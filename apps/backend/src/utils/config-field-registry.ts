@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string -- transform fields are documented numeric/string column values; String(v) is intentional for nullable numeric DB columns */
 import { stringifyDynamicSymbolExcluded, stringifyEnabledSetupTypes } from './profile-transformers';
 
 interface ConfigFieldDef {

@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { KlineValidator, compareOHLC, OHLC_TOLERANCE, VOLUME_TOLERANCE } from '../../services/kline-validator';
 
@@ -433,7 +434,7 @@ const createDbKline = (overrides: Partial<{
   volume: string;
   symbol: string;
   interval: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   closeTime: Date;
   quoteVolume: string;
   trades: number;

@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import {
   boolean,
   index,
@@ -77,7 +78,7 @@ export const customSymbolComponents = pgTable('custom_symbol_components', {
     .references(() => customSymbols.id, { onDelete: 'cascade' }),
   symbol: varchar({ length: 20 }).notNull(),
   marketType: varchar('market_type', { length: 10 })
-    .$type<'SPOT' | 'FUTURES'>().default('SPOT').notNull(),
+    .$type<MarketType>().default('SPOT').notNull(),
   coingeckoId: varchar('coingecko_id', { length: 100 }),
   weight: numeric({ precision: 10, scale: 8 }).notNull(),
   basePrice: numeric('base_price', { precision: 20, scale: 8 }),

@@ -64,7 +64,7 @@ export const orderMutationsRouter = router({
         if (isPaperWallet(wallet)) {
           const simulatedTimestamp = Date.now();
           const simulatedOrderId = String(simulatedTimestamp);
-          const price = input.price || '0';
+          const price = input.price ?? '0';
           const quantity = input.quantity;
 
           await ctx.db.insert(orders).values({
@@ -196,7 +196,7 @@ export const orderMutationsRouter = router({
             )
             .limit(1);
 
-          const isReduceOrder = input.reduceOnly || !!existingOpposite;
+          const isReduceOrder = input.reduceOnly ?? !!existingOpposite;
 
           if (!isReduceOrder) {
             await ctx.db.insert(tradeExecutions).values({
@@ -299,7 +299,7 @@ export const orderMutationsRouter = router({
         }
 
         const [dbOrder] = await ctx.db.select().from(orders).where(eq(orders.orderId, input.orderId)).limit(1);
-        const isAlgoOrder = input.isAlgo || (dbOrder && (dbOrder.type === 'STOP_MARKET' || dbOrder.type === 'TAKE_PROFIT_MARKET'));
+        const isAlgoOrder = input.isAlgo ?? (dbOrder && (dbOrder.type === 'STOP_MARKET' || dbOrder.type === 'TAKE_PROFIT_MARKET'));
 
         const client = createBinanceFuturesClient(wallet);
         if (isAlgoOrder) {

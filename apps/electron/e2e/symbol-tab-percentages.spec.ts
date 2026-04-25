@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { test, expect, type Page } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
 import { installTrpcMock } from './helpers/trpcMock';
@@ -6,7 +7,7 @@ import { emitSocketEvent, setWsConnected, waitForSocket } from './helpers/socket
 
 interface SymbolTabSeed {
   symbol: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   open: number;
   lastPrice: number;
 }

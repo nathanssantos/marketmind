@@ -63,6 +63,11 @@ vi.mock('../../services/opportunity-scoring', () => ({
   })),
 }));
 
+vi.mock('../../services/binance-exchange-info', () => ({
+  getTopSymbolsByVolume: vi.fn().mockResolvedValue(['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT']),
+  get24hrTickerData: vi.fn().mockResolvedValue(new Map()),
+}));
+
 describe('Auto-Trading Router', () => {
   beforeAll(async () => {
     await setupTestDatabase();
@@ -933,13 +938,14 @@ describe('Auto-Trading Router', () => {
       ).rejects.toThrow(TRPCError);
     });
 
-    it.skipIf(process.env.CI)('should return symbols list', async () => {
+    it('should return symbols list', async () => {
       const { user, session } = await createAuthenticatedUser();
       const caller = createAuthenticatedCaller(user, session);
 
       const result = await caller.autoTrading.getTopSymbols({ limit: 10 });
 
       expect(Array.isArray(result)).toBe(true);
+      expect(result).toContain('BTCUSDT');
     });
   });
 

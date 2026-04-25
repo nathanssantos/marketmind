@@ -1,3 +1,4 @@
+import type { PositionSide } from './direction';
 import type { ExchangeId } from './market';
 import type { MarketType } from './futures';
 
@@ -72,7 +73,7 @@ export interface Order {
   walletId?: string;
   setupId?: string;
   setupType?: string;
-  setupDirection?: 'LONG' | 'SHORT';
+  setupDirection?: PositionSide;
   setupConfidence?: number;
   entryFee?: string;
   exitFee?: string;
@@ -170,7 +171,7 @@ export interface WalletPerformancePoint {
 
 export interface Position {
   symbol: string;
-  side?: 'LONG' | 'SHORT';
+  side?: PositionSide;
   quantity: number;
   avgPrice: number;
   currentPrice: number;

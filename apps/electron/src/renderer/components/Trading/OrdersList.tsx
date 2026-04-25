@@ -35,7 +35,7 @@ const OrdersListComponent = () => {
     cancelOrder: cancelBackendOrder,
     closeExecution,
     cancelExecution,
-  } = useBackendTrading(activeWalletId || '', undefined);
+  } = useBackendTrading(activeWalletId ?? '', undefined);
 
   const { data: statsData } = trpc.trading.getOrdersStats.useQuery(
     { walletId: activeWalletId ?? '' },
@@ -48,12 +48,12 @@ const OrdersListComponent = () => {
       orderId: o.orderId,
       orderListId: '0',
       clientOrderId: '',
-      price: o.price || '0',
-      origQty: o.origQty || '0',
-      executedQty: o.executedQty || '0',
+      price: o.price ?? '0',
+      origQty: o.origQty ?? '0',
+      executedQty: o.executedQty ?? '0',
       cummulativeQuoteQty: '0',
       status: (o.status || 'NEW') as OrderStatus,
-      timeInForce: (o.timeInForce || 'GTC') as TimeInForce,
+      timeInForce: (o.timeInForce ?? 'GTC') as TimeInForce,
       type: (o.type || 'LIMIT') as OrderType,
       side: o.side,
       time: typeof o.time === 'number' ? o.time : Date.now(),
@@ -63,10 +63,10 @@ const OrdersListComponent = () => {
       id: o.orderId,
       walletId: o.walletId,
       orderDirection: o.side === 'BUY' ? ('long' as const) : ('short' as const),
-      entryPrice: parseFloat(o.price || '0'),
-      quantity: parseFloat(o.origQty || '0'),
+      entryPrice: parseFloat(o.price ?? '0'),
+      quantity: parseFloat(o.origQty ?? '0'),
       createdAt: new Date(o.createdAt),
-      marketType: o.marketType || 'FUTURES',
+      marketType: o.marketType ?? 'FUTURES',
     }));
 
     const ordersFromExecutions = tradeExecutions.map((e): Order => ({
@@ -94,11 +94,11 @@ const OrdersListComponent = () => {
       createdAt: new Date(e.createdAt),
       stopLoss: e.stopLoss ? parseFloat(e.stopLoss) : undefined,
       takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
-      pnl: e.pnl || undefined,
-      pnlPercent: e.pnlPercent || undefined,
+      pnl: e.pnl ?? undefined,
+      pnlPercent: e.pnlPercent ?? undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
-      setupType: e.setupType || undefined,
-      marketType: e.marketType || 'FUTURES',
+      setupType: e.setupType ?? undefined,
+      marketType: e.marketType ?? 'FUTURES',
 
       isAutoTrade: !!e.setupType,
     }));
@@ -109,9 +109,9 @@ const OrdersListComponent = () => {
   const wallets = backendWallets.map((w) => ({
     id: w.id,
     name: w.name,
-    balance: parseFloat(w.currentBalance || '0'),
-    initialBalance: parseFloat(w.initialBalance || '0'),
-    currency: (w.currency || 'USDT') as WalletCurrency,
+    balance: parseFloat(w.currentBalance ?? '0'),
+    initialBalance: parseFloat(w.initialBalance ?? '0'),
+    currency: (w.currency ?? 'USDT') as WalletCurrency,
     createdAt: new Date(w.createdAt),
     performance: [],
     makerCommission: 0,

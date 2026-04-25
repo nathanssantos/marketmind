@@ -140,9 +140,9 @@ export async function handleOrderUpdate(
 
       const orderIdStr = String(orderId);
       const executionByOrderId = openExecutions.find(e =>
-        (e.stopLossOrderId && e.stopLossOrderId === orderIdStr) ||
-        (e.stopLossAlgoId && e.stopLossAlgoId === orderIdStr) ||
-        (e.takeProfitOrderId && e.takeProfitOrderId === orderIdStr) ||
+        (e.stopLossOrderId && e.stopLossOrderId === orderIdStr) ??
+        (e.stopLossAlgoId && e.stopLossAlgoId === orderIdStr) ??
+        (e.takeProfitOrderId && e.takeProfitOrderId === orderIdStr) ??
         (e.takeProfitAlgoId && e.takeProfitAlgoId === orderIdStr)
       );
 
@@ -150,7 +150,7 @@ export async function handleOrderUpdate(
         ? openExecutions.find(e => e.exitReason === 'STOP_LOSS' || e.exitReason === 'TAKE_PROFIT')
         : undefined;
 
-      const execution = executionByOrderId || executionByExitReason || openExecutions[0];
+      const execution = executionByOrderId ?? executionByExitReason ?? openExecutions[0];
 
       if (!execution) {
         const handled = await handleUntrackedReduceFill(ctx, walletId, symbol, orderSide, orderId, avgPrice, lastFilledPrice, executedQty, realizedProfit, commission);
@@ -160,9 +160,9 @@ export async function handleOrderUpdate(
         return;
       }
 
-      let isSLOrder = (execution.stopLossOrderId && execution.stopLossOrderId === orderIdStr) ||
+      let isSLOrder = (execution.stopLossOrderId && execution.stopLossOrderId === orderIdStr) ??
         (execution.stopLossAlgoId && execution.stopLossAlgoId === orderIdStr);
-      let isTPOrder = (execution.takeProfitOrderId && execution.takeProfitOrderId === orderIdStr) ||
+      let isTPOrder = (execution.takeProfitOrderId && execution.takeProfitOrderId === orderIdStr) ??
         (execution.takeProfitAlgoId && execution.takeProfitAlgoId === orderIdStr);
       const isAlgoTriggerFill = !isSLOrder && !isTPOrder && execution.exitReason;
 

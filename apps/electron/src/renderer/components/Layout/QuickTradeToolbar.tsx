@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { Button, ConfirmationDialog, IconButton, Menu, Slider, TooltipWrapper } from '@renderer/components/ui';
 import { Box, Flex, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -89,7 +90,7 @@ export type QuickTradeMode = 'sidebar' | 'chart';
 
 interface QuickTradeActionsProps {
   symbol: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   interval?: string;
   showDragHandle?: boolean;
   onDragStart?: (e: React.MouseEvent) => void;
@@ -115,7 +116,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     isClosingPositionAndCancellingOrders,
     cancelAllOrders,
     isCancellingAllOrders,
-  } = useBackendFuturesTrading(activeWallet?.id || '');
+  } = useBackendFuturesTrading(activeWallet?.id ?? '');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
@@ -289,7 +290,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
               </Button>
             ))}
           </HStack>
-          {(onMenuAction || onClose) && (
+          {(onMenuAction ?? onClose) && (
             <Menu.Root>
               <Menu.Trigger asChild>
                 <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Options" flexShrink={0}>
@@ -495,7 +496,7 @@ QuickTradeActions.displayName = 'QuickTradeActions';
 
 interface QuickTradeToolbarProps {
   symbol: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   interval?: string;
   onMenuAction?: (mode: QuickTradeMode) => void;
   currentMode?: QuickTradeMode;

@@ -1,5 +1,5 @@
 import { FILTER_DEFAULTS } from '@marketmind/types';
-import type { MultiWatcherBacktestConfig } from '@marketmind/types';
+import type { MultiWatcherBacktestConfig, PositionSide } from '@marketmind/types';
 import { DEFAULT_ENABLED_SETUPS } from '../constants/index.js';
 
 export const ENABLED_SETUPS = DEFAULT_ENABLED_SETUPS;
@@ -109,7 +109,7 @@ export interface DirectionalMetrics {
 }
 
 export const calculateDirectionalMetrics = (
-  trades: Array<{ side: 'LONG' | 'SHORT'; pnl?: number }>
+  trades: Array<{ side: PositionSide; pnl?: number }>
 ): DirectionalMetrics => {
   if (trades.length === 0) return { pnl: 0, trades: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0 };
 

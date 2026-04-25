@@ -91,10 +91,10 @@ const ROOM_HANDLERS: Array<RoomHandler<keyof ClientToServerEvents>> = [
   {
     subscribe: CLIENT_TO_SERVER_EVENTS.subscribePricesBatch,
     unsubscribe: CLIENT_TO_SERVER_EVENTS.unsubscribePrices,
-    room: (symbols) => Array.isArray(symbols) ? (symbols as string[]).map(ROOMS.prices) : null,
+    room: (symbols) => Array.isArray(symbols) ? (symbols).map(ROOMS.prices) : null,
     onJoin: (symbols, _, svc) => {
       if (!Array.isArray(symbols)) return;
-      for (const symbol of symbols as string[]) {
+      for (const symbol of symbols) {
         skipCustomSymbol(symbol, () => binancePriceStreamService.subscribeSymbol(symbol));
       }
       svc.emitActiveSymbolsChanged();

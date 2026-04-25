@@ -1,17 +1,4 @@
-import type {
-  BacktestEquityPoint,
-  BacktestTrade,
-  ConflictStats,
-  FibonacciProjectionData,
-  Interval,
-  Kline,
-  MultiWatcherBacktestConfig,
-  MultiWatcherBacktestResult,
-  TimelineEvent,
-  TradingSetup,
-  WatcherConfig,
-  WatcherStats,
-} from '@marketmind/types';
+import type { BacktestEquityPoint, BacktestTrade, ConflictStats, FibonacciProjectionData, Interval, Kline, MultiWatcherBacktestConfig, MultiWatcherBacktestResult, PositionSide, TimelineEvent, TradingSetup, WatcherConfig, WatcherStats } from '@marketmind/types';
 import { calculateTotalFees } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
 import { BACKTEST_DEFAULTS } from '../../constants';
@@ -22,7 +9,7 @@ import {
 } from '../../utils/filters';
 import type { FilterResults } from '../../utils/confluence-scoring';
 import type { PineStrategy } from '../pine/types';
-import { FilterManager, type FilterConfig } from './FilterManager';
+import { FilterManager } from './FilterManager';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { BACKTEST_ENGINE } from '../../constants';
@@ -274,7 +261,7 @@ export class MultiWatcherBacktestEngine {
         detectedSetups: setups,
         strategies: watcherPineStrategies,
         stats: this.initWatcherStats(watcherConfig),
-        filterManager: new FilterManager(this.config as unknown as FilterConfig),
+        filterManager: new FilterManager(this.config),
       });
     }
   }
@@ -350,7 +337,7 @@ export class MultiWatcherBacktestEngine {
 
   private async applyIndicatorFilters(
     klines: Kline[],
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     _strategy: unknown,
     filterManager: FilterManager,
     tradesCount: number,
@@ -597,7 +584,7 @@ export class MultiWatcherBacktestEngine {
 
   private checkExit(
     position: {
-      side: 'LONG' | 'SHORT';
+      side: PositionSide;
       entryPrice: number;
       stopLoss?: number;
       takeProfit?: number;
@@ -791,7 +778,7 @@ export class MultiWatcherBacktestEngine {
 
   private getFibonacciTargetPrice(
     fib: FibonacciProjectionData,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     entryPrice: number
   ): number | null {
     if (!fib?.levels || fib.levels.length === 0) return null;

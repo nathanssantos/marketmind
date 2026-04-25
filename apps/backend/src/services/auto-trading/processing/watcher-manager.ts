@@ -202,7 +202,7 @@ export class WatcherManager {
       enabledStrategies,
       profileId,
       profileName,
-      intervalId: syncTimeoutId as unknown as ReturnType<typeof setInterval>,
+      intervalId: syncTimeoutId,
       lastProcessedTime: Date.now(),
       lastProcessedCandleOpenTime,
       isManual,
@@ -323,7 +323,7 @@ export class WatcherManager {
       watcherDetails.push({
         symbol: w.symbol,
         interval: w.interval,
-        marketType: (w.marketType as MarketType) ?? 'FUTURES',
+        marketType: (w.marketType) ?? 'FUTURES',
         profileId: w.profileId ?? undefined,
         profileName,
         isManual: w.isManual,
@@ -370,7 +370,7 @@ export class WatcherManager {
     const nextCandleClose = new Date(Math.ceil(now / pollIntervalMs) * pollIntervalMs);
 
     for (const pw of persistedWatchers) {
-      const marketType = (pw.marketType as MarketType) ?? 'FUTURES';
+      const marketType = (pw.marketType) ?? 'FUTURES';
       const exchange = (pw.exchange as ExchangeId) ?? 'BINANCE';
 
       const result = await prefetchKlines({

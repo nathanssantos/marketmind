@@ -2,7 +2,7 @@ import { verify } from '@node-rs/argon2';
 import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply } from 'fastify';
 import { users } from '../db/schema';
 import {
   createEmailVerificationToken,
@@ -73,7 +73,7 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const ip = req.ip ?? 'unknown';
       const metadata = extractRequestMetadata(req);
 
@@ -116,7 +116,7 @@ export const authRouter = router({
         email: input.email,
       });
 
-      setSessionCookie(ctx.res as FastifyReply, sessionId, expiresAt);
+      setSessionCookie(ctx.res, sessionId, expiresAt);
 
       return {
         userId,
@@ -134,7 +134,7 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const ip = req.ip ?? 'unknown';
       const metadata = extractRequestMetadata(req);
 
@@ -198,7 +198,7 @@ export const authRouter = router({
         email: input.email,
       });
 
-      setSessionCookie(ctx.res as FastifyReply, sessionId, expiresAt);
+      setSessionCookie(ctx.res, sessionId, expiresAt);
 
       return {
         requiresTwoFactor: false as const,
@@ -217,7 +217,7 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const metadata = extractRequestMetadata(req);
 
       checkTwoFactorRateLimit(input.userId, metadata);
@@ -242,7 +242,7 @@ export const authRouter = router({
       logSecurityEvent(SecurityEvent.TWO_FACTOR_SUCCESS, input.userId, metadata);
       logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, input.userId, metadata);
 
-      setSessionCookie(ctx.res as FastifyReply, sessionId, expiresAt);
+      setSessionCookie(ctx.res, sessionId, expiresAt);
 
       return { userId: input.userId, sessionId, expiresAt };
     }),
@@ -250,7 +250,7 @@ export const authRouter = router({
   resendTwoFactorCode: publicProcedure
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const metadata = extractRequestMetadata(req);
 
       checkTwoFactorRateLimit(input.userId, metadata);
@@ -279,7 +279,7 @@ export const authRouter = router({
       });
     }
 
-    const req = ctx.req as FastifyRequest;
+    const req = ctx.req;
     const metadata = extractRequestMetadata(req);
     const userId = ctx.user?.id ?? null;
 
@@ -287,7 +287,7 @@ export const authRouter = router({
 
     logSecurityEvent(SecurityEvent.LOGOUT, userId, metadata);
 
-    clearSessionCookie(ctx.res as FastifyReply);
+    clearSessionCookie(ctx.res);
 
     return { success: true };
   }),
@@ -323,7 +323,7 @@ export const authRouter = router({
   requestPasswordReset: publicProcedure
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const metadata = extractRequestMetadata(req);
 
       checkPasswordResetRateLimit(input.email, metadata);
@@ -364,7 +364,7 @@ export const authRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const metadata = extractRequestMetadata(req);
 
       const tokenResult = await validatePasswordResetToken(input.token);
@@ -392,7 +392,7 @@ export const authRouter = router({
   verifyEmail: publicProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const metadata = extractRequestMetadata(req);
 
       const result = await verifyEmailToken(input.token);
@@ -410,7 +410,7 @@ export const authRouter = router({
     }),
 
   resendVerificationEmail: protectedProcedure.mutation(async ({ ctx }) => {
-    const req = ctx.req as FastifyRequest;
+    const req = ctx.req;
     const metadata = extractRequestMetadata(req);
     const user = ctx.user;
 
@@ -438,7 +438,7 @@ export const authRouter = router({
   toggleTwoFactor: protectedProcedure
     .input(z.object({ enabled: z.boolean() }))
     .mutation(async ({ input, ctx }) => {
-      const req = ctx.req as FastifyRequest;
+      const req = ctx.req;
       const metadata = extractRequestMetadata(req);
       const user = ctx.user;
 

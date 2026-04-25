@@ -30,7 +30,7 @@ export class IBStockClient implements IExchangeSpotClient {
     this.connectionManager = createConnectionManager({
       port: credentials.testnet ? IB_PORTS.GATEWAY_PAPER : IB_PORTS.GATEWAY_LIVE,
     });
-    this.accountType = (credentials as any).accountType ?? 'PRO';
+    this.accountType = (credentials as { accountType?: IBAccountType }).accountType ?? 'PRO';
   }
 
   private async ensureConnected(): Promise<void> {

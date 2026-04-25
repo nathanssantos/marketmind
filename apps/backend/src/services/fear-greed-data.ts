@@ -96,9 +96,7 @@ export class FearGreedDataService {
 let fearGreedDataService: FearGreedDataService | null = null;
 
 export const getFearGreedDataService = (): FearGreedDataService => {
-  if (!fearGreedDataService) {
-    fearGreedDataService = new FearGreedDataService();
-  }
+  fearGreedDataService ??= new FearGreedDataService();
   return fearGreedDataService;
 };
 

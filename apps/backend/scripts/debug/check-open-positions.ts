@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { db } from '../../src/db';
 import { tradeExecutions } from '../../src/db/schema';
 import { inArray } from 'drizzle-orm';

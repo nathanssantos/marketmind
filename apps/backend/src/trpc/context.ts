@@ -36,8 +36,8 @@ export const createContext = async ({ req, res }: CreateFastifyContextOptions) =
     req,
     res,
     sessionId,
-    user: result?.user || null,
-    session: result?.session || null,
+    user: result?.user ?? null,
+    session: result?.session ?? null,
     websocket: websocketService,
   };
 };

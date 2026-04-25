@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import type { USDMClient} from 'binance';
 import { WebsocketClient } from 'binance';
 import type { WsKey } from 'binance/lib/util/websockets/websocket-util';
@@ -161,7 +162,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       await db.delete(tradeExecutions).where(eq(tradeExecutions.id, deleteExecId));
     }
 
-    const hasProtection = freshExec.stopLoss || freshExec.takeProfit;
+    const hasProtection = freshExec.stopLoss ?? freshExec.takeProfit;
     if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
 
     const wsService = getWebSocketService();
@@ -177,7 +178,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       }
     }
 
-    logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty, deleteExecId }, `[FuturesUserStream] ${logContext || 'Pyramided into existing position'} + emitted WS`);
+    logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty, deleteExecId }, `[FuturesUserStream] ${logContext ?? 'Pyramided into existing position'} + emitted WS`);
   }
 
   async syncPositionFromExchange(walletId: string, symbol: string, executionId: string, logContext: string): Promise<boolean> {
@@ -244,7 +245,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     return closeResidualPositionFn(this, walletId, symbol, executionId);
   }
 
-  async verifyAlgoFillProcessed(walletId: string, executionId: string, symbol: string, side: 'LONG' | 'SHORT', openedAt: number, exitReason: string): Promise<void> {
+  async verifyAlgoFillProcessed(walletId: string, executionId: string, symbol: string, side: PositionSide, openedAt: number, exitReason: string): Promise<void> {
     return verifyAlgoFillProcessedFn(this, walletId, executionId, symbol, side, openedAt, exitReason);
   }
 

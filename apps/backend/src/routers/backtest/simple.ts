@@ -1,5 +1,5 @@
 import { FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
-import type { BacktestConfig, Interval } from '@marketmind/types';
+import type { BacktestConfig } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { DEFAULT_ENABLED_SETUPS } from '../../constants';
@@ -71,11 +71,11 @@ export const simpleProcedures = {
 
         const config: BacktestConfig = {
           symbol: input.symbol,
-          interval: input.interval as Interval,
+          interval: input.interval,
           startDate: input.startDate,
           endDate: input.endDate,
           initialCapital: input.initialCapital,
-          setupTypes: input.setupTypes || [...DEFAULT_ENABLED_SETUPS],
+          setupTypes: input.setupTypes ?? [...DEFAULT_ENABLED_SETUPS],
           minConfidence: input.minConfidence,
           useTrendFilter: input.useTrendFilter,
           useAlgorithmicLevels: input.useAlgorithmicLevels,

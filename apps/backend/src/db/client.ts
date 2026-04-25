@@ -31,9 +31,7 @@ const getPool = (): pg.Pool => {
 };
 
 const createDb = (): DatabaseType => {
-  if (!dbInstance) {
-    dbInstance = drizzle(getPool(), { schema, logger: false });
-  }
+  dbInstance ??= drizzle(getPool(), { schema, logger: false });
   return dbInstance;
 };
 

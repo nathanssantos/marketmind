@@ -1,4 +1,4 @@
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions } from '../db/schema';
@@ -24,11 +24,11 @@ import {
 export const evaluateDynamicPyramid = async (
   evaluateStatic: (
     userId: string, walletId: string, symbol: string,
-    direction: 'LONG' | 'SHORT', currentPrice: number,
+    direction: PositionSide, currentPrice: number,
     mlConfidence?: number, config?: Partial<PyramidConfig>
   ) => Promise<PyramidEvaluation>,
   userId: string, walletId: string, symbol: string,
-  direction: 'LONG' | 'SHORT', currentPrice: number,
+  direction: PositionSide, currentPrice: number,
   klines: Kline[], config: PyramidConfig, mlConfidence?: number
 ): Promise<PyramidEvaluation> => {
   const dynamicConfig: DynamicPyramidConfig = {
@@ -95,7 +95,7 @@ export const evaluateDynamicPyramid = async (
 
 export const evaluateFibonacciPyramid = async (
   userId: string, walletId: string, symbol: string,
-  direction: 'LONG' | 'SHORT', currentPrice: number,
+  direction: PositionSide, currentPrice: number,
   stopLoss: number | null, config: PyramidConfig, _mlConfidence?: number
 ): Promise<PyramidEvaluation> => {
   const openExecutions = await db

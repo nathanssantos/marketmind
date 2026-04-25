@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions, wallets, orders } from '../../db/schema';
@@ -24,7 +25,7 @@ export async function handleUntrackedReduceFill(
   const rp = parseFloat(realizedProfit || '0');
   if (rp === 0) return false;
 
-  const reduceDirection: 'LONG' | 'SHORT' = orderSide === 'BUY' ? 'SHORT' : 'LONG';
+  const reduceDirection: PositionSide = orderSide === 'BUY' ? 'SHORT' : 'LONG';
   const [oppositeExec] = await db
     .select()
     .from(tradeExecutions)
@@ -70,7 +71,7 @@ export async function handleUntrackedReduceFill(
   }
 
   if (remainingQty > 0 && remainingQty < execQty) {
-    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl || '0');
+    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl ?? '0');
     const newPartialClosePnl = existingPartialPnl + partialPnl;
 
     await db
@@ -96,7 +97,7 @@ export async function handleUntrackedReduceFill(
       '[FuturesUserStream] Untracked reduce fill — partial close applied'
     );
 
-    const hasProtection = oppositeExec.stopLoss || oppositeExec.takeProfit;
+    const hasProtection = oppositeExec.stopLoss ?? oppositeExec.takeProfit;
     if (hasProtection) ctx.scheduleDebouncedSlTpUpdate(oppositeExec.id, walletId, symbol);
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
@@ -110,7 +111,7 @@ export async function handleUntrackedReduceFill(
       });
     }
   } else {
-    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl || '0');
+    const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl ?? '0');
     const totalPnl = partialPnl + existingPartialPnl;
     const exitFee = parseFloat(commission || '0');
 
@@ -206,10 +207,10 @@ export async function handleManualOrderFill(
     return;
   }
 
-  const direction: 'LONG' | 'SHORT' = orderSide === 'BUY' ? 'LONG' : 'SHORT';
+  const direction: PositionSide = orderSide === 'BUY' ? 'LONG' : 'SHORT';
   const oppositeDirection = direction === 'LONG' ? 'SHORT' : 'LONG';
   const fillPrice = parseFloat(avgPrice || lastFilledPrice);
-  const fillQty = parseFloat(executedQty || manualOrder.origQty || '0');
+  const fillQty = parseFloat(executedQty || (manualOrder.origQty ?? '0'));
 
   const [existingOpposite] = await db
     .select({ id: tradeExecutions.id })

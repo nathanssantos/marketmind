@@ -33,37 +33,37 @@ export class BacktestLogger {
     return `${hours}:${minutes}:${seconds}`;
   }
 
-  error(message: string, ...args: any[]) {
+  error(message: string, ...args: unknown[]) {
     if (this.shouldLog(LogLevel.ERROR)) {
       console.error(chalk.red(`[${this.timestamp()}] ✗ ${message}`), ...args);
     }
   }
 
-  warn(message: string, ...args: any[]) {
+  warn(message: string, ...args: unknown[]) {
     if (this.shouldLog(LogLevel.WARN)) {
       console.warn(chalk.yellow(`[${this.timestamp()}] ! ${message}`), ...args);
     }
   }
 
-  info(message: string, ...args: any[]) {
+  info(message: string, ...args: unknown[]) {
     if (this.shouldLog(LogLevel.INFO)) {
       console.log(chalk.cyan(`[${this.timestamp()}] ${message}`), ...args);
     }
   }
 
-  success(message: string, ...args: any[]) {
+  success(message: string, ...args: unknown[]) {
     if (this.shouldLog(LogLevel.INFO)) {
       console.log(chalk.green(`[${this.timestamp()}] ✓ ${message}`), ...args);
     }
   }
 
-  verbose(message: string, ...args: any[]) {
+  verbose(message: string, ...args: unknown[]) {
     if (this.shouldLog(LogLevel.VERBOSE)) {
       console.log(chalk.gray(`[${this.timestamp()}] ${message}`), ...args);
     }
   }
 
-  debug(message: string, ...args: any[]) {
+  debug(message: string, ...args: unknown[]) {
     if (this.shouldLog(LogLevel.DEBUG)) {
       console.log(chalk.magenta(`[${this.timestamp()}] [DEBUG] ${message}`), ...args);
     }
@@ -155,7 +155,13 @@ export class BacktestLogger {
     }
   }
 
-  optimizationResults(results: Array<{ params: any; metrics: BacktestMetrics }>, top: number = 10) {
+  optimizationResults(
+    results: Array<{
+      params: { stopLossPercent?: number; takeProfitPercent?: number; minConfidence?: number };
+      metrics: BacktestMetrics;
+    }>,
+    top: number = 10,
+  ) {
     if (!this.shouldLog(LogLevel.INFO)) return;
 
     this.header('TOP OPTIMIZATION RESULTS');

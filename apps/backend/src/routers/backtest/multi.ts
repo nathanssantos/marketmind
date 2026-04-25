@@ -174,7 +174,6 @@ export const multiProcedures = {
           data: {
             id: backtestId,
             status: 'FAILED',
-            config: input as any,
           },
         });
 

@@ -1,6 +1,49 @@
 import type { PivotPoint } from './tradingSetup';
 import type { TrendDirection } from './filters';
 
+// --- Indicator constants (formerly in indicator-constants.ts) ---
+
+export const INDICATOR_PERIODS = {
+  RSI_DEFAULT: 14,
+  ADX_DEFAULT: 14,
+  ATR_DEFAULT: 14,
+  EMA_FAST: 9,
+  EMA_MEDIUM: 20,
+  EMA_SLOW: 50,
+  EMA_TREND: 200,
+  MACD_FAST: 12,
+  MACD_SLOW: 26,
+  MACD_SIGNAL: 9,
+  VOLUME_LOOKBACK: 20,
+  STOCHASTIC_K: 14,
+  STOCHASTIC_D: 3,
+  STOCHASTIC_SMOOTH: 3,
+  BOLLINGER_PERIOD: 20,
+  BOLLINGER_STD_DEV: 2,
+} as const;
+
+export const FILTER_THRESHOLDS = {
+  ADX_TREND: 20,
+  ADX_MIN: 25,
+  ADX_STRONG: 40,
+  ADX_VERY_STRONG: 45,
+  RSI_OVERBOUGHT: 70,
+  RSI_OVERSOLD: 30,
+  RSI_NEUTRAL_HIGH: 60,
+  RSI_NEUTRAL_LOW: 40,
+  STOCHASTIC_OVERBOUGHT: 80,
+  STOCHASTIC_OVERSOLD: 20,
+  CORRELATION_HIGH: 0.7,
+  CORRELATION_LOW: 0.3,
+  CORRELATION_NEGATIVE: -0.3,
+  VOLUME_SPIKE_MULTIPLIER: 1.5,
+  VOLUME_CONFIRMATION_MULTIPLIER: 1.2,
+  VERY_HIGH_VOLATILITY_ATR: 4.0,
+} as const;
+
+export type IndicatorPeriodsConstants = typeof INDICATOR_PERIODS;
+export type FilterThresholdsConstants = typeof FILTER_THRESHOLDS;
+
 // --- adx.ts ---
 
 export interface ADXResult {

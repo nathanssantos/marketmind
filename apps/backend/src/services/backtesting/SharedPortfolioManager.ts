@@ -4,7 +4,7 @@ import {
   canOpenNewPosition,
   type ExposureConfig,
 } from '@marketmind/risk';
-import type { TradingSetup } from '@marketmind/types';
+import type { PositionSide, TradingSetup } from '@marketmind/types';
 import { generateEntityId } from '../../utils/id';
 
 export interface PortfolioConfig {
@@ -36,7 +36,7 @@ export interface SharedPosition {
   watcherSymbol: string;
   watcherInterval: string;
   setupType: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   entryPrice: number;
   quantity: number;
   entryTime: number;
@@ -184,7 +184,7 @@ export class SharedPortfolioManager {
     return { passed: true };
   }
 
-  checkOppositeDirection(symbol: string, direction: 'LONG' | 'SHORT'): FilterCheckResult {
+  checkOppositeDirection(symbol: string, direction: PositionSide): FilterCheckResult {
     const oppositePosition = this.openPositions.find(
       (p) => p.watcherSymbol === symbol && p.side !== direction
     );

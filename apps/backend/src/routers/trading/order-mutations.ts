@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -104,7 +105,7 @@ export const orderMutationsRouter = router({
         if (isPaperWallet(wallet)) {
           const simulatedTimestamp = Date.now();
           const simulatedOrderId = generatePaperOrderId();
-          const price = input.price || '0';
+          const price = input.price ?? '0';
           const quantity = input.quantity;
 
           await ctx.db.insert(orders).values({
@@ -273,7 +274,7 @@ export const orderMutationsRouter = router({
           });
 
           if (!orderInput.reduceOnly) {
-            const intendedSide: 'LONG' | 'SHORT' = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
+            const intendedSide: PositionSide = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
             const oppositeDirection = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
             const [existingOpposite] = await ctx.db
               .select({ id: tradeExecutions.id })
@@ -382,7 +383,7 @@ export const orderMutationsRouter = router({
           const rawTargetPrice = orderInput.stopPrice ?? orderInput.price ?? binanceOrder.price;
           const targetPrice = rawTargetPrice && rawTargetPrice !== '0' ? rawTargetPrice : null;
           if (targetPrice) {
-            const intendedSide: 'LONG' | 'SHORT' = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
+            const intendedSide: PositionSide = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
             const oppositeDirection = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
             const [existingOpposite] = await ctx.db
               .select({ id: tradeExecutions.id })
@@ -409,7 +410,7 @@ export const orderMutationsRouter = router({
                 side: intendedSide,
                 entryPrice: String(targetPrice),
                 limitEntryPrice: String(targetPrice),
-                quantity: String(binanceOrder.origQty || orderInput.quantity),
+                quantity: String(binanceOrder.origQty ?? orderInput.quantity),
                 entryOrderId: binanceOrder.orderId,
                 entryOrderType: 'LIMIT',
                 status: 'pending',

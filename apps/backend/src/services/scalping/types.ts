@@ -1,4 +1,4 @@
-import type { ScalpingStrategy, ScalpingMetrics } from '@marketmind/types';
+import type { PositionSide, ScalpingMetrics, ScalpingStrategy } from '@marketmind/types';
 
 export interface OrderBookState {
   bids: Map<number, number>;
@@ -47,7 +47,7 @@ export interface StrategyContext {
 
 export interface StrategyResult {
   shouldTrade: boolean;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   confidence: number;
   strategy: ScalpingStrategy;
   entryPrice: number;

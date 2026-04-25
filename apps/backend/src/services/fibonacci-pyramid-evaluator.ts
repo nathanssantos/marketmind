@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import {
   FIBONACCI_TARGET_VALUES,
   type FibonacciTargetLevelNumeric,
@@ -24,7 +25,7 @@ export interface FiboPyramidEvaluation {
 
 export interface TriggeredFiboState {
   symbol: string;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   entryPrice: number;
   triggeredLevels: Set<FiboLevel>;
 }
@@ -33,13 +34,13 @@ const FIBO_LEVEL_VALUES = FIBONACCI_TARGET_VALUES;
 
 const triggeredFiboStateMap = new Map<string, TriggeredFiboState>();
 
-const getStateKey = (symbol: string, direction: 'LONG' | 'SHORT'): string => {
+const getStateKey = (symbol: string, direction: PositionSide): string => {
   return `${symbol}-${direction}`;
 };
 
 export const initializeFiboState = (
   symbol: string,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   entryPrice: number
 ): void => {
   const key = getStateKey(symbol, direction);
@@ -51,14 +52,14 @@ export const initializeFiboState = (
   });
 };
 
-export const clearFiboState = (symbol: string, direction: 'LONG' | 'SHORT'): void => {
+export const clearFiboState = (symbol: string, direction: PositionSide): void => {
   const key = getStateKey(symbol, direction);
   triggeredFiboStateMap.delete(key);
 };
 
 export const getFiboState = (
   symbol: string,
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ): TriggeredFiboState | undefined => {
   const key = getStateKey(symbol, direction);
   return triggeredFiboStateMap.get(key);
@@ -67,7 +68,7 @@ export const getFiboState = (
 export const calculateFiboTargetPrice = (
   entryPrice: number,
   stopLoss: number,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   fiboLevel: FiboLevel
 ): number => {
   const risk = Math.abs(entryPrice - stopLoss);
@@ -80,7 +81,7 @@ export const calculateFiboTargetPrice = (
 
 export const evaluateFiboPyramidTrigger = (
   symbol: string,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   entryPrice: number,
   stopLoss: number,
   currentPrice: number,
@@ -204,7 +205,7 @@ export const evaluateFiboPyramidTrigger = (
 export const getFiboLevelsWithPrices = (
   entryPrice: number,
   stopLoss: number,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   enabledLevels: FiboLevel[]
 ): Array<{ level: FiboLevel; price: number; percentFromEntry: number }> => {
   return enabledLevels.map((level) => {
@@ -217,7 +218,7 @@ export const getFiboLevelsWithPrices = (
 
 export const getTriggeredLevelsCount = (
   symbol: string,
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ): number => {
   const state = getFiboState(symbol, direction);
   return state?.triggeredLevels.size ?? 0;

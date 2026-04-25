@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { Kline, MomentumTimingResult, SetupMomentumType } from '@marketmind/types';
+import type { Kline, MomentumTimingResult, PositionSide, SetupMomentumType } from '@marketmind/types';
 import { getStrategyMomentumType } from './strategy-filter-types';
 
 const pineService = new PineIndicatorService();
@@ -24,7 +24,7 @@ export const getSetupMomentumType = (setupType: string): SetupMomentumType => {
 
 export const checkMomentumTiming = async (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   setupType?: string
 ): Promise<MomentumTimingResult> => {
   const {

@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import type { klines } from '../db/schema';
 
 const MIN_VOLUME_FOR_VALIDITY = 0.01;
@@ -188,7 +188,7 @@ export class KlineValidator {
 
     if (highEqualsOpen && !lowEqualsOpen) {
       const hasNeighborWithHigherHigh =
-        (prevKline && parseFloat(prevKline.high) > high) ||
+        (prevKline && parseFloat(prevKline.high) > high) ??
         (nextKline && parseFloat(nextKline.high) > high);
 
       if (hasNeighborWithHigherHigh) {
@@ -198,7 +198,7 @@ export class KlineValidator {
 
     if (lowEqualsOpen && !highEqualsOpen) {
       const hasNeighborWithLowerLow =
-        (prevKline && parseFloat(prevKline.low) < low) ||
+        (prevKline && parseFloat(prevKline.low) < low) ??
         (nextKline && parseFloat(nextKline.low) < low);
 
       if (hasNeighborWithLowerLow) {
@@ -283,7 +283,7 @@ export class KlineValidator {
     kline: DbKline,
     symbol: string,
     interval: Interval,
-    marketType: 'SPOT' | 'FUTURES'
+    marketType: MarketType
   ): Promise<ValidationAgainstAPIResult> {
     const apiKline = await this.fetchBinanceKline(
       symbol,
@@ -311,7 +311,7 @@ export class KlineValidator {
     symbol: string,
     interval: string,
     timestamp: number,
-    marketType: 'SPOT' | 'FUTURES'
+    marketType: MarketType
   ): Promise<BinanceKlineResponse | null> {
     const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
     const url = `${baseUrl}?symbol=${symbol.toUpperCase()}&interval=${interval}&startTime=${timestamp}&limit=1`;
@@ -353,7 +353,7 @@ export class KlineValidator {
     interval: string,
     startTime: number,
     endTime: number,
-    marketType: 'SPOT' | 'FUTURES'
+    marketType: MarketType
   ): Promise<Map<number, BinanceKlineResponse>> {
     const baseUrl = marketType === 'FUTURES' ? BINANCE_FUTURES_API : BINANCE_SPOT_API;
     const url = `${baseUrl}?symbol=${symbol.toUpperCase()}&interval=${interval}&startTime=${startTime}&endTime=${endTime}&limit=1000`;
@@ -391,7 +391,7 @@ export class KlineValidator {
     dbKlines: DbKline[],
     symbol: string,
     interval: Interval,
-    marketType: 'SPOT' | 'FUTURES'
+    marketType: MarketType
   ): Promise<Map<number, ValidationAgainstAPIResult>> {
     const results = new Map<number, ValidationAgainstAPIResult>();
     if (dbKlines.length === 0) return results;

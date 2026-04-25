@@ -1,4 +1,3 @@
-import type { MarketType } from '@marketmind/types';
 import { checklistConditionSchema, conditionSideSchema } from '@marketmind/trading-core';
 import { z } from 'zod';
 import { tradingProfileQueries } from '../../services/database/tradingProfileQueries';
@@ -34,7 +33,7 @@ export const checklistRouter = router({
         userId: ctx.user.id,
         symbol: input.symbol,
         interval: input.interval,
-        marketType: input.marketType as MarketType,
+        marketType: input.marketType,
         side: input.side,
         conditions: conditions ?? [],
       });

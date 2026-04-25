@@ -146,13 +146,13 @@ export const tradeProcedures = {
 
       const avgWin =
         winningTrades.length > 0
-          ? winningTrades.reduce((sum, t) => sum + parseFloat(t.pnl || '0'), 0) /
+          ? winningTrades.reduce((sum, t) => sum + parseFloat(t.pnl ?? '0'), 0) /
             winningTrades.length
           : 0;
 
       const avgLoss =
         losingTrades.length > 0
-          ? losingTrades.reduce((sum, t) => sum + parseFloat(t.pnl || '0'), 0) /
+          ? losingTrades.reduce((sum, t) => sum + parseFloat(t.pnl ?? '0'), 0) /
             losingTrades.length
           : 0;
 
@@ -161,20 +161,20 @@ export const tradeProcedures = {
 
       const wallet = await walletQueries.findByIdAndUser(input.walletId, ctx.user.id, { throwIfNotFound: false });
 
-      const initialBalance = wallet ? parseFloat(wallet.initialBalance || '0') : 0;
-      const currentBalance = wallet ? parseFloat(wallet.currentBalance || '0') : 0;
-      const walletTotalDeposits = wallet ? parseFloat(wallet.totalDeposits || '0') : 0;
-      const walletTotalWithdrawals = wallet ? parseFloat(wallet.totalWithdrawals || '0') : 0;
+      const initialBalance = wallet ? parseFloat(wallet.initialBalance ?? '0') : 0;
+      const currentBalance = wallet ? parseFloat(wallet.currentBalance ?? '0') : 0;
+      const walletTotalDeposits = wallet ? parseFloat(wallet.totalDeposits ?? '0') : 0;
+      const walletTotalWithdrawals = wallet ? parseFloat(wallet.totalWithdrawals ?? '0') : 0;
       const effectiveCapital = initialBalance + walletTotalDeposits - walletTotalWithdrawals;
       const totalReturn =
         effectiveCapital > 0 ? ((currentBalance - effectiveCapital) / effectiveCapital) * 100 : 0;
 
       const largestWin = winningTrades.length > 0
-        ? Math.max(...winningTrades.map((t) => parseFloat(t.pnl || '0')))
+        ? Math.max(...winningTrades.map((t) => parseFloat(t.pnl ?? '0')))
         : 0;
 
       const largestLoss = losingTrades.length > 0
-        ? Math.min(...losingTrades.map((t) => parseFloat(t.pnl || '0')))
+        ? Math.min(...losingTrades.map((t) => parseFloat(t.pnl ?? '0')))
         : 0;
 
       let maxDrawdown = 0;

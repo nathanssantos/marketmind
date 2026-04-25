@@ -1,3 +1,5 @@
+import type { PositionSide } from './direction';
+
 export const HEATMAP_MAX_BUCKETS = 500;
 export const HEATMAP_BUCKET_DURATION_MS = 60_000;
 
@@ -16,7 +18,7 @@ export interface LiquidityHeatmapLiquidation {
 
 export interface EstimatedLiquidationLevel {
   price: number;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   leverage: number;
 }
 

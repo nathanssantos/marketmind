@@ -1,4 +1,4 @@
-import type { Kline, TradingSetup } from '@marketmind/types';
+import type { Kline, PositionSide, TradingSetup } from '@marketmind/types';
 import type { PineStrategy } from '../../pine/types';
 import { and, eq, inArray } from 'drizzle-orm';
 import { BACKTEST_DEFAULTS } from '../../../constants';
@@ -41,7 +41,7 @@ export const resolveConfig = async (
 
 export const resolveTpConfig = (
   config: typeof autoTradingConfig.$inferSelect | null,
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ) => {
   const tpCalculationMode = config?.tpCalculationMode ?? 'default';
   const fibonacciTargetLevelLong = config?.fibonacciTargetLevelLong ?? config?.fibonacciTargetLevel ?? '2';
@@ -56,7 +56,7 @@ export const buildFilterConfig = (
   config: typeof autoTradingConfig.$inferSelect,
   directionMode: string
 ): FilterValidatorConfig => ({
-  ...buildFilterConfigFromDb(config as unknown as Record<string, unknown>),
+  ...buildFilterConfigFromDb(config),
   useBtcCorrelationFilter: directionMode === 'auto' && (config.useBtcCorrelationFilter ?? false),
   volumeFilterConfig: {
     longConfig: {

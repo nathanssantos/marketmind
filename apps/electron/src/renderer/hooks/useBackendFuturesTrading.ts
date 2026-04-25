@@ -1,3 +1,4 @@
+import type { FuturesOrderType, PositionSide } from '@marketmind/types';
 import { useCallback, useMemo } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
@@ -161,7 +162,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       walletId: string;
       symbol: string;
       side: 'BUY' | 'SELL';
-      type: 'MARKET' | 'LIMIT' | 'STOP' | 'STOP_MARKET' | 'TAKE_PROFIT' | 'TAKE_PROFIT_MARKET';
+      type: FuturesOrderType;
       quantity: string;
       price?: string;
       stopPrice?: string;
@@ -188,7 +189,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     async (data: {
       walletId: string;
       symbol: string;
-      side: 'LONG' | 'SHORT';
+      side: PositionSide;
       entryPrice: string;
       entryQty: string;
       stopLoss?: string;

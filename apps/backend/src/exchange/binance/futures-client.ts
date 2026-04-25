@@ -1,10 +1,4 @@
-import type {
-  FuturesAccount,
-  FuturesLeverage,
-  FuturesOrder,
-  FuturesPosition,
-  MarginType,
-} from '@marketmind/types';
+import type { FuturesAccount, FuturesLeverage, FuturesOrder, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
 import { USDMClient } from 'binance';
 import type {
   AccountTradeRecord,
@@ -101,7 +95,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
       symbol,
       amount,
       binanceType,
-      positionSide as 'LONG' | 'SHORT' | 'BOTH' | undefined
+      positionSide as PositionSide | 'BOTH' | undefined
     );
   }
 
@@ -159,7 +153,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
 
   async getLastClosingTrade(
     symbol: string,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     openedAt: number
   ): Promise<ClosingTradeResult | null> {
     return binanceGetLastClosingTrade(this.client, symbol, side, openedAt);
@@ -167,7 +161,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
 
   async getAllTradeFeesForPosition(
     symbol: string,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     openedAt: number,
     closedAt?: number
   ): Promise<AllTradeFeesResult | null> {

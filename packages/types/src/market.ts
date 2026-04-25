@@ -4,6 +4,8 @@ export type AssetClass = 'CRYPTO' | 'STOCKS';
 
 export type ExchangeId = 'BINANCE' | 'INTERACTIVE_BROKERS';
 
+export type WalletType = 'live' | 'testnet' | 'paper';
+
 export type SymbolStatus = 'TRADING' | 'HALT' | 'BREAK';
 
 export interface StockSymbolInfo {

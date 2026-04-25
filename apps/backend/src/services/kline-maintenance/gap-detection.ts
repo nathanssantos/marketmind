@@ -177,8 +177,8 @@ export const fillGap = async (gap: GapInfo, silent = false): Promise<number> => 
             closeTime: new Date(kline.closeTime),
             quoteVolume: kline.quoteVolume,
             trades: kline.trades,
-            takerBuyBaseVolume: kline.takerBuyBaseVolume || '0',
-            takerBuyQuoteVolume: kline.takerBuyQuoteVolume || '0',
+            takerBuyBaseVolume: kline.takerBuyBaseVolume ?? '0',
+            takerBuyQuoteVolume: kline.takerBuyQuoteVolume ?? '0',
           })
           .onConflictDoNothing();
         inserted++;

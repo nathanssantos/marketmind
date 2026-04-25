@@ -1,3 +1,5 @@
+import type { PositionSide } from '@marketmind/types';
+import { SecType } from '@stoqey/ib';
 import { IB_ORDER_TYPES, IB_ORDER_ACTIONS, IB_TIME_IN_FORCE } from './constants';
 import type { IBOrderParams, IBStockContract } from './types';
 
@@ -9,7 +11,7 @@ export interface TrailingStopConfig {
 
 export interface CreateTrailingStopParams {
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   quantity: number;
   trailPercent?: number;
   trailAmount?: number;
@@ -40,7 +42,7 @@ export const createTrailingStopOrderParams = (params: CreateTrailingStopParams):
 
   const contract: IBStockContract = {
     symbol,
-    secType: 'STK' as any,
+    secType: SecType.STK,
     exchange: 'SMART',
     currency: 'USD',
   };
@@ -75,7 +77,7 @@ export const createTrailingStopOrderParams = (params: CreateTrailingStopParams):
 export const calculateTrailingDistance = (
   entryPrice: number,
   distancePercent: number,
-  side: 'LONG' | 'SHORT'
+  side: PositionSide
 ): { stopPrice: number; trailAmount: number } => {
   const trailAmount = entryPrice * (distancePercent / 100);
   const stopPrice = side === 'LONG'
@@ -131,7 +133,7 @@ export const shouldUseNativeTrailing = (exchange: string): boolean => {
 export const mapMarketMindTrailingToIB = (
   entryPrice: number,
   currentPrice: number,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   activationPercent: number,
   distancePercent: number
 ): { trailPercent: number; initialStopPrice: number } | null => {

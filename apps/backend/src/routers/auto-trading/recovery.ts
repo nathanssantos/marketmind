@@ -44,7 +44,7 @@ export const recoveryRouter = router({
         logger.error({ error: errorMsg }, '[EmergencyStop] Failed to stop watchers');
       }
 
-      const walletMarketType = wallet.marketType || 'FUTURES';
+      const walletMarketType = wallet.marketType ?? 'FUTURES';
 
       const openExecutions = await ctx.db
         .select()
@@ -265,7 +265,7 @@ export const recoveryRouter = router({
       }
 
       const wallet = await walletQueries.getByIdAndUser(execution.walletId, ctx.user.id);
-      const marketType = (execution.marketType || 'FUTURES');
+      const marketType = (execution.marketType ?? 'FUTURES');
 
       const currentPrice = await positionMonitorService.getCurrentPrice(execution.symbol, marketType);
 

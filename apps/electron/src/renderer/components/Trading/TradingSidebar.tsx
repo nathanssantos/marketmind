@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { Box, Flex, Text } from '@chakra-ui/react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +15,7 @@ interface TradingSidebarProps {
   width: number;
   onClose?: () => void;
   symbol?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   quickTradeMode?: QuickTradeMode;
   onQuickTradeModeChange?: (mode: QuickTradeMode) => void;
 }

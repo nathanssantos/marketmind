@@ -13,7 +13,7 @@ export const useOrderNotifications = () => {
 
   const { wallets } = useBackendWallet();
   const activeWalletId = wallets[0]?.id;
-  const { orders } = useBackendTrading(activeWalletId || '', undefined);
+  const { orders } = useBackendTrading(activeWalletId ?? '', undefined);
 
   const orderStatusMap = useMemo(
     () => new Map(orders.map(o => [o.orderId.toString(), { status: o.status as OrderStatus, order: o }])),
@@ -56,8 +56,8 @@ export const useOrderNotifications = () => {
       const toastBody = t('trading.notifications.orderFilled.body', {
         type: orderType,
         symbol: order.symbol,
-        quantity: parseFloat(order.origQty || '0'),
-        price: parseFloat(order.price || '0').toFixed(2)
+        quantity: parseFloat(order.origQty ?? '0'),
+        price: parseFloat(order.price ?? '0').toFixed(2)
       });
 
       success(toastTitle, toastBody, meta);

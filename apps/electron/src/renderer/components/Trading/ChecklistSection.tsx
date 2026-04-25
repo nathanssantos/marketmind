@@ -1,3 +1,4 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { Badge, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useChecklistEvaluation } from '@renderer/hooks/useChecklistEvaluation';
@@ -13,12 +14,12 @@ import { LuCheck, LuChevronDown, LuChevronRight, LuTriangle, LuX } from 'react-i
 interface ChecklistSectionProps {
   symbol: string;
   interval: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
 }
 
 type EvaluationResult = {
   conditionId: string;
-  side: 'LONG' | 'SHORT' | 'BOTH';
+  side: PositionSide | 'BOTH';
   evaluated: boolean;
   passed: boolean;
   tier: 'required' | 'preferred';
@@ -252,7 +253,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       >
         <Box flexShrink={0}>{icon}</Box>
         <Text flex={1} truncate>
-          {r.indicatorLabel || r.catalogType || '—'}
+          {r.indicatorLabel ?? r.catalogType ?? '—'}
         </Text>
         {tfLabel && (
           <Badge size="xs" variant="outline" colorPalette="gray">

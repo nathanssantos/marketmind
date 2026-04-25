@@ -63,19 +63,32 @@ export default [
                     varsIgnorePattern: '^_',
                 },
             ],
+            // Kept at 'warn' for now — relaxed-mode promotion to error surfaced
+            // ~218 .ts violations (event handlers + useEffect callbacks needing
+            // explicit `: void`). Tracked as Wave 3b follow-up: bulk-add inferred
+            // return types via ts-morph or manual annotation.
             '@typescript-eslint/explicit-function-return-type': [
                 'warn',
                 {
                     allowExpressions: true,
                     allowTypedFunctionExpressions: true,
+                    allowHigherOrderFunctions: true,
+                    allowIIFEs: true,
+                    allowDirectConstAssertionInArrowFunctions: true,
                 },
             ],
             '@typescript-eslint/no-floating-promises': 'error',
             '@typescript-eslint/no-misused-promises': 'error',
             '@typescript-eslint/await-thenable': 'error',
             '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-            '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-            '@typescript-eslint/prefer-optional-chain': 'warn',
+            '@typescript-eslint/prefer-nullish-coalescing': 'error',
+            '@typescript-eslint/prefer-optional-chain': 'error',
+            '@typescript-eslint/switch-exhaustiveness-check': ['error', {
+                considerDefaultExhaustiveForUnions: true,
+            }],
+            '@typescript-eslint/no-base-to-string': 'error',
+            '@typescript-eslint/no-unsafe-enum-comparison': 'error',
+            '@typescript-eslint/only-throw-error': 'error',
             '@typescript-eslint/consistent-type-imports': [
                 'error',
                 {
@@ -119,6 +132,15 @@ export default [
             'max-lines-per-function': 'off',
             'complexity': ['warn', 15],
             'max-depth': ['warn', 4],
+        },
+    },
+    {
+        // React components: their return type is always JSX.Element / ReactNode,
+        // adding explicit annotations is pure noise. The rule provides almost zero
+        // signal for .tsx files. Disable here so it stays valuable for utility .ts.
+        files: ['**/*.tsx'],
+        rules: {
+            '@typescript-eslint/explicit-function-return-type': 'off',
         },
     },
     {

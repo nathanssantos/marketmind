@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { COOLDOWN_GAP_CHECK, COOLDOWN_CORRUPTION_CHECK, TIME_MS } from '../../constants';
 import { db } from '../../db';
@@ -236,7 +236,7 @@ class KlineMaintenance {
     return getActivePairsWithSubscriptions();
   }
 
-  async forceCheckSymbol(symbol: string, interval: Interval, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
+  async forceCheckSymbol(symbol: string, interval: Interval, marketType: MarketType = 'FUTURES'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
     const pair: ActivePair = { symbol, interval, marketType };
 
     const misalignedDeleted = await detectAndFixMisalignedKlines(pair);
@@ -325,9 +325,7 @@ class KlineMaintenance {
 let klineMaintenanceInstance: KlineMaintenance | null = null;
 
 export const getKlineMaintenance = (): KlineMaintenance => {
-  if (!klineMaintenanceInstance) {
-    klineMaintenanceInstance = new KlineMaintenance();
-  }
+  klineMaintenanceInstance ??= new KlineMaintenance();
   return klineMaintenanceInstance;
 };
 

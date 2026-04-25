@@ -23,7 +23,7 @@ export const dispatchUserDataEvent = <EventName extends string>(
 
   const handler = handlers[eventType as EventName];
   if (handler) {
-    void handler(options.walletId, event as unknown);
+    void handler(options.walletId, event);
     return;
   }
 

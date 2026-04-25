@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { INTERVAL_MS, type Interval, type Kline, type TimeInterval } from '@marketmind/types';
 import { and, asc, eq, gte } from 'drizzle-orm';
 import { db } from '../db';
@@ -25,7 +26,7 @@ export const smartBackfillIBKlines = async (
   symbol: string,
   interval: Interval,
   targetCount: number,
-  _marketType: 'SPOT' | 'FUTURES' = 'SPOT'
+  _marketType: MarketType = 'SPOT'
 ): Promise<SmartBackfillResult> => {
   const intervalMs = getIntervalMs(interval);
   const now = Date.now();

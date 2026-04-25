@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import type { USDMClient } from 'binance';
 import type {
     AccountTradeRecord,
@@ -70,7 +71,7 @@ export async function getRecentTrades(
       symbol: t.symbol,
       id: t.id,
       orderId: String(t.orderId),
-      side: t.side as 'BUY' | 'SELL',
+      side: t.side,
       price: String(t.price),
       qty: String(t.qty),
       realizedPnl: String(t.realizedPnl),
@@ -90,7 +91,7 @@ export async function getRecentTrades(
 export async function getLastClosingTrade(
   client: USDMClient,
   symbol: string,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   openedAt: number
 ): Promise<{ price: number; realizedPnl: number; commission: number } | null> {
   try {
@@ -140,12 +141,12 @@ export async function getLastClosingTrade(
 export async function getAllTradeFeesForPosition(
   client: USDMClient,
   symbol: string,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   openedAt: number,
   closedAt?: number
 ): Promise<AllTradeFeesResult | null> {
   try {
-    const endTime = closedAt || Date.now();
+    const endTime = closedAt ?? Date.now();
     const trades = await guardBinanceCall(() => client.getAccountTrades({
       symbol,
       startTime: openedAt - 5000,

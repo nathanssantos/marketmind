@@ -28,7 +28,7 @@ export const LoadingSpinner = ({ message, size = 'lg' }: LoadingSpinnerProps) =>
           color="fg.muted"
           fontWeight="medium"
         >
-          {message || t('common.loading')}
+          {message ?? t('common.loading')}
         </Text>
       </Stack>
     </Box>

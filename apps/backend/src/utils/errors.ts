@@ -15,7 +15,9 @@ export const serializeError = (error: unknown): string => {
       return Object.prototype.toString.call(error);
     }
   }
-  return String(error);
+  if (typeof error === 'string') return error;
+  if (typeof error === 'number' || typeof error === 'boolean') return String(error);
+  return Object.prototype.toString.call(error);
 };
 
 export const throwNotFound = (resource: string): never => {

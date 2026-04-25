@@ -1,4 +1,4 @@
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import type { VolumeFilterConfig } from './volume-filter';
 import { checkAdxCondition } from './adx-filter';
 import { checkBollingerSqueezeCondition } from './bollinger-squeeze-filter';
@@ -33,7 +33,7 @@ export interface FilterDef {
   params: FilterParam[];
   run?: (
     klines: Kline[],
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     setupType: string,
     config: Record<string, unknown>
   ) => Promise<BaseFilterResult>;
@@ -286,13 +286,9 @@ export const applyFilterDefaults = (
 ): Record<string, unknown> => {
   const result = { ...config };
   for (const f of FILTER_REGISTRY) {
-    if (result[f.enableKey] === undefined || result[f.enableKey] === null) {
-      result[f.enableKey] = defaults[f.enableKey] ?? false;
-    }
+    result[f.enableKey] ??= defaults[f.enableKey] ?? false;
     for (const p of f.params) {
-      if (result[p.key] === undefined || result[p.key] === null) {
-        result[p.key] = defaults[p.key] ?? p.default;
-      }
+      result[p.key] ??= defaults[p.key] ?? p.default;
     }
   }
   return result;

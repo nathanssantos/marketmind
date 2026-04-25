@@ -1,5 +1,5 @@
 import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
-import type { TradingProfile } from '@marketmind/types';
+import type { MarketType, TradingProfile } from '@marketmind/types';
 import { Button, CollapsibleSection, DirectionModeSelector } from '@renderer/components/ui';
 import type { DirectionMode } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ export interface WatchersListProps {
   isExpanded: boolean;
   onToggle: () => void;
   onAddWatcher: () => void;
-  onStopWatcher: (symbol: string, interval: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onStopWatcher: (symbol: string, interval: string, marketType?: MarketType) => void;
   onStopAll: () => void;
   isStoppingWatcher: boolean;
   isStoppingAll: boolean;

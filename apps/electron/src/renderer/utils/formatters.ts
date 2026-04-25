@@ -107,15 +107,15 @@ export const formatChartDataContext = (chartData: ChartContextData): string => {
   const prices = recentKlines.map((c) => getKlineClose(c));
   const volumes = recentKlines.map((c) => getKlineVolume(c));
   
-  const currentPrice = prices[prices.length - 1] || 0;
-  const previousPrice = prices[prices.length - 2] || currentPrice;
+  const currentPrice = prices[prices.length - 1] ?? 0;
+  const previousPrice = prices[prices.length - 2] ?? currentPrice;
   const priceChange = currentPrice - previousPrice;
   const priceChangePercent = previousPrice !== 0 ? (priceChange / previousPrice) * 100 : 0;
   
   const highPrice = Math.max(...prices);
   const lowPrice = Math.min(...prices);
   const avgVolume = volumes.reduce((sum, v) => sum + v, 0) / volumes.length;
-  const currentVolume = volumes[volumes.length - 1] || 0;
+  const currentVolume = volumes[volumes.length - 1] ?? 0;
   
   const bullishKlines = recentKlines.filter((c) => getKlineClose(c) > getKlineOpen(c)).length;
   const bearishKlines = recentKlines.filter((c) => getKlineClose(c) < getKlineOpen(c)).length;

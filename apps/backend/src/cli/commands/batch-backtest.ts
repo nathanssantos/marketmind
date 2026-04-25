@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import chalk from 'chalk';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
@@ -36,7 +37,7 @@ interface BatchOptions {
   strategies?: string;
   symbols?: string;
   intervals?: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   leverage: string;
   exchange: 'BINANCE' | 'INTERACTIVE_BROKERS';
   assetClass: 'CRYPTO' | 'STOCKS';

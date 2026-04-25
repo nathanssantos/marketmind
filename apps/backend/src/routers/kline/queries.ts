@@ -1,4 +1,4 @@
-import type { AssetClass, Interval, MarketType } from '@marketmind/types';
+import type { Interval } from '@marketmind/types';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { CHART_INITIAL_KLINES } from '../../constants';
@@ -31,7 +31,7 @@ export const queryProcedures = {
       })
     )
     .query(async ({ input }) => {
-      const marketType = input.marketType as MarketType;
+      const marketType = input.marketType;
 
       if (input.interval === '1y') {
         await prefetchKlines({ symbol: input.symbol, interval: '1M', targetCount: input.limit * 12, marketType });
@@ -69,7 +69,7 @@ export const queryProcedures = {
 
       result.sort((a, b) => new Date(a.openTime).getTime() - new Date(b.openTime).getTime());
 
-      subscribeToStream(input.symbol, input.interval as Interval, marketType);
+      subscribeToStream(input.symbol, input.interval, marketType);
 
       triggerCorruptionCheck(input.symbol, input.interval, marketType);
 
@@ -85,12 +85,12 @@ export const queryProcedures = {
       })
     )
     .query(async ({ input }) => {
-      const marketType = input.marketType as MarketType;
+      const marketType = input.marketType;
 
       const latest = await db.query.klines.findFirst({
         where: and(
           eq(klines.symbol, input.symbol),
-          eq(klines.interval, input.interval as Interval),
+          eq(klines.interval, input.interval),
           eq(klines.marketType, marketType)
         ),
         orderBy: [desc(klines.openTime)],
@@ -108,12 +108,12 @@ export const queryProcedures = {
       })
     )
     .query(async ({ input }) => {
-      const marketType = input.marketType as MarketType;
+      const marketType = input.marketType;
 
       const result = await db.query.klines.findMany({
         where: and(
           eq(klines.symbol, input.symbol),
-          eq(klines.interval, input.interval as Interval),
+          eq(klines.interval, input.interval),
           eq(klines.marketType, marketType)
         ),
       });
@@ -132,15 +132,15 @@ export const queryProcedures = {
       })
     )
     .query(async ({ input }) => {
-      const marketType = input.marketType as MarketType;
+      const marketType = input.marketType;
       const sinceDate = new Date(input.since);
       const now = Date.now();
-      const intervalMs = getIntervalMilliseconds(input.interval as Interval);
+      const intervalMs = getIntervalMilliseconds(input.interval);
 
       const result = await db.query.klines.findMany({
         where: and(
           eq(klines.symbol, input.symbol),
-          eq(klines.interval, input.interval as Interval),
+          eq(klines.interval, input.interval),
           eq(klines.marketType, marketType),
           gte(klines.closeTime, sinceDate)
         ),
@@ -177,8 +177,8 @@ export const queryProcedures = {
       })
     )
     .query(async ({ input }) => {
-      const marketType = input.marketType as MarketType;
-      const assetClass = input.assetClass as AssetClass;
+      const marketType = input.marketType;
+      const assetClass = input.assetClass;
 
       if (assetClass === 'STOCKS') {
         try {
@@ -212,10 +212,17 @@ export const queryProcedures = {
           throw new Error(`Failed to fetch exchange info: ${response.status}`);
         }
 
-        const data = await response.json();
+        interface ExchangeSymbolInfo {
+          symbol: string;
+          baseAsset: string;
+          quoteAsset: string;
+          status?: string;
+          contractStatus?: string;
+        }
+        const data = (await response.json()) as { symbols: ExchangeSymbolInfo[] };
         const fetchedSymbols = data.symbols
-          .filter((s: any) => s.status === 'TRADING' || s.contractStatus === 'TRADING')
-          .map((s: any) => ({
+          .filter((s) => s.status === 'TRADING' || s.contractStatus === 'TRADING')
+          .map((s) => ({
             symbol: s.symbol,
             baseAsset: s.baseAsset,
             quoteAsset: s.quoteAsset,
@@ -229,7 +236,7 @@ export const queryProcedures = {
 
       const query = input.query.toUpperCase();
       const symbolList = symbols ?? [];
-      const filtered = symbolList.filter((s: any) =>
+      const filtered = symbolList.filter((s) =>
         s.symbol.includes(query) ||
         s.baseAsset.includes(query) ||
         s.quoteAsset.includes(query)

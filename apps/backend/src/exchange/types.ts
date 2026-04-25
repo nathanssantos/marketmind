@@ -1,6 +1,7 @@
-export type ExchangeId = 'BINANCE' | 'INTERACTIVE_BROKERS';
+export type { ExchangeId } from '@marketmind/types';
+import type { ExchangeId } from '@marketmind/types';
 
-export type AssetClass = 'CRYPTO_SPOT' | 'CRYPTO_FUTURES' | 'EQUITY' | 'ETF' | 'FUTURES' | 'OPTIONS';
+export type ExchangeAssetCategory = 'CRYPTO_SPOT' | 'CRYPTO_FUTURES' | 'EQUITY' | 'ETF' | 'FUTURES' | 'OPTIONS';
 
 export interface ExchangeCredentials {
   apiKey: string;
@@ -15,7 +16,7 @@ export interface MarketHours {
 }
 
 export interface ExchangeCapabilities {
-  supportedAssetClasses: AssetClass[];
+  supportedAssetClasses: ExchangeAssetCategory[];
   supportedOrderTypes: string[];
   supportsOco: boolean;
   supportsAlgoOrders: boolean;

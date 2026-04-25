@@ -2,7 +2,6 @@ import type {
   ComputedIndicator,
   ComputedIndicators,
   IndicatorDefinition,
-  IndicatorType,
   Kline,
   ScreenerIndicatorId,
 } from '@marketmind/types';
@@ -58,7 +57,7 @@ export class IndicatorEngine {
     }
 
     result['_price'] = {
-      type: 'sma' as IndicatorType,
+      type: 'sma',
       values: {
         open: klines.map((k) => parseFloat(k.open)),
         high: klines.map((k) => parseFloat(k.high)),
@@ -70,7 +69,7 @@ export class IndicatorEngine {
 
     const volumeSma20 = calculateVolumeSMA(klines, 20);
     result['volume'] = {
-      type: 'sma' as IndicatorType,
+      type: 'sma',
       values: {
         current: klines.map((k) => parseFloat(k.volume)),
         sma20: volumeSma20,
@@ -85,7 +84,7 @@ export class IndicatorEngine {
       } else {
         const dmiResult = await pineService.computeMulti('dmi', klines, { period: 14 });
         result['adx'] = {
-          type: 'adx' as IndicatorType,
+          type: 'adx',
           values: {
             adx: dmiResult['adx'] ?? [],
             plusDI: dmiResult['plusDI'] ?? [],
@@ -104,7 +103,7 @@ export class IndicatorEngine {
       } else {
         const atrResult = await pineService.compute('atr', klines, { period: 14 });
         result['atr'] = {
-          type: 'atr' as IndicatorType,
+          type: 'atr',
           values: atrResult,
         };
         this.singleCache.set(atrKey, result['atr']);
@@ -216,9 +215,7 @@ export class IndicatorEngine {
       } else if (part.startsWith('prev')) {
         const num = parseInt(part.slice(4), 10);
         offset = isNaN(num) ? 1 : num;
-      } else if (!subKey) {
-        subKey = part;
-      }
+      } else subKey ??= part;
     }
 
     return { base, subKey, offset };

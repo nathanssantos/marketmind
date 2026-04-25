@@ -1,4 +1,4 @@
-import type { BacktestConfig, BacktestResult, BacktestTrade } from '@marketmind/types';
+import type { BacktestConfig, BacktestResult, BacktestTrade, Kline, PositionSide } from '@marketmind/types';
 import {
   calculateLiquidationPrice,
   calculateLeveragedPnl,
@@ -76,7 +76,7 @@ export class FuturesBacktestEngine {
 
   private calculateFundingPayments(
     positionValue: number,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     entryTime: number,
     exitTime: number,
     fundingRates: LocalFundingRateData[]
@@ -96,13 +96,14 @@ export class FuturesBacktestEngine {
   }
 
   private findLiquidationPoint(
-    klines: any[],
+    klines: Kline[],
     entryIndex: number,
     liquidationPrice: number,
-    side: 'LONG' | 'SHORT'
+    side: PositionSide
   ): { liquidated: boolean; exitIndex: number; exitPrice: number } | null {
     for (let i = entryIndex + 1; i < klines.length; i++) {
       const kline = klines[i];
+      if (!kline) continue;
       const low = parseFloat(kline.low);
       const high = parseFloat(kline.high);
 
@@ -126,7 +127,7 @@ export class FuturesBacktestEngine {
     return null;
   }
 
-  async run(config: BacktestConfig, klines?: any[]): Promise<BacktestResult> {
+  async run(config: BacktestConfig, klines?: Kline[]): Promise<BacktestResult> {
     const isFuturesMode = config.marketType === 'FUTURES';
 
     if (!isFuturesMode || config.leverage === 1) {

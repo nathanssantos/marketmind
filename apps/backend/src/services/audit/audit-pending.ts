@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { orders, tradeExecutions } from '../../db/schema';
@@ -58,7 +59,7 @@ export async function auditPending(ctx: AuditContext): Promise<void> {
 
     if (existingPending) continue;
 
-    const side: 'LONG' | 'SHORT' = openOrder.side === 'BUY' ? 'LONG' : 'SHORT';
+    const side: PositionSide = openOrder.side === 'BUY' ? 'LONG' : 'SHORT';
     const executionId = generateExecutionId();
 
     logger.info(
@@ -142,7 +143,7 @@ export async function auditPending(ctx: AuditContext): Promise<void> {
 
     if (existingPending) continue;
 
-    const side: 'LONG' | 'SHORT' = algoOrder.side === 'BUY' ? 'LONG' : 'SHORT';
+    const side: PositionSide = algoOrder.side === 'BUY' ? 'LONG' : 'SHORT';
     const executionId = generateExecutionId();
     const entryOrderType = algoOrder.type === 'STOP_MARKET' ? 'STOP_MARKET' : 'TAKE_PROFIT_MARKET';
 

@@ -52,8 +52,6 @@ const PAN_RERENDER_CAP = 10;
 const ZOOM_FRAMES = 120;
 const INDICATOR_CHURN_CYCLES = 20;
 const INDICATOR_CHURN_SETTLE_FRAMES = 6;
-const IDLE_TICK_POLL_FRAMES = 300;
-const IDLE_TICK_POLL_CHARTCANVAS_CAP = 1;
 const MOUNT_UNMOUNT_CYCLES = 10;
 const MOUNT_UNMOUNT_DRIVE_FRAMES = 30;
 const MOUNT_UNMOUNT_UNMOUNT_FRAMES = 15;
@@ -404,34 +402,6 @@ test.describe('Chart hot-path perf', () => {
       componentRenderRate(snap, 'QuickTradeToolbar'),
       'QuickTradeToolbar re-rendering under tick storm — subscribed to usePriceStore via selector (Part 2)',
     ).toBeLessThanOrEqual(10);
-  });
-
-  test.fixme('idle tick-poll: no ticks -> ChartCanvas stays quiet', async ({ page }) => {
-    await clearIndicators(page);
-    await addIndicators(page, OVERLAY_INDICATORS);
-    await driveFrames(page, WARMUP_FRAMES);
-    await waitForFrames(page, 30);
-    await resetPerfMonitor(page);
-
-    await waitForFrames(page, IDLE_TICK_POLL_FRAMES);
-
-    const snap = await readPerfSnapshot(page);
-    const key = 'idle-tick-poll';
-    const result: BaselineEntry = {
-      fps: snap.fps,
-      p95FrameMs: slowestSectionMs(snap),
-      renderRate: componentRenderRate(snap, 'ChartCanvas'),
-      generatedAt: new Date().toISOString(),
-    };
-    writeRunResult(key, result);
-    writeDiagnose(key, snap);
-
-    expect(snap.enabled).toBe(true);
-    expect(
-      componentRenderRate(snap, 'ChartCanvas'),
-      'ChartCanvas re-rendering while idle (no ticks, no mouse) — tick-poll gate regressed',
-    ).toBeLessThanOrEqual(IDLE_TICK_POLL_CHARTCANVAS_CAP);
-    assertRegression(key, result);
   });
 
   test('mount-unmount churn: chart heap + instances bounded across 10 cycles', async ({ page }) => {

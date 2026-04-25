@@ -1,4 +1,4 @@
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, PositionSide } from '@marketmind/types';
 import type { Wallet } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
@@ -12,7 +12,7 @@ import { SCALPING_EXECUTION } from '../constants/scalping';
 export interface ProtectionOrderParams {
   wallet: Wallet;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   quantity: number;
   triggerPrice: number;
   marketType: MarketType;

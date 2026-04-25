@@ -254,7 +254,7 @@ export class BinanceFuturesDataService {
         symbol: data.symbol,
         markPrice: parseFloat(data.markPrice),
         indexPrice: parseFloat(data.indexPrice),
-        estimatedSettlePrice: parseFloat(data.estimatedSettlePrice || '0'),
+        estimatedSettlePrice: parseFloat(data.estimatedSettlePrice ?? '0'),
         lastFundingRate: parseFloat(data.lastFundingRate) * 100,
         nextFundingTime: data.nextFundingTime,
         interestRate: parseFloat(data.interestRate) * 100,
@@ -325,9 +325,7 @@ export class BinanceFuturesDataService {
 let binanceFuturesDataService: BinanceFuturesDataService | null = null;
 
 export const getBinanceFuturesDataService = (): BinanceFuturesDataService => {
-  if (!binanceFuturesDataService) {
-    binanceFuturesDataService = new BinanceFuturesDataService();
-  }
+  binanceFuturesDataService ??= new BinanceFuturesDataService();
   return binanceFuturesDataService;
 };
 

@@ -1,4 +1,4 @@
-import type { ScalpingStrategy, ScalpingExecutionMode, ScalpingMetrics, AggTrade, BookTickerUpdate, DepthUpdate, VolumeProfile } from '@marketmind/types';
+import type { ScalpingStrategy, ScalpingMetrics, AggTrade, BookTickerUpdate, DepthUpdate, VolumeProfile } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { db } from '../../db';
 import { scalpingConfig } from '../../db/schema';
@@ -98,7 +98,7 @@ export class ScalpingScheduler {
         {
           walletId: config.walletId,
           userId: config.userId,
-          executionMode: (config.executionMode ?? 'POST_ONLY') as ScalpingExecutionMode,
+          executionMode: (config.executionMode ?? 'POST_ONLY'),
           positionSizePercent: parseFloat(config.positionSizePercent ?? '1'),
           leverage: config.leverage ?? 5,
           marginType: (config.marginType as 'ISOLATED' | 'CROSSED') ?? 'CROSSED',
@@ -389,8 +389,6 @@ export class ScalpingScheduler {
 let scalpingScheduler: ScalpingScheduler | null = null;
 
 export const getScalpingScheduler = (): ScalpingScheduler => {
-  if (!scalpingScheduler) {
-    scalpingScheduler = new ScalpingScheduler();
-  }
+  scalpingScheduler ??= new ScalpingScheduler();
   return scalpingScheduler;
 };

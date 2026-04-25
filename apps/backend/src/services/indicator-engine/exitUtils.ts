@@ -1,5 +1,6 @@
+import type { PositionSide } from '@marketmind/types';
 export const checkStopLossAndTakeProfit = (
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   high: number,
   low: number,
   open: number,
@@ -42,7 +43,7 @@ export const checkStopLossAndTakeProfit = (
 export const applySlippage = (
   exitPrice: number,
   exitReason: string,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   slippagePercent: number = 0.1
 ): number => {
   if (exitReason !== 'STOP_LOSS' && exitReason !== 'TAKE_PROFIT') return exitPrice;

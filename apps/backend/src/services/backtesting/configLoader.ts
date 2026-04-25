@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import type { MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
+import type { MarketType, MultiWatcherBacktestConfig, WatcherConfig } from '@marketmind/types';
 import { FILTER_DEFAULTS } from '@marketmind/types';
 import { BACKTEST_DEFAULTS } from '../../constants';
 import { db } from '../../db';
@@ -133,7 +133,7 @@ export const buildMultiWatcherConfigFromWatchers = (
     minRiskRewardRatio?: number;
     useCooldown?: boolean;
     cooldownMinutes?: number;
-    marketType?: 'SPOT' | 'FUTURES';
+    marketType?: MarketType;
     leverage?: number;
     tpCalculationMode?: 'default' | 'fibonacci';
     useMtfFilter?: boolean;

@@ -15,7 +15,14 @@ const truncate = (msg: string): string =>
 export const serializeError = (error: unknown): string => {
   if (error instanceof Error) {
     const cause = (error as Error & { cause?: unknown }).cause;
-    const msg = cause ? `${error.message} (cause: ${String(cause)})` : error.message;
+    const causeStr = cause instanceof Error
+      ? cause.message
+      : typeof cause === 'string'
+        ? cause
+        : cause !== null && cause !== undefined
+          ? JSON.stringify(cause)
+          : '';
+    const msg = causeStr ? `${error.message} (cause: ${causeStr})` : error.message;
     return truncate(msg);
   }
   if (error && typeof error === 'object') {
@@ -65,7 +72,7 @@ const createLogger = (): pino.Logger => {
           }),
     },
     {
-      level: 'warn' as pino.Level,
+      level: 'warn',
       stream: pino.destination({
         dest: ERROR_LOG_FILE,
         sync: false,

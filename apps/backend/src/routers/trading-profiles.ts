@@ -136,7 +136,7 @@ export const tradingProfilesRouter = router({
 
     const defaultChecklist = await materializeDefaultChecklist(ctx.user.id);
     const existingCount = (await tradingProfileQueries.listByUser(ctx.user.id)).length;
-    const profileName = input.name?.trim() || `Profile ${existingCount + 1}`;
+    const profileName = input.name?.trim() ?? `Profile ${existingCount + 1}`;
     const profileSetups = input.enabledSetupTypes && input.enabledSetupTypes.length > 0
       ? input.enabledSetupTypes
       : [...DEFAULT_ENABLED_SETUPS];
@@ -178,7 +178,7 @@ export const tradingProfilesRouter = router({
     }
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
-    applyProfileFieldsToUpdate(input as Record<string, unknown>, updateData);
+    applyProfileFieldsToUpdate(input, updateData);
 
     await db.update(tradingProfiles).set(updateData).where(eq(tradingProfiles.id, input.id));
 

@@ -1,4 +1,4 @@
-import type { Kline, TimeInterval } from '@marketmind/types';
+import type { Kline, PositionSide, TimeInterval } from '@marketmind/types';
 import { getKlineHigh, getKlineLow } from '@marketmind/types';
 import { FILTER_THRESHOLDS, INTERVAL_MS, TIME_MS } from '@marketmind/types';
 import {
@@ -122,7 +122,7 @@ export const calculateFibonacciProjection = (
   klines: Kline[],
   currentIndex: number,
   lookback: number | TimeInterval = 100,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   swingRange: 'extended' | 'nearest' = 'nearest',
 ): FibonacciProjectionResult | null => {
   const effectiveLookback = typeof lookback === 'string'

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Kline, TradingSetup, MarketType } from '@marketmind/types';
+import type { Kline, MarketType, PositionSide, TradingSetup } from '@marketmind/types';
 
 const {
   mockDbSelect,
@@ -570,7 +570,7 @@ describe('OrderExecutor', () => {
   });
 
   describe('getAdxBasedFibonacciLevel (private)', () => {
-    const getLevel = (klines: Kline[], dir: 'LONG' | 'SHORT'): Promise<number> =>
+    const getLevel = (klines: Kline[], dir: PositionSide): Promise<number> =>
       (executor as any).getAdxBasedFibonacciLevel(klines, dir);
 
     it('should return default 1.272 when insufficient klines', async () => {

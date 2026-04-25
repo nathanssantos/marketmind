@@ -46,7 +46,7 @@ export const LanguageSelector = () => {
           value={i18n.language}
           onChange={(newLanguage) => { void handleLanguageChange(newLanguage); }}
           options={LANGUAGES}
-          placeholder={LANGUAGES.find(l => l.value === i18n.language)?.label || 'English'}
+          placeholder={LANGUAGES.find(l => l.value === i18n.language)?.label ?? 'English'}
           usePortal={false}
         />
       </Stack>

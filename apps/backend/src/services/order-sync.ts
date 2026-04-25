@@ -156,7 +156,7 @@ export class OrderSyncService {
 
       const exchangeOrdersBySymbol = new Map<string, FuturesAlgoOrder[]>();
       for (const order of exchangeOrders) {
-        const orders = exchangeOrdersBySymbol.get(order.symbol) || [];
+        const orders = exchangeOrdersBySymbol.get(order.symbol) ?? [];
         orders.push(order);
         exchangeOrdersBySymbol.set(order.symbol, orders);
       }
@@ -170,7 +170,7 @@ export class OrderSyncService {
             symbol: order.symbol,
             type: order.type,
             side: order.side,
-            triggerPrice: order.triggerPrice || '',
+            triggerPrice: order.triggerPrice ?? '',
             quantity: order.quantity,
             hasPositionOnExchange,
           });
@@ -200,7 +200,7 @@ export class OrderSyncService {
       }
 
       for (const [symbol, position] of dbOrdersBySymbol) {
-        const exchangeOrdersForSymbol = exchangeOrdersBySymbol.get(symbol) || [];
+        const exchangeOrdersForSymbol = exchangeOrdersBySymbol.get(symbol) ?? [];
 
         if (position.stopLossAlgoId) {
           const slOrder = exchangeOrdersForSymbol.find(
@@ -216,7 +216,7 @@ export class OrderSyncService {
                   position.id,
                   'stopLoss',
                   anySlOrder.algoId,
-                  parseFloat(anySlOrder.triggerPrice || '0')
+                  parseFloat(anySlOrder.triggerPrice ?? '0')
                 );
                 result.fixedOrders.push({
                   executionId: position.id,
@@ -224,7 +224,7 @@ export class OrderSyncService {
                   field: 'stopLoss',
                   oldAlgoId: position.stopLossAlgoId,
                   newAlgoId: anySlOrder.algoId,
-                  newTriggerPrice: anySlOrder.triggerPrice || '',
+                  newTriggerPrice: anySlOrder.triggerPrice ?? '',
                 });
                 logger.info({ executionId: position.id, symbol, oldAlgoId: position.stopLossAlgoId, newAlgoId: anySlOrder.algoId }, '[OrderSync] Auto-fixed SL order ID from exchange');
               } catch (fixError) {
@@ -276,7 +276,7 @@ export class OrderSyncService {
             }
           } else {
             const dbSL = position.stopLoss ? parseFloat(position.stopLoss) : 0;
-            const exchangeSL = parseFloat(slOrder.triggerPrice || '0');
+            const exchangeSL = parseFloat(slOrder.triggerPrice ?? '0');
             if (Math.abs(dbSL - exchangeSL) > 0.00001) {
               if (this.autoFixMismatches) {
                 try {
@@ -287,7 +287,7 @@ export class OrderSyncService {
                     field: 'stopLoss',
                     oldAlgoId: position.stopLossAlgoId,
                     newAlgoId: slOrder.algoId,
-                    newTriggerPrice: slOrder.triggerPrice || '',
+                    newTriggerPrice: slOrder.triggerPrice ?? '',
                   });
                   logger.info({ executionId: position.id, symbol, dbValue: dbSL, exchangeValue: exchangeSL }, '[OrderSync] Auto-fixed SL trigger price from exchange');
                 } catch (fixError) {
@@ -299,7 +299,7 @@ export class OrderSyncService {
                     dbValue: dbSL,
                     dbAlgoId: position.stopLossAlgoId,
                     exchangeAlgoId: slOrder.algoId,
-                    exchangeTriggerPrice: slOrder.triggerPrice || null,
+                    exchangeTriggerPrice: slOrder.triggerPrice ?? null,
                   });
                 }
               } else {
@@ -310,7 +310,7 @@ export class OrderSyncService {
                   dbValue: dbSL,
                   dbAlgoId: position.stopLossAlgoId,
                   exchangeAlgoId: slOrder.algoId,
-                  exchangeTriggerPrice: slOrder.triggerPrice || null,
+                  exchangeTriggerPrice: slOrder.triggerPrice ?? null,
                 });
               }
             }
@@ -331,7 +331,7 @@ export class OrderSyncService {
                   position.id,
                   'takeProfit',
                   anyTpOrder.algoId,
-                  parseFloat(anyTpOrder.triggerPrice || '0')
+                  parseFloat(anyTpOrder.triggerPrice ?? '0')
                 );
                 result.fixedOrders.push({
                   executionId: position.id,
@@ -339,7 +339,7 @@ export class OrderSyncService {
                   field: 'takeProfit',
                   oldAlgoId: position.takeProfitAlgoId,
                   newAlgoId: anyTpOrder.algoId,
-                  newTriggerPrice: anyTpOrder.triggerPrice || '',
+                  newTriggerPrice: anyTpOrder.triggerPrice ?? '',
                 });
                 logger.info({ executionId: position.id, symbol, oldAlgoId: position.takeProfitAlgoId, newAlgoId: anyTpOrder.algoId }, '[OrderSync] Auto-fixed TP order ID from exchange');
               } catch (fixError) {
@@ -391,7 +391,7 @@ export class OrderSyncService {
             }
           } else {
             const dbTP = position.takeProfit ? parseFloat(position.takeProfit) : 0;
-            const exchangeTP = parseFloat(tpOrder.triggerPrice || '0');
+            const exchangeTP = parseFloat(tpOrder.triggerPrice ?? '0');
             if (Math.abs(dbTP - exchangeTP) > 0.00001) {
               if (this.autoFixMismatches) {
                 try {
@@ -402,7 +402,7 @@ export class OrderSyncService {
                     field: 'takeProfit',
                     oldAlgoId: position.takeProfitAlgoId,
                     newAlgoId: tpOrder.algoId,
-                    newTriggerPrice: tpOrder.triggerPrice || '',
+                    newTriggerPrice: tpOrder.triggerPrice ?? '',
                   });
                   logger.info({ executionId: position.id, symbol, dbValue: dbTP, exchangeValue: exchangeTP }, '[OrderSync] Auto-fixed TP trigger price from exchange');
                 } catch (fixError) {
@@ -414,7 +414,7 @@ export class OrderSyncService {
                     dbValue: dbTP,
                     dbAlgoId: position.takeProfitAlgoId,
                     exchangeAlgoId: tpOrder.algoId,
-                    exchangeTriggerPrice: tpOrder.triggerPrice || null,
+                    exchangeTriggerPrice: tpOrder.triggerPrice ?? null,
                   });
                 }
               } else {
@@ -425,7 +425,7 @@ export class OrderSyncService {
                   dbValue: dbTP,
                   dbAlgoId: position.takeProfitAlgoId,
                   exchangeAlgoId: tpOrder.algoId,
-                  exchangeTriggerPrice: tpOrder.triggerPrice || null,
+                  exchangeTriggerPrice: tpOrder.triggerPrice ?? null,
                 });
               }
             }

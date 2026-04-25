@@ -1,9 +1,10 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import { useCallback, useMemo } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
 import { usePollingInterval } from './usePollingInterval';
-export const useBackendTrading = (walletId: string, symbol?: string, _marketType: 'SPOT' | 'FUTURES' = 'FUTURES') => {
+export const useBackendTrading = (walletId: string, symbol?: string, _marketType: MarketType = 'FUTURES') => {
   const utils = trpc.useUtils();
   const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
 
@@ -141,7 +142,7 @@ export const useBackendTrading = (walletId: string, symbol?: string, _marketType
     async (data: {
       walletId: string;
       symbol: string;
-      side: 'LONG' | 'SHORT';
+      side: PositionSide;
       entryPrice: string;
       entryQty: string;
       stopLoss?: string;

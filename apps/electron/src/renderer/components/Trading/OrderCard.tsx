@@ -2,7 +2,7 @@ import { Badge, CryptoIcon, IconButton } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { Box, Flex, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import type { Order, WalletCurrency } from '@marketmind/types';
+import type { MarketType, Order, WalletCurrency } from '@marketmind/types';
 import { getOrderId, getOrderPrice, getOrderQuantity, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ export interface OrderCardProps {
   currency: WalletCurrency;
   onCancel: (id: string) => void;
   onClose: (id: string, price: number) => void;
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }
 
 const getTypeColor = (isLong: boolean): string => isLong ? 'green' : 'red';
@@ -112,7 +112,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
                   {canClose && (
                     <MenuItem
                       value="close"
-                      onClick={() => onClose(getOrderId(order), order.currentPrice || getOrderPrice(order))}
+                      onClick={() => onClose(getOrderId(order), order.currentPrice ?? getOrderPrice(order))}
                       px={4}
                       py={2.5}
                       _hover={{ bg: 'bg.muted' }}

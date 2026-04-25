@@ -86,8 +86,8 @@ export const futuresConfigRouter = router({
 
       if (isPaperWallet(wallet)) {
         return {
-          totalWalletBalance: wallet.currentBalance || '0',
-          availableBalance: wallet.currentBalance || '0',
+          totalWalletBalance: wallet.currentBalance ?? '0',
+          availableBalance: wallet.currentBalance ?? '0',
           positions: [],
         };
       }

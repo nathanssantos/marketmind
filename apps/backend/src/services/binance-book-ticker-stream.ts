@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-base-to-string -- Binance WS message values are unknown but documented strings; explicit cast at every read would be 50+ lines of noise */
 import { WebsocketClient } from 'binance';
 import type { BookTickerUpdate } from '@marketmind/types';
 import { SCALPING_STREAM } from '../constants/scalping';

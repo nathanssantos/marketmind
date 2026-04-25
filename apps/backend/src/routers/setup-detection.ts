@@ -50,11 +50,12 @@ export const setupDetectionRouter = router({
       const strategies = await sharedStrategyLoader.loadAllCached();
 
       let filtered = strategies;
+      type StrategyStatus = z.infer<typeof strategyStatusSchema>;
       if (input?.includeStatuses?.length) {
-        filtered = filtered.filter((s) => input.includeStatuses!.includes(s.metadata.status as any));
+        filtered = filtered.filter((s) => input.includeStatuses!.includes(s.metadata.status as StrategyStatus));
       }
       if (input?.excludeStatuses?.length) {
-        filtered = filtered.filter((s) => !input.excludeStatuses!.includes(s.metadata.status as any));
+        filtered = filtered.filter((s) => !input.excludeStatuses!.includes(s.metadata.status as StrategyStatus));
       }
 
       return filtered.map((strategy) => ({

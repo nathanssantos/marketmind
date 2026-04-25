@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { autoTradingConfig, tradeExecutions } from '../../db/schema';
@@ -96,7 +97,7 @@ describe('OpportunityCostManagerService', () => {
       const service = new OpportunityCostManagerService();
       const calculateTightenedStop = (service as unknown as {
         calculateTightenedStop: (
-          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: 'LONG' | 'SHORT' },
+          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: PositionSide },
           config: OpportunityCostConfig,
           currentPrice: number,
           profitPercent: number
@@ -129,7 +130,7 @@ describe('OpportunityCostManagerService', () => {
       const service = new OpportunityCostManagerService();
       const calculateTightenedStop = (service as unknown as {
         calculateTightenedStop: (
-          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: 'LONG' | 'SHORT' },
+          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: PositionSide },
           config: OpportunityCostConfig,
           currentPrice: number,
           profitPercent: number
@@ -162,7 +163,7 @@ describe('OpportunityCostManagerService', () => {
       const service = new OpportunityCostManagerService();
       const calculateTightenedStop = (service as unknown as {
         calculateTightenedStop: (
-          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: 'LONG' | 'SHORT' },
+          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: PositionSide },
           config: OpportunityCostConfig,
           currentPrice: number,
           profitPercent: number
@@ -196,7 +197,7 @@ describe('OpportunityCostManagerService', () => {
       const service = new OpportunityCostManagerService();
       const calculateTightenedStop = (service as unknown as {
         calculateTightenedStop: (
-          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: 'LONG' | 'SHORT' },
+          execution: { entryPrice: string; stopLoss: string; barsInTrade: number; side: PositionSide },
           config: OpportunityCostConfig,
           currentPrice: number,
           profitPercent: number

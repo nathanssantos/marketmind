@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { Badge, Button, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
@@ -30,13 +31,13 @@ const FuturesPositionCard = memo(({
   isClosing: boolean;
   onReverse: () => void;
   isReversing: boolean;
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }) => {
   const { t } = useTranslation();
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
 
   const entryPrice = parseFloat(position.entryPrice);
-  const markPrice = currentPrice || parseFloat(position.currentPrice ?? position.entryPrice);
+  const markPrice = currentPrice ?? parseFloat(position.currentPrice ?? position.entryPrice);
   const liquidationPrice = parseFloat(position.liquidationPrice ?? '0');
   const quantity = parseFloat(position.entryQty);
   const leverage = position.leverage ?? 1;
@@ -279,7 +280,7 @@ const FuturesPositionsPanelComponent = () => {
     isClosingPosition,
     reversePosition,
     isReversingPosition,
-  } = useBackendFuturesTrading(activeWalletId || '');
+  } = useBackendFuturesTrading(activeWalletId ?? '');
 
   const openPositions = useMemo((): FuturesPosition[] => {
     if (!Array.isArray(positions)) return [];

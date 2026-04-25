@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type TradeExecution, type Wallet } from '../db/schema';
@@ -18,7 +19,7 @@ export interface PnLResult {
 }
 
 export function detectExitReason(
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   entryPrice: number,
   exitPrice: number
 ): 'STOP_LOSS' | 'TAKE_PROFIT' {
@@ -29,7 +30,7 @@ export function detectExitReason(
 }
 
 export function calculatePnL(
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   entryPrice: number,
   exitPrice: number,
   quantity: number,
@@ -141,17 +142,17 @@ export async function closeExecutionWithPnL(params: CloseExecutionParams): Promi
     const entryPrice = parseFloat(execution.entryPrice);
     const quantity = parseFloat(execution.quantity);
     const positionValue = entryPrice * quantity;
-    pnlPercent = positionValue > 0 ? (pnl / positionValue) * 100 * (execution.leverage || 1) : 0;
+    pnlPercent = positionValue > 0 ? (pnl / positionValue) * 100 * (execution.leverage ?? 1) : 0;
   } else {
     const result = calculatePnL(
       execution.side,
       parseFloat(execution.entryPrice),
       exitPrice,
       parseFloat(execution.quantity),
-      execution.leverage || 1,
+      execution.leverage ?? 1,
       exitFee,
-      parseFloat(execution.entryFee || '0'),
-      parseFloat(execution.accumulatedFunding || '0')
+      parseFloat(execution.entryFee ?? '0'),
+      parseFloat(execution.accumulatedFunding ?? '0')
     );
     pnl = result.pnl;
     pnlPercent = result.pnlPercent;
@@ -163,11 +164,11 @@ export async function closeExecutionWithPnL(params: CloseExecutionParams): Promi
       status: 'closed',
       exitPrice: exitPrice.toString(),
       exitReason,
-      exitSource: exitSource || exitReason,
+      exitSource: exitSource ?? exitReason,
       pnl: pnl.toString(),
       pnlPercent: pnlPercent.toString(),
       exitFee: exitFee.toString(),
-      fees: (parseFloat(execution.entryFee || '0') + exitFee).toString(),
+      fees: (parseFloat(execution.entryFee ?? '0') + exitFee).toString(),
       closedAt: new Date(),
       stopLossAlgoId: null,
       stopLossOrderId: null,
@@ -187,7 +188,7 @@ export async function closeExecutionWithPnL(params: CloseExecutionParams): Promi
     pnlPercent,
   }, '[ExecutionManager] Closed execution with PnL');
 
-  return updated || null;
+  return updated ?? null;
 }
 
 export interface CancelAndClearParams {
@@ -198,7 +199,7 @@ export interface CancelAndClearParams {
 
 export async function cancelAndClearProtectionOrder(params: CancelAndClearParams): Promise<boolean> {
   const { wallet, execution, field } = params;
-  const marketType = execution.marketType || 'FUTURES';
+  const marketType = execution.marketType ?? 'FUTURES';
 
   const algoId = field === 'stopLoss' ? execution.stopLossAlgoId : execution.takeProfitAlgoId;
   const orderId = field === 'stopLoss' ? execution.stopLossOrderId : execution.takeProfitOrderId;
@@ -227,7 +228,7 @@ export async function cancelAndClearProtectionOrder(params: CancelAndClearParams
 }
 
 export async function cancelAllExecutionOrders(wallet: Wallet, execution: TradeExecution): Promise<void> {
-  const marketType = execution.marketType || 'FUTURES';
+  const marketType = execution.marketType ?? 'FUTURES';
 
   const promises: Promise<boolean>[] = [];
 
@@ -267,7 +268,7 @@ export async function getWalletById(walletId: string): Promise<Wallet | null> {
     .select()
     .from(wallets)
     .where(eq(wallets.id, walletId));
-  return wallet || null;
+  return wallet ?? null;
 }
 
 export async function getExecutionById(executionId: string): Promise<TradeExecution | null> {
@@ -275,10 +276,10 @@ export async function getExecutionById(executionId: string): Promise<TradeExecut
     .select()
     .from(tradeExecutions)
     .where(eq(tradeExecutions.id, executionId));
-  return execution || null;
+  return execution ?? null;
 }
 
-export function isClosingSide(executionSide: 'LONG' | 'SHORT', orderSide: 'BUY' | 'SELL'): boolean {
+export function isClosingSide(executionSide: PositionSide, orderSide: 'BUY' | 'SELL'): boolean {
   return (executionSide === 'LONG' && orderSide === 'SELL') ||
          (executionSide === 'SHORT' && orderSide === 'BUY');
 }

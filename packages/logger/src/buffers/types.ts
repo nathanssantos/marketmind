@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 export interface LogEntry {
   timestamp: Date;
   level: 'info' | 'warn' | 'error' | 'debug';
@@ -53,7 +54,7 @@ export type SetupOutcome = 'executed' | 'blocked' | 'pending' | 'failed';
 
 export interface SetupValidationEntry {
   setupType: string;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   entryPrice: string;
   stopLoss?: string;
   takeProfit?: string;

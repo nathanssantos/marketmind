@@ -1,9 +1,10 @@
+import type { MarketType } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { klines, priceCache } from '../db/schema';
 import { logger } from './logger';
 
-export const fetchPriceFromApi = async (symbol: string, marketType: 'SPOT' | 'FUTURES'): Promise<number> => {
+export const fetchPriceFromApi = async (symbol: string, marketType: MarketType): Promise<number> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -30,7 +31,7 @@ export const fetchPriceFromApi = async (symbol: string, marketType: 'SPOT' | 'FU
   }
 };
 
-export const getLastKlinePrice = async (symbol: string, marketType: 'SPOT' | 'FUTURES'): Promise<number | null> => {
+export const getLastKlinePrice = async (symbol: string, marketType: MarketType): Promise<number | null> => {
   try {
     const lastKline = await db.query.klines.findFirst({
       where: and(
@@ -53,7 +54,7 @@ export const getLastKlinePrice = async (symbol: string, marketType: 'SPOT' | 'FU
   }
 };
 
-export const getCurrentPrice = async (symbol: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<number> => {
+export const getCurrentPrice = async (symbol: string, marketType: MarketType = 'FUTURES'): Promise<number> => {
   const cacheKey = marketType === 'FUTURES' ? `${symbol}_FUTURES` : symbol;
   const maxRetries = 3;
   const retryDelayMs = 1000;

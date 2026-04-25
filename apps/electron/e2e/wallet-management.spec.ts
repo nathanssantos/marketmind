@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { test, expect } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
 import { installTrpcMock } from './helpers/trpcMock';
@@ -7,7 +8,7 @@ interface MockWallet {
   id: string;
   name: string;
   walletType: 'paper' | 'testnet' | 'live';
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   currency: string;
   exchange: string;
   initialBalance: string;

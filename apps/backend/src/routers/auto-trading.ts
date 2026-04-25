@@ -1,7 +1,7 @@
 import { FIBONACCI_PYRAMID_LEVELS, FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import { colorize } from '@marketmind/logger';
 import { calculateCapitalLimits } from '@marketmind/risk';
-import type { ExchangeId, TimeInterval } from '@marketmind/types';
+import type { ExchangeId, MarketType, TimeInterval } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, INTERVAL_MS, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -258,8 +258,8 @@ export const autoTradingRouter = router({
         updatedAt: new Date(),
       };
 
-      applyConfigFieldsToUpdate(input as Record<string, unknown>, updateData as Record<string, unknown>);
-      applyFilterInputToUpdate(input as Record<string, unknown>, updateData as Record<string, unknown>);
+      applyConfigFieldsToUpdate(input, updateData);
+      applyFilterInputToUpdate(input, updateData);
 
       await ctx.db
         .update(autoTradingConfig)
@@ -391,7 +391,7 @@ export const autoTradingRouter = router({
         });
       }
 
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
 
       const perWatcherExposurePercent = watcherStatus.watchers > 0
@@ -1474,7 +1474,7 @@ export const autoTradingRouter = router({
         {
           targetWatcherCount: targetCount,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
-          marketType: (wallet.marketType as 'SPOT' | 'FUTURES') || 'FUTURES',
+          marketType: (wallet.marketType as MarketType) || 'FUTURES',
           interval: rotationConfig.interval,
           profileId: undefined,
           leverage: config.leverage ?? 1,
@@ -1621,7 +1621,7 @@ export const autoTradingRouter = router({
         logger.error({ error: errorMsg }, '[EmergencyStop] Failed to stop watchers');
       }
 
-      const walletMarketType = wallet.marketType || 'FUTURES';
+      const walletMarketType = wallet.marketType ?? 'FUTURES';
 
       const openExecutions = await ctx.db
         .select()
@@ -1905,7 +1905,7 @@ export const autoTradingRouter = router({
       }
 
       const wallet = await walletQueries.getByIdAndUser(execution.walletId, ctx.user.id);
-      const marketType = (execution.marketType || 'FUTURES');
+      const marketType = (execution.marketType ?? 'FUTURES');
 
       const currentPrice = await positionMonitorService.getCurrentPrice(execution.symbol, marketType);
 

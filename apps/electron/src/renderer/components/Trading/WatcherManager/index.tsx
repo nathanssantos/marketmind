@@ -1,6 +1,6 @@
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
-import type { TimeInterval } from '@marketmind/types';
+import type { MarketType, TimeInterval } from '@marketmind/types';
 import { Button, Separator } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -160,7 +160,7 @@ export const WatcherManager = () => {
   const directionMode = config?.directionMode ?? 'auto';
   const tradingMode = config?.tradingMode ?? 'auto';
 
-  const handleStopWatcher = async (symbol: string, interval: string, marketType?: 'SPOT' | 'FUTURES') => {
+  const handleStopWatcher = async (symbol: string, interval: string, marketType?: MarketType) => {
     await stopWatcher(symbol, interval, marketType);
   };
 

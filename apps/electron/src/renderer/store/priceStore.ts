@@ -114,7 +114,7 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
     set((state) => {
       for (const [symbol, price] of updates) {
         const current = state.prices[symbol];
-        if (current && current.price === price) continue;
+        if (current?.price === price) continue;
         state.prices[symbol] = { price, timestamp: now, source: 'websocket' };
         changed.push([symbol, price]);
       }
@@ -128,7 +128,7 @@ export const usePriceStore = create<PriceState>()(immer((set, get) => ({
   },
 
   getPriceEntry: (symbol) => {
-    return get().prices[symbol] || null;
+    return get().prices[symbol] ?? null;
   },
 
   cleanupStaleSymbols: () => {

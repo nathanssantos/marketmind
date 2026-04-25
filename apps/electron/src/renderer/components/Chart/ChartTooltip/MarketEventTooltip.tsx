@@ -40,7 +40,7 @@ export const MarketEventTooltip = ({ marketEvent, left, top }: MarketEventToolti
   const actual = getMetaString(marketEvent.metadata, 'actual');
   const estimate = getMetaString(marketEvent.metadata, 'estimate');
   const previous = getMetaString(marketEvent.metadata, 'previous');
-  const hasEconData = marketEvent.type === 'economic_event' && (actual || estimate || previous);
+  const hasEconData = marketEvent.type === 'economic_event' && (actual ?? estimate ?? previous);
 
   return (
     <TooltipContainer left={left} top={top}>

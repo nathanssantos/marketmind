@@ -24,7 +24,7 @@ export interface DailyIncomeBucket {
 }
 
 export const getDailyIncomeSum = async (query: DailyIncomeQuery): Promise<Map<string, number>> => {
-  const tz = query.tz || 'UTC';
+  const tz = query.tz ?? 'UTC';
   const types = query.types ?? PNL_CONTRIBUTING_TYPES;
   const asset = query.asset ?? 'USDT';
 
@@ -54,7 +54,7 @@ export const getDailyIncomeSum = async (query: DailyIncomeQuery): Promise<Map<st
 };
 
 export const getDailyIncomeBreakdown = async (query: DailyIncomeQuery): Promise<DailyIncomeBucket[]> => {
-  const tz = query.tz || 'UTC';
+  const tz = query.tz ?? 'UTC';
   const types = query.types ?? INCOME_TYPES;
   const asset = query.asset ?? 'USDT';
 

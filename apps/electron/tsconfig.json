@@ -16,6 +16,10 @@
     "noUncheckedIndexedAccess": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
+    // exactOptionalPropertyTypes: enabling this flag surfaces 264 type errors
+    // (mostly `{ x?: T }` vs `{ x?: T | undefined }` distinctions in component
+    // props). Tracked as a future strictness wave once dependent props are
+    // audited. Leave false for now to keep the build green.
     "exactOptionalPropertyTypes": false,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,

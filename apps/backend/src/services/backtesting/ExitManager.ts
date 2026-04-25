@@ -1,4 +1,4 @@
-import type { Kline, MarketType } from '@marketmind/types';
+import type { Kline, MarketType, PositionSide } from '@marketmind/types';
 import {
   checkStopLossAndTakeProfit as checkSLTP,
   applySlippage as applySlippageUtil,
@@ -24,7 +24,7 @@ export class ExitManager {
   }
 
   checkStopLossAndTakeProfit(
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     high: number,
     low: number,
     open: number,
@@ -38,13 +38,13 @@ export class ExitManager {
   applySlippage(
     exitPrice: number,
     exitReason: string,
-    direction: 'LONG' | 'SHORT'
+    direction: PositionSide
   ): number {
     return applySlippageUtil(exitPrice, exitReason, direction, this.config.slippagePercent ?? 0.1);
   }
 
   findExit(
-    setup: { direction: 'LONG' | 'SHORT' },
+    setup: { direction: PositionSide },
     klines: Kline[],
     actualEntryKlineIndex: number,
     stopLoss: number | undefined,

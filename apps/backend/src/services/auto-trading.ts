@@ -1,4 +1,4 @@
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, PositionSide } from '@marketmind/types';
 import { getRoundTripFee } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { AUTO_TRADING_KELLY } from '../constants';
@@ -204,7 +204,7 @@ export class AutoTradingService {
         } else {
           logger.warn({
             strategyId,
-            trades: stats?.totalTrades || 0,
+            trades: stats?.totalTrades ?? 0,
             minRequired: MIN_TRADES,
           }, 'Insufficient trades for Kelly, using defaults');
         }
@@ -335,7 +335,7 @@ export class AutoTradingService {
     symbol: string,
     quantity: number,
     stopLoss: number,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     marketType: MarketType = 'FUTURES'
   ): Promise<OrderResult> {
     if (marketType === 'FUTURES') {
@@ -363,7 +363,7 @@ export class AutoTradingService {
     symbol: string,
     quantity: number,
     takeProfit: number,
-    side: 'LONG' | 'SHORT',
+    side: PositionSide,
     marketType: MarketType = 'FUTURES'
   ): Promise<OrderResult> {
     if (marketType === 'FUTURES') {

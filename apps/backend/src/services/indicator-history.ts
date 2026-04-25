@@ -211,8 +211,6 @@ export class IndicatorHistoryService {
 let indicatorHistoryService: IndicatorHistoryService | null = null;
 
 export const getIndicatorHistoryService = (): IndicatorHistoryService => {
-  if (!indicatorHistoryService) {
-    indicatorHistoryService = new IndicatorHistoryService();
-  }
+  indicatorHistoryService ??= new IndicatorHistoryService();
   return indicatorHistoryService;
 };

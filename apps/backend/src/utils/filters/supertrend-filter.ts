@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { Kline, SupertrendFilterResult, SupertrendTrend } from '@marketmind/types';
+import type { Kline, PositionSide, SupertrendFilterResult, SupertrendTrend } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
 
@@ -15,7 +15,7 @@ export type { SupertrendFilterResult, SupertrendTrend };
 
 export const checkSupertrendCondition = async (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   period: number = DEFAULT_PERIOD,
   multiplier: number = DEFAULT_MULTIPLIER,
 ): Promise<SupertrendFilterResult> => {

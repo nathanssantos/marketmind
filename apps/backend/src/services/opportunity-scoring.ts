@@ -126,7 +126,7 @@ export class OpportunityScoringService {
       );
       const priceChangeScore = this.calculatePriceChangeScore(coin.priceChangePercent24h);
       const setupFrequencyScore = Math.min(100, setupCount * 10);
-      const winRateScore = performance?.winRate != null ? performance.winRate : 50;
+      const winRateScore = performance?.winRate ?? 50;
       const profitFactorScore = performance?.profitFactor != null
         ? Math.min(100, performance.profitFactor * 50)
         : 50;
@@ -312,9 +312,7 @@ export class OpportunityScoringService {
 let opportunityScoringService: OpportunityScoringService | null = null;
 
 export const getOpportunityScoringService = (): OpportunityScoringService => {
-  if (!opportunityScoringService) {
-    opportunityScoringService = new OpportunityScoringService();
-  }
+  opportunityScoringService ??= new OpportunityScoringService();
   return opportunityScoringService;
 };
 

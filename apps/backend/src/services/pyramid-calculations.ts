@@ -1,3 +1,4 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import { colorize } from '@marketmind/logger';
 import type { TradeExecution } from '../db/schema';
 import type { FiboLevel } from './fibonacci-pyramid-evaluator';
@@ -92,7 +93,7 @@ export const calculateBaseSize = (executions: ExecutionLike[]): number => {
     (a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime()
   );
 
-  return parseFloat(sorted[0]?.quantity || '0');
+  return parseFloat(sorted[0]?.quantity ?? '0');
 };
 
 export const roundQuantity = (quantity: number): number => {
@@ -108,7 +109,7 @@ export const roundQuantity = (quantity: number): number => {
 export const calculatePyramidProfitPercent = (
   avgEntryPrice: number,
   currentPrice: number,
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ): number => {
   return direction === 'LONG'
     ? (currentPrice - avgEntryPrice) / avgEntryPrice
@@ -201,7 +202,7 @@ export const calculateInitialPositionSize = async (
   remainingBalance: number,
   totalWalletExposure: number,
   activeWatchersCount?: number,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  marketType: MarketType = 'FUTURES'
 ): Promise<{ quantity: number; sizePercent: number; reason: string }> => {
   let positionValue = (walletBalance * maxPositionSizePercent) / 100;
 

@@ -1,6 +1,8 @@
+import type { PositionSide } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
+import type { DatabaseType } from '../../db/client';
 import { orders, tradeExecutions } from '../../db/schema';
 import { autoTradingService } from '../../services/auto-trading';
 import type {
@@ -14,7 +16,7 @@ import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/for
 import { generateEntityId } from '../../utils/id';
 
 export const handleConditionalOrder = async (
-  ctx: { db: any; user: { id: string } },
+  ctx: { db: DatabaseType; user: { id: string } },
   input: {
     walletId: string;
     symbol: string;
@@ -144,7 +146,7 @@ export const handleConditionalOrder = async (
 };
 
 export const handleMarketOrderProtection = async (
-  ctx: { db: any; user: { id: string } },
+  ctx: { db: DatabaseType; user: { id: string } },
   input: {
     walletId: string;
     symbol: string;
@@ -156,7 +158,7 @@ export const handleMarketOrderProtection = async (
   },
   futuresOrder: { orderId: string; price: string; avgPrice?: string },
   wallet: Awaited<ReturnType<typeof walletQueries.getByIdAndUser>>,
-  orderDirection: 'LONG' | 'SHORT',
+  orderDirection: PositionSide,
   actualLeverage: number,
 ) => {
   const quantity = parseFloat(input.quantity);
@@ -179,7 +181,7 @@ export const handleMarketOrderProtection = async (
   }
 
   if (slResult || tpResult) {
-    const fillPrice = parseFloat((futuresOrder as { avgPrice?: string }).avgPrice || futuresOrder.price || '0');
+    const fillPrice = parseFloat(((futuresOrder as { avgPrice?: string }).avgPrice ?? futuresOrder.price) || '0');
     await ctx.db.insert(tradeExecutions).values({
       id: generateEntityId(),
       userId: ctx.user.id,
@@ -187,7 +189,7 @@ export const handleMarketOrderProtection = async (
       symbol: input.symbol,
       side: orderDirection,
       entryOrderId: futuresOrder.orderId,
-      entryPrice: fillPrice > 0 ? fillPrice.toString() : (input.price || '0'),
+      entryPrice: fillPrice > 0 ? fillPrice.toString() : (input.price ?? '0'),
       quantity: input.quantity,
       stopLoss: input.stopLoss,
       takeProfit: input.takeProfit,

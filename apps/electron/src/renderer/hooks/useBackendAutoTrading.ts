@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { QUERY_CONFIG } from '@shared/constants';
 import { keepPreviousData } from '@tanstack/react-query';
@@ -140,14 +141,14 @@ export const useBackendAutoTrading = (walletId: string) => {
   );
 
   const startWatcher = useCallback(
-    async (symbol: string, interval: string, profileId?: string, marketType?: 'SPOT' | 'FUTURES') => {
+    async (symbol: string, interval: string, profileId?: string, marketType?: MarketType) => {
       return startWatcherMutation.mutateAsync({ walletId, symbol, interval, profileId, marketType });
     },
     [walletId, startWatcherMutation]
   );
 
   const stopWatcher = useCallback(
-    async (symbol: string, interval: string, marketType?: 'SPOT' | 'FUTURES') => {
+    async (symbol: string, interval: string, marketType?: MarketType) => {
       return stopWatcherMutation.mutateAsync({ walletId, symbol, interval, marketType });
     },
     [walletId, stopWatcherMutation]
@@ -161,7 +162,7 @@ export const useBackendAutoTrading = (walletId: string) => {
   );
 
   const startWatchersBulk = useCallback(
-    async (symbols: string[], interval: string, profileId?: string, marketType?: 'SPOT' | 'FUTURES', targetCount?: number) => {
+    async (symbols: string[], interval: string, profileId?: string, marketType?: MarketType, targetCount?: number) => {
       return startWatchersBulkMutation.mutateAsync({ walletId, symbols, interval, profileId, marketType, targetCount });
     },
     [walletId, startWatchersBulkMutation]
@@ -214,7 +215,7 @@ export const useBackendAutoTrading = (walletId: string) => {
   };
 };
 
-export const useTopSymbols = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = 12) => {
+export const useTopSymbols = (marketType: MarketType = 'FUTURES', limit: number = 12) => {
   const { data: topSymbols, isLoading: isLoadingTopSymbols, error: topSymbolsError } =
     trpc.autoTrading.getTopSymbols.useQuery(
       { marketType, limit },
@@ -228,7 +229,7 @@ export const useTopSymbols = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit:
   };
 };
 
-export const useDynamicSymbolScores = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = 50) => {
+export const useDynamicSymbolScores = (marketType: MarketType = 'FUTURES', limit: number = 50) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getDynamicSymbolScores.useQuery(
     { marketType, limit },
     { staleTime: 5 * 60 * 1000 }
@@ -244,7 +245,7 @@ export const useDynamicSymbolScores = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES
 
 export const useFilteredSymbolsForQuickStart = (
   walletId: string,
-  marketType: 'SPOT' | 'FUTURES',
+  marketType: MarketType,
   interval: string,
   limit: number,
   useBtcCorrelationFilter: boolean = true
@@ -268,7 +269,7 @@ export const useFilteredSymbolsForQuickStart = (
   };
 };
 
-export const useTopCoinsByMarketCap = (marketType: 'SPOT' | 'FUTURES' = 'FUTURES', limit: number = AUTO_TRADING_CONFIG.TARGET_COUNT.MAX) => {
+export const useTopCoinsByMarketCap = (marketType: MarketType = 'FUTURES', limit: number = AUTO_TRADING_CONFIG.TARGET_COUNT.MAX) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getTopCoinsByMarketCap.useQuery(
     { marketType, limit },
     { staleTime: 5 * 60 * 1000 }
@@ -340,7 +341,7 @@ export interface CapitalLimits {
 
 export const useCapitalLimits = (
   walletId: string,
-  marketType: 'SPOT' | 'FUTURES'
+  marketType: MarketType
 ) => {
   const { data, isLoading, error, refetch } = trpc.autoTrading.getCapitalLimits.useQuery(
     { walletId, marketType },

@@ -1,4 +1,4 @@
-import type { FibonacciProjectionData, TrailingStopOptimizationConfig } from '@marketmind/types';
+import type { FibonacciProjectionData, PositionSide, TrailingStopOptimizationConfig } from '@marketmind/types';
 import { TRAILING_STOP } from '../constants';
 import type { AutoTradingConfig, SymbolTrailingStopOverride } from '../db/schema';
 import {
@@ -27,7 +27,7 @@ export const DEFAULT_TRAILING_STOP_CONFIG: TrailingStopOptimizationConfig = {
 };
 
 export const resolveTrailingStopConfig = (
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   symbolOverride: SymbolTrailingStopOverride | null,
   walletConfig: AutoTradingConfig | null,
   baseConfig: TrailingStopOptimizationConfig
@@ -111,7 +111,7 @@ export interface TrailingStopInput {
   entryPrice: number;
   currentPrice: number;
   currentStopLoss: number | null;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   takeProfit?: number | null;
   swingPoints: Array<{ price: number; type: 'high' | 'low' }>;
   atr?: number;

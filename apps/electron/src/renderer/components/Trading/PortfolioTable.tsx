@@ -43,9 +43,9 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
         case 'side':
           return dir * a.side.localeCompare(b.side);
         case 'type':
-          return dir * ((a.marketType || '').localeCompare(b.marketType || ''));
+          return dir * ((a.marketType ?? '').localeCompare(b.marketType ?? ''));
         case 'setup':
-          return dir * ((a.setupType || '').localeCompare(b.setupType || ''));
+          return dir * ((a.setupType ?? '').localeCompare(b.setupType ?? ''));
         case 'opened':
           return dir * (a.openedAt.getTime() - b.openedAt.getTime());
         case 'quantity':
@@ -55,9 +55,9 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
         case 'currentPrice':
           return dir * (a.currentPrice - b.currentPrice);
         case 'stopLoss':
-          return dir * ((a.stopLoss || 0) - (b.stopLoss || 0));
+          return dir * ((a.stopLoss ?? 0) - (b.stopLoss ?? 0));
         case 'takeProfit':
-          return dir * ((a.takeProfit || 0) - (b.takeProfit || 0));
+          return dir * ((a.takeProfit ?? 0) - (b.takeProfit ?? 0));
         case 'exposure':
           return dir * ((a.avgPrice * a.quantity) - (b.avgPrice * b.quantity));
         default:

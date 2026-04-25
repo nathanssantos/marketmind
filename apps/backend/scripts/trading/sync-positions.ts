@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import 'dotenv/config';
 import { and, eq } from 'drizzle-orm';
 import type { USDMClient } from 'binance';
@@ -160,7 +161,7 @@ async function processWallet(walletId: string) {
         closingTrade = await guardedCall(() => getLastClosingTrade(
           client,
           exec.symbol,
-          exec.side as 'LONG' | 'SHORT',
+          exec.side as PositionSide,
           exec.openedAt.getTime()
         ));
       } catch (_err) {

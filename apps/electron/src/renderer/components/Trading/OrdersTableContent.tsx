@@ -1,6 +1,6 @@
 import { Box, Flex, Portal, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import type { Order, WalletCurrency } from '@marketmind/types';
+import type { MarketType, Order, WalletCurrency } from '@marketmind/types';
 import { Badge, CryptoIcon, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { useUIStore } from '@renderer/store/uiStore';
@@ -19,7 +19,7 @@ export interface OrdersTableContentProps {
   currency: WalletCurrency;
   onCancel: (id: string) => void;
   onClose: (id: string, price: number) => void;
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }
 
 export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, onNavigateToSymbol }: OrdersTableContentProps) => {
@@ -56,25 +56,25 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
         case 'status':
           return dir * a.status.localeCompare(b.status);
         case 'type':
-          return dir * ((a.marketType || '').localeCompare(b.marketType || ''));
+          return dir * ((a.marketType ?? '').localeCompare(b.marketType ?? ''));
         case 'setup':
-          return dir * ((a.setupType || '').localeCompare(b.setupType || ''));
+          return dir * ((a.setupType ?? '').localeCompare(b.setupType ?? ''));
         case 'createdAt':
-          return dir * ((a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+          return dir * ((a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0));
         case 'filledAt':
           return dir * ((a.updateTime || 0) - (b.updateTime || 0));
         case 'closedAt':
-          return dir * ((a.closedAt?.getTime() || 0) - (b.closedAt?.getTime() || 0));
+          return dir * ((a.closedAt?.getTime() ?? 0) - (b.closedAt?.getTime() ?? 0));
         case 'quantity':
           return dir * (getOrderQuantity(a) - getOrderQuantity(b));
         case 'entryPrice':
           return dir * (getOrderPrice(a) - getOrderPrice(b));
         case 'currentPrice':
-          return dir * ((a.currentPrice || 0) - (b.currentPrice || 0));
+          return dir * ((a.currentPrice ?? 0) - (b.currentPrice ?? 0));
         case 'stopLoss':
-          return dir * ((a.stopLoss || 0) - (b.stopLoss || 0));
+          return dir * ((a.stopLoss ?? 0) - (b.stopLoss ?? 0));
         case 'takeProfit':
-          return dir * ((a.takeProfit || 0) - (b.takeProfit || 0));
+          return dir * ((a.takeProfit ?? 0) - (b.takeProfit ?? 0));
         default:
           return 0;
       }
@@ -213,7 +213,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
                         {canClose && (
                           <MenuItem
                             value="close"
-                            onClick={() => onClose(getOrderId(order), currentPrice || getOrderPrice(order))}
+                            onClick={() => onClose(getOrderId(order), currentPrice ?? getOrderPrice(order))}
                             px={3}
                             py={2}
                             _hover={{ bg: 'bg.muted' }}

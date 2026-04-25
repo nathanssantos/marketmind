@@ -1,5 +1,5 @@
 import { calculateFibonacciProjection, calculateTimeframeLookback } from '../../../lib/indicators';
-import type { FibLevel, Kline, TimeInterval } from '@marketmind/types';
+import type { FibLevel, Kline, PositionSide, TimeInterval } from '@marketmind/types';
 import { FILTER_THRESHOLDS } from '@marketmind/types';
 import { TIME_MS, UNIT_MS } from '../../../constants';
 import { PineIndicatorService } from '../../pine/PineIndicatorService';
@@ -13,7 +13,7 @@ export const getIntervalMs = (interval: string): number => {
   return parseInt(match[1]) * unitMs;
 };
 
-export const getAdxBasedFibonacciLevel = async (klines: Kline[], _direction: 'LONG' | 'SHORT'): Promise<number> => {
+export const getAdxBasedFibonacciLevel = async (klines: Kline[], _direction: PositionSide): Promise<number> => {
   const { ADX_MIN, ADX_STRONG, ADX_VERY_STRONG } = FILTER_THRESHOLDS;
   const MIN_KLINES_FOR_ADX = 35;
 
@@ -54,7 +54,7 @@ export const getAdxBasedFibonacciLevel = async (klines: Kline[], _direction: 'LO
 export const calculateFibonacciTakeProfit = async (
   klines: Kline[],
   _entryPrice: number,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   fibonacciTargetLevel: FibLevel = '2',
   interval: string = '4h',
   swingRange: 'extended' | 'nearest' = 'nearest'

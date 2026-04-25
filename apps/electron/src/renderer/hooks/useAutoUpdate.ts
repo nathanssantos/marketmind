@@ -68,7 +68,7 @@ export const useAutoUpdate = () => {
     if (!update.isSupported()) return;
     const result = await update.checkForUpdates();
     if (!result.success) {
-      setError({ message: result.error || 'Failed to check for updates' });
+      setError({ message: result.error ?? 'Failed to check for updates' });
       setStatus('error');
     }
   }, [update]);
@@ -77,7 +77,7 @@ export const useAutoUpdate = () => {
     if (!update.isSupported()) return;
     const result = await update.downloadUpdate();
     if (!result.success) {
-      setError({ message: result.error || 'Failed to download update' });
+      setError({ message: result.error ?? 'Failed to download update' });
       setStatus('error');
     }
   }, [update]);
@@ -86,7 +86,7 @@ export const useAutoUpdate = () => {
     if (!update.isSupported()) return;
     const result = await update.installUpdate();
     if (!result.success) {
-      setError({ message: result.error || 'Failed to install update' });
+      setError({ message: result.error ?? 'Failed to install update' });
       setStatus('error');
     }
   }, [update]);

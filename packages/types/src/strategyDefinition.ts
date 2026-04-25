@@ -1,3 +1,4 @@
+import type { PositionSide } from './direction';
 import type { TimeInterval } from './kline';
 
 export type IndicatorType =
@@ -317,7 +318,7 @@ export interface FibonacciSwingData {
 }
 
 export interface ExitContext {
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   entryPrice: number;
   klines: unknown[]; // Kline[] - avoiding circular dependency
   currentIndex: number;

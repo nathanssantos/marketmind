@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { BINANCE_NATIVE_INTERVALS, INTERVAL_MS } from '@marketmind/types';
 import { and, asc, eq, gte, lt } from 'drizzle-orm';
 import { ABSOLUTE_MINIMUM_KLINES, AUTO_TRADING_API, AUTO_TRADING_BATCH } from '../constants';
@@ -6,6 +6,35 @@ import { db } from '../db';
 import { klines } from '../db/schema';
 import { withRetryFetch } from '../utils/retry';
 import { logger, serializeError } from './logger';
+
+type BinanceKlineTuple = [
+  number, // open time
+  string, // open
+  string, // high
+  string, // low
+  string, // close
+  string, // volume
+  number, // close time
+  string, // quote volume
+  number, // trades
+  string, // taker buy base volume
+  string, // taker buy quote volume
+  string, // ignore
+];
+
+interface ParsedKline {
+  openTime: number;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+  volume: string;
+  closeTime: number;
+  quoteVolume: string;
+  trades: number;
+  takerBuyBaseVolume: string;
+  takerBuyQuoteVolume: string;
+}
 
 const BATCH_SIZE = AUTO_TRADING_BATCH.KLINE_FETCH_BATCH_SIZE;
 const RATE_LIMIT_DELAY = AUTO_TRADING_API.RATE_LIMIT_DELAY_MS;
@@ -18,7 +47,7 @@ export const backfillHistoricalKlines = async (
   interval: Interval,
   startTime: Date,
   endTime: Date = new Date(),
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  marketType: MarketType = 'FUTURES'
 ): Promise<number> => {
   const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
   const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
@@ -49,14 +78,14 @@ export const backfillHistoricalKlines = async (
         throw new Error(`Binance ${marketType} API error: ${response.status} ${response.statusText}`);
       }
 
-      const candles = await response.json();
+      const candles = (await response.json()) as BinanceKlineTuple[];
 
       if (candles.length === 0) break;
 
       const lastCandle = candles[candles.length - 1];
       if (!lastCandle) break;
 
-      const klinesData = candles.map((candle: any) => ({
+      const klinesData = candles.map((candle) => ({
         symbol,
         interval,
         marketType,
@@ -69,8 +98,8 @@ export const backfillHistoricalKlines = async (
         closeTime: new Date(candle[6]),
         quoteVolume: candle[7],
         trades: candle[8],
-        takerBuyBaseVolume: candle[9] || '0',
-        takerBuyQuoteVolume: candle[10] || '0',
+        takerBuyBaseVolume: candle[9] ?? '0',
+        takerBuyQuoteVolume: candle[10] ?? '0',
       }));
 
       await db.insert(klines).values(klinesData).onConflictDoNothing();
@@ -104,14 +133,14 @@ export const fetchHistoricalKlinesFromAPI = async (
   interval: Interval,
   startTime: Date,
   endTime: Date = new Date()
-): Promise<any[]> => {
+): Promise<ParsedKline[]> => {
   logger.trace(
     { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
     'Fetching historical klines from Binance API'
   );
 
   const intervalMs = getIntervalMilliseconds(interval);
-  const allKlines: any[] = [];
+  const allKlines: ParsedKline[] = [];
   let currentStartTime = startTime.getTime();
   const finalEndTime = endTime.getTime();
 
@@ -124,14 +153,14 @@ export const fetchHistoricalKlinesFromAPI = async (
         throw new Error(`Binance API error: ${response.status} ${response.statusText}`);
       }
 
-      const candles = await response.json();
+      const candles = (await response.json()) as BinanceKlineTuple[];
 
       if (candles.length === 0) break;
 
       const lastCandle = candles[candles.length - 1];
       if (!lastCandle) break;
 
-      const klinesData = candles.map((candle: any) => ({
+      const klinesData: ParsedKline[] = candles.map((candle) => ({
         openTime: candle[0],
         open: candle[1],
         high: candle[2],
@@ -164,14 +193,14 @@ export const fetchFuturesKlinesFromAPI = async (
   interval: Interval,
   startTime: Date,
   endTime: Date = new Date()
-): Promise<any[]> => {
+): Promise<ParsedKline[]> => {
   logger.trace(
     { symbol, interval, startTime: startTime.toISOString(), endTime: endTime.toISOString() },
     'Fetching futures klines from Binance Futures API'
   );
 
   const intervalMs = getIntervalMilliseconds(interval);
-  const allKlines: any[] = [];
+  const allKlines: ParsedKline[] = [];
   let currentStartTime = startTime.getTime();
   const finalEndTime = endTime.getTime();
 
@@ -184,14 +213,14 @@ export const fetchFuturesKlinesFromAPI = async (
         throw new Error(`Binance Futures API error: ${response.status} ${response.statusText}`);
       }
 
-      const candles = await response.json();
+      const candles = (await response.json()) as BinanceKlineTuple[];
 
       if (candles.length === 0) break;
 
       const lastCandle = candles[candles.length - 1];
       if (!lastCandle) break;
 
-      const klinesData = candles.map((candle: any) => ({
+      const klinesData: ParsedKline[] = candles.map((candle) => ({
         openTime: candle[0],
         open: candle[1],
         high: candle[2],
@@ -230,7 +259,7 @@ export const smartBackfillKlines = async (
   symbol: string,
   interval: Interval,
   targetCount: number,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
+  marketType: MarketType = 'FUTURES',
   forRotation: boolean = false
 ): Promise<SmartBackfillResult> => {
   const intervalMs = getIntervalMilliseconds(interval);
@@ -373,7 +402,7 @@ export const smartBackfillKlines = async (
 export interface AggregatedKline {
   symbol: string;
   interval: '1y';
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   openTime: Date;
   closeTime: Date;
   open: string;
@@ -390,7 +419,7 @@ export interface AggregatedKline {
 export const aggregateYearlyKline = async (
   symbol: string,
   year: number,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  marketType: MarketType = 'FUTURES'
 ): Promise<AggregatedKline | null> => {
   const startTime = new Date(year, 0, 1);
   const endTime = new Date(year + 1, 0, 1);
@@ -447,7 +476,7 @@ export const aggregateYearlyKline = async (
 
 export const aggregateYearlyKlines = async (
   symbol: string,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
+  marketType: MarketType = 'FUTURES',
   limit: number = 10
 ): Promise<AggregatedKline[]> => {
   const currentYear = new Date().getFullYear();

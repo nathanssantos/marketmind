@@ -1,11 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type {
-  Kline,
-  ObvTrend,
-  SetupVolumeType,
-  VolumeFilterConfig,
-  VolumeFilterResult,
-} from '@marketmind/types';
+import type { Kline, ObvTrend, PositionSide, SetupVolumeType, VolumeFilterConfig, VolumeFilterResult } from '@marketmind/types';
 import { getStrategyVolumeType } from './strategy-filter-types';
 
 const pineService = new PineIndicatorService();
@@ -27,7 +21,7 @@ export const VOLUME_FILTER = {
 export type { ObvTrend, SetupVolumeType, VolumeFilterConfig, VolumeFilterResult };
 
 const getDirectionalConfig = (
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   config?: VolumeFilterConfig
 ): { breakoutMult: number; pullbackMult: number; useObv: boolean; obvLookback: number } => {
   const directionalConfig = direction === 'LONG' ? config?.longConfig : config?.shortConfig;
@@ -85,7 +79,7 @@ const getObvTrend = (obvValues: (number | null)[], lookback: number): ObvTrend =
 
 export const checkVolumeCondition = async (
   klines: Kline[],
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   setupType: string,
   config?: VolumeFilterConfig
 ): Promise<VolumeFilterResult> => {

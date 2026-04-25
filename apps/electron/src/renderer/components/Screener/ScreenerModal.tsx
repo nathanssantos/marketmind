@@ -1,4 +1,4 @@
-import type { SavedScreener, ScreenerFilterCondition, ScreenerSortField } from '@marketmind/types';
+import type { MarketType, SavedScreener, ScreenerFilterCondition, ScreenerSortField } from '@marketmind/types';
 import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +40,7 @@ const MARKET_TYPE_OPTIONS: SelectOption[] = [
   { value: 'FUTURES', label: 'Futures' },
 ];
 
-export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void }) => {
+export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol: string, marketType?: MarketType) => void }) => {
   const { t } = useTranslation();
   const [isSaveOpen, setIsSaveOpen] = useState(false);
 

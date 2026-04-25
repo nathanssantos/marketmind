@@ -1,8 +1,10 @@
 import type {
   BacktestConfig,
+  BacktestMetrics,
   BacktestResult,
   Interval,
   Kline,
+  TradingSetup,
 } from '@marketmind/types';
 import type { PineStrategy } from '../pine/types';
 import { getDefaultFee, FILTER_DEFAULTS } from '@marketmind/types';
@@ -17,7 +19,7 @@ import { SetupDetectionService } from '../setup-detection/SetupDetectionService'
 import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
 import { applyFilterDefaults } from '../../utils/filters/filter-registry';
 import { ExitManager } from './ExitManager';
-import { FilterManager, type FilterConfig } from './FilterManager';
+import { FilterManager } from './FilterManager';
 import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
 import { calculateBacktestMetrics } from './metrics-calculator';
 import { TradeExecutor, type TradeResult } from './TradeExecutor';
@@ -26,7 +28,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class BacktestEngine {
-  async run(config: BacktestConfig, klines?: any[]): Promise<BacktestResult> {
+  async run(config: BacktestConfig, klines?: Kline[]): Promise<BacktestResult> {
     const backtestId = generateEntityId();
     const startTime = Date.now();
 
@@ -45,10 +47,10 @@ export class BacktestEngine {
       const filterManager = new FilterManager({
         ...effectiveConfig,
         directionMode: resolvedDirectionMode,
-      } as FilterConfig);
+      });
 
       await filterManager.initialize(
-        historicalKlines as Kline[],
+        historicalKlines,
         config.startDate,
         config.endDate,
         config.symbol
@@ -180,7 +182,7 @@ export class BacktestEngine {
     }
   }
 
-  private async fetchKlines(config: BacktestConfig, klines?: any[]): Promise<any[]> {
+  private async fetchKlines(config: BacktestConfig, klines?: Kline[]): Promise<Kline[]> {
     if (klines && klines.length > 0) {
       console.log('[Backtest] Using pre-fetched klines:', klines.length);
       return klines;
@@ -219,7 +221,7 @@ export class BacktestEngine {
     return historicalKlines;
   }
 
-  private async initializeStrategies(config: BacktestConfig, _historicalKlines: any[]) {
+  private async initializeStrategies(config: BacktestConfig, _historicalKlines: Kline[]) {
     const setupsToEnable = config.setupTypes?.length ? config.setupTypes : [];
 
     console.log('[Backtest] Dynamic setups:', setupsToEnable);
@@ -258,7 +260,7 @@ export class BacktestEngine {
     return {
       ...applyFilterDefaults(
         config as unknown as Record<string, unknown>,
-        FILTER_DEFAULTS as unknown as Record<string, unknown>,
+        FILTER_DEFAULTS,
       ) as unknown as BacktestConfig,
       useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
       commission: config.commission ?? getDefaultFee(config.marketType ?? 'FUTURES'),
@@ -277,10 +279,10 @@ export class BacktestEngine {
 
   private async detectSetupsWithExitSignals(
     setupDetectionService: SetupDetectionService,
-    historicalKlines: any[],
+    historicalKlines: Kline[],
     loadedStrategies: PineStrategy[],
     trendFilterPeriod?: number
-  ): Promise<{ detectedSetups: any[]; exitSignalsMap: Map<string, (number | null)[]> }> {
+  ): Promise<{ detectedSetups: TradingSetup[]; exitSignalsMap: Map<string, (number | null)[]> }> {
     try {
       const warmupPeriod = this.calculateWarmupPeriod(loadedStrategies, trendFilterPeriod);
       const startIndex = warmupPeriod;
@@ -297,8 +299,8 @@ export class BacktestEngine {
       console.log('[Backtest] Detected', detectedSetups.length, 'setups');
 
       if (detectedSetups.length > 0) {
-        const setupTypes = detectedSetups.reduce((acc: any, s: any) => {
-          acc[s.type] = (acc[s.type] || 0) + 1;
+        const setupTypes = detectedSetups.reduce((acc: Record<string, number>, s: TradingSetup) => {
+          acc[s.type] = (acc[s.type] ?? 0) + 1;
           return acc;
         }, {});
         console.log('[Backtest] Setup breakdown:', setupTypes);
@@ -316,21 +318,21 @@ export class BacktestEngine {
   }
 
   private async filterSetups(
-    detectedSetups: any[],
-    _historicalKlines: any[],
+    detectedSetups: TradingSetup[],
+    _historicalKlines: Kline[],
     config: BacktestConfig,
     effectiveConfig: BacktestConfig,
     _loadedStrategies: PineStrategy[]
-  ): Promise<any[]> {
+  ): Promise<TradingSetup[]> {
     const userStartTimestamp = new Date(config.startDate).getTime();
-    const setupsInRange = detectedSetups.filter((s: any) => s.openTime >= userStartTimestamp);
+    const setupsInRange = detectedSetups.filter((s) => s.openTime >= userStartTimestamp);
 
     if (detectedSetups.length > setupsInRange.length) {
       console.log(`[Backtest] Excluded ${detectedSetups.length - setupsInRange.length} setups before startDate (warmup period)`);
     }
 
     const tradableSetups = effectiveConfig.minConfidence && effectiveConfig.minConfidence > 0
-      ? setupsInRange.filter((s: any) => s.confidence >= effectiveConfig.minConfidence!)
+      ? setupsInRange.filter((s: TradingSetup) => s.confidence >= effectiveConfig.minConfidence!)
       : setupsInRange;
 
     console.log('[Backtest] Filtered to', tradableSetups.length, 'tradable setups by confidence', effectiveConfig.minConfidence ? `(min: ${effectiveConfig.minConfidence}%)` : '(no filter)');
@@ -339,8 +341,8 @@ export class BacktestEngine {
   }
 
   private async executeBacktest(
-    tradableSetups: any[],
-    historicalKlines: any[],
+    tradableSetups: TradingSetup[],
+    historicalKlines: Kline[],
     config: BacktestConfig,
     effectiveConfig: BacktestConfig,
     _strategyMap: Map<string, PineStrategy>,
@@ -351,13 +353,13 @@ export class BacktestEngine {
     stochasticHtfKlines: Kline[] = [],
     mtfHtfKlines: Kline[] = [],
     mtfHtfInterval: string | null = null
-  ): Promise<{ trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] }> {
+  ): Promise<{ trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: BacktestResult["equityCurve"] }> {
     const trades: TradeResult[] = [];
     let equity = config.initialCapital;
     let peakEquity = config.initialCapital;
     let maxDrawdown = 0;
 
-    const equityCurve: any[] = [{
+    const equityCurve: BacktestResult["equityCurve"] = [{
       time: config.startDate,
       equity: config.initialCapital,
       drawdown: 0,
@@ -365,8 +367,8 @@ export class BacktestEngine {
     }];
 
     const klineMap = new Map(historicalKlines.map((k) => [k.openTime, k]));
-    const klineIndexMap = new Map(historicalKlines.map((k: any, i: number) => [k.openTime, i]));
-    const sortedSetups = tradableSetups.sort((a: any, b: any) => a.openTime - b.openTime);
+    const klineIndexMap = new Map(historicalKlines.map((k: Kline, i: number) => [k.openTime, i]));
+    const sortedSetups = tradableSetups.sort((a: TradingSetup, b: TradingSetup) => a.openTime - b.openTime);
     const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
     for (const setup of sortedSetups) {
@@ -381,7 +383,7 @@ export class BacktestEngine {
 
       const setupIndex = klineIndexMap.get(setup.openTime) ?? -1;
 
-      if (!(await filterManager.runRegisteredFilters(historicalKlines as Kline[], setupIndex, setup.direction, setup.type))) continue;
+      if (!(await filterManager.runRegisteredFilters(historicalKlines, setupIndex, setup.direction, setup.type))) continue;
       if (!(await filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length))) continue;
       if (!(await filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length))) continue;
       if (!(await filterManager.checkMtfFilter(mtfHtfKlines, setup.direction, mtfHtfInterval, trades.length)).passed) continue;
@@ -393,7 +395,7 @@ export class BacktestEngine {
         continue;
       }
 
-      const entryResult = tradeExecutor.resolveEntryPrice(setup, entryKline, historicalKlines as Kline[], setupIndex, trades.length);
+      const entryResult = tradeExecutor.resolveEntryPrice(setup, entryKline, historicalKlines, setupIndex, trades.length);
       if (entryResult.skipped === 'limitExpired') {
         filterManager.incrementLimitExpired();
         continue;
@@ -403,8 +405,8 @@ export class BacktestEngine {
 
       const shouldUseTrendFilter = effectiveConfig.useTrendFilter === true;
 
-      if (!(await filterManager.checkTrendFilter(historicalKlines as Kline[], setupIndex, setup.direction, shouldUseTrendFilter, trades.length))) continue;
-      if (!filterManager.checkFvgFilter(historicalKlines as Kline[], setupIndex, entryPrice, setup.direction, trades.length)) continue;
+      if (!(await filterManager.checkTrendFilter(historicalKlines, setupIndex, setup.direction, shouldUseTrendFilter, trades.length))) continue;
+      if (!filterManager.checkFvgFilter(historicalKlines, setupIndex, entryPrice, setup.direction, trades.length)) continue;
 
       const { stopLoss, takeProfit } = tradeExecutor.resolveStopLossAndTakeProfit(setup, entryPrice, trades.length);
 
@@ -419,7 +421,7 @@ export class BacktestEngine {
       const volatilityAdjusted = await tradeExecutor.applyVolatilityAdjustment(
         rawPositionSize,
         entryPrice,
-        historicalKlines as Kline[],
+        historicalKlines,
         setupIndex,
         trades.length
       );
@@ -448,7 +450,7 @@ export class BacktestEngine {
 
       const exitResult = exitManager.findExit(
         setup,
-        historicalKlines as Kline[],
+        historicalKlines,
         actualEntryKlineIndex,
         stopLoss,
         takeProfit,
@@ -504,7 +506,7 @@ export class BacktestEngine {
   private logResults(
     filterManager: FilterManager,
     trades: TradeResult[],
-    metrics: any,
+    metrics: BacktestMetrics,
     duration: number,
     equity: number
   ): void {
@@ -532,7 +534,7 @@ export class BacktestEngine {
     if (configs.length === 0) return [];
 
     const baseConfig = configs[0]!;
-    const historicalKlines = klines as any[];
+    const historicalKlines = klines;
 
     const { setupDetectionService, loadedStrategies, strategyMap } = await this.initializeStrategies(baseConfig, historicalKlines);
     const baseEffective = this.buildEffectiveConfig(baseConfig, loadedStrategies);
@@ -556,7 +558,7 @@ export class BacktestEngine {
     const pineService = new PineIndicatorService();
     const emaTrend = (await pineService.compute('ema', klines, { period: emaTrendPeriod })).map(v => v ?? 0);
 
-    const anyHtfStochastic = configs.some(c => c.useStochasticHtfFilter || c.useStochasticRecoveryHtfFilter);
+    const anyHtfStochastic = configs.some(c => c.useStochasticHtfFilter ?? c.useStochasticRecoveryHtfFilter);
     let batchStochasticHtfKlines: Kline[] = [];
     if (anyHtfStochastic) {
       const htfInterval = getOneStepAboveTimeframe(baseConfig.interval);
@@ -614,7 +616,7 @@ export class BacktestEngine {
         const filterManager = new FilterManager({
           ...effectiveConfig,
           directionMode: batchDirectionMode,
-        } as FilterConfig);
+        });
         filterManager.setEmaTrend(emaTrend);
 
         const tradeExecutor = new TradeExecutor({

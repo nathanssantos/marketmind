@@ -1,6 +1,6 @@
 import { serializeError } from '../utils/errors';
 import { createLogger } from '@marketmind/logger';
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { ABSOLUTE_MINIMUM_KLINES, BACKFILL_TARGET_KLINES } from '../constants';
 import { binanceApiCache } from './binance-api-cache';
 import { smartBackfillKlines, type SmartBackfillResult } from './binance-historical';
@@ -12,13 +12,13 @@ const HARD_MINIMUM_KLINES = 2000;
 
 const activeBackfills = new Map<string, Promise<SmartBackfillResult>>();
 
-const getBackfillKey = (symbol: string, interval: string, marketType: 'SPOT' | 'FUTURES'): string =>
+const getBackfillKey = (symbol: string, interval: string, marketType: MarketType): string =>
   `${symbol}:${interval}:${marketType}`;
 
 export interface PrefetchOptions {
   symbol: string;
   interval: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   targetCount?: number;
   silent?: boolean;
   forRotation?: boolean;
@@ -180,7 +180,7 @@ export const runBatchBackfill = async (
   walletId: string,
   symbols: string[],
   interval: string,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+  marketType: MarketType = 'FUTURES'
 ): Promise<void> => {
   const { getWebSocketService } = await import('./websocket');
   const ws = getWebSocketService();
@@ -217,7 +217,7 @@ export const runBatchBackfill = async (
 export const checkKlineAvailability = async (
   symbol: string,
   interval: string,
-  marketType: 'SPOT' | 'FUTURES' = 'FUTURES',
+  marketType: MarketType = 'FUTURES',
   silent: boolean = false
 ): Promise<KlineAvailabilityResult> => {
   const required = ABSOLUTE_MINIMUM_KLINES;

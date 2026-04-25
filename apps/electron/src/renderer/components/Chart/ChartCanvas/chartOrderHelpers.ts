@@ -1,4 +1,4 @@
-import type { MarketType, Order } from '@marketmind/types';
+import type { MarketType, Order, PositionSide } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { roundTradingPrice } from '@shared/utils';
 import type { MutableRefObject } from 'react';
@@ -6,7 +6,7 @@ import type { BackendExecution } from '../useOrderLinesRenderer';
 
 export interface OptimisticEntryParams {
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   price: number;
   marketType: MarketType;
   getOrderQuantity: (price: number) => string;

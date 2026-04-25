@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { useBackendAutoTrading } from './useBackendAutoTrading';
 import { useBackendWallet } from './useBackendWallet';
 import { useEffect, useMemo, useRef } from 'react';
@@ -13,7 +14,7 @@ interface ExecutionState {
   pnl?: string | null;
   pnlPercent?: string | null;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   entryPrice: string;
   exitPrice?: string | null;
   quantity: string;
@@ -26,7 +27,7 @@ export const useExecutionNotifications = () => {
 
   const { wallets } = useBackendWallet();
   const activeWalletId = wallets[0]?.id;
-  const { activeExecutions, executionHistory } = useBackendAutoTrading(activeWalletId || '');
+  const { activeExecutions, executionHistory } = useBackendAutoTrading(activeWalletId ?? '');
 
   const allExecutions = useMemo(() => {
     return [...activeExecutions, ...executionHistory];
@@ -37,7 +38,7 @@ export const useExecutionNotifications = () => {
     for (const exec of allExecutions) {
       map.set(exec.id, {
         id: exec.id,
-        status: exec.status || 'open',
+        status: exec.status ?? 'open',
         stopLoss: exec.stopLoss,
         exitReason: exec.exitReason,
         pnl: exec.pnl,
@@ -124,8 +125,8 @@ export const useExecutionNotifications = () => {
   const handlePositionClosed = (exec: ExecutionState) => {
     const isLong = exec.side === 'LONG';
     const sideLabel = t(`trading.ticket.${isLong ? 'long' : 'short'}`);
-    const pnl = parseFloat(exec.pnl || '0');
-    const pnlPercent = parseFloat(exec.pnlPercent || '0');
+    const pnl = parseFloat(exec.pnl ?? '0');
+    const pnlPercent = parseFloat(exec.pnlPercent ?? '0');
     const isProfit = pnl >= 0;
 
     let title: string;
@@ -153,7 +154,7 @@ export const useExecutionNotifications = () => {
       side: sideLabel,
       symbol: exec.symbol,
       entryPrice: formatPrice(exec.entryPrice),
-      exitPrice: formatPrice(exec.exitPrice || '0'),
+      exitPrice: formatPrice(exec.exitPrice ?? '0'),
       pnl: pnl >= 0 ? `+${pnl.toFixed(2)}` : pnl.toFixed(2),
       pnlPercent: pnlPercent >= 0 ? `+${pnlPercent.toFixed(2)}` : pnlPercent.toFixed(2),
       reason: reasonLabel,

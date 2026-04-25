@@ -116,9 +116,7 @@ export class IndicatorCacheService {
 let indicatorCacheServiceInstance: IndicatorCacheService | null = null;
 
 export const getIndicatorCacheService = (ttl?: number): IndicatorCacheService => {
-  if (!indicatorCacheServiceInstance) {
-    indicatorCacheServiceInstance = new IndicatorCacheService(ttl);
-  }
+  indicatorCacheServiceInstance ??= new IndicatorCacheService(ttl);
   return indicatorCacheServiceInstance;
 };
 

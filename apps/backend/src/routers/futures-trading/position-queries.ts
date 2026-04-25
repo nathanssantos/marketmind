@@ -87,7 +87,7 @@ export const positionQueriesRouter = router({
           )
           .limit(1);
 
-        return dbPosition || null;
+        return dbPosition ?? null;
       }
 
       try {

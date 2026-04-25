@@ -1,9 +1,10 @@
+import type { PositionSide } from '@marketmind/types';
 import { EventEmitter } from 'events';
 
 export interface PositionClosedEvent {
   walletId: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   pnl: number;
   executionId: string;
 }
@@ -22,6 +23,6 @@ class PositionEventBus extends EventEmitter {
 let instance: PositionEventBus | null = null;
 
 export const getPositionEventBus = (): PositionEventBus => {
-  if (!instance) instance = new PositionEventBus();
+  instance ??= new PositionEventBus();
   return instance;
 };

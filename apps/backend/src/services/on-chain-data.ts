@@ -146,6 +146,6 @@ export class OnChainDataService {
 let onChainDataService: OnChainDataService | null = null;
 
 export const getOnChainDataService = (): OnChainDataService => {
-  if (!onChainDataService) onChainDataService = new OnChainDataService();
+  onChainDataService ??= new OnChainDataService();
   return onChainDataService;
 };

@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { serializeError } from '../utils/errors';
 import { WebsocketClient } from 'binance';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -22,7 +23,7 @@ export interface TradeTick {
   price: number;
   quantity: number;
   timestamp: number;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
 }
 
 export type TradeTickHandler = (tick: TradeTick) => void;
@@ -216,7 +217,7 @@ export class BinancePriceStreamService {
       }
 
       const now = Date.now();
-      const lastCheck = this.lastPositionCheck.get(update.symbol) || 0;
+      const lastCheck = this.lastPositionCheck.get(update.symbol) ?? 0;
       if (now - lastCheck < POSITION_CHECK_THROTTLE_MS) {
         return;
       }

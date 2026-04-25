@@ -61,7 +61,7 @@ export const preferencesRouter = router({
       const result: Record<string, Record<string, unknown>> = {};
 
       for (const pref of prefs) {
-        if (!result[pref.category]) result[pref.category] = {};
+        result[pref.category] ??= {};
         const category = result[pref.category]!;
         category[pref.key] = parseJsonValue(pref.value);
       }

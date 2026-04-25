@@ -87,12 +87,12 @@ export class MinNotionalFilterService {
 
         for (const filter of symbol.filters) {
           if (filter.filterType === 'MIN_NOTIONAL') {
-            minNotional = parseFloat(filter.notional || filter.minNotional || '5');
+            minNotional = parseFloat(filter.notional ?? filter.minNotional ?? '5');
           } else if (filter.filterType === 'LOT_SIZE') {
-            minQty = parseFloat(filter.minQty || '0');
-            stepSize = parseFloat(filter.stepSize || '0');
+            minQty = parseFloat(filter.minQty ?? '0');
+            stepSize = parseFloat(filter.stepSize ?? '0');
           } else if (filter.filterType === 'PRICE_FILTER') {
-            tickSize = parseFloat(filter.tickSize || '0');
+            tickSize = parseFloat(filter.tickSize ?? '0');
           }
         }
 
@@ -133,12 +133,12 @@ export class MinNotionalFilterService {
 
         for (const filter of symbol.filters) {
           if (filter.filterType === 'NOTIONAL' || filter.filterType === 'MIN_NOTIONAL') {
-            minNotional = parseFloat(filter.minNotional || '10');
+            minNotional = parseFloat(filter.minNotional ?? '10');
           } else if (filter.filterType === 'LOT_SIZE') {
-            minQty = parseFloat(filter.minQty || '0');
-            stepSize = parseFloat(filter.stepSize || '0');
+            minQty = parseFloat(filter.minQty ?? '0');
+            stepSize = parseFloat(filter.stepSize ?? '0');
           } else if (filter.filterType === 'PRICE_FILTER') {
-            tickSize = parseFloat(filter.tickSize || '0');
+            tickSize = parseFloat(filter.tickSize ?? '0');
           }
         }
 
@@ -461,8 +461,6 @@ export class MinNotionalFilterService {
 let minNotionalFilterService: MinNotionalFilterService | null = null;
 
 export const getMinNotionalFilterService = (): MinNotionalFilterService => {
-  if (!minNotionalFilterService) {
-    minNotionalFilterService = new MinNotionalFilterService();
-  }
+  minNotionalFilterService ??= new MinNotionalFilterService();
   return minNotionalFilterService;
 };

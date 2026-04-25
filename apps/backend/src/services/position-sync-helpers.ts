@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import type { OrphanedPositionEntry, UnknownPositionEntry, UpdatedPositionEntry } from '@marketmind/logger';
 import { and, desc, eq, gte, isNotNull, or } from 'drizzle-orm';
 import { db } from '../db';
@@ -51,7 +52,7 @@ export const createFailedSyncResult = (walletId: string, errorMsg: string): Sync
 export const processIntentOrderForAdoptedPosition = async (
   wallet: Wallet,
   symbol: string,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   positionAmt: number,
   executionId: string,
 ): Promise<void> => {

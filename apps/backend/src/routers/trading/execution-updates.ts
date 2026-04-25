@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -55,7 +56,7 @@ export const executionUpdatesRouter = router({
       const walletSupportsLive = !isPaperWallet(wallet);
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
       const isFutures = execution.marketType === 'FUTURES';
-      const marketType = execution.marketType as 'SPOT' | 'FUTURES';
+      const marketType = execution.marketType as MarketType;
       const qty = parseFloat(execution.quantity);
       const side = execution.side;
 
@@ -384,11 +385,11 @@ export const executionUpdatesRouter = router({
             continue;
           }
 
-          if (!resolvedWalletId) resolvedWalletId = execution.walletId;
+          resolvedWalletId ??= execution.walletId;
           const wallet = await walletQueries.getById(execution.walletId);
           const walletSupportsLive = !isPaperWallet(wallet);
           const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
-          const marketType = execution.marketType as 'SPOT' | 'FUTURES';
+          const marketType = execution.marketType as MarketType;
 
           const algoId = input.type === 'stopLoss' ? execution.stopLossAlgoId : execution.takeProfitAlgoId;
           const orderId = input.type === 'stopLoss' ? execution.stopLossOrderId : execution.takeProfitOrderId;

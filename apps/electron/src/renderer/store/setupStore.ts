@@ -318,7 +318,7 @@ export const useSetupStore = create<SetupStoreState>()(
     },
 
     getPerformanceByType: (setupType) =>
-      get().performanceByType[setupType] || createEmptyPerformanceStats(),
+      get().performanceByType[setupType] ?? createEmptyPerformanceStats(),
 
     getGlobalPerformance: () => get().globalPerformance,
 

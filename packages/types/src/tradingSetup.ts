@@ -1,10 +1,11 @@
+import type { PositionSide } from './direction';
 import type { TriggerCandleSnapshot, TriggerIndicatorValues } from './strategyVisualization';
 
 export type BuiltinSetupType = 'bear-trap' | 'mean-reversion' | 'stochastic-double-touch';
 
 export type SetupType = BuiltinSetupType | string;
 
-export type SetupDirection = 'LONG' | 'SHORT';
+export type SetupDirection = PositionSide;
 
 export interface SetupSpecificData {
   [key: string]: unknown;
@@ -23,6 +24,18 @@ export type SetupCancellationReason =
   | 'breakout-failed'
   | 'retest-failed'
   | 'manual';
+
+export type SetupSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+
+export type TradeExecutionStatus = 'open' | 'pending' | 'closed';
+
+export type ExitReason =
+  | 'TRAILING_STOP'
+  | 'TAKE_PROFIT'
+  | 'STOP_LOSS'
+  | 'END_OF_PERIOD'
+  | 'MAX_BARS'
+  | 'EXIT_SIGNAL';
 
 export interface FibonacciProjectionData {
   swingLow: { price: number; index: number; timestamp: number };
