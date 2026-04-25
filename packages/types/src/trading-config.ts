@@ -308,8 +308,6 @@ export type ScalpingDefaultsConstants = typeof SCALPING_DEFAULTS;
 
 export const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD'] as const;
 
-export { FIBONACCI_TARGET_LEVELS, type FibonacciTargetLevel } from '@marketmind/fibonacci';
-
 export const BACKTEST_DEFAULTS = {
   LEVERAGE: 2,
   MIN_CONFIDENCE: 50,

@@ -19,6 +19,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@marketmind/types": "workspace:*",
     "pino": "^10.3.1"
   },
   "devDependencies": {
