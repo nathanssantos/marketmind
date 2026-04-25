@@ -1,8 +1,7 @@
 import type { Interval, MarketType } from '@marketmind/types';
-import { useEffect } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
-import { useWebSocket } from './useWebSocket';
+import { useSocketEvent, useUserChannelSubscription } from './socket';
 import { usePollingInterval } from './usePollingInterval';
 
 type SetupType =
@@ -87,26 +86,16 @@ export const useBackendSetups = () => {
   });
 
   const useRealtimeSetups = (userId: string, enabled = true) => {
-    const { subscribe, unsubscribe, on, off } = useWebSocket();
-
-    useEffect(() => {
-      if (!enabled || !userId) return;
-
-      subscribe.setups(userId);
-
-      const handleSetupDetected = () => {
+    useUserChannelSubscription(enabled && userId ? userId : undefined);
+    useSocketEvent(
+      'setup-detected',
+      () => {
         void utils.setup.detectCurrent.invalidate();
         void utils.setup.getHistory.invalidate();
         void utils.setup.getStats.invalidate();
-      };
-
-      on('setup-detected', handleSetupDetected);
-
-      return () => {
-        off('setup-detected', handleSetupDetected);
-        unsubscribe.setups(userId);
-      };
-    }, [userId, enabled, subscribe, unsubscribe, on, off, utils]);
+      },
+      enabled && !!userId,
+    );
   };
 
   return {

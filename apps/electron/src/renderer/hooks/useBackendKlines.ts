@@ -1,7 +1,8 @@
-import type { AssetClass, Interval, MarketType } from '@marketmind/types';
+import type { AssetClass, Interval, KlineUpdatePayload, MarketType } from '@marketmind/types';
 import { useEffect, useRef } from 'react';
+import { useConnectionStore } from '../store/connectionStore';
 import { trpc } from '../utils/trpc';
-import { useWebSocket } from './useWebSocket';
+import { useKlineSubscription, useSocketEvent } from './socket';
 
 interface ListParams {
   symbol: string;
@@ -37,25 +38,25 @@ export const useBackendKlines = () => {
       },
       {
         enabled: !!params.symbol && !!params.interval,
-      }
+      },
     );
 
   const useLatestKline = (symbol: string, interval: Interval, marketType: MarketType = 'FUTURES') =>
     trpc.kline.latest.useQuery(
       { symbol, interval, marketType },
-      { enabled: !!symbol && !!interval }
+      { enabled: !!symbol && !!interval },
     );
 
   const useKlineCount = (symbol: string, interval: Interval, marketType: MarketType = 'FUTURES') =>
     trpc.kline.count.useQuery(
       { symbol, interval, marketType },
-      { enabled: !!symbol && !!interval }
+      { enabled: !!symbol && !!interval },
     );
 
   const useSearchSymbols = (query: string, marketType: MarketType = 'FUTURES', assetClass: AssetClass = 'CRYPTO') =>
     trpc.kline.searchSymbols.useQuery(
       { query, marketType, assetClass },
-      { enabled: query.length >= 2 }
+      { enabled: query.length >= 2 },
     );
 
   const subscribeStream = trpc.kline.subscribeStream.useMutation();
@@ -77,25 +78,12 @@ export const useBackendKlines = () => {
 export const useKlineStream = (
   symbol: string,
   interval: Interval,
-  onKlineUpdate: (kline: {
-    symbol: string;
-    interval: string;
-    marketType?: MarketType;
-    openTime: number;
-    closeTime: number;
-    open: string;
-    high: string;
-    low: string;
-    close: string;
-    volume: string;
-    isClosed: boolean;
-    timestamp: number;
-  }) => void,
+  onKlineUpdate: (kline: KlineUpdatePayload) => void,
   enabled = true,
-  marketType: MarketType = 'FUTURES'
+  marketType: MarketType = 'FUTURES',
 ) => {
   const { subscribeStream, unsubscribeStream } = useBackendKlines();
-  const { isConnected, on, off, subscribe, unsubscribe } = useWebSocket({ autoConnect: enabled });
+  const isConnected = useConnectionStore((s) => s.wsConnected);
   const subscribedRef = useRef(false);
   const onKlineUpdateRef = useRef(onKlineUpdate);
 
@@ -104,9 +92,25 @@ export const useKlineStream = (
   }, [onKlineUpdate]);
 
   useEffect(() => {
-    if (!enabled || !isConnected || !symbol || !interval) return;
+    if (!enabled || !symbol || !interval) return;
+    if (!subscribedRef.current) {
+      subscribeStream.mutate({ symbol, interval, marketType });
+      subscribedRef.current = true;
+    }
+    return () => {
+      if (subscribedRef.current) {
+        unsubscribeStream.mutate({ symbol, interval, marketType });
+        subscribedRef.current = false;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, symbol, interval, marketType]);
 
-    const handleKlineUpdate = (kline: Parameters<typeof onKlineUpdate>[0]) => {
+  useKlineSubscription(enabled ? symbol : undefined, enabled ? interval : undefined);
+
+  useSocketEvent(
+    'kline:update',
+    (kline) => {
       if (
         kline.symbol === symbol &&
         kline.interval === interval &&
@@ -114,28 +118,9 @@ export const useKlineStream = (
       ) {
         onKlineUpdateRef.current(kline);
       }
-    };
-
-    if (!subscribedRef.current) {
-      subscribeStream.mutate({ symbol, interval, marketType });
-      subscribedRef.current = true;
-    }
-
-    subscribe.klines({ symbol, interval });
-
-    on('kline:update', handleKlineUpdate);
-
-    return () => {
-      off('kline:update', handleKlineUpdate);
-
-      unsubscribe.klines({ symbol, interval });
-
-      if (subscribedRef.current) {
-        unsubscribeStream.mutate({ symbol, interval, marketType });
-        subscribedRef.current = false;
-      }
-    };
-  }, [enabled, isConnected, symbol, interval, marketType]);
+    },
+    enabled && !!symbol && !!interval,
+  );
 
   return {
     isConnected,

@@ -6,18 +6,16 @@ import { useScannerPreset } from '@renderer/hooks/useScreener';
 import { trpc } from '@renderer/utils/trpc';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import type { TimeInterval } from '@marketmind/types';
-import { memo, useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuDownload, LuX, LuZap } from 'react-icons/lu';
-import { socketService } from '@renderer/services/socketService';
-import { useConnectionStore } from '@renderer/store/connectionStore';
+import { useSocketEvent, useWalletSubscription } from '@renderer/hooks/socket';
 import { SCANNER_ICON_MAP, SCANNER_TIMEFRAME_OPTIONS, SCANNER_CATEGORY_ORDER } from '@renderer/components/Screener/constants';
 
 const ScannerTabComponent = () => {
   const { t } = useTranslation();
   const { isIB, activeWalletId } = useActiveWallet();
   const globalActions = useGlobalActionsOptional();
-  const wsConnected = useConnectionStore((s) => s.wsConnected);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<TimeInterval>('30m');
   const [isBackfilling, setIsBackfilling] = useState(false);
@@ -33,26 +31,18 @@ const ScannerTabComponent = () => {
 
   const backfillMutation = trpc.kline.backfillTopSymbols.useMutation();
 
-  useEffect(() => {
-    const socket = socketService.getSocket();
-    if (!socket || !activeWalletId) return;
-
-    socket.emit('subscribe:wallet', activeWalletId);
-
-    const handler = (data: { completed: number; total: number; status: string }) => {
+  useWalletSubscription(activeWalletId ?? undefined);
+  useSocketEvent(
+    'backfill:progress',
+    (data) => {
       setBackfillProgress({ completed: data.completed, total: data.total });
       if (data.status === 'completed' || data.status === 'error') {
         setIsBackfilling(false);
         setTimeout(() => setBackfillProgress(null), 3000);
       }
-    };
-
-    socket.on('backfill:progress', handler);
-    return () => {
-      socket.off('backfill:progress', handler);
-      socket.emit('unsubscribe:wallet', activeWalletId);
-    };
-  }, [activeWalletId, wsConnected]);
+    },
+    !!activeWalletId,
+  );
 
   const handleBackfill = useCallback(() => {
     if (!activeWalletId || isBackfilling) return;

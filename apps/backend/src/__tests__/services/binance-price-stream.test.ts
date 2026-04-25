@@ -33,6 +33,8 @@ vi.mock('../../services/position-monitor', () => ({
 
 const mockWebSocketService = {
   emitPriceUpdate: vi.fn(),
+  getActiveRooms: vi.fn(() => [] as string[]),
+  getActivelyViewedSymbols: vi.fn(() => [] as string[]),
 };
 
 vi.mock('../../services/websocket', () => ({

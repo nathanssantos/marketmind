@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ScalpingMetrics } from '@marketmind/types';
-import { socketService } from '../services/socketService';
+import { useSocketEvent, useSymbolStreamSubscription } from './socket';
 
 const MAX_HISTORY = 2000;
 
@@ -12,22 +12,18 @@ export interface ScalpingMetricsHistoryEntry {
 
 export const useScalpingMetrics = (symbol: string | null, enabled = true) => {
   const [metrics, setMetrics] = useState<ScalpingMetrics | null>(null);
-  const latestRef = useRef<ScalpingMetrics | null>(null);
-  const frameRef = useRef<number | null>(null);
   const historyRef = useRef<ScalpingMetricsHistoryEntry[]>([]);
 
   useEffect(() => {
-    if (!symbol || !enabled) return;
-
-    const socket = socketService.connect();
-
     setMetrics(null);
     historyRef.current = [];
-    socket.emit('subscribe:scalpingMetrics', symbol);
+  }, [symbol]);
 
-    const handler = (data: ScalpingMetrics) => {
-      latestRef.current = data;
+  useSymbolStreamSubscription('scalpingMetrics', enabled && symbol ? symbol : undefined);
 
+  useSocketEvent(
+    'scalpingMetrics:update',
+    (data) => {
       const history = historyRef.current;
       history.push({
         cvd: data.cvd,
@@ -35,27 +31,10 @@ export const useScalpingMetrics = (symbol: string | null, enabled = true) => {
         timestamp: Date.now(),
       });
       if (history.length > MAX_HISTORY) history.splice(0, history.length - MAX_HISTORY);
-
-      if (!frameRef.current) {
-        frameRef.current = requestAnimationFrame(() => {
-          if (latestRef.current) setMetrics(latestRef.current);
-          frameRef.current = null;
-        });
-      }
-    };
-
-    socket.on('scalpingMetrics:update', handler);
-
-    return () => {
-      socket.off('scalpingMetrics:update', handler);
-      socket.emit('unsubscribe:scalpingMetrics', symbol);
-      if (frameRef.current) {
-        cancelAnimationFrame(frameRef.current);
-        frameRef.current = null;
-      }
-      socketService.disconnect();
-    };
-  }, [symbol, enabled]);
+      setMetrics(data);
+    },
+    enabled && !!symbol,
+  );
 
   const getHistory = useCallback(() => historyRef.current, []);
 

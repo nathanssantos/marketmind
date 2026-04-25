@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LuPlus, LuRefreshCw, LuTrash2, LuX } from 'react-icons/lu';
 import { useBackendCustomSymbols } from '../../hooks/useBackendCustomSymbols';
 import { toaster } from '../../utils/toaster';
-import { Badge, Button, IconButton, Input, Tabs } from '../ui';
+import { Badge, BetaBadge, Button, IconButton, Input, Tabs } from '../ui';
 
 const CATEGORIES = ['politics', 'defi', 'gaming', 'ai', 'other'] as const;
 const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL'] as const;
@@ -103,6 +103,9 @@ export const CustomSymbolsTab = memo(() => {
 
   return (
     <Tabs.Root defaultValue="list" variant="line" size="sm">
+      <Flex justify="flex-end" mb={2}>
+        <BetaBadge />
+      </Flex>
       <Tabs.List>
         <Tabs.Trigger value="list" px={3} py={1.5}>
           {t('customSymbols.myIndices')}

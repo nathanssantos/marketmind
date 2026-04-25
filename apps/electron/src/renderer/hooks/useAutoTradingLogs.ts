@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type { AutoTradingLogEntryPayload } from '@marketmind/types';
+import { useConnectionStore } from '../store/connectionStore';
 import { trpc } from '../utils/trpc';
-import { useWebSocket, type FrontendLogEntry } from './useWebSocket';
+import { useSocketEvent, useWalletStreamSubscription } from './socket';
+
+export type FrontendLogEntry = AutoTradingLogEntryPayload;
 
 const MAX_LOGS = 500;
 
 export const useAutoTradingLogs = (walletId: string, enabled = true) => {
   const logsRef = useRef<FrontendLogEntry[]>([]);
   const [logs, setLogs] = useState<FrontendLogEntry[]>([]);
-  const { isConnected, subscribe, unsubscribe, on, off } = useWebSocket({
-    autoConnect: enabled && !!walletId,
-  });
+  const isConnected = useConnectionStore((s) => s.wsConnected);
 
   const { data: initialLogs, isLoading } = trpc.autoTrading.getRecentLogs.useQuery(
     { walletId, limit: 100 },
-    { enabled: !!walletId && enabled }
+    { enabled: !!walletId && enabled },
   );
 
   useEffect(() => {
@@ -28,27 +30,13 @@ export const useAutoTradingLogs = (walletId: string, enabled = true) => {
     setLogs(logsRef.current);
   }, []);
 
-  useEffect(() => {
-    if (!enabled || !isConnected || !walletId) return;
-
-    subscribe.autoTradingLogs(walletId);
-    on('autoTrading:log', handleNewLog);
-
-    return () => {
-      off('autoTrading:log', handleNewLog);
-      unsubscribe.autoTradingLogs(walletId);
-    };
-  }, [enabled, isConnected, walletId, subscribe, unsubscribe, on, off, handleNewLog]);
+  useWalletStreamSubscription('autoTradingLogs', enabled && walletId ? walletId : undefined);
+  useSocketEvent('autoTrading:log', handleNewLog, enabled && !!walletId);
 
   const clearLogs = useCallback(() => {
     logsRef.current = [];
     setLogs([]);
   }, []);
 
-  return {
-    logs,
-    isLoading,
-    isConnected,
-    clearLogs,
-  };
+  return { logs, isLoading, isConnected, clearLogs };
 };

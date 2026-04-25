@@ -19,6 +19,7 @@ const DailyChangeBadge = memo(({
   const isPositive = pct >= 0;
   return (
     <Text
+      data-testid={`tab-pct-${symbol}`}
       fontSize="2xs"
       fontWeight="semibold"
       color={isPositive ? 'trading.profit' : 'trading.loss'}
