@@ -309,7 +309,7 @@ export class RotationManager {
         );
 
       for (const watcher of dynamicWatchers) {
-        await this.deps.stopWatcher(watcher.walletId, watcher.symbol, watcher.interval, watcher.marketType as MarketType);
+        await this.deps.stopWatcher(watcher.walletId, watcher.symbol, watcher.interval, watcher.marketType);
       }
 
       log('✗ Stopped dynamic rotation and removed dynamic watchers', {

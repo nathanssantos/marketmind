@@ -38,7 +38,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
     return {
       orderId: String(order.orderId),
       symbol: order.symbol,
-      side: ('side' in order ? order.side : params.side) as 'BUY' | 'SELL',
+      side: ('side' in order ? order.side : params.side),
       type: 'type' in order ? order.type : params.type,
       status: 'status' in order ? order.status : 'NEW',
       price: 'price' in order ? order.price?.toString() : undefined,
@@ -66,7 +66,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
     return orders.map((order) => ({
       orderId: String(order.orderId),
       symbol: order.symbol,
-      side: order.side as 'BUY' | 'SELL',
+      side: order.side,
       type: order.type,
       status: order.status,
       price: order.price?.toString(),
@@ -83,7 +83,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
     return orders.map((order) => ({
       orderId: String(order.orderId),
       symbol: order.symbol,
-      side: order.side as 'BUY' | 'SELL',
+      side: order.side,
       type: order.type,
       status: order.status,
       price: order.price?.toString(),

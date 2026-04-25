@@ -51,7 +51,7 @@ export async function handleAlgoOrderUpdate(
         data: { algoId, orderType, status },
         timestamp: Date.now(),
       });
-      wsService.emitPositionUpdate(walletId, { id: String(algoId), status: 'cancelled' } as Parameters<typeof wsService.emitPositionUpdate>[1]);
+      wsService.emitPositionUpdate(walletId, { id: String(algoId), status: 'cancelled' });
     }
     return;
   }

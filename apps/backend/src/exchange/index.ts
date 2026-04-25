@@ -1,6 +1,6 @@
 export type {
   ExchangeId,
-  AssetClass,
+  ExchangeAssetCategory,
   ExchangeCredentials,
   MarketHours,
   ExchangeCapabilities,

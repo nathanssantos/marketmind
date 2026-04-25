@@ -70,7 +70,7 @@ export async function getRecentTrades(
       symbol: t.symbol,
       id: t.id,
       orderId: String(t.orderId),
-      side: t.side as 'BUY' | 'SELL',
+      side: t.side,
       price: String(t.price),
       qty: String(t.qty),
       realizedPnl: String(t.realizedPnl),

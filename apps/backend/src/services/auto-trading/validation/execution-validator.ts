@@ -56,7 +56,7 @@ export const buildFilterConfig = (
   config: typeof autoTradingConfig.$inferSelect,
   directionMode: string
 ): FilterValidatorConfig => ({
-  ...buildFilterConfigFromDb(config as unknown as Record<string, unknown>),
+  ...buildFilterConfigFromDb(config),
   useBtcCorrelationFilter: directionMode === 'auto' && (config.useBtcCorrelationFilter ?? false),
   volumeFilterConfig: {
     longConfig: {

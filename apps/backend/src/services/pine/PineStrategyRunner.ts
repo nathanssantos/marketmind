@@ -105,7 +105,7 @@ const extractPlotValue = (
   if (!data || index >= data.length) return null;
 
   const entry = data[index];
-  if (!entry || entry.value === null || entry.value === undefined) return null;
+  if (entry?.value == null) return null;
   if (typeof entry.value === 'number' && isNaN(entry.value)) return null;
 
   return entry.value;

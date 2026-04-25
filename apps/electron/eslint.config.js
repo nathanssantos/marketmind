@@ -75,7 +75,7 @@ export default [
             '@typescript-eslint/await-thenable': 'error',
             '@typescript-eslint/no-unnecessary-type-assertion': 'error',
             '@typescript-eslint/prefer-nullish-coalescing': 'warn',
-            '@typescript-eslint/prefer-optional-chain': 'warn',
+            '@typescript-eslint/prefer-optional-chain': 'error',
             '@typescript-eslint/consistent-type-imports': [
                 'error',
                 {

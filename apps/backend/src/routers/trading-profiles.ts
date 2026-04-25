@@ -178,7 +178,7 @@ export const tradingProfilesRouter = router({
     }
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
-    applyProfileFieldsToUpdate(input as Record<string, unknown>, updateData);
+    applyProfileFieldsToUpdate(input, updateData);
 
     await db.update(tradingProfiles).set(updateData).where(eq(tradingProfiles.id, input.id));
 

@@ -17,7 +17,7 @@ import { SetupDetectionService } from '../setup-detection/SetupDetectionService'
 import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
 import { applyFilterDefaults } from '../../utils/filters/filter-registry';
 import { ExitManager } from './ExitManager';
-import { FilterManager, type FilterConfig } from './FilterManager';
+import { FilterManager } from './FilterManager';
 import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
 import { calculateBacktestMetrics } from './metrics-calculator';
 import { TradeExecutor, type TradeResult } from './TradeExecutor';
@@ -45,7 +45,7 @@ export class BacktestEngine {
       const filterManager = new FilterManager({
         ...effectiveConfig,
         directionMode: resolvedDirectionMode,
-      } as FilterConfig);
+      });
 
       await filterManager.initialize(
         historicalKlines as Kline[],
@@ -258,7 +258,7 @@ export class BacktestEngine {
     return {
       ...applyFilterDefaults(
         config as unknown as Record<string, unknown>,
-        FILTER_DEFAULTS as unknown as Record<string, unknown>,
+        FILTER_DEFAULTS,
       ) as unknown as BacktestConfig,
       useAlgorithmicLevels: config.useAlgorithmicLevels ?? true,
       commission: config.commission ?? getDefaultFee(config.marketType ?? 'FUTURES'),
@@ -614,7 +614,7 @@ export class BacktestEngine {
         const filterManager = new FilterManager({
           ...effectiveConfig,
           directionMode: batchDirectionMode,
-        } as FilterConfig);
+        });
         filterManager.setEmaTrend(emaTrend);
 
         const tradeExecutor = new TradeExecutor({

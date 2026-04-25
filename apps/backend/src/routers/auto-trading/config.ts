@@ -212,8 +212,8 @@ export const configRouter = router({
         updatedAt: new Date(),
       };
 
-      applyConfigFieldsToUpdate(input as Record<string, unknown>, updateData as Record<string, unknown>);
-      applyFilterInputToUpdate(input as Record<string, unknown>, updateData as Record<string, unknown>);
+      applyConfigFieldsToUpdate(input, updateData);
+      applyFilterInputToUpdate(input, updateData);
 
       await ctx.db
         .update(autoTradingConfig)
