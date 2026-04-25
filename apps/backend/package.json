@@ -43,7 +43,7 @@
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
     "test:integration": "bash scripts/ensure-docker.sh && vitest run --project integration",
-    "test:contract": "vitest run --include='**/contracts/*.contract.test.ts'",
+    "test:contract": "vitest run --project contracts",
     "test:load": "artillery run load-tests/config.yml",
     "test:load:health": "artillery run load-tests/health-check.yml",
     "test:load:wallet": "artillery run load-tests/wallet-api.yml",
