@@ -60,11 +60,10 @@ class SocketBus {
     this.socket.on('connect_error', () => useConnectionStore.getState().setWsConnected(false));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.socket as any).io.on('reconnect_failed', () => {
-      // eslint-disable-next-line no-console
       console.warn('[SocketBus] Reconnection failed after 50 attempts — backend may be offline');
     });
 
-    exposeSocketForE2E(this.socket as unknown as Socket);
+    exposeSocketForE2E(this.socket);
     return this.socket;
   }
 
@@ -85,7 +84,6 @@ class SocketBus {
       try {
         (h as ServerHandler<E>)(payload as never);
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.error(`[SocketBus] handler for ${event} threw`, err);
       }
     }
@@ -101,7 +99,7 @@ class SocketBus {
     for (const key of keys) {
       const payload = this.latestRafPayload.get(key);
       this.latestRafPayload.delete(key);
-      if (payload !== undefined) this.dispatch(event, payload as never);
+      if (payload !== undefined) this.dispatch(event, payload);
     }
   }
 
@@ -130,7 +128,7 @@ class SocketBus {
       }) as ServerHandler<E>;
       sock.on(event, handler as never);
     } else {
-      const handler = ((payload: unknown) => this.dispatch(event, payload as never)) as ServerHandler<E>;
+      const handler = ((payload: unknown) => this.dispatch(event, payload)) as ServerHandler<E>;
       sock.on(event, handler as never);
     }
   }
@@ -215,7 +213,7 @@ class SocketBus {
 
   /** Direct socket access for E2E and existing legacy paths. Avoid in new code. */
   getSocket(): Socket | null {
-    return this.socket as unknown as Socket | null;
+    return this.socket;
   }
 }
 
