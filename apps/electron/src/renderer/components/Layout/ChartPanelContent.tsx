@@ -34,7 +34,7 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
     return { symbol, interval: panelConfig.timeframe, klines: paginatedKlines };
   }, [paginatedKlines, symbol, panelConfig.timeframe]);
 
-  const { displayKlines } = useKlineLiveStream({
+  const { displayKlines, klineSource } = useKlineLiveStream({
     symbol,
     timeframe: panelConfig.timeframe,
     marketType,
@@ -56,6 +56,7 @@ function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPa
   return (
     <ChartCanvas
       klines={displayKlines}
+      klineSource={klineSource}
       symbol={symbol}
       marketType={marketType}
       width="100%"

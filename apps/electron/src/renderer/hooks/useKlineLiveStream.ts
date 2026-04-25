@@ -34,8 +34,21 @@ interface UseKlineLiveStreamOptions {
   refetchKlines: () => Promise<unknown>;
 }
 
+export interface KlineSource {
+  /** Always points to the freshest displayKlines array. Read inside imperative subscribers. */
+  klinesRef: React.MutableRefObject<Kline[]>;
+  /**
+   * Subscribe to live-tick events. Called once per RAF flush after the live kline
+   * mutates. Use this to update canvas state imperatively without re-rendering React.
+   * Returns an unsubscribe function. The source's identity is stable across renders
+   * — pass it as a prop without breaking React.memo.
+   */
+  subscribe: (cb: () => void) => () => void;
+}
+
 interface UseKlineLiveStreamReturn {
   displayKlines: Kline[];
+  klineSource: KlineSource;
 }
 
 const MIN_REFETCH_INTERVAL_MS = 30_000;
@@ -232,5 +245,24 @@ export const useKlineLiveStream = ({
     return [...baseKlines, ...filteredLiveKlines];
   }, [baseKlines, liveKlines]);
 
-  return { displayKlines };
+  const klinesRef = useRef<Kline[]>(displayKlines);
+  klinesRef.current = displayKlines;
+
+  const tickSubscribersRef = useRef<Set<() => void>>(new Set());
+
+  const klineSource = useMemo<KlineSource>(() => ({
+    klinesRef,
+    subscribe: (cb) => {
+      tickSubscribersRef.current.add(cb);
+      return () => { tickSubscribersRef.current.delete(cb); };
+    },
+  }), []);
+
+  useEffect(() => {
+    for (const cb of tickSubscribersRef.current) {
+      try { cb(); } catch { /* best-effort */ }
+    }
+  }, [displayKlines]);
+
+  return { displayKlines, klineSource };
 };
