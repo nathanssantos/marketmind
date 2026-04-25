@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.99.1] - 2026-04-25
+
+Quality overhaul release — eight-wave initiative covering the lint config, the type system, and the `@marketmind/types` package architecture. No user-facing changes; entirely internal refactor + rule tightening. Backend went from ~999 lint warnings + ~360 `any` to **0 lint errors / 603 warnings** with `no-explicit-any` now enforced as `error` in `apps/backend/src` (test mocks and CLI scripts keep `warn` as an intentional escape hatch).
+
+### Changed
+- **Lint rule promotions across both apps** — `prefer-nullish-coalescing`, `prefer-optional-chain`, `no-unnecessary-type-assertion`, `react-hooks/exhaustive-deps` graduated from `warn` to `error`. `explicit-function-return-type` reconfigured with `allowExpressions/allowTypedFunctionExpressions/allowHigherOrderFunctions`. Electron `no-magic-numbers` ignore list tightened (`[2, 4, 7, 12, 24, 60, 100, 1000]`, `ignoreEnums`, `ignoreNumericLiteralTypes`).
+- **New advanced typescript-eslint rules enabled as `error`**: `switch-exhaustiveness-check`, `no-base-to-string`, `restrict-template-expressions`, `no-unsafe-enum-comparison`, `only-throw-error`.
+- **Imports + tests linting** — added `eslint-plugin-import-x` (import order, no-cycle, no-duplicates) and `eslint-plugin-vitest` (recommended preset, no-focused / no-disabled) across both apps. `eslint-plugin-jsx-a11y` recommended preset added in electron.
+- **`@marketmind/types` package restructured** — trading domain split into `trading/order.ts`, `trading/setup.ts`, `trading/profile.ts`, `trading/config.ts`. `indicators.ts` and `indicator-constants.ts` merged. `TradeNotificationPayload` and other event payloads rewritten as discriminated unions on `type`. New `utils.ts` exposes `Brand<T,K>`, `Result<T,E>`, `NonEmptyArray<T>`. Type-level tests (`__tests__/`) lock in invariants via `expectTypeOf`.
+- **TS compiler strictness sweep** — verified `strict`, `noUncheckedIndexedAccess`, `noPropertyAccessFromIndexSignature`, `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noUnusedLocals`, `noUnusedParameters`, `useUnknownInCatchVariables` are all on consistently across workspaces.
+
+### Added
+- **Canonical types replacing inline string-literal unions** — `PositionSide`, `OrderSide`, `MarketType`, `TimeInterval`, `FuturesOrderType`, `EntryOrderType`, `SetupSuggestionStatus`, `TradeExecutionStatus`, `ExitReason`, `WalletType`, `IndicatorId` (derived from a const-asserted array). Replaced ~214 inline `'LONG' | 'SHORT'` across 79 files and ~95 inline `'SPOT' | 'FUTURES'` across 60 files. DB schema columns now use `$type<...>()` to enforce the canonical types end-to-end.
+- **Branded ID types** — new `packages/types/src/branded.ts`: `WalletId`, `UserId`, `OrderId`, `SetupId`, `ExecutionId`, `ProfileId`, `SymbolString`, `StrategyId`. Each ID flows through tRPC routers as a structurally-checked nominal type, preventing the "passed walletId where userId was expected" class of bug at compile time.
+- **Typed Binance adapters** — `BinanceKlineTuple` + `ParsedKline` shapes replace `Promise<any[]>` in `binance-historical.ts`. `BacktestEngine`, `BacktestOptimizer`, `FuturesBacktestEngine`, `TradeExecutor`, `FilterManager` consume `Kline`, `TradingSetup`, `TradeResult`, `BacktestMetrics` from `@marketmind/types`.
+
+### Removed
+- `packages/types/src/indicator-results.ts` (544-line dead duplicate of `indicators.ts`).
+- Duplicate `ExchangeId` declaration in `apps/backend/src/exchange/types.ts` — the package version is now the single source of truth.
+- Trailing inline `import('./tradingSetup').TradingSetup[]` and `import('./kline').Kline[]` references in `packages/types/src/backtesting.ts` (replaced with top-level imports for a readable dependency graph).
+
+### Notes
+- Plan + per-wave PRs: #120 (Wave 0 — cleanup), #121 (Wave 1 — inline-union reconciliation), #122 (Wave 2 — new canonical types), #123 (Wave 3 — rule promotions), #124 + #129 (Wave 4a + 4b — `any` elimination, ~360 → 0 in src), #125 (Wave 5 — advanced typescript-eslint rules), #126 (Wave 6 — branded IDs), #128 (Wave 7 — types package architecture polish), #127 (Wave 8 — TS compiler strictness sweep).
+- 5,352 backend tests + full electron + packages suites all green throughout. Zero behavioral changes shipped — every wave was verified with the full test gauntlet before merging.
+
 ## [0.99.0] - 2026-04-25
 
 ### Added
