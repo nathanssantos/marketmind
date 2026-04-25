@@ -1,5 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import type { Kline, MarketType, TimeInterval, TradingSetup, Viewport } from '@marketmind/types';
+import type { KlineSource } from '@renderer/hooks/useKlineLiveStream';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
 import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
@@ -15,7 +16,7 @@ import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStor
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
@@ -55,6 +56,13 @@ const TOOLTIP_DEBOUNCE_MS = 150;
 
 export interface ChartCanvasProps {
   klines: Kline[];
+  /**
+   * Optional live-tick source — when provided, intra-candle OHLC updates flow
+   * imperatively to the canvas via `klineSource.subscribe`, and `React.memo`'s
+   * structural comparator skips re-rendering ChartCanvas on those updates.
+   * Without it, ChartCanvas falls back to re-rendering on every klines prop change.
+   */
+  klineSource?: KlineSource;
   symbol?: string;
   marketType?: MarketType;
   width?: string | number;
@@ -68,8 +76,9 @@ export interface ChartCanvasProps {
   isLoadingMore?: boolean;
 }
 
-export const ChartCanvas = ({
+const ChartCanvasInternal = ({
   klines,
+  klineSource,
   symbol,
   marketType,
   width = '100%',
@@ -178,6 +187,15 @@ export const ChartCanvas = ({
   });
 
   managerRef.current = manager;
+
+  useEffect(() => {
+    if (!manager || !klineSource) return;
+    return klineSource.subscribe(() => {
+      const latest = klineSource.klinesRef.current;
+      manager.setKlines(latest);
+      manager.markDirty('klines');
+    });
+  }, [manager, klineSource]);
 
   useEffect(() => {
     exposeCanvasManagerForE2E(manager);
@@ -476,3 +494,33 @@ export const ChartCanvas = ({
     </>
   );
 };
+
+const arePropsStructurallyEqual = (prev: ChartCanvasProps, next: ChartCanvasProps): boolean => {
+  if (prev.symbol !== next.symbol) return false;
+  if (prev.marketType !== next.marketType) return false;
+  if (prev.timeframe !== next.timeframe) return false;
+  if (prev.chartType !== next.chartType) return false;
+  if (prev.width !== next.width) return false;
+  if (prev.height !== next.height) return false;
+  if (prev.advancedConfig !== next.advancedConfig) return false;
+  if (prev.initialViewport !== next.initialViewport) return false;
+  if (prev.onViewportChange !== next.onViewportChange) return false;
+  if (prev.onNearLeftEdge !== next.onNearLeftEdge) return false;
+  if (prev.isLoadingMore !== next.isLoadingMore) return false;
+  if (prev.klineSource !== next.klineSource) return false;
+
+  if (!prev.klineSource) {
+    if (prev.klines !== next.klines) return false;
+    return true;
+  }
+
+  const pk = prev.klines;
+  const nk = next.klines;
+  if (pk.length !== nk.length) return false;
+  if (pk.length === 0) return true;
+  const pl = pk[pk.length - 1]!;
+  const nl = nk[nk.length - 1]!;
+  return pl.openTime === nl.openTime;
+};
+
+export const ChartCanvas = memo(ChartCanvasInternal, arePropsStructurallyEqual);
