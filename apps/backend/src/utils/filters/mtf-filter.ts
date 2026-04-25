@@ -1,5 +1,5 @@
 import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
-import type { HtfTrend, Interval, Kline, MtfFilterResult } from '@marketmind/types';
+import type { HtfTrend, Interval, Kline, MtfFilterResult, PositionSide } from '@marketmind/types';
 
 const pineService = new PineIndicatorService();
 
@@ -38,7 +38,7 @@ export const getHigherTimeframe = (tradingInterval: string): Interval | null => 
 
 export const checkMtfCondition = async (
   htfKlines: Kline[],
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   htfInterval: string
 ): Promise<MtfFilterResult> => {
   if (htfKlines.length < MIN_KLINES_FOR_EMA200) {

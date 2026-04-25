@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import type { WalletRecord } from '../database/walletQueries';
 import { isPaperWallet } from '../binance-client';
@@ -11,7 +12,7 @@ import { logger } from '../logger';
 export interface CalculateQtyInput {
   wallet: WalletRecord;
   symbol: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   percent: number;
   price: number;
 }

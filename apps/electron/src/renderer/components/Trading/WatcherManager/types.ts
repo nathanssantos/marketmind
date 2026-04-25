@@ -64,7 +64,7 @@ export interface ActiveWatcher {
   interval: string;
   profileId?: string;
   profileName?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
 }
 
 export interface WatcherManagerProps {

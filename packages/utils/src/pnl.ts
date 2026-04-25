@@ -1,10 +1,11 @@
+import type { PositionSide } from '@marketmind/types';
 import { calculateTotalFees } from '@marketmind/types';
 
 export interface PnlCalculationParams {
   entryPrice: number;
   exitPrice: number;
   quantity: number;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   marketType: 'FUTURES' | 'SPOT';
   leverage?: number;
   accumulatedFunding?: number;

@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 export interface OpportunityCostConfig {
   opportunityCostEnabled: boolean;
   maxHoldingPeriodBars: number;
@@ -11,7 +12,7 @@ export interface OpportunityCostConfig {
 export interface StaleTradeCheck {
   executionId: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   barsInTrade: number;
   priceMovementPercent: number;
   isStale: boolean;
@@ -38,7 +39,7 @@ export const calculatePriceMovementPercent = (
   entryPrice: number,
   highestPrice: number,
   lowestPrice: number,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
 ): number => {
   if (entryPrice === 0) return 0;
 
@@ -56,7 +57,7 @@ export const calculatePriceMovementPercent = (
 export const calculateProfitPercent = (
   entryPrice: number,
   currentPrice: number,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
 ): number => {
   if (entryPrice === 0) return 0;
 

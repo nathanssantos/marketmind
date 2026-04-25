@@ -5,7 +5,7 @@ import {
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createTestUser, createTestWallet } from '../helpers/test-fixtures';
 import { tradeExecutions, autoTradingConfig } from '../../db/schema';
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import type { AutoTradingConfig } from '../../db/schema';
 
 vi.mock('../../services/position-monitor', () => ({
@@ -130,7 +130,7 @@ const insertTradeExecution = async (
   walletId: string,
   overrides: Partial<{
     symbol: string;
-    side: 'LONG' | 'SHORT';
+    side: PositionSide;
     entryPrice: string;
     quantity: string;
     status: string;

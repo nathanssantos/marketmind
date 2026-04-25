@@ -1,4 +1,4 @@
-import type { Kline, MarketType } from '@marketmind/types';
+import type { Kline, MarketType, PositionSide } from '@marketmind/types';
 import { getDefaultChecklistWeight } from '@marketmind/types';
 import {
   INDICATOR_CATALOG,
@@ -28,7 +28,7 @@ export interface EvaluateChecklistInput {
   interval: string;
   marketType: MarketType;
   conditions: ChecklistCondition[];
-  side?: 'LONG' | 'SHORT' | 'BOTH';
+  side?: PositionSide | 'BOTH';
 }
 
 export interface EvaluateChecklistConditionResult {
@@ -189,7 +189,7 @@ const pickRepresentativeConditions = (
 
 const conditionAppliesToSide = (
   cond: ChecklistCondition,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
 ): boolean => cond.side === side || cond.side === 'BOTH';
 
 export const evaluateChecklist = async (

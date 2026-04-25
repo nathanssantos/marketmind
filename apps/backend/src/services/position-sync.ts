@@ -1,5 +1,5 @@
 import type { OrphanedPositionEntry, PositionSyncResult, UnknownPositionEntry, UpdatedPositionEntry, WalletSyncEntry } from '@marketmind/logger';
-import type { FuturesPosition } from '@marketmind/types';
+import type { FuturesPosition, PositionSide } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { STARTUP_CONFIG } from '../constants';
 import { db } from '../db';
@@ -377,7 +377,7 @@ export class PositionSyncService {
             );
           }
         } else {
-          const side: 'LONG' | 'SHORT' = positionAmt > 0 ? 'LONG' : 'SHORT';
+          const side: PositionSide = positionAmt > 0 ? 'LONG' : 'SHORT';
           const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
           try {

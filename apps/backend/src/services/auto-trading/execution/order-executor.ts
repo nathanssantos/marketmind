@@ -1,4 +1,4 @@
-import type { FibLevel, Kline, TradingSetup } from '@marketmind/types';
+import type { FibLevel, Kline, PositionSide, TradingSetup } from '@marketmind/types';
 import type { PineStrategy } from '../../pine/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../../../db';
@@ -75,7 +75,7 @@ export class OrderExecutor {
   async calculateFibonacciTakeProfit(
     klines: Kline[],
     _entryPrice: number,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     fibonacciTargetLevel: FibLevel = '2',
     interval: string = '4h',
     swingRange: 'extended' | 'nearest' = 'nearest'
@@ -87,7 +87,7 @@ export class OrderExecutor {
     return getIntervalMs(interval);
   }
 
-  async getAdxBasedFibonacciLevel(klines: Kline[], direction: 'LONG' | 'SHORT'): Promise<number> {
+  async getAdxBasedFibonacciLevel(klines: Kline[], direction: PositionSide): Promise<number> {
     return getAdxBasedFibonacciLevel(klines, direction);
   }
 

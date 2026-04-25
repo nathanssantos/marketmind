@@ -1,4 +1,4 @@
-import type { Kline, TradingSetup } from '@marketmind/types';
+import type { Kline, MarketType, TradingSetup } from '@marketmind/types';
 import {
   ADX_FILTER,
   checkAdxCondition,
@@ -64,7 +64,7 @@ export interface FilterOrchestrationInput {
   externalData?: FilterExternalData;
   symbol?: string;
   interval?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   strategyHasTrendFilter?: boolean;
 }
 

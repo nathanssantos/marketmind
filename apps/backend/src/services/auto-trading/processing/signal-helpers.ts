@@ -1,4 +1,4 @@
-import type { Kline, TimeInterval, TradingSetup } from '@marketmind/types';
+import type { Kline, PositionSide, TimeInterval, TradingSetup } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { TIME_MS, UNIT_MS } from '../../../constants';
 import { db } from '../../../db';
@@ -69,7 +69,7 @@ export const runSetupDetection = async (
 
         logBuffer.startSetupValidation({
           type: strategyName,
-          direction: rejectionDirection as 'LONG' | 'SHORT',
+          direction: rejectionDirection as PositionSide,
           entryPrice: entryPrice ?? currentPrice,
           confidence: result.confidence ?? 0,
         });

@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions, wallets, orders } from '../../db/schema';
@@ -24,7 +25,7 @@ export async function handleUntrackedReduceFill(
   const rp = parseFloat(realizedProfit || '0');
   if (rp === 0) return false;
 
-  const reduceDirection: 'LONG' | 'SHORT' = orderSide === 'BUY' ? 'SHORT' : 'LONG';
+  const reduceDirection: PositionSide = orderSide === 'BUY' ? 'SHORT' : 'LONG';
   const [oppositeExec] = await db
     .select()
     .from(tradeExecutions)
@@ -206,7 +207,7 @@ export async function handleManualOrderFill(
     return;
   }
 
-  const direction: 'LONG' | 'SHORT' = orderSide === 'BUY' ? 'LONG' : 'SHORT';
+  const direction: PositionSide = orderSide === 'BUY' ? 'LONG' : 'SHORT';
   const oppositeDirection = direction === 'LONG' ? 'SHORT' : 'LONG';
   const fillPrice = parseFloat(avgPrice || lastFilledPrice);
   const fillQty = parseFloat(executedQty || manualOrder.origQty || '0');

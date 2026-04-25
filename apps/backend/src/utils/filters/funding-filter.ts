@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 export const FUNDING_FILTER = {
   WARNING_THRESHOLD: 0.0005,
   BLOCK_THRESHOLD: 0.001,
@@ -17,7 +18,7 @@ export interface FundingFilterResult {
 
 export const checkFundingRate = (
   fundingRate: number | null,
-  direction: 'LONG' | 'SHORT',
+  direction: PositionSide,
   nextFundingTime?: Date
 ): FundingFilterResult => {
   if (fundingRate === null || fundingRate === undefined) {

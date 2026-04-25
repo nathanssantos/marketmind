@@ -1,3 +1,4 @@
+import type { PositionSide } from './direction';
 import type { AggTrade, BookTickerUpdate, DepthUpdate, ScalpingMetrics, ScalpingSignal } from './scalping';
 import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from './liquidityHeatmap';
 import type { MarketType } from './futures';
@@ -118,7 +119,7 @@ export interface TradeNotificationPayload {
   data: {
     executionId: string;
     symbol: string;
-    side: 'LONG' | 'SHORT';
+    side: PositionSide;
     entryPrice?: string;
     exitPrice?: string;
     pnl?: string;
@@ -135,7 +136,7 @@ export interface SetupDetectedPayload {
   setup: {
     id: string;
     setupType: string;
-    direction: 'LONG' | 'SHORT';
+    direction: PositionSide;
     entryPrice: number;
     stopLoss?: number | null;
     takeProfit?: number | null;
@@ -150,7 +151,7 @@ export interface SignalSuggestionPayload {
   walletId: string;
   symbol: string;
   interval: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   setupType: string;
   entryPrice: string;
   stopLoss: string | null;
@@ -173,7 +174,7 @@ export interface AutoTradingLogEntryPayload {
 export interface PositionClosedPayload {
   positionId: string;
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   exitReason: string;
   pnl: number;
   pnlPercent: number;
@@ -187,7 +188,7 @@ export interface DailyLossLimitPayload {
 
 export interface LiquidationWarningPayload {
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   markPrice: number;
   liquidationPrice: number;
   distancePercent: number;

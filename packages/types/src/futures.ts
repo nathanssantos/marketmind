@@ -1,4 +1,5 @@
 import { BINANCE_FEES } from './binance-fees';
+import type { PositionSide } from './direction';
 
 export type MarketType = 'SPOT' | 'FUTURES';
 
@@ -28,7 +29,7 @@ export interface FuturesSymbolInfo {
 
 export interface FuturesPosition {
   symbol: string;
-  positionSide: 'LONG' | 'SHORT' | 'BOTH';
+  positionSide: PositionSide | 'BOTH';
   positionAmt: string;
   entryPrice: string;
   markPrice: string;
@@ -95,7 +96,7 @@ export interface FuturesOrder {
   reduceOnly: boolean;
   closePosition: boolean;
   side: 'BUY' | 'SELL';
-  positionSide: 'LONG' | 'SHORT' | 'BOTH';
+  positionSide: PositionSide | 'BOTH';
   stopPrice: string;
   workingType: string;
   priceProtect: boolean;
@@ -161,7 +162,7 @@ export const FUTURES_DEFAULTS = {
 export const calculateLiquidationPrice = (
   entryPrice: number,
   leverage: number,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   maintenanceMarginRate: number = FUTURES_DEFAULTS.MAINTENANCE_MARGIN_RATE,
   liquidationFee: number = FUTURES_DEFAULTS.LIQUIDATION_FEE
 ): number => {
@@ -176,7 +177,7 @@ export const calculateLeveragedPnl = (
   entryPrice: number,
   exitPrice: number,
   leverage: number,
-  side: 'LONG' | 'SHORT'
+  side: PositionSide
 ): { pnlPercent: number; leveragedPnlPercent: number } => {
   const pnlPercent = side === 'LONG'
     ? ((exitPrice - entryPrice) / entryPrice) * 100
@@ -191,7 +192,7 @@ export const calculateLeveragedPnl = (
 export const calculateFundingPayment = (
   positionValue: number,
   fundingRate: number,
-  side: 'LONG' | 'SHORT'
+  side: PositionSide
 ): number => {
   const payment = positionValue * (fundingRate / 100);
   return side === 'LONG' ? -payment : payment;
@@ -200,7 +201,7 @@ export const calculateFundingPayment = (
 export const wouldLiquidate = (
   currentPrice: number,
   liquidationPrice: number,
-  side: 'LONG' | 'SHORT'
+  side: PositionSide
 ): boolean => {
   return side === 'LONG'
     ? currentPrice <= liquidationPrice

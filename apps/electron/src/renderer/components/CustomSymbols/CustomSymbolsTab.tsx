@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,7 +12,7 @@ const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MAR
 
 interface ComponentInput {
   symbol: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   coingeckoId: string;
 }
 

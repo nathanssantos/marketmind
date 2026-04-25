@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { Grid, HStack, VStack } from '@chakra-ui/react';
 import type { ConditionOp, ConditionThreshold } from '@marketmind/trading-core';
 import {
@@ -27,7 +28,7 @@ export interface ChecklistFieldsValue {
   op: ConditionOp;
   threshold?: ConditionThreshold;
   tier: 'required' | 'preferred';
-  side: 'LONG' | 'SHORT' | 'BOTH';
+  side: PositionSide | 'BOTH';
   weight: number;
 }
 
@@ -128,7 +129,7 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
         <RadioGroup
           value={value.side}
           onValueChange={({ value: side }) =>
-            onChange({ ...value, side: side as 'LONG' | 'SHORT' | 'BOTH' })
+            onChange({ ...value, side: side as PositionSide | 'BOTH' })
           }
         >
           <HStack gap={4}>

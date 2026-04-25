@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import type { Timeframe } from '../Chart/TimeframeSelector';
-import type { ChartType } from '@marketmind/types';
+import type { ChartType, MarketType } from '@marketmind/types';
 import { MarketSidebar } from '../MarketSidebar';
 import { AnalyticsModal } from '../Analytics';
 import { ScreenerModal } from '../Screener';
@@ -32,14 +32,14 @@ interface MainLayoutProps {
   onToggleTrading: () => void;
   onToggleAutoTrading: () => void;
   symbol: string;
-  marketType?: 'SPOT' | 'FUTURES';
-  onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
+  marketType?: MarketType;
+  onMarketTypeChange?: (marketType: MarketType) => void;
   timeframe: Timeframe;
   chartType: ChartType;
   onChartTypeChange: (type: ChartType) => void;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }
 
 const MIN_TRADING_WIDTH = 300;
@@ -88,7 +88,7 @@ const MainLayoutComponent = ({
   const globalActions = useMemo(() => ({
     openSettings: () => setIsSettingsOpen(true),
     openSymbolSelector: () => onOpenSymbolSelector?.(),
-    navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => onNavigateToSymbol?.(symbol, marketType),
+    navigateToSymbol: (symbol: string, marketType?: MarketType) => onNavigateToSymbol?.(symbol, marketType),
   }), [onOpenSymbolSelector, onNavigateToSymbol]);
 
   const startResize = useCallback((e: React.MouseEvent, target: 'trading' | 'autoTrading' | 'market' | 'orderFlow', currentWidth: number) => {

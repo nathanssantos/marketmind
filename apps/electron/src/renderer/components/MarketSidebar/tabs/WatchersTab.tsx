@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { Badge, Button, CryptoIcon, DirectionModeSelector, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -19,7 +20,7 @@ interface ActiveWatcher {
   watcherId: string;
   symbol: string;
   interval: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   profileId?: string;
   profileName?: string;
 }
@@ -213,7 +214,7 @@ interface SuggestionCardProps {
   onReject: (id: string) => Promise<unknown>;
   isAccepting: boolean;
   isRejecting: boolean;
-  onNavigate?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigate?: (symbol: string, marketType?: MarketType) => void;
 }
 
 const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRejecting, onNavigate }: SuggestionCardProps) => {
@@ -341,7 +342,7 @@ SuggestionCard.displayName = 'SuggestionCard';
 
 interface WatchersTableProps {
   watchers: ActiveWatcher[];
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }
 
 const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps) => {

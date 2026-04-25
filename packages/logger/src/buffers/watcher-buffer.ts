@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import type {
     FilterCheckEntry,
     LogEntry,
@@ -82,7 +83,7 @@ export class WatcherLogBuffer {
 
   startSetupValidation(setup: {
     type: string;
-    direction: 'LONG' | 'SHORT';
+    direction: PositionSide;
     entryPrice: number;
     stopLoss?: number;
     takeProfit?: number;

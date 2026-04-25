@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { priceCache as priceCacheTable } from '../../db/schema';
@@ -8,7 +9,7 @@ import { getBinanceFuturesDataService } from '../binance-futures-data';
 import { logger } from '../logger';
 import { priceCache } from '../price-cache';
 
-export const getCurrentPrice = async (symbol: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<number> => {
+export const getCurrentPrice = async (symbol: string, marketType: MarketType = 'FUTURES'): Promise<number> => {
   try {
     const inMemoryCached = priceCache.getPrice(symbol, marketType);
     if (inMemoryCached !== null) return inMemoryCached;

@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { semanticTokenColors } from './semanticTokens';
 
 const resolveTokenValue = (token: unknown, colorMode: 'light' | 'dark'): string => {
@@ -278,7 +279,7 @@ export const getPnLColor = (value: number, colorMode: 'light' | 'dark' = 'dark')
   return colors.neutral;
 };
 
-export const getSideColor = (side: 'LONG' | 'SHORT' | 'BUY' | 'SELL', colorMode: 'light' | 'dark' = 'dark'): string => {
+export const getSideColor = (side: PositionSide | 'BUY' | 'SELL', colorMode: 'light' | 'dark' = 'dark'): string => {
   const colors = getTradingColors(colorMode);
   return side === 'LONG' || side === 'BUY' ? colors.long : colors.short;
 };

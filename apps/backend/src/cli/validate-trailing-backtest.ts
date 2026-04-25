@@ -1,6 +1,6 @@
 import { parseArgs } from 'util';
 import { and, eq, gte, lte, asc } from 'drizzle-orm';
-import type { Interval, Kline } from '@marketmind/types';
+import type { Interval, Kline, MarketType } from '@marketmind/types';
 import { db } from '../db';
 import { klines as klinesTable } from '../db/schema';
 import { backfillHistoricalKlines } from '../services/binance-historical';
@@ -56,7 +56,7 @@ const fetchKlinesFromDb = async (
   interval: Interval,
   startDate: Date,
   endDate: Date,
-  marketType: 'SPOT' | 'FUTURES'
+  marketType: MarketType
 ): Promise<Kline[]> => {
   const rows = await db.query.klines.findMany({
     where: and(

@@ -23,7 +23,7 @@ import { useUIZoom } from '../../hooks/useUIZoom';
 import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
-import type { ChartType } from '@marketmind/types';
+import type { ChartType, MarketType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
 import { UserAvatar } from '../UserAvatar';
 import { WalletSelector } from '../WalletSelector';
@@ -76,8 +76,8 @@ ToolbarLayoutActions.displayName = 'ToolbarLayoutActions';
 
 export interface ToolbarProps {
   symbol: string;
-  marketType?: 'SPOT' | 'FUTURES';
-  onMarketTypeChange?: (marketType: 'SPOT' | 'FUTURES') => void;
+  marketType?: MarketType;
+  onMarketTypeChange?: (marketType: MarketType) => void;
   timeframe: Timeframe;
   chartType: ChartType;
   onChartTypeChange: (type: ChartType) => void;
@@ -87,7 +87,7 @@ export interface ToolbarProps {
   showSidebarButtons?: boolean;
   showZoomControls?: boolean;
   rightExtra?: React.ReactNode;
-  onSymbolChange: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onSymbolChange: (symbol: string, marketType?: MarketType) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
   onToggleTrading: () => void;
   onToggleAutoTrading: () => void;

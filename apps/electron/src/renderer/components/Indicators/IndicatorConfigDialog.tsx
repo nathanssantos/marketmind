@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { VStack } from '@chakra-ui/react';
 import type {
   ChecklistCondition,
@@ -47,7 +48,7 @@ export interface IndicatorConfigChecklistResult {
   op: ConditionOp;
   threshold?: [number, number] | number;
   tier: 'required' | 'preferred';
-  side: 'LONG' | 'SHORT' | 'BOTH';
+  side: PositionSide | 'BOTH';
   weight: number;
 }
 

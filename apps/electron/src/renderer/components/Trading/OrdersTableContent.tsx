@@ -1,6 +1,6 @@
 import { Box, Flex, Portal, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import type { Order, WalletCurrency } from '@marketmind/types';
+import type { MarketType, Order, WalletCurrency } from '@marketmind/types';
 import { Badge, CryptoIcon, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { useUIStore } from '@renderer/store/uiStore';
@@ -19,7 +19,7 @@ export interface OrdersTableContentProps {
   currency: WalletCurrency;
   onCancel: (id: string) => void;
   onClose: (id: string, price: number) => void;
-  onNavigateToSymbol?: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }
 
 export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, onNavigateToSymbol }: OrdersTableContentProps) => {

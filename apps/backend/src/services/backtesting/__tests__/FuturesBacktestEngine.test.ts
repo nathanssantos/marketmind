@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import {
   calculateLiquidationPrice,
@@ -38,7 +39,7 @@ const createMockKlines = (startTime: number, count: number, startPrice: number, 
 const createMockTrade = (
   entryPrice: number,
   exitPrice: number,
-  side: 'LONG' | 'SHORT',
+  side: PositionSide,
   quantity: number = 0.1
 ): {
   id: string;
@@ -48,7 +49,7 @@ const createMockTrade = (
   entryPrice: number;
   exitTime: string;
   exitPrice: number;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   quantity: number;
   stopLoss: number;
   takeProfit: number;

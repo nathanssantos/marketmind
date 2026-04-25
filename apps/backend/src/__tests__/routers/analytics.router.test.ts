@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { incomeEvents, tradeExecutions } from '../../db/schema';
@@ -10,7 +11,7 @@ const createTestTradeExecution = async (options: {
   userId: string;
   walletId: string;
   symbol?: string;
-  side?: 'LONG' | 'SHORT';
+  side?: PositionSide;
   status?: 'open' | 'closed' | 'cancelled' | 'pending';
   setupType?: string;
   pnl?: string;

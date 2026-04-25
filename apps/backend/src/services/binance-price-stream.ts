@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { serializeError } from '../utils/errors';
 import { WebsocketClient } from 'binance';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -22,7 +23,7 @@ export interface TradeTick {
   price: number;
   quantity: number;
   timestamp: number;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
 }
 
 export type TradeTickHandler = (tick: TradeTick) => void;

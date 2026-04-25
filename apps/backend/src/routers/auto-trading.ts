@@ -1,7 +1,7 @@
 import { FIBONACCI_PYRAMID_LEVELS, FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
 import { colorize } from '@marketmind/logger';
 import { calculateCapitalLimits } from '@marketmind/risk';
-import type { ExchangeId, TimeInterval } from '@marketmind/types';
+import type { ExchangeId, MarketType, TimeInterval } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, INTERVAL_MS, TRADING_DEFAULTS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
@@ -1474,7 +1474,7 @@ export const autoTradingRouter = router({
         {
           targetWatcherCount: targetCount,
           dynamicSymbolExcluded: config.dynamicSymbolExcluded,
-          marketType: (wallet.marketType as 'SPOT' | 'FUTURES') || 'FUTURES',
+          marketType: (wallet.marketType as MarketType) || 'FUTURES',
           interval: rotationConfig.interval,
           profileId: undefined,
           leverage: config.leverage ?? 1,

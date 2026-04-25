@@ -1,5 +1,5 @@
 import { calculateDynamicExposure } from '@marketmind/risk';
-import type { Kline } from '@marketmind/types';
+import type { Kline, MarketType, PositionSide } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { AutoTradingConfig, TradeExecution } from '../db/schema';
@@ -56,7 +56,7 @@ export class PyramidingService {
     userId: string,
     walletId: string,
     symbol: string,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     currentPrice: number,
     mlConfidence?: number,
     config?: Partial<PyramidConfig>
@@ -220,12 +220,12 @@ export class PyramidingService {
     userId: string,
     walletId: string,
     symbol: string,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     walletBalance: number,
     entryPrice: number,
     _mlConfidence?: number,
     activeWatchersCount?: number,
-    marketType: 'SPOT' | 'FUTURES' = 'FUTURES'
+    marketType: MarketType = 'FUTURES'
   ): Promise<{ quantity: number; sizePercent: number; reason: string }> {
     const openExecutions = await db
       .select()
@@ -368,7 +368,7 @@ export class PyramidingService {
     userId: string,
     walletId: string,
     symbol: string,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     currentPrice: number,
     klines: Kline[],
     stopLoss: number | null,
@@ -457,11 +457,11 @@ export class PyramidingService {
     };
   }
 
-  initializeFiboTracking(symbol: string, direction: 'LONG' | 'SHORT', entryPrice: number): void {
+  initializeFiboTracking(symbol: string, direction: PositionSide, entryPrice: number): void {
     initializeFiboState(symbol, direction, entryPrice);
   }
 
-  clearFiboTracking(symbol: string, direction: 'LONG' | 'SHORT'): void {
+  clearFiboTracking(symbol: string, direction: PositionSide): void {
     clearFiboState(symbol, direction);
   }
 }

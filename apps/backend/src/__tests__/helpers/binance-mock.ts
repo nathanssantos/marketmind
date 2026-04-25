@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { vi } from 'vitest';
 
 export interface BinanceFuturesMock {
@@ -72,7 +73,7 @@ export const createFuturesOrderUpdateEvent = (options: {
   status?: string;
   execType?: string;
   side?: 'BUY' | 'SELL';
-  positionSide?: 'LONG' | 'SHORT' | 'BOTH';
+  positionSide?: PositionSide | 'BOTH';
   avgPrice?: string;
   lastFilledPrice?: string;
   executedQty?: string;
@@ -213,7 +214,7 @@ export const createMockPosition = (options: {
   marginType?: 'ISOLATED' | 'CROSS';
   isolatedWallet?: string;
   notional?: string;
-  positionSide?: 'LONG' | 'SHORT' | 'BOTH';
+  positionSide?: PositionSide | 'BOTH';
 }) => ({
   symbol: options.symbol || 'BTCUSDT',
   positionAmt: options.positionAmt || '0.1',
@@ -234,7 +235,7 @@ export const createFuturesAlgoUpdateEvent = (options: {
   status?: 'NEW' | 'TRIGGERED' | 'TRIGGERING' | 'CANCELLED' | 'REJECTED' | 'EXPIRED';
   orderType?: 'STOP_MARKET' | 'TAKE_PROFIT_MARKET' | 'TRAILING_STOP_MARKET';
   side?: 'BUY' | 'SELL';
-  positionSide?: 'LONG' | 'SHORT' | 'BOTH';
+  positionSide?: PositionSide | 'BOTH';
   triggerPrice?: string;
 }) => ({
   e: 'ALGO_UPDATE',

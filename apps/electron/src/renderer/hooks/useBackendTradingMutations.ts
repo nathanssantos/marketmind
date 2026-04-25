@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { useCallback } from 'react';
 import { trpc } from '../utils/trpc';
 export const useBackendTradingMutations = () => {
@@ -126,7 +127,7 @@ export const useBackendTradingMutations = () => {
       reduceOnly?: boolean;
       setupId?: string;
       setupType?: string;
-      marketType?: 'SPOT' | 'FUTURES';
+      marketType?: MarketType;
     }) => {
       return createOrderMutation.mutateAsync(data);
     },

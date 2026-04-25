@@ -1,4 +1,4 @@
-import type { Interval, Kline, TimeInterval } from '@marketmind/types';
+import type { Interval, Kline, MarketType, TimeInterval } from '@marketmind/types';
 import { INTERVAL_MS } from '@marketmind/types';
 import { and, desc, eq, gte, lte } from 'drizzle-orm';
 import { ABSOLUTE_MINIMUM_KLINES, TIME_MS } from '../../constants';
@@ -25,7 +25,7 @@ export const getIntervalMs = (interval: string): number =>
 export const fetchKlinesFromDbWithBackfill = async (
   symbol: string,
   interval: Interval,
-  marketType: 'SPOT' | 'FUTURES',
+  marketType: MarketType,
   startTime: Date,
   endTime: Date,
   exchange?: 'BINANCE' | 'INTERACTIVE_BROKERS',

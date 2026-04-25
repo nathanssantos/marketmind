@@ -1,4 +1,4 @@
-import type { Interval, Kline, StochasticFilterResult } from '@marketmind/types';
+import type { Interval, Kline, PositionSide, StochasticFilterResult } from '@marketmind/types';
 import { checkStochasticCondition } from './stochastic-filter';
 import { checkStochasticRecoveryCondition } from './stochastic-recovery-filter';
 
@@ -34,7 +34,7 @@ export const findHtfKlineIndex = (htfKlines: Kline[], timestamp: number): number
 export const checkStochasticHtfCondition = async (
   htfKlines: Kline[],
   setupTimestamp: number,
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ): Promise<StochasticFilterResult> => {
   const htfIndex = findHtfKlineIndex(htfKlines, setupTimestamp);
   if (htfIndex < 0) {
@@ -60,7 +60,7 @@ export const checkStochasticHtfCondition = async (
 export const checkStochasticRecoveryHtfCondition = async (
   htfKlines: Kline[],
   setupTimestamp: number,
-  direction: 'LONG' | 'SHORT'
+  direction: PositionSide
 ): Promise<StochasticFilterResult> => {
   const htfIndex = findHtfKlineIndex(htfKlines, setupTimestamp);
   if (htfIndex < 0) {

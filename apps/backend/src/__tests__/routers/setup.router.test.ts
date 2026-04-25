@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { randomUUID } from 'crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
@@ -11,7 +12,7 @@ const createTestSetupDetection = async (options: {
   symbol?: string;
   interval?: string;
   setupType?: string;
-  direction?: 'LONG' | 'SHORT';
+  direction?: PositionSide;
   confidence?: number;
   riskReward?: string;
   detectedAt?: Date;

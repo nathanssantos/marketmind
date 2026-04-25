@@ -1,4 +1,4 @@
-import type { Kline } from '@marketmind/types';
+import type { Kline, PositionSide } from '@marketmind/types';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 
 export interface TradeValidationResult {
@@ -10,7 +10,7 @@ export interface RiskRewardInput {
   entryPrice: number;
   stopLoss: number | undefined;
   takeProfit: number | undefined;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   minRiskRewardRatio?: number;
 }
 
@@ -28,7 +28,7 @@ export interface MinNotionalInput {
 export interface MinProfitInput {
   entryPrice: number;
   takeProfit: number | undefined;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   minProfitPercent: number | undefined;
   commissionRate: number;
 }
@@ -59,7 +59,7 @@ export type { FibonacciTargetLevel };
 export interface FibonacciResolverInput {
   fibonacciProjection: FibonacciProjectionData | null | undefined;
   entryPrice: number;
-  direction: 'LONG' | 'SHORT';
+  direction: PositionSide;
   targetLevel?: FibonacciTargetLevel;
   targetLevelLong?: FibonacciTargetLevel;
   targetLevelShort?: FibonacciTargetLevel;

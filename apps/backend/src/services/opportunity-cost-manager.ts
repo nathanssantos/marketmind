@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { OPPORTUNITY_COST_CONFIG } from '@marketmind/types';
 import { eq, sql } from 'drizzle-orm';
 import { db } from '../db';
@@ -438,7 +439,7 @@ export class OpportunityCostManagerService {
     };
   }
 
-  private async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES'): Promise<number | null> {
+  private async getCurrentPrice(symbol: string, marketType: MarketType): Promise<number | null> {
     try {
       return await priceCache.fetchPrice(symbol, marketType);
     } catch (error) {

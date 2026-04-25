@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../db';
 import {
@@ -196,7 +196,7 @@ class CustomSymbolService {
   async ensureKlinesBackfilled(
     symbol: string,
     interval: Interval,
-    _marketType: 'SPOT' | 'FUTURES',
+    _marketType: MarketType,
     targetCount: number,
   ): Promise<void> {
     const result = await db.execute(sql`
@@ -215,7 +215,7 @@ class CustomSymbolService {
   async backfillKlines(
     customSymbol: string,
     interval: Interval,
-    _marketType: 'SPOT' | 'FUTURES',
+    _marketType: MarketType,
     startTime?: Date,
     endTime?: Date,
   ): Promise<void> {

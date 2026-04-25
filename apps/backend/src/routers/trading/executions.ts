@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { calculatePnl } from '@marketmind/utils';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, ilike } from 'drizzle-orm';
@@ -192,7 +193,7 @@ export const executionsRouter = router({
       if (shouldExecuteReal) {
         try {
           const orderSide = execution.side === 'LONG' ? 'SELL' : 'BUY';
-          const marketType = execution.marketType as 'SPOT' | 'FUTURES';
+          const marketType = execution.marketType as MarketType;
 
           await Promise.allSettled(
             allExecutionsToClose.map((exec) =>

@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { useCallback, useMemo } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
@@ -188,7 +189,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     async (data: {
       walletId: string;
       symbol: string;
-      side: 'LONG' | 'SHORT';
+      side: PositionSide;
       entryPrice: string;
       entryQty: string;
       stopLoss?: string;

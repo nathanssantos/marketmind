@@ -1,4 +1,4 @@
-import type { Interval } from '@marketmind/types';
+import type { Interval, MarketType } from '@marketmind/types';
 import { logger } from './logger';
 
 export type WeightingMethod = 'EQUAL' | 'MARKET_CAP' | 'CAPPED_MARKET_CAP' | 'SQRT_MARKET_CAP' | 'MANUAL';
@@ -6,7 +6,7 @@ export type WeightingMethod = 'EQUAL' | 'MARKET_CAP' | 'CAPPED_MARKET_CAP' | 'SQ
 export interface ComponentState {
   id: number;
   symbol: string;
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   coingeckoId: string | null;
   weight: number;
   basePrice: number;
@@ -124,7 +124,7 @@ export const mapDbComponentToState = (c: {
 }): ComponentState => ({
   id: c.id,
   symbol: c.symbol,
-  marketType: c.marketType as 'SPOT' | 'FUTURES',
+  marketType: c.marketType as MarketType,
   coingeckoId: c.coingeckoId,
   weight: parseFloat(c.weight),
   basePrice: c.basePrice ? parseFloat(c.basePrice) : 0,

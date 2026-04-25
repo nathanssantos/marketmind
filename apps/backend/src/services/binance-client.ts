@@ -1,9 +1,10 @@
 import type { LogParams } from 'binance';
 import { MainClient, USDMClient } from 'binance';
+import type { WalletType } from '@marketmind/types';
 import { decryptApiKey } from './encryption';
 import type { Wallet } from '../db/schema';
 
-export type WalletType = 'live' | 'testnet' | 'paper';
+export type { WalletType };
 
 const noop = (): void => {};
 

@@ -1,4 +1,4 @@
-import type { Kline, MarketType } from '@marketmind/types';
+import type { Kline, MarketType, PositionSide } from '@marketmind/types';
 import { getDefaultFee } from '@marketmind/types';
 import { generateShortId } from '../../utils/id';
 import {
@@ -44,7 +44,7 @@ export interface TradeResult {
   entryPrice: number;
   exitTime: string;
   exitPrice: number;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   quantity: number;
   stopLoss: number | undefined;
   takeProfit: number | undefined;
@@ -239,7 +239,7 @@ export class TradeExecutor {
   checkMinProfit(
     entryPrice: number,
     takeProfit: number | undefined,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     minProfitPercent: number | undefined,
     commission: number
   ): boolean {
@@ -263,7 +263,7 @@ export class TradeExecutor {
     entryPrice: number,
     stopLoss: number | undefined,
     takeProfit: number | undefined,
-    direction: 'LONG' | 'SHORT',
+    direction: PositionSide,
     tradesCount: number
   ): boolean {
     const effectiveMinRR = direction === 'LONG'

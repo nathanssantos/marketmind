@@ -1,3 +1,4 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import {
   bigint,
   boolean,
@@ -31,7 +32,7 @@ export const orders = pgTable('orders', {
   setupId: varchar('setup_id', { length: 255 }),
   setupType: varchar('setup_type', { length: 100 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
-  marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('FUTURES'),
+  marketType: varchar('market_type', { length: 10 }).$type<MarketType>().default('FUTURES'),
   reduceOnly: boolean('reduce_only').default(false),
   stopLossIntent: numeric('stop_loss_intent', { precision: 20, scale: 8 }),
   takeProfitIntent: numeric('take_profit_intent', { precision: 20, scale: 8 }),
@@ -46,7 +47,7 @@ export const positions = pgTable('positions', {
     .notNull()
     .references(() => wallets.id),
   symbol: varchar({ length: 20 }).notNull(),
-  side: varchar({ length: 10 }).$type<'LONG' | 'SHORT'>().notNull(),
+  side: varchar({ length: 10 }).$type<PositionSide>().notNull(),
   entryPrice: numeric('entry_price', { precision: 20, scale: 8 }).notNull(),
   entryQty: numeric('entry_qty', { precision: 20, scale: 8 }).notNull(),
   currentPrice: numeric('current_price', { precision: 20, scale: 8 }),
@@ -59,7 +60,7 @@ export const positions = pgTable('positions', {
   setupId: varchar('setup_id', { length: 255 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
-  marketType: varchar('market_type', { length: 10 }).$type<'SPOT' | 'FUTURES'>().default('FUTURES'),
+  marketType: varchar('market_type', { length: 10 }).$type<MarketType>().default('FUTURES'),
   leverage: integer().default(1),
   marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>(),
   liquidationPrice: numeric('liquidation_price', { precision: 20, scale: 8 }),

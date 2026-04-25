@@ -1,3 +1,5 @@
+import type { PositionSide } from './direction';
+
 export const FIB_LEVELS = ['auto', '1', '1.272', '1.382', '1.618', '2', '2.618', '3', '3.618', '4.236'] as const;
 export type FibLevel = (typeof FIB_LEVELS)[number];
 
@@ -81,7 +83,7 @@ export interface ChecklistConditionDto {
   op: ChecklistConditionOp;
   threshold?: number | [number, number];
   tier: 'required' | 'preferred';
-  side: 'LONG' | 'SHORT' | 'BOTH';
+  side: PositionSide | 'BOTH';
   weight: number;
   enabled: boolean;
   order: number;

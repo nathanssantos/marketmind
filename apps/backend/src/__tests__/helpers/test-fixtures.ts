@@ -1,3 +1,4 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import { hash } from '@node-rs/argon2';
 import { FILTER_DEFAULTS } from '@marketmind/types';
 import * as schema from '../../db/schema';
@@ -48,7 +49,7 @@ export interface CreateTradeExecutionOptions {
   userId: string;
   walletId: string;
   symbol?: string;
-  side?: 'LONG' | 'SHORT';
+  side?: PositionSide;
   entryPrice?: string;
   quantity?: string;
   stopLoss?: string | null;
@@ -59,7 +60,7 @@ export interface CreateTradeExecutionOptions {
   takeProfitOrderId?: string | null;
   status?: 'pending' | 'open' | 'closed' | 'cancelled';
   setupType?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   leverage?: number;
 }
 
@@ -69,14 +70,14 @@ export interface CreateActiveWatcherOptions {
   profileId?: string;
   symbol?: string;
   interval?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   isManual?: boolean;
 }
 
 export interface CreateKlinesOptions {
   symbol?: string;
   interval?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   count?: number;
   startTime?: Date;
   basePrice?: number;
@@ -87,7 +88,7 @@ export interface CreateSetupDetectionOptions {
   symbol?: string;
   interval?: string;
   setupType?: string;
-  direction?: 'LONG' | 'SHORT';
+  direction?: PositionSide;
   entryPrice?: string;
   stopLoss?: string;
   takeProfit?: string;
@@ -106,7 +107,7 @@ export interface CreateOrderOptions {
   origQty?: string;
   executedQty?: string;
   status?: string;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
 }
 
 export interface CreateAutoTradingConfigOptions {

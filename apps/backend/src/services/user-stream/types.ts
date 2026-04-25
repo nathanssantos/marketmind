@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import type { USDMClient } from 'binance';
 import { type WebsocketClient } from 'binance';
 import type { Wallet } from '../../db/schema';
@@ -47,7 +48,7 @@ export interface FuturesOrderUpdate {
     T: number;
     t: number;
     rp: string;
-    ps: 'LONG' | 'SHORT' | 'BOTH';
+    ps: PositionSide | 'BOTH';
   };
 }
 
@@ -91,7 +92,7 @@ export interface FuturesAlgoOrderUpdate {
     s: string;
     S: 'BUY' | 'SELL';
     o: string;
-    ps: 'LONG' | 'SHORT' | 'BOTH';
+    ps: PositionSide | 'BOTH';
     f: string;
     q: string;
     X: 'NEW' | 'CANCELED' | 'TRIGGERING' | 'TRIGGERED' | 'FINISHED' | 'REJECTED' | 'EXPIRED';
@@ -257,6 +258,6 @@ export interface UserStreamContext {
   scheduleDebouncedSlTpUpdate(executionId: string, walletId: string, symbol: string): void;
   cancelPendingEntryOrders(walletId: string, symbol: string, closedExecutionId: string): Promise<void>;
   closeResidualPosition(walletId: string, symbol: string, executionId: string): Promise<void>;
-  verifyAlgoFillProcessed(walletId: string, executionId: string, symbol: string, side: 'LONG' | 'SHORT', openedAt: number, exitReason: string): Promise<void>;
+  verifyAlgoFillProcessed(walletId: string, executionId: string, symbol: string, side: PositionSide, openedAt: number, exitReason: string): Promise<void>;
   recentAlgoEntrySymbols: Map<string, number>;
 }

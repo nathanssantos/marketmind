@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 let mockWalletsData: unknown[] = [];
@@ -99,7 +100,7 @@ interface TestWallet {
   userId: string;
   name: string;
   walletType: 'live' | 'testnet' | 'paper';
-  marketType: 'SPOT' | 'FUTURES';
+  marketType: MarketType;
   apiKeyEncrypted: string;
   apiSecretEncrypted: string;
   exchange: string;

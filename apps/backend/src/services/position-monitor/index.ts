@@ -1,3 +1,4 @@
+import type { MarketType } from '@marketmind/types';
 import { eq } from 'drizzle-orm';
 import { AUTO_TRADING_TIMING, PROTECTION_CONFIG, RISK_ALERT_TYPES, RISK_ALERT_LEVELS } from '../../constants';
 import { db } from '../../db';
@@ -251,7 +252,7 @@ export class PositionMonitorService {
     return executeExit(execution, exitPrice, reason);
   }
 
-  async getCurrentPrice(symbol: string, marketType: 'SPOT' | 'FUTURES' = 'FUTURES'): Promise<number> {
+  async getCurrentPrice(symbol: string, marketType: MarketType = 'FUTURES'): Promise<number> {
     return getCurrentPrice(symbol, marketType);
   }
 

@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 export { formatPrice } from '@marketmind/utils';
 
 export const roundToDecimals = (value: number, decimals: number = 8): number => {
@@ -10,7 +11,7 @@ export const calculateGrossPnl = (
   entryPrice: number,
   exitPrice: number,
   quantity: number,
-  side: 'LONG' | 'SHORT'
+  side: PositionSide
 ): number => {
   const priceDiff = roundToDecimals(exitPrice - entryPrice, 8);
   const grossPnl = roundToDecimals(priceDiff * quantity, 8);

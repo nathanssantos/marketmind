@@ -1,8 +1,9 @@
+import type { PositionSide, MarketType } from '@marketmind/types';
 import type { ReactNode } from 'react';
 
 export interface PortfolioPosition {
   symbol: string;
-  side: 'LONG' | 'SHORT';
+  side: PositionSide;
   quantity: number;
   avgPrice: number;
   currentPrice: number;
@@ -16,7 +17,7 @@ export interface PortfolioPosition {
   status: 'open' | 'pending';
   limitEntryPrice?: number;
   expiresAt?: Date;
-  marketType?: 'SPOT' | 'FUTURES';
+  marketType?: MarketType;
   isAutoTrade?: boolean;
   count: number;
   leverage: number;
@@ -27,5 +28,5 @@ export interface PortfolioProps {
 }
 
 export interface NavigateToSymbol {
-  (symbol: string, marketType?: 'SPOT' | 'FUTURES'): void;
+  (symbol: string, marketType?: MarketType): void;
 }

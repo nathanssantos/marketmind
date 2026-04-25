@@ -1,3 +1,4 @@
+import type { PositionSide } from '@marketmind/types';
 import { serializeError } from '../utils/errors';
 import type { Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from './binance-client';
@@ -58,7 +59,7 @@ export class OCOOrderService {
     quantity: number,
     stopLoss: number,
     takeProfit: number,
-    side: 'LONG' | 'SHORT'
+    side: PositionSide
   ): Promise<ExitOCOResult | null> {
     if (isPaperWallet(wallet)) {
       logger.warn({ symbol }, 'Paper wallet cannot place real OCO orders');
@@ -200,7 +201,7 @@ export class OCOOrderService {
     entryPrice: number;
     stopLoss: number;
     takeProfit: number;
-    side: 'LONG' | 'SHORT';
+    side: PositionSide;
   }): OCOOrderParams | null {
     const { stopLoss, takeProfit, side } = params;
 
