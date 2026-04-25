@@ -23,6 +23,6 @@ class PositionEventBus extends EventEmitter {
 let instance: PositionEventBus | null = null;
 
 export const getPositionEventBus = (): PositionEventBus => {
-  if (!instance) instance = new PositionEventBus();
+  instance ??= new PositionEventBus();
   return instance;
 };

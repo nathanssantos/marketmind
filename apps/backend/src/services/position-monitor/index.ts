@@ -333,8 +333,8 @@ export class PositionMonitorService {
     if (!slTriggered && !tpTriggered) return;
 
     const allDeferredToExchange = executions.every((e) => {
-      if (slTriggered) return !!(e.stopLossAlgoId || e.stopLossOrderId);
-      return !!(e.takeProfitAlgoId || e.takeProfitOrderId);
+      if (slTriggered) return !!(e.stopLossAlgoId ?? e.stopLossOrderId);
+      return !!(e.takeProfitAlgoId ?? e.takeProfitOrderId);
     });
 
     if (allDeferredToExchange) {
@@ -388,7 +388,7 @@ export class PositionMonitorService {
 
     for (const execution of executions) {
       const key = `${execution.symbol}-${execution.side}`;
-      const existing = groups.get(key) || [];
+      const existing = groups.get(key) ?? [];
       existing.push(execution);
       groups.set(key, existing);
     }

@@ -45,8 +45,8 @@ export const useSetupDetection = (options: UseSetupDetectionOptions = {}): UseSe
   useRealtimeSetups(userId ?? '', Boolean(userId && enableRealtimeUpdates));
 
   const { data: result, isPending } = useDetectCurrent({
-    symbol: symbol || '',
-    interval: interval || '1h',
+    symbol: symbol ?? '',
+    interval: interval ?? '1h',
     marketType,
   });
 

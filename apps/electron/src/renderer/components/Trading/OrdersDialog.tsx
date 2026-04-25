@@ -54,7 +54,7 @@ const OrdersDialogComponent = () => {
   const activeWallet = useMemo(() => {
     const w = backendWallets.find((w) => w.id === activeWalletId);
     if (!w) return null;
-    return { id: w.id, currency: (w.currency || 'USDT') as WalletCurrency };
+    return { id: w.id, currency: (w.currency ?? 'USDT') as WalletCurrency };
   }, [backendWallets, activeWalletId]);
 
   const orders: Order[] = useMemo(() => {
@@ -63,12 +63,12 @@ const OrdersDialogComponent = () => {
       orderId: o.orderId,
       orderListId: '0',
       clientOrderId: '',
-      price: o.price || '0',
-      origQty: o.origQty || '0',
-      executedQty: o.executedQty || '0',
+      price: o.price ?? '0',
+      origQty: o.origQty ?? '0',
+      executedQty: o.executedQty ?? '0',
       cummulativeQuoteQty: '0',
       status: (o.status || 'NEW') as OrderStatus,
-      timeInForce: (o.timeInForce || 'GTC') as TimeInForce,
+      timeInForce: (o.timeInForce ?? 'GTC') as TimeInForce,
       type: (o.type || 'LIMIT') as OrderType,
       side: o.side,
       time: typeof o.time === 'number' ? o.time : Date.now(),
@@ -78,10 +78,10 @@ const OrdersDialogComponent = () => {
       id: o.orderId.toString(),
       walletId: o.walletId,
       orderDirection: o.side === 'BUY' ? ('long' as const) : ('short' as const),
-      entryPrice: parseFloat(o.price || '0'),
-      quantity: parseFloat(o.origQty || '0'),
+      entryPrice: parseFloat(o.price ?? '0'),
+      quantity: parseFloat(o.origQty ?? '0'),
       createdAt: new Date(o.createdAt),
-      marketType: o.marketType || 'FUTURES',
+      marketType: o.marketType ?? 'FUTURES',
     }));
 
     const ordersFromExecutions = (executionsData ?? []).map((e): Order => ({
@@ -109,11 +109,11 @@ const OrdersDialogComponent = () => {
       createdAt: new Date(e.createdAt),
       stopLoss: e.stopLoss ? parseFloat(e.stopLoss) : undefined,
       takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
-      pnl: e.pnl || undefined,
-      pnlPercent: e.pnlPercent || undefined,
+      pnl: e.pnl ?? undefined,
+      pnlPercent: e.pnlPercent ?? undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
-      setupType: e.setupType || undefined,
-      marketType: e.marketType || 'FUTURES',
+      setupType: e.setupType ?? undefined,
+      marketType: e.marketType ?? 'FUTURES',
       isAutoTrade: !!e.setupType,
     }));
 

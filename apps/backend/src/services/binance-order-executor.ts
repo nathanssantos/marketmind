@@ -135,8 +135,8 @@ export const executeBinanceOrder = async (
 
     return {
       orderId: order.orderId,
-      executedQty: order.executedQty?.toString() || '0',
-      price: order.price?.toString() || '0',
+      executedQty: order.executedQty?.toString() ?? '0',
+      price: order.price?.toString() ?? '0',
     };
   } catch (error) {
     logger.error({

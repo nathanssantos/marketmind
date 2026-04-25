@@ -39,6 +39,9 @@ export default [
                 {
                     allowExpressions: true,
                     allowTypedFunctionExpressions: true,
+                    allowHigherOrderFunctions: true,
+                    allowIIFEs: true,
+                    allowDirectConstAssertionInArrowFunctions: true,
                 },
             ],
             '@typescript-eslint/no-explicit-any': 'warn',
@@ -46,7 +49,7 @@ export default [
             '@typescript-eslint/no-misused-promises': 'error',
             '@typescript-eslint/await-thenable': 'error',
             '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-            '@typescript-eslint/prefer-nullish-coalescing': 'warn',
+            '@typescript-eslint/prefer-nullish-coalescing': 'error',
             '@typescript-eslint/prefer-optional-chain': 'error',
             'no-console': 'off',
         },

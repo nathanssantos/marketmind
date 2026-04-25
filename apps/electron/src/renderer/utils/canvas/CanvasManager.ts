@@ -87,9 +87,7 @@ export class CanvasManager {
     this.initialize();
     this.observeResize();
 
-    if (!globalThis.__canvasManagerInstances) {
-      globalThis.__canvasManagerInstances = new Set();
-    }
+    globalThis.__canvasManagerInstances ??= new Set();
     globalThis.__canvasManagerInstances.add(this);
   }
 
@@ -170,7 +168,7 @@ export class CanvasManager {
   }
 
   public getFrameCached<T>(key: unknown, compute: () => T): T {
-    if (!this.frameCache) this.frameCache = new Map();
+    this.frameCache ??= new Map();
     if (this.frameCache.has(key)) return this.frameCache.get(key) as T;
     const value = compute();
     this.frameCache.set(key, value);
@@ -183,18 +181,14 @@ export class CanvasManager {
 
   private ensureOffscreen(): boolean {
     if (!this.canvas.width || !this.canvas.height) return false;
-    if (!this.offscreen) {
-      this.offscreen = document.createElement('canvas');
-    }
+    this.offscreen ??= document.createElement('canvas');
     if (this.offscreen.width !== this.canvas.width || this.offscreen.height !== this.canvas.height) {
       this.offscreen.width = this.canvas.width;
       this.offscreen.height = this.canvas.height;
       this.offscreenCtx = this.offscreen.getContext('2d');
       this.offscreenValid = false;
     }
-    if (!this.offscreenCtx) {
-      this.offscreenCtx = this.offscreen.getContext('2d');
-    }
+    this.offscreenCtx ??= this.offscreen.getContext('2d');
     return this.offscreenCtx !== null;
   }
 

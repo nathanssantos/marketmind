@@ -174,7 +174,7 @@ export class BacktestOptimizer {
     const avgWinRate = metrics.reduce((sum, m) => sum + m.winRate, 0) / metrics.length;
     const avgPnl = metrics.reduce((sum, m) => sum + m.totalPnlPercent, 0) / metrics.length;
     const avgProfitFactor = metrics.reduce((sum, m) => sum + m.profitFactor, 0) / metrics.length;
-    const avgSharpe = metrics.reduce((sum, m) => sum + (m.sharpeRatio || 0), 0) / metrics.length;
+    const avgSharpe = metrics.reduce((sum, m) => sum + (m.sharpeRatio ?? 0), 0) / metrics.length;
 
     return {
       totalRuns: results.length,

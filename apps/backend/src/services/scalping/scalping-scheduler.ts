@@ -389,8 +389,6 @@ export class ScalpingScheduler {
 let scalpingScheduler: ScalpingScheduler | null = null;
 
 export const getScalpingScheduler = (): ScalpingScheduler => {
-  if (!scalpingScheduler) {
-    scalpingScheduler = new ScalpingScheduler();
-  }
+  scalpingScheduler ??= new ScalpingScheduler();
   return scalpingScheduler;
 };

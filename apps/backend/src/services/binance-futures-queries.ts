@@ -146,7 +146,7 @@ export async function getAllTradeFeesForPosition(
   closedAt?: number
 ): Promise<AllTradeFeesResult | null> {
   try {
-    const endTime = closedAt || Date.now();
+    const endTime = closedAt ?? Date.now();
     const trades = await guardBinanceCall(() => client.getAccountTrades({
       symbol,
       startTime: openedAt - 5000,

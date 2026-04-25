@@ -50,9 +50,7 @@ export class BTCDominanceDataService {
 
     if (data) {
       this.setCache(data);
-      if (this.previousDominance === null) {
-        this.previousDominance = data.btcDominance;
-      }
+      this.previousDominance ??= data.btcDominance;
     }
 
     return data;
@@ -260,9 +258,7 @@ export class BTCDominanceDataService {
 let btcDominanceDataService: BTCDominanceDataService | null = null;
 
 export const getBTCDominanceDataService = (): BTCDominanceDataService => {
-  if (!btcDominanceDataService) {
-    btcDominanceDataService = new BTCDominanceDataService();
-  }
+  btcDominanceDataService ??= new BTCDominanceDataService();
   return btcDominanceDataService;
 };
 

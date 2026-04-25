@@ -31,7 +31,7 @@ const renderConsolidatedSLTP = (
     const slIsProfit = isSLInProfitZone(isLongPosition, position.avgPrice, consolidatedPrice);
     const slLineColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_LINE : ORDER_LINE_COLORS.SL_LOSS_LINE;
     const slTagColor = slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL;
-    const firstOrderId = position.orderIds[0] || '';
+    const firstOrderId = position.orderIds[0] ?? '';
 
     ctx.save();
     drawHorizontalLine(ctx, y, chartWidth, slLineColor);
@@ -94,7 +94,7 @@ const renderConsolidatedSLTP = (
     ctx.restore();
     drawFlashLine(ctx, slFlash, y, chartWidth);
   } else {
-    const firstOrderId = position.orderIds[0] || '';
+    const firstOrderId = position.orderIds[0] ?? '';
     const tpFillColor = ORDER_LINE_COLORS.TP_FILL;
 
     ctx.save();
@@ -174,13 +174,13 @@ export const renderPositionSLTP = (
     const takeProfitOrders = position.orders.filter(o => o.takeProfit);
     const consolidatedStopLoss = stopLossOrders.length > 0
       ? (isLongPosition
-          ? Math.max(...stopLossOrders.map(o => o.stopLoss || 0))
-          : Math.min(...stopLossOrders.map(o => o.stopLoss || Infinity)))
+          ? Math.max(...stopLossOrders.map(o => o.stopLoss ?? 0))
+          : Math.min(...stopLossOrders.map(o => o.stopLoss ?? Infinity)))
       : null;
     const consolidatedTakeProfit = takeProfitOrders.length > 0
       ? (isLongPosition
-          ? Math.min(...takeProfitOrders.map(o => o.takeProfit || Infinity))
-          : Math.max(...takeProfitOrders.map(o => o.takeProfit || 0)))
+          ? Math.min(...takeProfitOrders.map(o => o.takeProfit ?? Infinity))
+          : Math.max(...takeProfitOrders.map(o => o.takeProfit ?? 0)))
       : null;
 
     if (rc.showProfitLossAreas && (consolidatedStopLoss || consolidatedTakeProfit)) {

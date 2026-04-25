@@ -391,7 +391,7 @@ export const autoTradingRouter = router({
         });
       }
 
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
 
       const perWatcherExposurePercent = watcherStatus.watchers > 0
@@ -1621,7 +1621,7 @@ export const autoTradingRouter = router({
         logger.error({ error: errorMsg }, '[EmergencyStop] Failed to stop watchers');
       }
 
-      const walletMarketType = wallet.marketType || 'FUTURES';
+      const walletMarketType = wallet.marketType ?? 'FUTURES';
 
       const openExecutions = await ctx.db
         .select()
@@ -1905,7 +1905,7 @@ export const autoTradingRouter = router({
       }
 
       const wallet = await walletQueries.getByIdAndUser(execution.walletId, ctx.user.id);
-      const marketType = (execution.marketType || 'FUTURES');
+      const marketType = (execution.marketType ?? 'FUTURES');
 
       const currentPrice = await positionMonitorService.getCurrentPrice(execution.symbol, marketType);
 

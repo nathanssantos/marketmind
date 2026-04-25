@@ -175,7 +175,7 @@ export async function handleAlgoOrderUpdate(
       e.takeProfitOrderId === algoIdStr
     );
 
-    const execution = executionByAlgoId || algoOpenExecutions[0];
+    const execution = executionByAlgoId ?? algoOpenExecutions[0];
 
     if (!execution) {
       logger.warn({ walletId, symbol, algoId, openCount: algoOpenExecutions.length }, '[FuturesUserStream] No open execution found for algo order');
@@ -194,8 +194,8 @@ export async function handleAlgoOrderUpdate(
     }
 
     const orderToCancel = isSLOrder
-      ? (execution.takeProfitAlgoId || execution.takeProfitOrderId)
-      : (execution.stopLossAlgoId || execution.stopLossOrderId);
+      ? (execution.takeProfitAlgoId ?? execution.takeProfitOrderId)
+      : (execution.stopLossAlgoId ?? execution.stopLossOrderId);
     const exitReason = isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT';
 
     logger.info(

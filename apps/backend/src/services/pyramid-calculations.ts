@@ -93,7 +93,7 @@ export const calculateBaseSize = (executions: ExecutionLike[]): number => {
     (a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime()
   );
 
-  return parseFloat(sorted[0]?.quantity || '0');
+  return parseFloat(sorted[0]?.quantity ?? '0');
 };
 
 export const roundQuantity = (quantity: number): number => {

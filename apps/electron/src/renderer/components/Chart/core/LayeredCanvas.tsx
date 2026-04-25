@@ -51,8 +51,8 @@ export class LayerManager {
         canvas.style.zIndex = config.zIndex.toString();
         canvas.style.pointerEvents = config.id === 'interaction' ? 'auto' : 'none';
 
-        canvas.width = this.options.width * (this.options.devicePixelRatio || 1);
-        canvas.height = this.options.height * (this.options.devicePixelRatio || 1);
+        canvas.width = this.options.width * (this.options.devicePixelRatio ?? 1);
+        canvas.height = this.options.height * (this.options.devicePixelRatio ?? 1);
 
         const ctx = canvas.getContext('2d', { alpha: config.id !== 'grid' });
         if (!ctx) {
@@ -61,8 +61,8 @@ export class LayerManager {
         }
 
         ctx.scale(
-            this.options.devicePixelRatio || 1,
-            this.options.devicePixelRatio || 1
+            this.options.devicePixelRatio ?? 1,
+            this.options.devicePixelRatio ?? 1
         );
 
         this.container.appendChild(canvas);
@@ -102,14 +102,14 @@ export class LayerManager {
         this.options.height = height;
 
         this.layers.forEach((canvas, layerId) => {
-            canvas.width = width * (this.options.devicePixelRatio || 1);
-            canvas.height = height * (this.options.devicePixelRatio || 1);
+            canvas.width = width * (this.options.devicePixelRatio ?? 1);
+            canvas.height = height * (this.options.devicePixelRatio ?? 1);
 
             const ctx = this.contexts.get(layerId);
             if (ctx) {
                 ctx.scale(
-                    this.options.devicePixelRatio || 1,
-                    this.options.devicePixelRatio || 1
+                    this.options.devicePixelRatio ?? 1,
+                    this.options.devicePixelRatio ?? 1
                 );
             }
 

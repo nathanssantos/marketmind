@@ -16,7 +16,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
   const { t } = useTranslation();
 
   const entryPrice = parseFloat(position.entryPrice);
-  const markPrice = currentPrice || parseFloat(position.markPrice);
+  const markPrice = currentPrice ?? parseFloat(position.markPrice);
   const liquidationPrice = parseFloat(position.liquidationPrice);
   const positionAmt = Math.abs(parseFloat(position.positionAmt));
   const unrealizedPnl = parseFloat(position.unrealizedPnl);

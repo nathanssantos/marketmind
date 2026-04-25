@@ -192,7 +192,7 @@ const renderPositionEntry = (
 
   if (!hasStopLoss || !hasTakeProfit) {
     const { slButton, tpButton } = drawSlTpButtons(ctx, buttonsX, y, hasStopLoss, hasTakeProfit);
-    const primaryOrderId = position.orderIds[0] || '';
+    const primaryOrderId = position.orderIds[0] ?? '';
     if (slButton) {
       rc.slTpButtonHitboxes.push({
         executionId: primaryOrderId,

@@ -103,7 +103,7 @@ export const useChartTradingActions = ({
     );
 
     const optimisticId = createOptimisticEntry({
-      symbol, side: 'LONG', price, marketType: marketType || 'FUTURES',
+      symbol, side: 'LONG', price, marketType: marketType ?? 'FUTURES',
       getOrderQuantity, setOptimisticExecutions, orderLoadingMapRef, manager,
     });
 
@@ -134,7 +134,7 @@ export const useChartTradingActions = ({
     );
 
     const optimisticId = createOptimisticEntry({
-      symbol, side: 'SHORT', price, marketType: marketType || 'FUTURES',
+      symbol, side: 'SHORT', price, marketType: marketType ?? 'FUTURES',
       getOrderQuantity, setOptimisticExecutions, orderLoadingMapRef, manager,
     });
 
@@ -423,7 +423,7 @@ export const useChartTradingActions = ({
         takeProfit: null,
         status: 'pending',
         setupType: null,
-        marketType: marketType || 'FUTURES',
+        marketType: marketType ?? 'FUTURES',
         openedAt: new Date(),
         triggerKlineOpenTime: null,
         fibonacciProjection: null,

@@ -156,7 +156,7 @@ export const positionsRouter = router({
       const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;
 
       const isFutures = position.marketType === 'FUTURES';
-      const leverage = position.leverage || 1;
+      const leverage = position.leverage ?? 1;
 
       if (shouldExecuteReal) {
         try {
@@ -241,7 +241,7 @@ export const positionsRouter = router({
         leverage,
       });
 
-      const currentBalance = parseFloat(wallet.currentBalance || '0');
+      const currentBalance = parseFloat(wallet.currentBalance ?? '0');
       const newBalance = currentBalance + netPnl;
 
       await ctx.db.transaction(async (tx) => {

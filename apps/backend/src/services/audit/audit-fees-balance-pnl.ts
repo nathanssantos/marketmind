@@ -47,8 +47,8 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
 
     if (!realFees) continue;
 
-    const dbEntryFee = parseFloat(exec.entryFee || '0');
-    const dbExitFee = parseFloat(exec.exitFee || '0');
+    const dbEntryFee = parseFloat(exec.entryFee ?? '0');
+    const dbExitFee = parseFloat(exec.exitFee ?? '0');
     const entryFeeDelta = Math.abs(realFees.entryFee - dbEntryFee);
     const exitFeeDelta = Math.abs(realFees.exitFee - dbExitFee);
 
@@ -71,10 +71,10 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
     const newExitFee = realFees.exitFee;
     const newTotalFees = newEntryFee + newExitFee;
     const entryPrice = parseFloat(exec.entryPrice);
-    const exitPrice = parseFloat(exec.exitPrice || '0');
+    const exitPrice = parseFloat(exec.exitPrice ?? '0');
     const quantity = parseFloat(exec.quantity);
-    const leverage = exec.leverage || 1;
-    const accumulatedFunding = parseFloat(exec.accumulatedFunding || '0');
+    const leverage = exec.leverage ?? 1;
+    const accumulatedFunding = parseFloat(exec.accumulatedFunding ?? '0');
 
     const grossPnl =
       exec.side === 'LONG'
@@ -83,7 +83,7 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
     const newPnl = grossPnl - newTotalFees + accumulatedFunding;
     const marginValue = (entryPrice * quantity) / leverage;
     const newPnlPercent = marginValue > 0 ? (newPnl / marginValue) * 100 : 0;
-    const oldPnl = parseFloat(exec.pnl || '0');
+    const oldPnl = parseFloat(exec.pnl ?? '0');
     const pnlDelta = newPnl - oldPnl;
 
     if (!dryRun) {
@@ -100,7 +100,7 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
         .where(eq(tradeExecutions.id, exec.id));
 
       if (Math.abs(pnlDelta) > FEES_DELTA_THRESHOLD) {
-        const currentBalance = parseFloat(wallet.currentBalance || '0');
+        const currentBalance = parseFloat(wallet.currentBalance ?? '0');
         const newBalance = currentBalance + pnlDelta;
         await db
           .update(wallets)
@@ -117,7 +117,7 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
 export async function auditBalance(ctx: AuditContext): Promise<void> {
   const { wallet, dryRun, summary, dbOpenExecutions, accountInfo } = ctx;
 
-  const dbBalance = parseFloat(wallet.currentBalance || '0');
+  const dbBalance = parseFloat(wallet.currentBalance ?? '0');
   const exchangeTotalWalletBalance = parseFloat(accountInfo.totalWalletBalance);
   const exchangeAvailableBalance = parseFloat(accountInfo.availableBalance);
   const hasOpenPositions = dbOpenExecutions.length > 0;

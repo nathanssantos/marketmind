@@ -230,8 +230,8 @@ export const queryProcedures = {
       const query = input.query.toUpperCase();
       const symbolList = symbols ?? [];
       const filtered = symbolList.filter((s: any) =>
-        s.symbol.includes(query) ||
-        s.baseAsset.includes(query) ||
+        s.symbol.includes(query) ??
+        s.baseAsset.includes(query) ??
         s.quoteAsset.includes(query)
       );
 

@@ -122,15 +122,13 @@ export const useKlineLiveStream = ({
     if (timeSinceLastUpdate < MIN_UPDATE_INTERVAL_MS) {
       pendingUpdateRef.current = { kline, isFinal };
 
-      if (flushTimerRef.current === null) {
-        flushTimerRef.current = setTimeout(() => {
-          flushTimerRef.current = null;
-          if (pendingUpdateRef.current) {
-            if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
-            rafIdRef.current = requestAnimationFrame(processUpdate);
-          }
-        }, MIN_UPDATE_INTERVAL_MS);
-      }
+      flushTimerRef.current ??= setTimeout(() => {
+        flushTimerRef.current = null;
+        if (pendingUpdateRef.current) {
+          if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = requestAnimationFrame(processUpdate);
+        }
+      }, MIN_UPDATE_INTERVAL_MS);
       return;
     }
 
@@ -154,10 +152,10 @@ export const useKlineLiveStream = ({
       low: backendKline.low,
       close: backendKline.close,
       volume: backendKline.volume,
-      quoteVolume: backendKline.quoteVolume || '0',
-      trades: backendKline.trades || 0,
-      takerBuyBaseVolume: backendKline.takerBuyBaseVolume || '0',
-      takerBuyQuoteVolume: backendKline.takerBuyQuoteVolume || '0',
+      quoteVolume: backendKline.quoteVolume ?? '0',
+      trades: backendKline.trades ?? 0,
+      takerBuyBaseVolume: backendKline.takerBuyBaseVolume ?? '0',
+      takerBuyQuoteVolume: backendKline.takerBuyQuoteVolume ?? '0',
     };
     handleRealtimeUpdate(kline, backendKline.isClosed);
   }, [handleRealtimeUpdate]);

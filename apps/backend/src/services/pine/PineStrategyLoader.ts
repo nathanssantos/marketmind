@@ -43,15 +43,15 @@ const parseMetadataLine = (
       metadata.enabled = v === 'true';
       break;
     case 'strategyType':
-      if (!metadata.filters) metadata.filters = {};
+      metadata.filters ??= {};
       metadata.filters.strategyType = v;
       break;
     case 'momentumType':
-      if (!metadata.filters) metadata.filters = {};
+      metadata.filters ??= {};
       metadata.filters.momentumType = v;
       break;
     case 'volumeType':
-      if (!metadata.filters) metadata.filters = {};
+      metadata.filters ??= {};
       metadata.filters.volumeType = v;
       break;
   }

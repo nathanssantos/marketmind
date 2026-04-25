@@ -78,7 +78,7 @@ export const processTooltipHitTest = ({
   }
 
   const hoveredOrderForTooltip = getHoveredOrder(mouseX, mouseY);
-  const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id || null;
+  const hoveredOrderIdForTooltip = hoveredOrderForTooltip?.id ?? null;
 
   if (hoveredOrderForTooltip && klines.length > 0) {
     if (hoveredOrderIdForTooltip !== lastTooltipOrderRef.current) {

@@ -46,10 +46,10 @@ const mapToKline = (k: {
   low: k.low,
   close: k.close,
   volume: k.volume,
-  quoteVolume: k.quoteVolume || '0',
-  trades: k.trades || 0,
-  takerBuyBaseVolume: k.takerBuyBaseVolume || '0',
-  takerBuyQuoteVolume: k.takerBuyQuoteVolume || '0',
+  quoteVolume: k.quoteVolume ?? '0',
+  trades: k.trades ?? 0,
+  takerBuyBaseVolume: k.takerBuyBaseVolume ?? '0',
+  takerBuyQuoteVolume: k.takerBuyQuoteVolume ?? '0',
 });
 
 export const useKlinePagination = ({

@@ -180,7 +180,7 @@ export const handleMarketOrderProtection = async (
   }
 
   if (slResult || tpResult) {
-    const fillPrice = parseFloat((futuresOrder as { avgPrice?: string }).avgPrice || futuresOrder.price || '0');
+    const fillPrice = parseFloat(((futuresOrder as { avgPrice?: string }).avgPrice ?? futuresOrder.price) || '0');
     await ctx.db.insert(tradeExecutions).values({
       id: generateEntityId(),
       userId: ctx.user.id,
@@ -188,7 +188,7 @@ export const handleMarketOrderProtection = async (
       symbol: input.symbol,
       side: orderDirection,
       entryOrderId: futuresOrder.orderId,
-      entryPrice: fillPrice > 0 ? fillPrice.toString() : (input.price || '0'),
+      entryPrice: fillPrice > 0 ? fillPrice.toString() : (input.price ?? '0'),
       quantity: input.quantity,
       stopLoss: input.stopLoss,
       takeProfit: input.takeProfit,

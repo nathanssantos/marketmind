@@ -58,7 +58,7 @@ class FundingRateService {
 
       const symbolPositions = new Map<string, typeof openFuturesPositions>();
       for (const pos of openFuturesPositions) {
-        const existing = symbolPositions.get(pos.position.symbol) || [];
+        const existing = symbolPositions.get(pos.position.symbol) ?? [];
         existing.push(pos);
         symbolPositions.set(pos.position.symbol, existing);
       }

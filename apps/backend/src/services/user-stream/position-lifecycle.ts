@@ -61,8 +61,8 @@ export async function verifyAlgoFillProcessed(
     const exitFee = closingTrade.commission;
     const entryPrice = parseFloat(execution.entryPrice);
     const quantity = parseFloat(execution.quantity);
-    const leverage = execution.leverage || 1;
-    let entryFee = parseFloat(execution.entryFee || '0');
+    const leverage = execution.leverage ?? 1;
+    let entryFee = parseFloat(execution.entryFee ?? '0');
 
     if (entryFee === 0 && execution.entryOrderId) {
       try {
@@ -71,7 +71,7 @@ export async function verifyAlgoFillProcessed(
       } catch (_e) { /* entry fee fetch is best-effort */ }
     }
 
-    const accumulatedFunding = parseFloat(execution.accumulatedFunding || '0');
+    const accumulatedFunding = parseFloat(execution.accumulatedFunding ?? '0');
 
     const pnlResult = calculatePnl({
       entryPrice,
@@ -84,7 +84,7 @@ export async function verifyAlgoFillProcessed(
       entryFee: entryFee,
       exitFee,
     });
-    const partialClosePnl = parseFloat(execution.partialClosePnl || '0');
+    const partialClosePnl = parseFloat(execution.partialClosePnl ?? '0');
     const pnl = pnlResult.netPnl + partialClosePnl;
     const pnlPercent = pnlResult.pnlPercent;
     const totalFees = entryFee + exitFee;
@@ -240,8 +240,8 @@ export async function closeResidualPosition(
           const entryPrice = parseFloat(orphan.entryPrice);
           const quantity = parseFloat(orphan.quantity);
           const exitPrice = actualExitPrice ?? entryPrice;
-          const accumulatedFunding = parseFloat(orphan.accumulatedFunding || '0');
-          const actualEntryFee = parseFloat(orphan.entryFee || '0');
+          const accumulatedFunding = parseFloat(orphan.accumulatedFunding ?? '0');
+          const actualEntryFee = parseFloat(orphan.entryFee ?? '0');
 
           const pnlResult = calculatePnl({
             entryPrice,
@@ -249,10 +249,10 @@ export async function closeResidualPosition(
             quantity,
             side: orphan.side,
             marketType: 'FUTURES',
-            leverage: orphan.leverage || 1,
+            leverage: orphan.leverage ?? 1,
             accumulatedFunding,
           });
-          const partialClosePnl = parseFloat(orphan.partialClosePnl || '0');
+          const partialClosePnl = parseFloat(orphan.partialClosePnl ?? '0');
           const pnl = pnlResult.netPnl + partialClosePnl;
           const totalFees = pnlResult.totalFees;
 

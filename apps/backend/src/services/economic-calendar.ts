@@ -145,8 +145,6 @@ export class EconomicCalendarService {
 let economicCalendarService: EconomicCalendarService | null = null;
 
 export const getEconomicCalendarService = (): EconomicCalendarService => {
-  if (!economicCalendarService) {
-    economicCalendarService = new EconomicCalendarService();
-  }
+  economicCalendarService ??= new EconomicCalendarService();
   return economicCalendarService;
 };

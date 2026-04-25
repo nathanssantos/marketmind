@@ -112,7 +112,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
                   {canClose && (
                     <MenuItem
                       value="close"
-                      onClick={() => onClose(getOrderId(order), order.currentPrice || getOrderPrice(order))}
+                      onClick={() => onClose(getOrderId(order), order.currentPrice ?? getOrderPrice(order))}
                       px={4}
                       py={2.5}
                       _hover={{ bg: 'bg.muted' }}

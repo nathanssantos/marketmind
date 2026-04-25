@@ -173,12 +173,11 @@ export const formatPendingOrdersCheckResults = (result: PendingOrdersCheckResult
       }
 
       const details = action.error
-        ? action.error
-        : action.action === 'EXPIRED' && action.expiresAt
+        ?? (action.action === 'EXPIRED' && action.expiresAt
           ? `expired at ${action.expiresAt.toLocaleTimeString()}`
           : action.action === 'FILLED' && action.currentPrice
             ? `filled at ${action.currentPrice.toPrecision(6)}`
-            : '';
+            : '');
 
       lines.push(
         `    ${colorize(actionIcon, actionColor)} ${action.symbol} ${colorize(action.side, sideColor)} ` +

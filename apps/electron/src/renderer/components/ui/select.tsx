@@ -150,7 +150,7 @@ export const Select = ({
               </Text>
             )}
             <Text fontSize={currentSize.fontSize} fontWeight="medium" color="fg" whiteSpace={noWrap ? 'nowrap' : undefined}>
-              {selectedOption?.label || placeholder}
+              {selectedOption?.label ?? placeholder}
             </Text>
             {description && selectedOption && (
               <Text fontSize={size === 'xs' ? '2xs' : 'xs'} color="fg.muted">

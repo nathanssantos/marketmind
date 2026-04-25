@@ -99,8 +99,8 @@ export const optimizeKlines = (klines: Kline[], detailedCount: number = DETAILED
     detailed,
     simplified,
     openTimeInfo: {
-      first: firstKline?.openTime || 0,
-      last: lastKline?.openTime || 0,
+      first: firstKline?.openTime ?? 0,
+      last: lastKline?.openTime ?? 0,
       total: klines.length,
       timeframe,
     },

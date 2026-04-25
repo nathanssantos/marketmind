@@ -60,7 +60,7 @@ export const useOrderLinesRenderer = (
           ? (typeof exec.openedAt === 'string' ? new Date(exec.openedAt).getTime() : exec.openedAt.getTime())
           : null;
         const validOpenedTime = openedTime && openedTime > 1000000000000 ? openedTime : null;
-        const openedAtTime = validOpenedTime || Date.now();
+        const openedAtTime = validOpenedTime ?? Date.now();
         return {
           id: exec.id,
           symbol: exec.symbol,

@@ -166,11 +166,11 @@ export class PositionSyncService {
           let pnlPercent = 0;
           let exitPrice = 0;
           let totalFees = 0;
-          let actualEntryFee = parseFloat(dbPosition.entryFee || '0');
+          let actualEntryFee = parseFloat(dbPosition.entryFee ?? '0');
           let actualExitFee = 0;
           const entryPrice = parseFloat(dbPosition.entryPrice);
           const quantity = parseFloat(dbPosition.quantity);
-          const accumulatedFunding = parseFloat(dbPosition.accumulatedFunding || '0');
+          const accumulatedFunding = parseFloat(dbPosition.accumulatedFunding ?? '0');
 
           try {
             const openedAt = dbPosition.openedAt?.getTime() || dbPosition.createdAt?.getTime() || Date.now();
@@ -186,7 +186,7 @@ export class PositionSyncService {
             }
 
             if (exitPrice > 0) {
-              const leverage = dbPosition.leverage || 1;
+              const leverage = dbPosition.leverage ?? 1;
 
               const pnlResult = calculatePnl({
                 entryPrice,
@@ -199,12 +199,12 @@ export class PositionSyncService {
                 entryFee: actualEntryFee,
                 exitFee: actualExitFee,
               });
-              const existingPartialPnl = parseFloat(dbPosition.partialClosePnl || '0');
+              const existingPartialPnl = parseFloat(dbPosition.partialClosePnl ?? '0');
               pnl = pnlResult.netPnl + existingPartialPnl;
               pnlPercent = pnlResult.pnlPercent;
               totalFees = pnlResult.totalFees;
 
-              const currentBalance = parseFloat(wallet.currentBalance || '0');
+              const currentBalance = parseFloat(wallet.currentBalance ?? '0');
               const newBalance = currentBalance + pnl;
 
               await db
@@ -224,8 +224,8 @@ export class PositionSyncService {
             );
           }
 
-          const hasProtectionOrders = dbPosition.stopLossAlgoId || dbPosition.stopLossOrderId ||
-            dbPosition.takeProfitAlgoId || dbPosition.takeProfitOrderId;
+          const hasProtectionOrders = dbPosition.stopLossAlgoId ?? dbPosition.stopLossOrderId ??
+            dbPosition.takeProfitAlgoId ?? dbPosition.takeProfitOrderId;
           if (hasProtectionOrders && !isPaperWallet(wallet)) {
             try {
               await cancelAllProtectionOrders({

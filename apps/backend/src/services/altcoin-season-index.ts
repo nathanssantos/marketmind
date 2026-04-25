@@ -166,8 +166,6 @@ export class AltcoinSeasonIndexService {
 let altcoinSeasonIndexService: AltcoinSeasonIndexService | null = null;
 
 export const getAltcoinSeasonIndexService = (): AltcoinSeasonIndexService => {
-  if (!altcoinSeasonIndexService) {
-    altcoinSeasonIndexService = new AltcoinSeasonIndexService();
-  }
+  altcoinSeasonIndexService ??= new AltcoinSeasonIndexService();
   return altcoinSeasonIndexService;
 };

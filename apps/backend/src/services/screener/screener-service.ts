@@ -427,7 +427,7 @@ export class ScreenerService {
 let instance: ScreenerService | null = null;
 
 export const getScreenerService = (): ScreenerService => {
-  if (!instance) instance = new ScreenerService();
+  instance ??= new ScreenerService();
   return instance;
 };
 

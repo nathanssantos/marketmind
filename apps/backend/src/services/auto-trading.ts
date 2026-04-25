@@ -204,7 +204,7 @@ export class AutoTradingService {
         } else {
           logger.warn({
             strategyId,
-            trades: stats?.totalTrades || 0,
+            trades: stats?.totalTrades ?? 0,
             minRequired: MIN_TRADES,
           }, 'Insufficient trades for Kelly, using defaults');
         }

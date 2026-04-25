@@ -215,9 +215,7 @@ export class IndicatorEngine {
       } else if (part.startsWith('prev')) {
         const num = parseInt(part.slice(4), 10);
         offset = isNaN(num) ? 1 : num;
-      } else if (!subKey) {
-        subKey = part;
-      }
+      } else subKey ??= part;
     }
 
     return { base, subKey, offset };

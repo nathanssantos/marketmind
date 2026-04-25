@@ -138,9 +138,7 @@ export class CalendarService {
 let calendarServiceInstance: CalendarService | null = null;
 
 export const getCalendarService = (): CalendarService => {
-  if (!calendarServiceInstance) {
-    calendarServiceInstance = new CalendarService();
-  }
+  calendarServiceInstance ??= new CalendarService();
   return calendarServiceInstance;
 };
 

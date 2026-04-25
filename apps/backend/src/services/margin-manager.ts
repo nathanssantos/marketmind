@@ -69,8 +69,8 @@ export class MarginManagerService {
 
       return {
         enabled: config.marginTopUpEnabled ?? false,
-        threshold: parseFloat(config.marginTopUpThreshold || '30') / 100,
-        topUpPercent: parseFloat(config.marginTopUpPercent || '10') / 100,
+        threshold: parseFloat(config.marginTopUpThreshold ?? '30') / 100,
+        topUpPercent: parseFloat(config.marginTopUpPercent ?? '10') / 100,
         maxTopUps: config.marginTopUpMaxCount ?? 3,
       };
     } catch (error) {
@@ -173,8 +173,8 @@ export class MarginManagerService {
         return null;
       }
 
-      const isolatedWallet = parseFloat(position.isolatedWallet || '0');
-      const notional = parseFloat(position.notional || '0');
+      const isolatedWallet = parseFloat(position.isolatedWallet ?? '0');
+      const notional = parseFloat(position.notional ?? '0');
       const maintMargin = this.calculateMaintenanceMargin(notional);
 
       if (isolatedWallet <= 0 || maintMargin <= 0) {
@@ -193,7 +193,7 @@ export class MarginManagerService {
       };
 
       if (result.needsTopUp) {
-        const walletBalance = parseFloat(wallet.currentBalance || '0');
+        const walletBalance = parseFloat(wallet.currentBalance ?? '0');
         const topUpAmount = walletBalance * config.topUpPercent;
 
         if (topUpAmount < 1) {

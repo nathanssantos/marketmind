@@ -217,7 +217,7 @@ export class BinancePriceStreamService {
       }
 
       const now = Date.now();
-      const lastCheck = this.lastPositionCheck.get(update.symbol) || 0;
+      const lastCheck = this.lastPositionCheck.get(update.symbol) ?? 0;
       if (now - lastCheck < POSITION_CHECK_THROTTLE_MS) {
         return;
       }

@@ -385,7 +385,7 @@ export const executionUpdatesRouter = router({
             continue;
           }
 
-          if (!resolvedWalletId) resolvedWalletId = execution.walletId;
+          resolvedWalletId ??= execution.walletId;
           const wallet = await walletQueries.getById(execution.walletId);
           const walletSupportsLive = !isPaperWallet(wallet);
           const shouldExecuteReal = walletSupportsLive && env.ENABLE_LIVE_TRADING;

@@ -41,7 +41,7 @@ export const useNotification = (): UseNotificationReturn => {
       const result = await notification.show(options);
 
       if (!result.success) {
-        throw new Error(result.error || 'Failed to show notification');
+        throw new Error(result.error ?? 'Failed to show notification');
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Failed to show notification';

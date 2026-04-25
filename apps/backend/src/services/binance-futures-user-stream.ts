@@ -162,7 +162,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       await db.delete(tradeExecutions).where(eq(tradeExecutions.id, deleteExecId));
     }
 
-    const hasProtection = freshExec.stopLoss || freshExec.takeProfit;
+    const hasProtection = freshExec.stopLoss ?? freshExec.takeProfit;
     if (hasProtection) this.scheduleDebouncedSlTpUpdate(freshExec.id, walletId, symbol);
 
     const wsService = getWebSocketService();
@@ -178,7 +178,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       }
     }
 
-    logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty, deleteExecId }, `[FuturesUserStream] ${logContext || 'Pyramided into existing position'} + emitted WS`);
+    logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty, deleteExecId }, `[FuturesUserStream] ${logContext ?? 'Pyramided into existing position'} + emitted WS`);
   }
 
   async syncPositionFromExchange(walletId: string, symbol: string, executionId: string, logContext: string): Promise<boolean> {

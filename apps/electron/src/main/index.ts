@@ -91,7 +91,7 @@ const chartWindows: Map<number, BrowserWindowType> = new Map();
 let chartWindowCounter = 0;
 
 const createChartWindow = (symbol?: string, timeframe?: string): number => {
-  debugLog('Creating chart window for symbol:', symbol || 'default', 'timeframe:', timeframe || 'default');
+  debugLog('Creating chart window for symbol:', symbol ?? 'default', 'timeframe:', timeframe ?? 'default');
 
   const windowId = ++chartWindowCounter;
   const windowOptions: electron.BrowserWindowConstructorOptions = {
@@ -100,7 +100,7 @@ const createChartWindow = (symbol?: string, timeframe?: string): number => {
     minWidth: 320,
     minHeight: 400,
     show: false,
-    title: `MarketMind - ${symbol || 'Chart'}`,
+    title: `MarketMind - ${symbol ?? 'Chart'}`,
     webPreferences: {
       preload: join(__dirname, '../preload/preload.mjs'),
       nodeIntegration: false,

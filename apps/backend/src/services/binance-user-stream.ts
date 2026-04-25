@@ -233,7 +233,7 @@ export class BinanceUserStreamService {
               status: 'open',
               entryPrice: fillPrice.toString(),
               entryFee: entryFee.toString(),
-              commissionAsset: commissionAsset || 'USDT',
+              commissionAsset: commissionAsset ?? 'USDT',
               openedAt: new Date(),
               updatedAt: new Date(),
             })
@@ -317,7 +317,7 @@ export class BinanceUserStreamService {
         }
 
         const actualExitFee = parseFloat(commissionAmount || '0');
-        const actualEntryFee = parseFloat(execution.entryFee || '0');
+        const actualEntryFee = parseFloat(execution.entryFee ?? '0');
         const totalFees = actualEntryFee + actualExitFee;
         const pnl = grossPnl - totalFees;
 

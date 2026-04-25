@@ -42,7 +42,7 @@ export const ErrorMessage = ({
 
         <Stack gap={2}>
           <Text fontSize="xl" fontWeight="bold" color="fg">
-            {title || t('common.error')}
+            {title ?? t('common.error')}
           </Text>
           <Text fontSize="md" color="fg.muted">
             {message}

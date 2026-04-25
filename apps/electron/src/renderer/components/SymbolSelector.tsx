@@ -228,7 +228,7 @@ export function SymbolSelector({
   };
 
   const selectedSymbol = popularSymbols.find(s => s.symbol === value);
-  const currentSymbol = selectedSymbol?.baseAsset || (isStocks ? value : value.replace('USDT', ''));
+  const currentSymbol = selectedSymbol?.baseAsset ?? (isStocks ? value : value.replace('USDT', ''));
 
   const handleSelect = (symbol: string) => {
     onChange(symbol, marketType, assetClass);

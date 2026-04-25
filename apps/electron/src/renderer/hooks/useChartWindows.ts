@@ -16,7 +16,7 @@ export const useChartWindows = (): UseChartWindowsResult => {
       const result = await windowAdapter.openChart(symbol, timeframe);
       if (!result.success) {
         console.error('Failed to open chart window:', result.error);
-        throw new Error(result.error || 'Failed to open chart window');
+        throw new Error(result.error ?? 'Failed to open chart window');
       }
     } catch (error) {
       console.error('Error opening chart window:', error);

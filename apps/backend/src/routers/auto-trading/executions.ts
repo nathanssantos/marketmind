@@ -126,7 +126,7 @@ export const executionsRouter = router({
         });
       }
 
-      const walletBalance = parseFloat(wallet.currentBalance || '0');
+      const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);
 
       const perWatcherExposurePercent = watcherStatus.watchers > 0

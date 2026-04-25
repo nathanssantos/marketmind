@@ -21,8 +21,8 @@ export const useToast = () => {
       toaster.create({
         title: options.title,
         description: options.description,
-        type: options.type || 'info',
-        duration: options.duration === null ? undefined : (options.duration || 3000),
+        type: options.type ?? 'info',
+        duration: options.duration === null ? undefined : (options.duration ?? 3000),
         meta: options.meta,
       });
     });

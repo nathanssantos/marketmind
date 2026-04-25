@@ -15,7 +15,7 @@ export const healthRouter = router({
     .input(z.object({ message: z.string().optional() }))
     .query(({ input }) => ({
       pong: true,
-      echo: input.message || 'No message provided',
+      echo: input.message ?? 'No message provided',
     })),
 
   streams: publicProcedure.query(() => {
