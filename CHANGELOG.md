@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.100.0] - 2026-04-26
+
+First user-facing feature ship after the v0.99.x performance + quality stabilization run: a complete in-app **Backtest** experience plus the e2e infrastructure to keep it honest.
+
+### Added
+- **Backtest UI modal** (`apps/electron/src/renderer/components/Backtest/`). Toolbar trigger (next to the Screener button) and `Cmd/Ctrl+Shift+B` shortcut open a 4-tab dialog wired to the existing `BacktestEngine`:
+  - **Basic** — symbol (via `SymbolSelector`), market type, interval, dates, initial capital, leverage (FUTURES-only conditional)
+  - **Strategies** — checkbox grid driven by `setupDetection.listStrategies`; status badges, recommended-timeframe mismatch warning, bulk Select all / Defaults / Clear, "Show experimental" toggle
+  - **Filters** — driven by the new `FILTER_DEFINITIONS` taxonomy; toggles + sub-params grouped by family (trend / momentum / volume / volatility / session / confluence) inside `CollapsibleSection`s
+  - **Risk** — sizing, stops, fibonacci (long/short split), cooldown, futures simulation
+  Submit gates on `simpleBacktestInputSchema.safeParse`; a "Recent runs" panel below the form shows the last 5 cached results.
+- **Live progress channel** — `backtest:progress` / `backtest:complete` / `backtest:failed` events emitted to the user's socket room with phase, processed/total, and an honest ETA (clamped to `null` until > 5% has run, smoothed client-side).
+- **`BacktestProgressReporter`** (`apps/backend/src/services/backtesting/`) — thin reporter threaded through `BacktestEngine.run` and `MultiWatcherBacktestEngine.run`; treats a missing `wsService` as no-op so the CLI path is unchanged. Mirrors the existing `BacktestOptimizer.onProgress(current, total)` signature so optimizer adoption is mechanical.
+- **Shared Zod schema** — `packages/types/src/backtest-input.ts` (`simpleBacktestInputSchema`, `multiWatcherBacktestInputSchema`, `getDefaultBacktestInput`) and `packages/types/src/backtest-filter-definitions.ts` (`FILTER_DEFINITIONS`, `FILTER_GROUPS`). Single source of truth for the engine, the tRPC router, the modal, and any future CLI client. `DEFAULT_ENABLED_SETUP_IDS` exported alongside.
+- **`installTrpcMockOnContext`** (`apps/electron/e2e/helpers/trpcMock.ts`) — Electron-friendly tRPC mock that uses `addInitScript` fetch monkey-patch instead of `page.route`. Necessary because `page.route` enables CDP request interception that conflicts with Vite's ESM loader inside the Electron renderer (see Notes below).
+
+### Changed
+- **`backtest.simple.run` / `backtest.multiWatcher` mutations** now return `{ backtestId }` immediately and run the engine fire-and-forget. Result is fetched via the existing `getResult({ id })` query once `backtest:complete` arrives. Both routers consume the shared Zod schema, expanding the public-API surface to every filter the engine already supported (FVG, choppiness, session, supertrend, direction, bollinger squeeze, partial exits, market context).
+- **Toolbar gains a Backtest icon** (`LuFlaskConical`) next to the screener trigger, wired to `useBacktestModalStore`.
+- **Documentation** (`docs/BROWSER_TESTING.md` Layer 4, plus a `CLAUDE.md` warning) — captures the page.route × Electron × Vite incompatibility and the `installTrpcMockOnContext` workaround so future agents don't waste time rediscovering the trap.
+
+### Fixed
+- **Electron smoke spec was failing on `develop`** — pre-existing canvas-doesn't-mount + `__mmPerf` undefined. Root cause: `page.route()` in Electron breaks Vite's ESM loader on reload (every `/src/**` and `@vite/client` request fails with `net::ERR_FAILED`, even when the route pattern matches none of those URLs — confirmed empirically). Switching the Electron-only adapter to `addInitScript` fetch override resolved both failures.
+- **`base-chart-canvas.png` and `chart-with-ema.png` visual goldens drifted** vs the recorded baselines (~4% pixel diff). Reproduced on `develop` — environmental drift, not regression. Regenerated via `--update-snapshots`.
+
+### Notes
+- Test floor lifts: backend **5,366** (was 5,352), frontend unit **1,800** (was 1,789), full e2e gauntlet **78 / 78** across chromium / visual-regression / perf / electron projects.
+- New `BacktestProgressPayload` / `BacktestCompletePayload` / `BacktestFailedPayload` are typed end-to-end through `ServerToClientEvents`.
+
 ## [0.99.3] - 2026-04-25
 
 Follow-up to v0.99.2's chart performance overhaul. v0.99.2 had the right architecture (Wave 1's `React.memo` with structural comparator on `ChartCanvas`) but missed a stable callback in the parent — so the memo never actually short-circuited. v0.99.3 fixes that and pins the new perf baseline so CI catches any regression.
