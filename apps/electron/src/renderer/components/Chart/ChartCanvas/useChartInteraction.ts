@@ -48,10 +48,11 @@ export interface UseChartInteractionProps {
     cancelGrid: () => void;
   };
   drawingInteraction?: {
-    isDrawing: boolean;
+    isDrawing: () => boolean;
     handleMouseDown: (x: number, y: number) => boolean;
     handleMouseMove: (x: number, y: number) => boolean;
     handleMouseUp: (x: number, y: number) => boolean;
+    cancelInteraction: () => boolean;
     getCursor: () => string | null;
     snapToOHLC: (x: number, y: number) => { x: number; y: number; snapped: boolean };
   };
@@ -176,7 +177,7 @@ export const useChartInteraction = ({
 
     if (drawingInteraction) {
       const handled = drawingInteraction.handleMouseMove(mouseX, mouseY);
-      if (handled && drawingInteraction.isDrawing) {
+      if (handled && drawingInteraction.isDrawing()) {
         mousePositionRef.current = { x: mouseX, y: mouseY };
         const drawingCursor = drawingInteraction.getCursor();
         if (drawingCursor) updateCursor(drawingCursor as 'crosshair');
@@ -274,6 +275,12 @@ export const useChartInteraction = ({
   const handleCanvasMouseLeave = useCallback((): void => {
     handleMouseLeave();
     gridInteraction?.cancelGrid();
+    // Drawing interaction may be mid-placement (placing-second / placing-third
+    // / drawing-freeform) or mid-drag. Cancelling here releases the phase
+    // back to 'idle' so the next click on the canvas isn't trapped in a
+    // stale phase. The drawing store keeps any drawing already-committed —
+    // a drag interrupted by a leave just freezes at its current position.
+    drawingInteraction?.cancelInteraction();
     mousePositionRef.current = null;
     orderPreviewRef.current = null;
     hoveredOrderIdRef.current = null;
@@ -288,7 +295,7 @@ export const useChartInteraction = ({
     if (manager) {
       manager.markDirty('overlays');
     }
-  }, [handleMouseLeave, gridInteraction, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef, setTooltipData, manager]);
+  }, [handleMouseLeave, gridInteraction, drawingInteraction, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef, setTooltipData, manager]);
 
   const handleCanvasMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!manager || !canvasRef.current) return;
@@ -345,12 +352,12 @@ export const useChartInteraction = ({
       return;
     }
 
-    if (drawingInteraction?.isDrawing) {
-      event.preventDefault();
-      event.stopPropagation();
-      return;
-    }
-
+    // Note: a previous version had an `if (drawingInteraction?.isDrawing())`
+    // short-circuit here that swallowed mousedown while a drawing was in
+    // any non-idle phase. That broke channel/pitchfork: their finalize
+    // click happens during phase 'placing-third', and was being
+    // intercepted before reaching the drawing handler. The handler itself
+    // already branches on phase + tool, so the guard is redundant.
     if (drawingInteraction?.handleMouseDown(mouseX, mouseY)) {
       event.preventDefault();
       event.stopPropagation();
@@ -372,10 +379,17 @@ export const useChartInteraction = ({
       return;
     }
 
-    if (drawingInteraction?.isDrawing) {
+    if (drawingInteraction?.isDrawing()) {
+      // Always release drawing state on mouseup, even if `mousePositionRef`
+      // is null (which can happen if mouseleave fires between move and up).
+      // The bug it covers: phase getting stuck in 'dragging' / 'placing-*'
+      // and the next click being treated as a continuation of the previous
+      // interaction — the user-visible "mouse grudado" symptom.
       const mousePos = mousePositionRef.current;
       if (mousePos) {
         drawingInteraction.handleMouseUp(mousePos.x, mousePos.y);
+      } else {
+        drawingInteraction.cancelInteraction();
       }
       handleMouseUp();
       return;
@@ -402,6 +416,31 @@ export const useChartInteraction = ({
       }
     };
   }, []);
+
+  // Safety net: if the user releases the mouse outside the canvas while a
+  // drawing interaction is in flight, the canvas's mouseup handler never
+  // fires. Without a window-level fallback the phase ref stays stuck and
+  // subsequent clicks behave as a continuation of the previous interaction
+  // ("mouse grudado"). The listener is registered once and reads the latest
+  // drawingInteraction through a ref so it doesn't churn on every render.
+  const drawingInteractionRef = useRef(drawingInteraction);
+  useEffect(() => {
+    drawingInteractionRef.current = drawingInteraction;
+  }, [drawingInteraction]);
+  useEffect(() => {
+    const onWindowMouseUp = (): void => {
+      const interaction = drawingInteractionRef.current;
+      if (!interaction?.isDrawing()) return;
+      const pos = mousePositionRef.current;
+      if (pos) {
+        interaction.handleMouseUp(pos.x, pos.y);
+      } else {
+        interaction.cancelInteraction();
+      }
+    };
+    window.addEventListener('mouseup', onWindowMouseUp);
+    return () => window.removeEventListener('mouseup', onWindowMouseUp);
+  }, [mousePositionRef]);
 
   return {
     handleCanvasMouseMove,
