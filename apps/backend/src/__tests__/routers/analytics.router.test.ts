@@ -430,6 +430,111 @@ describe('Analytics Router', () => {
     });
   });
 
+  describe('getDailyPerformance', () => {
+    it('falls back to trade-level pnl when income events have not synced yet (regression: daily PnL stuck after close)', async () => {
+      // The user's complaint: after closing a trade, the sidebar's daily
+      // PnL stays at the previous total until the periodic income sync
+      // populates `incomeEvents`. The fix: use `tradeExecutions.pnl`
+      // sum-by-day as the fallback when `incomeSum === 0` for that day.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const today = new Date();
+      // Insert a closed trade today with realized pnl=300 — but NO matching
+      // incomeEvents row, simulating the "just closed, sync hasn't run" gap.
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '300',
+        fees: '1',
+        openedAt: today,
+        closedAt: today,
+      });
+
+      const result = await caller.analytics.getDailyPerformance({
+        walletId: wallet.id,
+        year: today.getFullYear(),
+        month: today.getMonth() + 1,
+      });
+
+      // The trade is reflected in the daily bucket immediately (pre-sync).
+      const fmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const todayKey = fmt.format(today);
+      const todayBucket = result.find((d) => d.date === todayKey);
+      expect(todayBucket).toBeDefined();
+      expect(todayBucket?.pnl).toBeCloseTo(300, 0);
+      expect(todayBucket?.tradesCount).toBe(1);
+      expect(todayBucket?.wins).toBe(1);
+    });
+
+    it('prefers incomeEvents over trade pnl when both are populated', async () => {
+      // Once the income sync runs, incomeEvents includes funding +
+      // commissions that trade.pnl alone misses. We must surface that.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const today = new Date();
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '100',
+        openedAt: today,
+        closedAt: today,
+      });
+
+      // Simulate income sync — REALIZED_PNL + FUNDING_FEE deltas for today.
+      await db.insert(incomeEvents).values([
+        {
+          userId: user.id,
+          walletId: wallet.id,
+          binanceTranId: 1,
+          incomeType: 'REALIZED_PNL',
+          amount: '100',
+          asset: 'USDT',
+          symbol: 'BTCUSDT',
+          incomeTime: today,
+          source: 'binance',
+        },
+        {
+          userId: user.id,
+          walletId: wallet.id,
+          binanceTranId: 2,
+          incomeType: 'FUNDING_FEE',
+          amount: '5',
+          asset: 'USDT',
+          symbol: 'BTCUSDT',
+          incomeTime: today,
+          source: 'binance',
+        },
+      ]);
+
+      const result = await caller.analytics.getDailyPerformance({
+        walletId: wallet.id,
+        year: today.getFullYear(),
+        month: today.getMonth() + 1,
+      });
+
+      const fmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const todayKey = fmt.format(today);
+      const todayBucket = result.find((d) => d.date === todayKey);
+      // Income sum = 100 + 5 = 105 — preferred over the bare trade.pnl=100.
+      expect(todayBucket?.pnl).toBeCloseTo(105, 0);
+    });
+  });
+
   describe('getSetupStats', () => {
     it('should group stats by setup type', async () => {
       const { user, session } = await createAuthenticatedUser();

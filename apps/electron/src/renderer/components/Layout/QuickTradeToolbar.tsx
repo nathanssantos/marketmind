@@ -236,12 +236,20 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
   const handleConfirmOrder = useCallback(async () => {
     if (!activeWallet?.id || !pendingOrder) return;
     try {
+      // Send the previewed quantity directly — NOT `percent`.
+      // The previous behaviour sent `percent: sizePercent` and let the
+      // backend recompute the quantity using `accountInfo.availableBalance`,
+      // which differs from the frontend's `wallet.currentBalance` whenever
+      // the user has open positions consuming margin. The result was that
+      // a user picking 10% saw a preview based on total wallet balance
+      // but Binance executed 10% of the live available margin — surprising
+      // smaller fills. Sending the quantity guarantees preview == actual.
       await createOrder({
         walletId: activeWallet.id,
         symbol,
         side: pendingOrder.side,
         type: 'MARKET',
-        percent: sizePercent,
+        quantity: pendingOrder.quantity,
         referencePrice: pendingOrder.price,
       });
     } catch (err) {
@@ -250,7 +258,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     } finally {
       setPendingOrder(null);
     }
-  }, [activeWallet?.id, symbol, pendingOrder, createOrder, sizePercent, toastError, t]);
+  }, [activeWallet?.id, symbol, pendingOrder, createOrder, toastError, t]);
 
   const handleSliderChange = useCallback((value: number[]) => {
     const v = value[0];
