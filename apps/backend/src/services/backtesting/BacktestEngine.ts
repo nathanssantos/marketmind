@@ -18,6 +18,7 @@ import { PineStrategyLoader } from '../pine/PineStrategyLoader';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
 import { applyFilterDefaults } from '../../utils/filters/filter-registry';
+import type { BacktestProgressReporter } from './BacktestProgressReporter';
 import { ExitManager } from './ExitManager';
 import { FilterManager } from './FilterManager';
 import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
@@ -28,7 +29,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class BacktestEngine {
-  async run(config: BacktestConfig, klines?: Kline[]): Promise<BacktestResult> {
+  async run(
+    config: BacktestConfig,
+    klines?: Kline[],
+    reporter?: BacktestProgressReporter,
+  ): Promise<BacktestResult> {
     const backtestId = generateEntityId();
     const startTime = Date.now();
 
@@ -36,7 +41,9 @@ export class BacktestEngine {
       console.log('[Backtest] Starting backtest', backtestId, 'for', config.symbol, config.interval);
       console.log('[Backtest] Date range:', config.startDate, 'to', config.endDate);
 
+      reporter?.setPhase('fetchingKlines', 1);
       const historicalKlines = await this.fetchKlines(config, klines);
+      reporter?.tick(1);
       const { setupDetectionService, loadedStrategies, strategyMap } = await this.initializeStrategies(config, historicalKlines);
       const effectiveConfig = this.buildEffectiveConfig(config, loadedStrategies);
 
@@ -120,12 +127,14 @@ export class BacktestEngine {
         useBnbDiscount: config.useBnbDiscount,
       });
 
+      reporter?.setPhase('detectingSetups', 1);
       const { detectedSetups, exitSignalsMap } = await this.detectSetupsWithExitSignals(
         setupDetectionService,
         historicalKlines,
         loadedStrategies,
         effectiveConfig.trendFilterPeriod
       );
+      reporter?.tick(1);
 
       const tradableSetups = await this.filterSetups(
         detectedSetups,
@@ -135,6 +144,7 @@ export class BacktestEngine {
         loadedStrategies
       );
 
+      reporter?.setPhase('simulating', tradableSetups.length);
       const { trades, equity, maxDrawdown, equityCurve } = await this.executeBacktest(
         tradableSetups,
         historicalKlines,
@@ -147,10 +157,13 @@ export class BacktestEngine {
         exitSignalsMap,
         stochasticHtfKlines,
         mtfHtfKlines,
-        mtfHtfInterval
+        mtfHtfInterval,
+        reporter
       );
 
+      reporter?.setPhase('computingMetrics', 1);
       const metrics = calculateBacktestMetrics(trades, config.initialCapital, maxDrawdown);
+      reporter?.tick(1);
 
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -352,7 +365,8 @@ export class BacktestEngine {
     exitSignalsMap: Map<string, (number | null)[]>,
     stochasticHtfKlines: Kline[] = [],
     mtfHtfKlines: Kline[] = [],
-    mtfHtfInterval: string | null = null
+    mtfHtfInterval: string | null = null,
+    reporter?: BacktestProgressReporter
   ): Promise<{ trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: BacktestResult["equityCurve"] }> {
     const trades: TradeResult[] = [];
     let equity = config.initialCapital;
@@ -371,7 +385,11 @@ export class BacktestEngine {
     const sortedSetups = tradableSetups.sort((a: TradingSetup, b: TradingSetup) => a.openTime - b.openTime);
     const openPositions: Array<{ exitTime: number; positionValue: number }> = [];
 
+    let processedSetups = 0;
     for (const setup of sortedSetups) {
+      processedSetups += 1;
+      reporter?.tick(processedSetups);
+
       openPositions.splice(0, openPositions.length,
         ...openPositions.filter(p => p.exitTime > setup.openTime)
       );

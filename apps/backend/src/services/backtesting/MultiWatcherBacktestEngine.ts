@@ -9,6 +9,7 @@ import {
 } from '../../utils/filters';
 import type { FilterResults } from '../../utils/confluence-scoring';
 import type { PineStrategy } from '../pine/types';
+import type { BacktestProgressReporter } from './BacktestProgressReporter';
 import { FilterManager } from './FilterManager';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -56,13 +57,15 @@ export class MultiWatcherBacktestEngine {
 
   constructor(private config: MultiWatcherBacktestConfig) {}
 
-  async run(): Promise<MultiWatcherBacktestResult> {
+  async run(reporter?: BacktestProgressReporter): Promise<MultiWatcherBacktestResult> {
     const backtestId = generateEntityId();
     const startTime = Date.now();
 
     console.log('[MultiWatcherBacktest] Starting backtest', backtestId);
     console.log('[MultiWatcherBacktest] Watchers:', this.config.watchers.length);
     console.log('[MultiWatcherBacktest] Date range:', this.config.startDate, 'to', this.config.endDate);
+
+    reporter?.setPhase('fetchingKlines', 1);
 
     const portfolioConfig: PortfolioConfig = {
       initialCapital: this.config.initialCapital,
@@ -89,8 +92,11 @@ export class MultiWatcherBacktestEngine {
     this.portfolio = new SharedPortfolioManager(portfolioConfig, this.config.watchers.length);
 
     await this.initializeWatchers();
+    reporter?.tick(1);
 
+    reporter?.setPhase('detectingSetups', 1);
     const unifiedTimeline = this.buildUnifiedTimeline();
+    reporter?.tick(1);
     console.log('[MultiWatcherBacktest] Unified timeline events:', unifiedTimeline.length);
 
     const equityCurve: BacktestEquityPoint[] = [
@@ -108,10 +114,13 @@ export class MultiWatcherBacktestEngine {
     const totalEvents = unifiedTimeline.length;
     const progressInterval = Math.max(1000, Math.floor(totalEvents / 10));
 
+    reporter?.setPhase('simulating', totalEvents);
+
     for (const event of unifiedTimeline) {
       await this.processSetupEvent(event);
 
       eventsProcessed++;
+      reporter?.tick(eventsProcessed);
       if (eventsProcessed % progressInterval === 0) {
         const progress = ((eventsProcessed / totalEvents) * 100).toFixed(0);
         console.log(`[MultiWatcherBacktest] Progress: ${progress}% (${eventsProcessed}/${totalEvents} events)`);
@@ -139,7 +148,9 @@ export class MultiWatcherBacktestEngine {
       entryTime: t.entryTime,
       exitTime: t.exitTime,
     }));
+    reporter?.setPhase('computingMetrics', 1);
     const metrics = calculateBacktestMetrics(metricsTrades, this.config.initialCapital, maxDrawdown, maxDrawdownPercent);
+    reporter?.tick(1);
 
     const endTime = Date.now();
     const duration = endTime - startTime;

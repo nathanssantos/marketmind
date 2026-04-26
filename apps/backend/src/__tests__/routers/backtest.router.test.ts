@@ -56,6 +56,11 @@ vi.mock('../../services/logger', () => ({
   },
 }));
 
+const flushBackground = async (): Promise<void> => {
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  await new Promise<void>((resolve) => setImmediate(resolve));
+};
+
 describe('Backtest Router', () => {
   beforeAll(async () => {
     await setupTestDatabase();
@@ -112,29 +117,34 @@ describe('Backtest Router', () => {
   });
 
   describe('run', () => {
-    it('should run backtest with minimal config', async () => {
+    it('should return {backtestId} immediately and complete in background', async () => {
       const { user, session } = await createAuthenticatedUser();
       const caller = createAuthenticatedCaller(user, session);
 
-      const result = await caller.backtest.run({
+      const runResult = await caller.backtest.run({
         symbol: 'BTCUSDT',
         interval: '1h',
         startDate: '2024-01-01',
         endDate: '2024-01-31',
         initialCapital: 10000,
-      }) as any;
+      });
 
-      expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('status', 'COMPLETED');
-      expect(result).toHaveProperty('metrics');
-      expect(result).toHaveProperty('trades');
+      expect(runResult).toEqual({ backtestId: expect.any(String) });
+
+      await flushBackground();
+
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(cached).toHaveProperty('id', runResult.backtestId);
+      expect(cached).toHaveProperty('status', 'COMPLETED');
+      expect(cached).toHaveProperty('metrics');
+      expect(cached).toHaveProperty('trades');
     });
 
-    it('should run backtest with full config', async () => {
+    it('should preserve config in cache for full input', async () => {
       const { user, session } = await createAuthenticatedUser();
       const caller = createAuthenticatedCaller(user, session);
 
-      const result = await caller.backtest.run({
+      const runResult = await caller.backtest.run({
         symbol: 'ETHUSDT',
         interval: '4h',
         startDate: '2024-01-01',
@@ -151,52 +161,17 @@ describe('Backtest Router', () => {
         useBnbDiscount: true,
         useStochasticFilter: true,
         useAdxFilter: false,
-      }) as any;
+      });
 
-      expect(result).toHaveProperty('id');
-      expect(result).toHaveProperty('status', 'COMPLETED');
-      expect(result.config.symbol).toBe('ETHUSDT');
-      expect(result.config.marketType).toBe('FUTURES');
+      await flushBackground();
+
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(cached.status).toBe('COMPLETED');
+      expect(cached.config.symbol).toBe('ETHUSDT');
+      expect(cached.config.marketType).toBe('FUTURES');
     });
 
-    it('should return metrics in result', async () => {
-      const { user, session } = await createAuthenticatedUser();
-      const caller = createAuthenticatedCaller(user, session);
-
-      const result = await caller.backtest.run({
-        symbol: 'BTCUSDT',
-        interval: '1h',
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        initialCapital: 10000,
-      }) as any;
-
-      expect(result.metrics).toHaveProperty('totalTrades');
-      expect(result.metrics).toHaveProperty('winRate');
-      expect(result.metrics).toHaveProperty('totalPnl');
-      expect(result.metrics).toHaveProperty('maxDrawdown');
-      expect(result.metrics).toHaveProperty('profitFactor');
-    });
-
-    it('should include trades in result', async () => {
-      const { user, session } = await createAuthenticatedUser();
-      const caller = createAuthenticatedCaller(user, session);
-
-      const result = await caller.backtest.run({
-        symbol: 'BTCUSDT',
-        interval: '1h',
-        startDate: '2024-01-01',
-        endDate: '2024-01-31',
-        initialCapital: 10000,
-      }) as any;
-
-      expect(result.trades).toBeInstanceOf(Array);
-      expect(result.trades[0]).toHaveProperty('symbol');
-      expect(result.trades[0]).toHaveProperty('side');
-      expect(result.trades[0]).toHaveProperty('pnl');
-    });
-
-    it('should cache result for later retrieval', async () => {
+    it('should expose metrics on the cached result', async () => {
       const { user, session } = await createAuthenticatedUser();
       const caller = createAuthenticatedCaller(user, session);
 
@@ -206,11 +181,58 @@ describe('Backtest Router', () => {
         startDate: '2024-01-01',
         endDate: '2024-01-31',
         initialCapital: 10000,
-      }) as any;
+      });
 
-      const getResult = await caller.backtest.getResult({ id: runResult.id });
+      await flushBackground();
 
-      expect(getResult).toEqual(runResult);
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(cached.metrics).toHaveProperty('totalTrades');
+      expect(cached.metrics).toHaveProperty('winRate');
+      expect(cached.metrics).toHaveProperty('totalPnl');
+      expect(cached.metrics).toHaveProperty('maxDrawdown');
+      expect(cached.metrics).toHaveProperty('profitFactor');
+    });
+
+    it('should expose trades on the cached result', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const runResult = await caller.backtest.run({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+
+      await flushBackground();
+
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(cached.trades).toBeInstanceOf(Array);
+      expect(cached.trades[0]).toHaveProperty('symbol');
+      expect(cached.trades[0]).toHaveProperty('side');
+      expect(cached.trades[0]).toHaveProperty('pnl');
+    });
+
+    it('should be cached during RUNNING and after COMPLETED', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const runResult = await caller.backtest.run({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+
+      const running = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(['RUNNING', 'COMPLETED']).toContain(running.status);
+
+      await flushBackground();
+
+      const finished = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(finished.status).toBe('COMPLETED');
     });
   });
 
@@ -225,11 +247,13 @@ describe('Backtest Router', () => {
         startDate: '2024-01-01',
         endDate: '2024-01-31',
         initialCapital: 10000,
-      }) as any;
+      });
 
-      const result = await caller.backtest.getResult({ id: runResult.id }) as any;
+      await flushBackground();
 
-      expect(result.id).toBe(runResult.id);
+      const result = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+
+      expect(result.id).toBe(runResult.backtestId);
       expect(result.status).toBe('COMPLETED');
     });
 
@@ -264,6 +288,8 @@ describe('Backtest Router', () => {
         initialCapital: 5000,
       });
 
+      await flushBackground();
+
       const results = await caller.backtest.list();
 
       expect(results.length).toBeGreaterThanOrEqual(2);
@@ -294,6 +320,8 @@ describe('Backtest Router', () => {
         initialCapital: 5000,
       });
 
+      await flushBackground();
+
       const results = await caller.backtest.list();
 
       const times = results.map(r => new Date(r.createdAt).getTime());
@@ -314,13 +342,15 @@ describe('Backtest Router', () => {
         startDate: '2024-01-01',
         endDate: '2024-01-31',
         initialCapital: 10000,
-      }) as any;
+      });
 
-      const deleteResult = await caller.backtest.delete({ id: runResult.id });
+      await flushBackground();
+
+      const deleteResult = await caller.backtest.delete({ id: runResult.backtestId });
       expect(deleteResult.success).toBe(true);
 
       await expect(
-        caller.backtest.getResult({ id: runResult.id })
+        caller.backtest.getResult({ id: runResult.backtestId })
       ).rejects.toThrow('Backtest result not found');
     });
 
@@ -382,5 +412,127 @@ describe('Backtest Router', () => {
       ).rejects.toThrow();
     });
 
+    it('should accept all FILTER_REGISTRY toggles + sub-params via shared schema', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const runResult = await caller.backtest.run({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        initialCapital: 10000,
+        useStochasticFilter: true,
+        useStochasticRecoveryFilter: true,
+        useStochasticHtfFilter: true,
+        useStochasticRecoveryHtfFilter: true,
+        useMomentumTimingFilter: true,
+        useAdxFilter: true,
+        useTrendFilter: true,
+        trendFilterPeriod: 50,
+        useChoppinessFilter: true,
+        choppinessThresholdHigh: 70,
+        choppinessThresholdLow: 30,
+        choppinessPeriod: 20,
+        useSessionFilter: true,
+        sessionStartUtc: 8,
+        sessionEndUtc: 17,
+        useBollingerSqueezeFilter: true,
+        bollingerSqueezeThreshold: 0.15,
+        bollingerSqueezePeriod: 20,
+        bollingerSqueezeStdDev: 2.5,
+        useVwapFilter: true,
+        useSuperTrendFilter: true,
+        superTrendPeriod: 14,
+        superTrendMultiplier: 2.5,
+        useDirectionFilter: true,
+        enableLongInBearMarket: false,
+        enableShortInBullMarket: false,
+        useMarketRegimeFilter: true,
+        useVolumeFilter: true,
+        useBtcCorrelationFilter: true,
+        useFundingFilter: true,
+        useMtfFilter: true,
+        useConfluenceScoring: true,
+        confluenceMinScore: 75,
+        useFvgFilter: true,
+        fvgFilterProximityPercent: 0.7,
+      });
+
+      expect(runResult).toEqual({ backtestId: expect.any(String) });
+      await flushBackground();
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(cached.status).toBe('COMPLETED');
+    });
+
+    it('should reject choppinessThresholdHigh > 100', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.backtest.run({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31',
+          initialCapital: 10000,
+          choppinessThresholdHigh: 200,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should reject sessionStartUtc out of 0-23 range', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.backtest.run({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31',
+          initialCapital: 10000,
+          sessionStartUtc: 25,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should reject leverage > 125', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.backtest.run({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31',
+          initialCapital: 10000,
+          leverage: 200,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should accept fibonacciTargetLevelLong/Short split', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const runResult = await caller.backtest.run({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        initialCapital: 10000,
+        tpCalculationMode: 'fibonacci',
+        fibonacciTargetLevelLong: '1.618',
+        fibonacciTargetLevelShort: '1.272',
+        maxFibonacciEntryProgressPercentLong: 100,
+        maxFibonacciEntryProgressPercentShort: 80,
+      });
+
+      await flushBackground();
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as any;
+      expect(cached.status).toBe('COMPLETED');
+    });
   });
 });

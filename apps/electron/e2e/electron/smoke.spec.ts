@@ -1,15 +1,22 @@
 import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type LaunchedApp } from './app-launch';
 import { generateKlines } from '../helpers/klineFixtures';
-import { installTrpcMock } from '../helpers/trpcMock';
+import { installTrpcMockOnContext } from '../helpers/trpcMock';
 
 let launched: LaunchedApp;
 
 test.describe('Electron smoke', () => {
   test.beforeAll(async () => {
-    launched = await launchApp();
     const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
-    await installTrpcMock(launched.window, { klines });
+    launched = await launchApp({
+      // Install the fetch-override mock on the BrowserContext BEFORE
+      // firstWindow(). The renderer's initial load happens too early to
+      // intercept (BrowserWindow.loadURL is called synchronously in main),
+      // so we explicitly reload() below; the init script runs on that
+      // reload's navigation and patches window.fetch before any user code.
+      setupContext: (ctx) => installTrpcMockOnContext(ctx, { klines }),
+    });
+    // Trigger the navigation that runs the init script.
     await launched.window.reload();
     await launched.window.waitForLoadState('domcontentloaded');
   });
