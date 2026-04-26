@@ -1,4 +1,6 @@
 export * from './backtesting';
+export * from './backtesting/backtestInput';
+export * from './backtesting/filterDefinitions';
 export * from './branded';
 export * from './utils';
 export * from './binance';

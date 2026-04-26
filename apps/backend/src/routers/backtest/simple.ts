@@ -1,5 +1,5 @@
-import { FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
-import type { BacktestConfig } from '@marketmind/types';
+import type { BacktestConfig, SimpleBacktestInput } from '@marketmind/types';
+import { simpleBacktestInputSchema } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { DEFAULT_ENABLED_SETUPS } from '../../constants';
@@ -10,45 +10,15 @@ import { serializeError } from '../../utils/errors';
 import { generateEntityId } from '../../utils/id';
 import { backtestResults, getCacheEntry, setCacheEntry } from './shared';
 
+const buildBacktestConfig = (input: SimpleBacktestInput): BacktestConfig => ({
+  ...input,
+  setupTypes: input.setupTypes ?? [...DEFAULT_ENABLED_SETUPS],
+  marketType: input.marketType ?? 'FUTURES',
+});
+
 export const simpleProcedures = {
   run: protectedProcedure
-    .input(
-      z.object({
-        symbol: z.string(),
-        interval: z.string(),
-        startDate: z.string(),
-        endDate: z.string(),
-        initialCapital: z.number().positive(),
-        minProfitPercent: z.number().min(0).optional(),
-        setupTypes: z.array(z.string()).optional(),
-        minConfidence: z.number().min(0).max(100).optional(),
-        useTrendFilter: z.boolean().optional(),
-        useAlgorithmicLevels: z.boolean().optional().default(false),
-        stopLossPercent: z.number().positive().optional(),
-        takeProfitPercent: z.number().positive().optional(),
-        commission: z.number().min(0).max(1).optional(),
-        marketType: z.enum(['SPOT', 'FUTURES']).optional().default('FUTURES'),
-        useBnbDiscount: z.boolean().optional().default(false),
-        useStochasticFilter: z.boolean().optional(),
-        useAdxFilter: z.boolean().optional(),
-        useMtfFilter: z.boolean().optional(),
-        useBtcCorrelationFilter: z.boolean().optional(),
-        useMarketRegimeFilter: z.boolean().optional(),
-        useVolumeFilter: z.boolean().optional(),
-        useFundingFilter: z.boolean().optional(),
-        useConfluenceScoring: z.boolean().optional(),
-        confluenceMinScore: z.number().min(0).max(100).optional(),
-        useMomentumTimingFilter: z.boolean().optional(),
-        trendFilterPeriod: z.number().min(1).optional(),
-        tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
-        positionSizePercent: z.number().min(1).max(100).optional(),
-        leverage: z.number().min(1).max(125).optional(),
-        cooldownMinutes: z.number().min(0).optional(),
-        useCooldown: z.boolean().optional(),
-        minRiskRewardRatio: z.number().min(0).optional(),
-      })
-    )
+    .input(simpleBacktestInputSchema)
     .mutation(async ({ input }) => {
       const backtestId = generateEntityId();
       const startTime = Date.now();
@@ -69,40 +39,7 @@ export const simpleProcedures = {
           endDate: input.endDate,
         }, 'Starting backtest');
 
-        const config: BacktestConfig = {
-          symbol: input.symbol,
-          interval: input.interval,
-          startDate: input.startDate,
-          endDate: input.endDate,
-          initialCapital: input.initialCapital,
-          setupTypes: input.setupTypes ?? [...DEFAULT_ENABLED_SETUPS],
-          minConfidence: input.minConfidence,
-          useTrendFilter: input.useTrendFilter,
-          useAlgorithmicLevels: input.useAlgorithmicLevels,
-          stopLossPercent: input.stopLossPercent,
-          takeProfitPercent: input.takeProfitPercent,
-          commission: input.commission,
-          marketType: input.marketType,
-          useBnbDiscount: input.useBnbDiscount,
-          useStochasticFilter: input.useStochasticFilter,
-          useAdxFilter: input.useAdxFilter,
-          useMtfFilter: input.useMtfFilter,
-          useBtcCorrelationFilter: input.useBtcCorrelationFilter,
-          useMarketRegimeFilter: input.useMarketRegimeFilter,
-          useVolumeFilter: input.useVolumeFilter,
-          useFundingFilter: input.useFundingFilter,
-          useConfluenceScoring: input.useConfluenceScoring,
-          confluenceMinScore: input.confluenceMinScore,
-          useMomentumTimingFilter: input.useMomentumTimingFilter,
-          trendFilterPeriod: input.trendFilterPeriod,
-          tpCalculationMode: input.tpCalculationMode,
-          fibonacciTargetLevel: input.fibonacciTargetLevel,
-          positionSizePercent: input.positionSizePercent,
-          leverage: input.leverage,
-          cooldownMinutes: input.cooldownMinutes,
-          useCooldown: input.useCooldown,
-          minRiskRewardRatio: input.minRiskRewardRatio,
-        };
+        const config = buildBacktestConfig(input);
 
         const engine = new BacktestEngine();
         const result = await engine.run(config);

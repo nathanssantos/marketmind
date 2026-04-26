@@ -1,4 +1,4 @@
-import { FIBONACCI_TARGET_LEVELS } from '@marketmind/fibonacci';
+import { multiWatcherBacktestInputSchema } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { MultiWatcherBacktestEngine } from '../../services/backtesting/MultiWatcherBacktestEngine';
@@ -11,49 +11,13 @@ import { multiWatcherResults } from './shared';
 
 export const multiProcedures = {
   multiWatcher: protectedProcedure
-    .input(
-      z.object({
-        walletId: z.string().optional(),
-        watchers: z
-          .array(
-            z.object({
-              symbol: z.string(),
-              interval: z.string(),
-              setupTypes: z.array(z.string()).optional(),
-              marketType: z.enum(['SPOT', 'FUTURES']).optional(),
-              profileId: z.string().optional(),
-            })
-          )
-          .optional(),
-        startDate: z.string(),
-        endDate: z.string(),
-        initialCapital: z.number().positive().default(10000),
-        positionSizePercent: z.number().min(1).max(100).optional(),
-        useStochasticFilter: z.boolean().optional(),
-        useAdxFilter: z.boolean().optional(),
-        minRiskRewardRatio: z.number().min(0).optional(),
-        cooldownMinutes: z.number().min(0).optional(),
-        marketType: z.enum(['SPOT', 'FUTURES']).optional(),
-        leverage: z.number().min(1).max(125).optional(),
-        tpCalculationMode: z.enum(['default', 'fibonacci']).optional(),
-        fibonacciTargetLevel: z.enum(FIBONACCI_TARGET_LEVELS).optional(),
-        useMtfFilter: z.boolean().optional(),
-        useBtcCorrelationFilter: z.boolean().optional(),
-        useMarketRegimeFilter: z.boolean().optional(),
-        useVolumeFilter: z.boolean().optional(),
-        useFundingFilter: z.boolean().optional(),
-        useConfluenceScoring: z.boolean().optional(),
-        confluenceMinScore: z.number().min(0).max(100).optional(),
-        useMomentumTimingFilter: z.boolean().optional(),
-        useTrendFilter: z.boolean().optional(),
-        trendFilterPeriod: z.number().min(1).optional(),
-      })
-    )
+    .input(multiWatcherBacktestInputSchema)
     .mutation(async ({ input }) => {
       const backtestId = generateEntityId();
 
       try {
         let config;
+        const initialCapital = input.initialCapital ?? 10_000;
 
         if (input.walletId) {
           config = await loadMultiWatcherConfigFromAutoTrading(
@@ -61,7 +25,7 @@ export const multiProcedures = {
             {
               startDate: input.startDate,
               endDate: input.endDate,
-              initialCapital: input.initialCapital,
+              initialCapital,
             },
             {
               tpCalculationMode: input.tpCalculationMode,
@@ -83,7 +47,7 @@ export const multiProcedures = {
           config = buildMultiWatcherConfigFromWatchers(input.watchers, {
             startDate: input.startDate,
             endDate: input.endDate,
-            initialCapital: input.initialCapital,
+            initialCapital,
             positionSizePercent: input.positionSizePercent,
             useStochasticFilter: input.useStochasticFilter,
             useAdxFilter: input.useAdxFilter,
@@ -149,7 +113,7 @@ export const multiProcedures = {
             winRate: result.metrics.winRate,
             totalPnl: result.metrics.totalPnl,
             totalPnlPercent: result.metrics.totalPnlPercent,
-            finalEquity: input.initialCapital + result.metrics.totalPnl,
+            finalEquity: initialCapital + result.metrics.totalPnl,
             maxDrawdown: result.metrics.maxDrawdown,
             maxDrawdownPercent: result.metrics.maxDrawdownPercent,
             profitFactor: result.metrics.profitFactor,

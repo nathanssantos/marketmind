@@ -382,5 +382,123 @@ describe('Backtest Router', () => {
       ).rejects.toThrow();
     });
 
+    it('should accept all FILTER_REGISTRY toggles + sub-params via shared schema', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.backtest.run({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        initialCapital: 10000,
+        useStochasticFilter: true,
+        useStochasticRecoveryFilter: true,
+        useStochasticHtfFilter: true,
+        useStochasticRecoveryHtfFilter: true,
+        useMomentumTimingFilter: true,
+        useAdxFilter: true,
+        useTrendFilter: true,
+        trendFilterPeriod: 50,
+        useChoppinessFilter: true,
+        choppinessThresholdHigh: 70,
+        choppinessThresholdLow: 30,
+        choppinessPeriod: 20,
+        useSessionFilter: true,
+        sessionStartUtc: 8,
+        sessionEndUtc: 17,
+        useBollingerSqueezeFilter: true,
+        bollingerSqueezeThreshold: 0.15,
+        bollingerSqueezePeriod: 20,
+        bollingerSqueezeStdDev: 2.5,
+        useVwapFilter: true,
+        useSuperTrendFilter: true,
+        superTrendPeriod: 14,
+        superTrendMultiplier: 2.5,
+        useDirectionFilter: true,
+        enableLongInBearMarket: false,
+        enableShortInBullMarket: false,
+        useMarketRegimeFilter: true,
+        useVolumeFilter: true,
+        useBtcCorrelationFilter: true,
+        useFundingFilter: true,
+        useMtfFilter: true,
+        useConfluenceScoring: true,
+        confluenceMinScore: 75,
+        useFvgFilter: true,
+        fvgFilterProximityPercent: 0.7,
+      }) as any;
+
+      expect(result).toHaveProperty('id');
+      expect(result.status).toBe('COMPLETED');
+    });
+
+    it('should reject choppinessThresholdHigh > 100', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.backtest.run({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31',
+          initialCapital: 10000,
+          choppinessThresholdHigh: 200,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should reject sessionStartUtc out of 0-23 range', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.backtest.run({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31',
+          initialCapital: 10000,
+          sessionStartUtc: 25,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should reject leverage > 125', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.backtest.run({
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          startDate: '2024-01-01',
+          endDate: '2024-01-31',
+          initialCapital: 10000,
+          leverage: 200,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should accept fibonacciTargetLevelLong/Short split', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.backtest.run({
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        initialCapital: 10000,
+        tpCalculationMode: 'fibonacci',
+        fibonacciTargetLevelLong: '1.618',
+        fibonacciTargetLevelShort: '1.272',
+        maxFibonacciEntryProgressPercentLong: 100,
+        maxFibonacciEntryProgressPercentShort: 80,
+      }) as any;
+
+      expect(result.status).toBe('COMPLETED');
+    });
   });
 });
