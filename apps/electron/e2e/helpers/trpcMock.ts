@@ -71,16 +71,18 @@ const parseBatchInput = (raw: string | null): Record<string, unknown> => {
   }
 };
 
-const buildBatchResponse = (
+const buildBatchResponse = async (
   paths: string[],
   inputs: Record<string, unknown>,
   resolverMap: TrpcResolverMap,
-): Array<{ result: { data: unknown } }> =>
-  paths.map((path, i) => {
-    const input = unwrapJson(inputs[String(i)]);
-    const data = resolveValue(resolverMap, path, input);
-    return { result: { data } };
-  });
+): Promise<Array<{ result: { data: unknown } }>> =>
+  Promise.all(
+    paths.map(async (path, i) => {
+      const input = unwrapJson(inputs[String(i)]);
+      const data = await resolveValue(resolverMap, path, input);
+      return { result: { data } };
+    }),
+  );
 
 /**
  * Single source of truth for the resolver map composition. The factory for
@@ -189,7 +191,7 @@ export const installTrpcMock = async (page: Page, options: TrpcMockOptions = {})
       }
     }, paths).catch(() => { /* best effort — ignore if page not ready */ });
 
-    const body = buildBatchResponse(paths, inputs, resolverMap);
+    const body = await buildBatchResponse(paths, inputs, resolverMap);
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
