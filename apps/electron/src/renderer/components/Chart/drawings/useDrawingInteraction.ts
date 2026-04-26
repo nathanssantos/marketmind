@@ -28,7 +28,13 @@ interface UseDrawingInteractionResult {
   handleMouseDown: (x: number, y: number) => boolean;
   handleMouseMove: (x: number, y: number) => boolean;
   handleMouseUp: (x: number, y: number) => boolean;
-  isDrawing: boolean;
+  cancelInteraction: () => boolean;
+  // Read live from `phaseRef.current` so callers always see the latest value.
+  // Returning a snapshotted boolean would be stale: the hook does not
+  // re-render between mouse events (no zustand subscription tracks the
+  // phase), so a snapshot taken at the previous render would still show
+  // 'idle' after a mousedown that just transitioned to 'placing-second'.
+  isDrawing: () => boolean;
   getCursor: () => string | null;
   pendingDrawingRef: React.MutableRefObject<Drawing | null>;
   lastSnapRef: React.MutableRefObject<OHLCSnapIndicator | null>;
@@ -220,12 +226,27 @@ export const useDrawingInteraction = ({
         return false;
       }
 
-      if (hit.drawingId !== selectedId) store.selectDrawing(hit.drawingId);
-
       const drawing = drawings.find(d => d.id === hit.drawingId);
-      if (!drawing || drawing.locked) return true;
+      if (!drawing || drawing.locked) {
+        if (hit.drawingId !== selectedId) store.selectDrawing(hit.drawingId);
+        return true;
+      }
 
       const isFibBody = drawing.type === 'fibonacci' && (hit.handleType === null || hit.handleType === 'body');
+
+      // First click on an unselected drawing only selects it — handles become
+      // visible, and the user has to mousedown again to drag. The exception
+      // is when the hit landed directly on a handle (handleType !== null and
+      // not 'body'): handles are only rendered after selection so this can
+      // only happen on a click against an already-selected drawing, but we
+      // treat it as a drag-prepared selection anyway in case selection state
+      // is racing the renderer.
+      const isHandleHit = hit.handleType !== null && hit.handleType !== 'body' && !isFibBody;
+      if (hit.drawingId !== selectedId) {
+        store.selectDrawing(hit.drawingId);
+        if (!isHandleHit) return true;
+      }
+
       if (isFibBody) return true;
 
       const rawDrawing = rawDrawings.find(d => d.id === hit.drawingId);
@@ -504,10 +525,15 @@ export const useDrawingInteraction = ({
         drawing = { ...drawing, endIndex: index, endPrice: price };
       }
 
+      // A click without drag (start === end on both axes) leaves a degenerate
+      // drawing on the chart that's effectively invisible but still selectable
+      // — confusing for users. Cancel placement when start === end across
+      // every 2-point type, plus the fibonacci-specific case where both
+      // swings collapse to the same price.
       const isZeroLength =
-        (drawing.type === 'fibonacci' && drawing.swingLowPrice === drawing.swingHighPrice) ||
+        (drawing.type === 'fibonacci' && drawing.swingLowPrice === drawing.swingHighPrice && drawing.swingLowIndex === drawing.swingHighIndex) ||
         ((drawing.type === 'rectangle' || drawing.type === 'area') && (drawing.startIndex === drawing.endIndex || drawing.startPrice === drawing.endPrice)) ||
-        ((drawing.type === 'line' || drawing.type === 'ruler' || drawing.type === 'arrow') && drawing.startIndex === drawing.endIndex && drawing.startPrice === drawing.endPrice);
+        (isTwoPointDrawing(drawing) && drawing.startIndex === drawing.endIndex && drawing.startPrice === drawing.endPrice);
 
       const store = useDrawingStore.getState();
 
@@ -547,7 +573,29 @@ export const useDrawingInteraction = ({
     return false;
   }, [manager, getIndexAndPrice]);
 
-  const isDrawing = phaseRef.current !== 'idle';
+  const cancelInteraction = useCallback((): boolean => {
+    const phase = phaseRef.current;
+    if (phase === 'idle') return false;
+
+    // Drag in progress: leave the drawing where it landed (don't revert),
+    // just release the drag state. The mouse should be free again.
+    if (phase === 'dragging') {
+      dragStartRef.current = null;
+      phaseRef.current = 'idle';
+      manager?.markDirty('overlays');
+      return true;
+    }
+
+    // Placement in progress: discard the pending drawing entirely. A
+    // mid-placement abandon (mouse left the canvas, modifier-cancel, etc.)
+    // shouldn't litter the chart with half-built drawings.
+    pendingDrawingRef.current = null;
+    phaseRef.current = 'idle';
+    manager?.markDirty('overlays');
+    return true;
+  }, [manager]);
+
+  const isDrawing = useCallback((): boolean => phaseRef.current !== 'idle', []);
 
   const getCursor = useCallback((): string | null => {
     const store = useDrawingStore.getState();
@@ -576,6 +624,7 @@ export const useDrawingInteraction = ({
     handleMouseDown,
     handleMouseMove,
     handleMouseUp,
+    cancelInteraction,
     isDrawing,
     getCursor,
     pendingDrawingRef,
