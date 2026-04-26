@@ -473,9 +473,14 @@ describe('Analytics Router', () => {
       expect(todayBucket?.wins).toBe(1);
     });
 
-    it('prefers incomeEvents over trade pnl when both are populated', async () => {
-      // Once the income sync runs, incomeEvents includes funding +
-      // commissions that trade.pnl alone misses. We must surface that.
+    it('always prefers trade-level pnl on days with closed trades — even when incomeEvents already has prior trades for the day (regression: third trade on same day)', async () => {
+      // The user's reproduction: today already had 2 closed trades that
+      // had been picked up by an earlier income-sync pass — so
+      // `incomeSum != 0` and the previous fallback (only-when-zero) did
+      // nothing. They closed a 3rd trade and the sidebar's "Today's P&L"
+      // stayed at the old +40.66 / 2 trades value because the new trade
+      // hadn't been synced yet but the daily was reading from incomeSum
+      // (frozen at the pre-3rd-trade total).
       const { user, session } = await createAuthenticatedUser();
       const wallet = await createTestWallet({
         userId: user.id,
@@ -486,40 +491,35 @@ describe('Analytics Router', () => {
       const db = getTestDatabase();
 
       const today = new Date();
+      // Two earlier trades for today, already synced: pnl 20 + 20 = 40.
       await createTestTradeExecution({
-        userId: user.id,
-        walletId: wallet.id,
-        status: 'closed',
-        pnl: '100',
-        openedAt: today,
-        closedAt: today,
+        userId: user.id, walletId: wallet.id, status: 'closed',
+        pnl: '20', openedAt: today, closedAt: today,
       });
-
-      // Simulate income sync — REALIZED_PNL + FUNDING_FEE deltas for today.
+      await createTestTradeExecution({
+        userId: user.id, walletId: wallet.id, status: 'closed',
+        pnl: '20', openedAt: today, closedAt: today,
+      });
       await db.insert(incomeEvents).values([
         {
-          userId: user.id,
-          walletId: wallet.id,
-          binanceTranId: 1,
-          incomeType: 'REALIZED_PNL',
-          amount: '100',
-          asset: 'USDT',
-          symbol: 'BTCUSDT',
-          incomeTime: today,
-          source: 'binance',
+          userId: user.id, walletId: wallet.id, binanceTranId: 1,
+          incomeType: 'REALIZED_PNL', amount: '20', asset: 'USDT',
+          symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
         },
         {
-          userId: user.id,
-          walletId: wallet.id,
-          binanceTranId: 2,
-          incomeType: 'FUNDING_FEE',
-          amount: '5',
-          asset: 'USDT',
-          symbol: 'BTCUSDT',
-          incomeTime: today,
-          source: 'binance',
+          userId: user.id, walletId: wallet.id, binanceTranId: 2,
+          incomeType: 'REALIZED_PNL', amount: '20', asset: 'USDT',
+          symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
         },
       ]);
+
+      // The 3rd trade just closed — pnl 50 — but the income sync hasn't
+      // picked it up yet. This is the gap the old fallback couldn't bridge
+      // because incomeSum was already 40 (non-zero) from the first two.
+      await createTestTradeExecution({
+        userId: user.id, walletId: wallet.id, status: 'closed',
+        pnl: '50', openedAt: today, closedAt: today,
+      });
 
       const result = await caller.analytics.getDailyPerformance({
         walletId: wallet.id,
@@ -530,8 +530,42 @@ describe('Analytics Router', () => {
       const fmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
       const todayKey = fmt.format(today);
       const todayBucket = result.find((d) => d.date === todayKey);
-      // Income sum = 100 + 5 = 105 — preferred over the bare trade.pnl=100.
-      expect(todayBucket?.pnl).toBeCloseTo(105, 0);
+      expect(todayBucket?.tradesCount).toBe(3);
+      // The new rule: with closed trades on the day, use trade-level pnl.
+      // 20 + 20 + 50 = 90 — reflects all 3 trades immediately, not the
+      // stale incomeSum=40.
+      expect(todayBucket?.pnl).toBeCloseTo(90, 0);
+    });
+
+    it('falls back to incomeSum on days with NO closed trades (funding-only days)', async () => {
+      // A user who's holding through a funding interval on a flat day
+      // (no positions opened or closed, just funding rolling) should
+      // still see the funding delta — which only exists in incomeEvents.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id, walletType: 'paper', initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const today = new Date();
+      await db.insert(incomeEvents).values({
+        userId: user.id, walletId: wallet.id, binanceTranId: 99,
+        incomeType: 'FUNDING_FEE', amount: '-3.5', asset: 'USDT',
+        symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
+      });
+
+      const result = await caller.analytics.getDailyPerformance({
+        walletId: wallet.id,
+        year: today.getFullYear(),
+        month: today.getMonth() + 1,
+      });
+
+      const fmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const todayKey = fmt.format(today);
+      const todayBucket = result.find((d) => d.date === todayKey);
+      expect(todayBucket?.tradesCount).toBe(0);
+      expect(todayBucket?.pnl).toBeCloseTo(-3.5, 1);
     });
   });
 

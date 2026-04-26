@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.108.0] - 2026-04-26
+
+Follow-up to v0.107.0: the daily-PnL fix was incomplete and the user reproduced the same symptom on a 3rd close.
+
+### Fixed
+- **Daily PnL only refreshed on the FIRST close of the day** (`apps/backend/src/routers/analytics/stats.ts` — `getDailyPerformance`). v0.107.0 fell back to trade-level PnL only when `incomeSum === 0`. The user's reproduction: 2 earlier trades closed and the periodic income sync had picked them up — so `incomeSum = 40` (non-zero). They closed a 3rd trade; `tradeRealizedNet` jumped to 90 but `incomeSum` was still 40 (next sync hadn't run). The fallback condition was false → the sidebar's "Today's P&L" stayed on +40.66 / 2 trades. Replaced with a sharper rule: when the day has any closed trades (`stats.closedPositions > 0`), always use `tradeRealizedNet` — gives an instant update on every close, on every trade, and stays consistent with the wins/losses count above (which already comes from `tradeStatsByDay`). Funding-only days (no closed trades) still fall through to `incomeSum` so the funding delta surfaces.
+
+### Changed
+- **Backend regression test** (`apps/backend/src/__tests__/routers/analytics.router.test.ts`). Replaced "prefers incomeEvents over trade pnl when both are populated" — that assertion encoded the broken behaviour where `incomeSum` would shadow a freshly-closed trade. The new test seeds 2 prior trades synced to `incomeEvents` (`incomeSum = 40`) + a 3rd closed trade not yet synced, asserts the daily bucket returns `pnl: 90` (sum of all 3 trades), not the stale 40. Kept the "no closed trades, funding-only day" case so the income-sum branch is still exercised.
+
+### Notes
+- Backend tests: 5370 → 5371 (one replaced, one added). Frontend untouched.
+
 ## [0.107.0] - 2026-04-26
 
 Two real bugs in the sidebar trading flow that the user reported. Both were single-source-of-truth violations producing surprising behaviour.
