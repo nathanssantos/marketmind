@@ -11,7 +11,7 @@ test.describe('Backtest modal — open / close from toolbar', () => {
     await waitForChartReady(page);
   });
 
-  test('toolbar button opens the modal and close button hides it', async ({ page }) => {
+  test('toolbar button opens the modal with the form, escape closes it', async ({ page }) => {
     const trigger = page.getByRole('button', { name: 'Backtest', exact: true });
     await expect(trigger).toBeVisible();
 
@@ -21,9 +21,31 @@ test.describe('Backtest modal — open / close from toolbar', () => {
 
     const dialog = page.getByRole('dialog', { name: 'Backtest' });
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText('Backtest configuration coming soon.')).toBeVisible();
+
+    // Form tabs visible
+    await expect(dialog.getByRole('tab', { name: 'Basic' })).toBeVisible();
+    await expect(dialog.getByRole('tab', { name: 'Strategies' })).toBeVisible();
+    await expect(dialog.getByRole('tab', { name: 'Filters' })).toBeVisible();
+    await expect(dialog.getByRole('tab', { name: 'Risk' })).toBeVisible();
+
+    // Submit button rendered
+    await expect(dialog.getByRole('button', { name: 'Run backtest' })).toBeVisible();
 
     await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog', { name: 'Backtest' })).toHaveCount(0);
+  });
+
+  test('Cmd+Shift+B keyboard shortcut toggles the modal', async ({ page }) => {
+    await expect(page.getByRole('dialog', { name: 'Backtest' })).toHaveCount(0);
+
+    const isMac = process.platform === 'darwin';
+    const modifier = isMac ? 'Meta' : 'Control';
+
+    await page.keyboard.press(`${modifier}+Shift+KeyB`);
+
+    await expect(page.getByRole('dialog', { name: 'Backtest' })).toBeVisible();
+
+    await page.keyboard.press(`${modifier}+Shift+KeyB`);
     await expect(page.getByRole('dialog', { name: 'Backtest' })).toHaveCount(0);
   });
 });
