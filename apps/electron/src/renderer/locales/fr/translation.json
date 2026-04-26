@@ -1768,13 +1768,12 @@
     }
   },
   "marketSidebar": {
-    "title": "Marché & Watchers",
+    "title": "Marché",
     "close": "Fermer la sidebar de marché",
     "tabs": {
       "indicators": "Marché",
       "watchers": "Watchers",
-      "logs": "Logs",
-      "scanner": "Scanner"
+      "logs": "Logs"
     },
     "indicators": {
       "title": "Indicateurs de Marché",
