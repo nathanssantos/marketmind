@@ -418,6 +418,8 @@ export const useChartStore = create<ChartState>((set) => ({
 ## 🧪 Testing Approach
 
 > **Browser automation for agents:** see [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md). Three layers — Playwright MCP (generic web), chart perf harness (`pnpm --filter @marketmind/electron test:perf`), Electron smoke (`pnpm --filter @marketmind/electron test:e2e:electron`). Renderer-only auth bypass via `VITE_E2E_BYPASS_AUTH=true`.
+>
+> **⚠️ Electron e2e — never use `page.route()`:** Playwright's `page.route()` enables CDP request interception that conflicts with Vite's ESM module loader in the Electron renderer; on reload, every `/src/**` and `@vite/client` request fails with `net::ERR_FAILED` and React never mounts (true even when the route pattern matches none of those URLs). Use `installTrpcMockOnContext(ctx)` (addInitScript fetch monkey-patch) instead — see Layer 4 in `docs/BROWSER_TESTING.md`.
 
 ### Unit Tests (Frontend)
 
