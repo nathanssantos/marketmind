@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.103.0] - 2026-04-26
+
+Bug-fix release. The Analytics modal had two related issues that produced contradictory cards on the same screen — both fixed here, with regression coverage at every layer.
+
+### Fixed
+- **`analytics.getPerformance` — period-aware `totalReturn`** (`apps/backend/src/routers/analytics/trades.ts`). Before this fix, `totalReturn` was always derived from the all-time wallet balance (`(currentBalance - effectiveCapital) / effectiveCapital`) regardless of the period selected. That produced screens like "Net PnL +$615.85 / Total Return -37.86%" on the same Week filter — opposite signs for the same period. Now: for `period === 'all'` the calculation is unchanged; for `'day' | 'week' | 'month'` it's `(netPnL / effectiveCapital) * 100`, sign-consistent with `netPnL` by construction.
+- **`analytics.getPerformance` — single source of truth for `netPnL`** (same router). Previously `netPnL` was overridden with `getDailyIncomeSum` (Binance income — REALIZED_PNL + COMMISSION + FUNDING_FEE) when a period was selected, while W/L count, `avgWin`, `avgLoss`, `profitFactor`, and `largestWin`/`largestLoss` were always computed from per-trade `tradeExecutions.pnl`. Funding paid on currently-open positions slipped into `netPnL` but never into the trade-level metrics, breaking the math users expect: `W × avgWin + L × avgLoss == netPnL`. Now all metrics come from the same `tradeExecutions.pnl` sum so the identity always holds. `totalFunding` (already returned in the payload) is now displayed separately in the UI as `Gross · Fees · Funding` so the funding component stays visible without polluting `netPnL`.
+
+### Changed
+- **`PerformancePanel` Net PnL subtext** (`apps/electron/src/renderer/components/Trading/PerformancePanel.tsx`) now shows `Gross · Fees · Funding` when `totalFunding !== 0`. When funding is exactly zero (e.g. SPOT-only wallets, paper wallets) the line collapses back to `Gross · Fees`.
+
+### Added
+- **Backend regression tests** (`apps/backend/src/__tests__/routers/analytics.router.test.ts`, +2 cases):
+  - `should keep totalReturn sign-consistent with netPnL across periods` — seeds a recent winner + an older loser, then asserts `Math.sign(netPnL) === Math.sign(totalReturn)` for both `day` and `month` periods.
+  - `should keep netPnL = sum(trade.pnl) so W × avgWin + L × avgLoss matches` — stuffs a stray `FUNDING_FEE` income event into the period; under the old implementation it would have polluted `netPnL` and broken the W/L math identity.
+- **Frontend unit tests** (`apps/electron/src/renderer/components/Trading/PerformancePanel.test.tsx`, 9 cases): renders all 9 metric cards, positive/negative `totalReturn` formatting, `Gross / Fees / Funding` conditional subtext, W/L summary line, period button → `setPerformancePeriod`, loading + no-data branches.
+- **E2E** (`apps/electron/e2e/analytics-modal.spec.ts`, 7 specs): toolbar trigger toggle, all metric labels render, period buttons each trigger `analytics.getPerformance` re-fetch, `totalReturn` sign flips when switching from `All Time` → `Week` (the actual regression visible to the user), `Gross · Fees · Funding` subtext, no-wallet state.
+
+### Notes
+- Floors lifted: backend tests 5366 → 5368 (+2), frontend unit 1828 → 1837 (+9), e2e 148 → 155 (+7).
+- The 4 pre-existing baseline flakes (`symbol-tab-percentages` socket-driven specs, `visual/chart.visual` snapshots) confirmed unrelated.
+
 ## [0.102.0] - 2026-04-26
 
 Closes the largest e2e gap in the app: **auto-trading was at zero specs** before this release. Mirrors the coverage shape that just shipped for Backtest (v0.100.0) and Screener (v0.101.0).
