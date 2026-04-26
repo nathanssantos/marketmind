@@ -307,6 +307,127 @@ describe('Analytics Router', () => {
       expect(weekResult.totalTrades).toBe(2);
       expect(monthResult.totalTrades).toBe(3);
     });
+
+    it('should keep totalReturn sign-consistent with netPnL across periods', async () => {
+      // Regression for the bug where Total Return was always derived from
+      // the all-time wallet balance regardless of the selected period — so
+      // a profitable Week could appear next to a deeply negative all-time
+      // return, with conflicting signs on the same screen.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+
+      // Recent winning trade (inside Day window)
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '500',
+        fees: '5',
+        openedAt: oneHourAgo,
+        closedAt: oneHourAgo,
+      });
+
+      // Older losing trade (outside Day window, inside Month)
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '-2000',
+        fees: '5',
+        openedAt: tenDaysAgo,
+        closedAt: tenDaysAgo,
+      });
+
+      const dayResult = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'day' });
+      const monthResult = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'month' });
+
+      // Day: only the +500 trade is visible — netPnL > 0 ⇒ totalReturn > 0
+      expect(dayResult.netPnL).toBeGreaterThan(0);
+      expect(dayResult.totalReturn).toBeGreaterThan(0);
+      expect(Math.sign(dayResult.netPnL)).toBe(Math.sign(dayResult.totalReturn));
+
+      // Month: both trades visible — netPnL < 0 ⇒ totalReturn < 0
+      expect(monthResult.netPnL).toBeLessThan(0);
+      expect(monthResult.totalReturn).toBeLessThan(0);
+      expect(Math.sign(monthResult.netPnL)).toBe(Math.sign(monthResult.totalReturn));
+    });
+
+    it('should keep netPnL = sum(trade.pnl) so W × avgWin + L × avgLoss matches', async () => {
+      // Regression for the W/L count vs netPnL desync: the previous
+      // implementation overrode netPnL with `getDailyIncomeSum` whenever a
+      // period was selected, mixing two data sources and breaking the math
+      // users expect (W × avgWin + L × avgLoss == netPnL).
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const now = new Date();
+      const recent = new Date(now.getTime() - 60 * 60 * 1000);
+
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '100',
+        fees: '1',
+        openedAt: recent,
+        closedAt: recent,
+      });
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '200',
+        fees: '1',
+        openedAt: recent,
+        closedAt: recent,
+      });
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '-50',
+        fees: '1',
+        openedAt: recent,
+        closedAt: recent,
+      });
+
+      // Stuff a stray Binance income event into the period — under the old
+      // implementation this would have polluted netPnL and broken the math.
+      const db = getTestDatabase();
+      await db.insert(incomeEvents).values({
+        userId: user.id,
+        walletId: wallet.id,
+        binanceTranId: Date.now(),
+        incomeType: 'FUNDING_FEE',
+        amount: '999',
+        asset: 'USDT',
+        symbol: 'BTCUSDT',
+        incomeTime: recent,
+        source: 'binance',
+      });
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'day' });
+
+      const expectedNet = result.winningTrades * result.avgWin + result.losingTrades * result.avgLoss;
+      expect(result.netPnL).toBeCloseTo(expectedNet, 1);
+
+      // The stray FUNDING_FEE row must NOT bleed into netPnL.
+      expect(result.netPnL).toBeCloseTo(250, 0);
+    });
   });
 
   describe('getSetupStats', () => {
