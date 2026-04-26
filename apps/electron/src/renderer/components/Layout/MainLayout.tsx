@@ -10,6 +10,7 @@ import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { ChartType, MarketType } from '@marketmind/types';
 import { MarketSidebar } from '../MarketSidebar';
 import { AnalyticsModal } from '../Analytics';
+import { BacktestModal } from '../Backtest';
 import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { TradingSidebar } from '../Trading/TradingSidebar';
@@ -265,6 +266,7 @@ const MainLayoutComponent = ({
           onAdvancedConfigChange={onAdvancedConfigChange}
         />
         <ScreenerModal onSymbolClick={onNavigateToSymbol} />
+        <BacktestModal />
         <AnalyticsModal />
       </Box>
     </GlobalActionsProvider>

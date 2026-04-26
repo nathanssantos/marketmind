@@ -8,6 +8,9 @@ import {
   type AppNotificationPayload,
   type AutoTradingLogEntryPayload,
   type BackfillProgressPayload,
+  type BacktestCompletePayload,
+  type BacktestFailedPayload,
+  type BacktestProgressPayload,
   type ClientToServerEvents,
   type DailyLossLimitPayload,
   type KlineSubscribePayload,
@@ -354,6 +357,18 @@ export class WebSocketService {
 
   public emitBackfillProgress(walletId: string, data: BackfillProgressPayload): void {
     this.io.to(ROOMS.wallet(walletId)).emit(SERVER_TO_CLIENT_EVENTS.backfillProgress, data);
+  }
+
+  public emitBacktestProgress(userId: string, data: BacktestProgressPayload): void {
+    this.io.to(ROOMS.user(userId)).emit(SERVER_TO_CLIENT_EVENTS.backtestProgress, data);
+  }
+
+  public emitBacktestComplete(userId: string, data: BacktestCompletePayload): void {
+    this.io.to(ROOMS.user(userId)).emit(SERVER_TO_CLIENT_EVENTS.backtestComplete, data);
+  }
+
+  public emitBacktestFailed(userId: string, data: BacktestFailedPayload): void {
+    this.io.to(ROOMS.user(userId)).emit(SERVER_TO_CLIENT_EVENTS.backtestFailed, data);
   }
 
   public getIO(): TypedServer {

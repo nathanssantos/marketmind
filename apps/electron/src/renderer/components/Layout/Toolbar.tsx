@@ -10,12 +10,14 @@ import {
   LuDollarSign,
   LuPlus,
   LuSquareArrowOutUpRight,
+  LuFlaskConical,
   LuScanLine,
   LuZoomIn,
   LuZoomOut,
 } from 'react-icons/lu';
 import { useLayoutStore } from '../../store/layoutStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useBacktestModalStore } from '../../store/backtestModalStore';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
@@ -133,6 +135,13 @@ export const Toolbar = memo(({
     }))
   );
 
+  const { isBacktestOpen, toggleBacktest } = useBacktestModalStore(
+    useShallow((state) => ({
+      isBacktestOpen: state.isBacktestOpen,
+      toggleBacktest: state.toggleBacktest,
+    }))
+  );
+
   const handleOpenNewWindow = (): void => {
     void openChartWindow(symbol, timeframe);
   };
@@ -238,6 +247,16 @@ export const Toolbar = memo(({
                 onClick={toggleScreener}
               >
                 <LuScanLine />
+              </ToggleIconButton>
+            </TooltipWrapper>
+            <TooltipWrapper label={t('backtest.title')} showArrow>
+              <ToggleIconButton
+                active={isBacktestOpen}
+                size="2xs"
+                aria-label={t('backtest.title')}
+                onClick={toggleBacktest}
+              >
+                <LuFlaskConical />
               </ToggleIconButton>
             </TooltipWrapper>
             <TooltipWrapper label={t('trading.tabs.analytics')} showArrow>

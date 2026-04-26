@@ -1820,6 +1820,139 @@
     "crypto": "Crypto",
     "stocks": "Actions"
   },
+  "backtest": {
+    "title": "Backtest",
+    "openTooltip": "Ouvrir le backtest",
+    "comingSoon": "Configuration du backtest bientôt disponible.",
+    "tabs": {
+      "basic": "Général",
+      "strategies": "Stratégies",
+      "filters": "Filtres",
+      "risk": "Risque"
+    },
+    "form": {
+      "run": "Lancer le backtest",
+      "ready": "Configuration valide.",
+      "invalid": "{{count}} champ(s) à corriger."
+    },
+    "progress": {
+      "starting": "Démarrage du backtest…",
+      "runningWithPhase": "{{phase}} — {{pct}}%",
+      "etaCalculating": "calcul de l'ETA…",
+      "etaS": "~{{s}}s restantes",
+      "etaMs": "~{{m}}m {{s}}s restantes",
+      "etaHm": "~{{h}}h {{m}}m restantes",
+      "elapsedS": "{{s}}s écoulés",
+      "elapsedMs": "{{m}}m {{s}}s écoulés",
+      "elapsedHm": "{{h}}h {{m}}m écoulés",
+      "phase": {
+        "fetchingKlines": "Récupération des klines",
+        "detectingSetups": "Détection des setups",
+        "simulating": "Simulation des trades",
+        "computingMetrics": "Calcul des métriques"
+      }
+    },
+    "results": {
+      "title": "Résultats",
+      "runAnother": "Relancer",
+      "totalTrades": "Trades",
+      "winRate": "Taux de réussite",
+      "totalPnl": "PnL total",
+      "maxDrawdown": "Drawdown max",
+      "profitFactor": "Profit factor",
+      "finalEquity": "Équité finale",
+      "avgWin": "Gain moyen",
+      "avgLoss": "Perte moyenne",
+      "sharpeRatio": "Sharpe"
+    },
+    "failed": {
+      "title": "Échec du backtest",
+      "unknown": "Erreur inconnue"
+    },
+    "recent": {
+      "title": "Exécutions récentes",
+      "view": "Voir"
+    },
+    "basic": {
+      "symbol": "Symbole",
+      "marketType": "Marché",
+      "interval": "Intervalle",
+      "startDate": "Date de début",
+      "endDate": "Date de fin",
+      "initialCapital": "Capital initial",
+      "leverage": "Levier"
+    },
+    "strategies": {
+      "selectAll": "Tout sélectionner",
+      "selectDefaults": "Par défaut",
+      "deselectAll": "Effacer",
+      "showExperimental": "Afficher les expérimentales",
+      "intervalMismatchTitle": "Intervalle non recommandé",
+      "intervalMismatchBody": "Les stratégies sélectionnées ne recommandent pas l'intervalle {{interval}}.",
+      "loadFailed": "Échec du chargement des stratégies.",
+      "empty": "Aucune stratégie ne correspond au filtre."
+    },
+    "filters": {
+      "groups": {
+        "trend": "Tendance",
+        "momentum": "Momentum",
+        "volume": "Volume",
+        "volatility": "Volatilité",
+        "session": "Session",
+        "confluence": "Confluence"
+      },
+      "groupSummary": "{{enabled}} sur {{total}} actifs",
+      "trend": { "label": "Tendance (EMA)", "description": "Bloque les trades contre l'EMA", "enable": "Activer le filtre de tendance", "period": "Période EMA" },
+      "mtf": { "label": "Multi-timeframe", "enable": "Activer MTF" },
+      "marketRegime": { "label": "Régime de marché", "enable": "Activer le filtre de régime" },
+      "supertrend": { "label": "SuperTrend", "enable": "Activer SuperTrend", "period": "Période", "multiplier": "Multiplicateur" },
+      "btcCorrelation": { "label": "Corrélation BTC", "enable": "Activer corrélation BTC" },
+      "direction": { "label": "Direction (EMA200)", "enable": "Activer filtre de direction", "longInBear": "Autoriser LONG en bear", "shortInBull": "Autoriser SHORT en bull" },
+      "stochastic": { "label": "Stochastique", "enable": "Activer stochastique" },
+      "stochasticRecovery": { "label": "Stochastique recovery", "enable": "Activer recovery" },
+      "stochasticHtf": { "label": "Stochastique HTF", "enable": "Activer HTF" },
+      "stochasticRecoveryHtf": { "label": "Recovery HTF", "enable": "Activer recovery HTF" },
+      "momentum": { "label": "Momentum (RSI/MFI)", "enable": "Activer momentum" },
+      "adx": { "label": "ADX", "enable": "Activer ADX" },
+      "volume": { "label": "Volume", "enable": "Activer volume" },
+      "funding": { "label": "Funding rate", "enable": "Activer funding" },
+      "vwap": { "label": "VWAP", "enable": "Activer VWAP" },
+      "fvg": { "label": "FVG", "enable": "Activer FVG", "proximityPercent": "Proximité %" },
+      "bollingerSqueeze": { "label": "Bollinger squeeze", "enable": "Activer BB squeeze", "threshold": "Seuil", "period": "Période", "stdDev": "Écart-type" },
+      "choppiness": { "label": "Choppiness", "enable": "Activer choppiness", "thresholdHigh": "Seuil haut", "thresholdLow": "Seuil bas", "period": "Période" },
+      "session": { "label": "Session de trading", "enable": "Activer filtre de session", "startUtc": "Début (UTC)", "endUtc": "Fin (UTC)" },
+      "confluence": { "label": "Confluence", "enable": "Activer confluence", "minScore": "Score minimum" }
+    },
+    "risk": {
+      "sizing": "Taille de position",
+      "stops": "Stop loss / take profit",
+      "fibonacci": "Fibonacci",
+      "cooldown": "Cooldown & direction",
+      "futures": "Futures",
+      "positionSizePercent": "Taille %",
+      "commission": "Commission",
+      "slippagePercent": "Slippage",
+      "minRiskRewardRatioLong": "R:R LONG min",
+      "minRiskRewardRatioShort": "R:R SHORT min",
+      "minProfitPercent": "Profit min %",
+      "useAlgorithmicLevels": "Utiliser SL/TP de la stratégie",
+      "stopLossPercent": "Stop loss %",
+      "takeProfitPercent": "Take profit %",
+      "tpCalculationMode": "Calcul du TP",
+      "fibonacciSwingRange": "Plage de swing",
+      "fibonacciTargetLevelLong": "Cible Fib LONG",
+      "fibonacciTargetLevelShort": "Cible Fib SHORT",
+      "maxFibonacciEntryProgressPercentLong": "Progrès max % LONG",
+      "maxFibonacciEntryProgressPercentShort": "Progrès max % SHORT",
+      "initialStopMode": "Mode du stop initial",
+      "useCooldown": "Activer cooldown",
+      "cooldownMinutes": "Minutes cooldown",
+      "directionMode": "Direction",
+      "simulateFundingRates": "Simuler funding",
+      "simulateLiquidation": "Simuler liquidation",
+      "useBnbDiscount": "Appliquer remise BNB"
+    }
+  },
   "screener": {
     "title": "Screener de Marché",
     "error": "Échec du chargement des résultats du screener. Veuillez réessayer.",

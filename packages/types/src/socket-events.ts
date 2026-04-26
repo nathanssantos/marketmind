@@ -62,6 +62,9 @@ export const SERVER_TO_CLIENT_EVENTS = {
   liquidityHeatmapBucket: 'liquidityHeatmap:bucket',
   symbolsActiveUpdated: 'symbols:active:updated',
   backfillProgress: 'backfill:progress',
+  backtestProgress: 'backtest:progress',
+  backtestComplete: 'backtest:complete',
+  backtestFailed: 'backtest:failed',
 } as const;
 
 export interface PriceUpdatePayload {
@@ -209,6 +212,32 @@ export interface BackfillProgressPayload {
   error?: string;
 }
 
+export type BacktestProgressPhase =
+  | 'fetchingKlines'
+  | 'detectingSetups'
+  | 'simulating'
+  | 'computingMetrics';
+
+export interface BacktestProgressPayload {
+  backtestId: string;
+  phase: BacktestProgressPhase;
+  processed: number;
+  total: number;
+  etaMs: number | null;
+  startedAt: number;
+}
+
+export interface BacktestCompletePayload {
+  backtestId: string;
+  resultId: string;
+  durationMs: number;
+}
+
+export interface BacktestFailedPayload {
+  backtestId: string;
+  error: string;
+}
+
 export interface SessionScanResultPayload {
   sessionId: string;
   presetId: string;
@@ -285,6 +314,9 @@ export type ServerToClientEvents = {
   [SERVER_TO_CLIENT_EVENTS.liquidityHeatmapBucket]: (data: LiquidityHeatmapBucketEvent) => void;
   [SERVER_TO_CLIENT_EVENTS.symbolsActiveUpdated]: (symbols: string[]) => void;
   [SERVER_TO_CLIENT_EVENTS.backfillProgress]: (data: BackfillProgressPayload) => void;
+  [SERVER_TO_CLIENT_EVENTS.backtestProgress]: (data: BacktestProgressPayload) => void;
+  [SERVER_TO_CLIENT_EVENTS.backtestComplete]: (data: BacktestCompletePayload) => void;
+  [SERVER_TO_CLIENT_EVENTS.backtestFailed]: (data: BacktestFailedPayload) => void;
 };
 
 export const ROOMS = {
