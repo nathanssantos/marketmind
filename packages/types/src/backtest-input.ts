@@ -174,6 +174,24 @@ export const multiWatcherBacktestInputSchema = simpleBacktestInputSchema
 
 export type MultiWatcherBacktestInput = z.infer<typeof multiWatcherBacktestInputSchema>;
 
+export const DEFAULT_ENABLED_SETUP_IDS = [
+  '7day-momentum-crypto',
+  'breakout-retest',
+  'bull-trap',
+  'cumulative-rsi-r3',
+  'divergence-rsi-macd',
+  'golden-cross-sma',
+  'hull-ma-trend',
+  'liquidity-sweep',
+  'macd-divergence',
+  'momentum-breakout-2025',
+  'nr7-breakout',
+  'pin-inside-combo',
+  'triple-ema-confluence',
+] as const;
+
+export type DefaultEnabledSetupId = (typeof DEFAULT_ENABLED_SETUP_IDS)[number];
+
 export const getDefaultBacktestInput = (): SimpleBacktestInput => ({
   symbol: 'BTCUSDT',
   interval: '1h',

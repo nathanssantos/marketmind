@@ -1821,7 +1821,97 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Abrir backtest",
-    "comingSoon": "Configuração de backtest em breve."
+    "comingSoon": "Configuração de backtest em breve.",
+    "tabs": {
+      "basic": "Básico",
+      "strategies": "Estratégias",
+      "filters": "Filtros",
+      "risk": "Risco"
+    },
+    "form": {
+      "run": "Rodar backtest",
+      "ready": "Configuração válida.",
+      "invalid": "{{count}} campo(s) com problema."
+    },
+    "basic": {
+      "symbol": "Símbolo",
+      "marketType": "Mercado",
+      "interval": "Intervalo",
+      "startDate": "Data inicial",
+      "endDate": "Data final",
+      "initialCapital": "Capital inicial",
+      "leverage": "Alavancagem"
+    },
+    "strategies": {
+      "selectAll": "Selecionar todas",
+      "selectDefaults": "Padrão",
+      "deselectAll": "Limpar",
+      "showExperimental": "Mostrar experimentais",
+      "intervalMismatchTitle": "Intervalo não recomendado",
+      "intervalMismatchBody": "As estratégias selecionadas não recomendam o intervalo {{interval}}.",
+      "loadFailed": "Falha ao carregar estratégias.",
+      "empty": "Nenhuma estratégia para o filtro atual."
+    },
+    "filters": {
+      "groups": {
+        "trend": "Tendência",
+        "momentum": "Momentum",
+        "volume": "Volume",
+        "volatility": "Volatilidade",
+        "session": "Sessão",
+        "confluence": "Confluência"
+      },
+      "groupSummary": "{{enabled}} de {{total}} ativos",
+      "trend": { "label": "Tendência (EMA)", "description": "Bloqueia trades contra a EMA", "enable": "Ativar filtro de tendência", "period": "Período EMA" },
+      "mtf": { "label": "Multi-timeframe", "enable": "Ativar filtro MTF" },
+      "marketRegime": { "label": "Regime de mercado", "enable": "Ativar filtro de regime" },
+      "supertrend": { "label": "SuperTrend", "enable": "Ativar SuperTrend", "period": "Período", "multiplier": "Multiplicador" },
+      "btcCorrelation": { "label": "Correlação BTC", "enable": "Ativar filtro de correlação com BTC" },
+      "direction": { "label": "Direção (EMA200)", "enable": "Ativar filtro de direção", "longInBear": "Permitir LONG em bear", "shortInBull": "Permitir SHORT em bull" },
+      "stochastic": { "label": "Stochastic", "enable": "Ativar filtro stochastic" },
+      "stochasticRecovery": { "label": "Stochastic recovery", "enable": "Ativar filtro de recuperação" },
+      "stochasticHtf": { "label": "Stochastic HTF", "enable": "Ativar HTF stochastic" },
+      "stochasticRecoveryHtf": { "label": "Stochastic recovery HTF", "enable": "Ativar recovery HTF" },
+      "momentum": { "label": "Momentum (RSI/MFI)", "enable": "Ativar filtro de momentum" },
+      "adx": { "label": "ADX", "enable": "Ativar filtro ADX" },
+      "volume": { "label": "Volume", "enable": "Ativar filtro de volume" },
+      "funding": { "label": "Funding rate", "enable": "Ativar filtro de funding" },
+      "vwap": { "label": "VWAP", "enable": "Ativar filtro VWAP" },
+      "fvg": { "label": "FVG", "enable": "Ativar filtro FVG", "proximityPercent": "Proximidade %" },
+      "bollingerSqueeze": { "label": "Bollinger squeeze", "enable": "Ativar BB squeeze", "threshold": "Threshold", "period": "Período", "stdDev": "Desvio" },
+      "choppiness": { "label": "Choppiness", "enable": "Ativar choppiness", "thresholdHigh": "Threshold alto", "thresholdLow": "Threshold baixo", "period": "Período" },
+      "session": { "label": "Sessão de trading", "enable": "Ativar filtro de sessão", "startUtc": "Início (UTC)", "endUtc": "Fim (UTC)" },
+      "confluence": { "label": "Confluência", "enable": "Ativar confluência", "minScore": "Score mínimo" }
+    },
+    "risk": {
+      "sizing": "Sizing",
+      "stops": "Stop loss / take profit",
+      "fibonacci": "Fibonacci",
+      "cooldown": "Cooldown & direção",
+      "futures": "Futuros",
+      "positionSizePercent": "Tamanho da posição %",
+      "commission": "Comissão",
+      "slippagePercent": "Slippage",
+      "minRiskRewardRatioLong": "Min R:R LONG",
+      "minRiskRewardRatioShort": "Min R:R SHORT",
+      "minProfitPercent": "Lucro mínimo %",
+      "useAlgorithmicLevels": "Usar SL/TP da estratégia",
+      "stopLossPercent": "Stop loss %",
+      "takeProfitPercent": "Take profit %",
+      "tpCalculationMode": "Cálculo do TP",
+      "fibonacciSwingRange": "Swing",
+      "fibonacciTargetLevelLong": "Alvo Fib LONG",
+      "fibonacciTargetLevelShort": "Alvo Fib SHORT",
+      "maxFibonacciEntryProgressPercentLong": "Progresso máx. % LONG",
+      "maxFibonacciEntryProgressPercentShort": "Progresso máx. % SHORT",
+      "initialStopMode": "Modo do stop inicial",
+      "useCooldown": "Ativar cooldown",
+      "cooldownMinutes": "Cooldown (min)",
+      "directionMode": "Direção",
+      "simulateFundingRates": "Simular funding",
+      "simulateLiquidation": "Simular liquidação",
+      "useBnbDiscount": "Aplicar desconto BNB"
+    }
   },
   "screener": {
     "title": "Screener de Mercado",

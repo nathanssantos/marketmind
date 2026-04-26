@@ -1780,7 +1780,97 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Open backtest",
-    "comingSoon": "Backtest configuration coming soon."
+    "comingSoon": "Backtest configuration coming soon.",
+    "tabs": {
+      "basic": "Basic",
+      "strategies": "Strategies",
+      "filters": "Filters",
+      "risk": "Risk"
+    },
+    "form": {
+      "run": "Run backtest",
+      "ready": "All inputs valid.",
+      "invalid": "{{count}} field(s) need attention."
+    },
+    "basic": {
+      "symbol": "Symbol",
+      "marketType": "Market",
+      "interval": "Interval",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "initialCapital": "Initial capital",
+      "leverage": "Leverage"
+    },
+    "strategies": {
+      "selectAll": "Select all",
+      "selectDefaults": "Defaults",
+      "deselectAll": "Clear",
+      "showExperimental": "Show experimental",
+      "intervalMismatchTitle": "Strategy / interval mismatch",
+      "intervalMismatchBody": "Selected strategies don't recommend interval {{interval}}.",
+      "loadFailed": "Failed to load strategies.",
+      "empty": "No strategies match the current filter."
+    },
+    "filters": {
+      "groups": {
+        "trend": "Trend",
+        "momentum": "Momentum",
+        "volume": "Volume",
+        "volatility": "Volatility",
+        "session": "Session",
+        "confluence": "Confluence"
+      },
+      "groupSummary": "{{enabled}} of {{total}} enabled",
+      "trend": { "label": "Trend (EMA)", "description": "Block trades against EMA bias", "enable": "Enable trend filter", "period": "EMA period" },
+      "mtf": { "label": "Multi-timeframe", "enable": "Enable MTF filter" },
+      "marketRegime": { "label": "Market regime", "enable": "Enable regime filter" },
+      "supertrend": { "label": "SuperTrend", "enable": "Enable SuperTrend", "period": "Period", "multiplier": "Multiplier" },
+      "btcCorrelation": { "label": "BTC correlation", "enable": "Enable BTC correlation filter" },
+      "direction": { "label": "Direction (EMA200)", "enable": "Enable direction filter", "longInBear": "Allow LONG in bear", "shortInBull": "Allow SHORT in bull" },
+      "stochastic": { "label": "Stochastic", "enable": "Enable stochastic filter" },
+      "stochasticRecovery": { "label": "Stochastic recovery", "enable": "Enable stochastic recovery filter" },
+      "stochasticHtf": { "label": "HTF stochastic", "enable": "Enable HTF stochastic filter" },
+      "stochasticRecoveryHtf": { "label": "HTF stochastic recovery", "enable": "Enable HTF stochastic recovery filter" },
+      "momentum": { "label": "Momentum (RSI/MFI)", "enable": "Enable momentum filter" },
+      "adx": { "label": "ADX", "enable": "Enable ADX filter" },
+      "volume": { "label": "Volume", "enable": "Enable volume filter" },
+      "funding": { "label": "Funding rate", "enable": "Enable funding filter" },
+      "vwap": { "label": "VWAP", "enable": "Enable VWAP filter" },
+      "fvg": { "label": "FVG", "enable": "Enable FVG filter", "proximityPercent": "Proximity %" },
+      "bollingerSqueeze": { "label": "Bollinger squeeze", "enable": "Enable BB squeeze filter", "threshold": "Threshold", "period": "Period", "stdDev": "Std dev" },
+      "choppiness": { "label": "Choppiness", "enable": "Enable choppiness filter", "thresholdHigh": "High threshold", "thresholdLow": "Low threshold", "period": "Period" },
+      "session": { "label": "Trading session", "enable": "Enable session filter", "startUtc": "Start (UTC)", "endUtc": "End (UTC)" },
+      "confluence": { "label": "Confluence scoring", "enable": "Enable confluence scoring", "minScore": "Minimum score" }
+    },
+    "risk": {
+      "sizing": "Position sizing",
+      "stops": "Stop loss / take profit",
+      "fibonacci": "Fibonacci",
+      "cooldown": "Cooldown & direction",
+      "futures": "Futures",
+      "positionSizePercent": "Position size %",
+      "commission": "Commission",
+      "slippagePercent": "Slippage",
+      "minRiskRewardRatioLong": "Min R:R LONG",
+      "minRiskRewardRatioShort": "Min R:R SHORT",
+      "minProfitPercent": "Min profit %",
+      "useAlgorithmicLevels": "Use strategy SL/TP",
+      "stopLossPercent": "Stop loss %",
+      "takeProfitPercent": "Take profit %",
+      "tpCalculationMode": "TP calculation",
+      "fibonacciSwingRange": "Swing range",
+      "fibonacciTargetLevelLong": "Fib target LONG",
+      "fibonacciTargetLevelShort": "Fib target SHORT",
+      "maxFibonacciEntryProgressPercentLong": "Max entry progress % LONG",
+      "maxFibonacciEntryProgressPercentShort": "Max entry progress % SHORT",
+      "initialStopMode": "Initial stop mode",
+      "useCooldown": "Enable cooldown",
+      "cooldownMinutes": "Cooldown minutes",
+      "directionMode": "Direction",
+      "simulateFundingRates": "Simulate funding payments",
+      "simulateLiquidation": "Simulate liquidation",
+      "useBnbDiscount": "Apply BNB discount"
+    }
   },
   "screener": {
     "title": "Market Screener",
