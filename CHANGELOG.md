@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.102.0] - 2026-04-26
+
+Closes the largest e2e gap in the app: **auto-trading was at zero specs** before this release. Mirrors the coverage shape that just shipped for Backtest (v0.100.0) and Screener (v0.101.0).
+
+### Added
+- **Auto-trading e2e — 8 new spec files (45 tests)** under `apps/electron/e2e/auto-trading-*.spec.ts`:
+  - `auto-trading-sidebar-toggle.spec.ts` (6) — toolbar `LuBot` toggle, three-tab render (Watchers / Scalping / Logs), default tab, last-active-tab persistence after close+reopen, `autoTradingSidebarTab` `syncUI` write-through.
+  - `auto-trading-watchers-tab.spec.ts` (8) — empty-state CTA, populated-state with badge + Stop All, `stopAllWatchers` mutation flow, `DirectionModeSelector` triggering `updateConfig`, position-size slider committing on release, watcher-row click-through, no-wallet warning.
+  - `auto-trading-start-watchers-modal.spec.ts` (6) — open/close, default header (Spot/Futures/Timeframe/count), market-type switch triggering `getFilteredSymbolsForQuickStart` re-fetch, direction-mode buttons firing `updateConfig`, Start Top N firing `startWatchersBulk` + closing the modal, disabled-state with empty filtered symbols.
+  - `auto-trading-add-watcher-dialog.spec.ts` (3) — single-mode default render, single↔bulk mode toggle changing the submit label, single-mode submit firing `startWatcher`.
+  - `auto-trading-logs-tab.spec.ts` (6) — empty waiting line, single `autoTrading:log` socket event appending a line, multi-event ordering, `Clear logs` button wiping the buffer, font-size +/− controls altering computed `font-size`, error-level lines rendering in red.
+  - `auto-trading-watcher-manager.spec.ts` (10) — Settings → Auto-Trading entry path, Trading Mode auto/semi-assisted toggle, all major collapsible section headers visible, Emergency Stop confirm/cancel/confirm flow with `emergencyStop` mutation, Position Size + Risk Management + Trailing Stop section expansion.
+  - `auto-trading-socket-invalidations.spec.ts` (5) — `order:update` invalidating `trading.getOrders`, `order:created` invalidating both orders + wallet, `position:update` invalidating `autoTrading.getActiveExecutions`, `wallet:update` invalidating `wallet.list`, smoke test that arbitrary unhandled events don't crash the page.
+  - `electron/auto-trading-sidebar.spec.ts` (1) — packaged-Electron smoke: trigger opens the sidebar, all three tabs visible, switching to Logs renders the waiting line, toggle closes — using `installTrpcMockOnContext` per the `page.route × Vite` rule documented in `docs/BROWSER_TESTING.md` Layer 4.
+
+- **uiStore unit coverage — 10 new tests** in `apps/electron/src/renderer/store/uiStore.test.ts` for the auto-trading slice: `autoTradingSidebarOpen` toggle/setter, `autoTradingSidebarTab` accepting all three values via `it.each`, `setWatchersTableSort` updating both key + direction independently.
+
+### Changed
+- **`e2eBridge.installE2EBridge()`** now exposes `window.__uiStore` (the full Zustand `useUIStore`) so e2e specs can seed `activeWalletId` directly without going through the wallet picker UI. Gated on `IS_E2E_BYPASS_AUTH` — zero production impact.
+- **New `exposeGlobalActionsForE2E(actions)` helper** + `window.__globalActions` bridge, wired via `useEffect` in `apps/electron/src/renderer/components/Layout/MainLayout.tsx`. Lets specs open the Settings dialog programmatically (avoiding the user-avatar menu traversal).
+
+### Notes
+- Floors lifted: e2e 103 → 148 (+45), frontend unit 1818 → 1828 (+10). Backend test count unchanged at 5366.
+- Pre-existing baseline flakes in `symbol-tab-percentages.spec.ts` and `visual/chart.visual.spec.ts` confirmed unrelated — same failures present on `develop` HEAD before this PR landed.
+- Implementation plan archived at `docs/plans/auto-trading-e2e.md`.
+
 ## [0.101.0] - 2026-04-26
 
 Quality-of-life follow-up to the v0.100.0 Backtest ship: comprehensive e2e + unit coverage for the **Screener modal** (previously zero specs), plus a small but load-bearing fix to the e2e helper.
