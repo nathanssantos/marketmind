@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.106.0] - 2026-04-26
+
+Three real bugs in the indicators flow surfaced while writing the coverage you asked for. All three meant config changes from the indicator dialog never reached the chart canvas without a manual workaround. The fix is centralized in `useUserIndicators` so every surface (popover + Settings library + future) gets the sync for free.
+
+### Fixed
+- **Editing a userIndicator didn't propagate to active chart instances** (`apps/electron/src/renderer/hooks/useUserIndicators.ts`). The dialog called `userIndicators.update` and invalidated the list query, but `indicatorStore.instances[i].params` was frozen at the time `addInstance` was first called. Renderers (`renderOverlayLine`, `renderIchimoku`, …) read directly from `instance.params`, so the chart kept showing the old color / period / lineWidth / smooth / source until the user toggled the indicator off and on again. `update.onSuccess` now re-applies `variables.params` onto every active instance whose `userIndicatorId` matches — replace, not merge, since the dialog always sends the full param record.
+- **Deleting from `IndicatorLibrary` (Settings → Indicators) left orphan instances.** The popover-side delete already called `removeInstancesByUserIndicatorId`, but the library forgot — so a deleted indicator's chart instance kept rendering against a dangling `userIndicatorId`. `remove.onSuccess` now does this centrally for every consumer; the popover's redundant manual call has been removed.
+- **Reset of all userIndicators** wiped the server-side list but left the chart holding orphan instances. `reset.onSuccess` now wipes all client-side instances; `useAutoActivateDefaultIndicators` reseeds the chart with the refreshed catalog defaults on the next render.
+
+### Added
+- **`useUserIndicators.test.tsx` (6 tests)** — exercises every onSuccess path with seeded chart instances: update with params re-applies onto every matching instance; update without params is a no-op; remove drops only matching instances; reset wipes everything; all of them invalidate the list query.
+- **`ParamFields.test.tsx` (18 tests)** — covers the four field components individually + the `ParamFields` router. NumberField (5: value render, parsed integer, parsed float, NaN-on-clear, ignore-non-numeric); BooleanField (3: render, toggle via switch root, disabled no-op); ColorField (2: current hex render, preset click commits onChange); SelectField (2: render selected option, switch via dropdown); router (6: integer / color / boolean / select schemas route correctly, default fallback when value is missing, render order matches schema definition).
+- **`chart-indicators.spec.ts` (6 e2e)** — popover toggle adds an instance with the full param record (color + period + lineWidth all reach `instance.params`); toggle off removes; library shows seeded indicators with category groups + param summaries; **the regression specs**: editing an indicator from the dialog re-applies new params onto every active chart instance (period 20 → 50 reflected on the chart immediately, no toggle off/on needed); deleting via popover removes the active chart instance; resetting from Settings wipes all active instances.
+
+### Notes
+- Floors lifted: frontend unit 1858 → 1882 (+24), e2e 173 → 179 (+6). Backend test count unchanged at 5368.
+- Pre-existing baseline flakes (`symbol-tab-percentages` socket-driven specs, `visual/chart.visual` snapshots) confirmed unrelated.
+
 ## [0.105.0] - 2026-04-26
 
 Small feature on top of v0.104.0: ESC now cancels the active drawing edit the same way ESC cancels an order drag — drag-in-flight reverts the drawing back to its mousedown position, mid-placement discards the pending without committing.
