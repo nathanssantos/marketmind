@@ -472,9 +472,8 @@ describe('QuickTradeToolbar — Size controls (presets, slider, +/- 5%)', () => 
     expect(setSizePercentMock).toHaveBeenCalledWith(5);
   });
 
-  it('+ button caps at 100', async () => {
+  it('+ button caps at 100', () => {
     setDefaults({ sizePercent: 100 });
-    const user = userEvent.setup();
     renderActions();
 
     const incButton = screen.getByRole('button', { name: /increase size 5%/i });
