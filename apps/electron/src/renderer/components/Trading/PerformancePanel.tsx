@@ -130,7 +130,7 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
           label={t('trading.analytics.performance.netPnL')}
           value={formatCurrencyWithBrl(performance.netPnL)}
           valueColor={getValueColor(performance.netPnL)}
-          subtext={`Gross: ${formatCurrency(performance.grossPnL)} - Fees: ${formatWalletCurrency(performance.totalFees, currency)}`}
+          subtext={`Gross: ${formatCurrency(performance.grossPnL)} · Fees: ${formatWalletCurrency(performance.totalFees, currency)}${performance.totalFunding !== 0 ? ` · Funding: ${formatCurrency(performance.totalFunding)}` : ''}`}
         />
         <MetricCard
           label={t('trading.analytics.performance.winRate')}
