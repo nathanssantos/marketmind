@@ -1,12 +1,11 @@
 import { Box, Flex, Text } from '@chakra-ui/react';
-import { memo, useCallback } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
-import { type MarketSidebarTab, useUIStore } from '../../store/uiStore';
-import { IconButton, SidebarContainer, Tabs } from '../ui';
+import { useUIStore } from '../../store/uiStore';
+import { IconButton, SidebarContainer } from '../ui';
 import { MarketIndicatorsTab } from './tabs/MarketIndicatorsTab';
-import { ScannerTab } from './tabs/ScannerTab';
 
 interface MarketSidebarProps {
   width: number;
@@ -15,57 +14,33 @@ interface MarketSidebarProps {
 const MarketSidebarComponent = ({ width }: MarketSidebarProps) => {
   const { t } = useTranslation();
 
-  const { marketSidebarTab, setMarketSidebarTab, marketSidebarOpen } = useUIStore(
+  const { marketSidebarOpen } = useUIStore(
     useShallow((s) => ({
-      marketSidebarTab: s.marketSidebarTab,
-      setMarketSidebarTab: s.setMarketSidebarTab,
       marketSidebarOpen: s.marketSidebarOpen,
     }))
-  );
-
-  const handleTabChange = useCallback(
-    (details: { value: string }) => {
-      setMarketSidebarTab(details.value as MarketSidebarTab);
-    },
-    [setMarketSidebarTab]
   );
 
   if (!marketSidebarOpen) return null;
 
   return (
     <SidebarContainer width={width} position="left">
-      <Tabs.Root
-        value={marketSidebarTab}
-        onValueChange={handleTabChange}
-        fitted
-        h="full"
-        display="flex"
-        flexDirection="column"
-      >
-        <Flex>
-          <Tabs.List flex={1}>
-            <Tabs.Trigger value="indicators">
-              <Text fontSize="xs">{t('marketSidebar.tabs.indicators')}</Text>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="scanner">
-              <Text fontSize="xs">{t('marketSidebar.tabs.scanner')}</Text>
-            </Tabs.Trigger>
-          </Tabs.List>
-          <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Close" onClick={() => useUIStore.getState().toggleMarketSidebar()} mr={1} mt={0.5}>
+      <Flex direction="column" h="full">
+        <Flex align="center" justify="space-between" px={3} py={2} borderBottomWidth="1px" borderColor="border">
+          <Text fontSize="xs" fontWeight="semibold">{t('marketSidebar.title')}</Text>
+          <IconButton
+            size="2xs"
+            variant="ghost"
+            color="fg.muted"
+            aria-label={t('marketSidebar.close')}
+            onClick={() => useUIStore.getState().toggleMarketSidebar()}
+          >
             <LuX />
           </IconButton>
         </Flex>
-
         <Box flex={1} overflowY="auto">
-          <Tabs.Content value="indicators">
-            <MarketIndicatorsTab />
-          </Tabs.Content>
-
-          <Tabs.Content value="scanner">
-            <ScannerTab />
-          </Tabs.Content>
+          <MarketIndicatorsTab />
         </Box>
-      </Tabs.Root>
+      </Flex>
     </SidebarContainer>
   );
 };

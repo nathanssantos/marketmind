@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { usePreferencesStore } from './preferencesStore';
 
 export type TradingSidebarTab = 'orders' | 'portfolio';
-export type MarketSidebarTab = 'indicators' | 'scanner';
+export type MarketSidebarTab = 'indicators';
 export type AutoTradingSidebarTab = 'watchers' | 'scalping' | 'logs';
 export type OrderFlowSidebarTab = 'dom' | 'metrics';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
