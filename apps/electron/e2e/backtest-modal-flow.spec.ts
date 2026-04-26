@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
-import { installTrpcMock } from './helpers/trpcMock';
+import { getTrpcHitCount, installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady } from './helpers/chartTestSetup';
 import { emitSocketEvent, setWsConnected, waitForSocket } from './helpers/socketBridge';
 
@@ -270,5 +270,116 @@ test.describe('Backtest modal — full flow coverage', () => {
     await recentRow.click();
 
     await expect(dialog.getByText('Backtest results', { exact: true })).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('form validation — clearing initial capital disables submit', async ({ page }) => {
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+
+    const submit = dialog.getByRole('button', { name: 'Run backtest' });
+    await expect(submit).toBeEnabled();
+
+    // Initial capital must be > 0; setting to 0 violates schema
+    const capital = dialog.locator('input[type="number"]').first();
+    await capital.fill('0');
+    await expect(submit).toBeDisabled();
+
+    // Restore valid value
+    await capital.fill('5000');
+    await expect(submit).toBeEnabled();
+  });
+
+  test('form validation — invalid leverage (>125) disables submit', async ({ page }) => {
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+
+    const submit = dialog.getByRole('button', { name: 'Run backtest' });
+    await expect(submit).toBeEnabled();
+
+    // Leverage field is the second numeric input on the Basic tab (after initialCapital)
+    const numbers = dialog.locator('input[type="number"]');
+    const leverage = numbers.nth(1);
+    await leverage.fill('500');
+    await expect(submit).toBeDisabled();
+
+    await leverage.fill('10');
+    await expect(submit).toBeEnabled();
+  });
+
+  test('Risk tab — useAlgorithmicLevels disables stopLoss/takeProfit inputs', async ({ page }) => {
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+    await dialog.getByRole('tab', { name: 'Risk' }).click();
+
+    // Open the Stops collapsible
+    await dialog.getByText('Stop loss / take profit', { exact: true }).click();
+
+    // The "Use strategy SL/TP" row contains exactly one switch
+    const algoRow = dialog.getByText('Use strategy SL/TP', { exact: true }).locator('xpath=..');
+    await algoRow.locator('input[type="checkbox"]').click({ force: true });
+
+    // The two number inputs that follow should now be disabled
+    const stopInputs = dialog.locator('input[type="number"][disabled]');
+    await expect(stopInputs).not.toHaveCount(0);
+  });
+
+  test('Strategies tab — Show experimental triggers a new listStrategies call', async ({ page }) => {
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+    await dialog.getByRole('tab', { name: 'Strategies' }).click();
+
+    // Wait for the initial listStrategies request to land
+    await expect.poll(
+      () => getTrpcHitCount(page, 'setupDetection.listStrategies'),
+      { timeout: 5_000 },
+    ).toBeGreaterThanOrEqual(1);
+
+    const before = await getTrpcHitCount(page, 'setupDetection.listStrategies');
+
+    // Toggle Show experimental — query input changes -> new request
+    const showExpRow = dialog.getByText('Show experimental', { exact: true }).locator('xpath=..');
+    await showExpRow.locator('input[type="checkbox"]').click({ force: true });
+
+    await expect.poll(
+      () => getTrpcHitCount(page, 'setupDetection.listStrategies'),
+      { timeout: 5_000 },
+    ).toBeGreaterThan(before);
+  });
+
+  test('hook ignores progress events bound to a different backtestId', async ({ page }) => {
+    await waitForSocket(page);
+    await setWsConnected(page, true);
+
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+    await dialog.getByRole('button', { name: 'Run backtest' }).click();
+
+    await expect(dialog.getByText('Starting backtest…', { exact: true })).toBeVisible({ timeout: 5_000 });
+    await waitForSocket(page, { event: 'backtest:progress', minListeners: 1 });
+
+    // Emit progress for a DIFFERENT backtestId
+    await emitSocketEvent(page, 'backtest:progress', {
+      backtestId: 'someone-elses-bt',
+      phase: 'simulating',
+      processed: 90,
+      total: 100,
+      etaMs: 100,
+      startedAt: Date.now() - 5_000,
+    });
+
+    // Modal should NOT update — still shows the starting placeholder
+    await expect(dialog.getByText('Starting backtest…', { exact: true })).toBeVisible();
+    await expect(dialog.getByText('Simulating trades', { exact: true })).toHaveCount(0);
+
+    // Emit progress for the correct backtestId — should update
+    await emitSocketEvent(page, 'backtest:progress', {
+      backtestId: FAKE_BACKTEST_ID,
+      phase: 'simulating',
+      processed: 50,
+      total: 100,
+      etaMs: 1_000,
+      startedAt: Date.now() - 5_000,
+    });
+    await expect(dialog.getByText('Simulating trades', { exact: true })).toBeVisible();
   });
 });
