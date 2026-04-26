@@ -1,4 +1,4 @@
-import type { SimpleBacktestInput } from './backtestInput';
+import type { SimpleBacktestInput } from './backtest-input';
 
 export type FilterFieldKind = 'toggle' | 'number' | 'integer' | 'percent' | 'enum';
 
