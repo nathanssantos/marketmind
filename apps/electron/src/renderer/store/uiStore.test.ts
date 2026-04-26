@@ -381,4 +381,75 @@ describe('uiStore', () => {
       expect(useUIStore.getState().enableShiftAltOrderEntry).toBe(false);
     });
   });
+
+  describe('autoTradingSidebarOpen', () => {
+    beforeEach(() => {
+      useUIStore.setState({ autoTradingSidebarOpen: false });
+    });
+
+    it('starts closed by default', () => {
+      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(false);
+    });
+
+    it('toggleAutoTradingSidebar flips between open and closed', () => {
+      const { toggleAutoTradingSidebar } = useUIStore.getState();
+      toggleAutoTradingSidebar();
+      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(true);
+      toggleAutoTradingSidebar();
+      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(false);
+    });
+
+    it('setAutoTradingSidebarOpen forces a specific value', () => {
+      const { setAutoTradingSidebarOpen } = useUIStore.getState();
+      setAutoTradingSidebarOpen(true);
+      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(true);
+      setAutoTradingSidebarOpen(false);
+      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(false);
+    });
+  });
+
+  describe('autoTradingSidebarTab', () => {
+    beforeEach(() => {
+      useUIStore.setState({ autoTradingSidebarTab: 'watchers' });
+    });
+
+    it('defaults to watchers', () => {
+      expect(useUIStore.getState().autoTradingSidebarTab).toBe('watchers');
+    });
+
+    it.each(['watchers', 'scalping', 'logs'] as const)('accepts %s', (tab) => {
+      useUIStore.getState().setAutoTradingSidebarTab(tab);
+      expect(useUIStore.getState().autoTradingSidebarTab).toBe(tab);
+    });
+  });
+
+  describe('watchersTableSort', () => {
+    beforeEach(() => {
+      useUIStore.setState({
+        watchersTableSortKey: '',
+        watchersTableSortDirection: 'asc',
+      });
+    });
+
+    it('setWatchersTableSort updates both key and direction', () => {
+      useUIStore.getState().setWatchersTableSort('symbol', 'desc');
+      const state = useUIStore.getState();
+      expect(state.watchersTableSortKey).toBe('symbol');
+      expect(state.watchersTableSortDirection).toBe('desc');
+    });
+
+    it('flips direction when called with same key + opposite direction', () => {
+      useUIStore.getState().setWatchersTableSort('symbol', 'asc');
+      useUIStore.getState().setWatchersTableSort('symbol', 'desc');
+      expect(useUIStore.getState().watchersTableSortDirection).toBe('desc');
+    });
+
+    it('switches key independently', () => {
+      useUIStore.getState().setWatchersTableSort('symbol', 'desc');
+      useUIStore.getState().setWatchersTableSort('interval', 'asc');
+      const state = useUIStore.getState();
+      expect(state.watchersTableSortKey).toBe('interval');
+      expect(state.watchersTableSortDirection).toBe('asc');
+    });
+  });
 });

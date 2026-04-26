@@ -2,6 +2,7 @@ import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
 import { useUIPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { perfMonitor } from '@/renderer/utils/canvas/perfMonitor';
+import { exposeGlobalActionsForE2E } from '@/renderer/utils/e2eBridge';
 import { Box, Flex } from '@chakra-ui/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
@@ -91,6 +92,10 @@ const MainLayoutComponent = ({
     openSymbolSelector: () => onOpenSymbolSelector?.(),
     navigateToSymbol: (symbol: string, marketType?: MarketType) => onNavigateToSymbol?.(symbol, marketType),
   }), [onOpenSymbolSelector, onNavigateToSymbol]);
+
+  useEffect(() => {
+    exposeGlobalActionsForE2E(globalActions);
+  }, [globalActions]);
 
   const startResize = useCallback((e: React.MouseEvent, target: 'trading' | 'autoTrading' | 'market' | 'orderFlow', currentWidth: number) => {
     e.preventDefault();

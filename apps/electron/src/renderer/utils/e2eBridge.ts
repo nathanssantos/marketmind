@@ -6,12 +6,19 @@ import { useIndicatorStore } from '../store/indicatorStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { usePriceStore } from '../store/priceStore';
+import { useUIStore } from '../store/uiStore';
 import type { CanvasManager } from './canvas/CanvasManager';
 
 interface SocketTestBridge {
   emit: (event: string, payload: unknown) => void;
   getListenerCount: (event: string) => number;
   listEvents: () => string[];
+}
+
+interface GlobalActionsBridge {
+  openSettings: () => void;
+  openSymbolSelector: () => void;
+  navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }
 
 declare global {
@@ -22,10 +29,12 @@ declare global {
     __preferencesStore?: typeof usePreferencesStore;
     __priceStore?: typeof usePriceStore;
     __connectionStore?: typeof useConnectionStore;
+    __uiStore?: typeof useUIStore;
     __canvasManager?: CanvasManager | null;
     __isPanning?: boolean;
     __socket?: Socket | null;
     __socketTestBridge?: SocketTestBridge;
+    __globalActions?: GlobalActionsBridge;
   }
 }
 
@@ -38,6 +47,7 @@ export const installE2EBridge = (): void => {
   window.__preferencesStore = usePreferencesStore;
   window.__priceStore = usePriceStore;
   window.__connectionStore = useConnectionStore;
+  window.__uiStore = useUIStore;
 };
 
 export const exposeCanvasManagerForE2E = (manager: CanvasManager | null): void => {
@@ -50,6 +60,12 @@ export const exposeIsPanningForE2E = (isPanning: boolean): void => {
   if (!IS_E2E_BYPASS_AUTH) return;
   if (typeof window === 'undefined') return;
   window.__isPanning = isPanning;
+};
+
+export const exposeGlobalActionsForE2E = (actions: GlobalActionsBridge): void => {
+  if (!IS_E2E_BYPASS_AUTH) return;
+  if (typeof window === 'undefined') return;
+  window.__globalActions = actions;
 };
 
 export const exposeSocketForE2E = (socket: Socket | null): void => {
