@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { DEFAULT_ENABLED_SETUPS } from '../../constants';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
+import { BacktestProgressReporter } from '../../services/backtesting/BacktestProgressReporter';
 import { logger } from '../../services/logger';
 import { protectedProcedure } from '../../trpc';
 import { serializeError } from '../../utils/errors';
@@ -19,77 +20,85 @@ const buildBacktestConfig = (input: SimpleBacktestInput): BacktestConfig => ({
 export const simpleProcedures = {
   run: protectedProcedure
     .input(simpleBacktestInputSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const backtestId = generateEntityId();
       const startTime = Date.now();
+      const userId = String(ctx.user.id);
 
-      try {
-        setCacheEntry(backtestId, {
-          id: backtestId,
-          status: 'RUNNING',
-          config: input,
-          startTime: new Date().toISOString(),
-        });
+      setCacheEntry(backtestId, {
+        id: backtestId,
+        status: 'RUNNING',
+        config: input,
+        startTime: new Date(startTime).toISOString(),
+      });
 
-        logger.info({
-          backtestId,
-          symbol: input.symbol,
-          interval: input.interval,
-          startDate: input.startDate,
-          endDate: input.endDate,
-        }, 'Starting backtest');
+      logger.info({
+        backtestId,
+        symbol: input.symbol,
+        interval: input.interval,
+        startDate: input.startDate,
+        endDate: input.endDate,
+      }, 'Starting backtest');
 
-        const config = buildBacktestConfig(input);
+      const reporter = new BacktestProgressReporter({
+        backtestId,
+        userId,
+        wsService: ctx.websocket,
+      });
 
-        const engine = new BacktestEngine();
-        const result = await engine.run(config);
+      void (async () => {
+        try {
+          const config = buildBacktestConfig(input);
+          const engine = new BacktestEngine();
+          const result = await engine.run(config, undefined, reporter);
 
-        setCacheEntry(backtestId, {
-          ...result,
-          id: backtestId,
-          status: 'COMPLETED',
-          config: input,
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date().toISOString(),
-          duration: Date.now() - startTime,
-        });
+          setCacheEntry(backtestId, {
+            ...result,
+            id: backtestId,
+            status: 'COMPLETED',
+            config: input,
+            startTime: new Date(startTime).toISOString(),
+            endTime: new Date().toISOString(),
+            duration: Date.now() - startTime,
+          });
 
-        logger.info({
-          backtestId,
-          trades: result.trades.length,
-          winRate: result.metrics.winRate,
-          totalPnl: result.metrics.totalPnl,
-          totalPnlPercent: result.metrics.totalPnlPercent,
-          finalEquity: input.initialCapital + result.metrics.totalPnl,
-          maxDrawdown: result.metrics.maxDrawdown,
-          maxDrawdownPercent: result.metrics.maxDrawdownPercent,
-          profitFactor: result.metrics.profitFactor,
-        }, 'Backtest completed successfully');
+          logger.info({
+            backtestId,
+            trades: result.trades.length,
+            winRate: result.metrics.winRate,
+            totalPnl: result.metrics.totalPnl,
+            totalPnlPercent: result.metrics.totalPnlPercent,
+            finalEquity: input.initialCapital + result.metrics.totalPnl,
+            maxDrawdown: result.metrics.maxDrawdown,
+            maxDrawdownPercent: result.metrics.maxDrawdownPercent,
+            profitFactor: result.metrics.profitFactor,
+          }, 'Backtest completed successfully');
 
-        return getCacheEntry(backtestId);
-      } catch (error) {
-        logger.error({
-          backtestId,
-          error: serializeError(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        }, 'Backtest failed');
+          reporter.complete(backtestId);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
 
-        setCacheEntry(backtestId, {
-          id: backtestId,
-          status: 'FAILED',
-          config: input,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          startTime: new Date(startTime).toISOString(),
-          endTime: new Date().toISOString(),
-          duration: Date.now() - startTime,
-        });
+          logger.error({
+            backtestId,
+            error: serializeError(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          }, 'Backtest failed');
 
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Backtest failed',
-          cause: error,
-        });
-      }
+          setCacheEntry(backtestId, {
+            id: backtestId,
+            status: 'FAILED',
+            config: input,
+            error: message,
+            startTime: new Date(startTime).toISOString(),
+            endTime: new Date().toISOString(),
+            duration: Date.now() - startTime,
+          });
+
+          reporter.fail(message);
+        }
+      })();
+
+      return { backtestId };
     }),
 
   getResult: protectedProcedure
