@@ -359,5 +359,68 @@ describe('useDrawingInteraction — state machine', () => {
       // Drawing still exists — drag was released, not reverted.
       expect(drawingsForSymbol()).toHaveLength(1);
     });
+
+    it('cancelInteraction({ revert: true }) restores the drawing back to its mousedown snapshot', () => {
+      const drawing: Drawing = {
+        id: 'd1', type: 'line', symbol: 'BTCUSDT', interval: '1h', visible: true, locked: false, zIndex: 0,
+        createdAt: 0, updatedAt: 0,
+        startIndex: 10, startPrice: 90, endIndex: 20, endPrice: 80,
+      };
+      useDrawingStore.setState({
+        drawingsByKey: { 'BTCUSDT:1h': [drawing] },
+        selectedDrawingId: 'd1',
+        activeTool: null,
+      });
+      hitTestDrawingsMock.mockReturnValue({ drawingId: 'd1', handleType: 'body', distance: 0 });
+
+      const { result } = setup();
+
+      act(() => {
+        result.current.handleMouseDown(100, 100);
+      });
+
+      // Drag the line so it leaves the original position.
+      act(() => {
+        result.current.handleMouseMove(150, 100);
+      });
+      const movedStartIndex = drawingsForSymbol()[0]?.type === 'line'
+        ? (drawingsForSymbol()[0] as { startIndex: number }).startIndex
+        : null;
+      expect(movedStartIndex).not.toBe(10);
+
+      let cancelled = false;
+      act(() => {
+        cancelled = result.current.cancelInteraction({ revert: true });
+      });
+
+      expect(cancelled).toBe(true);
+      const revertedStartIndex = drawingsForSymbol()[0]?.type === 'line'
+        ? (drawingsForSymbol()[0] as { startIndex: number }).startIndex
+        : null;
+      expect(revertedStartIndex).toBe(10);
+    });
+
+    it('cancelInteraction({ revert: true }) discards the pending placement (does not commit)', () => {
+      useDrawingStore.getState().setActiveTool('line');
+      const { result } = setup();
+
+      act(() => {
+        result.current.handleMouseDown(100, 200);
+      });
+      expect(result.current.pendingDrawingRef.current).not.toBeNull();
+
+      act(() => {
+        result.current.handleMouseMove(300, 400);
+      });
+
+      let cancelled = false;
+      act(() => {
+        cancelled = result.current.cancelInteraction({ revert: true });
+      });
+
+      expect(cancelled).toBe(true);
+      expect(result.current.pendingDrawingRef.current).toBeNull();
+      expect(drawingsForSymbol()).toHaveLength(0);
+    });
   });
 });

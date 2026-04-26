@@ -279,6 +279,109 @@ test.describe('Chart drawings — "stuck mouse" regressions', () => {
   });
 });
 
+test.describe('Chart drawings — ESC reverts the active edit', () => {
+  test.beforeEach(async ({ page }) => {
+    const klines = generateKlines({ count: 300, symbol: SYMBOL, interval: INTERVAL });
+    await installTrpcMock(page, { klines });
+    await page.goto('/');
+    await waitForChartReady(page);
+    await waitForE2EBridge(page);
+  });
+
+  test('ESC during a drag restores the drawing to its mousedown position', async ({ page }) => {
+    // Seed a horizontalLine at a fixed price via the store bridge.
+    const seedPrice = await page.evaluate(() => {
+      const store = window.__drawingStore?.getState();
+      if (!store) throw new Error('drawing store missing');
+      const seed = {
+        id: 'esc-revert-line',
+        type: 'horizontalLine',
+        symbol: 'BTCUSDT',
+        interval: '1h',
+        visible: true,
+        locked: false,
+        zIndex: 0,
+        createdAt: 0,
+        updatedAt: 0,
+        index: 50,
+        price: 50_000,
+      };
+      store.setDrawingsForSymbol('BTCUSDT', '1h', [seed as never]);
+      store.selectDrawing('esc-revert-line');
+      return 50_000;
+    });
+
+    const before = await page.evaluate((id) => {
+      const list = window.__drawingStore?.getState().drawingsByKey['BTCUSDT:1h'] ?? [];
+      const d = list.find((x) => x.id === id);
+      return d && 'price' in d ? (d as { price: number }).price : null;
+    }, 'esc-revert-line');
+    expect(before).toBe(seedPrice);
+
+    // Find the line's screen Y via the canvas manager exposed on window.
+    const lineY = await page.evaluate((p) => {
+      const mgr = window.__canvasManager;
+      return mgr ? mgr.priceToY(p) : null;
+    }, seedPrice);
+    if (lineY === null) throw new Error('canvas manager not exposed');
+
+    const rect = await getCanvasRect(page);
+    const startX = rect.left + rect.width * 0.5;
+    const startY = rect.top + lineY;
+
+    // Two clicks: 1st selects (already selected here, but mouseup releases),
+    // 2nd starts the drag.
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.up();
+    await waitForFrames(page, 2);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    // Move the line down 80px (drag in flight)
+    await page.mouse.move(startX, startY + 80, { steps: 5 });
+    await waitForFrames(page, 2);
+
+    // ESC mid-drag — must revert
+    await page.keyboard.press('Escape');
+    await waitForFrames(page, 3);
+
+    // Release the mouse — at this point the drag is already released; this
+    // is just to clean up the mouse state for subsequent tests.
+    await page.mouse.up();
+    await waitForFrames(page, 2);
+
+    const after = await page.evaluate((id) => {
+      const list = window.__drawingStore?.getState().drawingsByKey['BTCUSDT:1h'] ?? [];
+      const d = list.find((x) => x.id === id);
+      return d && 'price' in d ? (d as { price: number }).price : null;
+    }, 'esc-revert-line');
+
+    expect(after).toBe(before);
+  });
+
+  test('ESC mid-placement discards the pending drawing (no commit)', async ({ page }) => {
+    await setActiveTool(page, 'line');
+    const rect = await getCanvasRect(page);
+    const p1 = { x: rect.left + rect.width * 0.3, y: rect.top + rect.height * 0.4 };
+
+    const before = await drawingsCount(page);
+    await page.mouse.move(p1.x, p1.y);
+    await page.mouse.down();
+    await page.mouse.move(p1.x + 80, p1.y + 40, { steps: 5 });
+
+    // ESC mid-placement
+    await page.keyboard.press('Escape');
+    await waitForFrames(page, 3);
+
+    // Mouseup after ESC should be a no-op (placement already cancelled).
+    await page.mouse.up();
+    await waitForFrames(page, 2);
+
+    expect(await drawingsCount(page)).toBe(before);
+  });
+});
+
 test.describe('Chart drawings — toolbar tool-button state', () => {
   test.beforeEach(async ({ page }) => {
     const klines = generateKlines({ count: 300, symbol: SYMBOL, interval: INTERVAL });

@@ -243,6 +243,12 @@ const ChartCanvasInternal = ({
 
   const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
 
+  // Bridge from the ESC handler (declared early in the render) to the
+  // drawingInteraction returned later by useChartAuxiliarySetup. Without a
+  // ref we'd have a forward-reference problem: useTradingShortcuts captures
+  // its onEscape closure before auxiliarySetup runs.
+  const drawingInteractionRef = useRef<{ cancelInteraction: (options?: { revert?: boolean }) => boolean; isDrawing: () => boolean } | null>(null);
+
   const klinePrice = klines.length > 0 ? getKlineClose(klines[klines.length - 1]!) : 0;
   const klinePriceRef = useRef(klinePrice);
   klinePriceRef.current = klinePrice;
@@ -299,6 +305,17 @@ const ChartCanvasInternal = ({
         useGridOrderStore.getState().resetDrawing();
         setGridModeActive(false);
         manager?.markDirty('overlays');
+      }
+      // If a drawing edit is in flight (drag or mid-placement), ESC should
+      // cancel it and — for a drag — revert the drawing back to where it
+      // was when the drag started. Same UX as ESC on an order drag. We do
+      // this BEFORE deselecting so a single ESC press can both abort the
+      // edit and snap the drawing back; a subsequent ESC will deselect.
+      const drawingInteraction = drawingInteractionRef.current;
+      if (drawingInteraction?.isDrawing()) {
+        drawingInteraction.cancelInteraction({ revert: true });
+        manager?.markDirty('overlays');
+        return;
       }
       const drawingState = useDrawingStore.getState();
       if (drawingState.activeTool) drawingState.setActiveTool(null);
@@ -390,6 +407,9 @@ const ChartCanvasInternal = ({
   });
 
   const { orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, tsPlacementDeactivate, tsPlacementSetPreview, isGridModeActive, gridInteraction, renderGridPreview, drawingInteraction, renderDrawings } = auxiliarySetup;
+
+  // Keep the ESC-handler bridge ref pointed at the latest drawingInteraction.
+  drawingInteractionRef.current = drawingInteraction;
 
   const { handleCanvasMouseMove, handleCanvasMouseDown, handleCanvasMouseUp, handleCanvasMouseLeave, handleWheel } = useChartInteraction({
     manager, canvasRef, klines, advancedConfig,
