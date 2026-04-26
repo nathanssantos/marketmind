@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.107.0] - 2026-04-26
+
+Two real bugs in the sidebar trading flow that the user reported. Both were single-source-of-truth violations producing surprising behaviour.
+
+### Fixed
+- **Boleta `10%` (or any %) preview-vs-actual mismatch** (`apps/electron/src/renderer/components/Layout/QuickTradeToolbar.tsx`). The QuickTradeToolbar sent `percent: sizePercent` to the backend, which then ran `calculateQtyFromPercent` against `accountInfo.availableBalance` (live from Binance). The frontend preview used `wallet.currentBalance` (DB-cached client-side). Whenever the user had open positions consuming margin, `availableBalance < currentBalance` — so picking 10% showed a quantity computed against the full wallet but Binance executed 10% of the smaller available balance. Now the toolbar sends `quantity: pendingOrder.quantity` directly so what the user previewed is exactly what gets submitted; if the cached balance is stale enough that Binance would reject, the failure surfaces as a clear error instead of a silently smaller fill.
+- **Daily PnL stuck after closing a trade** (`apps/backend/src/routers/analytics/stats.ts` — `getDailyPerformance`). The daily `pnl` value was sourced purely from `getDailyIncomeSum` (`incomeEvents` table — REALIZED_PNL + COMMISSION + FUNDING_FEE on the Binance side). Income events are populated by a periodic sync that runs on a ~1 min cadence — when a trade just closed, `tradeExecutions.pnl` was already updated synchronously but `incomeEvents` for the day was empty until the next sync. The user's sidebar Daily PnL appeared stuck on the previous total until they manually clicked "atualizar carteira", which triggers a sync. The wins/losses count for the day was already using `tradeExecutions` so this was an internal inconsistency inside one query response. Fix: when `incomeSum === 0` for a day but trades did close that day, surface the trade-level realized PnL (`grossProfit - grossLoss`) immediately. The next income sync replaces it with the funded-and-commissioned authoritative figure.
+
+### Added
+- **Backend regression tests** (`apps/backend/src/__tests__/routers/analytics.router.test.ts`, +2):
+  - `falls back to trade-level pnl when income events have not synced yet (regression: daily PnL stuck after close)` — seeds a closed trade with no matching `incomeEvents` row; pre-fix the daily bucket returned `pnl: 0`.
+  - `prefers incomeEvents over trade pnl when both are populated` — guards the fallback from being too eager when the sync has actually run.
+- **Frontend hook tests** (`apps/electron/src/renderer/hooks/useOrderQuantity.test.ts`, +7): futures formula `(balance × leverage × pct) / price`, SPOT ignores leverage, zero-balance / zero-price guards, missing-symbol-leverage falls back to 1×, `sizePercent` flows through, missing-wallet handled with balance=0.
+
+### Notes
+- Floors lifted: backend tests 5368 → 5370 (+2), frontend unit 1882 → 1889 (+7). E2E count unchanged at 179.
+- Pre-existing baseline flakes (`symbol-tab-percentages`, `visual/chart.visual`) confirmed unrelated.
+
 ## [0.106.0] - 2026-04-26
 
 Three real bugs in the indicators flow surfaced while writing the coverage you asked for. All three meant config changes from the indicator dialog never reached the chart canvas without a manual workaround. The fix is centralized in `useUserIndicators` so every surface (popover + Settings library + future) gets the sync for free.
