@@ -1,10 +1,11 @@
-import { Box, Flex, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, VStack } from '@chakra-ui/react';
 import { Alert, FormDialog, LoadingSpinner } from '@renderer/components/ui';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 import { useBacktestModalStore } from '../../store/backtestModalStore';
 import { useBacktestRun } from '../../hooks/useBacktestRun';
 import { BacktestForm } from './BacktestForm';
+import { BacktestProgress } from './BacktestProgress';
 import { BacktestResults } from './BacktestResults';
 import type { BacktestResult } from '@marketmind/types';
 
@@ -38,17 +39,7 @@ export const BacktestModal = () => {
       )}
 
       {run.status === 'running' && (
-        <VStack align="stretch" gap={4} py={8}>
-          <Flex justify="center"><LoadingSpinner /></Flex>
-          <Text textAlign="center" fontSize="sm" color="fg.muted">
-            {run.progress
-              ? t('backtest.progress.runningWithPhase', {
-                  phase: t(`backtest.progress.phase.${run.progress.phase}`),
-                  pct: Math.floor((run.progress.processed / run.progress.total) * 100),
-                })
-              : t('backtest.progress.starting')}
-          </Text>
-        </VStack>
+        <BacktestProgress progress={run.progress} onCancel={() => run.reset()} />
       )}
 
       {run.status === 'success' && run.result?.status === 'COMPLETED' && (

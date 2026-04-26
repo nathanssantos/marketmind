@@ -1849,6 +1849,13 @@
     "progress": {
       "starting": "Iniciando backtest…",
       "runningWithPhase": "{{phase}} — {{pct}}%",
+      "etaCalculating": "calculando ETA…",
+      "etaS": "~{{s}}s restantes",
+      "etaMs": "~{{m}}m {{s}}s restantes",
+      "etaHm": "~{{h}}h {{m}}m restantes",
+      "elapsedS": "{{s}}s transcurridos",
+      "elapsedMs": "{{m}}m {{s}}s transcurridos",
+      "elapsedHm": "{{h}}h {{m}}m transcurridos",
       "phase": {
         "fetchingKlines": "Obteniendo klines",
         "detectingSetups": "Detectando setups",
