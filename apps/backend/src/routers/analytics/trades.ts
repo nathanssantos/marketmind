@@ -1,7 +1,6 @@
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { tradeExecutions } from '../../db/schema';
-import { getDailyIncomeSum } from '../../services/income-events';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
 
@@ -107,30 +106,17 @@ export const tradeProcedures = {
         return pnl < 0;
       });
 
-      let totalPnL = trades.reduce((sum, t) => {
+      // Sum of per-trade realized PnL — internally consistent with the W/L
+      // count, avgWin, avgLoss, profitFactor, and largestWin/Loss reported
+      // below. We deliberately do NOT override this with `getDailyIncomeSum`
+      // even when a period is selected: doing so would mix two data sources
+      // (Binance daily-income sum vs per-trade pnl) and break the math users
+      // expect (W × avgWin + L × avgLoss == netPnL). Funding paid on
+      // currently-open positions is reported separately as `totalFunding`.
+      const totalPnL = trades.reduce((sum, t) => {
         const pnl = t.pnl ? parseFloat(t.pnl) : 0;
         return sum + pnl;
       }, 0);
-
-      if (input.period !== 'all') {
-        const now = new Date();
-        const periodStart = new Date();
-        switch (input.period) {
-          case 'day': periodStart.setDate(now.getDate() - 1); break;
-          case 'week': periodStart.setDate(now.getDate() - 7); break;
-          case 'month': periodStart.setMonth(now.getMonth() - 1); break;
-        }
-        const dailyMap = await getDailyIncomeSum({
-          walletId: input.walletId,
-          userId: ctx.user.id,
-          from: periodStart,
-          to: now,
-          tz: input.tz,
-        });
-        let sum = 0;
-        for (const v of dailyMap.values()) sum += v;
-        if (sum !== 0) totalPnL = sum;
-      }
 
       const totalFees = trades.reduce((sum, t) => {
         const fees = t.fees ? parseFloat(t.fees) : 0;
@@ -166,8 +152,18 @@ export const tradeProcedures = {
       const walletTotalDeposits = wallet ? parseFloat(wallet.totalDeposits ?? '0') : 0;
       const walletTotalWithdrawals = wallet ? parseFloat(wallet.totalWithdrawals ?? '0') : 0;
       const effectiveCapital = initialBalance + walletTotalDeposits - walletTotalWithdrawals;
-      const totalReturn =
-        effectiveCapital > 0 ? ((currentBalance - effectiveCapital) / effectiveCapital) * 100 : 0;
+
+      // Period-aware return: when a period is filtered, reflect that period's
+      // PnL relative to the effective capital base. The all-time variant uses
+      // the wallet's current balance (which captures unrealized PnL on open
+      // positions, deposits, withdrawals, etc). Mixing the two — as the
+      // previous implementation did — produced contradictory cards (e.g.
+      // Net PnL +$615 alongside Total Return -37% on the same Week filter).
+      const totalReturn = effectiveCapital > 0
+        ? input.period === 'all'
+          ? ((currentBalance - effectiveCapital) / effectiveCapital) * 100
+          : (totalPnL / effectiveCapital) * 100
+        : 0;
 
       const largestWin = winningTrades.length > 0
         ? Math.max(...winningTrades.map((t) => parseFloat(t.pnl ?? '0')))
