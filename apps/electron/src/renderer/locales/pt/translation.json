@@ -1818,6 +1818,11 @@
     "crypto": "Crypto",
     "stocks": "Ações"
   },
+  "backtest": {
+    "title": "Backtest",
+    "openTooltip": "Abrir backtest",
+    "comingSoon": "Configuração de backtest em breve."
+  },
   "screener": {
     "title": "Screener de Mercado",
     "error": "Falha ao carregar resultados do screener. Tente novamente.",

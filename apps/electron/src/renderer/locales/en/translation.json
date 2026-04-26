@@ -1777,6 +1777,11 @@
     "crypto": "Crypto",
     "stocks": "Stocks"
   },
+  "backtest": {
+    "title": "Backtest",
+    "openTooltip": "Open backtest",
+    "comingSoon": "Backtest configuration coming soon."
+  },
   "screener": {
     "title": "Market Screener",
     "error": "Failed to load screener results. Please try again.",
