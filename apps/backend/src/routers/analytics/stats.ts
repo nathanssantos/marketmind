@@ -186,8 +186,27 @@ export const statsProcedures = {
 
       let balanceAtStart = runningBalance;
       for (const date of sortedDays) {
-        const dailyPnl = monthDailySum.get(date) ?? 0;
+        const incomeSum = monthDailySum.get(date) ?? 0;
         const stats = tradeStatsByDay.get(date) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
+
+        // Daily PnL source resolution:
+        //   - `incomeSum` comes from `incomeEvents` (REALIZED_PNL +
+        //     COMMISSION + FUNDING_FEE on the Binance side) and is the
+        //     authoritative source once the periodic income sync has run.
+        //   - But the income sync runs on a ~1 min cadence: when a trade
+        //     just closed, `incomeEvents` for that day is empty until the
+        //     next sync, while `tradeExecutions.pnl` is already updated
+        //     synchronously. Using only `incomeSum` made the sidebar's
+        //     daily PnL appear stuck on the previous total until the user
+        //     manually refreshed the wallet — visible bug.
+        //   - Fallback: if `incomeSum === 0` for this day but trades did
+        //     close, surface the trade-level realized PnL immediately.
+        //     The next sync replaces this with the funded-and-commissioned
+        //     authoritative value.
+        const tradeRealizedNet = stats.grossProfit - stats.grossLoss;
+        const dailyPnl = incomeSum !== 0
+          ? incomeSum
+          : tradeRealizedNet;
 
         results.push({
           date,
