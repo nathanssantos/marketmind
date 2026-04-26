@@ -67,10 +67,11 @@ const makeBaseProps = (drawingIsDrawing: boolean, innerHandleMouseDown: ReturnTy
     },
     gridInteraction: undefined,
     drawingInteraction: {
-      isDrawing: drawingIsDrawing,
+      isDrawing: vi.fn(() => drawingIsDrawing),
       handleMouseDown: vi.fn(() => false),
       handleMouseMove: vi.fn(() => false),
       handleMouseUp: vi.fn(() => true),
+      cancelInteraction: vi.fn(() => false),
       getCursor: vi.fn(() => null),
       snapToOHLC: vi.fn((x: number, y: number) => ({ x, y, snapped: false })),
     },
@@ -88,14 +89,20 @@ const makeBaseProps = (drawingIsDrawing: boolean, innerHandleMouseDown: ReturnTy
 describe('useChartInteraction — drawing / pan regression', () => {
   it('does not fall through to pan handler while a multi-point drawing is in progress', () => {
     const innerHandleMouseDown = vi.fn();
+    // Drawing's handleMouseDown returns true to claim the click — covers the
+    // case where a phase-aware drawing handler (e.g. channel placing-third
+    // finalize) processes the mousedown.
     const props = makeBaseProps(true, innerHandleMouseDown);
+    props.drawingInteraction!.handleMouseDown = vi.fn(() => true);
 
     const { result } = renderHook(() => useChartInteraction(props));
 
     result.current.handleCanvasMouseDown(makeMouseEvent({ clientX: 200, clientY: 200 }));
 
+    // Drawing handler MUST be called so it can finalize / advance phase.
+    expect(props.drawingInteraction!.handleMouseDown).toHaveBeenCalledTimes(1);
+    // Pan must NOT receive the click — the drawing claimed it.
     expect(innerHandleMouseDown).not.toHaveBeenCalled();
-    expect(props.drawingInteraction!.handleMouseDown).not.toHaveBeenCalled();
   });
 
   it('allows pan to start when no drawing is in progress and drawing rejects the click', () => {
