@@ -20,6 +20,9 @@ vi.mock('../../utils/trpc', () => ({
       getResult: {
         useQuery: () => ({ data: undefined, isLoading: false }),
       },
+      list: {
+        useQuery: () => ({ data: [], isLoading: false }),
+      },
     },
   },
 }));

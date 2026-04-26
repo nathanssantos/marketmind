@@ -54,6 +54,10 @@ export const useBacktestRun = () => {
     setState(INITIAL_STATE);
   }, []);
 
+  const viewResult = useCallback((id: string) => {
+    setState({ ...INITIAL_STATE, status: 'success', resultId: id });
+  }, []);
+
   useSocketEvent(
     'backtest:progress',
     (payload: BacktestProgressPayload) => {
@@ -96,5 +100,6 @@ export const useBacktestRun = () => {
     isFetchingResult: resultQuery.isLoading && !!state.resultId,
     start,
     reset,
+    viewResult,
   } as const;
 };

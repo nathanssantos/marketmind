@@ -1826,6 +1826,10 @@
       "title": "Backtest failed",
       "unknown": "Unknown error"
     },
+    "recent": {
+      "title": "Recent runs",
+      "view": "View"
+    },
     "basic": {
       "symbol": "Symbol",
       "marketType": "Market",

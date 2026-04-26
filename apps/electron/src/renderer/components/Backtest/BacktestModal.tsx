@@ -1,12 +1,16 @@
 import { Box, Flex, VStack } from '@chakra-ui/react';
 import { Alert, FormDialog, LoadingSpinner } from '@renderer/components/ui';
+import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
 import { useBacktestModalStore } from '../../store/backtestModalStore';
 import { useBacktestRun } from '../../hooks/useBacktestRun';
+import { useBacktestShortcut } from '../../hooks/useBacktestShortcut';
+import { perfMonitor } from '../../utils/canvas/perfMonitor';
 import { BacktestForm } from './BacktestForm';
 import { BacktestProgress } from './BacktestProgress';
 import { BacktestResults } from './BacktestResults';
+import { RecentRunsPanel } from './RecentRunsPanel';
 import type { BacktestResult } from '@marketmind/types';
 
 export const BacktestModal = () => {
@@ -19,6 +23,11 @@ export const BacktestModal = () => {
   );
 
   const run = useBacktestRun();
+  useBacktestShortcut();
+
+  useEffect(() => {
+    if (isBacktestOpen) perfMonitor.recordComponentRender('BacktestModal');
+  }, [isBacktestOpen]);
 
   const handleClose = () => {
     run.reset();
@@ -35,7 +44,10 @@ export const BacktestModal = () => {
       hideFooter
     >
       {run.status === 'idle' && (
-        <BacktestForm onClose={handleClose} onRun={(input) => void run.start(input)} />
+        <VStack align="stretch" gap={3}>
+          <BacktestForm onClose={handleClose} onRun={(input) => void run.start(input)} />
+          <RecentRunsPanel onSelect={(id) => run.viewResult(id)} />
+        </VStack>
       )}
 
       {run.status === 'running' && (

@@ -1867,6 +1867,10 @@
       "title": "Backtest falhou",
       "unknown": "Erro desconhecido"
     },
+    "recent": {
+      "title": "Execuções recentes",
+      "view": "Ver"
+    },
     "basic": {
       "symbol": "Símbolo",
       "marketType": "Mercado",

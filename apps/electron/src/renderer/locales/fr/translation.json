@@ -1869,6 +1869,10 @@
       "title": "Échec du backtest",
       "unknown": "Erreur inconnue"
     },
+    "recent": {
+      "title": "Exécutions récentes",
+      "view": "Voir"
+    },
     "basic": {
       "symbol": "Symbole",
       "marketType": "Marché",
