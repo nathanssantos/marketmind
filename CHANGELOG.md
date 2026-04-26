@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.104.0] - 2026-04-26
+
+Bug-fix release for the chart drawings layer. The "mouse grudado" symptom users hit was the visible result of five interaction bugs that compounded into a single bad experience.
+
+### Fixed
+- **Phase stuck after mouseup-outside-canvas** (`apps/electron/src/renderer/components/Chart/ChartCanvas/useChartInteraction.ts`). Releasing the mouse outside the chart canvas during a drag or mid-placement no longer leaves `phaseRef.current` stuck in `'dragging'` / `'placing-second'` / `'placing-third'`. A window-level mouseup safety net (registered via a ref so it doesn't churn on every render) now finalizes the in-flight interaction with the last-known mouse position, or cancels cleanly when the position is unknown.
+- **Mouseleave didn't cancel pending placement** (same file). Cursor + tooltip cleared but the drawing-interaction phase stayed pending. Now `handleCanvasMouseLeave` calls `drawingInteraction.cancelInteraction()` so the next click on the canvas starts fresh.
+- **First click on a drawing immediately entered drag mode** (`apps/electron/src/renderer/components/Chart/drawings/useDrawingInteraction.ts`). Selection logic now separates "select" from "drag": first click on an unselected drawing only selects (handles appear); a subsequent click on the body or a handle of an already-selected drawing enters drag mode. Hits directly on a handle still go straight to drag (handles only render after selection, so this only fires when the renderer + selection state are racing).
+- **Zero-length cancellation** (same file) now uses `isTwoPointDrawing(...)` so it covers ray / trendLine / priceRange / ellipse / gannFan instead of just line / ruler / arrow + rectangle / area. A misclick (mousedown + mouseup at the same pixel) no longer adds a degenerate 1-pixel drawing.
+- **`isDrawing` was a stale snapshotted boolean** read across renders (same file). The hook doesn't re-render between mouse events — no zustand subscription tracks `phaseRef` — so consumers like `useChartInteraction.handleCanvasMouseUp` saw a `false` even right after a mousedown that just transitioned to `'placing-second'`, and skipped the drawing's mouseup branch entirely. Drawings simply weren't getting committed under e2e tests, and were probably racing in production. `isDrawing` is now a getter `() => boolean` reading `phaseRef.current` live.
+- **`isDrawing` short-circuit was eating the channel/pitchfork finalize click** (`apps/electron/src/renderer/components/Chart/ChartCanvas/useChartInteraction.ts`). The `if (drawingInteraction?.isDrawing()) preventDefault; return` guard before calling the drawing handler swallowed the mousedown that's supposed to commit a channel during phase `'placing-third'`. The drawing handler already branches on phase + tool, so the guard was redundant — removed.
+
+### Added
+- **`cancelInteraction()`** on `useDrawingInteraction` — releases drag state without reverting (the drawing freezes at its current position, mouse becomes free again) and discards pending placements (mid-placement abandons don't litter the chart).
+- **19 unit tests** in `apps/electron/src/renderer/components/Chart/drawings/useDrawingInteraction.test.ts` covering the full state machine: 2-point creation (line/ray/arrow/trendLine), zero-length cancellation across all 5 newly-covered types via `it.each`, three-point creation (channel placing-second → placing-third → idle), freeform (pencil), single-click types (text/horizontalLine/verticalLine/anchoredVwap), selection-vs-drag (4 cases including locked drawings and empty-space deselect), and `cancelInteraction` (3 cases including drag-release without revert).
+- **16 e2e specs** in `apps/electron/e2e/chart-drawings-interaction.spec.ts` covering creation flows for line / ray / arrow / trendLine / horizontalLine / verticalLine / pencil / channel; zero-length cancellation per 2-point type; the stuck-mouse regressions (mouseup-outside-canvas during drag, mouseleave-mid-placement); DrawingToolbar tool-button state transitions including same-button-toggle-off.
+
+### Changed
+- **`useChartInteraction.drawingPan.test.ts`** existing mock + invariant updated for the new `isDrawing()` getter shape and the `cancelInteraction` field. The old assertion *"drawing.handleMouseDown is NOT called while drawing"* was inverted into the correct one *"drawing.handleMouseDown MUST be called so it can finalize, and pan must NOT receive the click"*.
+
+### Notes
+- Floors lifted: frontend unit 1837 → 1856 (+19), e2e 155 → 171 (+16). Backend test count unchanged at 5368.
+- Pre-existing baseline flakes (`symbol-tab-percentages` socket-driven specs, `visual/chart.visual` snapshots) confirmed unrelated.
+
 ## [0.103.0] - 2026-04-26
 
 Bug-fix release. The Analytics modal had two related issues that produced contradictory cards on the same screen — both fixed here, with regression coverage at every layer.
