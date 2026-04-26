@@ -52,7 +52,7 @@ export interface UseChartInteractionProps {
     handleMouseDown: (x: number, y: number) => boolean;
     handleMouseMove: (x: number, y: number) => boolean;
     handleMouseUp: (x: number, y: number) => boolean;
-    cancelInteraction: () => boolean;
+    cancelInteraction: (options?: { revert?: boolean }) => boolean;
     getCursor: () => string | null;
     snapToOHLC: (x: number, y: number) => { x: number; y: number; snapped: boolean };
   };
