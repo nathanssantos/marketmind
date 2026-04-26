@@ -1725,13 +1725,12 @@
     }
   },
   "marketSidebar": {
-    "title": "Market & Watchers",
+    "title": "Market",
     "close": "Close market sidebar",
     "tabs": {
       "indicators": "Market",
       "watchers": "Watchers",
-      "logs": "Logs",
-      "scanner": "Scanner"
+      "logs": "Logs"
     },
     "indicators": {
       "title": "Market Indicators",
