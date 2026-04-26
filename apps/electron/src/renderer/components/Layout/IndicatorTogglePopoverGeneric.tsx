@@ -155,10 +155,13 @@ export const IndicatorTogglePopoverGeneric = memo(
 
   const handleConfirmDelete = useCallback(async () => {
     if (!confirmDelete) return;
-    removeInstancesByUserIndicatorId(confirmDelete.id);
+    // useUserIndicators().remove already calls
+    // removeInstancesByUserIndicatorId on success, so we don't need to do
+    // it manually here. Kept the symbol on the destructure below in case
+    // future code wants to drop instances explicitly.
     await remove.mutateAsync({ id: confirmDelete.id });
     setConfirmDelete(null);
-  }, [confirmDelete, remove, removeInstancesByUserIndicatorId]);
+  }, [confirmDelete, remove]);
 
   const totalCount = indicators.length;
   const activeCount = useMemo(() => {
