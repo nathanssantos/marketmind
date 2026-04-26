@@ -81,13 +81,20 @@ const STRATEGY_FIXTURE = [
   },
 ];
 
-const installModalMock = async (page: Page, opts: { resultOverride?: Record<string, unknown> } = {}) => {
+const installModalMock = async (
+  page: Page,
+  opts: {
+    resultOverride?: Record<string, unknown>;
+    strategiesOverride?: typeof STRATEGY_FIXTURE;
+    runOverride?: () => unknown;
+  } = {},
+) => {
   const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
   await installTrpcMock(page, {
     klines,
     overrides: {
-      'setupDetection.listStrategies': () => STRATEGY_FIXTURE,
-      'backtest.run': () => ({ backtestId: FAKE_BACKTEST_ID }),
+      'setupDetection.listStrategies': () => opts.strategiesOverride ?? STRATEGY_FIXTURE,
+      'backtest.run': opts.runOverride ?? (() => ({ backtestId: FAKE_BACKTEST_ID })),
       'backtest.getResult': () => ({ ...FAKE_RESULT, ...(opts.resultOverride ?? {}) }),
       'backtest.list': () => [
         {
@@ -346,6 +353,118 @@ test.describe('Backtest modal — full flow coverage', () => {
     ).toBeGreaterThan(before);
   });
 
+  test('marketType SPOT hides the leverage field; FUTURES shows it', async ({ page }) => {
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+
+    // Default is FUTURES — leverage visible
+    await expect(dialog.getByText('Leverage', { exact: true })).toBeVisible();
+
+    // The Market Select is the button whose accessible content includes
+    // "Futures" (the current value). There are several Selects on the
+    // Basic tab (Market, Interval); we pick the one currently showing
+    // "Futures".
+    const marketTrigger = dialog.locator('button').filter({ hasText: 'Futures' }).first();
+    await marketTrigger.click();
+    await dialog.locator('text=Spot').first().click();
+
+    await expect(dialog.getByText('Leverage', { exact: true })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Run backtest' })).toBeEnabled();
+
+    // Switch back to FUTURES — leverage reappears
+    await dialog.locator('button').filter({ hasText: 'Spot' }).first().click();
+    await dialog.locator('text=Futures').first().click();
+    await expect(dialog.getByText('Leverage', { exact: true })).toBeVisible();
+  });
+
+  test('mutation rejection (server 500) flips modal to failed', async ({ page }) => {
+    // Add a more specific route override on top of the existing mock; the
+    // catch-all `**/trpc/**` from beforeEach was registered first, so this
+    // narrower one wins. Returns a tRPC-shaped error so the client throws.
+    await page.route('**/trpc/backtest.run**', async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify([{
+          error: {
+            json: {
+              message: 'Server exploded',
+              code: -32603,
+              data: { code: 'INTERNAL_SERVER_ERROR', httpStatus: 500 },
+            },
+          },
+        }]),
+      });
+    });
+
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+    await dialog.getByRole('button', { name: 'Run backtest' }).click();
+
+    await expect(dialog.getByText('Backtest failed', { exact: true }))
+      .toBeVisible({ timeout: 10_000 });
+  });
+
+  test('ETA renders calculating then computed across two progress events', async ({ page }) => {
+    await waitForSocket(page);
+    await setWsConnected(page, true);
+
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+    await dialog.getByRole('button', { name: 'Run backtest' }).click();
+    await expect(dialog.getByText('Starting backtest…', { exact: true })).toBeVisible({ timeout: 5_000 });
+    await waitForSocket(page, { event: 'backtest:progress', minListeners: 1 });
+
+    // First event: etaMs=null (below 5% floor on the backend) — UI shows
+    // "calculating ETA…"
+    await emitSocketEvent(page, 'backtest:progress', {
+      backtestId: FAKE_BACKTEST_ID,
+      phase: 'simulating',
+      processed: 5,
+      total: 100,
+      etaMs: null,
+      startedAt: Date.now() - 2_000,
+    });
+    await expect(dialog.getByText('calculating ETA…', { exact: true })).toBeVisible();
+
+    // Second event: etaMs is provided — UI surfaces a remaining-time string.
+    await emitSocketEvent(page, 'backtest:progress', {
+      backtestId: FAKE_BACKTEST_ID,
+      phase: 'simulating',
+      processed: 60,
+      total: 100,
+      etaMs: 30_000,
+      startedAt: Date.now() - 30_000,
+    });
+    await expect(dialog.getByText(/remaining/)).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('keyboard arrow nav cycles through the four tabs', async ({ page }) => {
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+
+    // Default: Basic tab is selected
+    const basicTab = dialog.getByRole('tab', { name: 'Basic' });
+    const strategiesTab = dialog.getByRole('tab', { name: 'Strategies' });
+    const filtersTab = dialog.getByRole('tab', { name: 'Filters' });
+    const riskTab = dialog.getByRole('tab', { name: 'Risk' });
+
+    await basicTab.focus();
+    await expect(basicTab).toBeFocused();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(strategiesTab).toBeFocused();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(filtersTab).toBeFocused();
+
+    await page.keyboard.press('ArrowRight');
+    await expect(riskTab).toBeFocused();
+
+    await page.keyboard.press('ArrowLeft');
+    await expect(filtersTab).toBeFocused();
+  });
+
   test('hook ignores progress events bound to a different backtestId', async ({ page }) => {
     await waitForSocket(page);
     await setWsConnected(page, true);
@@ -381,5 +500,37 @@ test.describe('Backtest modal — full flow coverage', () => {
       startedAt: Date.now() - 5_000,
     });
     await expect(dialog.getByText('Simulating trades', { exact: true })).toBeVisible();
+  });
+});
+
+test.describe('Backtest modal — strategy interval-mismatch warning', () => {
+  test('Alert appears when no selected strategy recommends current interval', async ({ page }) => {
+    // Strategy fixture whose recommendedTimeframes excludes the default 1h
+    const mismatchFixture = [{
+      id: 'mismatch-only',
+      name: 'Mismatch Only',
+      version: '1.0',
+      description: 'Only recommends 4h',
+      author: 'mm',
+      tags: [],
+      status: 'active',
+      enabled: true,
+      recommendedTimeframes: { primary: '4h', secondary: ['1d'] },
+    }];
+
+    await installModalMock(page, { strategiesOverride: mismatchFixture });
+    await page.goto('/');
+    await waitForChartReady(page);
+
+    await openModal(page);
+    const dialog = page.getByRole('dialog', { name: 'Backtest' });
+    await dialog.getByRole('tab', { name: 'Strategies' }).click();
+
+    // Reset selection then pick only the mismatched strategy
+    await dialog.getByRole('button', { name: 'Clear' }).click();
+    await dialog.getByText('Mismatch Only', { exact: true }).click();
+
+    await expect(dialog.getByText('Strategy / interval mismatch', { exact: true }))
+      .toBeVisible({ timeout: 5_000 });
   });
 });

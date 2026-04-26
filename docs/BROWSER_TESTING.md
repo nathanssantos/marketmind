@@ -243,14 +243,61 @@ The script builds `dist-electron/main/index.js` via `VITE_TARGET=electron vite b
 
 ### What it covers
 
-- `apps/electron/e2e/electron/app-launch.ts` — `_electron.launch({ args: [MAIN_ENTRY], env: { VITE_E2E_BYPASS_AUTH: 'true', NODE_ENV: 'test' } })`
+- `apps/electron/e2e/electron/app-launch.ts` — `_electron.launch({ args: [MAIN_ENTRY], env: { VITE_E2E_BYPASS_AUTH: 'true', NODE_ENV: 'test' } })` with an optional `setupContext` callback
 - `apps/electron/e2e/electron/smoke.spec.ts`:
   - window opens, title set
   - chart canvas mounts
   - preload `window.electron` bridge present
   - `window.__mmPerf` reachable after setting `chart.perf`
+- `apps/electron/e2e/electron/backtest-modal.spec.ts`:
+  - toolbar trigger opens the modal, all four tabs render, Strategies fixture renders, Escape closes
+  - Cmd/Ctrl+Shift+B keyboard shortcut toggles the modal
 
 Slower than Layer 2 (~30 s boot). Only covers what the Vite renderer path can't: preload, IPC, packaged-app boot.
+
+### Mocking tRPC in Electron — **don't use `page.route()`**
+
+Layer 3 (feature specs) installs network mocks via `installTrpcMock(page)` which uses Playwright's `page.route()`. **That pattern does NOT work inside Electron.** Discovery:
+
+> Playwright's `page.route()` enables CDP request interception that conflicts with Vite's ESM module loader inside the Electron renderer. On reload, ALL Vite-served scripts (`/src/**`, `@vite/client`, dep pre-bundles) start failing with `net::ERR_FAILED` and React never mounts — empirically true even when the route pattern matches NONE of those URLs (e.g. a route on `http://localhost:3001/trpc/**` still kills `localhost:5173/src/...`).
+
+Use the addInitScript-based variant instead. The renderer-side fetch monkey-patch never engages CDP and survives reload.
+
+```ts
+// apps/electron/e2e/electron/your.spec.ts
+import { launchApp, closeApp, type LaunchedApp } from './app-launch';
+import { installTrpcMockOnContext } from '../helpers/trpcMock';
+import { generateKlines } from '../helpers/klineFixtures';
+
+let launched: LaunchedApp;
+
+test.beforeAll(async () => {
+  const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
+  launched = await launchApp({
+    setupContext: (ctx) => installTrpcMockOnContext(ctx, {
+      klines,
+      overrides: {
+        'setupDetection.listStrategies': () => [/* fixture */],
+        'backtest.run': () => ({ backtestId: 'bt-test' }),
+      },
+    }),
+  });
+  // The very first BrowserWindow.loadURL races us — reload once so the
+  // init script runs against a fresh navigation and patches window.fetch
+  // before any user code makes a request.
+  await launched.window.reload();
+  await launched.window.waitForLoadState('domcontentloaded');
+});
+```
+
+Two tRPC mock adapters share a single `composeResolverMap` factory in `apps/electron/e2e/helpers/trpcMock.ts`:
+
+| Adapter | Mechanism | Use in |
+|---|---|---|
+| `installTrpcMock(page)` | `page.exposeFunction` + `page.addInitScript` + `page.route('**/trpc/**')` | chromium / visual-regression / perf projects (any pure Chromium spec) |
+| `installTrpcMockOnContext(context)` | `context.addInitScript(...)` only — fetch monkey-patch | Electron project (where page.route breaks Vite) |
+
+Both honor the same `TrpcMockOptions` (klines, overrides). Functions in the resolver map are serialized by source, with `kline.list` getting its `rawKlines` inlined as a JSON literal (closures don't survive the page.evaluate boundary).
 
 ---
 
