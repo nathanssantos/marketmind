@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.101.0] - 2026-04-26
+
+Quality-of-life follow-up to the v0.100.0 Backtest ship: comprehensive e2e + unit coverage for the **Screener modal** (previously zero specs), plus a small but load-bearing fix to the e2e helper.
+
+### Added
+- **Screener modal — comprehensive e2e coverage** (`apps/electron/e2e/screener-modal-flow.spec.ts`, 22 tests). Mirrors the Backtest modal's coverage depth: trigger toggle + Escape close, header `Select`s for asset class / market / interval (with hit-count-bumped `screener.run` assertions), `usePortal=false` validation so dropdown clicks land inside the dialog, `PresetBar` rendering + active-preset toggling + preset-A→preset-B switching, `FilterBuilder` add/remove + Clear All, mutual exclusion of preset vs custom filters, footer Save gating + `SaveScreenerDialog` flow with name validation, saved-screeners load/delete, results-table rendering + sortable column headers + row-click wiring, refresh button hit-count delta, empty-state message, loading spinner during in-flight `screener.run` (delayed mock), and error block on `NOT_FOUND` short-circuit.
+- **Screener modal — packaged-Electron coverage** (`apps/electron/e2e/electron/screener-modal.spec.ts`, 3 tests). Uses `installTrpcMockOnContext` so the renderer boots inside the actual Electron main process: confirms toolbar trigger opens dialog with header Selects visible, opening the modal fires `screener.run` and clicking a preset chip fires `screener.runPreset`, Escape closes + reopen still works.
+- **Screener store unit coverage** (`apps/electron/src/renderer/store/screenerStore.test.ts`, 18 tests). Covers `toggleSort` cycle (asc↔desc on same field, reset-to-desc on field switch), `clearFilters` resetting both `customFilters` and `activePresetId`, `updateFilter` partial-merge by id, `hydrate` accepting partial-key payloads without clobbering unset fields, plus the open/close + asset/market/interval setters.
+
+### Fixed
+- **`installTrpcMock` now awaits resolvers** (`apps/electron/e2e/helpers/trpcMock.ts`). `buildBatchResponse` was synchronously mapping resolvers — async overrides (e.g. `delayRunMs` for loading-state specs) returned a `Promise` that `JSON.stringify` serialized as `{}`, leaving the consumer with `data.results === undefined` and the page caught by the React error boundary. Now Promise-aware, fully backwards-compatible for sync resolvers.
+
+### Notes
+- Floors lifted: frontend unit 1800 → 1818 (+18), e2e specs 78 → 103 (+25 — 22 chromium + 3 electron). Backend unit count unchanged at 5366.
+- Pre-existing baseline flakes (`symbol-tab-percentages`, `visual/chart.visual`) confirmed unrelated to this change — same failures present on the `develop` HEAD before this PR landed.
+
 ## [0.100.0] - 2026-04-26
 
 First user-facing feature ship after the v0.99.x performance + quality stabilization run: a complete in-app **Backtest** experience plus the e2e infrastructure to keep it honest.
