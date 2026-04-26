@@ -13,11 +13,26 @@ vi.mock('../../utils/trpc', () => ({
         useQuery: () => ({ data: [], isLoading: false, isError: false }),
       },
     },
+    backtest: {
+      run: {
+        useMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue({ backtestId: 'bt-test' }) }),
+      },
+      getResult: {
+        useQuery: () => ({ data: undefined, isLoading: false }),
+      },
+    },
   },
 }));
 
 vi.mock('../SymbolSelector', () => ({
   SymbolSelector: ({ value }: { value: string }) => <div data-testid="symbol-selector-stub">{value}</div>,
+}));
+
+vi.mock('../../services/socketBus', () => ({
+  socketBus: {
+    on: () => () => {},
+    emit: vi.fn(),
+  },
 }));
 
 const queryClient = new QueryClient();

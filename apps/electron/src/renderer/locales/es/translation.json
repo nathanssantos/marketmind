@@ -1846,6 +1846,33 @@
       "ready": "Configuración válida.",
       "invalid": "{{count}} campo(s) con error."
     },
+    "progress": {
+      "starting": "Iniciando backtest…",
+      "runningWithPhase": "{{phase}} — {{pct}}%",
+      "phase": {
+        "fetchingKlines": "Obteniendo klines",
+        "detectingSetups": "Detectando setups",
+        "simulating": "Simulando trades",
+        "computingMetrics": "Calculando métricas"
+      }
+    },
+    "results": {
+      "title": "Resultados",
+      "runAnother": "Ejecutar otro",
+      "totalTrades": "Trades",
+      "winRate": "Aciertos",
+      "totalPnl": "PnL total",
+      "maxDrawdown": "Drawdown máx",
+      "profitFactor": "Profit factor",
+      "finalEquity": "Equity final",
+      "avgWin": "Ganancia media",
+      "avgLoss": "Pérdida media",
+      "sharpeRatio": "Sharpe"
+    },
+    "failed": {
+      "title": "Backtest falló",
+      "unknown": "Error desconocido"
+    },
     "basic": {
       "symbol": "Símbolo",
       "marketType": "Mercado",

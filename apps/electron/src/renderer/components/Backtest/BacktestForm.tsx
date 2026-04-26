@@ -19,9 +19,10 @@ export type SetField = <K extends keyof SimpleBacktestInput>(
 
 interface BacktestFormProps {
   onClose: () => void;
+  onRun: (input: SimpleBacktestInput) => void;
 }
 
-export const BacktestForm = ({ onClose }: BacktestFormProps) => {
+export const BacktestForm = ({ onClose, onRun }: BacktestFormProps) => {
   const { t } = useTranslation();
   const [state, setState] = useState<SimpleBacktestInput>(() => getDefaultBacktestInput());
 
@@ -87,6 +88,9 @@ export const BacktestForm = ({ onClose }: BacktestFormProps) => {
               disabled={!isValid}
               px={3}
               data-testid="backtest-submit"
+              onClick={() => {
+                if (validation.success) onRun(validation.data);
+              }}
             >
               {t('backtest.form.run')}
             </Button>

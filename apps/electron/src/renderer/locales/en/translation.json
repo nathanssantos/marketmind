@@ -1792,6 +1792,33 @@
       "ready": "All inputs valid.",
       "invalid": "{{count}} field(s) need attention."
     },
+    "progress": {
+      "starting": "Starting backtest…",
+      "runningWithPhase": "{{phase}} — {{pct}}%",
+      "phase": {
+        "fetchingKlines": "Fetching klines",
+        "detectingSetups": "Detecting setups",
+        "simulating": "Simulating trades",
+        "computingMetrics": "Computing metrics"
+      }
+    },
+    "results": {
+      "title": "Backtest results",
+      "runAnother": "Run another",
+      "totalTrades": "Trades",
+      "winRate": "Win rate",
+      "totalPnl": "Total PnL",
+      "maxDrawdown": "Max drawdown",
+      "profitFactor": "Profit factor",
+      "finalEquity": "Final equity",
+      "avgWin": "Avg win",
+      "avgLoss": "Avg loss",
+      "sharpeRatio": "Sharpe"
+    },
+    "failed": {
+      "title": "Backtest failed",
+      "unknown": "Unknown error"
+    },
     "basic": {
       "symbol": "Symbol",
       "marketType": "Market",
