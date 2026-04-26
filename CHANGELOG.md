@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.105.0] - 2026-04-26
+
+Small feature on top of v0.104.0: ESC now cancels the active drawing edit the same way ESC cancels an order drag — drag-in-flight reverts the drawing back to its mousedown position, mid-placement discards the pending without committing.
+
+### Added
+- **`cancelInteraction({ revert: true })`** on `useDrawingInteraction` (`apps/electron/src/renderer/components/Chart/drawings/useDrawingInteraction.ts`). When a drag is in flight, calls `updateDrawing(originalDrawing.id, originalDrawing)` with the snapshot captured at mousedown so the drawing snaps back. When a placement is in flight, the pending is discarded — same behaviour as the existing mouseleave cancel since there is nothing on-store to revert to. Default `revert: false` preserves the v0.104.0 behaviour for the window-level mouseup safety net and for `handleCanvasMouseLeave` (drag is released in place, drawing keeps its current position).
+- **ESC handler in `ChartCanvas.tsx`** now checks `drawingInteractionRef.current?.isDrawing()` first and calls `cancelInteraction({ revert: true })` if so, returning early. A subsequent ESC press still deselects + clears the active tool (existing path). The ref bridge is needed because `useTradingShortcuts` is declared earlier in the render than `useChartAuxiliarySetup`, which is what produces the actual `drawingInteraction` object.
+- **Coverage** — 2 new unit tests in `useDrawingInteraction.test.ts`: revert restores `startIndex` after a drag-then-cancel; revert during placement still discards the pending without committing. 2 new e2e specs in `chart-drawings-interaction.spec.ts`: ESC during a horizontalLine drag (price reverts to the seeded value); ESC during a line placement (no commit even after the trailing mouseup).
+
+### Notes
+- Floors lifted: frontend unit 1856 → 1858 (+2), e2e 171 → 173 (+2). Backend test count unchanged at 5368.
+- Pre-existing baseline flakes (`symbol-tab-percentages` socket-driven specs, `visual/chart.visual` snapshots) confirmed unrelated.
+
 ## [0.104.0] - 2026-04-26
 
 Bug-fix release for the chart drawings layer. The "mouse grudado" symptom users hit was the visible result of five interaction bugs that compounded into a single bad experience.

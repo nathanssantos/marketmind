@@ -24,11 +24,21 @@ export interface OHLCSnapIndicator {
   ohlcType: 'open' | 'high' | 'low' | 'close';
 }
 
+interface CancelInteractionOptions {
+  /**
+   * When true and a drag is in progress, restore the drawing back to the
+   * snapshot taken at mousedown. Used by ESC so the user can abort an
+   * accidental drag the same way they abort an accidental order placement.
+   * Default false: drag is released in place (e.g. for mouseleave).
+   */
+  revert?: boolean;
+}
+
 interface UseDrawingInteractionResult {
   handleMouseDown: (x: number, y: number) => boolean;
   handleMouseMove: (x: number, y: number) => boolean;
   handleMouseUp: (x: number, y: number) => boolean;
-  cancelInteraction: () => boolean;
+  cancelInteraction: (options?: CancelInteractionOptions) => boolean;
   // Read live from `phaseRef.current` so callers always see the latest value.
   // Returning a snapshotted boolean would be stale: the hook does not
   // re-render between mouse events (no zustand subscription tracks the
@@ -573,13 +583,20 @@ export const useDrawingInteraction = ({
     return false;
   }, [manager, getIndexAndPrice]);
 
-  const cancelInteraction = useCallback((): boolean => {
+  const cancelInteraction = useCallback((options: CancelInteractionOptions = {}): boolean => {
     const phase = phaseRef.current;
     if (phase === 'idle') return false;
 
-    // Drag in progress: leave the drawing where it landed (don't revert),
-    // just release the drag state. The mouse should be free again.
     if (phase === 'dragging') {
+      // Default behaviour (mouseleave / window mouseup safety net): leave
+      // the drawing where it landed and just release the drag state.
+      // ESC behaviour (revert=true): restore the drawing to the snapshot
+      // captured when the drag started — same UX as cancelling an order
+      // drag with ESC.
+      if (options.revert && dragStartRef.current) {
+        const { originalDrawing } = dragStartRef.current;
+        useDrawingStore.getState().updateDrawing(originalDrawing.id, originalDrawing);
+      }
       dragStartRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');
