@@ -192,21 +192,25 @@ export const statsProcedures = {
         // Daily PnL source resolution:
         //   - `incomeSum` comes from `incomeEvents` (REALIZED_PNL +
         //     COMMISSION + FUNDING_FEE on the Binance side) and is the
-        //     authoritative source once the periodic income sync has run.
-        //   - But the income sync runs on a ~1 min cadence: when a trade
-        //     just closed, `incomeEvents` for that day is empty until the
-        //     next sync, while `tradeExecutions.pnl` is already updated
-        //     synchronously. Using only `incomeSum` made the sidebar's
-        //     daily PnL appear stuck on the previous total until the user
-        //     manually refreshed the wallet — visible bug.
-        //   - Fallback: if `incomeSum === 0` for this day but trades did
-        //     close, surface the trade-level realized PnL immediately.
-        //     The next sync replaces this with the funded-and-commissioned
-        //     authoritative value.
+        //     authoritative end-of-day source — but it's lagged behind
+        //     the periodic income-sync cadence (~1 min).
+        //   - `tradeRealizedNet` is the sum of `tradeExecutions.pnl` for
+        //     trades closed this day. It updates synchronously the moment
+        //     a trade is closed, so it's the only source that reflects
+        //     "I just closed an operation right now".
+        //   - Rule: when the day has any closed trades, ALWAYS prefer
+        //     trade-level data — that gives an instant update on close
+        //     and stays consistent with the wins/losses count above
+        //     (which is also computed from `tradeStatsByDay`). On days
+        //     without closed trades, fall through to `incomeSum` so
+        //     funding-only days (holding through funding intervals on a
+        //     flat day) still show.
+        //   - The previous version of this fix only fell back when
+        //     `incomeSum === 0`, which broke the moment a day already
+        //     had at least one synced trade: a second trade closing on
+        //     the same day would not appear until the next income sync.
         const tradeRealizedNet = stats.grossProfit - stats.grossLoss;
-        const dailyPnl = incomeSum !== 0
-          ? incomeSum
-          : tradeRealizedNet;
+        const dailyPnl = stats.closedPositions > 0 ? tradeRealizedNet : incomeSum;
 
         results.push({
           date,
