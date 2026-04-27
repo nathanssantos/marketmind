@@ -3,6 +3,7 @@ import type { DirtyFlags } from '@renderer/utils/canvas/CanvasManager';
 import { getOrderId, getOrderPrice, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
 import type { RefObject } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { clampStopToTighten, findRelatedOrdersForSlTp, isTighterStop, isValidTakeProfit } from './orderDragValidators';
 
 interface OrderDragConfig {
   orders: Order[];
@@ -94,10 +95,8 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
         if (dragType === 'stopLoss' || dragType === 'takeProfit') {
           let finalPrice = currentPrice;
           if (dragType === 'stopLoss' && config.slTightenOnly && initialSlPriceRef.current !== null) {
-            const initialSl = initialSlPriceRef.current;
-            finalPrice = isOrderLong(draggedOrder)
-              ? Math.max(currentPrice, initialSl)
-              : Math.min(currentPrice, initialSl);
+            const side = isOrderLong(draggedOrder) ? 'LONG' : 'SHORT';
+            finalPrice = clampStopToTighten(currentPrice, initialSlPriceRef.current, side);
           }
           previewPriceRef.current = finalPrice;
           config.markDirty?.('overlays');
@@ -146,9 +145,9 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
 
     if (dragType === 'stopLoss' || dragType === 'takeProfit') {
       const entryPrice = getOrderPrice(draggedOrder);
-      const isLong = isOrderLong(draggedOrder);
+      const side = isOrderLong(draggedOrder) ? 'LONG' : 'SHORT';
       const isValidSl = dragType === 'stopLoss';
-      const isValidTp = dragType === 'takeProfit' && (isLong ? previewPrice > entryPrice : previewPrice < entryPrice);
+      const isValidTp = dragType === 'takeProfit' && isValidTakeProfit(previewPrice, entryPrice, side);
 
       if (!isValidSl && !isValidTp) {
         clearDragState();
@@ -156,25 +155,30 @@ export const useOrderDragHandler = (config: OrderDragConfig) => {
       }
 
       if (dragType === 'stopLoss' && config.slTightenOnly && initialSlPriceRef.current !== null) {
-        const initialSl = initialSlPriceRef.current;
-        const isTighter = isLong ? previewPrice >= initialSl : previewPrice <= initialSl;
-        if (!isTighter) {
+        if (!isTighterStop(previewPrice, initialSlPriceRef.current, side)) {
           clearDragState();
           return;
         }
       }
 
-      const relatedOrders = config.orders.filter(
-        (order) =>
-          order.symbol === draggedOrder.symbol &&
-          isOrderLong(order) === isOrderLong(draggedOrder) &&
-          isOrderActive(order)
+      const draggedRelatable = {
+        id: getOrderId(draggedOrder),
+        symbol: draggedOrder.symbol,
+        isLong: isOrderLong(draggedOrder),
+        isActive: isOrderActive(draggedOrder),
+      };
+      const orderRelatables = config.orders.map((order) => ({
+        id: getOrderId(order),
+        symbol: order.symbol,
+        isLong: isOrderLong(order),
+        isActive: isOrderActive(order),
+      }));
+      const relatedIds = new Set(
+        findRelatedOrdersForSlTp(orderRelatables, draggedRelatable).map((o) => o.id),
       );
 
-      relatedOrders.forEach((order) => {
-        config.updateOrder(getOrderId(order), {
-          [dragType]: previewPrice,
-        });
+      relatedIds.forEach((relatedId) => {
+        config.updateOrder(relatedId, { [dragType]: previewPrice });
       });
     }
 
