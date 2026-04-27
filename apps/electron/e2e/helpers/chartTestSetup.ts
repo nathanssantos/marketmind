@@ -172,6 +172,33 @@ export const waitForChartReady = async (page: Page, timeoutMs = 10_000): Promise
     { timeout: timeoutMs },
   );
   await waitForFrames(page, 10);
+  // Mounted + 10 frames is not the same as "the chart has actually painted".
+  // The kline query resolves async, the canvasManager's render loop runs on
+  // its own RAF schedule, and historically the e2e socket connection used to
+  // mask the gap by triggering extra re-renders in that window. Without that
+  // accidental forcing function (we now explicitly disconnect the socket in
+  // e2e), the gap is observable as ~100ms of zero-alpha canvas after
+  // waitForFrames returns. Wait until at least one canvas has non-zero alpha.
+  await page.waitForFunction(
+    () => {
+      const canvases = Array.from(document.querySelectorAll('canvas')) as HTMLCanvasElement[];
+      for (const c of canvases) {
+        if (c.width === 0 || c.height === 0) continue;
+        const ctx = c.getContext('2d');
+        if (!ctx) continue;
+        try {
+          const img = ctx.getImageData(0, 0, c.width, c.height).data;
+          for (let i = 3; i < img.length; i += 4) {
+            if (img[i]! > 0) return true;
+          }
+        } catch {
+          // best effort — getImageData can throw on tainted canvases
+        }
+      }
+      return false;
+    },
+    { timeout: timeoutMs },
+  );
 };
 
 export interface AddIndicatorInput {

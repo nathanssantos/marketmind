@@ -5,6 +5,7 @@ import {
   type ServerToClientEvents,
 } from '@marketmind/types';
 import { BACKEND_URL } from '@shared/constants/api';
+import { IS_E2E_BYPASS_AUTH } from '@shared/constants';
 import { useConnectionStore } from '../store/connectionStore';
 import { exposeSocketForE2E } from '../utils/e2eBridge';
 import { perfMonitor } from '../utils/canvas/perfMonitor';
@@ -43,9 +44,17 @@ class SocketBus {
 
   private ensureSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
     if (this.socket) return this.socket;
+    // E2E hard-rule: never open a real transport. socket.io-client still gives
+    // us a working .on/.off/.listeners surface, which is what the test bridge
+    // wraps with __socketTestBridge.emit() — that path invokes registered
+    // handlers synchronously without going through the wire. If we DID let it
+    // connect to BACKEND_URL while a developer's `pnpm dev` backend is running,
+    // we'd receive real Binance price:update events that race against the
+    // test fixtures and break assertions non-deterministically (this was the
+    // 3 flaky symbol-tab-percentages tests on develop).
     this.socket = io(BACKEND_URL, {
-      autoConnect: true,
-      reconnection: true,
+      autoConnect: !IS_E2E_BYPASS_AUTH,
+      reconnection: !IS_E2E_BYPASS_AUTH,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 50,
