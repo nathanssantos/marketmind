@@ -1,6 +1,7 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { Callout, IconButton, Select } from '@renderer/components/ui';
+import { MM } from '@renderer/theme/tokens';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import type { PortfolioFilterOption, PortfolioSortOption } from '@renderer/store/uiStore';
@@ -53,7 +54,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
   const { totalPnL, totalPnLPercent, profitableCount, losingCount } = stats;
 
   return (
-    <Stack gap={3} p={4}>
+    <Stack gap={MM.spacing.section.gap} p={MM.spacing.dialogPadding}>
       {headerContent}
       {!isIB && <FuturesPositionsPanel />}
 

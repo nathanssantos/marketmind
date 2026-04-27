@@ -1,6 +1,7 @@
 import type { MarketType } from '@marketmind/types';
 import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { MM } from '@renderer/theme/tokens';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
@@ -61,7 +62,7 @@ const WatchersTabComponent = () => {
   };
 
   return (
-    <Stack gap={3} p={4}>
+    <Stack gap={MM.spacing.section.gap} p={MM.spacing.dialogPadding}>
       <Flex justify="space-between" align="center">
         <Flex align="center" gap={2}>
           <Text fontSize="sm" fontWeight="bold">

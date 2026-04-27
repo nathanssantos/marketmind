@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Phase 3 (Sidebars deep review)
+Phase 3 of v1 post-release plan. Sidebars came out cleaner than expected from prior v1.0.0 sweeps — no hardcoded shades found in `Trading/TradingSidebar`, `AutoTrading/AutoTradingSidebar`, `OrderFlow/OrderFlowSidebar`, `MarketSidebar/MarketSidebar`, or any tab. Two real touches:
+
+- **`AutoTradingSidebar`**: "select wallet first" empty state replaced with `<Callout tone="warning" compact>` (was raw muted Text in `<Box p={4}>`).
+- **MM token adoption** in 3 sidebar bodies — `Trading/Portfolio.tsx`, `Trading/OrdersList.tsx`, `MarketSidebar/tabs/WatchersTab.tsx`: outer `Stack gap={3} p={4}` → `Stack gap={MM.spacing.section.gap} p={MM.spacing.dialogPadding}` (token-driven, identical visual at current scale, single change point if compactness target shifts).
+
+`MarketSidebar/tabs/LogsTab.tsx` keeps `gray.800` / `gray.900` literals — intentional terminal aesthetic; documented as exception.
+
 ### Added — Phase 2 (Code/architecture)
 - **`apps/electron/src/renderer/theme/tokens.ts`** — `MM` namespace exports the MarketMind compact-style design tokens (spacing, typography, line-heights, button sizes, radius, preview dimensions). Single source of truth referenced from all primitives.
 - **`packages/ui/MIGRATION.md`** — extraction audit + plan for v1.2. Found only 3 of ~47 ui files have cross-imports (`color-mode.tsx`, `MetricCard.tsx`, `PnLDisplay.tsx`) — extraction is low-effort surgery; bulk is mechanical.
