@@ -1,5 +1,7 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
-import { useUIPref } from '@/renderer/store/preferencesStore';
+import { useBacktestModalStore } from '@/renderer/store/backtestModalStore';
+import { usePreferencesStore, useUIPref } from '@/renderer/store/preferencesStore';
+import { useScreenerStore } from '@/renderer/store/screenerStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { perfMonitor } from '@/renderer/utils/canvas/perfMonitor';
 import { exposeGlobalActionsForE2E } from '@/renderer/utils/e2eBridge';
@@ -89,6 +91,20 @@ const MainLayoutComponent = ({
     orderFlowSidebarOpen: state.orderFlowSidebarOpen,
   })));
 
+  const closeAll = useCallback(() => {
+    setIsSettingsOpen(false);
+    const ui = useUIStore.getState();
+    ui.setOrdersDialogOpen(false);
+    ui.setAnalyticsOpen(false);
+    ui.setMarketSidebarOpen(false);
+    ui.setOrderFlowSidebarOpen(false);
+    useBacktestModalStore.getState().closeBacktest();
+    useScreenerStore.getState().setScreenerOpen(false);
+    const prefs = usePreferencesStore.getState();
+    prefs.set('ui', 'tradingSidebarOpen', false);
+    prefs.set('ui', 'autoTradingSidebarOpen', false);
+  }, []);
+
   const globalActions = useMemo(() => ({
     openSettings: (tab?: SettingsTab) => {
       setSettingsInitialTab(tab ?? DEFAULT_SETTINGS_TAB);
@@ -96,13 +112,21 @@ const MainLayoutComponent = ({
     },
     openSymbolSelector: () => onOpenSymbolSelector?.(),
     navigateToSymbol: (symbol: string, marketType?: MarketType) => onNavigateToSymbol?.(symbol, marketType),
-  }), [onOpenSymbolSelector, onNavigateToSymbol]);
+    closeAll,
+    setTimeframe: (tf: Timeframe) => onTimeframeChange(tf),
+    setChartType: (type: ChartType) => onChartTypeChange(type),
+    setMarketType: (mt: MarketType) => onMarketTypeChange?.(mt),
+  }), [onOpenSymbolSelector, onNavigateToSymbol, closeAll, onTimeframeChange, onChartTypeChange, onMarketTypeChange]);
 
   useEffect(() => {
     exposeGlobalActionsForE2E({
       openSettings: (tab) => globalActions.openSettings(tab as SettingsTab | undefined),
       openSymbolSelector: globalActions.openSymbolSelector,
       navigateToSymbol: globalActions.navigateToSymbol,
+      closeAll: globalActions.closeAll,
+      setTimeframe: (tf) => globalActions.setTimeframe(tf as Timeframe),
+      setChartType: (t) => globalActions.setChartType(t as ChartType),
+      setMarketType: (mt) => globalActions.setMarketType(mt),
     });
   }, [globalActions]);
 

@@ -216,3 +216,6 @@ results/
 *.log
 optimization-log*.txt
 .vercel
+
+# MCP screenshot output — ignore timestamped session dirs, keep baseline.
+apps/electron/screenshots/[0-9]*/

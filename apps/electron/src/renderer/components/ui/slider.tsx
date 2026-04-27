@@ -10,13 +10,34 @@ export interface SliderProps {
   width?: string;
   label?: string;
   showValue?: boolean;
+  'aria-label'?: string;
 }
 
 export const Slider = (props: SliderProps) => {
-  const { label, showValue = false, value, onValueChange, onValueChangeEnd, min, max, step, width = 'full' } = props;
+  const {
+    label,
+    showValue = false,
+    value,
+    onValueChange,
+    onValueChangeEnd,
+    min,
+    max,
+    step,
+    width = 'full',
+    'aria-label': ariaLabel,
+  } = props;
 
   return (
-    <ChakraSlider.Root value={value} onValueChange={(e) => onValueChange(e.value)} onValueChangeEnd={onValueChangeEnd ? (e) => onValueChangeEnd(e.value) : undefined} min={min} max={max} step={step} width={width}>
+    <ChakraSlider.Root
+      value={value}
+      onValueChange={(e) => onValueChange(e.value)}
+      onValueChangeEnd={onValueChangeEnd ? (e) => onValueChangeEnd(e.value) : undefined}
+      min={min}
+      max={max}
+      step={step}
+      width={width}
+      aria-label={ariaLabel ? [ariaLabel] : undefined}
+    >
       {label && <ChakraSlider.Label>{label}</ChakraSlider.Label>}
       <ChakraSlider.Control>
         <ChakraSlider.Track>

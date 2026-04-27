@@ -81,15 +81,18 @@ The `apps/electron/src/renderer/components/ui/` directory is the **single source
 import { Button, IconButton, Switch, Badge, Tabs } from '@renderer/components/ui';
 ```
 - **ALL** interactive/visual components must come from `@renderer/components/ui` (barrel import via `index.ts`)
-- This includes: `Button`, `IconButton`, `ToggleIconButton`, `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup`, `Field`, `Badge`, `Alert`, `Callout`, `Skeleton`, `Link`, `CloseButton`, `Image`, `Menu`, `Separator`, `Progress`, `Tabs`, `Table`, `Card`, `Stat`, `Dialog`, `FormDialog`, `ConfirmationDialog`, `FormSection`, `FormRow`, `CollapsibleSection`, `Popover`, `TooltipWrapper`, `EmptyState`, `ErrorMessage`, `LoadingSpinner`, `CryptoIcon`, `MetricCard`, `PnLDisplay`, `PageTitle`, `SectionTitle`, `SubsectionTitle`, `SectionDescription`, `FieldHint`, `MetaText`
+- This includes: `Button`, `IconButton`, `ToggleIconButton`, `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup`, `Field`, `Badge`, `Alert`, `Callout`, `Skeleton`, `Link`, `CloseButton`, `Image`, `Menu`, `Separator`, `Progress`, `Tabs`, `Table`, `Card`, `Stat`, `Dialog`, `FormDialog`, `ConfirmationDialog`, `FormSection`, `FormRow`, `PanelHeader`, `CollapsibleSection`, `Popover`, `TooltipWrapper`, `EmptyState`, `ErrorMessage`, `LoadingSpinner`, `CryptoIcon`, `MetricCard`, `PnLDisplay`, `PageTitle`, `SectionTitle`, `SubsectionTitle`, `SectionDescription`, `FieldHint`, `MetaText`
 - **Only layout primitives** come directly from `@chakra-ui/react`: `Box`, `Flex`, `Stack`, `HStack`, `VStack`, `Grid`, `GridItem`, `Text`, `Heading`, `Spinner`, `Portal`, `Group`
 - **NEVER** import `Button`, `IconButton`, `Badge`, `Tabs`, `Table`, `Menu`, `Input`, `Switch`, or any interactive component directly from `@chakra-ui/react` — only the `ui/` wrappers may do that internally
 
-**Section / row composition (use these for every dialog and tab — added in v1.0.0):**
-- `<FormSection title="..." description="..." action={...}>` — standard section block. Pairs with `<Field>`, `<FormRow>`, `<Callout>` inside.
+**Section / row composition (use these for every dialog and tab — added in v1.0.0+):**
+- `<FormSection title="..." description="..." action={...}>` — standard section block (no border separator). Pairs with `<Field>`, `<FormRow>`, `<Callout>` inside.
+- `<PanelHeader title="..." action={...}>` — **dashboard-style panel header with `borderBottom`** separator. Use in AnalyticsModal panels and any panel where you want the title visually divided from the body. Same title typography as `FormSection` (sm/semibold).
 - `<FormRow label="..." helper="..."><Switch ... /></FormRow>` — left label/helper, right control. Use for switch/select rows.
 - `<Callout tone="info|success|warning|danger|neutral" title="..." compact>...</Callout>` — replaces ad-hoc colored `<Box bg="blue.50" ...>` patterns. Always prefer this over inline colored boxes for inline messages.
 - `<CollapsibleSection variant="static" ...>` — non-accordion mode (no chevron, always-open). Use this in contexts where collapsing is unwanted (e.g. AutoTrading sections).
+- `MM.spinner.panel` (`{ size: 'md', py: 6 }`) — standard panel loading state. Pair with `<Flex justify="center" align="center" py={MM.spinner.panel.py}><Spinner size={MM.spinner.panel.size} /></Flex>`.
+- `MM.buttonSize.nav` (`'2xs'`) — pagination / prev-next nav buttons. Pair with `px={1.5} minW="auto"` for tight icon-only buttons (‹ ›).
 
 **Theming rules (mandatory for future multi-theme support):**
 - All colors via **semantic tokens** — never hardcode hex/rgb values
@@ -420,6 +423,19 @@ export const useChartStore = create<ChartState>((set) => ({
 ```
 
 ---
+
+## 🤖 MCP Servers (v1.1+)
+
+> **Four Model Context Protocol servers** under `packages/mcp-*` expose 47 tools to any MCP client (Claude Code, ChatGPT desktop, custom agents). Independently installable via `pnpm mcp:install` (auto-detects each `packages/mcp-*` workspace and registers it in `~/.claude.json`).
+>
+> - `@marketmind/mcp-screenshot` (6 tools) — visual capture pipeline (Playwright + Chromium against the dev renderer); HTML galleries side-by-side dark/light. **Phase 6 visual verification depends on this.**
+> - `@marketmind/mcp-app` (19 tools) — drives the live dev app: navigation, symbol/timeframe/chart-type, theme, sidebars, allowlisted store dispatch, Playwright escape hatches.
+> - `@marketmind/mcp-backend` (14 tools) — read-only DB layer + tRPC bridge + audit log.
+> - `@marketmind/mcp-strategy` (8 tools) — Pine strategy CRUD + backtest proxies.
+>
+> Full docs: [`docs/MCP_SERVERS.md`](docs/MCP_SERVERS.md) (overview + tool tables), [`docs/MCP_AGENT_GUIDE.md`](docs/MCP_AGENT_GUIDE.md) (recipes), [`docs/MCP_SECURITY.md`](docs/MCP_SECURITY.md) (threat model).
+>
+> All servers are **dev-only** — they require `VITE_E2E_BYPASS_AUTH=true` (for the Playwright servers) and a local `DATABASE_URL` (for the DB server). Trade execution via MCP (`mcp-trading`) is deferred to v1.2.
 
 ## 🧪 Testing Approach
 

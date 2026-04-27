@@ -11,6 +11,7 @@
     "success": "Éxito",
     "search": "Buscar",
     "noResults": "No se encontraron resultados",
+    "noData": "Sin datos disponibles",
     "typeToSearch": "Escriba para buscar...",
     "dismiss": "Descartar",
     "skip": "Omitir",
@@ -88,6 +89,7 @@
   },
   "customSymbols": {
     "title": "Símbolos Personalizados",
+    "description": "Crea índices personalizados a partir de múltiples componentes con agregación ponderada.",
     "myIndices": "Mis Índices",
     "createNew": "Crear Nuevo",
     "name": "Nombre",

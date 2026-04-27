@@ -1,0 +1,31 @@
+{
+  "name": "@marketmind/mcp-screenshot",
+  "version": "1.0.0",
+  "description": "MCP server that drives a Playwright browser against the MarketMind dev server and captures screenshots of any tab/modal/sidebar.",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "mm-mcp-screenshot": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "mcp": {
+    "env": {
+      "MM_MCP_BASE_URL": "http://localhost:5174"
+    }
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "playwright": "^1.49.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "5.9.3"
+  }
+}

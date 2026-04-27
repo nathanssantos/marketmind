@@ -37,12 +37,12 @@ export const CustomSymbolsTab = memo(() => {
   const [formCapPercent, setFormCapPercent] = useState(40);
   const [formBaseValue, setFormBaseValue] = useState(100);
   const [formComponents, setFormComponents] = useState<ComponentInput[]>([
-    { symbol: '', marketType: 'SPOT', coingeckoId: '' },
-    { symbol: '', marketType: 'SPOT', coingeckoId: '' },
+    { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
+    { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
   ]);
 
   const addComponent = () => {
-    setFormComponents((prev) => [...prev, { symbol: '', marketType: 'SPOT', coingeckoId: '' }]);
+    setFormComponents((prev) => [...prev, { symbol: '', marketType: 'FUTURES', coingeckoId: '' }]);
   };
 
   const removeComponent = (index: number) => {
@@ -78,8 +78,8 @@ export const CustomSymbolsTab = memo(() => {
       setFormSymbol('');
       setFormName('');
       setFormComponents([
-        { symbol: '', marketType: 'SPOT', coingeckoId: '' },
-        { symbol: '', marketType: 'SPOT', coingeckoId: '' },
+        { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
+        { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
       ]);
     } catch (err) {
       toaster.create({ title: t('common.error'), description: String(err), type: 'error' });
@@ -103,10 +103,20 @@ export const CustomSymbolsTab = memo(() => {
   };
 
   return (
-    <Tabs.Root defaultValue="list" variant="line" size="sm">
-      <Flex justify="flex-end" mb={2}>
-        <BetaBadge />
+    <Stack gap={4}>
+      <Flex justify="space-between" align="start">
+        <Stack gap={0}>
+          <Flex align="center" gap={2}>
+            <Text fontSize="md" fontWeight="bold">{t('customSymbols.title')}</Text>
+            <BetaBadge />
+            {(customSymbols.data?.length ?? 0) > 0 && (
+              <Badge size="sm" colorPalette="blue">{customSymbols.data?.length ?? 0}</Badge>
+            )}
+          </Flex>
+          <Text fontSize="xs" color="fg.muted">{t('customSymbols.description')}</Text>
+        </Stack>
       </Flex>
+      <Tabs.Root defaultValue="list" variant="line" size="sm">
       <Tabs.List>
         <Tabs.Trigger value="list" px={3} py={1.5}>
           {t('customSymbols.myIndices')}
@@ -310,7 +320,8 @@ export const CustomSymbolsTab = memo(() => {
           </Button>
         </Stack>
       </Tabs.Content>
-    </Tabs.Root>
+      </Tabs.Root>
+    </Stack>
   );
 });
 

@@ -6,6 +6,7 @@ import { LuRefreshCw, LuSave } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { useScreener } from '../../hooks/useScreener';
 import { useScreenerStore } from '../../store/screenerStore';
+import { MM } from '@renderer/theme/tokens';
 import {
   BetaBadge,
   Button,
@@ -177,8 +178,8 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
               </Flex>
             </DialogHeader>
 
-            <DialogBody px={4} py={3} overflowY="auto">
-              <Stack gap={3}>
+            <DialogBody px={MM.spacing.section.gap} py={MM.spacing.dialogPadding} overflowY="auto">
+              <Stack gap={MM.spacing.row.gap}>
                 <PresetBar
                   presets={presets}
                   activePresetId={activePresetId}

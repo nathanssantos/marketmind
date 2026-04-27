@@ -42,6 +42,7 @@ export { Menu } from './menu';
 export { MetricCard } from './MetricCard';
 export { NumberInput } from './number-input';
 export type { NumberInputProps } from './number-input';
+export { PanelHeader } from './panel-header';
 export { PasswordInput } from './password-input';
 export type { PasswordInputProps } from './password-input';
 export { PnLDisplay } from './PnLDisplay';

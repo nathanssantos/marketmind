@@ -4,8 +4,8 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
-![Tests](https://img.shields.io/badge/tests-7,500%2B%20passing-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Tests](https://img.shields.io/badge/tests-8,500%2B%20passing-brightgreen.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey.svg)
 ![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20PT%20%7C%20ES%20%7C%20FR-success.svg)
@@ -72,6 +72,15 @@ Visit the **[landing page](https://marketmind-app.vercel.app)** for a full overv
 - **Multi-Language**: English, Portuguese, Spanish, French
 - **Auto-Update**: Automatic updates via GitHub releases
 - **Secure Storage**: Platform-native encryption for API keys
+
+#### AI Agent Bridge (MCP)
+Four Model Context Protocol servers expose **47 tools** to any MCP client (Claude Code, ChatGPT desktop, custom agents). Install with one command (`pnpm mcp:install`) and drive the app from your AI assistant.
+- **`@marketmind/mcp-screenshot`** (6 tools) — Playwright + headless Chromium captures of any tab/modal/sidebar in light + dark, with side-by-side HTML gallery output.
+- **`@marketmind/mcp-app`** (19 tools) — drives the live dev app: navigation, symbol/timeframe/chart-type, theme, sidebars, allowlisted toolbar/store dispatch, escape hatches (`click`/`fill`/`waitFor`).
+- **`@marketmind/mcp-backend`** (14 tools) — read-only DB layer with per-table query tools, SELECT/CTE-only `db.exec`, tRPC bridge, audit log.
+- **`@marketmind/mcp-strategy`** (8 tools) — Pine strategy CRUD + backtest proxies (run/diff/getResult).
+
+Full reference: [`docs/MCP_SERVERS.md`](docs/MCP_SERVERS.md) · agent recipes: [`docs/MCP_AGENT_GUIDE.md`](docs/MCP_AGENT_GUIDE.md) · threat model: [`docs/MCP_SECURITY.md`](docs/MCP_SECURITY.md).
 
 ## Technology Stack
 

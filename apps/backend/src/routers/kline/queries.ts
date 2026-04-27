@@ -6,8 +6,12 @@ import { db } from '../../db';
 import { customSymbols, klines } from '../../db/schema';
 import { symbolSearch } from '../../exchange/interactive-brokers/symbol-search';
 import { aggregateYearlyKlines, getIntervalMilliseconds } from '../../services/binance-historical';
+import { getCustomSymbolService } from '../../services/custom-symbol-service';
 import { prefetchKlines } from '../../services/kline-prefetch';
 import { logger } from '../../services/logger';
+
+const isCustomSymbol = (symbol: string): boolean =>
+  getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false;
 import { demoOrProtectedProcedure, protectedProcedure } from '../../trpc';
 import {
   assetClassSchema,
@@ -31,7 +35,8 @@ export const queryProcedures = {
       })
     )
     .query(async ({ input }) => {
-      const marketType = input.marketType;
+      const isCustom = isCustomSymbol(input.symbol);
+      const marketType = isCustom ? 'SPOT' : input.marketType;
 
       if (input.interval === '1y') {
         await prefetchKlines({ symbol: input.symbol, interval: '1M', targetCount: input.limit * 12, marketType });
@@ -85,7 +90,7 @@ export const queryProcedures = {
       })
     )
     .query(async ({ input }) => {
-      const marketType = input.marketType;
+      const marketType = isCustomSymbol(input.symbol) ? 'SPOT' : input.marketType;
 
       const latest = await db.query.klines.findFirst({
         where: and(

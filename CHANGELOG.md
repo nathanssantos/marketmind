@@ -7,6 +7,134 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-27
+
+**v1.1 release** — Phase 6 visual-verification baseline shipped, custom-symbols loadability fully wired (POLITIFI now loads, real-time tab % works, components auto-backfill from Binance), MCP infrastructure populated for fixture-driven review, CryptoIcon source caching, NaN-guard in price store, full DailyPerformance + Market sidebar fixtures.
+
+### Added — Phase 6 (Visual verification)
+- **`docs/visual-review-2026-04.md`** — Phase 6.2 deliverable. Walks every Settings tab / modal / sidebar against the compact-style rules in `V1_POST_RELEASE_PLAN.md`, scores findings P0/P1/P2, captures the Phase 6.3 fix plan. Outcome: 0 P0, 4 P1 (all addressed in this release), 5 P2 (deferred).
+- **Visual regression baseline** — `apps/electron/screenshots/baseline/` (44 PNGs, English × dark+light, ~4MB) at viewport 1440×900 deviceScaleFactor 1. `.gitignore` now ignores timestamped session dirs only (`apps/electron/screenshots/[0-9]*/`), keeps `baseline/` tracked.
+- **`scripts/visual-gallery.mjs`** — thin driver around `captureGallery` for quick Phase 6.x iterations without going through the MCP stdio transport.
+- **`scripts/visual-diff.mjs`** — compares the most recent (or named) gallery session against the committed baseline, reports diffs/missing/new files, exits non-zero on divergence. Byte-equality compare today; pixelmatch swap-in is the next deliverable.
+- **`packages/mcp-screenshot/src/fixtures.ts`** populated for review: 12 closed executions, 2 paper wallets ($12,473 + $5,847), 3 active watchers, 1 trading profile, full DailyPerformance shape (12 days April 2026), 11 Market sidebar indicator snapshots (Fear & Greed 62/Greed, BTC dominance 56.4%, MVRV 2.1, production cost vs price, open interest 28.4B, long/short global+topTraders, altcoin season w/ topPerformers, ADX 26.4 bullish, order book buy pressure, funding rates × 4). 30-day history series simulated for sparkline charts.
+
+### Fixed — Phase 6.3 P1 sweep
+- **`priceStore.computeDailyChangePct`** returns null when `livePrice` is non-finite or computed pct is NaN — fixes "BTCUSDT NaN%" rendered in the chart panel header when the price stream had no data.
+- **`common.noData` translation key** added to all 4 locales (en/pt/es/fr). Market sidebar indicator cards used to render the literal i18n key as a fallback. (Initially shipped earlier in this release window.)
+- **Orders modal not rendering in captures** — `OrdersDialog` is mounted inside `TradingSidebar`, so flipping `isOrdersDialogOpen` alone wasn't enough; the capture pipeline now opens the trading sidebar first.
+- **Watcher fixture shape** — `autoTrading.getWatcherStatus` returns `{ active, watchers, activeWatchers, persistedWatchers }`, not a bare array; renderer was reading 0 watchers despite 3 in the fixture.
+
+### Added — Custom symbols (POLITIFI loadability)
+- **`CustomSymbolsTab`** standard section header (title + count badge + BetaBadge + description) matching `IndicatorsTab` and `TradingProfilesManager` — was a floating BetaBadge with no title. New i18n key `customSymbols.description` in all 4 locales.
+- **`SymbolSelector.handleSelect`** now accepts marketType / assetClass overrides and forces `marketType=SPOT, assetClass=CRYPTO` when the user picks a custom symbol — custom klines are always stored under SPOT.
+- **`backfillKlines`** in `custom-symbol-service`:
+  - Tries the configured marketType first, falls back to the alternate side (with log + DB persistence of the working side) when no rows are found.
+  - Calls `smartBackfillKlines` on every run for each component (not just when local count is 0) so recent gaps to "now" get filled. `smartBackfillKlines` is gap-aware, so this is cheap when data is already complete.
+  - Falls back to fetching from Binance (FUTURES first, SPOT second) when a component has zero local klines anywhere.
+  - Skips components that still have no data after the network attempt and **renormalizes weights** across the remaining basket; logs the skipped symbols.
+- **`kline.list` / `kline.latest`** coerce `marketType` to `'SPOT'` when the symbol is a known custom symbol — keeps SPOT/FUTURES toggling on the chart from breaking custom indices.
+- **`shared.ts`** in `kline` router — `subscribeToStream`, `triggerCorruptionCheck`, `unsubscribeFromStream` short-circuit for custom symbols (no Binance kline stream to subscribe to).
+- **`futuresTrading.getOpenOrders` / `getOpenAlgoOrders` / `getPosition`** short-circuit to empty/null for custom symbols; was hitting Binance fapi `/openOrders?symbol=POLITIFI` and getting `-1121 Invalid symbol`, which propagated as a tRPC error.
+- **`ticker.getDailyBatch`** resolves custom symbols against the local klines table (1h SPOT, since today's UTC midnight) — without this the tab-bar percentage stayed empty for POLITIFI because Binance returns nothing for synthetic indices.
+
+### Fixed — Symbol icons
+- **`CryptoIcon`** caches the working source index per base asset at module scope (`workingSourceByAsset`) and remembers fully-bad assets (`knownBadAssets`). Previously every remount restarted from source 0 and re-tried URLs that were known to fail (raw.githubusercontent + ORB blocks), causing the icon to flicker to its letter fallback on every render.
+
+### Changed — Capture pipeline
+- **Default `deviceScaleFactor`** in `mcp-screenshot/src/browser.ts` lowered from 2 → 1 (override via `MM_MCP_SCALE`). Galleries are ~58% smaller (9.5MB → 4MB) at viewport 1440×900 — sufficient for layout review, retina mode kept opt-in.
+- **Flow modals** (`addWatcher` / `createWallet` / `startWatchers` / `importProfile` / `tradingProfiles`) moved to a `FLOW_MODALS` list — no longer in the default gallery sweep, since they open via in-app click flows (not store flags) and produced empty workspace shots.
+- **`docs/MCP_AGENT_GUIDE.md`** — new "Reproducing user bugs — drive the real flow, not fixtures" section documents the principle: bugs only repro through the same path the user took, so use `mcp-app` (live tRPC) not `mcp-screenshot` (fixtures-driven).
+
+### Added — Phase 5 (MCP infrastructure)
+- **Four MCP servers** under `packages/mcp-*`, each independently installable, totalling **47 tools**:
+  - `@marketmind/mcp-screenshot` (6 tools) — Playwright + Chromium against the dev renderer; `screenshot.tab`/`modal`/`sidebar`/`fullPage`/`gallery` plus `__health`. Emits side-by-side dark/light HTML galleries to `apps/electron/screenshots/{ts}/`.
+  - `@marketmind/mcp-app` (19 tools) — drives the live dev app: navigation (`openSettings`/`closeSettings`/`closeAll`/`openModal`), symbol/chart (`navigateToSymbol`/`setTimeframe`/`setChartType`/`setMarketType`), UI state (`applyTheme`/`toggleSidebar`/`toggleIndicator`), allowlisted `dispatchToolbar`/`dispatchStore`, escape hatches (`click`/`fill`/`waitFor`/`takeScreenshot`), `inspectStore`. All bridges are dev-only — gated by `VITE_E2E_BYPASS_AUTH=true`.
+  - `@marketmind/mcp-backend` (14 tools) — read-only DB layer: per-table `db.query.{wallets,executions,orders,klines,users,sessions,watchers,setups,autoTradingConfig}` plus SELECT/CTE-only `db.exec`, `trpc.call` HTTP bridge, `audit.tail`, `health.check`. Audit log is JSONL, append-only, local-only.
+  - `@marketmind/mcp-strategy` (8 tools) — Pine strategy CRUD (`list`/`export`/`create` against `apps/backend/strategies/{builtin,user}/`) + backtest proxies (`run`/`diff`/`getResult`/`listBacktests`).
+- **Renderer e2e bridge extended** for MCP control surface: `__globalActions.closeAll`/`setTimeframe`/`setChartType`/`setMarketType` added to `apps/electron/src/renderer/utils/e2eBridge.ts` + `MainLayout.tsx` + `GlobalActionsContext.tsx`. New stores exposed on `window`: `__backtestModalStore`, `__screenerStore`.
+- **One-shot installer** `pnpm mcp:install` (`scripts/mcp-install.mjs`) — auto-detects every `packages/mcp-*` workspace, registers them in `~/.claude.json` under `mcpServers.marketmind-{surface}`. `pnpm mcp:install:dry-run` previews the patch; `pnpm mcp:uninstall` removes the entries; `pnpm mcp:build` compiles all four packages.
+- **Three top-level docs**:
+  - `docs/MCP_SERVERS.md` — overview, install, per-server tool tables, architecture diagram.
+  - `docs/MCP_AGENT_GUIDE.md` — common-flow recipes (gallery sweep, symbol nav, P&L lookup, strategy diff, store inspection, audit tail).
+  - `docs/MCP_SECURITY.md` — threat model, env gates, allowlist enforcement, audit log semantics, why `mcp-trading` is deferred to v1.2.
+
+### Added — UI standards uplift (during Phase 4)
+- **`<PanelHeader>` new primitive** (`apps/electron/src/renderer/components/ui/panel-header.tsx`). Standard header for dashboard-style panels: title (`MM.font.sectionTitle` = sm/semibold) + optional description + optional right-side action slot, with `pb={2}` + `borderBottomWidth="1px" borderColor="border"` separator. **`<PanelHeader>` vs `<FormSection>`**: FormSection = form group, no border; PanelHeader = data panel, with bottom border. Same title typography.
+- **New tokens**:
+  - `MM.spinner.panel = { size: 'md', py: 6 }` — standard dashboard panel loading state
+  - `MM.spinner.inline = { size: 'sm', py: 0 }` — inline next-to-text loading
+  - `MM.buttonSize.nav = '2xs'` — pagination / prev-next nav buttons
+- **AnalyticsModal panels migrated** to `<PanelHeader>` — `EquityCurveChart`, `PerformanceCalendar`, `PerformancePanel` all use the new primitive. All 3 spinners use `MM.spinner.panel` tokens. Calendar prev/next buttons use `MM.buttonSize.nav`.
+
+### Docs
+- `docs/V1_POST_RELEASE_PLAN.md` — Component primacy table extended with PanelHeader / panel-loading / pagination patterns + dedicated "Panel header vs Form section" sub-section + 3 new forbidden patterns.
+- `docs/UI_STYLE_GUIDE.md` — new "Spinners" token table + dedicated "Panel header pattern" section with usage example.
+- `apps/electron/src/renderer/components/ui/README.md` — PanelHeader added to the Layout catalog with rationale.
+- `CLAUDE.md` — PanelHeader added to the must-use-from-`ui` list + section/row composition guide updated with PanelHeader, MM.spinner.panel, MM.buttonSize.nav usage.
+
+### Changed — Phase 4 (Modals deep review)
+- **OrdersDialog**: stats bar tightened (`gap={6}` → MM.spacing.row.gap, ad-hoc colors `green.500/orange.500` → semantic `green.fg/orange.fg`), filter bar gaps + button sizes adopt MM tokens (`size="sm"` → `xs` for view-mode toggles), empty/loading states tightened to `p={6}` from `p={8}`.
+- **BacktestForm** outer shell: `gap={3}` → `MM.spacing.row.gap`, `py={4}` → `MM.spacing.section.gap`, button group gap → `MM.spacing.inline.gap`, body text size → `MM.font.body.size`.
+- **ScreenerModal** body: `Stack gap={3}` → `MM.spacing.row.gap`; dialog padding `px={4} py={3}` → `MM.spacing.section.gap` / `MM.spacing.dialogPadding`.
+- **AnalyticsModal/EquityCurveChart** "no trades yet" empty state: ad-hoc `<Box p={6} bg="bg.muted">` + Text → `<Callout tone="neutral" compact>`.
+
+### Changed — Phase 3 (Sidebars deep review)
+Phase 3 of v1 post-release plan. Sidebars came out cleaner than expected from prior v1.0.0 sweeps — no hardcoded shades found in `Trading/TradingSidebar`, `AutoTrading/AutoTradingSidebar`, `OrderFlow/OrderFlowSidebar`, `MarketSidebar/MarketSidebar`, or any tab. Two real touches:
+
+- **`AutoTradingSidebar`**: "select wallet first" empty state replaced with `<Callout tone="warning" compact>` (was raw muted Text in `<Box p={4}>`).
+- **MM token adoption** in 3 sidebar bodies — `Trading/Portfolio.tsx`, `Trading/OrdersList.tsx`, `MarketSidebar/tabs/WatchersTab.tsx`: outer `Stack gap={3} p={4}` → `Stack gap={MM.spacing.section.gap} p={MM.spacing.dialogPadding}` (token-driven, identical visual at current scale, single change point if compactness target shifts).
+
+`MarketSidebar/tabs/LogsTab.tsx` keeps `gray.800` / `gray.900` literals — intentional terminal aesthetic; documented as exception.
+
+### Added — Phase 2 (Code/architecture)
+- **`apps/electron/src/renderer/theme/tokens.ts`** — `MM` namespace exports the MarketMind compact-style design tokens (spacing, typography, line-heights, button sizes, radius, preview dimensions). Single source of truth referenced from all primitives.
+- **`packages/ui/MIGRATION.md`** — extraction audit + plan for v1.2. Found only 3 of ~47 ui files have cross-imports (`color-mode.tsx`, `MetricCard.tsx`, `PnLDisplay.tsx`) — extraction is low-effort surgery; bulk is mechanical.
+
+### Changed — primitives consume tokens (no behavior change)
+- **`Callout`**: padding, spacing, font sizes, line-heights, border-radius now read from `MM` tokens.
+- **`FormSection`** + **`FormRow`**: same — section title size, body line-height, contentGap default.
+- **`typography`** (PageTitle / SectionTitle / SubsectionTitle / SectionDescription / FieldHint / MetaText): all 6 components fully token-driven.
+- Locked compact-style values: section gap `4` (16px), row gap `2.5` (10px), inline `1.5` (6px), button primary `xs`, secondary `2xs`. Matches `docs/V1_POST_RELEASE_PLAN.md` Design language table.
+
+### Docs
+- `docs/UI_STYLE_GUIDE.md` — new "Compact-style tokens (`MM`)" section documenting every token + value + use + usage example.
+
+### Added — Phase 1 (Quality & tests)
+- **+82 frontend unit tests** covering v1 sweep refactors that shipped without coverage:
+  - `ui/Callout` (8) — every tone, compact, custom icon, title/body composition
+  - `ui/FormSection` + `ui/FormRow` (10)
+  - `Trading/DirectionBadge` (11) — long/short variants, BTC trend, blocked, skipped count, isIB
+  - `Trading/DynamicSymbolRankings` (7) — open/close, tab switch, active marker, added/removed pills
+  - `Trading/CreateWalletDialog` (9) — name validation, paper params on submit, currency/balance fields
+  - `Trading/AddWatcherDialog` (10) — single↔bulk toggle, profile selector, futures warning, info Callout
+  - `Trading/ImportProfileDialog` (8) — JSON parse, valid preview, invalid error, autofill name, mutation
+  - `Trading/StartWatchersModal` (10) — open/close, no-wallet Callout, market type toggle, direction toggles, settings/cancel
+  - `hooks/useSetupToasts` (6) — subscribe, fire on payload, gate, skip missing fields
+- **+27 backend integration tests** in `auth.router.test.ts`:
+  - email-masking integration at every call site (register success/fail, login success/fail, requestPasswordReset, resendVerificationEmail, changePassword fail) — assert raw email NEVER in serialized payload, mask preserves first-char + domain
+  - avatar edge cases: whitespace data, exactly-too-large (cap+1), at-the-cap, empty rejected
+  - avatarColor regex: 6-digit upper/lower accepted; 3-digit, color name, invalid hex chars, missing `#` rejected
+  - changePassword session preservation: current kept, others invalidated; new password works; old password fails
+
+### Added — Phase 1.3 (NotificationsTab wiring)
+- **`utils/notificationSound.ts`** — Web Audio API beep (synthesized, no asset). Different freq per type (success 880Hz, info 660Hz, warning 440Hz, error 220Hz). Best-effort — never throws.
+- **`useToast`** now reads `notificationSoundEnabled` pref and plays a beep on every toast when enabled.
+- **`useOrderNotifications`** gates status-change toasts on `orderToastsEnabled` (default true).
+- **`useSetupToasts`** new hook subscribed to `setup-detected` socket events; fires info toast gated on `setupToastsEnabled`. Mounted in `App.tsx` alongside `useOrderNotifications`.
+
+### Added — Phase 1.4 (a11y audit on Settings dialog)
+- **`@axe-core/playwright`** added as e2e dev-dep.
+- **6 new a11y test cases** in `settings-overhaul.spec.ts` — one per high-traffic Settings tab (account/security/notifications/general/updates/about). Asserts 0 serious + 0 critical violations against the dialog scope.
+- Disabled rules with rationale in test code: `region` + `aria-allowed-attr` (Chakra portal patterns); `color-contrast` (deferred to dedicated theme PR per V1_POST_RELEASE_PLAN.md Phase 2.1 — `fg.muted` over `bg.muted` in dark mode falls below 4.5:1).
+
+### Fixed — a11y issues found by audit
+- **Switch wrappers** in NotificationsTab + UpdatesTab + SecurityTab now pass `aria-label` to the underlying input (was empty `<Switch.Label>` because FormRow renders the label outside the Switch). Resolves serious `aria-labelledby` violations.
+- **Slider** wrapper extended with `aria-label` prop, applied to update-interval slider in UpdatesTab. Resolves serious `aria-input-field-name` violation.
+
+### Test totals
+- Frontend: 2155 → 2237 (+82 unit). 19 e2e tests for Settings (was 13). All passing.
+- Backend: 5389 → 5416 (+27). All 204 test files pass.
+
 ### Security
 - **`audit-logger.ts` — email masking in security event logs.** Resolves 4 CodeQL `js/clear-text-logging` (high-severity) alerts that flagged `metadata.email` being persisted in clear text through `auditLogger.info/warn` for events like `LOGIN_FAILURE`, `PASSWORD_RESET_*`, `REGISTER_FAILURE`. New `maskEmail()` helper preserves correlation grep-ability (first char of local part + full domain, e.g. `alice@example.com → a****@example.com`) without ever logging the full address. Tests verify: long-local masking, single-char local (`a@x` → `*@x`), two-char (`ab@x` → `a*@x`), malformed-email fallback (`***`), full-email never present in serialized payload on `LOGIN_FAILURE`. +5 tests (audit-logger now 21).
 

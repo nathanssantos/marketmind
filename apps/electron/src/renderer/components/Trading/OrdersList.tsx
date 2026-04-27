@@ -1,5 +1,6 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Button, Callout, IconButton, Select } from '@renderer/components/ui';
+import { MM } from '@renderer/theme/tokens';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -191,7 +192,7 @@ const OrdersListComponent = () => {
   const totalCount = (statsData?.ordersCount ?? 0) + (statsData?.executionsCount ?? 0);
 
   return (
-    <Stack gap={3} p={4}>
+    <Stack gap={MM.spacing.section.gap} p={MM.spacing.dialogPadding}>
 
       {!activeWallet ? (
         <Callout tone="warning" compact>

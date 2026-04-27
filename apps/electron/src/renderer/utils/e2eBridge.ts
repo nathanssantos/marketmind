@@ -1,11 +1,13 @@
 import { IS_E2E_BYPASS_AUTH } from '@shared/constants';
 import type { Socket } from 'socket.io-client';
+import { useBacktestModalStore } from '../store/backtestModalStore';
 import { useConnectionStore } from '../store/connectionStore';
 import { useDrawingStore } from '../store/drawingStore';
 import { useIndicatorStore } from '../store/indicatorStore';
 import { useLayoutStore } from '../store/layoutStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { usePriceStore } from '../store/priceStore';
+import { useScreenerStore } from '../store/screenerStore';
 import { useUIStore } from '../store/uiStore';
 import type { CanvasManager } from './canvas/CanvasManager';
 
@@ -19,6 +21,10 @@ interface GlobalActionsBridge {
   openSettings: (tab?: string) => void;
   openSymbolSelector: () => void;
   navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
+  closeAll: () => void;
+  setTimeframe: (tf: string) => void;
+  setChartType: (type: string) => void;
+  setMarketType: (marketType: 'SPOT' | 'FUTURES') => void;
 }
 
 declare global {
@@ -30,11 +36,14 @@ declare global {
     __priceStore?: typeof usePriceStore;
     __connectionStore?: typeof useConnectionStore;
     __uiStore?: typeof useUIStore;
+    __backtestModalStore?: typeof useBacktestModalStore;
+    __screenerStore?: typeof useScreenerStore;
     __canvasManager?: CanvasManager | null;
     __isPanning?: boolean;
     __socket?: Socket | null;
     __socketTestBridge?: SocketTestBridge;
     __globalActions?: GlobalActionsBridge;
+    __setColorMode?: (mode: 'light' | 'dark') => void;
   }
 }
 
@@ -48,6 +57,8 @@ export const installE2EBridge = (): void => {
   window.__priceStore = usePriceStore;
   window.__connectionStore = useConnectionStore;
   window.__uiStore = useUIStore;
+  window.__backtestModalStore = useBacktestModalStore;
+  window.__screenerStore = useScreenerStore;
 };
 
 export const exposeCanvasManagerForE2E = (manager: CanvasManager | null): void => {
@@ -66,6 +77,12 @@ export const exposeGlobalActionsForE2E = (actions: GlobalActionsBridge): void =>
   if (!IS_E2E_BYPASS_AUTH) return;
   if (typeof window === 'undefined') return;
   window.__globalActions = actions;
+};
+
+export const exposeColorModeForE2E = (setter: (mode: 'light' | 'dark') => void): void => {
+  if (!IS_E2E_BYPASS_AUTH) return;
+  if (typeof window === 'undefined') return;
+  window.__setColorMode = setter;
 };
 
 export const exposeSocketForE2E = (socket: Socket | null): void => {

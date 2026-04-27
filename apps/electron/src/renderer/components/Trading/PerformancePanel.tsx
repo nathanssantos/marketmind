@@ -11,9 +11,11 @@ import {
 } from '@chakra-ui/react';
 import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
+import { PanelHeader } from '../ui';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
+import { MM } from '../../theme/tokens';
 import { formatBRL, formatWalletCurrency, formatWalletCurrencyWithSign } from '../../utils/currencyFormatter';
 
 interface PerformancePanelProps {
@@ -31,8 +33,8 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
 
   if (isLoadingPerformance) {
     return (
-      <Flex justify="center" align="center" py={8}>
-        <Spinner size="lg" />
+      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+        <Spinner size={MM.spinner.panel.size} />
       </Flex>
     );
   }
@@ -102,23 +104,23 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
 
   return (
     <Stack gap={3}>
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
-        <Text fontSize="md" fontWeight="bold">
-          {t('trading.analytics.performance.title')}
-        </Text>
-        <ButtonGroup size="2xs" variant="outline" flexWrap="wrap">
-          {periods.map((p) => (
-            <Button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              variant={period === p.value ? 'solid' : 'outline'}
-              px={2}
-            >
-              {t(p.labelKey)}
-            </Button>
-          ))}
-        </ButtonGroup>
-      </Flex>
+      <PanelHeader
+        title={t('trading.analytics.performance.title')}
+        action={
+          <ButtonGroup size={MM.buttonSize.nav} variant="outline" flexWrap="wrap">
+            {periods.map((p) => (
+              <Button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                variant={period === p.value ? 'solid' : 'outline'}
+                px={2}
+              >
+                {t(p.labelKey)}
+              </Button>
+            ))}
+          </ButtonGroup>
+        }
+      />
 
       <Grid templateColumns="repeat(3, 1fr)" gap={2}>
         <MetricCard

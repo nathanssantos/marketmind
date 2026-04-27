@@ -6,7 +6,8 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { formatBRL, formatWalletCurrencyWithSign } from '../../utils/currencyFormatter';
 import { trpc } from '../../utils/trpc';
-import { Button } from '@renderer/components/ui';
+import { Button, PanelHeader } from '@renderer/components/ui';
+import { MM } from '@renderer/theme/tokens';
 
 interface PerformanceCalendarProps {
   walletId: string;
@@ -32,12 +33,12 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
     }
   })();
 
-  const { data = [], isLoading } = trpc.analytics.getDailyPerformance.useQuery(
+  const { data, isLoading } = trpc.analytics.getDailyPerformance.useQuery(
     { walletId, year, month, tz },
     { enabled: !!walletId, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 
-  const dailyMap = new Map(data.map((d) => [d.date, d]));
+  const dailyMap = new Map((data ?? []).map((d) => [d.date, d]));
 
   const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -106,7 +107,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
     return { pnl, pnlPercent, wins, losses, winRate, profitFactor, hasTrades };
   };
 
-  const monthTotal = data.reduce(
+  const monthTotal = (data ?? []).reduce(
     (acc, d) => ({
       pnl: acc.pnl + d.pnl,
       pnlPercent: acc.pnlPercent + d.pnlPercent,
@@ -147,26 +148,26 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
 
   return (
     <Stack gap={3}>
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
-        <Text fontSize="lg" fontWeight="bold">
-          {t('trading.analytics.calendar.title')}
-        </Text>
-        <Flex align="center" gap={2}>
-          <Button size="xs" variant="outline" onClick={goToPrev} px={2}>
-            ‹
-          </Button>
-          <Text fontSize="sm" fontWeight="medium" minW="120px" textAlign="center">
-            {monthLabel}
-          </Text>
-          <Button size="xs" variant="outline" onClick={goToNext} px={2} disabled={isNextDisabled}>
-            ›
-          </Button>
-        </Flex>
-      </Flex>
+      <PanelHeader
+        title={t('trading.analytics.calendar.title')}
+        action={
+          <Flex align="center" gap={1.5}>
+            <Button size={MM.buttonSize.nav} variant="outline" onClick={goToPrev} px={1.5} minW="auto">
+              ‹
+            </Button>
+            <Text fontSize="xs" fontWeight="medium" minW="100px" textAlign="center">
+              {monthLabel}
+            </Text>
+            <Button size={MM.buttonSize.nav} variant="outline" onClick={goToNext} px={1.5} minW="auto" disabled={isNextDisabled}>
+              ›
+            </Button>
+          </Flex>
+        }
+      />
 
       {isLoading ? (
-        <Flex justify="center" align="center" py={6}>
-          <Spinner size="md" />
+        <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+          <Spinner size={MM.spinner.panel.size} />
         </Flex>
       ) : (
         <Box>
@@ -267,7 +268,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
             );
           })}
 
-          {data.length > 0 && (
+          {(data?.length ?? 0) > 0 && (
             <Grid templateColumns="repeat(8, 1fr)" gap={1} mt={1}>
               <GridItem colSpan={7} />
               <GridItem>
@@ -296,7 +297,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
             </Grid>
           )}
 
-          {data.length === 0 && (
+          {(data?.length ?? 0) === 0 && (
             <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
               {t('trading.analytics.calendar.noData')}
             </Text>

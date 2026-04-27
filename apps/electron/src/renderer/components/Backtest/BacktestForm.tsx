@@ -1,5 +1,6 @@
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { Button, Tabs } from '@renderer/components/ui';
+import { MM } from '@renderer/theme/tokens';
 import {
   getDefaultBacktestInput,
   simpleBacktestInputSchema,
@@ -44,7 +45,7 @@ export const BacktestForm = ({ onClose, onRun }: BacktestFormProps) => {
   const isValid = validation.success;
 
   return (
-    <VStack align="stretch" gap={3} h="100%">
+    <VStack align="stretch" gap={MM.spacing.row.gap} h="100%">
       <Tabs.Root defaultValue="basic" variant="line">
         <Tabs.List>
           <Tabs.Trigger value="basic">{t('backtest.tabs.basic')}</Tabs.Trigger>
@@ -53,16 +54,16 @@ export const BacktestForm = ({ onClose, onRun }: BacktestFormProps) => {
           <Tabs.Trigger value="risk">{t('backtest.tabs.risk')}</Tabs.Trigger>
         </Tabs.List>
 
-        <Tabs.Content value="basic" px={0} py={4}>
+        <Tabs.Content value="basic" px={0} py={MM.spacing.section.gap}>
           <BasicTab state={state} setField={setField} fieldErrors={fieldErrors} />
         </Tabs.Content>
-        <Tabs.Content value="strategies" px={0} py={4}>
+        <Tabs.Content value="strategies" px={0} py={MM.spacing.section.gap}>
           <StrategiesTab state={state} setField={setField} />
         </Tabs.Content>
-        <Tabs.Content value="filters" px={0} py={4}>
+        <Tabs.Content value="filters" px={0} py={MM.spacing.section.gap}>
           <FiltersTab state={state} setField={setField} fieldErrors={fieldErrors} />
         </Tabs.Content>
-        <Tabs.Content value="risk" px={0} py={4}>
+        <Tabs.Content value="risk" px={0} py={MM.spacing.section.gap}>
           <RiskTab state={state} setField={setField} fieldErrors={fieldErrors} />
         </Tabs.Content>
       </Tabs.Root>
@@ -70,15 +71,15 @@ export const BacktestForm = ({ onClose, onRun }: BacktestFormProps) => {
       <Box flexShrink={0} pt={2} borderTopWidth="1px" borderColor="border">
         <HStack justify="space-between">
           {!isValid ? (
-            <Text fontSize="xs" color="fg.error">
+            <Text fontSize={MM.font.body.size} color="fg.error">
               {t('backtest.form.invalid', { count: validation.error?.issues.length ?? 0 })}
             </Text>
           ) : (
-            <Text fontSize="xs" color="fg.muted">
+            <Text fontSize={MM.font.body.size} color="fg.muted">
               {t('backtest.form.ready')}
             </Text>
           )}
-          <HStack gap={2}>
+          <HStack gap={MM.spacing.inline.gap}>
             <Button size="2xs" variant="ghost" onClick={onClose} px={3}>
               {t('common.cancel')}
             </Button>

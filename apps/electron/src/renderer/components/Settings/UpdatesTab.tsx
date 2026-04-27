@@ -65,13 +65,25 @@ export const UpdatesTab = () => {
           label={t('settings.autoUpdate.checkAutomatically')}
           helper={t('settings.autoUpdate.checkAutomaticallyDescription')}
         >
-          <Switch checked={autoCheckUpdates} onCheckedChange={handleAutoCheckChange} data-testid="updates-auto-check" />
+          <Switch
+            checked={autoCheckUpdates}
+            onCheckedChange={handleAutoCheckChange}
+            aria-label={t('settings.autoUpdate.checkAutomatically')}
+            data-testid="updates-auto-check"
+          />
         </FormRow>
 
         {autoCheckUpdates && (
           <Box>
-            <Text fontSize="xs" mb={1.5}>{t('settings.autoUpdate.checkInterval', { hours: updateCheckInterval })}</Text>
-            <Slider value={[updateCheckInterval]} onValueChange={handleIntervalChange} min={1} max={168} step={1} />
+            <Text fontSize="xs" mb={1.5} id="settings-update-interval-label">{t('settings.autoUpdate.checkInterval', { hours: updateCheckInterval })}</Text>
+            <Slider
+              value={[updateCheckInterval]}
+              onValueChange={handleIntervalChange}
+              min={1}
+              max={168}
+              step={1}
+              aria-label={t('settings.autoUpdate.checkAutomatically')}
+            />
           </Box>
         )}
 
@@ -79,7 +91,12 @@ export const UpdatesTab = () => {
           label={t('settings.autoUpdate.downloadAutomatically')}
           helper={t('settings.autoUpdate.downloadAutomaticallyDescription')}
         >
-          <Switch checked={autoDownloadUpdates} onCheckedChange={setAutoDownloadUpdates} data-testid="updates-auto-download" />
+          <Switch
+            checked={autoDownloadUpdates}
+            onCheckedChange={setAutoDownloadUpdates}
+            aria-label={t('settings.autoUpdate.downloadAutomatically')}
+            data-testid="updates-auto-download"
+          />
         </FormRow>
 
         <HStack gap={2}>

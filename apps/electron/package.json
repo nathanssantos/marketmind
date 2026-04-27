@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MarketMind Electron Desktop App",
   "keywords": [
     "trading",
@@ -96,6 +96,7 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.2",
     "@playwright/test": "^1.59.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
