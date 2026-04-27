@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-27
+
+**v1 launch** 🚀 — Settings overhaul, full account & security flows, shared UI primitives, no-accordion AutoTrading.
+
 ### Added — Settings overhaul (v1)
 - **Vertical-rail Settings dialog** (`apps/electron/src/renderer/components/Settings/SettingsDialog.tsx`). Replaces horizontal `Tabs.Root` with `orientation="vertical"`, 220px sticky rail + scrollable content. Tabs grouped under section labels (`ACCOUNT` / `APPEARANCE` / `TRADING` / `SYSTEM`) with icons.
 - **`Settings/constants.ts`**: tab IDs, group definitions, icon mapping, `SettingsTab` union, `isSettingsTab` guard, `AVATAR_COLOR_PALETTE`.
