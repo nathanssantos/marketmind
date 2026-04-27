@@ -11,7 +11,7 @@ interface FormSectionProps {
 
 export const FormSection = ({ title, description, action, children, contentGap = 3 }: FormSectionProps) => (
   <Stack gap={2}>
-    {(title || action) && (
+    {(title ?? action) && (
       <Flex justify="space-between" align="flex-start" gap={3}>
         <Box flex={1} minW={0}>
           {title && (

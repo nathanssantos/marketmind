@@ -123,7 +123,11 @@ export const AccountTab = () => {
     ? new Date(currentUser.createdAt).toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
 
-  const initials = (currentUser?.name?.trim() || currentUser?.email || '?')
+  const trimmedName = currentUser?.name?.trim();
+  const initialsSource = (trimmedName && trimmedName.length > 0)
+    ? trimmedName
+    : (currentUser?.email ?? '?');
+  const initials = initialsSource
     .split(/\s+/).slice(0, 2).map((p) => p[0] ?? '').join('').toUpperCase();
   const avatarSrc = avatarQuery.data ? `data:${avatarQuery.data.mimeType};base64,${avatarQuery.data.data}` : null;
 
@@ -172,7 +176,7 @@ export const AccountTab = () => {
                   size="xs"
                   variant="outline"
                   colorPalette="red"
-                  onClick={handleDeleteAvatar}
+                  onClick={() => { void handleDeleteAvatar(); }}
                   loading={isDeletingAvatar}
                   data-testid="account-avatar-delete-button"
                 >
