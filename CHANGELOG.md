@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-27
+
+**v1.1 release** — Phase 6 visual-verification baseline shipped, custom-symbols loadability fully wired (POLITIFI now loads, real-time tab % works, components auto-backfill from Binance), MCP infrastructure populated for fixture-driven review, CryptoIcon source caching, NaN-guard in price store, full DailyPerformance + Market sidebar fixtures.
+
 ### Added — Phase 6 (Visual verification)
 - **`docs/visual-review-2026-04.md`** — Phase 6.2 deliverable. Walks every Settings tab / modal / sidebar against the compact-style rules in `V1_POST_RELEASE_PLAN.md`, scores findings P0/P1/P2, captures the Phase 6.3 fix plan. Outcome: 0 P0, 4 P1 (all addressed in this release), 5 P2 (deferred).
 - **Visual regression baseline** — `apps/electron/screenshots/baseline/` (44 PNGs, English × dark+light, ~4MB) at viewport 1440×900 deviceScaleFactor 1. `.gitignore` now ignores timestamped session dirs only (`apps/electron/screenshots/[0-9]*/`), keeps `baseline/` tracked.
