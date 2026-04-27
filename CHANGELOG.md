@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.115.0] - 2026-04-27
+
+UX polish + dead-code cleanup. No new features, no behaviour change.
+
+### Changed
+- **Boleta — outline borders on the menu / +/- buttons** (`apps/electron/src/renderer/components/Layout/QuickTradeToolbar.tsx`). The 3-dots menu trigger and the +/- size-step buttons used `variant="ghost"`; the size presets used `variant="outline"`. All three now match.
+- **Indicator selector relocated to the top toolbar with a label** (`apps/electron/src/renderer/components/Layout/Toolbar.tsx` + `IndicatorTogglePopoverGeneric.tsx` + `ChartToolsToolbar.tsx`). Was a square icon at the top of the left vertical drawing toolbar; now sits next to `ChartTypeSelector` with the gauge icon + "Indicators" label, matching the labeled selectors. The popover gained `triggerVariant: 'icon' | 'labeled'` and `popoverPlacement: 'right-start' | 'bottom-start'` so the same component still serves both shapes. Store wiring is unchanged — the singleton `useIndicatorStore` continues to drive every chart panel.
+- **Position-line PnL: `$` → `USD`** (`apps/electron/src/renderer/components/Chart/renderPositions.ts`). The position info-tag PnL badge now renders `+USD X.XX` / `-USD X.XX` instead of `+$X.XX` / `-$X.XX`, matching the rest of the app's currency formatting.
+
+### Removed
+- **8 dead `VITE_*` env keys** (root `.env.example`) for the removed AI features (Anthropic / OpenAI / Gemini API keys), the removed news features (NewsAPI / CryptoPanic), plus `BINANCE_API_KEY`/`SECRET` (wallets store these encrypted per-wallet in the backend DB) and `ALPHA_VANTAGE_API_KEY` (replaced by IB integration). Kept only what's actually read.
+- **4 dead backend env keys** (`apps/backend/.env.example`): `RATE_LIMIT_MAX`, `RATE_LIMIT_WINDOW`, `ENABLE_METRICS`, `METRICS_PORT` — zero references in the codebase. Annotated remaining docker-only vars (`DATABASE_USER`, `REDIS_PASSWORD`, `PGADMIN_*`, etc.) with `# [docker]`.
+- **5 stale plan docs**: `docs/BACKTEST_UI_PLAN.md`, `docs/CRYPTO_SIGNAL_IDEAS.md`, `docs/SCREENER_IMPLEMENTATION_PLAN.md`, `docs/plans/auto-trading-e2e.md`, `docs/plans/screener-modal-e2e.md`. No in-tree code references any of them.
+
 ## [0.114.0] - 2026-04-27
 
 Four real chart-order bugs the user reported, plus the white-flash UX polish extended to every cancel/close path. +47 unit tests.
