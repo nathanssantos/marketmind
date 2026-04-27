@@ -4,230 +4,170 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SettingsDialog } from './SettingsDialog';
 
 vi.mock('react-i18next', () => ({
-    useTranslation: () => ({
-        t: (key: string) => key,
-        i18n: {
-            language: 'en',
-            changeLanguage: vi.fn(),
-        },
-    }),
+  useTranslation: () => ({
+    t: (key: string, opts?: { defaultValue?: string }) => opts?.defaultValue ?? key,
+    i18n: { language: 'en', changeLanguage: vi.fn() },
+  }),
 }));
 
-vi.mock('./GeneralTab', () => ({
-    GeneralTab: () => <div>GeneralTab Content</div>,
-}));
+vi.mock('./AccountTab', () => ({ AccountTab: () => <div>AccountTab Content</div> }));
+vi.mock('./SecurityTab', () => ({ SecurityTab: () => <div>SecurityTab Content</div> }));
+vi.mock('./NotificationsTab', () => ({ NotificationsTab: () => <div>NotificationsTab Content</div> }));
+vi.mock('./GeneralTab', () => ({ GeneralTab: () => <div>GeneralTab Content</div> }));
+vi.mock('./ChartSettingsTab', () => ({ ChartSettingsTab: () => <div>ChartSettingsTab Content</div> }));
+vi.mock('./AboutTab', () => ({ AboutTab: () => <div>AboutTab Content</div> }));
+vi.mock('./UpdatesTab', () => ({ UpdatesTab: () => <div>UpdatesTab Content</div> }));
+vi.mock('./TradingProfilesTab', () => ({ TradingProfilesTab: () => <div>TradingProfilesTab Content</div> }));
+vi.mock('./DataTab', () => ({ DataTab: () => <div>DataTab Content</div> }));
+vi.mock('./IndicatorsTab', () => ({ IndicatorsTab: () => <div>IndicatorsTab Content</div> }));
+vi.mock('./AutoTradingTab', () => ({ AutoTradingTab: () => <div>AutoTradingTab Content</div> }));
+vi.mock('../Trading/WalletManager', () => ({ WalletManager: () => <div>WalletManager Content</div> }));
+vi.mock('../CustomSymbols', () => ({ CustomSymbolsTab: () => <div>CustomSymbolsTab Content</div> }));
 
-vi.mock('./ChartSettingsTab', () => ({
-    ChartSettingsTab: () => <div>ChartSettingsTab Content</div>,
-}));
+const renderWithChakra = (component: React.ReactElement) =>
+  render(<ChakraProvider value={defaultSystem}>{component}</ChakraProvider>);
 
-vi.mock('./AboutTab', () => ({
-    AboutTab: () => <div>AboutTab Content</div>,
-}));
-
-vi.mock('./TradingProfilesTab', () => ({
-    TradingProfilesTab: () => <div>TradingProfilesTab Content</div>,
-}));
-
-vi.mock('./DataTab', () => ({
-    DataTab: () => <div>DataTab Content</div>,
-}));
-
-vi.mock('./IndicatorsTab', () => ({
-    IndicatorsTab: () => <div>IndicatorsTab Content</div>,
-}));
-
-vi.mock('./AutoTradingTab', () => ({
-    AutoTradingTab: () => <div>AutoTradingTab Content</div>,
-}));
-
-vi.mock('../Trading/WalletManager', () => ({
-    WalletManager: () => <div>WalletManager Content</div>,
-}));
-
-vi.mock('../CustomSymbols', () => ({
-    CustomSymbolsTab: () => <div>CustomSymbolsTab Content</div>,
-}));
-
-const renderWithChakra = (component: React.ReactElement) => {
-    return render(
-        <ChakraProvider value={defaultSystem}>
-            {component}
-        </ChakraProvider>
-    );
+const mockAdvancedConfig = {
+  rightMargin: 72,
+  volumeHeightRatio: 0.2,
+  klineSpacing: 0.3,
+  klineWickWidth: 1,
+  gridLineWidth: 1,
+  currentPriceLineWidth: 2,
+  currentPriceLineStyle: 'solid' as const,
+  paddingTop: 10,
+  paddingBottom: 10,
+  paddingLeft: 0,
+  paddingRight: 0,
 };
 
 describe('SettingsDialog', () => {
-    const mockOnClose = vi.fn();
-    const mockOnAdvancedConfigChange = vi.fn();
-    const mockAdvancedConfig = {
-        rightMargin: 72,
-        volumeHeightRatio: 0.2,
-        klineSpacing: 0.3,
-        klineWickWidth: 1,
-        gridLineWidth: 1,
-        currentPriceLineWidth: 2,
-        currentPriceLineStyle: 'solid' as const,
-        paddingTop: 10,
-        paddingBottom: 10,
-        paddingLeft: 0,
-        paddingRight: 0,
-    };
+  const mockOnClose = vi.fn();
+  const mockOnAdvancedConfigChange = vi.fn();
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-    it('renders when isOpen is true', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
+  it('renders the dialog title when open', () => {
+    renderWithChakra(
+      <SettingsDialog
+        isOpen={true}
+        onClose={mockOnClose}
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    expect(screen.getByText('settings.title')).toBeDefined();
+  });
 
-        expect(screen.getByText('settings.title')).toBeDefined();
-    });
+  it('does not render when isOpen is false', () => {
+    renderWithChakra(
+      <SettingsDialog
+        isOpen={false}
+        onClose={mockOnClose}
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    expect(screen.queryByText('settings.title')).toBeNull();
+  });
 
-    it('does not render when isOpen is false', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={false}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
+  it('shows the section group labels in the rail', () => {
+    renderWithChakra(
+      <SettingsDialog
+        isOpen={true}
+        onClose={mockOnClose}
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    expect(screen.getByText('settings.section.account')).toBeDefined();
+    expect(screen.getByText('settings.section.appearance')).toBeDefined();
+    expect(screen.getByText('settings.section.trading')).toBeDefined();
+    expect(screen.getByText('settings.section.system')).toBeDefined();
+  });
 
-        expect(screen.queryByText('settings.title')).toBeNull();
-    });
+  it('renders Account tab content by default', () => {
+    renderWithChakra(
+      <SettingsDialog
+        isOpen={true}
+        onClose={mockOnClose}
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    expect(screen.getByText('AccountTab Content')).toBeDefined();
+  });
 
-    it('renders all tab buttons', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
+  it('opens on the requested initialTab', () => {
+    renderWithChakra(
+      <SettingsDialog
+        isOpen={true}
+        onClose={mockOnClose}
+        initialTab="security"
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    expect(screen.getByText('SecurityTab Content')).toBeDefined();
+  });
 
-        expect(screen.getByText('settings.tabs.general')).toBeDefined();
-        expect(screen.getByText('settings.tabs.chart')).toBeDefined();
-        expect(screen.getByText('settings.tabs.about')).toBeDefined();
-    });
+  it('switches to a different tab via initialTab prop', () => {
+    const { rerender } = renderWithChakra(
+      <SettingsDialog
+        isOpen={true}
+        onClose={mockOnClose}
+        initialTab="account"
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    expect(screen.getByText('AccountTab Content')).toBeDefined();
 
-    it('renders GeneralTab content by default', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
+    rerender(
+      <ChakraProvider value={defaultSystem}>
+        <SettingsDialog
+          isOpen={true}
+          onClose={mockOnClose}
+          initialTab="chart"
+          advancedConfig={mockAdvancedConfig}
+          onAdvancedConfigChange={mockOnAdvancedConfigChange}
+        />
+      </ChakraProvider>
+    );
+    expect(screen.getByText('ChartSettingsTab Content')).toBeDefined();
+  });
 
-        expect(screen.getByText('GeneralTab Content')).toBeDefined();
-    });
+  it('renders an icon-prefixed trigger for each tab', () => {
+    renderWithChakra(
+      <SettingsDialog
+        isOpen={true}
+        onClose={mockOnClose}
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    const tabsToCheck = [
+      'account', 'security', 'notifications',
+      'general', 'chart',
+      'wallets', 'tradingProfiles', 'autoTrading', 'indicators', 'customSymbols',
+      'data', 'updates', 'about',
+    ];
+    for (const t of tabsToCheck) {
+      expect(screen.getByTestId(`settings-tab-${t}`)).toBeDefined();
+    }
+  });
 
-    it('renders ChartSettingsTab when chart tab is clicked', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        const chartTab = screen.getByText('settings.tabs.chart');
-        fireEvent.click(chartTab);
-
-        expect(screen.getByText('ChartSettingsTab Content')).toBeDefined();
-    });
-
-    it('renders AboutTab when about tab is clicked', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        const aboutTab = screen.getByText('settings.tabs.about');
-        fireEvent.click(aboutTab);
-
-        expect(screen.getByText('AboutTab Content')).toBeDefined();
-    });
-
-    it('renders close button', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        const closeButtons = screen.getAllByRole('button');
-        expect(closeButtons.length).toBeGreaterThan(0);
-    });
-
-    it('switches between tabs correctly', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        expect(screen.getByText('GeneralTab Content')).toBeDefined();
-
-        fireEvent.click(screen.getByText('settings.tabs.chart'));
-        expect(screen.getByText('ChartSettingsTab Content')).toBeDefined();
-
-        fireEvent.click(screen.getByText('settings.tabs.about'));
-        expect(screen.getByText('AboutTab Content')).toBeDefined();
-    });
-
-    it('passes advancedConfig to ChartSettingsTab', () => {
-        renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        const chartTab = screen.getByText('settings.tabs.chart');
-        fireEvent.click(chartTab);
-
-        expect(screen.getByText('ChartSettingsTab Content')).toBeDefined();
-    });
-
-    it('calls onClose when dialog close is triggered', () => {
-        const { container } = renderWithChakra(
-            <SettingsDialog
-                isOpen={true}
-                onClose={mockOnClose}
-                advancedConfig={mockAdvancedConfig}
-                onAdvancedConfigChange={mockOnAdvancedConfigChange}
-            />
-        );
-
-        const backdrop = container.querySelector('[data-scope="dialog"][data-part="backdrop"]');
-        if (backdrop) {
-            fireEvent.click(backdrop);
-        }
-
-        expect(container).toBeDefined();
-    });
+  it('renders the rail container', () => {
+    renderWithChakra(
+      <SettingsDialog
+        isOpen={true}
+        onClose={mockOnClose}
+        advancedConfig={mockAdvancedConfig}
+        onAdvancedConfigChange={mockOnAdvancedConfigChange}
+      />
+    );
+    expect(screen.getByTestId('settings-rail')).toBeDefined();
+  });
 });

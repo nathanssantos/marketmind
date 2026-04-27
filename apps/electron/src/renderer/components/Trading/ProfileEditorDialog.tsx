@@ -65,6 +65,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 description={t('tradingProfiles.sections.basicInfoDescription')}
                 defaultOpen={true}
                 size="lg"
+      variant="static"
               >
                 <Stack gap={4}>
                   <Field label={t('tradingProfiles.fields.name')} required={form.isEditing}>
@@ -107,6 +108,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 description={t('tradingProfiles.sections.tradingModeDescription')}
                 badge={<OverrideBadge count={overrideActions.ovCount(MODE_KEYS)} />}
                 size="lg"
+      variant="static"
               >
                 <Stack gap={4}>
                   <OverrideRow
@@ -159,6 +161,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                   </Badge>
                 }
                 size="lg"
+      variant="static"
               >
                 <Stack gap={4}>
                   <Box>
@@ -219,6 +222,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                   </Badge>
                 }
                 size="lg"
+      variant="static"
               >
                 <ChecklistEditor
                   conditions={form.checklistConditions}

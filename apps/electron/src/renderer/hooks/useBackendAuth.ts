@@ -13,6 +13,10 @@ export const useBackendAuth = () => {
   const verifyTwoFactorMutation = trpc.auth.verifyTwoFactor.useMutation();
   const resendTwoFactorMutation = trpc.auth.resendTwoFactorCode.useMutation();
   const toggleTwoFactorMutation = trpc.auth.toggleTwoFactor.useMutation();
+  const changePasswordMutation = trpc.auth.changePassword.useMutation();
+  const updateProfileMutation = trpc.auth.updateProfile.useMutation();
+  const uploadAvatarMutation = trpc.auth.uploadAvatar.useMutation();
+  const deleteAvatarMutation = trpc.auth.deleteAvatar.useMutation();
 
   const { data: realUser, isLoading: realIsLoading, refetch } = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -98,6 +102,40 @@ export const useBackendAuth = () => {
     [toggleTwoFactorMutation, refetch]
   );
 
+  const changePassword = useCallback(
+    async (currentPassword: string, newPassword: string) => {
+      return await changePasswordMutation.mutateAsync({ currentPassword, newPassword });
+    },
+    [changePasswordMutation]
+  );
+
+  const updateProfile = useCallback(
+    async (input: { name?: string; avatarColor?: string | null }) => {
+      const result = await updateProfileMutation.mutateAsync(input);
+      await refetch();
+      return result;
+    },
+    [updateProfileMutation, refetch]
+  );
+
+  const uploadAvatar = useCallback(
+    async (data: string, mimeType: string) => {
+      const result = await uploadAvatarMutation.mutateAsync({ data, mimeType });
+      await refetch();
+      return result;
+    },
+    [uploadAvatarMutation, refetch]
+  );
+
+  const deleteAvatar = useCallback(
+    async () => {
+      const result = await deleteAvatarMutation.mutateAsync();
+      await refetch();
+      return result;
+    },
+    [deleteAvatarMutation, refetch]
+  );
+
   return {
     currentUser,
     isLoading,
@@ -112,6 +150,10 @@ export const useBackendAuth = () => {
     verifyTwoFactor,
     resendTwoFactorCode,
     toggleTwoFactor,
+    changePassword,
+    updateProfile,
+    uploadAvatar,
+    deleteAvatar,
     isLoggingIn: loginMutation.isPending,
     isRegistering: registerMutation.isPending,
     isLoggingOut: logoutMutation.isPending,
@@ -122,11 +164,17 @@ export const useBackendAuth = () => {
     isVerifyingTwoFactor: verifyTwoFactorMutation.isPending,
     isResendingTwoFactor: resendTwoFactorMutation.isPending,
     isTogglingTwoFactor: toggleTwoFactorMutation.isPending,
+    isChangingPassword: changePasswordMutation.isPending,
+    isUpdatingProfile: updateProfileMutation.isPending,
+    isUploadingAvatar: uploadAvatarMutation.isPending,
+    isDeletingAvatar: deleteAvatarMutation.isPending,
     loginError: loginMutation.error,
     registerError: registerMutation.error,
     logoutError: logoutMutation.error,
     resetError: resetPasswordMutation.error,
     verifyEmailError: verifyEmailMutation.error,
     twoFactorError: verifyTwoFactorMutation.error,
+    changePasswordError: changePasswordMutation.error,
+    uploadAvatarError: uploadAvatarMutation.error,
   };
 };

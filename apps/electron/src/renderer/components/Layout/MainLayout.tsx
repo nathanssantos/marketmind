@@ -14,6 +14,7 @@ import { AnalyticsModal } from '../Analytics';
 import { BacktestModal } from '../Backtest';
 import { ScreenerModal } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
+import { DEFAULT_SETTINGS_TAB, type SettingsTab } from '../Settings/constants';
 import { TradingSidebar } from '../Trading/TradingSidebar';
 import { AutoTradingSidebar } from '../AutoTrading/AutoTradingSidebar';
 import { OrderFlowSidebar } from '../OrderFlow';
@@ -77,6 +78,7 @@ const MainLayoutComponent = ({
   const [marketWidth, setMarketWidth] = useUIPref('marketSidebarWidth', DEFAULT_MARKET_WIDTH);
   const [orderFlowWidth, setOrderFlowWidth] = useUIPref('orderFlowSidebarWidth', DEFAULT_MARKET_WIDTH);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>(DEFAULT_SETTINGS_TAB);
   const resizingRef = useRef<'trading' | 'autoTrading' | 'market' | 'orderFlow' | null>(null);
   const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
@@ -88,13 +90,20 @@ const MainLayoutComponent = ({
   })));
 
   const globalActions = useMemo(() => ({
-    openSettings: () => setIsSettingsOpen(true),
+    openSettings: (tab?: SettingsTab) => {
+      setSettingsInitialTab(tab ?? DEFAULT_SETTINGS_TAB);
+      setIsSettingsOpen(true);
+    },
     openSymbolSelector: () => onOpenSymbolSelector?.(),
     navigateToSymbol: (symbol: string, marketType?: MarketType) => onNavigateToSymbol?.(symbol, marketType),
   }), [onOpenSymbolSelector, onNavigateToSymbol]);
 
   useEffect(() => {
-    exposeGlobalActionsForE2E(globalActions);
+    exposeGlobalActionsForE2E({
+      openSettings: (tab) => globalActions.openSettings(tab as SettingsTab | undefined),
+      openSymbolSelector: globalActions.openSymbolSelector,
+      navigateToSymbol: globalActions.navigateToSymbol,
+    });
   }, [globalActions]);
 
   const startResize = useCallback((e: React.MouseEvent, target: 'trading' | 'autoTrading' | 'market' | 'orderFlow', currentWidth: number) => {
@@ -267,6 +276,7 @@ const MainLayoutComponent = ({
         <SettingsDialog
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
+          initialTab={settingsInitialTab}
           advancedConfig={advancedConfig}
           onAdvancedConfigChange={onAdvancedConfigChange}
         />

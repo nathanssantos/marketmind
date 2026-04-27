@@ -32,6 +32,7 @@ export const OpportunityCostSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
       badge={config?.opportunityCostEnabled ? (
         <Box px={2} py={0.5} bg="purple.100" color="purple.800" borderRadius="full" fontSize="xs" fontWeight="medium" _dark={{ bg: 'purple.900', color: 'purple.200' }}>
           {t('common.active')}

@@ -58,6 +58,7 @@ export const EntrySettingsSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
       <Stack gap={6}>
         <Grid templateColumns="repeat(2, 1fr)" gap={4}>

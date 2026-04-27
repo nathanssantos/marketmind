@@ -51,6 +51,7 @@ export const WatchersList = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
       badge={activeWatchers.length > 0 ? (
         <Box px={2} py={0.5} bg="green.100" color="green.800" borderRadius="full" fontSize="xs" fontWeight="medium" _dark={{ bg: 'green.900', color: 'green.200' }}>
           {activeWatchers.length}

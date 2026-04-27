@@ -20,6 +20,7 @@ export const ProfileFibEntrySection = ({ actions }: ProfileFibEntrySectionProps)
         description={t('tradingProfiles.sections.fibEntryDescription')}
         badge={<OverrideBadge count={ovCount(FIB_ENTRY_KEYS)} />}
         size="lg"
+      variant="static"
       >
         <Stack gap={4}>
           <OverrideRow
@@ -133,6 +134,7 @@ export const ProfileFibEntrySection = ({ actions }: ProfileFibEntrySectionProps)
         description={t('tradingProfiles.sections.minRRDescription')}
         badge={<OverrideBadge count={ovCount(RR_KEYS)} />}
         size="lg"
+      variant="static"
       >
         <Stack gap={4}>
           <OverrideRow

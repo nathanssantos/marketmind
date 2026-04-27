@@ -83,6 +83,7 @@ export const DynamicSelectionSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
       badge={isAutoRotationEnabled ? (
         <Box px={2} py={0.5} bg="blue.100" color="blue.800" borderRadius="full" fontSize="xs" fontWeight="medium" _dark={{ bg: 'blue.900', color: 'blue.200' }}>
           <Flex align="center" gap={1}>

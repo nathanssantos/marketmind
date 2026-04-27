@@ -13,12 +13,13 @@ interface CollapsibleSectionProps {
   badge?: ReactNode;
   size?: 'sm' | 'md' | 'lg';
   onToggle?: (isOpen: boolean) => void;
+  variant?: 'collapsible' | 'static';
 }
 
 const sizeConfig = {
   sm: { titleSize: 'xs' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 14, py: 2, gap: 2 },
-  md: { titleSize: 'sm' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 16, py: 3, gap: 3 },
-  lg: { titleSize: 'lg' as const, titleWeight: 'bold' as const, descSize: 'sm' as const, iconSize: 20, py: 2, gap: 4 },
+  md: { titleSize: 'sm' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 16, py: 2, gap: 2 },
+  lg: { titleSize: 'sm' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 16, py: 2, gap: 3 },
 } as const;
 
 export const CollapsibleSection = ({
@@ -32,13 +33,15 @@ export const CollapsibleSection = ({
   badge,
   size = 'md',
   onToggle,
+  variant = 'collapsible',
 }: CollapsibleSectionProps) => {
   const isControlled = open !== undefined;
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
-  const isOpen = isControlled ? open : internalOpen;
+  const isOpen = variant === 'static' ? true : isControlled ? open : internalOpen;
   const config = sizeConfig[size];
 
   const handleToggle = () => {
+    if (variant === 'static') return;
     const next = !isOpen;
     if (!isControlled) setInternalOpen(next);
     onOpenChange?.(next);
@@ -46,6 +49,31 @@ export const CollapsibleSection = ({
   };
 
   const ChevronIcon = isOpen ? LuChevronUp : LuChevronDown;
+  const isStatic = variant === 'static';
+
+  if (isStatic) {
+    return (
+      <Box>
+        <Flex align="flex-start" justify="space-between" gap={2} mb={config.gap}>
+          <Box flex={1} minW={0}>
+            <Flex align="center" gap={2}>
+              <Text fontSize={config.titleSize} fontWeight={config.titleWeight} lineHeight="1.2">
+                {title}
+              </Text>
+              {badge}
+            </Flex>
+            {description && (
+              <Text fontSize={config.descSize} color="fg.muted" mt={0.5} lineHeight="1.4">
+                {description}
+              </Text>
+            )}
+          </Box>
+          {headerAction && <Box flexShrink={0}>{headerAction}</Box>}
+        </Flex>
+        <Box>{children}</Box>
+      </Box>
+    );
+  }
 
   return (
     <Collapsible.Root open={isOpen}>

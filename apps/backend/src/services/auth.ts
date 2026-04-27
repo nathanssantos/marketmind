@@ -1,6 +1,6 @@
 import { hash, verify } from '@node-rs/argon2';
 import { TIME_MS } from '@marketmind/types';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, lt, ne } from 'drizzle-orm';
 import { db } from '../db/client';
 import {
   emailVerificationTokens,
@@ -45,7 +45,16 @@ export const verifyPassword = async (userId: string, password: string) => {
   return await verify(user.passwordHash, password);
 };
 
-export const createSession = async (userId: string, rememberMe = true) => {
+export interface SessionMetadata {
+  userAgent?: string | null;
+  ip?: string | null;
+}
+
+export const createSession = async (
+  userId: string,
+  rememberMe = true,
+  metadata: SessionMetadata = {}
+) => {
   const sessionId = generateSessionId();
   const duration = rememberMe ? AUTH_EXPIRY.SESSION_LONG : AUTH_EXPIRY.SESSION_SHORT;
   const expiresAt = new Date(Date.now() + duration);
@@ -54,9 +63,26 @@ export const createSession = async (userId: string, rememberMe = true) => {
     id: sessionId,
     userId,
     expiresAt,
+    userAgent: metadata.userAgent ?? null,
+    ip: metadata.ip ?? null,
   });
 
   return { sessionId, expiresAt };
+};
+
+export const listUserSessions = async (userId: string) => {
+  const rows = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.userId, userId));
+
+  return rows.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+};
+
+export const invalidateOtherUserSessions = async (userId: string, keepSessionId: string) => {
+  await db
+    .delete(sessions)
+    .where(and(eq(sessions.userId, userId), ne(sessions.id, keepSessionId)));
 };
 
 export const validateSession = async (sessionId: string) => {
@@ -204,6 +230,47 @@ export const toggleTwoFactor = async (userId: string, enabled: boolean) => {
   await db
     .update(users)
     .set({ twoFactorEnabled: enabled, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+};
+
+export const AVATAR_LIMITS = {
+  MAX_DATA_BYTES: 700_000,
+  ALLOWED_MIME_TYPES: ['image/png', 'image/jpeg', 'image/webp', 'image/gif'] as const,
+} as const;
+
+export const setUserAvatar = async (
+  userId: string,
+  data: string,
+  mimeType: string
+) => {
+  await db
+    .update(users)
+    .set({ avatarData: data, avatarMimeType: mimeType, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+};
+
+export const clearUserAvatar = async (userId: string) => {
+  await db
+    .update(users)
+    .set({ avatarData: null, avatarMimeType: null, updatedAt: new Date() })
+    .where(eq(users.id, userId));
+};
+
+export const getUserAvatar = async (userId: string) => {
+  const [row] = await db
+    .select({ data: users.avatarData, mimeType: users.avatarMimeType })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!row || !row.data || !row.mimeType) return null;
+  return { data: row.data, mimeType: row.mimeType };
+};
+
+export const setUserAvatarColor = async (userId: string, color: string | null) => {
+  await db
+    .update(users)
+    .set({ avatarColor: color, updatedAt: new Date() })
     .where(eq(users.id, userId));
 };
 

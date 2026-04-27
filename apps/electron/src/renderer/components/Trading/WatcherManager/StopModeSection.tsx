@@ -26,6 +26,7 @@ export const StopModeSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
       <RadioGroup
         value={initialStopMode}

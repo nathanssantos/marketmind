@@ -26,6 +26,7 @@ export const LeverageSettingsSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
           <Stack gap={4}>
             <Box flex="0 0 120px">

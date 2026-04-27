@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Settings overhaul (v1)
+- **Vertical-rail Settings dialog** (`apps/electron/src/renderer/components/Settings/SettingsDialog.tsx`). Replaces horizontal `Tabs.Root` with `orientation="vertical"`, 220px sticky rail + scrollable content. Tabs grouped under section labels (`ACCOUNT` / `APPEARANCE` / `TRADING` / `SYSTEM`) with icons.
+- **`Settings/constants.ts`**: tab IDs, group definitions, icon mapping, `SettingsTab` union, `isSettingsTab` guard, `AVATAR_COLOR_PALETTE`.
+- **Account tab** (`AccountTab.tsx`) — replaces standalone `AccountDialog`. Avatar upload / preview / delete (PNG/JPG/WEBP/GIF up to 500KB), display name, email + verified badge + resend verification, color picker fallback for initials.
+- **Security tab** (`SecurityTab.tsx`) — change password (current + new + confirm with validation, invalidates other sessions), 2FA toggle (gated by emailVerified), active sessions list with per-session revoke + "log out other sessions".
+- **Notifications tab** (`NotificationsTab.tsx`) — order-update toasts on/off, setup-detected toasts on/off, notification sound on/off + "more coming soon" callout.
+- **Updates tab** (`UpdatesTab.tsx`) — auto-update settings extracted from About: auto-check toggle, interval slider, auto-download toggle, manual check + status badge.
+- **`openSettings(tab?)` plumbing** — `GlobalActionsContext`, `MainLayout`, `SettingsDialog.initialTab`, `e2eBridge` updated. `UserAvatar` "Account" menu item now opens Settings on the Account tab; "Settings" opens default tab.
+- **Backend**: `auth.changePassword` (verifies current + invalidates other sessions), `auth.uploadAvatar` / `getAvatar` / `deleteAvatar` (base64 + mime validation, 700KB cap), `auth.listSessions` / `revokeSession` / `revokeAllOtherSessions`, `auth.updateProfile` extended to accept `avatarColor`. Schema migration `0033_user_avatar_session_metadata.sql`: `users.avatar_data/_mime_type/_color` + `sessions.created_at/_user_agent/_ip`.
+- **Avatar storage**: base64 in `users.avatar_data` text column. No filesystem dependency (good for Electron portability). 700KB DB cap server-side, 500KB client-side, mime allowlist `image/png|jpeg|webp|gif`.
+- **Session metadata captured on create**: `userAgent` + `ip` recorded at register / login / 2FA verify, surfaced in Security tab's sessions list.
+
+### Added — UI primitives (`apps/electron/src/renderer/components/ui/`)
+- **`Callout`** — info/success/warning/danger/neutral toned banner with icon, optional title + body, `compact` mode.
+- **`FormSection`** + **`FormRow`** — standardized section header (title / description / optional action) + label/helper/control row layout used across every Settings tab.
+- **`PageTitle` / `SectionTitle` / `SubsectionTitle` / `SectionDescription` / `FieldHint` / `MetaText`** — typography scale for consistent heading + body text sizes.
+- **`CollapsibleSection.variant="static"`** — non-accordion mode for the AutoTrading sub-sections (no chevron, content always shown). Backwards-compatible default `"collapsible"`.
+- **`Switch` wrapper** now forwards `data-testid` + `aria-label` props (was eating them silently).
+
+### Changed
+- **AutoTrading tab — no more accordion**. All 12 `WatcherManager` sub-sections (Watchers list, Dynamic Selection, Position Size, Leverage, Risk Management, Trailing Stop, TP Mode, Stop Mode, Entry Settings, Filters, Opportunity Cost, Pyramiding) and the 5 Trading Profile editor sections (Filters, Fib Entry, Trailing Stop, Risk, base) now use `variant="static"` — content always visible, no toggle, faster scan.
+- **Tab reorganization**: 9 → 13 tabs. Old (General | Wallets | Chart | Indicators | Trading Profiles | Auto-Trading | Custom Symbols | Data | About) → new groups: Account/Security/Notifications · General/Chart · Wallets/Trading Profiles/Auto-Trading/Indicators/Custom Symbols · Data/Updates/About.
+- **Compact spacing throughout**. Settings dialog content padding `p={6}` → `p={4}`. Section gaps `gap={6}` → `gap={5}`. Field gaps `gap={4}` → `gap={3}`. Avatar 80×80 → 64×64. Buttons `size="sm"` → `size="xs"` for secondary actions. Title sizes downsized one step (md → sm). Helper text 2xs (smaller) for inline hints.
+- **`AboutTab` slimmed** — version + resources + copyright only. Auto-update settings live in Updates tab.
+- **`GeneralTab`** uses `FormSection` for language + theme; `LanguageSelector` no longer renders its own header (parent FormSection provides it).
+- **`ChartSettingsTab`** rewritten with `FormSection` + 2-col grids; helpers moved to `helperText`; reset button to `size="sm"`.
+- **`DataTab`** uses `FormSection` + `Callout` (replaces ad-hoc colored repair-result text); heatmap section + storage section + cooldowns all consistent.
+- **Locale strings** added in 4 languages (en / pt / es / fr): `settings.tabs.{account,security,notifications,updates}`, `settings.section.{account,appearance,trading,system}`, full `settings.account.*`, `settings.security.*`, `settings.notifications.*` blocks; `settings.autoUpdate` got `description` + `checking` keys.
+
+### Removed
+- **`apps/electron/src/renderer/components/Account/`** (folder + `AccountDialog.tsx`) — content lives in the new Account tab.
+- **`apps/electron/src/renderer/components/Settings/useSettingsDialog.ts`** — never imported, used `window.confirm`.
+- **`apps/electron/src/renderer/components/Settings/SetupConfigTab.tsx`** — never wired up; its config (minConfidence / minRiskReward) is set per-watcher.
+
+### Tests
+- New unit tests: `AccountTab` (10), `SecurityTab` (11), `NotificationsTab` (4), `UpdatesTab` (4), `UserAvatar` (3), updated `SettingsDialog` (8). Covers tab navigation via `initialTab`, mutation wiring, validation, session revoke flows, avatar mime-type guards.
+- Frontend total: 2126 → 2155 unit (+29). All passing.
+
 ## [0.115.0] - 2026-04-27
 
 UX polish + dead-code cleanup. No new features, no behaviour change.
