@@ -1,6 +1,6 @@
 import { Box, Group, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
-import { Button, Checkbox, Field, FormDialog, Select } from '@renderer/components/ui';
+import { Button, Callout, Checkbox, Field, FormDialog, Select } from '@renderer/components/ui';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -109,10 +109,10 @@ export const AddWatcherDialog = ({
       submitDisabled={!canSubmit}
       isLoading={isLoading}
     >
-      <Stack gap={5}>
+      <Stack gap={3}>
         <Group attached>
           <Button
-            size="sm"
+            size="xs"
             variant={!isBulkMode ? 'solid' : 'outline'}
             onClick={() => setIsBulkMode(false)}
             flex={1}
@@ -120,7 +120,7 @@ export const AddWatcherDialog = ({
             {t('tradingProfiles.watchers.singleMode', 'Single')}
           </Button>
           <Button
-            size="sm"
+            size="xs"
             variant={isBulkMode ? 'solid' : 'outline'}
             onClick={() => setIsBulkMode(true)}
             flex={1}
@@ -130,7 +130,7 @@ export const AddWatcherDialog = ({
         </Group>
 
         {!isBulkMode ? (
-          <HStack gap={4} align="flex-end">
+          <HStack gap={3} align="flex-end">
             <Field label={t('tradingProfiles.watchers.symbol')} required>
               <SymbolSelector
                 value={symbol}
@@ -149,7 +149,7 @@ export const AddWatcherDialog = ({
             </Field>
           </HStack>
         ) : (
-          <Stack gap={4}>
+          <Stack gap={3}>
             <Field label={t('tradingProfiles.watchers.interval')}>
               <TimeframeSelector
                 selectedTimeframe={interval}
@@ -170,27 +170,15 @@ export const AddWatcherDialog = ({
         )}
 
         {marketType === 'FUTURES' && (
-          <Box
-            p={2}
-            borderRadius="sm"
-            bg="orange.50"
-            borderWidth="1px"
-            borderColor="orange.200"
-            _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
-          >
-            <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
-              {t('tradingProfiles.watchers.futuresWarning', 'Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.')}
-            </Text>
-          </Box>
+          <Callout tone="warning" compact>
+            {t('tradingProfiles.watchers.futuresWarning', 'Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.')}
+          </Callout>
         )}
 
         <Box>
-          <HStack mb={3}>
-            <Checkbox
-              checked={useDefault}
-              onCheckedChange={setUseDefault}
-            />
-            <Text fontSize="sm">{t('tradingProfiles.watchers.useWalletDefault')}</Text>
+          <HStack mb={2}>
+            <Checkbox checked={useDefault} onCheckedChange={setUseDefault} />
+            <Text fontSize="xs">{t('tradingProfiles.watchers.useWalletDefault')}</Text>
           </HStack>
 
           {!useDefault && (
@@ -199,40 +187,24 @@ export const AddWatcherDialog = ({
                 value={profileId ?? ''}
                 onChange={(value) => setProfileId(value || null)}
                 options={profileOptions}
+                size="sm"
                 usePortal={false}
               />
             </Field>
           )}
 
           {!useDefault && profiles.length === 0 && (
-            <Box
-              p={3}
-              mt={2}
-              borderRadius="md"
-              bg="orange.50"
-              borderWidth="1px"
-              borderColor="orange.200"
-              _dark={{ bg: 'orange.950', borderColor: 'orange.800' }}
-            >
-              <Text fontSize="xs" color="orange.700" _dark={{ color: 'orange.300' }}>
+            <Box mt={2}>
+              <Callout tone="warning" compact>
                 {t('tradingProfiles.watchers.noProfiles')}
-              </Text>
+              </Callout>
             </Box>
           )}
         </Box>
 
-        <Box
-          p={3}
-          borderRadius="md"
-          bg="blue.50"
-          borderWidth="1px"
-          borderColor="blue.200"
-          _dark={{ bg: 'blue.950', borderColor: 'blue.800' }}
-        >
-          <Text fontSize="xs" color="blue.700" _dark={{ color: 'blue.300' }}>
-            {t('tradingProfiles.watchers.info')}
-          </Text>
-        </Box>
+        <Callout tone="info" compact>
+          {t('tradingProfiles.watchers.info')}
+        </Callout>
       </Stack>
     </FormDialog>
   );

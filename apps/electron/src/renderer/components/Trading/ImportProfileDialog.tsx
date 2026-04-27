@@ -1,7 +1,8 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Stack } from '@chakra-ui/react';
 import {
   Badge,
   Button,
+  Callout,
   CloseButton,
   DialogBackdrop,
   DialogBody,
@@ -98,9 +99,10 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
           </DialogHeader>
 
           <DialogBody>
-            <Stack gap={4}>
+            <Stack gap={3}>
               <Field label={t('tradingProfiles.import.nameLabel')}>
                 <Input
+                  size="sm"
                   value={profileName}
                   onChange={(e) => setProfileName(e.target.value)}
                   placeholder="e.g., Optimized BTC Strategy"
@@ -124,16 +126,13 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
               </Field>
 
               {parsedData && (
-                <Box p={3} bg="bg.muted" borderRadius="md">
-                  <Text fontSize="sm" fontWeight="bold" mb={2}>
-                    {t('tradingProfiles.import.preview')}
-                  </Text>
-                  <Stack gap={1}>
-                    <Text fontSize="xs" color="fg.muted">
+                <Callout tone="success" title={t('tradingProfiles.import.preview')} compact>
+                  <Stack gap={1.5} mt={1}>
+                    <Box fontSize="2xs">
                       {t('tradingProfiles.import.strategiesCount', {
                         count: parsedData.enabledSetupTypes?.length ?? 0,
                       })}
-                    </Text>
+                    </Box>
                     {parsedData.enabledSetupTypes && (
                       <Flex flexWrap="wrap" gap={1}>
                         {parsedData.enabledSetupTypes.slice(0, 6).map((setup) => (
@@ -149,7 +148,7 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
                       </Flex>
                     )}
                   </Stack>
-                </Box>
+                </Callout>
               )}
             </Stack>
           </DialogBody>

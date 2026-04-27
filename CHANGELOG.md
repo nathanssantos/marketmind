@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Modal sweep (post-v1)
+- **CreateWalletDialog**: replaced 3 ad-hoc `<Alert.Root>` blocks with `<Callout tone="info|warning|danger">`, tightened content gap from 4 → 3.
+- **AddWatcherDialog**: replaced 3 inline colored `<Box bg="orange.50/blue.50" ...>` panels with `<Callout>`, tightened gaps from 5 → 3, secondary buttons sized down to xs.
+- **ImportProfileDialog**: parsed-profile preview moved into `<Callout tone="success">`; field gap tightened.
+- **StartWatchersModal**: no-wallet warning, info footer text replaced with `<Callout tone="warning|info">`; semantic tokens `green.subtle`/`green.muted` for the quick-start panel.
+- **ScalpingConfig**: outer VStack gap reduced from 6 → 4.
+
+### Docs
+- `apps/electron/src/renderer/components/ui/README.md` — documents `Callout`, `FormSection`, `FormRow`, typography scale, `CollapsibleSection.variant="static"`.
+- `CLAUDE.md` — UI rules updated with the new section/row composition guidance, all new wrappers added to the must-use-from-`ui` list.
+
 ## [1.0.0] - 2026-04-27
 
 **v1 launch** 🚀 — Settings overhaul, full account & security flows, shared UI primitives, no-accordion AutoTrading.

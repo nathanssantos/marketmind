@@ -1,9 +1,9 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { Alert, Field, FormDialog, Input, Link, NumberInput, Select } from '@renderer/components/ui';
+import { Flex, Stack, Text } from '@chakra-ui/react';
+import { Callout, Field, FormDialog, Input, Link, NumberInput, Select } from '@renderer/components/ui';
 import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type WalletCurrency, type ExchangeId } from '@marketmind/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuExternalLink, LuInfo } from 'react-icons/lu';
+import { LuExternalLink } from 'react-icons/lu';
 
 const SELECTABLE_CURRENCIES: WalletCurrency[] = ['USDT', 'USD', 'BRL', 'EUR'];
 
@@ -121,7 +121,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
       submitDisabled={!isValid}
       isLoading={isCreating}
     >
-      <Stack gap={4}>
+      <Stack gap={3}>
         <Field label={t('trading.wallets.exchange', 'Exchange')}>
           <Select
             size="xs"
@@ -159,56 +159,32 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
         </Field>
 
         {isBinance && walletType === 'testnet' && (
-          <Alert.Root status="info" size="sm">
-            <Alert.Indicator>
-              <LuInfo />
-            </Alert.Indicator>
-            <Box>
-              <Alert.Title fontSize="xs">{t('trading.wallets.testnetInfo', 'Binance Testnet')}</Alert.Title>
-              <Alert.Description fontSize="xs">
-                <Text mb={1}>{t('trading.wallets.testnetDescription', 'Use testnet to practice with fake funds.')}</Text>
-                <Flex gap={3}>
-                  <Link href="https://testnet.binance.vision/" target="_blank" color="blue.500" fontSize="xs">
-                    Spot Testnet <LuExternalLink style={{ display: 'inline' }} />
-                  </Link>
-                  <Link href="https://testnet.binancefuture.com/" target="_blank" color="blue.500" fontSize="xs">
-                    Futures Testnet <LuExternalLink style={{ display: 'inline' }} />
-                  </Link>
-                </Flex>
-              </Alert.Description>
-            </Box>
-          </Alert.Root>
+          <Callout tone="info" title={t('trading.wallets.testnetInfo', 'Binance Testnet')} compact>
+            <Text mb={1}>{t('trading.wallets.testnetDescription', 'Use testnet to practice with fake funds.')}</Text>
+            <Flex gap={3}>
+              <Link href="https://testnet.binance.vision/" target="_blank" color="blue.500" fontSize="2xs">
+                Spot Testnet <LuExternalLink style={{ display: 'inline' }} />
+              </Link>
+              <Link href="https://testnet.binancefuture.com/" target="_blank" color="blue.500" fontSize="2xs">
+                Futures Testnet <LuExternalLink style={{ display: 'inline' }} />
+              </Link>
+            </Flex>
+          </Callout>
         )}
 
         {isIB && (
-          <Alert.Root status="info" size="sm">
-            <Alert.Indicator>
-              <LuInfo />
-            </Alert.Indicator>
-            <Box>
-              <Alert.Title fontSize="xs">{t('trading.wallets.ibInfo', 'Interactive Brokers')}</Alert.Title>
-              <Alert.Description fontSize="xs">
-                <Text mb={1}>{t('trading.wallets.ibDescription', 'Requires IB Gateway or TWS running locally.')}</Text>
-                <Link href="https://www.interactivebrokers.com/en/trading/ibgateway-stable.php" target="_blank" color="blue.500" fontSize="xs">
-                  {t('trading.wallets.downloadGateway', 'Download IB Gateway')} <LuExternalLink style={{ display: 'inline' }} />
-                </Link>
-              </Alert.Description>
-            </Box>
-          </Alert.Root>
+          <Callout tone="info" title={t('trading.wallets.ibInfo', 'Interactive Brokers')} compact>
+            <Text mb={1}>{t('trading.wallets.ibDescription', 'Requires IB Gateway or TWS running locally.')}</Text>
+            <Link href="https://www.interactivebrokers.com/en/trading/ibgateway-stable.php" target="_blank" color="blue.500" fontSize="2xs">
+              {t('trading.wallets.downloadGateway', 'Download IB Gateway')} <LuExternalLink style={{ display: 'inline' }} />
+            </Link>
+          </Callout>
         )}
 
         {walletType === 'live' && (
-          <Alert.Root status="warning" size="sm">
-            <Alert.Indicator>
-              <LuInfo />
-            </Alert.Indicator>
-            <Box>
-              <Alert.Title fontSize="xs">{t('trading.wallets.liveWarning', 'Warning: Real Money')}</Alert.Title>
-              <Alert.Description fontSize="xs">
-                {t('trading.wallets.liveDescription', 'Live trading uses real funds. Make sure you understand the risks.')}
-              </Alert.Description>
-            </Box>
-          </Alert.Root>
+          <Callout tone="warning" title={t('trading.wallets.liveWarning', 'Warning: Real Money')} compact>
+            {t('trading.wallets.liveDescription', 'Live trading uses real funds. Make sure you understand the risks.')}
+          </Callout>
         )}
 
         <Field label={t('trading.wallets.name')}>
@@ -296,10 +272,9 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
         )}
 
         {error && (
-          <Alert.Root status="error" size="sm">
-            <Alert.Indicator />
-            <Alert.Description fontSize="xs">{error}</Alert.Description>
-          </Alert.Root>
+          <Callout tone="danger" compact>
+            {error}
+          </Callout>
         )}
       </Stack>
     </FormDialog>
