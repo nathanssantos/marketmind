@@ -1,5 +1,6 @@
 import { Box, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
+import { MM } from '../../theme/tokens';
 
 interface TypographyProps {
   children?: ReactNode;
@@ -12,22 +13,42 @@ interface TypographyProps {
 }
 
 export const PageTitle = ({ children, mt, mb, color, textAlign, truncate, className }: TypographyProps) => (
-  <Box fontSize="lg" fontWeight="bold" lineHeight="1.2" mt={mt} mb={mb} color={color} textAlign={textAlign} truncate={truncate} className={className}>
+  <Box
+    fontSize={MM.font.pageTitle.size}
+    fontWeight={MM.font.pageTitle.weight}
+    lineHeight={MM.lineHeight.title}
+    mt={mt}
+    mb={mb}
+    color={color}
+    textAlign={textAlign}
+    truncate={truncate}
+    className={className}
+  >
     {children}
   </Box>
 );
 
 export const SectionTitle = ({ children, mt, mb, color, textAlign, truncate, className }: TypographyProps) => (
-  <Box fontSize="sm" fontWeight="semibold" lineHeight="1.2" mt={mt} mb={mb} color={color} textAlign={textAlign} truncate={truncate} className={className}>
+  <Box
+    fontSize={MM.font.sectionTitle.size}
+    fontWeight={MM.font.sectionTitle.weight}
+    lineHeight={MM.lineHeight.title}
+    mt={mt}
+    mb={mb}
+    color={color}
+    textAlign={textAlign}
+    truncate={truncate}
+    className={className}
+  >
     {children}
   </Box>
 );
 
 export const SubsectionTitle = ({ children, mt, mb, color = 'fg.muted', textAlign, truncate, className }: TypographyProps) => (
   <Box
-    fontSize="2xs"
-    fontWeight="bold"
-    lineHeight="1.2"
+    fontSize={MM.font.subsection.size}
+    fontWeight={MM.font.subsection.weight}
+    lineHeight={MM.lineHeight.title}
     textTransform="uppercase"
     letterSpacing="wider"
     color={color}
@@ -42,19 +63,45 @@ export const SubsectionTitle = ({ children, mt, mb, color = 'fg.muted', textAlig
 );
 
 export const SectionDescription = ({ children, mt, mb, color = 'fg.muted', textAlign, truncate, className }: TypographyProps) => (
-  <Text fontSize="xs" color={color} lineHeight="1.45" mt={mt} mb={mb} textAlign={textAlign} truncate={truncate} className={className}>
+  <Text
+    fontSize={MM.font.body.size}
+    color={color}
+    lineHeight={MM.lineHeight.body}
+    mt={mt}
+    mb={mb}
+    textAlign={textAlign}
+    truncate={truncate}
+    className={className}
+  >
     {children}
   </Text>
 );
 
 export const FieldHint = ({ children, mt, mb, color = 'fg.muted', textAlign, truncate, className }: TypographyProps) => (
-  <Text fontSize="2xs" color={color} lineHeight="1.4" mt={mt} mb={mb} textAlign={textAlign} truncate={truncate} className={className}>
+  <Text
+    fontSize={MM.font.hint.size}
+    color={color}
+    lineHeight={MM.lineHeight.hint}
+    mt={mt}
+    mb={mb}
+    textAlign={textAlign}
+    truncate={truncate}
+    className={className}
+  >
     {children}
   </Text>
 );
 
 export const MetaText = ({ children, mt, mb, color = 'fg.muted', textAlign, truncate, className }: TypographyProps) => (
-  <Text fontSize="2xs" color={color} mt={mt} mb={mb} textAlign={textAlign} truncate={truncate} className={className}>
+  <Text
+    fontSize={MM.font.hint.size}
+    color={color}
+    mt={mt}
+    mb={mb}
+    textAlign={textAlign}
+    truncate={truncate}
+    className={className}
+  >
     {children}
   </Text>
 );
