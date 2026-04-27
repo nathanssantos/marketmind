@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Phase 1 (Quality & tests)
+- **+82 frontend unit tests** covering v1 sweep refactors that shipped without coverage:
+  - `ui/Callout` (8) — every tone, compact, custom icon, title/body composition
+  - `ui/FormSection` + `ui/FormRow` (10)
+  - `Trading/DirectionBadge` (11) — long/short variants, BTC trend, blocked, skipped count, isIB
+  - `Trading/DynamicSymbolRankings` (7) — open/close, tab switch, active marker, added/removed pills
+  - `Trading/CreateWalletDialog` (9) — name validation, paper params on submit, currency/balance fields
+  - `Trading/AddWatcherDialog` (10) — single↔bulk toggle, profile selector, futures warning, info Callout
+  - `Trading/ImportProfileDialog` (8) — JSON parse, valid preview, invalid error, autofill name, mutation
+  - `Trading/StartWatchersModal` (10) — open/close, no-wallet Callout, market type toggle, direction toggles, settings/cancel
+  - `hooks/useSetupToasts` (6) — subscribe, fire on payload, gate, skip missing fields
+- **+27 backend integration tests** in `auth.router.test.ts`:
+  - email-masking integration at every call site (register success/fail, login success/fail, requestPasswordReset, resendVerificationEmail, changePassword fail) — assert raw email NEVER in serialized payload, mask preserves first-char + domain
+  - avatar edge cases: whitespace data, exactly-too-large (cap+1), at-the-cap, empty rejected
+  - avatarColor regex: 6-digit upper/lower accepted; 3-digit, color name, invalid hex chars, missing `#` rejected
+  - changePassword session preservation: current kept, others invalidated; new password works; old password fails
+
+### Added — Phase 1.3 (NotificationsTab wiring)
+- **`utils/notificationSound.ts`** — Web Audio API beep (synthesized, no asset). Different freq per type (success 880Hz, info 660Hz, warning 440Hz, error 220Hz). Best-effort — never throws.
+- **`useToast`** now reads `notificationSoundEnabled` pref and plays a beep on every toast when enabled.
+- **`useOrderNotifications`** gates status-change toasts on `orderToastsEnabled` (default true).
+- **`useSetupToasts`** new hook subscribed to `setup-detected` socket events; fires info toast gated on `setupToastsEnabled`. Mounted in `App.tsx` alongside `useOrderNotifications`.
+
+### Added — Phase 1.4 (a11y audit on Settings dialog)
+- **`@axe-core/playwright`** added as e2e dev-dep.
+- **6 new a11y test cases** in `settings-overhaul.spec.ts` — one per high-traffic Settings tab (account/security/notifications/general/updates/about). Asserts 0 serious + 0 critical violations against the dialog scope.
+- Disabled rules with rationale in test code: `region` + `aria-allowed-attr` (Chakra portal patterns); `color-contrast` (deferred to dedicated theme PR per V1_POST_RELEASE_PLAN.md Phase 2.1 — `fg.muted` over `bg.muted` in dark mode falls below 4.5:1).
+
+### Fixed — a11y issues found by audit
+- **Switch wrappers** in NotificationsTab + UpdatesTab + SecurityTab now pass `aria-label` to the underlying input (was empty `<Switch.Label>` because FormRow renders the label outside the Switch). Resolves serious `aria-labelledby` violations.
+- **Slider** wrapper extended with `aria-label` prop, applied to update-interval slider in UpdatesTab. Resolves serious `aria-input-field-name` violation.
+
+### Test totals
+- Frontend: 2155 → 2237 (+82 unit). 19 e2e tests for Settings (was 13). All passing.
+- Backend: 5389 → 5416 (+27). All 204 test files pass.
+
 ### Security
 - **`audit-logger.ts` — email masking in security event logs.** Resolves 4 CodeQL `js/clear-text-logging` (high-severity) alerts that flagged `metadata.email` being persisted in clear text through `auditLogger.info/warn` for events like `LOGIN_FAILURE`, `PASSWORD_RESET_*`, `REGISTER_FAILURE`. New `maskEmail()` helper preserves correlation grep-ability (first char of local part + full domain, e.g. `alice@example.com → a****@example.com`) without ever logging the full address. Tests verify: long-local masking, single-char local (`a@x` → `*@x`), two-char (`ab@x` → `a*@x`), malformed-email fallback (`***`), full-email never present in serialized payload on `LOGIN_FAILURE`. +5 tests (audit-logger now 21).
 

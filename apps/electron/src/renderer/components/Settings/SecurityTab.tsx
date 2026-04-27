@@ -172,6 +172,7 @@ export const SecurityTab = () => {
             checked={currentUser?.twoFactorEnabled ?? false}
             onCheckedChange={(checked) => { void handleToggleTwoFactor(checked); }}
             disabled={!currentUser?.emailVerified || isTogglingTwoFactor}
+            aria-label={t('settings.security.twoFactor.title')}
             data-testid="security-2fa-toggle"
           />
         </FormRow>

@@ -23,6 +23,7 @@ export const NotificationsTab = () => {
           <Switch
             checked={orderToastsEnabled}
             onCheckedChange={setOrderToastsEnabled}
+            aria-label={t('settings.notifications.toasts.orderUpdates')}
             data-testid="notifications-order-toasts"
           />
         </FormRow>
@@ -33,6 +34,7 @@ export const NotificationsTab = () => {
           <Switch
             checked={setupToastsEnabled}
             onCheckedChange={setSetupToastsEnabled}
+            aria-label={t('settings.notifications.toasts.setupDetected')}
             data-testid="notifications-setup-toasts"
           />
         </FormRow>
@@ -49,6 +51,7 @@ export const NotificationsTab = () => {
           <Switch
             checked={soundEnabled}
             onCheckedChange={setSoundEnabled}
+            aria-label={t('settings.notifications.sound.enable')}
             data-testid="notifications-sound-enabled"
           />
         </FormRow>
