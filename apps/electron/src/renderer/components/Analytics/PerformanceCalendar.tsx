@@ -151,14 +151,14 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
         <Text fontSize="sm" fontWeight="semibold">
           {t('trading.analytics.calendar.title')}
         </Text>
-        <Flex align="center" gap={2}>
-          <Button size="xs" variant="outline" onClick={goToPrev} px={2}>
+        <Flex align="center" gap={1.5}>
+          <Button size="2xs" variant="outline" onClick={goToPrev} px={1.5} minW="auto">
             ‹
           </Button>
-          <Text fontSize="sm" fontWeight="medium" minW="120px" textAlign="center">
+          <Text fontSize="xs" fontWeight="medium" minW="100px" textAlign="center">
             {monthLabel}
           </Text>
-          <Button size="xs" variant="outline" onClick={goToNext} px={2} disabled={isNextDisabled}>
+          <Button size="2xs" variant="outline" onClick={goToNext} px={1.5} minW="auto" disabled={isNextDisabled}>
             ›
           </Button>
         </Flex>
