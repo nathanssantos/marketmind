@@ -1,4 +1,4 @@
-import { Callout, FormSection, Link, Logo, MetaText, PageTitle } from '@renderer/components/ui';
+import { Callout, FormSection, Link, Logo, PageTitle } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { APP_VERSION } from '@shared/constants';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +40,7 @@ export const AboutTab = () => {
       </FormSection>
 
       <Callout tone="neutral" compact>
-        <MetaText>{t('about.copyright', { year: currentYear })}</MetaText>
+        {t('about.copyright', { year: currentYear })}
       </Callout>
     </Stack>
   );

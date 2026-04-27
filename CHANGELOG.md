@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — E2E spec for Settings flow
+- **`apps/electron/e2e/settings-overhaul.spec.ts`** — 13 chromium tests covering: opens with default Account tab, opens directly on requested tab via `openSettings(tab)`, four section labels render in the rail, every tab trigger renders, name input shows current name, avatar color swatches clickable, password submit gates on validation, current session shown in sessions list, all 3 notifications switches render, all 3 update controls render, rail navigation swaps the right pane, palette swatches in Chart tab, repair/clear-storage buttons in Data tab.
+- **`apps/electron/e2e/helpers/trpcMock.ts`**: `auth.me` defaults updated with the new `avatarColor` + `hasAvatar` fields, plus default resolvers for `auth.getAvatar`, `auth.listSessions` (one current session), `auth.changePassword`, `auth.uploadAvatar`, `auth.deleteAvatar`, `auth.updateProfile`, `auth.revokeSession`, `auth.revokeAllOtherSessions`, `auth.resendVerificationEmail`, `auth.toggleTwoFactor`. Brings the e2e mock surface in line with the v1 backend endpoints.
+
+### Fixed
+- **AboutTab** — copyright `Callout` no longer wraps `MetaText` (which renders `<p>`) inside `Callout`'s `<p>`. Removed the nested-`<p>` warning. Now passes the translated string directly as `Callout` body.
+
 ### Added — Backend tests for v1 auth endpoints
 - **16 new integration tests** in `apps/backend/src/__tests__/routers/auth.router.test.ts` covering all post-v1 auth endpoints:
   - `updateProfile` (4): name update, valid avatar color, invalid hex rejection, color clearing
