@@ -5,6 +5,7 @@ import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from 
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useOrdersFilters } from '@renderer/hooks/useOrdersFilters';
 import { trpc } from '@renderer/utils/trpc';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { useUIStore, type OrdersFilterOption, type OrdersSortOption } from '@renderer/store/uiStore';
@@ -183,51 +184,7 @@ const OrdersListComponent = () => {
     ? orders.filter((o) => o.walletId === activeWallet.id)
     : [];
 
-  const filteredOrders = useMemo(() => {
-    const filtered = walletOrders.filter((order) => {
-      if (filterStatus === 'all') return true;
-      if (filterStatus === 'pending') return isOrderPending(order);
-      if (filterStatus === 'active') return isOrderActive(order);
-      if (filterStatus === 'filled') return order.status === 'FILLED';
-      if (filterStatus === 'closed') return !!order.closedAt;
-      if (filterStatus === 'cancelled') return order.status === 'CANCELED' || order.status === 'REJECTED';
-      if (filterStatus === 'expired') return order.status === 'EXPIRED' || order.status === 'EXPIRED_IN_MATCH';
-      return true;
-    });
-
-    return filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return (b.updateTime || b.time) - (a.updateTime || a.time);
-        case 'oldest':
-          return (a.updateTime || a.time) - (b.updateTime || b.time);
-        case 'symbol-asc':
-          return a.symbol.localeCompare(b.symbol);
-        case 'symbol-desc':
-          return b.symbol.localeCompare(a.symbol);
-        case 'quantity-desc':
-          return (b.quantity ?? 0) - (a.quantity ?? 0);
-        case 'quantity-asc':
-          return (a.quantity ?? 0) - (b.quantity ?? 0);
-        case 'pnl-desc': {
-          const pnlA = parseFloat(String(a.pnl ?? 0));
-          const pnlB = parseFloat(String(b.pnl ?? 0));
-          return pnlB - pnlA;
-        }
-        case 'pnl-asc': {
-          const pnlA = parseFloat(String(a.pnl ?? 0));
-          const pnlB = parseFloat(String(b.pnl ?? 0));
-          return pnlA - pnlB;
-        }
-        case 'price-desc':
-          return (b.entryPrice ?? 0) - (a.entryPrice ?? 0);
-        case 'price-asc':
-          return (a.entryPrice ?? 0) - (b.entryPrice ?? 0);
-        default:
-          return (b.updateTime || b.time) - (a.updateTime || a.time);
-      }
-    });
-  }, [walletOrders, filterStatus, sortBy]);
+  const filteredOrders = useOrdersFilters(walletOrders, filterStatus, sortBy);
 
   const activeOrders = walletOrders.filter((o) => isOrderActive(o)).length;
   const pendingOrders = walletOrders.filter((o) => isOrderPending(o)).length;

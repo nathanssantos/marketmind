@@ -1,6 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const WEB_PORT = Number(process.env.PLAYWRIGHT_WEB_PORT ?? 5173);
+// Default to 5174 so the e2e webServer never collides with a developer-run
+// `pnpm dev` on 5173. If we collide, Playwright reuses the dev server (per
+// `reuseExistingServer`) — but that server lacks `VITE_E2E_BYPASS_AUTH`, so
+// the e2e bridge (window.__indicatorStore, etc.) never installs and every
+// test that touches it times out at `waitForE2EBridge`.
+const WEB_PORT = Number(process.env.PLAYWRIGHT_WEB_PORT ?? 5174);
 const BASE_URL = `http://localhost:${WEB_PORT}`;
 
 export default defineConfig({

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.110.0] - 2026-04-26
+
+Test infrastructure recovery + Orders sidebar coverage parity with the boleta.
+
+### Fixed
+- **Playwright e2e port collision with `pnpm dev`** (`apps/electron/playwright.config.ts`). The webServer config has `reuseExistingServer: !process.env.CI`. When a developer runs `pnpm dev` (port 5173) and then triggers `playwright test`, Playwright silently adopts the dev server — which doesn't set `VITE_E2E_BYPASS_AUTH=true`. Result: the e2e bridge (`window.__indicatorStore`, `__drawingStore`, `__priceStore`, `__layoutStore`, `__socketTestBridge`, `__globalActions`) never installed, every test that called `waitForE2EBridge` timed out at 30s, and the chromium project reported 76 of 153 failing on a clean develop. Defaulted the e2e port to 5174 so it never collides; pre-fix → post-fix on a clean develop: 74 → 150 passing. Override is still available via `PLAYWRIGHT_WEB_PORT`.
+
+### Added
+- **`useOrdersFilters` hook + 21 tests** (`apps/electron/src/renderer/hooks/useOrdersFilters.ts` + `.test.ts`). `OrdersList` had a 45-line inline filter+sort block — same shape as the boleta's `usePortfolioFilters`. Mirror-extracted to a hook for parity, then unit-tested: `filterOrders` (all 7 status filters including the CANCELED+REJECTED merge in `cancelled` and the EXPIRED+EXPIRED_IN_MATCH merge in `expired`), `sortOrders` (10 sort options + immutability + the `updateTime || time` fallback when `updateTime` is 0), `useOrdersFilters` end-to-end (composed pipeline + memoization).
+
+### Changed
+- **`OrdersList` consumes the new hook** (`apps/electron/src/renderer/components/Trading/OrdersList.tsx`). Net `+1 import / -45 inline lines`. Behaviour is unchanged — the same code now ships behind a tested seam.
+
+### Notes
+- Frontend tests: 1933 → 1954 unit + 97 browser. Backend untouched.
+- Chromium e2e: 74 → 150 passing on clean develop. Remaining 3 failures (`symbol-tab-percentages.spec.ts`) are a pre-existing data-race in the badge calculation, tracked separately.
+
 ## [0.109.0] - 2026-04-26
 
 Pure test-coverage release for the trading sidebar boleta. No production code changed.
