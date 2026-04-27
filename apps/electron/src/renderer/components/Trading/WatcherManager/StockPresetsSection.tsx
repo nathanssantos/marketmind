@@ -42,7 +42,7 @@ export const StockPresetsSection = ({ onStartPreset, isStarting, disabled = fals
   const { t } = useTranslation();
 
   return (
-    <Box p={4} bg="green.50" borderRadius="md" borderWidth="1px" borderColor="green.200" _dark={{ bg: 'green.900/20', borderColor: 'green.800' }}>
+    <Box p={3} bg="green.subtle" borderRadius="md" borderWidth="1px" borderColor="green.muted">
       <Flex align="center" gap={2} mb={3}>
         <LuBuilding2 size={16} />
         <Text fontSize="sm" fontWeight="medium">

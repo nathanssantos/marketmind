@@ -1,5 +1,5 @@
 import { Box, Stack, Text } from '@chakra-ui/react';
-import { CollapsibleSection, NumberInput } from '@renderer/components/ui';
+import { Callout, CollapsibleSection, NumberInput } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface LeverageSettingsSectionProps {
@@ -42,11 +42,9 @@ export const LeverageSettingsSection = ({
                 disabled={isPending}
               />
             </Box>
-            <Box p={3} bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900/20' }}>
-              <Text fontSize="xs" color="fg.muted">
-                {t('settings.algorithmicAutoTrading.leverage.warning', 'Higher leverage increases both potential gains and losses. Use with caution.')}
-              </Text>
-            </Box>
+            <Callout tone="warning" compact>
+              {t('settings.algorithmicAutoTrading.leverage.warning', 'Higher leverage increases both potential gains and losses. Use with caution.')}
+            </Callout>
           </Stack>
     </CollapsibleSection>
   );

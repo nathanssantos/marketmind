@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, CryptoIcon, DirectionModeSelector, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
+import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
@@ -108,11 +108,9 @@ const WatchersTabComponent = () => {
       )}
 
       {!activeWalletId ? (
-        <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
-          <Text fontSize="sm" color="orange.600" _dark={{ color: 'orange.300' }}>
-            {t('trading.portfolio.noWallet')}
-          </Text>
-        </Box>
+        <Callout tone="warning" compact>
+          {t('trading.portfolio.noWallet')}
+        </Callout>
       ) : isLoadingWatcherStatus ? (
         <Box p={4} textAlign="center">
           <Text fontSize="sm" color="fg.muted">{t('common.loading')}</Text>

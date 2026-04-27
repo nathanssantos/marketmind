@@ -70,7 +70,7 @@ export const QuickStartSection = ({
   const { t } = useTranslation();
 
   return (
-    <Box p={4} bg="green.50" borderRadius="md" borderWidth="1px" borderColor="green.200" _dark={{ bg: 'green.900/20', borderColor: 'green.800' }}>
+    <Box p={3} bg="green.subtle" borderRadius="md" borderWidth="1px" borderColor="green.muted">
       <Flex justify="space-between" align="center" mb={3}>
         <Text fontSize="sm" fontWeight="medium">
           {t('tradingProfiles.dynamicSelection.quickStartTitle')}

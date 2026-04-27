@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Modal sweep round 2 (Callout adoption + semantic tokens)
+- **BacktestModal**: error state now uses `<Callout tone="danger">` instead of `<Alert.Root status="error">`.
+- **ScreenerModal**: error banner now uses `<Callout tone="danger">` instead of an inline `<Box bg="red.subtle">` text block.
+- **AnalyticsModal**: "no wallet selected" empty state uses `<Callout tone="info">` instead of a centered muted Text.
+- **No-wallet warning unified across 4 surfaces** (`MarketSidebar/tabs/WatchersTab.tsx`, `MarketSidebar/tabs/LogsTab.tsx`, `Trading/Portfolio.tsx`, `Trading/OrdersList.tsx`) — all 4 used identical `<Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>` ad-hoc panels with hardcoded color shades. Replaced with `<Callout tone="warning" compact>`.
+- **WatcherManager**:
+  - `DynamicSelectionSection`: blue info panel → `<Callout tone="info" icon={<LuZap />} compact>` (loses ad-hoc `_dark={{ bg: 'blue.900/20' }}`).
+  - `LeverageSettingsSection`: orange leverage warning → `<Callout tone="warning" compact>`.
+  - `QuickStartSection` + `StockPresetsSection`: kept as bordered panels (structural — not informational), but switched the hardcoded `green.50/green.200/green.900/green.800` palette to the semantic `green.subtle`/`green.muted` tokens used by Chakra v3, matching the dialog's own panel style and removing 4× `_dark` overrides.
+
 ### Added — E2E spec for Settings flow
 - **`apps/electron/e2e/settings-overhaul.spec.ts`** — 13 chromium tests covering: opens with default Account tab, opens directly on requested tab via `openSettings(tab)`, four section labels render in the rail, every tab trigger renders, name input shows current name, avatar color swatches clickable, password submit gates on validation, current session shown in sessions list, all 3 notifications switches render, all 3 update controls render, rail navigation swaps the right pane, palette swatches in Chart tab, repair/clear-storage buttons in Data tab.
 - **`apps/electron/e2e/helpers/trpcMock.ts`**: `auth.me` defaults updated with the new `avatarColor` + `hasAvatar` fields, plus default resolvers for `auth.getAvatar`, `auth.listSessions` (one current session), `auth.changePassword`, `auth.uploadAvatar`, `auth.deleteAvatar`, `auth.updateProfile`, `auth.revokeSession`, `auth.revokeAllOtherSessions`, `auth.resendVerificationEmail`, `auth.toggleTwoFactor`. Brings the e2e mock surface in line with the v1 backend endpoints.

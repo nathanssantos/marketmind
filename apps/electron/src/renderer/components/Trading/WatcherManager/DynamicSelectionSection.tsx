@@ -1,6 +1,6 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TimeInterval } from '@marketmind/types';
-import { Button, CollapsibleSection, Switch } from '@renderer/components/ui';
+import { Button, Callout, CollapsibleSection, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuRefreshCw, LuZap } from 'react-icons/lu';
 import type { DirectionMode } from './WatchersList';
@@ -170,14 +170,11 @@ export const DynamicSelectionSection = ({
           )}
         </Box>
 
-        <Flex justify="space-between" align="center">
-          <Box p={3} bg="blue.50" borderRadius="md" _dark={{ bg: 'blue.900/20' }} flex={1}>
-            <Flex gap={2} align="flex-start">
-              <LuZap size={16} style={{ marginTop: 2, flexShrink: 0 }} />
-              <Text fontSize="xs" color="fg.muted">
-                {t('tradingProfiles.dynamicSelection.infoText')}
-              </Text>
-            </Flex>
+        <Flex justify="space-between" align="center" gap={2}>
+          <Box flex={1}>
+            <Callout tone="info" icon={<LuZap />} compact>
+              {t('tradingProfiles.dynamicSelection.infoText')}
+            </Callout>
           </Box>
           <Button
             size="sm"
