@@ -147,8 +147,8 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
 
   return (
     <Stack gap={3}>
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px">
-        <Text fontSize="lg" fontWeight="bold">
+      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" borderColor="border">
+        <Text fontSize="sm" fontWeight="semibold">
           {t('trading.analytics.calendar.title')}
         </Text>
         <Flex align="center" gap={2}>

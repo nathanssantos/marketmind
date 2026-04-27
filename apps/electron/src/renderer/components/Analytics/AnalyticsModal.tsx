@@ -68,11 +68,11 @@ export const AnalyticsModal = memo(() => {
             {activeWalletId ? (
               <Stack gap={4}>
                 <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
-                <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
                 <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
                 {marginRequirements && (
                   <MarginInfoPanel requirements={marginRequirements} />
                 )}
+                <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
               </Stack>
             ) : (
               <Callout tone="info" compact>

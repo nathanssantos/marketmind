@@ -31,8 +31,8 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
 
   if (isLoadingPerformance) {
     return (
-      <Flex justify="center" align="center" py={8}>
-        <Spinner size="lg" />
+      <Flex justify="center" align="center" py={6}>
+        <Spinner size="md" />
       </Flex>
     );
   }
@@ -102,8 +102,8 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
 
   return (
     <Stack gap={3}>
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
-        <Text fontSize="md" fontWeight="bold">
+      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" borderColor="border" flexWrap="wrap" gap={2}>
+        <Text fontSize="sm" fontWeight="semibold">
           {t('trading.analytics.performance.title')}
         </Text>
         <ButtonGroup size="2xs" variant="outline" flexWrap="wrap">
