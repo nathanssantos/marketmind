@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Round 4: badge swap + remaining color-shade cleanup
+- **`DirectionBadge`**: rewritten to use the `Badge` wrapper (with `colorPalette`) instead of 5 ad-hoc `<Box bg="X.100" _dark={{ bg: 'X.900' }}>` panels with hardcoded text-color light/dark overrides. Same visual semantics, fully theme-aware. -36 lines.
+- **`DynamicSymbolRankings`**: 5 ad-hoc `<Box bg="green.100"/red.100/gray.100" _dark={...}>` pills (active marker + added/removed symbol chips) → `<Badge colorPalette="green|red|gray" size="sm">`. -45 lines.
+- **`Layout/TrailingStopPopover`**: long/short manual-activation panels now have `borderWidth/borderColor="green.muted|red.muted"` to match all other Callout-style panels; text color tightened to `.fg` semantic token (was `.600` shade).
+
 ### Changed — Round 3: Backtest tabs no-accordion + final colored-box sweep
 - **Backtest `RiskTab`**: 5 `CollapsibleSection`s converted to `variant="static"` (always-visible — matches AutoTrading pattern). `FiltersTab` left as collapsible (filter groups benefit from collapsing).
 - **`FuturesPositionInfo`**: liquidation-warning panel → `<Callout tone="danger" compact>`.

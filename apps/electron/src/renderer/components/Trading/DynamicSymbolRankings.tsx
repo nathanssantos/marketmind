@@ -1,6 +1,7 @@
 import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import type { MarketType } from '@marketmind/types';
 import {
+  Badge,
   Button,
   CloseButton,
   CryptoIcon,
@@ -233,30 +234,13 @@ const RankingsTab = ({ symbolScores, isLoading, activeSymbols, t }: RankingsTabP
           </Text>
           <Flex flex="0 0 60px" justify="center">
             {activeSymbols.has(score.symbol) ? (
-              <Box
-                px={2}
-                py={0.5}
-                bg="green.100"
-                color="green.800"
-                _dark={{ bg: 'green.900', color: 'green.200' }}
-                borderRadius="full"
-                fontSize="2xs"
-                fontWeight="medium"
-              >
+              <Badge colorPalette="green" size="sm">
                 {t('common.active')}
-              </Box>
+              </Badge>
             ) : (
-              <Box
-                px={2}
-                py={0.5}
-                bg="gray.100"
-                color="gray.600"
-                _dark={{ bg: 'gray.700', color: 'gray.400' }}
-                borderRadius="full"
-                fontSize="2xs"
-              >
+              <Badge colorPalette="gray" size="sm">
                 -
-              </Box>
+              </Badge>
             )}
           </Flex>
         </Flex>
@@ -319,17 +303,9 @@ const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
                 </Text>
                 <HStack flexWrap="wrap" gap={1}>
                   {rotation.added.map((symbol) => (
-                    <Box
-                      key={symbol}
-                      px={2}
-                      py={0.5}
-                      bg="green.100"
-                      _dark={{ bg: 'green.900' }}
-                      borderRadius="sm"
-                      fontSize="xs"
-                    >
+                    <Badge key={symbol} colorPalette="green" size="sm">
                       {symbol}
-                    </Box>
+                    </Badge>
                   ))}
                 </HStack>
               </Box>
@@ -342,17 +318,9 @@ const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
                 </Text>
                 <HStack flexWrap="wrap" gap={1}>
                   {rotation.removed.map((symbol) => (
-                    <Box
-                      key={symbol}
-                      px={2}
-                      py={0.5}
-                      bg="red.100"
-                      _dark={{ bg: 'red.900' }}
-                      borderRadius="sm"
-                      fontSize="xs"
-                    >
+                    <Badge key={symbol} colorPalette="red" size="sm">
                       {symbol}
-                    </Box>
+                    </Badge>
                   ))}
                 </HStack>
               </Box>
