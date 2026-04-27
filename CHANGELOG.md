@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.109.0] - 2026-04-26
+
+Pure test-coverage release for the trading sidebar boleta. No production code changed.
+
+### Added
+- **Boleta unit suite** (`apps/electron/src/renderer/components/Layout/QuickTradeToolbar.test.tsx`, +26 tests). Covers all 7 user-flagged features: Buy/Sell (incl. the v0.107 regression that `createOrder` is called with `quantity` not `percent`), Reverse Position, Close Position, Cancel Orders (success path + `result.error` toast + thrown-rejection toast), Grid Orders / Trailing Stop / Checklist sub-component wiring (rendered only after Toggle advanced), SPOT vs FUTURES gating (Reverse/Close/Cancel hidden for SPOT), and size-preset / +-5% rounding with bound clamping.
+- **Portfolio-filter pipeline tests** (`apps/electron/src/renderer/hooks/usePortfolioFilters.test.ts`, +18 tests). `filterPositions` (all/long/short/profitable/losing — zero-PnL exclusion is asserted both ways), `sortPositions` (newest, oldest, symbol asc/desc, pnl asc/desc, exposure-desc, immutability of input), `calculateStats` (PnL totals, margin-denominated %, empty-array guard), and the `usePortfolioFilters` hook itself (memoization + filter-applies-before-stats invariant).
+- **E2E boleta spec** (`apps/electron/e2e/sidebar-quick-trade.spec.ts`, +8 tests, ~6s wall-clock). Same 7 features driven through the live tRPC mock — each handler asserted against the exact endpoint it should hit (`trading.createOrder`, `futuresTrading.reversePosition`, `closePositionAndCancelOrders`, `cancelAllOrders`). Uses position-fixture vs no-position-fixture split to prove the Reverse/Close rows are visually disabled without an open position.
+
+### Notes
+- Frontend tests: 1933 → 1977 unit + 97 browser, plus 8 new e2e in the chromium project. Backend untouched.
+
 ## [0.108.0] - 2026-04-26
 
 Follow-up to v0.107.0: the daily-PnL fix was incomplete and the user reproduced the same symptom on a 3rd close.
