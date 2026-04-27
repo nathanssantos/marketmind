@@ -366,11 +366,82 @@ After creating:
 
 ---
 
+## Compact-style tokens (`MM`)
+
+> Source: `apps/electron/src/renderer/theme/tokens.ts` — added in v1.1 Phase 2.1.
+
+The MarketMind compact style is captured as TS constants under the `MM` namespace. Primitives (`Callout`, `FormSection`, `FormRow`, `typography`) consume tokens directly — no hardcoded literals.
+
+### Spacing
+
+| Token | Chakra value | Pixels | Use |
+|---|---|---|---|
+| `MM.spacing.section.gap` | `4` | 16px | Between sections in dialogs/tabs |
+| `MM.spacing.row.gap` | `2.5` | 10px | Between rows in a section |
+| `MM.spacing.inline.gap` | `1.5` | 6px | Inline groups (icon + label) |
+| `MM.spacing.inlineTight.gap` | `1` | 4px | Compact callout body |
+| `MM.spacing.dialogPadding` | `3` | 12px | Dialog body padding |
+| `MM.spacing.sectionPadding` | `2.5` | 10px | Section content padding |
+| `MM.spacing.calloutCompact` | `{ px: 2.5, py: 1.5 }` | 10×6px | Callout `compact` mode |
+| `MM.spacing.callout` | `{ px: 3, py: 2.5 }` | 12×10px | Callout default mode |
+
+### Typography
+
+| Token | Size / Weight | Use |
+|---|---|---|
+| `MM.font.pageTitle` | `lg` / `bold` | Page heading |
+| `MM.font.sectionTitle` | `sm` / `semibold` | Section heading (FormSection) |
+| `MM.font.subsection` | `2xs` / `bold` uppercase | Eyebrow / rail group label |
+| `MM.font.body` | `xs` / `normal` | Body text, descriptions |
+| `MM.font.hint` | `2xs` / `normal` | Helper / hint / meta |
+
+### Line-heights
+
+| Token | Value | Use |
+|---|---|---|
+| `MM.lineHeight.title` | `1.2` | Headings |
+| `MM.lineHeight.body` | `1.45` | Body text |
+| `MM.lineHeight.hint` | `1.4` | Hints / meta |
+
+### Buttons + radius + previews
+
+| Token | Value | Use |
+|---|---|---|
+| `MM.buttonSize.primary` | `xs` | Primary action buttons |
+| `MM.buttonSize.secondary` | `2xs` | Secondary / row action buttons |
+| `MM.borderRadius.badge` | `sm` (2px) | Badges |
+| `MM.borderRadius.card` | `md` (4px) | Callouts, cards |
+| `MM.preview.sm` | `48` (px) | Small avatar |
+| `MM.preview.md` | `64` (px) | Profile avatar |
+
+### Usage
+
+```tsx
+import { MM } from '@renderer/theme/tokens';
+import { Stack } from '@chakra-ui/react';
+import { FormSection, FormRow, Switch } from '@renderer/components/ui';
+
+<Stack gap={MM.spacing.section.gap}>  {/* 16px */}
+  <FormSection title="Title">
+    <FormRow label="Label" helper="Help text">
+      <Switch ... />
+    </FormRow>
+  </FormSection>
+</Stack>
+```
+
+**Don't** hardcode literals where a token exists. If a value needs to change, change the token — primitives pick it up automatically.
+
+---
+
 ## File References
 
 - Theme definition: `apps/electron/src/renderer/theme/index.ts`
+- **Design tokens: `apps/electron/src/renderer/theme/tokens.ts`** ← v1.1
 - Component library: `apps/electron/src/renderer/components/ui/`
 - Component library barrel: `apps/electron/src/renderer/components/ui/index.ts`
 - Component library docs: `apps/electron/src/renderer/components/ui/README.md`
-- Standardization plan: `docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`
+- Compact-style design language: `docs/V1_POST_RELEASE_PLAN.md` § Design language
+- Extraction migration plan: `packages/ui/MIGRATION.md` ← v1.1
+- Standardization plan (legacy, superseded): `docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`
 - CLAUDE.md: AI assistant context with UI standards section

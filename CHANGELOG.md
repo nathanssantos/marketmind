@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Phase 2 (Code/architecture)
+- **`apps/electron/src/renderer/theme/tokens.ts`** — `MM` namespace exports the MarketMind compact-style design tokens (spacing, typography, line-heights, button sizes, radius, preview dimensions). Single source of truth referenced from all primitives.
+- **`packages/ui/MIGRATION.md`** — extraction audit + plan for v1.2. Found only 3 of ~47 ui files have cross-imports (`color-mode.tsx`, `MetricCard.tsx`, `PnLDisplay.tsx`) — extraction is low-effort surgery; bulk is mechanical.
+
+### Changed — primitives consume tokens (no behavior change)
+- **`Callout`**: padding, spacing, font sizes, line-heights, border-radius now read from `MM` tokens.
+- **`FormSection`** + **`FormRow`**: same — section title size, body line-height, contentGap default.
+- **`typography`** (PageTitle / SectionTitle / SubsectionTitle / SectionDescription / FieldHint / MetaText): all 6 components fully token-driven.
+- Locked compact-style values: section gap `4` (16px), row gap `2.5` (10px), inline `1.5` (6px), button primary `xs`, secondary `2xs`. Matches `docs/V1_POST_RELEASE_PLAN.md` Design language table.
+
+### Docs
+- `docs/UI_STYLE_GUIDE.md` — new "Compact-style tokens (`MM`)" section documenting every token + value + use + usage example.
+
 ### Added — Phase 1 (Quality & tests)
 - **+82 frontend unit tests** covering v1 sweep refactors that shipped without coverage:
   - `ui/Callout` (8) — every tone, compact, custom icon, title/body composition
