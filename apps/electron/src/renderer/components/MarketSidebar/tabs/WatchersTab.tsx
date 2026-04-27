@@ -15,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { LuCheck, LuOctagonX, LuPlay, LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { StartWatchersModal } from '@renderer/components/Trading/StartWatchersModal';
+import { formatSuggestionPrice, sortWatchers } from './watchersTabUtils';
 
 interface ActiveWatcher {
   watcherId: string;
@@ -203,10 +204,6 @@ SuggestionsSection.displayName = 'SuggestionsSection';
 
 type Suggestion = NonNullable<ReturnType<typeof useSignalSuggestions>['suggestions']>[number];
 
-const formatPrice = (price: string) => {
-  const num = Number(price);
-  return num >= 1 ? num.toFixed(2) : num.toPrecision(4);
-};
 
 interface SuggestionCardProps {
   suggestion: Suggestion;
@@ -273,18 +270,18 @@ const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRe
       <Flex gap={3} mb={2} wrap="wrap">
         <Box>
           <Text fontSize="2xs" color="fg.muted">{t('common.entry')}</Text>
-          <Text fontSize="xs" fontWeight="medium">{formatPrice(suggestion.entryPrice)}</Text>
+          <Text fontSize="xs" fontWeight="medium">{formatSuggestionPrice(suggestion.entryPrice)}</Text>
         </Box>
         {suggestion.stopLoss && (
           <Box>
             <Text fontSize="2xs" color="fg.muted">{t('common.stopLoss')}</Text>
-            <Text fontSize="xs" fontWeight="medium" color="red.500">{formatPrice(suggestion.stopLoss)}</Text>
+            <Text fontSize="xs" fontWeight="medium" color="red.500">{formatSuggestionPrice(suggestion.stopLoss)}</Text>
           </Box>
         )}
         {suggestion.takeProfit && (
           <Box>
             <Text fontSize="2xs" color="fg.muted">{t('common.takeProfit')}</Text>
-            <Text fontSize="xs" fontWeight="medium" color="green.500">{formatPrice(suggestion.takeProfit)}</Text>
+            <Text fontSize="xs" fontWeight="medium" color="green.500">{formatSuggestionPrice(suggestion.takeProfit)}</Text>
           </Box>
         )}
         {suggestion.riskRewardRatio && (
@@ -370,23 +367,10 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
     }
   };
 
-  const sortedWatchers = useMemo(() => {
-    return [...watchers].sort((a, b) => {
-      const dir = sortDirection === 'asc' ? 1 : -1;
-      switch (sortKey) {
-        case 'symbol':
-          return dir * a.symbol.localeCompare(b.symbol);
-        case 'interval':
-          return dir * a.interval.localeCompare(b.interval);
-        case 'type':
-          return dir * a.marketType.localeCompare(b.marketType);
-        case 'profile':
-          return dir * (a.profileName ?? '').localeCompare(b.profileName ?? '');
-        default:
-          return 0;
-      }
-    });
-  }, [watchers, sortKey, sortDirection]);
+  const sortedWatchers = useMemo(
+    () => sortWatchers(watchers, sortKey, sortDirection),
+    [watchers, sortKey, sortDirection],
+  );
 
   const columns: TradingTableColumn[] = [
     { key: 'symbol', header: t('trading.orders.symbol'), sticky: true, minW: '100px' },

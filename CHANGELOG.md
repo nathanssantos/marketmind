@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.111.0] - 2026-04-26
+
+Coverage parity for the Market sidebar and the Auto-Trading sidebar (Watchers + Logs + Scalping tabs). +75 unit tests, 4 pure-logic helpers extracted from inline-in-component code.
+
+### Added
+- **`marketIndicatorUtils.test.ts`** (+43 tests) — every formatter and threshold-color helper used by every chart in the Market sidebar's indicators tab: `getRefreshIntervals` (per-key clamp logic + `orderBook` quarter-of-half), `formatTooltipDate` (3 missing-data paths), `formatFundingRate`, `formatLargeNumber` (B/M/K thresholds), `getFearGreedLevel` / `getFearGreedColor` (5 levels × 10 boundary cases + > 100 fallback), `getAltSeasonColor`, `getAdxColor`, `getOrderBookPressureColor`, `getMvrvColor`, `formatUsd`.
+- **`watchersTabUtils.{ts,test.ts}`** (+13 tests) — extracted from `WatchersTab.tsx`. `sortWatchers` (4 keys × 2 directions, undefined-profile sorts first, unknown-key no-op, immutability, empty input) and `formatSuggestionPrice` (>= 1: 2 decimals; < 1: 4 sig figs).
+- **`scalpingDashboardUtils.{ts,test.ts}`** (+7 tests) — extracted from `ScalpingDashboard.tsx`. `formatScalpingPnl` (the negative-value test explicitly locks in the current `$-X.XX` quirk — sign inside the dollar prefix — flagging it for a follow-up rather than stealth-fixing) and `scalpingPnlColor` (zero is neutral, not green — fresh-session correctness).
+- **`logsTabUtils.{ts,test.ts}`** (+12 tests) — extracted from `LogsTab.tsx`. `LOGS_TAB_FONT_SIZE_STEPS` ladder lockfile, `clampFontSizeIndex`, `fontSizeForIndex` (with clamp + fallback), `isScrolledToBottom` (default 50px threshold + custom threshold + viewport-taller-than-content edge case where the user is "always at the bottom").
+
+### Changed
+- **`WatchersTab.tsx`, `ScalpingDashboard.tsx`, `LogsTab.tsx`** now consume the extracted helpers — net **-26 inline lines** across the three files. Behaviour is unchanged.
+
+### Notes
+- Frontend tests: 1954 → 2029 unit + 97 browser. Backend untouched.
+- OrderFlow sidebar already had parity tests (1:1 test-to-source ratio in `OrderFlow/__tests__/`) — no changes needed there.
+
 ## [0.110.0] - 2026-04-26
 
 Test infrastructure recovery + Orders sidebar coverage parity with the boleta.

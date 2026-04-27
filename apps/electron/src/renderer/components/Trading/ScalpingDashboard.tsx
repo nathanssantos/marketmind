@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useBackendScalping } from '@renderer/hooks/useBackendScalping';
 import { useScalpingSignals } from '@renderer/hooks/useScalpingSignals';
 import { OrderFlowMetrics } from '../OrderFlow/OrderFlowMetrics';
+import { formatScalpingPnl, scalpingPnlColor } from './scalpingDashboardUtils';
 
 interface ScalpingDashboardProps {
   walletId: string;
@@ -39,8 +40,8 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
           </Text>
         </Stack>
         <Flex align="center" gap={2}>
-          <Text fontWeight="medium" fontSize="sm" color={pnlColor(statusData?.sessionPnl ?? 0)}>
-            {formatPnl(statusData?.sessionPnl ?? 0)}
+          <Text fontWeight="medium" fontSize="sm" color={scalpingPnlColor(statusData?.sessionPnl ?? 0)}>
+            {formatScalpingPnl(statusData?.sessionPnl ?? 0)}
           </Text>
           <Badge colorPalette={isRunning ? 'green' : 'gray'} px={2}>
             {isRunning ? t('scalping.status.running', 'Running') : t('scalping.status.stopped', 'Stopped')}
@@ -117,13 +118,3 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
   );
 }
 
-const formatPnl = (pnl: number): string => {
-  const sign = pnl >= 0 ? '+' : '';
-  return `${sign}$${pnl.toFixed(2)}`;
-};
-
-const pnlColor = (pnl: number): string => {
-  if (pnl > 0) return 'fg.success';
-  if (pnl < 0) return 'fg.error';
-  return 'fg.default';
-};
