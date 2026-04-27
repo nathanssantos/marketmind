@@ -5,6 +5,7 @@ const DEFAULT_BASE_URL = process.env.MM_MCP_BASE_URL ?? 'http://localhost:5174';
 const RESTART_AFTER_CAPTURES = 50;
 const IDLE_RESTART_MS = 30 * 60 * 1000;
 const FIXTURES_ENABLED = process.env.MM_MCP_FIXTURES !== 'false';
+const DEVICE_SCALE_FACTOR = Number.parseFloat(process.env.MM_MCP_SCALE ?? '1');
 
 interface BrowserHandle {
   browser: Browser;
@@ -24,7 +25,7 @@ const launch = async (): Promise<BrowserHandle> => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
-    deviceScaleFactor: 2,
+    deviceScaleFactor: DEVICE_SCALE_FACTOR,
   });
   if (FIXTURES_ENABLED) {
     await installVisualFixtures(context);

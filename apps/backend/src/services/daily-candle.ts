@@ -1,7 +1,36 @@
 import type { MarketType } from '@marketmind/types';
+import { and, desc, eq, gte } from 'drizzle-orm';
+import { db } from '../db';
+import { klines } from '../db/schema';
 import { withRetryFetch } from '../utils/retry';
 import { logger } from './logger';
 import { serializeError } from '../utils/errors';
+import { getCustomSymbolService } from './custom-symbol-service';
+
+const isCustomSymbol = (symbol: string): boolean =>
+  getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false;
+
+const fetchCustomSymbolDailyCandle = async (symbol: string): Promise<DailyCandle | null> => {
+  const todayOpen = new Date(currentDailyOpenTime());
+  const rows = await db.query.klines.findMany({
+    where: and(
+      eq(klines.symbol, symbol),
+      eq(klines.interval, '1h'),
+      eq(klines.marketType, 'SPOT'),
+      gte(klines.openTime, todayOpen),
+    ),
+    orderBy: [desc(klines.openTime)],
+  });
+  if (rows.length === 0) return null;
+  const earliest = rows[rows.length - 1]!;
+  const latest = rows[0]!;
+  return {
+    symbol,
+    openTime: earliest.openTime.getTime(),
+    open: parseFloat(earliest.open),
+    close: parseFloat(latest.close),
+  };
+};
 
 export interface DailyCandle {
   symbol: string;
@@ -67,7 +96,8 @@ export const getDailyCandles = async (
   const todayOpen = currentDailyOpenTime();
   const now = Date.now();
   const result = new Map<string, DailyCandle>();
-  const toFetch: string[] = [];
+  const toFetchBinance: string[] = [];
+  const toFetchCustom: string[] = [];
 
   for (const symbol of symbols) {
     const cached = cache.get(symbol);
@@ -76,15 +106,23 @@ export const getDailyCandles = async (
       now - cached.fetchedAt < FETCH_TTL_MS
     ) {
       result.set(symbol, cached.candle);
+    } else if (isCustomSymbol(symbol)) {
+      toFetchCustom.push(symbol);
     } else {
-      toFetch.push(symbol);
+      toFetchBinance.push(symbol);
     }
   }
 
-  if (toFetch.length === 0) return result;
+  const binancePromise = toFetchBinance.length > 0
+    ? Promise.all(toFetchBinance.map((s) => fetchDailyCandle(s, marketType)))
+    : Promise.resolve([]);
+  const customPromise = toFetchCustom.length > 0
+    ? Promise.all(toFetchCustom.map((s) => fetchCustomSymbolDailyCandle(s)))
+    : Promise.resolve([]);
 
-  const fetched = await Promise.all(toFetch.map((s) => fetchDailyCandle(s, marketType)));
-  for (const candle of fetched) {
+  const [binanceResults, customResults] = await Promise.all([binancePromise, customPromise]);
+
+  for (const candle of [...binanceResults, ...customResults]) {
     if (!candle) continue;
     cache.set(candle.symbol, { candle, fetchedAt: now });
     result.set(candle.symbol, candle);

@@ -17,7 +17,10 @@ import {
   mapDbSymbolToState,
 } from './custom-symbol-helpers';
 import { logger } from './logger';
+import { smartBackfillKlines } from './binance-historical';
 import { getWebSocketService } from './websocket';
+
+const COMPONENT_BACKFILL_TARGET = 5_000;
 
 export { computeWeights, fetchBinancePrice, fetchMarketCaps } from './custom-symbol-helpers';
 
@@ -236,19 +239,61 @@ class CustomSymbolService {
     const componentKlinesMap = new Map<string, ComponentKline[]>();
 
     for (const c of state.components) {
-      const conditions = [
-        eq(klinesTable.symbol, c.symbol),
-        eq(klinesTable.interval, interval),
-        eq(klinesTable.marketType, c.marketType),
-      ];
-      if (startTime) conditions.push(gte(klinesTable.openTime, startTime));
-      if (endTime) conditions.push(lte(klinesTable.openTime, endTime));
+      const fetchKlines = async (mt: 'SPOT' | 'FUTURES') => {
+        const conditions = [
+          eq(klinesTable.symbol, c.symbol),
+          eq(klinesTable.interval, interval),
+          eq(klinesTable.marketType, mt),
+        ];
+        if (startTime) conditions.push(gte(klinesTable.openTime, startTime));
+        if (endTime) conditions.push(lte(klinesTable.openTime, endTime));
 
-      const rows = await db.query.klines.findMany({
-        where: and(...conditions),
-        orderBy: [desc(klinesTable.openTime)],
-        limit: 20_000,
-      });
+        return db.query.klines.findMany({
+          where: and(...conditions),
+          orderBy: [desc(klinesTable.openTime)],
+          limit: 20_000,
+        });
+      };
+
+      let rows = await fetchKlines(c.marketType);
+      let usedMarketType: 'SPOT' | 'FUTURES' = c.marketType;
+      if (rows.length === 0) {
+        const fallback = c.marketType === 'SPOT' ? 'FUTURES' : 'SPOT';
+        const fallbackRows = await fetchKlines(fallback);
+        if (fallbackRows.length > 0) {
+          logger.info({ symbol: c.symbol, configured: c.marketType, used: fallback, count: fallbackRows.length },
+            'Custom symbol component falling back to alternate marketType');
+          rows = fallbackRows;
+          usedMarketType = fallback;
+        }
+      }
+
+      try {
+        const targetForRefresh = rows.length === 0 ? COMPONENT_BACKFILL_TARGET : Math.min(rows.length, COMPONENT_BACKFILL_TARGET);
+        const result = await smartBackfillKlines(c.symbol, interval, targetForRefresh, 'FUTURES');
+        if (result.downloaded > 0) {
+          rows = await fetchKlines('FUTURES');
+          usedMarketType = 'FUTURES';
+          logger.info({ symbol: c.symbol, interval, downloaded: result.downloaded, totalInDb: result.totalInDb },
+            'Custom symbol component klines refreshed (FUTURES)');
+        } else if (rows.length === 0) {
+          const spotResult = await smartBackfillKlines(c.symbol, interval, COMPONENT_BACKFILL_TARGET, 'SPOT');
+          if (spotResult.totalInDb + spotResult.downloaded > 0) {
+            rows = await fetchKlines('SPOT');
+            usedMarketType = 'SPOT';
+          }
+        }
+      } catch (err) {
+        logger.warn({ symbol: c.symbol, interval, error: err },
+          'Custom symbol component Binance backfill failed');
+      }
+
+      if (rows.length > 0 && usedMarketType !== c.marketType) {
+        await db.update(customSymbolComponents)
+          .set({ marketType: usedMarketType })
+          .where(eq(customSymbolComponents.id, c.id));
+        c.marketType = usedMarketType;
+      }
 
       componentKlinesMap.set(c.symbol, rows.map(r => ({
         openTime: r.openTime,
@@ -262,12 +307,35 @@ class CustomSymbolService {
       })).reverse());
     }
 
-    const allTimestampSets = Array.from(componentKlinesMap.values()).map(
-      klines => new Set(klines.map(k => k.openTime.getTime()))
-    );
-    if (allTimestampSets.length === 0) return;
+    const usableComponents = state.components.filter((c) => {
+      const klines = componentKlinesMap.get(c.symbol);
+      return klines && klines.length > 0 && c.basePrice > 0;
+    });
 
-    const commonTimestamps = allTimestampSets.reduce((acc, s) => {
+    if (usableComponents.length === 0) {
+      logger.warn({ symbol: state.symbol, interval }, 'Custom symbol backfill: no usable components');
+      return;
+    }
+
+    if (usableComponents.length < state.components.length) {
+      const skipped = state.components
+        .filter((c) => !usableComponents.some((u) => u.symbol === c.symbol))
+        .map((c) => c.symbol);
+      logger.warn({ symbol: state.symbol, skipped, used: usableComponents.length, total: state.components.length },
+        'Custom symbol backfill: skipping components without klines, weights renormalized');
+    }
+
+    const totalWeight = usableComponents.reduce((sum, c) => sum + c.weight, 0);
+    const normalizedComponents = usableComponents.map((c) => ({
+      ...c,
+      weight: totalWeight > 0 ? c.weight / totalWeight : 1 / usableComponents.length,
+    }));
+
+    const usableTimestampSets = normalizedComponents.map(
+      (c) => new Set((componentKlinesMap.get(c.symbol) ?? []).map(k => k.openTime.getTime()))
+    );
+
+    const commonTimestamps = usableTimestampSets.reduce((acc, s) => {
       const result = new Set<number>();
       for (const t of acc) if (s.has(t)) result.add(t);
       return result;
@@ -306,10 +374,10 @@ class CustomSymbolService {
       let closeTime = new Date(ts);
       let valid = true;
 
-      for (const c of state.components) {
+      for (const c of normalizedComponents) {
         const byTime = componentKlinesByTime.get(c.symbol);
         const k = byTime?.get(ts);
-        if (!k || c.basePrice <= 0) { valid = false; break; }
+        if (!k) { valid = false; break; }
 
         open += c.weight * (k.open / c.basePrice);
         high += c.weight * (k.high / c.basePrice);

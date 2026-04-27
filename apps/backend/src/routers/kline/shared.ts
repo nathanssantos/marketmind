@@ -2,9 +2,13 @@ import type { Interval, MarketType } from '@marketmind/types';
 import { z } from 'zod';
 import { TIME_MS } from '../../constants';
 import { binanceFuturesKlineStreamService, binanceKlineStreamService } from '../../services/binance-kline-stream';
+import { getCustomSymbolService } from '../../services/custom-symbol-service';
 import { getKlineMaintenance } from '../../services/kline-maintenance';
 import { logger } from '../../services/logger';
 import { KeyedCache } from '../../utils/cache';
+
+const isCustomSymbol = (symbol: string): boolean =>
+  getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false;
 
 export const intervalSchema = z.enum([
   '1s', '1m', '3m', '5m', '15m', '30m',
@@ -26,6 +30,8 @@ export const symbolsCache = new KeyedCache<CachedSymbolInfo[]>(5 * TIME_MS.MINUT
 export const corruptionCheckCache = new KeyedCache<boolean>(2 * TIME_MS.MINUTE);
 
 export const triggerCorruptionCheck = (symbol: string, interval: string, marketType: MarketType): void => {
+  if (isCustomSymbol(symbol)) return;
+
   const key = `${symbol}@${interval}@${marketType}`;
 
   if (corruptionCheckCache.has(key)) return;
@@ -39,6 +45,8 @@ export const triggerCorruptionCheck = (symbol: string, interval: string, marketT
 };
 
 export const subscribeToStream = (symbol: string, interval: string, marketType: MarketType): void => {
+  if (isCustomSymbol(symbol)) return;
+
   if (marketType === 'FUTURES') {
     binanceFuturesKlineStreamService.subscribe(symbol, interval);
   } else {
@@ -47,6 +55,8 @@ export const subscribeToStream = (symbol: string, interval: string, marketType: 
 };
 
 export const unsubscribeFromStream = (symbol: string, interval: string, marketType: MarketType): void => {
+  if (isCustomSymbol(symbol)) return;
+
   if (marketType === 'FUTURES') {
     binanceFuturesKlineStreamService.unsubscribe(symbol, interval);
   } else {

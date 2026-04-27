@@ -11,6 +11,7 @@
     "success": "Success",
     "search": "Search",
     "noResults": "No results found",
+    "noData": "No data available",
     "typeToSearch": "Type to search...",
     "dismiss": "Dismiss",
     "skip": "Skip",
@@ -84,6 +85,7 @@
   },
   "customSymbols": {
     "title": "Custom Symbols",
+    "description": "Build custom indices from multiple components with weighted aggregation.",
     "myIndices": "My Indices",
     "createNew": "Create New",
     "name": "Name",

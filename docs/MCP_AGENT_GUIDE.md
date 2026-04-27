@@ -192,6 +192,37 @@ The MCP servers are independent — when you mix them, you get the union of thei
 
 ---
 
+## Reproducing user bugs — drive the real flow, not fixtures
+
+When a user reports "I clicked X and it didn't work", the only valid repro is the same path the user took: open the app, find the same UI affordance, click it, observe the result. Don't reach in with `dispatchStore` to set state, don't pre-populate fixtures to fake the data — those bypass the very wiring you're trying to test.
+
+Use `mcp-app` (not `mcp-screenshot`) for this — `mcp-screenshot` ships with `installVisualFixtures` baked in, so it short-circuits real tRPC calls. `mcp-app` drives the live renderer against the real backend.
+
+```
+# 1. Reset to a known starting point
+app.closeAll {}
+
+# 2. Click the affordance the user clicked (header symbol pill, etc.)
+app.click { selector: "[data-testid=symbol-selector]" }
+
+# 3. Click the actual list item (mirror what the user sees)
+app.click { selector: "text=POLITIFI" }
+
+# 4. Observe what loaded
+app.takeScreenshot { label: "after-politifi-click" }
+app.inspectStore { store: "indicator" }
+```
+
+If the bug repros only when fixtures are off, that's a load-bearing signal — the failure is in the wiring between renderer, tRPC, and backend, not in the renderer alone. Disable fixtures before driving:
+
+```bash
+MM_MCP_FIXTURES=false node scripts/visual-gallery.mjs
+```
+
+Anything you can do via MCP tools, a real user can also do — and that constraint keeps the repro honest.
+
+---
+
 ## Limits and gotchas
 
 - **One browser per Playwright server.** `mcp-screenshot` and `mcp-app` each launch their own Chromium. They don't share session/state — toggling a sidebar in one doesn't affect the other.

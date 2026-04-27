@@ -46,6 +46,9 @@ const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
     await openSettingsTab(page, 'account');
     return;
   }
+  if (modalId === 'orders') {
+    await toggleSidebar(page, 'trading', true);
+  }
   await page.evaluate((id) => {
     const w = window as Window & {
       __uiStore?: { getState: () => Record<string, (v?: unknown) => void> };
@@ -66,9 +69,6 @@ const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
       case 'analytics':
         ui?.setAnalyticsOpen?.(true);
         break;
-      // startWatchers/createWallet/addWatcher/importProfile/tradingProfiles
-      // open through specific in-app flows; capture them via the per-flow tools
-      // in mcp-app rather than hijacking modal state directly.
     }
   }, modalId);
   await page.waitForTimeout(300);

@@ -9,9 +9,13 @@ import {
   getOpenOrders,
   isPaperWallet,
 } from '../../services/binance-futures-client';
+import { getCustomSymbolService } from '../../services/custom-symbol-service';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
+
+const isCustomSymbol = (symbol: string | undefined): boolean =>
+  symbol ? (getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false) : false;
 
 export const orderQueriesRouter = router({
   getOpenOrders: protectedProcedure
@@ -22,6 +26,8 @@ export const orderQueriesRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
+      if (isCustomSymbol(input.symbol)) return [];
+
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
@@ -70,6 +76,8 @@ export const orderQueriesRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
+      if (isCustomSymbol(input.symbol)) return [];
+
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {

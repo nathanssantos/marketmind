@@ -203,7 +203,9 @@ const computeDailyChangePct = (symbol: string, marketType: MarketType): number |
   const entry = state.dailyOpen[dailyOpenKey(symbol, marketType)];
   if (!entry || entry.open <= 0) return null;
   const livePrice = state.prices[symbol]?.price ?? entry.lastPrice;
+  if (typeof livePrice !== 'number' || !Number.isFinite(livePrice)) return null;
   const pct = ((livePrice - entry.open) / entry.open) * 100;
+  if (!Number.isFinite(pct)) return null;
   return Math.round(pct * 100) / 100;
 };
 

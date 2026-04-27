@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-27
+
+**v1.1 release** — Phase 6 visual-verification baseline shipped, custom-symbols loadability fully wired (POLITIFI now loads, real-time tab % works, components auto-backfill from Binance), MCP infrastructure populated for fixture-driven review, CryptoIcon source caching, NaN-guard in price store, full DailyPerformance + Market sidebar fixtures.
+
+### Added — Phase 6 (Visual verification)
+- **`docs/visual-review-2026-04.md`** — Phase 6.2 deliverable. Walks every Settings tab / modal / sidebar against the compact-style rules in `V1_POST_RELEASE_PLAN.md`, scores findings P0/P1/P2, captures the Phase 6.3 fix plan. Outcome: 0 P0, 4 P1 (all addressed in this release), 5 P2 (deferred).
+- **Visual regression baseline** — `apps/electron/screenshots/baseline/` (44 PNGs, English × dark+light, ~4MB) at viewport 1440×900 deviceScaleFactor 1. `.gitignore` now ignores timestamped session dirs only (`apps/electron/screenshots/[0-9]*/`), keeps `baseline/` tracked.
+- **`scripts/visual-gallery.mjs`** — thin driver around `captureGallery` for quick Phase 6.x iterations without going through the MCP stdio transport.
+- **`scripts/visual-diff.mjs`** — compares the most recent (or named) gallery session against the committed baseline, reports diffs/missing/new files, exits non-zero on divergence. Byte-equality compare today; pixelmatch swap-in is the next deliverable.
+- **`packages/mcp-screenshot/src/fixtures.ts`** populated for review: 12 closed executions, 2 paper wallets ($12,473 + $5,847), 3 active watchers, 1 trading profile, full DailyPerformance shape (12 days April 2026), 11 Market sidebar indicator snapshots (Fear & Greed 62/Greed, BTC dominance 56.4%, MVRV 2.1, production cost vs price, open interest 28.4B, long/short global+topTraders, altcoin season w/ topPerformers, ADX 26.4 bullish, order book buy pressure, funding rates × 4). 30-day history series simulated for sparkline charts.
+
+### Fixed — Phase 6.3 P1 sweep
+- **`priceStore.computeDailyChangePct`** returns null when `livePrice` is non-finite or computed pct is NaN — fixes "BTCUSDT NaN%" rendered in the chart panel header when the price stream had no data.
+- **`common.noData` translation key** added to all 4 locales (en/pt/es/fr). Market sidebar indicator cards used to render the literal i18n key as a fallback. (Initially shipped earlier in this release window.)
+- **Orders modal not rendering in captures** — `OrdersDialog` is mounted inside `TradingSidebar`, so flipping `isOrdersDialogOpen` alone wasn't enough; the capture pipeline now opens the trading sidebar first.
+- **Watcher fixture shape** — `autoTrading.getWatcherStatus` returns `{ active, watchers, activeWatchers, persistedWatchers }`, not a bare array; renderer was reading 0 watchers despite 3 in the fixture.
+
+### Added — Custom symbols (POLITIFI loadability)
+- **`CustomSymbolsTab`** standard section header (title + count badge + BetaBadge + description) matching `IndicatorsTab` and `TradingProfilesManager` — was a floating BetaBadge with no title. New i18n key `customSymbols.description` in all 4 locales.
+- **`SymbolSelector.handleSelect`** now accepts marketType / assetClass overrides and forces `marketType=SPOT, assetClass=CRYPTO` when the user picks a custom symbol — custom klines are always stored under SPOT.
+- **`backfillKlines`** in `custom-symbol-service`:
+  - Tries the configured marketType first, falls back to the alternate side (with log + DB persistence of the working side) when no rows are found.
+  - Calls `smartBackfillKlines` on every run for each component (not just when local count is 0) so recent gaps to "now" get filled. `smartBackfillKlines` is gap-aware, so this is cheap when data is already complete.
+  - Falls back to fetching from Binance (FUTURES first, SPOT second) when a component has zero local klines anywhere.
+  - Skips components that still have no data after the network attempt and **renormalizes weights** across the remaining basket; logs the skipped symbols.
+- **`kline.list` / `kline.latest`** coerce `marketType` to `'SPOT'` when the symbol is a known custom symbol — keeps SPOT/FUTURES toggling on the chart from breaking custom indices.
+- **`shared.ts`** in `kline` router — `subscribeToStream`, `triggerCorruptionCheck`, `unsubscribeFromStream` short-circuit for custom symbols (no Binance kline stream to subscribe to).
+- **`futuresTrading.getOpenOrders` / `getOpenAlgoOrders` / `getPosition`** short-circuit to empty/null for custom symbols; was hitting Binance fapi `/openOrders?symbol=POLITIFI` and getting `-1121 Invalid symbol`, which propagated as a tRPC error.
+- **`ticker.getDailyBatch`** resolves custom symbols against the local klines table (1h SPOT, since today's UTC midnight) — without this the tab-bar percentage stayed empty for POLITIFI because Binance returns nothing for synthetic indices.
+
+### Fixed — Symbol icons
+- **`CryptoIcon`** caches the working source index per base asset at module scope (`workingSourceByAsset`) and remembers fully-bad assets (`knownBadAssets`). Previously every remount restarted from source 0 and re-tried URLs that were known to fail (raw.githubusercontent + ORB blocks), causing the icon to flicker to its letter fallback on every render.
+
+### Changed — Capture pipeline
+- **Default `deviceScaleFactor`** in `mcp-screenshot/src/browser.ts` lowered from 2 → 1 (override via `MM_MCP_SCALE`). Galleries are ~58% smaller (9.5MB → 4MB) at viewport 1440×900 — sufficient for layout review, retina mode kept opt-in.
+- **Flow modals** (`addWatcher` / `createWallet` / `startWatchers` / `importProfile` / `tradingProfiles`) moved to a `FLOW_MODALS` list — no longer in the default gallery sweep, since they open via in-app click flows (not store flags) and produced empty workspace shots.
+- **`docs/MCP_AGENT_GUIDE.md`** — new "Reproducing user bugs — drive the real flow, not fixtures" section documents the principle: bugs only repro through the same path the user took, so use `mcp-app` (live tRPC) not `mcp-screenshot` (fixtures-driven).
+
 ### Added — Phase 5 (MCP infrastructure)
 - **Four MCP servers** under `packages/mcp-*`, each independently installable, totalling **47 tools**:
   - `@marketmind/mcp-screenshot` (6 tools) — Playwright + Chromium against the dev renderer; `screenshot.tab`/`modal`/`sidebar`/`fullPage`/`gallery` plus `__health`. Emits side-by-side dark/light HTML galleries to `apps/electron/screenshots/{ts}/`.
