@@ -38,6 +38,7 @@ export const ProfileTrailingStopSection = ({ actions }: ProfileTrailingStopSecti
       description={t('tradingProfiles.sections.trailingStopDescription')}
       badge={<OverrideBadge count={ovCount(TRAILING_KEYS)} />}
       size="lg"
+      variant="static"
     >
       <Stack gap={4}>
         <OverrideRow

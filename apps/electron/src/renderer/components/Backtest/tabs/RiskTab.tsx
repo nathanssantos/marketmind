@@ -49,7 +49,7 @@ export const RiskTab = ({ state, setField, fieldErrors }: RiskTabProps) => {
 
   return (
     <VStack align="stretch" gap={3} maxH="440px" overflowY="auto" pr={2}>
-      <CollapsibleSection title={t('backtest.risk.sizing')} defaultOpen size="sm">
+      <CollapsibleSection title={t('backtest.risk.sizing')} defaultOpen size="sm" variant="static">
         <Grid templateColumns="repeat(2, 1fr)" gap={3}>
           <Field label={t('backtest.risk.positionSizePercent')} invalid={!!fieldErrors['positionSizePercent']} errorText={fieldErrors['positionSizePercent']}>
             <NumberInput
@@ -96,7 +96,7 @@ export const RiskTab = ({ state, setField, fieldErrors }: RiskTabProps) => {
         </Grid>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('backtest.risk.stops')} size="sm">
+      <CollapsibleSection title={t('backtest.risk.stops')} size="sm" variant="static">
         <Grid templateColumns="repeat(2, 1fr)" gap={3}>
           <GridItem colSpan={2}>
             <HStack justify="space-between">
@@ -126,7 +126,7 @@ export const RiskTab = ({ state, setField, fieldErrors }: RiskTabProps) => {
         </Grid>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('backtest.risk.fibonacci')} size="sm">
+      <CollapsibleSection title={t('backtest.risk.fibonacci')} size="sm" variant="static">
         <Grid templateColumns="repeat(2, 1fr)" gap={3}>
           <Field label={t('backtest.risk.tpCalculationMode')}>
             <Select
@@ -185,7 +185,7 @@ export const RiskTab = ({ state, setField, fieldErrors }: RiskTabProps) => {
         </Grid>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('backtest.risk.cooldown')} size="sm">
+      <CollapsibleSection title={t('backtest.risk.cooldown')} size="sm" variant="static">
         <Grid templateColumns="repeat(2, 1fr)" gap={3}>
           <GridItem colSpan={2}>
             <HStack justify="space-between">
@@ -218,7 +218,7 @@ export const RiskTab = ({ state, setField, fieldErrors }: RiskTabProps) => {
         </Grid>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t('backtest.risk.futures')} size="sm">
+      <CollapsibleSection title={t('backtest.risk.futures')} size="sm" variant="static">
         <Grid templateColumns="repeat(2, 1fr)" gap={3}>
           <GridItem colSpan={2}>
             <HStack justify="space-between">

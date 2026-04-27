@@ -60,6 +60,7 @@ export const RiskManagementSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
       <Stack gap={6}>
         <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">

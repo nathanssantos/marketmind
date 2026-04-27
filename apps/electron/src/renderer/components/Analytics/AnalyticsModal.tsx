@@ -1,5 +1,6 @@
-import { Flex, Stack, Text } from '@chakra-ui/react';
+import { Flex, Stack } from '@chakra-ui/react';
 import {
+  Callout,
   DialogBackdrop,
   DialogBody,
   DialogContent,
@@ -74,9 +75,9 @@ export const AnalyticsModal = memo(() => {
                 <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
               </Stack>
             ) : (
-              <Flex justify="center" py={8}>
-                <Text color="fg.muted" fontSize="sm">{t('trading.noWalletSelected')}</Text>
-              </Flex>
+              <Callout tone="info" compact>
+                {t('trading.noWalletSelected')}
+              </Callout>
             )}
           </DialogBody>
         </DialogContent>

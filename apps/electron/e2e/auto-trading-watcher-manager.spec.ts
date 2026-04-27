@@ -137,16 +137,15 @@ test.describe('WatcherManager — open path + trading mode', () => {
     ).toBeGreaterThan(before);
   });
 
-  test('all collapsible section headers render', async ({ page }) => {
+  test('all section headers render (static, always-visible)', async ({ page }) => {
     const dialog = await openWatcherManager(page);
 
-    // Active Watchers, Dynamic Selection, Position Size, Risk Management,
-    // Trailing Stop, Take Profit, Stop, Entry, Filters, Opportunity Cost,
-    // Pyramiding — assert ~5 representative ones.
-    await expect(dialog.getByRole('button', { name: /^Active Watchers/ })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: /Position Size/i }).first()).toBeVisible();
-    await expect(dialog.getByRole('button', { name: /^Risk Management/ })).toBeVisible();
-    await expect(dialog.getByRole('button', { name: /^Trailing Stop/ })).toBeVisible();
+    // After v1: WatcherManager sections use variant="static" — headers are
+    // plain text, content is always visible (no chevron buttons).
+    await expect(dialog.getByText(/Active Watchers/).first()).toBeVisible();
+    await expect(dialog.getByText(/Exposure & Position Size/)).toBeVisible();
+    await expect(dialog.getByText('Risk Management', { exact: true })).toBeVisible();
+    await expect(dialog.getByText('Trailing Stop', { exact: true })).toBeVisible();
   });
 });
 
@@ -196,7 +195,7 @@ test.describe('WatcherManager — emergency stop', () => {
   });
 });
 
-test.describe('WatcherManager — collapsible sections fire updateConfig', () => {
+test.describe('WatcherManager — static sections render content', () => {
   test.beforeEach(async ({ page }) => {
     await installAutoTradingMock(page);
     await page.goto('/');
@@ -204,25 +203,18 @@ test.describe('WatcherManager — collapsible sections fire updateConfig', () =>
     await seedActiveWallet(page);
   });
 
-  test('expanding Position Size reveals at least one slider', async ({ page }) => {
+  test('Position Size section renders at least one slider (always visible)', async ({ page }) => {
     const dialog = await openWatcherManager(page);
-
-    await dialog.getByRole('button', { name: /Position Size/i }).first().click();
     await expect(dialog.getByRole('slider').first()).toBeVisible({ timeout: 5_000 });
   });
 
-  test('Risk Management section expands and renders Max Drawdown row', async ({ page }) => {
+  test('Risk Management section renders Max Drawdown row (always visible)', async ({ page }) => {
     const dialog = await openWatcherManager(page);
-
-    await dialog.getByRole('button', { name: /^Risk Management/ }).click();
     await expect(dialog.getByText('Max Drawdown', { exact: true }).first()).toBeVisible({ timeout: 5_000 });
   });
 
-  test('Trailing Stop section expands and renders its content', async ({ page }) => {
+  test('Trailing Stop section renders its description (always visible)', async ({ page }) => {
     const dialog = await openWatcherManager(page);
-
-    await dialog.getByRole('button', { name: /^Trailing Stop/ }).click();
-    // Section description is the most stable expansion check
     await expect(
       dialog.getByText('Automatically adjust stop loss as price moves in your favor', { exact: true }),
     ).toBeVisible({ timeout: 5_000 });

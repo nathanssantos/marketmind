@@ -130,12 +130,12 @@ describe('ChartSettingsTab', () => {
         expect(screen.getByText('settings.chart.rightMargin')).toBeDefined();
     });
 
-    it('renders kline appearance section', () => {
+    it('renders kline spacing field', () => {
         renderWithChakra(
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText(/settings\.chart\.klineSettings/)).toBeDefined();
+        expect(screen.getByText('settings.chart.klineSpacing')).toBeDefined();
     });
 
     it('renders grid settings section', () => {
@@ -143,15 +143,15 @@ describe('ChartSettingsTab', () => {
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText(/settings\.chart\.gridSettings/)).toBeDefined();
+        expect(screen.getByText('settings.chart.gridSettings')).toBeDefined();
     });
 
-    it('renders current price line section', () => {
+    it('renders line style field', () => {
         renderWithChakra(
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
         );
 
-        expect(screen.getByText(/settings\.chart\.currentPriceLine/)).toBeDefined();
+        expect(screen.getByText('settings.chart.lineStyle')).toBeDefined();
     });
 
     it('renders padding settings section', () => {

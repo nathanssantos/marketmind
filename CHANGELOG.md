@@ -7,6 +7,101 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **`audit-logger.ts` — email masking in security event logs.** Resolves 4 CodeQL `js/clear-text-logging` (high-severity) alerts that flagged `metadata.email` being persisted in clear text through `auditLogger.info/warn` for events like `LOGIN_FAILURE`, `PASSWORD_RESET_*`, `REGISTER_FAILURE`. New `maskEmail()` helper preserves correlation grep-ability (first char of local part + full domain, e.g. `alice@example.com → a****@example.com`) without ever logging the full address. Tests verify: long-local masking, single-char local (`a@x` → `*@x`), two-char (`ab@x` → `a*@x`), malformed-email fallback (`***`), full-email never present in serialized payload on `LOGIN_FAILURE`. +5 tests (audit-logger now 21).
+
+### Changed — Round 4: badge swap + remaining color-shade cleanup
+- **`DirectionBadge`**: rewritten to use the `Badge` wrapper (with `colorPalette`) instead of 5 ad-hoc `<Box bg="X.100" _dark={{ bg: 'X.900' }}>` panels with hardcoded text-color light/dark overrides. Same visual semantics, fully theme-aware. -36 lines.
+- **`DynamicSymbolRankings`**: 5 ad-hoc `<Box bg="green.100"/red.100/gray.100" _dark={...}>` pills (active marker + added/removed symbol chips) → `<Badge colorPalette="green|red|gray" size="sm">`. -45 lines.
+- **`Layout/TrailingStopPopover`**: long/short manual-activation panels now have `borderWidth/borderColor="green.muted|red.muted"` to match all other Callout-style panels; text color tightened to `.fg` semantic token (was `.600` shade).
+
+### Changed — Round 3: Backtest tabs no-accordion + final colored-box sweep
+- **Backtest `RiskTab`**: 5 `CollapsibleSection`s converted to `variant="static"` (always-visible — matches AutoTrading pattern). `FiltersTab` left as collapsible (filter groups benefit from collapsing).
+- **`FuturesPositionInfo`**: liquidation-warning panel → `<Callout tone="danger" compact>`.
+- **`Trading/FuturesPositionsPanel`**: same liquidation-warning panel → `<Callout tone="danger" compact>`.
+- **`MarginInfoPanel`**: !isSafe warning → `<Callout tone="danger" compact>`. Removed unused `LuTriangleAlert` import.
+- **`WatcherManager/EmergencyStopSection`**: confirm panel changed from hardcoded `red.50` + `_dark={{ bg: 'red.900/30' }}` to semantic `red.subtle`/`red.muted` tokens; tightened spacing (p=4→3, gap=3→2, button size sm→xs).
+
+### Changed — Modal sweep round 2 (Callout adoption + semantic tokens)
+- **BacktestModal**: error state now uses `<Callout tone="danger">` instead of `<Alert.Root status="error">`.
+- **ScreenerModal**: error banner now uses `<Callout tone="danger">` instead of an inline `<Box bg="red.subtle">` text block.
+- **AnalyticsModal**: "no wallet selected" empty state uses `<Callout tone="info">` instead of a centered muted Text.
+- **No-wallet warning unified across 4 surfaces** (`MarketSidebar/tabs/WatchersTab.tsx`, `MarketSidebar/tabs/LogsTab.tsx`, `Trading/Portfolio.tsx`, `Trading/OrdersList.tsx`) — all 4 used identical `<Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>` ad-hoc panels with hardcoded color shades. Replaced with `<Callout tone="warning" compact>`.
+- **WatcherManager**:
+  - `DynamicSelectionSection`: blue info panel → `<Callout tone="info" icon={<LuZap />} compact>` (loses ad-hoc `_dark={{ bg: 'blue.900/20' }}`).
+  - `LeverageSettingsSection`: orange leverage warning → `<Callout tone="warning" compact>`.
+  - `QuickStartSection` + `StockPresetsSection`: kept as bordered panels (structural — not informational), but switched the hardcoded `green.50/green.200/green.900/green.800` palette to the semantic `green.subtle`/`green.muted` tokens used by Chakra v3, matching the dialog's own panel style and removing 4× `_dark` overrides.
+
+### Added — E2E spec for Settings flow
+- **`apps/electron/e2e/settings-overhaul.spec.ts`** — 13 chromium tests covering: opens with default Account tab, opens directly on requested tab via `openSettings(tab)`, four section labels render in the rail, every tab trigger renders, name input shows current name, avatar color swatches clickable, password submit gates on validation, current session shown in sessions list, all 3 notifications switches render, all 3 update controls render, rail navigation swaps the right pane, palette swatches in Chart tab, repair/clear-storage buttons in Data tab.
+- **`apps/electron/e2e/helpers/trpcMock.ts`**: `auth.me` defaults updated with the new `avatarColor` + `hasAvatar` fields, plus default resolvers for `auth.getAvatar`, `auth.listSessions` (one current session), `auth.changePassword`, `auth.uploadAvatar`, `auth.deleteAvatar`, `auth.updateProfile`, `auth.revokeSession`, `auth.revokeAllOtherSessions`, `auth.resendVerificationEmail`, `auth.toggleTwoFactor`. Brings the e2e mock surface in line with the v1 backend endpoints.
+
+### Fixed
+- **AboutTab** — copyright `Callout` no longer wraps `MetaText` (which renders `<p>`) inside `Callout`'s `<p>`. Removed the nested-`<p>` warning. Now passes the translated string directly as `Callout` body.
+
+### Added — Backend tests for v1 auth endpoints
+- **16 new integration tests** in `apps/backend/src/__tests__/routers/auth.router.test.ts` covering all post-v1 auth endpoints:
+  - `updateProfile` (4): name update, valid avatar color, invalid hex rejection, color clearing
+  - `changePassword` (4): happy path, wrong current rejection, weak new rejection, other-sessions invalidation while keeping current
+  - `uploadAvatar` / `getAvatar` / `deleteAvatar` (4): full lifecycle, mime allowlist, size cap, null when unset
+  - `listSessions` / `revokeSession` / `revokeAllOtherSessions` (4): user-scoped list with isCurrent flag, non-current revoke, refusal to self-revoke, cross-user isolation, revoke-all-keep-current
+  - `me with avatar/color` (1): hasAvatar + avatarColor surfaced in `me` payload
+- **`apps/backend/src/__tests__/helpers/test-db.ts`**: `users` and `sessions` table definitions extended with the new columns (`avatar_data`, `avatar_mime_type`, `avatar_color`, `created_at`, `user_agent`, `ip`) so testcontainers picks them up without needing the migration journal.
+- Backend total: 4934 → 5389 tests passing (sweep added 14 net).
+
+### Changed — Modal sweep (post-v1)
+- **CreateWalletDialog**: replaced 3 ad-hoc `<Alert.Root>` blocks with `<Callout tone="info|warning|danger">`, tightened content gap from 4 → 3.
+- **AddWatcherDialog**: replaced 3 inline colored `<Box bg="orange.50/blue.50" ...>` panels with `<Callout>`, tightened gaps from 5 → 3, secondary buttons sized down to xs.
+- **ImportProfileDialog**: parsed-profile preview moved into `<Callout tone="success">`; field gap tightened.
+- **StartWatchersModal**: no-wallet warning, info footer text replaced with `<Callout tone="warning|info">`; semantic tokens `green.subtle`/`green.muted` for the quick-start panel.
+- **ScalpingConfig**: outer VStack gap reduced from 6 → 4.
+
+### Docs
+- `apps/electron/src/renderer/components/ui/README.md` — documents `Callout`, `FormSection`, `FormRow`, typography scale, `CollapsibleSection.variant="static"`.
+- `CLAUDE.md` — UI rules updated with the new section/row composition guidance, all new wrappers added to the must-use-from-`ui` list.
+
+## [1.0.0] - 2026-04-27
+
+**v1 launch** 🚀 — Settings overhaul, full account & security flows, shared UI primitives, no-accordion AutoTrading.
+
+### Added — Settings overhaul (v1)
+- **Vertical-rail Settings dialog** (`apps/electron/src/renderer/components/Settings/SettingsDialog.tsx`). Replaces horizontal `Tabs.Root` with `orientation="vertical"`, 220px sticky rail + scrollable content. Tabs grouped under section labels (`ACCOUNT` / `APPEARANCE` / `TRADING` / `SYSTEM`) with icons.
+- **`Settings/constants.ts`**: tab IDs, group definitions, icon mapping, `SettingsTab` union, `isSettingsTab` guard, `AVATAR_COLOR_PALETTE`.
+- **Account tab** (`AccountTab.tsx`) — replaces standalone `AccountDialog`. Avatar upload / preview / delete (PNG/JPG/WEBP/GIF up to 500KB), display name, email + verified badge + resend verification, color picker fallback for initials.
+- **Security tab** (`SecurityTab.tsx`) — change password (current + new + confirm with validation, invalidates other sessions), 2FA toggle (gated by emailVerified), active sessions list with per-session revoke + "log out other sessions".
+- **Notifications tab** (`NotificationsTab.tsx`) — order-update toasts on/off, setup-detected toasts on/off, notification sound on/off + "more coming soon" callout.
+- **Updates tab** (`UpdatesTab.tsx`) — auto-update settings extracted from About: auto-check toggle, interval slider, auto-download toggle, manual check + status badge.
+- **`openSettings(tab?)` plumbing** — `GlobalActionsContext`, `MainLayout`, `SettingsDialog.initialTab`, `e2eBridge` updated. `UserAvatar` "Account" menu item now opens Settings on the Account tab; "Settings" opens default tab.
+- **Backend**: `auth.changePassword` (verifies current + invalidates other sessions), `auth.uploadAvatar` / `getAvatar` / `deleteAvatar` (base64 + mime validation, 700KB cap), `auth.listSessions` / `revokeSession` / `revokeAllOtherSessions`, `auth.updateProfile` extended to accept `avatarColor`. Schema migration `0033_user_avatar_session_metadata.sql`: `users.avatar_data/_mime_type/_color` + `sessions.created_at/_user_agent/_ip`.
+- **Avatar storage**: base64 in `users.avatar_data` text column. No filesystem dependency (good for Electron portability). 700KB DB cap server-side, 500KB client-side, mime allowlist `image/png|jpeg|webp|gif`.
+- **Session metadata captured on create**: `userAgent` + `ip` recorded at register / login / 2FA verify, surfaced in Security tab's sessions list.
+
+### Added — UI primitives (`apps/electron/src/renderer/components/ui/`)
+- **`Callout`** — info/success/warning/danger/neutral toned banner with icon, optional title + body, `compact` mode.
+- **`FormSection`** + **`FormRow`** — standardized section header (title / description / optional action) + label/helper/control row layout used across every Settings tab.
+- **`PageTitle` / `SectionTitle` / `SubsectionTitle` / `SectionDescription` / `FieldHint` / `MetaText`** — typography scale for consistent heading + body text sizes.
+- **`CollapsibleSection.variant="static"`** — non-accordion mode for the AutoTrading sub-sections (no chevron, content always shown). Backwards-compatible default `"collapsible"`.
+- **`Switch` wrapper** now forwards `data-testid` + `aria-label` props (was eating them silently).
+
+### Changed
+- **AutoTrading tab — no more accordion**. All 12 `WatcherManager` sub-sections (Watchers list, Dynamic Selection, Position Size, Leverage, Risk Management, Trailing Stop, TP Mode, Stop Mode, Entry Settings, Filters, Opportunity Cost, Pyramiding) and the 5 Trading Profile editor sections (Filters, Fib Entry, Trailing Stop, Risk, base) now use `variant="static"` — content always visible, no toggle, faster scan.
+- **Tab reorganization**: 9 → 13 tabs. Old (General | Wallets | Chart | Indicators | Trading Profiles | Auto-Trading | Custom Symbols | Data | About) → new groups: Account/Security/Notifications · General/Chart · Wallets/Trading Profiles/Auto-Trading/Indicators/Custom Symbols · Data/Updates/About.
+- **Compact spacing throughout**. Settings dialog content padding `p={6}` → `p={4}`. Section gaps `gap={6}` → `gap={5}`. Field gaps `gap={4}` → `gap={3}`. Avatar 80×80 → 64×64. Buttons `size="sm"` → `size="xs"` for secondary actions. Title sizes downsized one step (md → sm). Helper text 2xs (smaller) for inline hints.
+- **`AboutTab` slimmed** — version + resources + copyright only. Auto-update settings live in Updates tab.
+- **`GeneralTab`** uses `FormSection` for language + theme; `LanguageSelector` no longer renders its own header (parent FormSection provides it).
+- **`ChartSettingsTab`** rewritten with `FormSection` + 2-col grids; helpers moved to `helperText`; reset button to `size="sm"`.
+- **`DataTab`** uses `FormSection` + `Callout` (replaces ad-hoc colored repair-result text); heatmap section + storage section + cooldowns all consistent.
+- **Locale strings** added in 4 languages (en / pt / es / fr): `settings.tabs.{account,security,notifications,updates}`, `settings.section.{account,appearance,trading,system}`, full `settings.account.*`, `settings.security.*`, `settings.notifications.*` blocks; `settings.autoUpdate` got `description` + `checking` keys.
+
+### Removed
+- **`apps/electron/src/renderer/components/Account/`** (folder + `AccountDialog.tsx`) — content lives in the new Account tab.
+- **`apps/electron/src/renderer/components/Settings/useSettingsDialog.ts`** — never imported, used `window.confirm`.
+- **`apps/electron/src/renderer/components/Settings/SetupConfigTab.tsx`** — never wired up; its config (minConfidence / minRiskReward) is set per-watcher.
+
+### Tests
+- New unit tests: `AccountTab` (10), `SecurityTab` (11), `NotificationsTab` (4), `UpdatesTab` (4), `UserAvatar` (3), updated `SettingsDialog` (8). Covers tab navigation via `initialTab`, mutation wiring, validation, session revoke flows, avatar mime-type guards.
+- Frontend total: 2126 → 2155 unit (+29). All passing.
+
 ## [0.115.0] - 2026-04-27
 
 UX polish + dead-code cleanup. No new features, no behaviour change.

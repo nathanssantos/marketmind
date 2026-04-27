@@ -1,0 +1,20 @@
+name: "MarketMind CodeQL Config"
+
+# Use the same query suites as the workflow default.
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+# Suppress js/clear-text-logging in the security audit logger.
+#
+# This file exists specifically to log security events (LOGIN_FAILURE,
+# PASSWORD_RESET_REQUEST, etc.) for forensic correlation. CodeQL's taint
+# tracking treats enum values whose *names* contain "PASSWORD_RESET" or
+# similar as sensitive data, but these are constant identifiers — not
+# user-supplied data. Email addresses passed via metadata are masked at
+# the log boundary by maskEmail() (see audit-logger.ts).
+query-filters:
+  - exclude:
+      id: js/clear-text-logging
+      paths:
+        - apps/backend/src/services/security/audit-logger.ts

@@ -157,6 +157,9 @@
     "title": "Settings",
     "resetToDefaults": "Reset to Defaults",
     "tabs": {
+      "account": "Account",
+      "security": "Security",
+      "notifications": "Notifications",
       "general": "General",
       "chart": "Chart",
       "autoTrading": "Auto-Trading",
@@ -166,9 +169,109 @@
       "setupDetection": "Setup Detection",
       "tradingSimulator": "Trading Simulator",
       "data": "Data",
+      "updates": "Updates",
       "about": "About",
       "indicators": "Indicators",
       "customSymbols": "Custom Symbols"
+    },
+    "section": {
+      "account": "Account",
+      "appearance": "Appearance",
+      "trading": "Trading",
+      "system": "System"
+    },
+    "account": {
+      "saved": "Saved",
+      "memberSince": "Member since",
+      "profile": {
+        "title": "Profile",
+        "description": "Public information shown across the app.",
+        "name": "Display name",
+        "namePlaceholder": "Your name"
+      },
+      "avatar": {
+        "upload": "Upload photo",
+        "helper": "PNG, JPG, WEBP or GIF up to {{maxKb}}KB.",
+        "uploadSuccess": "Avatar updated",
+        "deleteSuccess": "Avatar removed",
+        "colorLabel": "Or pick a color for your initials"
+      },
+      "email": {
+        "title": "Email",
+        "description": "Used for sign-in, security alerts and verification codes.",
+        "label": "Email address",
+        "verified": "Verified",
+        "notVerified": "Not verified",
+        "resend": "Resend verification email",
+        "verificationSent": "Verification email sent"
+      },
+      "errors": {
+        "saveFailed": "Failed to save profile",
+        "uploadFailed": "Failed to upload avatar",
+        "deleteFailed": "Failed to remove avatar",
+        "resendFailed": "Failed to send verification email",
+        "invalidFileType": "Unsupported file type. Use PNG, JPG, WEBP or GIF.",
+        "fileTooLarge": "Image is too large. Maximum {{maxKb}}KB."
+      }
+    },
+    "security": {
+      "password": {
+        "title": "Password",
+        "description": "Change your account password. Other devices will be signed out.",
+        "current": "Current password",
+        "new": "New password",
+        "confirm": "Confirm new password",
+        "minLength": "Minimum {{count}} characters",
+        "tooShort": "Password must be at least {{count}} characters",
+        "mismatch": "Passwords do not match",
+        "submit": "Change password",
+        "changeSuccess": "Password changed",
+        "changeFailed": "Failed to change password"
+      },
+      "twoFactor": {
+        "title": "Two-factor authentication",
+        "description": "Receive a verification code by email each time you sign in.",
+        "activeLabel": "Two-factor authentication is enabled",
+        "inactiveLabel": "Two-factor authentication is disabled",
+        "requiresVerifiedEmail": "Verify your email first to enable two-factor authentication.",
+        "enabled": "Two-factor authentication enabled",
+        "disabled": "Two-factor authentication disabled",
+        "toggleFailed": "Failed to update two-factor authentication"
+      },
+      "sessions": {
+        "title": "Active sessions",
+        "description": "Devices currently signed in to your account.",
+        "current": "Current",
+        "revoke": "Revoke",
+        "revokeAll": "Sign out other sessions",
+        "revokeSuccess": "Session revoked",
+        "revokeAllSuccess": "Other sessions signed out",
+        "revokeFailed": "Failed to revoke session",
+        "empty": "No active sessions.",
+        "unknownAgent": "Unknown device",
+        "unknownIp": "Unknown location",
+        "createdAt": "Started {{date}}"
+      }
+    },
+    "notifications": {
+      "toasts": {
+        "title": "In-app notifications",
+        "description": "Control which on-screen alerts appear.",
+        "orderUpdates": "Order updates",
+        "orderUpdatesHelper": "Toasts when orders are filled, cancelled or modified.",
+        "setupDetected": "Detected setups",
+        "setupDetectedHelper": "Toasts when watchers detect a new trade setup."
+      },
+      "sound": {
+        "title": "Sound",
+        "description": "Play sounds for important events.",
+        "enable": "Play notification sounds",
+        "enableHelper": "Plays a brief sound for high-priority events."
+      },
+      "comingSoon": {
+        "title": "More notification options coming soon",
+        "description": "Email and desktop push notifications are on the roadmap."
+      }
     },
     "language": {
       "title": "Language",
@@ -200,7 +303,9 @@
       "clearSuccess": "All data cleared."
     },
     "autoUpdate": {
-      "title": "Auto-Update Settings",
+      "title": "Application updates",
+      "description": "Keep MarketMind up-to-date with the latest features and fixes.",
+      "checking": "Checking…",
       "checkAutomatically": "Check for updates automatically",
       "checkAutomaticallyDescription": "Automatically check for new versions in the background",
       "checkInterval": "Check interval: {{hours}} hours",

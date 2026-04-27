@@ -1,5 +1,5 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { IconButton } from '@renderer/components/ui';
+import { Callout, IconButton } from '@renderer/components/ui';
 import { useAutoTradingLogs, type FrontendLogEntry } from '@renderer/hooks/useAutoTradingLogs';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
@@ -100,11 +100,9 @@ const LogsTabComponent = () => {
   if (!activeWalletId) {
     return (
       <Stack gap={3} p={4}>
-        <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
-          <Text fontSize="sm" color="orange.600" _dark={{ color: 'orange.300' }}>
-            {t('trading.portfolio.noWallet')}
-          </Text>
-        </Box>
+        <Callout tone="warning" compact>
+          {t('trading.portfolio.noWallet')}
+        </Callout>
       </Stack>
     );
   }

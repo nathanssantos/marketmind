@@ -1,24 +1,31 @@
 import { verify } from '@node-rs/argon2';
 import { TRPCError } from '@trpc/server';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import type { FastifyReply } from 'fastify';
-import { users } from '../db/schema';
+import { sessions, users } from '../db/schema';
 import {
+  AVATAR_LIMITS,
+  clearUserAvatar,
   createEmailVerificationToken,
   createPasswordResetToken,
   createSession,
   createTwoFactorCode,
   createUser,
   consumePasswordResetToken,
+  getUserAvatar,
   invalidateAllUserSessions,
+  invalidateOtherUserSessions,
   invalidateSession,
+  listUserSessions,
+  setUserAvatar,
   toggleTwoFactor,
   updateUserPassword,
   validatePasswordResetToken,
   validateSession,
   validateTwoFactorCode,
   verifyEmailToken,
+  verifyPassword,
 } from '../services/auth';
 import { sendPasswordResetEmail, sendTwoFactorCode, sendVerificationEmail } from '../services/email';
 import { seedDefaultTradingProfile, seedDefaultUserIndicators } from '../services/user-indicators';
@@ -101,7 +108,10 @@ export const authRouter = router({
       const userId = await createUser(input.email, input.password);
       await seedDefaultUserIndicators(userId);
       await seedDefaultTradingProfile(userId);
-      const { sessionId, expiresAt } = await createSession(userId);
+      const { sessionId, expiresAt } = await createSession(userId, true, {
+        ip: metadata.ip,
+        userAgent: metadata.userAgent,
+      });
 
       const verificationToken = await createEmailVerificationToken(userId);
       await sendVerificationEmail(input.email, verificationToken);
@@ -191,7 +201,10 @@ export const authRouter = router({
         };
       }
 
-      const { sessionId, expiresAt } = await createSession(user.id, input.rememberMe);
+      const { sessionId, expiresAt } = await createSession(user.id, input.rememberMe, {
+        ip: metadata.ip,
+        userAgent: metadata.userAgent,
+      });
 
       logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, user.id, {
         ...metadata,
@@ -237,7 +250,10 @@ export const authRouter = router({
       }
 
       recordTwoFactorAttempt(input.userId, true);
-      const { sessionId, expiresAt } = await createSession(input.userId, input.rememberMe);
+      const { sessionId, expiresAt } = await createSession(input.userId, input.rememberMe, {
+        ip: metadata.ip,
+        userAgent: metadata.userAgent,
+      });
 
       logSecurityEvent(SecurityEvent.TWO_FACTOR_SUCCESS, input.userId, metadata);
       logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, input.userId, metadata);
@@ -304,21 +320,134 @@ export const authRouter = router({
       name: result.user.name,
       emailVerified: result.user.emailVerified,
       twoFactorEnabled: result.user.twoFactorEnabled,
+      avatarColor: result.user.avatarColor,
+      hasAvatar: !!result.user.avatarData,
       createdAt: result.user.createdAt.toISOString(),
     };
   }),
 
   updateProfile: protectedProcedure
-    .input(z.object({ name: z.string().max(255).optional() }))
+    .input(z.object({
+      name: z.string().max(255).optional(),
+      avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+    }))
     .mutation(async ({ input, ctx }) => {
       const user = ctx.user;
+      const updates: { name?: string | null; avatarColor?: string | null; updatedAt: Date } = {
+        updatedAt: new Date(),
+      };
+      if (input.name !== undefined) updates.name = input.name || null;
+      if (input.avatarColor !== undefined) updates.avatarColor = input.avatarColor;
+
       await ctx.db
         .update(users)
-        .set({ name: input.name ?? null, updatedAt: new Date() })
+        .set(updates)
         .where(eq(users.id, user.id));
 
       return { success: true };
     }),
+
+  changePassword: protectedProcedure
+    .input(z.object({
+      currentPassword: z.string(),
+      newPassword: z.string().min(8),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const req = ctx.req;
+      const metadata = extractRequestMetadata(req);
+      const user = ctx.user;
+
+      const valid = await verifyPassword(user.id, input.currentPassword);
+      if (!valid) {
+        logSecurityEvent(SecurityEvent.PASSWORD_RESET_FAILURE, user.id, {
+          ...metadata,
+          reason: 'invalid_current_password',
+        });
+        throw new TRPCError({
+          code: 'UNAUTHORIZED',
+          message: 'Current password is incorrect',
+        });
+      }
+
+      await updateUserPassword(user.id, input.newPassword);
+      if (ctx.sessionId) {
+        await invalidateOtherUserSessions(user.id, ctx.sessionId);
+      }
+
+      logSecurityEvent(SecurityEvent.PASSWORD_RESET_SUCCESS, user.id, {
+        ...metadata,
+        reason: 'self_service_change',
+      });
+
+      return { success: true };
+    }),
+
+  uploadAvatar: protectedProcedure
+    .input(z.object({
+      data: z.string().min(1),
+      mimeType: z.string().min(1),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      if (!AVATAR_LIMITS.ALLOWED_MIME_TYPES.includes(input.mimeType as typeof AVATAR_LIMITS.ALLOWED_MIME_TYPES[number])) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: `Unsupported image type. Allowed: ${AVATAR_LIMITS.ALLOWED_MIME_TYPES.join(', ')}`,
+        });
+      }
+      if (input.data.length > AVATAR_LIMITS.MAX_DATA_BYTES) {
+        throw new TRPCError({
+          code: 'PAYLOAD_TOO_LARGE',
+          message: `Avatar exceeds maximum size of ${Math.round(AVATAR_LIMITS.MAX_DATA_BYTES / 1024)}KB`,
+        });
+      }
+
+      await setUserAvatar(ctx.user.id, input.data, input.mimeType);
+      return { success: true };
+    }),
+
+  deleteAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+    await clearUserAvatar(ctx.user.id);
+    return { success: true };
+  }),
+
+  getAvatar: protectedProcedure.query(async ({ ctx }) => {
+    return await getUserAvatar(ctx.user.id);
+  }),
+
+  listSessions: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await listUserSessions(ctx.user.id);
+    return rows.map((s) => ({
+      id: s.id,
+      createdAt: s.createdAt.toISOString(),
+      expiresAt: s.expiresAt.toISOString(),
+      userAgent: s.userAgent,
+      ip: s.ip,
+      isCurrent: s.id === ctx.sessionId,
+    }));
+  }),
+
+  revokeSession: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      if (input.sessionId === ctx.sessionId) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Use logout to revoke the current session',
+        });
+      }
+      await ctx.db
+        .delete(sessions)
+        .where(and(eq(sessions.id, input.sessionId), eq(sessions.userId, ctx.user.id)));
+      return { success: true };
+    }),
+
+  revokeAllOtherSessions: protectedProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.sessionId) {
+      throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
+    await invalidateOtherUserSessions(ctx.user.id, ctx.sessionId);
+    return { success: true };
+  }),
 
   requestPasswordReset: publicProcedure
     .input(z.object({ email: z.string().email() }))

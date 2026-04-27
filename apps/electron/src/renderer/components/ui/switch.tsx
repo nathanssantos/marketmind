@@ -7,10 +7,12 @@ export interface SwitchProps {
   children?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
+  'aria-label'?: string;
+  'data-testid'?: string;
 }
 
 export const Switch = (props: SwitchProps): ReactElement => {
-  const { checked, onCheckedChange, children, size = 'md', disabled = false } = props;
+  const { checked, onCheckedChange, children, size = 'md', disabled = false, ...rest } = props;
 
   return (
     <ChakraSwitch.Root
@@ -21,6 +23,7 @@ export const Switch = (props: SwitchProps): ReactElement => {
       }}
       size={size}
       disabled={disabled}
+      {...rest}
     >
       <ChakraSwitch.HiddenInput />
       {children && <ChakraSwitch.Label>{children}</ChakraSwitch.Label>}

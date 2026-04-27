@@ -404,6 +404,7 @@ export const TrailingStopSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
       {content}
     </CollapsibleSection>

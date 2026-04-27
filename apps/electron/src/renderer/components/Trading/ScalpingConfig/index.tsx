@@ -107,7 +107,7 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
       submitLabel={t('common.save', 'Save')}
       isLoading={upsertConfig.isPending}
     >
-      <VStack gap={6} align="stretch" maxH="70vh" overflowY="auto">
+      <VStack gap={4} align="stretch" maxH="70vh" overflowY="auto">
         <SymbolSection symbols={symbols} onSymbolsChange={setSymbols} />
 
         <DirectionModeSelector value={directionMode} onChange={setDirectionMode} />

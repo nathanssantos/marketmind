@@ -1,8 +1,9 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { MarketType } from '@marketmind/types';
+import type { SettingsTab } from '../components/Settings/constants';
 
 interface GlobalActionsContextType {
-  openSettings: () => void;
+  openSettings: (tab?: SettingsTab) => void;
   openSymbolSelector: () => void;
   navigateToSymbol: (symbol: string, marketType?: MarketType) => void;
 }

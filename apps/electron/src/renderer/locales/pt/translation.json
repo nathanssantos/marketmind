@@ -161,6 +161,9 @@
     "title": "Configurações",
     "resetToDefaults": "Restaurar Padrões",
     "tabs": {
+      "account": "Conta",
+      "security": "Segurança",
+      "notifications": "Notificações",
       "general": "Geral",
       "chart": "Gráfico",
       "autoTrading": "Auto-Trading",
@@ -172,9 +175,109 @@
       "setupDetection": "Detecção de Setups",
       "tradingSimulator": "Simulador de Trading",
       "data": "Dados",
+      "updates": "Atualizações",
       "about": "Sobre",
       "indicators": "Indicadores",
       "customSymbols": "Símbolos Customizados"
+    },
+    "section": {
+      "account": "Conta",
+      "appearance": "Aparência",
+      "trading": "Trading",
+      "system": "Sistema"
+    },
+    "account": {
+      "saved": "Salvo",
+      "memberSince": "Membro desde",
+      "profile": {
+        "title": "Perfil",
+        "description": "Informações públicas exibidas no aplicativo.",
+        "name": "Nome de exibição",
+        "namePlaceholder": "Seu nome"
+      },
+      "avatar": {
+        "upload": "Enviar foto",
+        "helper": "PNG, JPG, WEBP ou GIF de até {{maxKb}}KB.",
+        "uploadSuccess": "Avatar atualizado",
+        "deleteSuccess": "Avatar removido",
+        "colorLabel": "Ou escolha uma cor para suas iniciais"
+      },
+      "email": {
+        "title": "Email",
+        "description": "Usado para login, alertas de segurança e códigos de verificação.",
+        "label": "Endereço de email",
+        "verified": "Verificado",
+        "notVerified": "Não verificado",
+        "resend": "Reenviar email de verificação",
+        "verificationSent": "Email de verificação enviado"
+      },
+      "errors": {
+        "saveFailed": "Falha ao salvar perfil",
+        "uploadFailed": "Falha ao enviar avatar",
+        "deleteFailed": "Falha ao remover avatar",
+        "resendFailed": "Falha ao enviar email de verificação",
+        "invalidFileType": "Tipo de arquivo não suportado. Use PNG, JPG, WEBP ou GIF.",
+        "fileTooLarge": "Imagem muito grande. Máximo {{maxKb}}KB."
+      }
+    },
+    "security": {
+      "password": {
+        "title": "Senha",
+        "description": "Altere a senha da sua conta. Outros dispositivos serão desconectados.",
+        "current": "Senha atual",
+        "new": "Nova senha",
+        "confirm": "Confirme a nova senha",
+        "minLength": "Mínimo de {{count}} caracteres",
+        "tooShort": "A senha deve ter pelo menos {{count}} caracteres",
+        "mismatch": "As senhas não coincidem",
+        "submit": "Alterar senha",
+        "changeSuccess": "Senha alterada",
+        "changeFailed": "Falha ao alterar senha"
+      },
+      "twoFactor": {
+        "title": "Autenticação em duas etapas",
+        "description": "Receba um código de verificação por email a cada login.",
+        "activeLabel": "Autenticação em duas etapas habilitada",
+        "inactiveLabel": "Autenticação em duas etapas desabilitada",
+        "requiresVerifiedEmail": "Verifique seu email primeiro para habilitar a autenticação em duas etapas.",
+        "enabled": "Autenticação em duas etapas habilitada",
+        "disabled": "Autenticação em duas etapas desabilitada",
+        "toggleFailed": "Falha ao atualizar autenticação em duas etapas"
+      },
+      "sessions": {
+        "title": "Sessões ativas",
+        "description": "Dispositivos atualmente conectados à sua conta.",
+        "current": "Atual",
+        "revoke": "Revogar",
+        "revokeAll": "Sair de outras sessões",
+        "revokeSuccess": "Sessão revogada",
+        "revokeAllSuccess": "Outras sessões desconectadas",
+        "revokeFailed": "Falha ao revogar sessão",
+        "empty": "Nenhuma sessão ativa.",
+        "unknownAgent": "Dispositivo desconhecido",
+        "unknownIp": "Localização desconhecida",
+        "createdAt": "Iniciada em {{date}}"
+      }
+    },
+    "notifications": {
+      "toasts": {
+        "title": "Notificações no app",
+        "description": "Controle quais alertas aparecem na tela.",
+        "orderUpdates": "Atualizações de ordens",
+        "orderUpdatesHelper": "Avisos quando ordens são executadas, canceladas ou modificadas.",
+        "setupDetected": "Setups detectados",
+        "setupDetectedHelper": "Avisos quando watchers detectam um novo setup."
+      },
+      "sound": {
+        "title": "Som",
+        "description": "Reproduzir sons para eventos importantes.",
+        "enable": "Reproduzir sons de notificação",
+        "enableHelper": "Reproduz um som breve para eventos de alta prioridade."
+      },
+      "comingSoon": {
+        "title": "Mais opções de notificação em breve",
+        "description": "Notificações por email e desktop estão no roadmap."
+      }
     },
     "contextConfig": {
       "title": "Configuração de Contexto de Mercado",
@@ -226,7 +329,9 @@
       "clearSuccess": "Todas as conversas foram limpas."
     },
     "autoUpdate": {
-      "title": "Configurações de Atualização Automática",
+      "title": "Atualizações do aplicativo",
+      "description": "Mantenha o MarketMind atualizado com os recursos e correções mais recentes.",
+      "checking": "Verificando…",
       "checkAutomatically": "Verificar atualizações automaticamente",
       "checkAutomaticallyDescription": "Verificar automaticamente novas versões em segundo plano",
       "checkInterval": "Intervalo de verificação: {{hours}} horas",

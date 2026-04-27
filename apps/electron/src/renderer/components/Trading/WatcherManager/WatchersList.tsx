@@ -1,6 +1,6 @@
 import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
-import { Button, CollapsibleSection, DirectionModeSelector } from '@renderer/components/ui';
+import { Badge, Button, CollapsibleSection, DirectionModeSelector } from '@renderer/components/ui';
 import type { DirectionMode } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuPause, LuPlus } from 'react-icons/lu';
@@ -51,10 +51,11 @@ export const WatchersList = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
       badge={activeWatchers.length > 0 ? (
-        <Box px={2} py={0.5} bg="green.100" color="green.800" borderRadius="full" fontSize="xs" fontWeight="medium" _dark={{ bg: 'green.900', color: 'green.200' }}>
+        <Badge colorPalette="green" size="sm">
           {activeWatchers.length}
-        </Box>
+        </Badge>
       ) : undefined}
     >
       <Stack gap={4}>

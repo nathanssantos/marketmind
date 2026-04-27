@@ -1,159 +1,47 @@
-import { Badge, Button, Link, Logo, Separator, Slider, Switch } from '@renderer/components/ui';
-import { DEFAULT_AUTO_UPDATE_SETTINGS } from '@/renderer/constants/defaults';
-import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
-import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { useUIPref } from '@/renderer/store/preferencesStore';
+import { Callout, FormSection, Link, Logo, PageTitle } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { APP_VERSION } from '@shared/constants';
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuExternalLink, LuRefreshCw } from 'react-icons/lu';
+import { LuExternalLink } from 'react-icons/lu';
 
 export const AboutTab = () => {
   const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
 
-  const [autoCheckUpdates, setAutoCheckUpdates] = useUIPref<boolean>('autoCheckUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates);
-  const [autoDownloadUpdates, setAutoDownloadUpdates] = useUIPref<boolean>('autoDownloadUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoDownloadUpdates);
-  const [updateCheckInterval, setUpdateCheckInterval] = useUIPref<number>('updateCheckInterval', DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
-
-  const { status, updateInfo, checkForUpdates, downloadUpdate, startAutoCheck, stopAutoCheck } = useAutoUpdate();
-
-  const debouncedSetUpdateCheckInterval = useDebounceCallback(setUpdateCheckInterval, 300);
-
-  useEffect(() => {
-    if (status === 'available' && autoDownloadUpdates) void downloadUpdate();
-  }, [status, autoDownloadUpdates, downloadUpdate]);
-
-  const handleAutoCheckChange = (checked: boolean) => {
-    setAutoCheckUpdates(checked);
-    if (checked) {
-      void startAutoCheck(updateCheckInterval);
-    } else {
-      void stopAutoCheck();
-    }
-  };
-
-  const handleAutoDownloadChange = (checked: boolean) => {
-    setAutoDownloadUpdates(checked);
-  };
-
-  const handleIntervalChange = (value: number[]) => {
-    const interval = value[0] ?? DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval;
-    debouncedSetUpdateCheckInterval(interval);
-    if (autoCheckUpdates) {
-      void stopAutoCheck();
-      void startAutoCheck(interval);
-    }
-  };
-
-  const handleCheckNow = () => {
-    void checkForUpdates();
-  };
-
-  const handleResetAutoUpdate = () => {
-    setAutoCheckUpdates(DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates);
-    setAutoDownloadUpdates(DEFAULT_AUTO_UPDATE_SETTINGS.autoDownloadUpdates);
-    setUpdateCheckInterval(DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
-    if (DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates) {
-      void startAutoCheck(DEFAULT_AUTO_UPDATE_SETTINGS.updateCheckInterval);
-    } else {
-      void stopAutoCheck();
-    }
-  };
-
   return (
-    <Stack gap={6}>
+    <Stack gap={5}>
       <Box>
-        <Flex align="center" gap={2} mb={2}>
-          <Logo size={32} />
-          <Text fontSize="2xl" fontWeight="bold">
-            {t('app.title')}
-          </Text>
+        <Flex align="center" gap={2} mb={1}>
+          <Logo size={28} />
+          <PageTitle>{t('app.title')}</PageTitle>
         </Flex>
-        <HStack gap={2} align="center" mb={4}>
-          <Text fontSize="md" color="fg.muted">
+        <HStack gap={2} align="center" mb={2}>
+          <Text fontSize="xs" color="fg.muted">
             {t('about.version', { version: APP_VERSION })}
           </Text>
-          {status === 'available' && (
-            <Badge colorPalette="blue" size="sm">{t('about.update.available', { version: updateInfo?.version })}</Badge>
-          )}
-          {status === 'not-available' && (
-            <Badge colorPalette="green" size="sm">{t('about.update.upToDate')}</Badge>
-          )}
-          {status === 'downloaded' && (
-            <Badge colorPalette="orange" size="sm">{t('about.update.readyToInstall')}</Badge>
-          )}
         </HStack>
-        <Text fontSize="sm" color="fg.muted">{t('about.description')}</Text>
-      </Box>
-
-      <Separator />
-
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={3}>{t('settings.autoUpdate.title')}</Text>
-        <Stack gap={4}>
-          <Box>
-            <Switch checked={autoCheckUpdates} onCheckedChange={handleAutoCheckChange}>
-              {t('settings.autoUpdate.checkAutomatically')}
-            </Switch>
-            <Text fontSize="sm" color="fg.muted" mt={1}>{t('settings.autoUpdate.checkAutomaticallyDescription')}</Text>
-          </Box>
-
-          {autoCheckUpdates && (
-            <Box>
-              <Text fontSize="sm" mb={2}>{t('settings.autoUpdate.checkInterval', { hours: updateCheckInterval })}</Text>
-              <Slider value={[updateCheckInterval]} onValueChange={handleIntervalChange} min={1} max={168} step={1} />
-            </Box>
-          )}
-
-          <Box>
-            <Switch checked={autoDownloadUpdates} onCheckedChange={handleAutoDownloadChange}>
-              {t('settings.autoUpdate.downloadAutomatically')}
-            </Switch>
-            <Text fontSize="sm" color="fg.muted" mt={1}>{t('settings.autoUpdate.downloadAutomaticallyDescription')}</Text>
-          </Box>
-
-          <HStack gap={2}>
-            <Button flex={1} variant="outline" onClick={handleCheckNow} disabled={status === 'checking'} loading={status === 'checking'}>
-              <LuRefreshCw />
-              {t('settings.autoUpdate.checkNow')}
-            </Button>
-            <Button flex={1} variant="outline" onClick={handleResetAutoUpdate}>
-              <LuRefreshCw />
-              {t('settings.resetToDefaults')}
-            </Button>
-          </HStack>
-        </Stack>
-      </Box>
-
-      <Separator />
-
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={3}>
-          {t('about.resources')}
-        </Text>
-        <Stack gap={2} fontSize="sm">
-          <Link href="https://github.com/nathanssantos/marketmind" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
-            {t('about.resourcesList.github')}
-            <LuExternalLink />
-          </Link>
-          <Link href="https://github.com/nathanssantos/marketmind/blob/main/.github/copilot-instructions.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
-            {t('about.resourcesList.documentation')}
-            <LuExternalLink />
-          </Link>
-          <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/CHANGELOG.md" target="_blank" color="blue.500" display="flex" alignItems="center" gap={1}>
-            {t('about.resourcesList.changelog')}
-            <LuExternalLink />
-          </Link>
-        </Stack>
-      </Box>
-
-      <Box bg="bg.muted" p={4} borderRadius="md">
-        <Text fontSize="sm" color="fg.muted">
-          {t('about.copyright', { year: currentYear })}
+        <Text fontSize="xs" color="fg.muted">
+          {t('about.description')}
         </Text>
       </Box>
+
+      <FormSection title={t('about.resources')}>
+        <Stack gap={1.5} fontSize="xs">
+          <Link href="https://github.com/nathanssantos/marketmind" target="_blank" color="blue.500" display="inline-flex" alignItems="center" gap={1}>
+            {t('about.resourcesList.github')} <LuExternalLink />
+          </Link>
+          <Link href="https://github.com/nathanssantos/marketmind/blob/main/.github/copilot-instructions.md" target="_blank" color="blue.500" display="inline-flex" alignItems="center" gap={1}>
+            {t('about.resourcesList.documentation')} <LuExternalLink />
+          </Link>
+          <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/CHANGELOG.md" target="_blank" color="blue.500" display="inline-flex" alignItems="center" gap={1}>
+            {t('about.resourcesList.changelog')} <LuExternalLink />
+          </Link>
+        </Stack>
+      </FormSection>
+
+      <Callout tone="neutral" compact>
+        {t('about.copyright', { year: currentYear })}
+      </Callout>
     </Stack>
   );
 };

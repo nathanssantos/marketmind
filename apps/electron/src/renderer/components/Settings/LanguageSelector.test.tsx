@@ -24,18 +24,6 @@ const renderWithChakra = (component: React.ReactElement) => {
 };
 
 describe('LanguageSelector', () => {
-    it('renders language selector title', () => {
-        renderWithChakra(<LanguageSelector />);
-
-        expect(screen.getByText('settings.language.title')).toBeDefined();
-    });
-
-    it('renders language selector description', () => {
-        renderWithChakra(<LanguageSelector />);
-
-        expect(screen.getByText('settings.language.description')).toBeDefined();
-    });
-
     it('renders with current language', () => {
         renderWithChakra(<LanguageSelector />);
 

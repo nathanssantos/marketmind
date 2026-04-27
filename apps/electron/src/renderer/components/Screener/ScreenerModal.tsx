@@ -1,5 +1,5 @@
 import type { MarketType, SavedScreener, ScreenerFilterCondition, ScreenerSortField } from '@marketmind/types';
-import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw, LuSave } from 'react-icons/lu';
@@ -9,6 +9,7 @@ import { useScreenerStore } from '../../store/screenerStore';
 import {
   BetaBadge,
   Button,
+  Callout,
   CloseButton,
   DialogBackdrop,
   DialogBody,
@@ -209,9 +210,9 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                 />
 
                 {error && (
-                  <Box p={3} bg="red.subtle" borderRadius="md">
-                    <Text color="red.fg" fontSize="sm">{t('screener.error')}</Text>
-                  </Box>
+                  <Callout tone="danger" compact>
+                    {t('screener.error')}
+                  </Callout>
                 )}
 
                 {isLoading ? (

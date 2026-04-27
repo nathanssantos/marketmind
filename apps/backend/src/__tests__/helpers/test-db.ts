@@ -51,6 +51,9 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(255),
   email_verified BOOLEAN DEFAULT false NOT NULL,
   two_factor_enabled BOOLEAN DEFAULT false NOT NULL,
+  avatar_data TEXT,
+  avatar_mime_type VARCHAR(100),
+  avatar_color VARCHAR(7),
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
@@ -58,7 +61,10 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS sessions (
   id VARCHAR(255) PRIMARY KEY,
   user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  expires_at TIMESTAMP NOT NULL
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  user_agent VARCHAR(500),
+  ip VARCHAR(64)
 );
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (

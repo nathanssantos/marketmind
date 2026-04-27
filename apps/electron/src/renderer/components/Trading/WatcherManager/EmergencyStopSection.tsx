@@ -25,29 +25,28 @@ export const EmergencyStopSection = ({
   if (showConfirm) {
     return (
       <Box
-        p={4}
-        bg="red.50"
-        borderRadius="lg"
-        borderWidth="2px"
-        borderColor="red.500"
-        _dark={{ bg: 'red.900/30' }}
+        p={3}
+        bg="red.subtle"
+        borderRadius="md"
+        borderWidth="1px"
+        borderColor="red.muted"
       >
-        <Flex align="center" gap={3} mb={3}>
-          <Box color="red.500">
-            <LuTriangleAlert size={24} />
+        <Flex align="center" gap={2} mb={2}>
+          <Box color="red.fg">
+            <LuTriangleAlert size={18} />
           </Box>
           <Box>
-            <Text fontWeight="bold" color="red.600" _dark={{ color: 'red.300' }}>
+            <Text fontSize="sm" fontWeight="semibold" color="red.fg">
               {t('tradingProfiles.emergencyStop.confirmTitle')}
             </Text>
-            <Text fontSize="sm" color="fg.muted">
+            <Text fontSize="xs" color="fg.muted">
               {t('tradingProfiles.emergencyStop.confirmDescription')}
             </Text>
           </Box>
         </Flex>
         <Flex gap={2} justify="flex-end">
           <Button
-            size="sm"
+            size="xs"
             variant="outline"
             onClick={onHideConfirm}
             disabled={isEmergencyStopping}
@@ -55,7 +54,7 @@ export const EmergencyStopSection = ({
             {t('common.cancel')}
           </Button>
           <Button
-            size="sm"
+            size="xs"
             colorPalette="red"
             onClick={onEmergencyStop}
             loading={isEmergencyStopping}

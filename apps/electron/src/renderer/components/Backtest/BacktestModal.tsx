@@ -1,5 +1,5 @@
 import { Box, Flex, VStack } from '@chakra-ui/react';
-import { Alert, FormDialog, LoadingSpinner } from '@renderer/components/ui';
+import { Callout, FormDialog, LoadingSpinner } from '@renderer/components/ui';
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
@@ -67,13 +67,9 @@ export const BacktestModal = () => {
 
       {run.status === 'failed' && (
         <VStack align="stretch" gap={3} py={4}>
-          <Alert.Root status="error">
-            <Alert.Indicator />
-            <Alert.Content>
-              <Alert.Title>{t('backtest.failed.title')}</Alert.Title>
-              <Alert.Description>{run.error ?? t('backtest.failed.unknown')}</Alert.Description>
-            </Alert.Content>
-          </Alert.Root>
+          <Callout tone="danger" title={t('backtest.failed.title')}>
+            {run.error ?? t('backtest.failed.unknown')}
+          </Callout>
         </VStack>
       )}
     </FormDialog>
