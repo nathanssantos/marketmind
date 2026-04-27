@@ -1,6 +1,7 @@
 import { Button, Dialog, IconButton, Input, Select } from '@renderer/components/ui';
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
+import { MM } from '@renderer/theme/tokens';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -167,25 +168,25 @@ const OrdersDialogComponent = () => {
             </Dialog.CloseTrigger>
           </Dialog.Header>
 
-          <Dialog.Body flex={1} overflowY="auto" display="flex" flexDirection="column" gap={3}>
-            <Box p={3} bg="bg.muted" borderRadius="md">
-              <Flex gap={6} fontSize="xs" flexWrap="wrap">
-                <Flex gap={2}>
+          <Dialog.Body flex={1} overflowY="auto" display="flex" flexDirection="column" gap={MM.spacing.row.gap}>
+            <Box p={MM.spacing.sectionPadding} bg="bg.muted" borderRadius={MM.borderRadius.card}>
+              <Flex gap={4} fontSize={MM.font.body.size} flexWrap="wrap">
+                <Flex gap={MM.spacing.inline.gap}>
                   <Text color="fg.muted">{t('trading.orders.total')}</Text>
                   <Text fontWeight="medium">{totalCount}</Text>
                 </Flex>
-                <Flex gap={2}>
+                <Flex gap={MM.spacing.inline.gap}>
                   <Text color="fg.muted">{t('trading.orders.active')}</Text>
-                  <Text fontWeight="medium" color="green.500">{activeOrders}</Text>
+                  <Text fontWeight="medium" color="green.fg">{activeOrders}</Text>
                 </Flex>
-                <Flex gap={2}>
+                <Flex gap={MM.spacing.inline.gap}>
                   <Text color="fg.muted">{t('trading.orders.pending')}</Text>
-                  <Text fontWeight="medium" color="orange.500">{pendingOrders}</Text>
+                  <Text fontWeight="medium" color="orange.fg">{pendingOrders}</Text>
                 </Flex>
               </Flex>
             </Box>
 
-            <Flex gap={2} align="center" flexWrap="wrap">
+            <Flex gap={MM.spacing.inline.gap} align="center" flexWrap="wrap">
               <Input
                 size="sm"
                 placeholder={t('trading.orders.search')}
@@ -213,7 +214,7 @@ const OrdersDialogComponent = () => {
               <Group attached ml="auto">
                 <IconButton
                   aria-label={t('trading.viewMode.cards')}
-                  size="sm"
+                  size="xs"
                   variant={viewMode === 'cards' ? 'solid' : 'outline'}
                   onClick={() => setViewMode('cards')}
                 >
@@ -221,7 +222,7 @@ const OrdersDialogComponent = () => {
                 </IconButton>
                 <IconButton
                   aria-label={t('trading.viewMode.table')}
-                  size="sm"
+                  size="xs"
                   variant={viewMode === 'table' ? 'solid' : 'outline'}
                   onClick={() => setViewMode('table')}
                 >
@@ -231,12 +232,12 @@ const OrdersDialogComponent = () => {
             </Flex>
 
             {isLoading ? (
-              <Box p={8} textAlign="center">
-                <Text color="fg.muted">{t('common.loading')}</Text>
+              <Box p={6} textAlign="center">
+                <Text color="fg.muted" fontSize={MM.font.body.size}>{t('common.loading')}</Text>
               </Box>
             ) : filteredOrders.length === 0 ? (
-              <Box p={8} textAlign="center">
-                <Text color="fg.muted">{t('trading.orders.noResults')}</Text>
+              <Box p={6} textAlign="center">
+                <Text color="fg.muted" fontSize={MM.font.body.size}>{t('trading.orders.noResults')}</Text>
               </Box>
             ) : activeWallet ? (
               viewMode === 'table' ? (

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Phase 4 (Modals deep review)
+- **OrdersDialog**: stats bar tightened (`gap={6}` → MM.spacing.row.gap, ad-hoc colors `green.500/orange.500` → semantic `green.fg/orange.fg`), filter bar gaps + button sizes adopt MM tokens (`size="sm"` → `xs` for view-mode toggles), empty/loading states tightened to `p={6}` from `p={8}`.
+- **BacktestForm** outer shell: `gap={3}` → `MM.spacing.row.gap`, `py={4}` → `MM.spacing.section.gap`, button group gap → `MM.spacing.inline.gap`, body text size → `MM.font.body.size`.
+- **ScreenerModal** body: `Stack gap={3}` → `MM.spacing.row.gap`; dialog padding `px={4} py={3}` → `MM.spacing.section.gap` / `MM.spacing.dialogPadding`.
+- **AnalyticsModal/EquityCurveChart** "no trades yet" empty state: ad-hoc `<Box p={6} bg="bg.muted">` + Text → `<Callout tone="neutral" compact>`.
+
 ### Changed — Phase 3 (Sidebars deep review)
 Phase 3 of v1 post-release plan. Sidebars came out cleaner than expected from prior v1.0.0 sweeps — no hardcoded shades found in `Trading/TradingSidebar`, `AutoTrading/AutoTradingSidebar`, `OrderFlow/OrderFlowSidebar`, `MarketSidebar/MarketSidebar`, or any tab. Two real touches:
 

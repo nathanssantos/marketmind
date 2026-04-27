@@ -1,4 +1,5 @@
 import { Box, Flex, Spinner, Text, useToken } from '@chakra-ui/react';
+import { Callout } from '@renderer/components/ui';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { memo, useMemo } from 'react';
@@ -107,11 +108,9 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
 
   if (chartData.length <= 1) {
     return (
-      <Box p={6} textAlign="center" bg="bg.muted" borderRadius="md">
-        <Text fontSize="sm" color="fg.muted">
-          {t('trading.wallets.noTradesYet')}
-        </Text>
-      </Box>
+      <Callout tone="neutral" compact>
+        {t('trading.wallets.noTradesYet')}
+      </Callout>
     );
   }
 
