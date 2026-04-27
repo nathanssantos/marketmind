@@ -65,10 +65,15 @@ export const closeBrowser = async (): Promise<void> => {
 export const setTheme = async (theme: 'light' | 'dark'): Promise<void> => {
   const page = await getPage();
   await page.evaluate((t) => {
+    const w = window as Window & { __setColorMode?: (mode: 'light' | 'dark') => void };
+    if (w.__setColorMode) {
+      w.__setColorMode(t);
+      return;
+    }
     const html = document.documentElement;
-    html.classList.remove('chakra-theme-light', 'chakra-theme-dark', 'light', 'dark');
+    html.classList.remove('light', 'dark');
     html.classList.add(t);
     html.dataset.theme = t;
-    localStorage.setItem('chakra-ui-color-mode', t);
   }, theme);
+  await page.waitForTimeout(150);
 };

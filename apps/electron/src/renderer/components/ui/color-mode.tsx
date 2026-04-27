@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../../utils/trpc';
+import { exposeColorModeForE2E } from '../../utils/e2eBridge';
 
 type ColorMode = 'light' | 'dark';
 
@@ -106,6 +107,10 @@ export const ColorModeProvider = ({ children }: ColorModeProviderProps) => {
   const setColorMode = useCallback((mode: ColorMode) => {
     setColorModeAndSync(mode);
   }, [setColorModeAndSync]);
+
+  useEffect(() => {
+    exposeColorModeForE2E(setColorMode);
+  }, [setColorMode]);
 
   const value: ColorModeContextValue = {
     colorMode,
