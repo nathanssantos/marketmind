@@ -58,10 +58,21 @@ const buyButton = (page: import('@playwright/test').Page) =>
 const sellButton = (page: import('@playwright/test').Page) =>
   page.getByRole('button', { name: /^Sell/, exact: false }).first();
 
+const waitForBuyPrice = async (page: import('@playwright/test').Page) => {
+  // The Buy button text starts as "Buy —" while currentPrice is 0, then
+  // flips to "Buy 47570.55" once the chart's kline-close has propagated
+  // through usePricesForSymbols (which has a 250ms throttle — so checking
+  // priceStore directly is not enough; the React closure inside the
+  // memoized BuySellButtons must also refresh). The button's accessible
+  // name reflects the actual `buyPrice` captured by the click handler.
+  await expect(buyButton(page)).not.toHaveAccessibleName(/—/, { timeout: 10_000 });
+};
+
 const openBoleta = async (page: import('@playwright/test').Page) => {
   const portfolioTab = page.getByRole('tab', { name: /Portfolio/i }).first();
   if (await portfolioTab.isVisible().catch(() => false)) await portfolioTab.click();
   await expect(buyButton(page)).toBeVisible();
+  await waitForBuyPrice(page);
 };
 
 test.describe('sidebar quick-trade boleta — comprehensive coverage of all 7 features', () => {

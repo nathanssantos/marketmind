@@ -321,9 +321,23 @@ test.describe('Backtest modal — full flow coverage', () => {
     // Open the Stops collapsible
     await dialog.getByText('Stop loss / take profit', { exact: true }).click();
 
-    // The "Use strategy SL/TP" row contains exactly one switch
-    const algoRow = dialog.getByText('Use strategy SL/TP', { exact: true }).locator('xpath=..');
-    await algoRow.locator('input[type="checkbox"]').click({ force: true });
+    // Chakra v3 Switch (Ark UI) wraps a visually-hidden checkbox inside a
+    // <label data-scope="switch">. Two gotchas:
+    //   1. Chakra Tabs renders every tab panel in DOM and marks inactive
+    //      ones with data-state="closed" (NOT the `hidden` attribute), so a
+    //      plain `label[data-scope="switch"]` selector also matches a 0×0
+    //      hidden switch in another panel. Scope to the visible panel via
+    //      [data-state="open"].
+    //   2. The label fails Playwright's normal actionability check (the
+    //      visible control span inside is aria-hidden, the hidden checkbox
+    //      is 1×1px in the corner). force-clicking the label directly
+    //      bypasses actionability and routes the click event into the
+    //      label, which Ark UI's controlled handler picks up.
+    const riskPanel = dialog.locator('[role="tabpanel"][data-state="open"]').first();
+    const algoSwitchRoot = riskPanel.locator('label[data-scope="switch"]').first();
+    await expect(algoSwitchRoot).toHaveAttribute('data-state', 'unchecked');
+    await algoSwitchRoot.click({ force: true });
+    await expect(algoSwitchRoot).toHaveAttribute('data-state', 'checked');
 
     // The two number inputs that follow should now be disabled
     const stopInputs = dialog.locator('input[type="number"][disabled]');
