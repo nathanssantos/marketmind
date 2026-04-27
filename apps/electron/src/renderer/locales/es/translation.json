@@ -11,6 +11,7 @@
     "success": "Éxito",
     "search": "Buscar",
     "noResults": "No se encontraron resultados",
+    "noData": "Sin datos disponibles",
     "typeToSearch": "Escriba para buscar...",
     "dismiss": "Descartar",
     "skip": "Omitir",
