@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.113.0] - 2026-04-27
+
+Coverage parity for the portfolio sidebar's PnL math + orphan-orders classification, two real bug fixes surfaced by the work.
+
+### Fixed
+- **Scalping P&L sign placement** (`apps/electron/src/renderer/components/Trading/scalpingDashboardUtils.ts`). `formatScalpingPnl` rendered `$-7.50` (sign inside the `$` prefix), non-standard accounting and inconsistent with every other PnL string in the app. Now produces `-$7.50`. The v0.111 characterisation test that locked in the buggy format is now updated to assert the correct one.
+- **Duplicate `price:update` listener** (`apps/electron/src/renderer/hooks/useTabTickers.ts`). `useTabTickers` AND `RealtimeTradingSyncContext` both listened on `price:update` and both wrote to `usePriceStore` for every tick — `updatePrice` ran twice per event, every event (confirmed in the e2e trace dump that diagnosed the v0.112 socket leak). `RealtimeTradingSyncProvider` mounts at the App root and is the canonical sole owner now. The `useTabTickers` listener was removed. No behaviour change beyond halving the per-tick work.
+
+### Added
+- **Portfolio position math + 36 tests** (`apps/electron/src/renderer/components/Trading/portfolioPositionMath.ts` + `.test.ts`). `usePortfolioData.ts` carried ~80 lines of inline math driving the entire sidebar's display: per-`(symbol, side)` grouping with weighted-avg entry, leverage-aware `pnlPercent` with sign-flip for SHORT, mark-to-market PnL with a 3-tier price-source precedence (centralized → ticker → avgPrice fallback), plus stop-protected and TP-projected aggregations, total exposure / margin, leverage detection, and effective capital. Extracted and covered with 36 tests including the divide-by-zero guard when `avgPrice=0` and the SHORT pct sign inversion.
+- **Orphan-order classifier + 14 tests** (`apps/electron/src/renderer/hooks/orphanOrdersClassifier.ts` + `.test.ts`). `useOrphanOrders` had a 60-line inline `useMemo` doing the exchange-order → orphan / tracked / skip classification with no isolated tests — if a future `tradeExecutions` column gets added (a 7th order-id field) and isn't wired into `buildTrackedOrderIds`, orders for that column would be silently flagged as orphans, and the user-facing "Cancel orphan" button would cancel real positions' protective orders. Extracted and tested: all 6 known order-id columns flow through, null/empty filtering, multi-execution dedupe, algo orders classified with `isAlgo=true` so cancellation routes correctly, mixed scenarios.
+
+### Notes
+- Frontend tests: 2029 → 2079 unit + 97 browser. Backend untouched.
+- Cumulative across this session: 1933 → 2079 unit (+146), 0 → 8 boleta e2e, 74 → 153 chromium e2e (+79 stabilized), 6 real production bugs found + fixed.
+
 ## [0.112.0] - 2026-04-26
 
 E2E suite goes from 150/153 → **153/153 passing on a clean develop**, with zero flakes across runs. The 3 long-running flaky `symbol-tab-percentages` tests are fixed; three latent test fragilities exposed by the fix were hardened in turn.
