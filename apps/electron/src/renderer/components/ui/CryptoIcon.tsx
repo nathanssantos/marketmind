@@ -28,18 +28,25 @@ const ICON_SOURCES = [
     (asset: string) => `https://assets.coincap.io/assets/icons/${asset}@2x.png`,
 ];
 
-const CryptoIconComponent = ({ symbol, size = 16, onClick, cursor }: CryptoIconProps) => {
-    const [sourceIndex, setSourceIndex] = useState(0);
-    const [hasError, setHasError] = useState(false);
+const workingSourceByAsset = new Map<string, number>();
+const knownBadAssets = new Set<string>();
 
+const CryptoIconComponent = ({ symbol, size = 16, onClick, cursor }: CryptoIconProps) => {
     const baseAsset = extractBaseAsset(symbol);
+    const [sourceIndex, setSourceIndex] = useState(() => workingSourceByAsset.get(baseAsset) ?? 0);
+    const [hasError, setHasError] = useState(() => knownBadAssets.has(baseAsset));
 
     const handleError = () => {
         if (sourceIndex < ICON_SOURCES.length - 1) {
             setSourceIndex(prev => prev + 1);
         } else {
+            knownBadAssets.add(baseAsset);
             setHasError(true);
         }
+    };
+
+    const handleLoad = () => {
+        workingSourceByAsset.set(baseAsset, sourceIndex);
     };
 
     if (hasError) {
@@ -73,6 +80,7 @@ const CryptoIconComponent = ({ symbol, size = 16, onClick, cursor }: CryptoIconP
             borderRadius="full"
             objectFit="cover"
             onError={handleError}
+            onLoad={handleLoad}
             flexShrink={0}
             onClick={onClick}
             cursor={cursor}

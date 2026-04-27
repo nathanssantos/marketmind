@@ -268,25 +268,24 @@ class CustomSymbolService {
         }
       }
 
-      if (rows.length === 0) {
-        try {
-          logger.info({ symbol: c.symbol, interval, target: COMPONENT_BACKFILL_TARGET },
-            'Custom symbol component has no local klines, fetching from Binance');
-          const result = await smartBackfillKlines(c.symbol, interval, COMPONENT_BACKFILL_TARGET, 'FUTURES');
-          if ((result.totalInDb + result.downloaded) > 0) {
-            rows = await fetchKlines('FUTURES');
-            usedMarketType = 'FUTURES';
-          } else {
-            const spotResult = await smartBackfillKlines(c.symbol, interval, COMPONENT_BACKFILL_TARGET, 'SPOT');
-            if (spotResult.totalInDb + spotResult.downloaded > 0) {
-              rows = await fetchKlines('SPOT');
-              usedMarketType = 'SPOT';
-            }
+      try {
+        const targetForRefresh = rows.length === 0 ? COMPONENT_BACKFILL_TARGET : Math.min(rows.length, COMPONENT_BACKFILL_TARGET);
+        const result = await smartBackfillKlines(c.symbol, interval, targetForRefresh, 'FUTURES');
+        if (result.downloaded > 0) {
+          rows = await fetchKlines('FUTURES');
+          usedMarketType = 'FUTURES';
+          logger.info({ symbol: c.symbol, interval, downloaded: result.downloaded, totalInDb: result.totalInDb },
+            'Custom symbol component klines refreshed (FUTURES)');
+        } else if (rows.length === 0) {
+          const spotResult = await smartBackfillKlines(c.symbol, interval, COMPONENT_BACKFILL_TARGET, 'SPOT');
+          if (spotResult.totalInDb + spotResult.downloaded > 0) {
+            rows = await fetchKlines('SPOT');
+            usedMarketType = 'SPOT';
           }
-        } catch (err) {
-          logger.warn({ symbol: c.symbol, interval, error: err },
-            'Custom symbol component Binance backfill failed');
         }
+      } catch (err) {
+        logger.warn({ symbol: c.symbol, interval, error: err },
+          'Custom symbol component Binance backfill failed');
       }
 
       if (rows.length > 0 && usedMarketType !== c.marketType) {
