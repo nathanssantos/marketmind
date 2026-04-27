@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **`audit-logger.ts` — email masking in security event logs.** Resolves 4 CodeQL `js/clear-text-logging` (high-severity) alerts that flagged `metadata.email` being persisted in clear text through `auditLogger.info/warn` for events like `LOGIN_FAILURE`, `PASSWORD_RESET_*`, `REGISTER_FAILURE`. New `maskEmail()` helper preserves correlation grep-ability (first char of local part + full domain, e.g. `alice@example.com → a****@example.com`) without ever logging the full address. Tests verify: long-local masking, single-char local (`a@x` → `*@x`), two-char (`ab@x` → `a*@x`), malformed-email fallback (`***`), full-email never present in serialized payload on `LOGIN_FAILURE`. +5 tests (audit-logger now 21).
+
 ### Changed — Round 4: badge swap + remaining color-shade cleanup
 - **`DirectionBadge`**: rewritten to use the `Badge` wrapper (with `colorPalette`) instead of 5 ad-hoc `<Box bg="X.100" _dark={{ bg: 'X.900' }}>` panels with hardcoded text-color light/dark overrides. Same visual semantics, fully theme-aware. -36 lines.
 - **`DynamicSymbolRankings`**: 5 ad-hoc `<Box bg="green.100"/red.100/gray.100" _dark={...}>` pills (active marker + added/removed symbol chips) → `<Badge colorPalette="green|red|gray" size="sm">`. -45 lines.

@@ -38,7 +38,7 @@ describe('Security Audit Logger', () => {
   });
 
   describe('logSecurityEvent', () => {
-    it('should log LOGIN_SUCCESS as info', () => {
+    it('should log LOGIN_SUCCESS as info with masked email', () => {
       logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, 'user-123', {
         ip: '127.0.0.1',
         email: 'test@example.com',
@@ -49,10 +49,54 @@ describe('Security Audit Logger', () => {
           event: 'LOGIN_SUCCESS',
           userId: 'user-123',
           ip: '127.0.0.1',
-          email: 'test@example.com',
+          email: 't***@example.com',
         }),
         expect.stringContaining('LOGIN_SUCCESS')
       );
+    });
+
+    it('masks email — single-char local', () => {
+      logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, 'u', { email: 'a@example.com' });
+      expect(auditLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ email: '*@example.com' }),
+        expect.any(String)
+      );
+    });
+
+    it('masks email — two-char local', () => {
+      logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, 'u', { email: 'ab@example.com' });
+      expect(auditLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'a*@example.com' }),
+        expect.any(String)
+      );
+    });
+
+    it('masks email — long local', () => {
+      logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, 'u', { email: 'alice.smith@corp.io' });
+      expect(auditLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'a**********@corp.io' }),
+        expect.any(String)
+      );
+    });
+
+    it('replaces malformed email with ***', () => {
+      logSecurityEvent(SecurityEvent.LOGIN_SUCCESS, 'u', { email: 'not-an-email' });
+      expect(auditLogger.info).toHaveBeenCalledWith(
+        expect.objectContaining({ email: '***' }),
+        expect.any(String)
+      );
+    });
+
+    it('does not log full email even on failure events', () => {
+      logSecurityEvent(SecurityEvent.LOGIN_FAILURE, null, {
+        ip: '1.2.3.4',
+        email: 'attacker@example.com',
+        reason: 'invalid_password',
+      });
+      const call = (auditLogger.warn as unknown as { mock: { calls: unknown[][] } }).mock.calls.at(-1);
+      const payload = call?.[0] as Record<string, unknown>;
+      expect(payload.email).toBe('a*******@example.com');
+      expect(JSON.stringify(payload)).not.toContain('attacker@example.com');
     });
 
     it('should log LOGIN_FAILURE as warn', () => {
