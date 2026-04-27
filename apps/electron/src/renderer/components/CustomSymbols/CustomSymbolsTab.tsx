@@ -37,12 +37,12 @@ export const CustomSymbolsTab = memo(() => {
   const [formCapPercent, setFormCapPercent] = useState(40);
   const [formBaseValue, setFormBaseValue] = useState(100);
   const [formComponents, setFormComponents] = useState<ComponentInput[]>([
-    { symbol: '', marketType: 'SPOT', coingeckoId: '' },
-    { symbol: '', marketType: 'SPOT', coingeckoId: '' },
+    { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
+    { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
   ]);
 
   const addComponent = () => {
-    setFormComponents((prev) => [...prev, { symbol: '', marketType: 'SPOT', coingeckoId: '' }]);
+    setFormComponents((prev) => [...prev, { symbol: '', marketType: 'FUTURES', coingeckoId: '' }]);
   };
 
   const removeComponent = (index: number) => {
@@ -78,8 +78,8 @@ export const CustomSymbolsTab = memo(() => {
       setFormSymbol('');
       setFormName('');
       setFormComponents([
-        { symbol: '', marketType: 'SPOT', coingeckoId: '' },
-        { symbol: '', marketType: 'SPOT', coingeckoId: '' },
+        { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
+        { symbol: '', marketType: 'FUTURES', coingeckoId: '' },
       ]);
     } catch (err) {
       toaster.create({ title: t('common.error'), description: String(err), type: 'error' });

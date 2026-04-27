@@ -236,19 +236,32 @@ class CustomSymbolService {
     const componentKlinesMap = new Map<string, ComponentKline[]>();
 
     for (const c of state.components) {
-      const conditions = [
-        eq(klinesTable.symbol, c.symbol),
-        eq(klinesTable.interval, interval),
-        eq(klinesTable.marketType, c.marketType),
-      ];
-      if (startTime) conditions.push(gte(klinesTable.openTime, startTime));
-      if (endTime) conditions.push(lte(klinesTable.openTime, endTime));
+      const fetchKlines = async (mt: 'SPOT' | 'FUTURES') => {
+        const conditions = [
+          eq(klinesTable.symbol, c.symbol),
+          eq(klinesTable.interval, interval),
+          eq(klinesTable.marketType, mt),
+        ];
+        if (startTime) conditions.push(gte(klinesTable.openTime, startTime));
+        if (endTime) conditions.push(lte(klinesTable.openTime, endTime));
 
-      const rows = await db.query.klines.findMany({
-        where: and(...conditions),
-        orderBy: [desc(klinesTable.openTime)],
-        limit: 20_000,
-      });
+        return db.query.klines.findMany({
+          where: and(...conditions),
+          orderBy: [desc(klinesTable.openTime)],
+          limit: 20_000,
+        });
+      };
+
+      let rows = await fetchKlines(c.marketType);
+      if (rows.length === 0) {
+        const fallback = c.marketType === 'SPOT' ? 'FUTURES' : 'SPOT';
+        const fallbackRows = await fetchKlines(fallback);
+        if (fallbackRows.length > 0) {
+          logger.info({ symbol: c.symbol, configured: c.marketType, used: fallback, count: fallbackRows.length },
+            'Custom symbol component falling back to alternate marketType');
+          rows = fallbackRows;
+        }
+      }
 
       componentKlinesMap.set(c.symbol, rows.map(r => ({
         openTime: r.openTime,
