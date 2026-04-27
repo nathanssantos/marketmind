@@ -424,6 +424,19 @@ export const useChartStore = create<ChartState>((set) => ({
 
 ---
 
+## 🤖 MCP Servers (v1.1+)
+
+> **Four Model Context Protocol servers** under `packages/mcp-*` expose 47 tools to any MCP client (Claude Code, ChatGPT desktop, custom agents). Independently installable via `pnpm mcp:install` (auto-detects each `packages/mcp-*` workspace and registers it in `~/.claude.json`).
+>
+> - `@marketmind/mcp-screenshot` (6 tools) — visual capture pipeline (Playwright + Chromium against the dev renderer); HTML galleries side-by-side dark/light. **Phase 6 visual verification depends on this.**
+> - `@marketmind/mcp-app` (19 tools) — drives the live dev app: navigation, symbol/timeframe/chart-type, theme, sidebars, allowlisted store dispatch, Playwright escape hatches.
+> - `@marketmind/mcp-backend` (14 tools) — read-only DB layer + tRPC bridge + audit log.
+> - `@marketmind/mcp-strategy` (8 tools) — Pine strategy CRUD + backtest proxies.
+>
+> Full docs: [`docs/MCP_SERVERS.md`](docs/MCP_SERVERS.md) (overview + tool tables), [`docs/MCP_AGENT_GUIDE.md`](docs/MCP_AGENT_GUIDE.md) (recipes), [`docs/MCP_SECURITY.md`](docs/MCP_SECURITY.md) (threat model).
+>
+> All servers are **dev-only** — they require `VITE_E2E_BYPASS_AUTH=true` (for the Playwright servers) and a local `DATABASE_URL` (for the DB server). Trade execution via MCP (`mcp-trading`) is deferred to v1.2.
+
 ## 🧪 Testing Approach
 
 > **Browser automation for agents:** see [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md). Three layers — Playwright MCP (generic web), chart perf harness (`pnpm --filter @marketmind/electron test:perf`), Electron smoke (`pnpm --filter @marketmind/electron test:e2e:electron`). Renderer-only auth bypass via `VITE_E2E_BYPASS_AUTH=true`.

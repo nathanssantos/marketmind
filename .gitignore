@@ -216,3 +216,6 @@ results/
 *.log
 optimization-log*.txt
 .vercel
+
+# MCP screenshot output (timestamped, local dev only)
+apps/electron/screenshots/

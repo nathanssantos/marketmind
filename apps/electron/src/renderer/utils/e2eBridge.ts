@@ -43,6 +43,7 @@ declare global {
     __socket?: Socket | null;
     __socketTestBridge?: SocketTestBridge;
     __globalActions?: GlobalActionsBridge;
+    __setColorMode?: (mode: 'light' | 'dark') => void;
   }
 }
 
@@ -76,6 +77,12 @@ export const exposeGlobalActionsForE2E = (actions: GlobalActionsBridge): void =>
   if (!IS_E2E_BYPASS_AUTH) return;
   if (typeof window === 'undefined') return;
   window.__globalActions = actions;
+};
+
+export const exposeColorModeForE2E = (setter: (mode: 'light' | 'dark') => void): void => {
+  if (!IS_E2E_BYPASS_AUTH) return;
+  if (typeof window === 'undefined') return;
+  window.__setColorMode = setter;
 };
 
 export const exposeSocketForE2E = (socket: Socket | null): void => {
