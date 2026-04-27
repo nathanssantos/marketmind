@@ -1,7 +1,7 @@
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import type { UserIndicator } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
-import { Badge, Button, ConfirmationDialog, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, ConfirmationDialog, EmptyState, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useUserIndicators } from '@renderer/hooks';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -109,11 +109,7 @@ export const IndicatorLibrary = () => {
 
       <Stack gap={4} flex={1} overflowY="auto" pr={1}>
         {groups.length === 0 && !isLoading && (
-          <Box py={6} textAlign="center">
-            <Text fontSize="sm" color="fg.muted">
-              {t('settings.indicators.empty')}
-            </Text>
-          </Box>
+          <EmptyState size="sm" title={t('settings.indicators.empty')} />
         )}
 
         {groups.map((group) => (

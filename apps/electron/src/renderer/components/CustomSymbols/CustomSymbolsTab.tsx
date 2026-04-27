@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LuPlus, LuRefreshCw, LuTrash2, LuX } from 'react-icons/lu';
 import { useBackendCustomSymbols } from '../../hooks/useBackendCustomSymbols';
 import { toaster } from '../../utils/toaster';
-import { Badge, BetaBadge, Button, IconButton, Input, Tabs } from '../ui';
+import { Badge, BetaBadge, Button, EmptyState, IconButton, Input, Tabs } from '../ui';
 
 const CATEGORIES = ['politics', 'defi', 'gaming', 'ai', 'other'] as const;
 const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL'] as const;
@@ -129,9 +129,7 @@ export const CustomSymbolsTab = memo(() => {
       <Tabs.Content value="list">
         <Stack gap={3} pt={3}>
           {customSymbols.data?.length === 0 && (
-            <Text color="fg.muted" fontSize="sm" textAlign="center" py={4}>
-              {t('common.noResults')}
-            </Text>
+            <EmptyState size="sm" title={t('common.noResults')} />
           )}
           {customSymbols.data?.map((cs) => (
             <Box key={cs.id} p={3} borderWidth="1px" borderColor="border" borderRadius="md">

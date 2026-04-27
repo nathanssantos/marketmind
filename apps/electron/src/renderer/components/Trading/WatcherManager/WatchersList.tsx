@@ -1,6 +1,6 @@
 import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
-import { Badge, Button, CollapsibleSection, DirectionModeSelector } from '@renderer/components/ui';
+import { Badge, Button, CollapsibleSection, DirectionModeSelector, EmptyState } from '@renderer/components/ui';
 import type { DirectionMode } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuPause, LuPlus } from 'react-icons/lu';
@@ -91,26 +91,11 @@ export const WatchersList = ({
             </Text>
           </Box>
         ) : activeWatchers.length === 0 && persistedWatchers === 0 ? (
-          <Box
-            p={6}
-            textAlign="center"
-            borderWidth="1px"
-            borderStyle="dashed"
-            borderRadius="lg"
-            borderColor="border"
-          >
-            <Text fontSize="sm" color="fg.muted" mb={2}>
-              {t('tradingProfiles.watchers.empty')}
-            </Text>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onAddWatcher}
-            >
-              <LuPlus />
-              {t('tradingProfiles.watchers.addFirst')}
-            </Button>
-          </Box>
+          <EmptyState
+            dashed
+            title={t('tradingProfiles.watchers.empty')}
+            action={{ label: t('tradingProfiles.watchers.addFirst'), onClick: onAddWatcher }}
+          />
         ) : (
           <Grid
             templateColumns="repeat(auto-fill, minmax(160px, 1fr))"
