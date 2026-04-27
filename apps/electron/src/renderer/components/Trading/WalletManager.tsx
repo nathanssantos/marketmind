@@ -1,7 +1,7 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { Badge, Button, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, EmptyState, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -128,17 +128,9 @@ export const WalletManager = () => {
 
       <Box maxH="calc(100vh - 250px)" overflowY="auto">
         {isLoading ? (
-          <Box p={4} textAlign="center">
-            <Text fontSize="sm" color="fg.muted">
-              {t('common.loading')}
-            </Text>
-          </Box>
+          <EmptyState size="sm" title={t('common.loading')} />
         ) : wallets.length === 0 ? (
-          <Box p={4} textAlign="center">
-            <Text fontSize="sm" color="fg.muted">
-              {t('trading.wallets.emptyReal')}
-            </Text>
-          </Box>
+          <EmptyState size="sm" title={t('trading.wallets.emptyReal')} />
         ) : (
           <Stack gap={2}>
             {wallets.map((wallet) => (
