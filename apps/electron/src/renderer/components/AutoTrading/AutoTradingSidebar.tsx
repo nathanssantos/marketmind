@@ -5,7 +5,7 @@ import { LuX } from 'react-icons/lu';
 import { type AutoTradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useChartContext } from '../../context/ChartContext';
-import { IconButton, SidebarContainer, Tabs } from '../ui';
+import { Callout, IconButton, SidebarContainer, Tabs } from '../ui';
 import { WatchersTab } from '../MarketSidebar/tabs/WatchersTab';
 import { LogsTab } from '../MarketSidebar/tabs/LogsTab';
 import { ScalpingDashboard } from '../Trading/ScalpingDashboard';
@@ -67,10 +67,10 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
                 onConfigClick={() => setScalpingConfigOpen(true)}
               />
             ) : (
-              <Box p={4}>
-                <Text fontSize="sm" color="fg.muted">
+              <Box p={3}>
+                <Callout tone="warning" compact>
                   {t('trading.wallets.selectWallet', 'Select a wallet first')}
-                </Text>
+                </Callout>
               </Box>
             )}
           </Tabs.Content>
