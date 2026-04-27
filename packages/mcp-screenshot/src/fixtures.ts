@@ -117,6 +117,25 @@ const EQUITY_POINTS = TRADE_EXECUTIONS
     return acc;
   }, []);
 
+const DAILY_PERFORMANCE = closedExecutions
+  .map((t) => {
+    const closedAt = new Date(Date.now() - t.daysAgo * 86_400_000);
+    const date = closedAt.toISOString().slice(0, 10);
+    const pnl = t.pnl;
+    return {
+      date,
+      pnl,
+      pnlPercent: (pnl / 10_000) * 100,
+      tradesCount: 1,
+      closedPositions: 1,
+      wins: pnl > 0 ? 1 : 0,
+      losses: pnl < 0 ? 1 : 0,
+      grossProfit: pnl > 0 ? pnl : 0,
+      grossLoss: pnl < 0 ? Math.abs(pnl) : 0,
+    };
+  })
+  .sort((a, b) => a.date.localeCompare(b.date));
+
 const TRADING_PROFILES = [
   {
     id: 'profile-1',
@@ -197,6 +216,86 @@ export interface Fixture {
   value: unknown;
 }
 
+const buildHistory = (count: number, base: number, jitter: number): Array<{ timestamp: string; value: number }> => {
+  const now = Date.now();
+  const dayMs = 86_400_000;
+  return Array.from({ length: count }, (_, i) => ({
+    timestamp: new Date(now - (count - i) * dayMs).toISOString(),
+    value: base + (Math.sin(i / 3) * jitter),
+  }));
+};
+
+const MARKET_INDICATORS = {
+  fearGreed: {
+    current: { value: 62, valueClassification: 'Greed' },
+    history: buildHistory(30, 60, 12),
+  },
+  btcDominance: {
+    current: 56.4,
+    change24h: 0.42,
+    history: buildHistory(30, 56, 1.5),
+  },
+  mvrv: {
+    current: 2.1,
+    history: buildHistory(30, 2.0, 0.2),
+  },
+  btcProductionCost: {
+    currentCost: 41_500,
+    currentPrice: 67_450,
+    history: buildHistory(30, 67_000, 1_200),
+  },
+  openInterest: {
+    current: 28_400_000_000,
+    change24h: 1.24,
+    history: buildHistory(30, 28_000_000_000, 600_000_000),
+  },
+  longShortRatio: {
+    global: { longAccount: 0.58, shortAccount: 0.42 },
+    topTraders: { longAccount: 0.61, shortAccount: 0.39 },
+    globalHistory: buildHistory(30, 0.58, 0.05),
+  },
+  altcoinSeason: {
+    seasonType: 'Bitcoin Season',
+    altSeasonIndex: 38,
+    change24h: -2.1,
+    altsOutperformingBtc: 19,
+    totalAltsAnalyzed: 50,
+    btcPerformance24h: 1.4,
+    topPerformers: [
+      { symbol: 'SOLUSDT', performance: 4.8 },
+      { symbol: 'ETHUSDT', performance: 1.4 },
+      { symbol: 'BNBUSDT', performance: 0.3 },
+    ],
+    history: buildHistory(30, 38, 8),
+  },
+  adxTrendStrength: {
+    adx: 26.4,
+    isChoppy: false,
+    isStrongTrend: true,
+    change24h: 0.6,
+    plusDI: 22.1,
+    minusDI: 14.7,
+    isBullish: true,
+    isBearish: false,
+    history: buildHistory(30, 25, 4),
+  },
+  orderBook: {
+    pressure: 'Buy',
+    imbalanceRatio: 1.18,
+    bidVolume: 48_500_000,
+    askVolume: 41_200_000,
+    spreadPercent: 0.012,
+    bidWalls: [],
+    askWalls: [],
+  },
+  fundingRates: [
+    { symbol: 'BTCUSDT', rate: 0.0001, isExtreme: false },
+    { symbol: 'ETHUSDT', rate: 0.00012, isExtreme: false },
+    { symbol: 'SOLUSDT', rate: 0.00031, isExtreme: false },
+    { symbol: 'BNBUSDT', rate: 0.00008, isExtreme: false },
+  ],
+};
+
 export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   // Auth
   { path: 'auth.me', value: SYNTHETIC_USER },
@@ -245,11 +344,7 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   // Analytics
   { path: 'analytics.getPerformance', value: PERFORMANCE_SUMMARY },
   { path: 'analytics.getEquityCurve', value: EQUITY_POINTS },
-  // analytics.getDailyPerformance — empty array to surface "no data" state cleanly.
-  // TODO: align with the full DailyPerformance shape (pnlPercent, tradesCount,
-  // wins, losses, grossProfit, grossLoss) once the renderer's null-safety is
-  // verified in Phase 6.2.
-  { path: 'analytics.getDailyPerformance', value: [] },
+  { path: 'analytics.getDailyPerformance', value: DAILY_PERFORMANCE },
   { path: 'analytics.getTradeStats', value: PERFORMANCE_SUMMARY },
   // Misc
   { path: 'ticker.getDailyBatch', value: DAILY_TICKERS },
@@ -270,6 +365,18 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   { path: 'tradingProfiles.list', value: TRADING_PROFILES },
   { path: 'tradingProfiles.getDefault', value: TRADING_PROFILES[0] },
   { path: 'autoTrading.listWatchers', value: ACTIVE_WATCHERS },
+  // Market sidebar indicators
+  { path: 'autoTrading.getMinActiveWatcherInterval', value: { halfIntervalMs: 30 * 60 * 1000 } },
+  { path: 'autoTrading.getFearGreedIndex', value: MARKET_INDICATORS.fearGreed },
+  { path: 'autoTrading.getBtcDominance', value: MARKET_INDICATORS.btcDominance },
+  { path: 'autoTrading.getMvrvRatio', value: MARKET_INDICATORS.mvrv },
+  { path: 'autoTrading.getBtcProductionCost', value: MARKET_INDICATORS.btcProductionCost },
+  { path: 'autoTrading.getOpenInterest', value: MARKET_INDICATORS.openInterest },
+  { path: 'autoTrading.getLongShortRatio', value: MARKET_INDICATORS.longShortRatio },
+  { path: 'autoTrading.getAltcoinSeasonIndex', value: MARKET_INDICATORS.altcoinSeason },
+  { path: 'autoTrading.getBtcAdxTrendStrength', value: MARKET_INDICATORS.adxTrendStrength },
+  { path: 'autoTrading.getOrderBookAnalysis', value: MARKET_INDICATORS.orderBook },
+  { path: 'autoTrading.getBatchFundingRates', value: MARKET_INDICATORS.fundingRates },
   // Auth mutations (acks)
   { path: 'auth.changePassword', value: { success: true } },
   { path: 'auth.uploadAvatar', value: { success: true } },
