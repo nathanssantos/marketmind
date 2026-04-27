@@ -25,6 +25,7 @@ import { useUIZoom } from '../../hooks/useUIZoom';
 import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
+import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 import type { ChartType, MarketType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
 import { UserAvatar } from '../UserAvatar';
@@ -207,6 +208,8 @@ export const Toolbar = memo(({
           chartType={chartType}
           onChartTypeChange={onChartTypeChange}
         />
+
+        <IndicatorTogglePopover triggerVariant="labeled" popoverPlacement="bottom-start" />
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 

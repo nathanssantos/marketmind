@@ -301,7 +301,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           {(onMenuAction ?? onClose) && (
             <Menu.Root>
               <Menu.Trigger asChild>
-                <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Options" flexShrink={0}>
+                <IconButton size="2xs" variant="outline" color="fg.muted" aria-label="Options" flexShrink={0} h="20px" minW="20px">
                   <LuEllipsisVertical />
                 </IconButton>
               </Menu.Trigger>
@@ -329,7 +329,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           <Slider value={[sizePercent]} onValueChange={handleSliderChange} min={0.1} max={100} step={0.1} />
           <IconButton
             size="2xs"
-            variant="ghost"
+            variant="outline"
             aria-label="Decrease size 5%"
             onClick={handleDecrement}
             disabled={sizePercent <= 0.1}
@@ -343,7 +343,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           </Text>
           <IconButton
             size="2xs"
-            variant="ghost"
+            variant="outline"
             aria-label="Increase size 5%"
             onClick={handleIncrement}
             disabled={sizePercent >= 100}
