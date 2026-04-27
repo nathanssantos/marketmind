@@ -263,7 +263,7 @@ export const getUserAvatar = async (userId: string) => {
     .where(eq(users.id, userId))
     .limit(1);
 
-  if (!row || !row.data || !row.mimeType) return null;
+  if (!row?.data || !row?.mimeType) return null;
   return { data: row.data, mimeType: row.mimeType };
 };
 
