@@ -2,11 +2,13 @@
  * Session P&L formatter for the Scalping dashboard.
  * - Always 2 decimals
  * - Leading "+" for non-negative values
- * - "$" prefix
+ * - For negatives, the "-" sits OUTSIDE the "$" ("-$7.50" rather than
+ *   "$-7.50") — matches accounting convention and how every other PnL
+ *   string in the app reads.
  */
 export const formatScalpingPnl = (pnl: number): string => {
-  const sign = pnl >= 0 ? '+' : '';
-  return `${sign}$${pnl.toFixed(2)}`;
+  if (pnl < 0) return `-$${Math.abs(pnl).toFixed(2)}`;
+  return `+$${pnl.toFixed(2)}`;
 };
 
 /**
