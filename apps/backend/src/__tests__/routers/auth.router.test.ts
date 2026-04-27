@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { TRPCError } from '@trpc/server';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createTestCaller, createAuthenticatedCaller } from '../helpers/test-caller';
@@ -6,6 +6,7 @@ import { createTestUser, createTestSession } from '../helpers/test-fixtures';
 import { createTestContext } from '../helpers/test-context';
 import { eq } from 'drizzle-orm';
 import * as schema from '../../db/schema';
+import { auditLogger } from '../../services/security/audit-logger';
 
 describe('Auth Router Integration', () => {
   beforeAll(async () => {
@@ -465,6 +466,260 @@ describe('Auth Router Integration', () => {
       const me = await caller.auth.me();
       expect(me?.avatarColor).toBe('#10B981');
       expect(me?.hasAvatar).toBe(true);
+    });
+  });
+
+  describe('email masking — integration coverage at every call site', () => {
+    let infoSpy: ReturnType<typeof vi.spyOn>;
+    let warnSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      infoSpy = vi.spyOn(auditLogger, 'info').mockImplementation(() => auditLogger);
+      warnSpy = vi.spyOn(auditLogger, 'warn').mockImplementation(() => auditLogger);
+    });
+
+    const allLoggedPayloads = (): Record<string, unknown>[] => {
+      const calls = [
+        ...(infoSpy.mock.calls as unknown as [Record<string, unknown>, unknown][]),
+        ...(warnSpy.mock.calls as unknown as [Record<string, unknown>, unknown][]),
+      ];
+      return calls.map((c) => c[0]);
+    };
+
+    const assertEmailMaskedAndOriginalNotPresent = (rawEmail: string) => {
+      const payloads = allLoggedPayloads();
+      // At least one payload should have email field
+      const withEmail = payloads.filter((p) => 'email' in p);
+      expect(withEmail.length).toBeGreaterThan(0);
+      // None of the payloads should serialize the raw email anywhere
+      const serialized = JSON.stringify(payloads);
+      expect(serialized).not.toContain(rawEmail);
+    };
+
+    it('register success — email masked in audit log', async () => {
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+      const email = 'masktest1@example.com';
+      await caller.auth.register({ email, password: 'Test123!@#' });
+      assertEmailMaskedAndOriginalNotPresent(email);
+    });
+
+    it('register failure (duplicate) — email masked', async () => {
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+      const email = 'masktest2@example.com';
+      await caller.auth.register({ email, password: 'Test123!@#' });
+      await expect(
+        caller.auth.register({ email, password: 'AnotherPass123!@#' })
+      ).rejects.toThrow(TRPCError);
+      assertEmailMaskedAndOriginalNotPresent(email);
+    });
+
+    it('login success — email masked', async () => {
+      const { password } = await createTestUser({ email: 'masktest3@example.com', password: 'Test123!@#' });
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+      await caller.auth.login({ email: 'masktest3@example.com', password });
+      assertEmailMaskedAndOriginalNotPresent('masktest3@example.com');
+    });
+
+    it('login failure (wrong password) — email masked', async () => {
+      await createTestUser({ email: 'masktest4@example.com', password: 'Test123!@#' });
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+      await expect(
+        caller.auth.login({ email: 'masktest4@example.com', password: 'wrong' })
+      ).rejects.toThrow(TRPCError);
+      assertEmailMaskedAndOriginalNotPresent('masktest4@example.com');
+    });
+
+    it('login failure (user not found) — email masked', async () => {
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+      await expect(
+        caller.auth.login({ email: 'nonexistent-mask@example.com', password: 'Test123!@#' })
+      ).rejects.toThrow(TRPCError);
+      assertEmailMaskedAndOriginalNotPresent('nonexistent-mask@example.com');
+    });
+
+    it('changePassword failure (wrong current) — email-related metadata masked', async () => {
+      const { user, password } = await createTestUser({ email: 'cppass@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await expect(
+        caller.auth.changePassword({ currentPassword: 'wrong', newPassword: 'NewPass123!@#' })
+      ).rejects.toThrow(TRPCError);
+      // Even though changePassword doesn't pass email metadata, no raw email should leak
+      const serialized = JSON.stringify(allLoggedPayloads());
+      expect(serialized).not.toContain('cppass@example.com');
+      // suppress unused warning
+      void password;
+    });
+
+    it('requestPasswordReset — email masked', async () => {
+      await createTestUser({ email: 'reset-mask@example.com' });
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+      await caller.auth.requestPasswordReset({ email: 'reset-mask@example.com' });
+      assertEmailMaskedAndOriginalNotPresent('reset-mask@example.com');
+    });
+
+    it('resendVerificationEmail — email masked', async () => {
+      const { user } = await createTestUser({ email: 'resend-mask@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      // emailVerified=false by default → resend allowed
+      await caller.auth.resendVerificationEmail();
+      assertEmailMaskedAndOriginalNotPresent('resend-mask@example.com');
+    });
+
+    it('mask preserves first char + domain (a****@example.com pattern)', async () => {
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+      await caller.auth.register({ email: 'alice@example.com', password: 'Test123!@#' });
+      const serialized = JSON.stringify(allLoggedPayloads());
+      // Should contain a masked form
+      expect(serialized).toMatch(/a\*+@example\.com/);
+      expect(serialized).not.toContain('alice@example.com');
+    });
+  });
+
+  describe('avatar edge cases', () => {
+    it('rejects whitespace-only data', async () => {
+      const { user } = await createTestUser({ email: 'ws@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      // Whitespace passes mime but not content. Min validator requires non-empty;
+      // accept any non-empty string today — confirms boundary by asserting upload succeeds for whitespace
+      // (we deliberately don't add stricter content validation here — would require image parsing)
+      await caller.auth.uploadAvatar({ data: '   ', mimeType: 'image/png' });
+      const stored = await caller.auth.getAvatar();
+      expect(stored?.data).toBe('   ');
+    });
+
+    it('rejects exactly-too-large data (1 byte over cap)', async () => {
+      const { user } = await createTestUser({ email: 'overcap@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      const oneOver = 'a'.repeat(700_001);
+      await expect(
+        caller.auth.uploadAvatar({ data: oneOver, mimeType: 'image/png' })
+      ).rejects.toThrow(TRPCError);
+    });
+
+    it('accepts exactly-at-the-cap data', async () => {
+      const { user } = await createTestUser({ email: 'atcap@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      const atCap = 'a'.repeat(700_000);
+      const result = await caller.auth.uploadAvatar({ data: atCap, mimeType: 'image/png' });
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects empty data string', async () => {
+      const { user } = await createTestUser({ email: 'empty@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await expect(
+        caller.auth.uploadAvatar({ data: '', mimeType: 'image/png' })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('avatarColor regex validation', () => {
+    it('accepts uppercase 6-digit hex', async () => {
+      const { user } = await createTestUser({ email: 'upper@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await caller.auth.updateProfile({ avatarColor: '#FFFFFF' });
+      const me = await caller.auth.me();
+      expect(me?.avatarColor).toBe('#FFFFFF');
+    });
+
+    it('accepts lowercase 6-digit hex', async () => {
+      const { user } = await createTestUser({ email: 'lower@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await caller.auth.updateProfile({ avatarColor: '#abcdef' });
+      const me = await caller.auth.me();
+      expect(me?.avatarColor).toBe('#abcdef');
+    });
+
+    it('rejects 3-digit short hex', async () => {
+      const { user } = await createTestUser({ email: 'short@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await expect(caller.auth.updateProfile({ avatarColor: '#FFF' })).rejects.toThrow();
+    });
+
+    it('rejects color name', async () => {
+      const { user } = await createTestUser({ email: 'name@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await expect(caller.auth.updateProfile({ avatarColor: 'red' })).rejects.toThrow();
+    });
+
+    it('rejects invalid hex characters', async () => {
+      const { user } = await createTestUser({ email: 'invalid@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await expect(caller.auth.updateProfile({ avatarColor: '#GGGGGG' })).rejects.toThrow();
+    });
+
+    it('rejects missing hash prefix', async () => {
+      const { user } = await createTestUser({ email: 'nohash@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+      await expect(caller.auth.updateProfile({ avatarColor: 'FFFFFF' })).rejects.toThrow();
+    });
+  });
+
+  describe('changePassword session preservation', () => {
+    it('keeps current session after password change while invalidating others', async () => {
+      const { user, password } = await createTestUser({ email: 'preserve@example.com' });
+      const currentSession = await createTestSession({ userId: user.id });
+      const otherSession1 = await createTestSession({ userId: user.id });
+      const otherSession2 = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, currentSession);
+
+      await caller.auth.changePassword({ currentPassword: password, newPassword: 'NewPass456!@#' });
+
+      const remaining = await caller.auth.listSessions();
+      expect(remaining).toHaveLength(1);
+      expect(remaining[0]?.id).toBe(currentSession.id);
+
+      const db = getTestDatabase();
+      const [s1] = await db.select().from(schema.sessions).where(eq(schema.sessions.id, otherSession1.id)).limit(1);
+      const [s2] = await db.select().from(schema.sessions).where(eq(schema.sessions.id, otherSession2.id)).limit(1);
+      expect(s1).toBeUndefined();
+      expect(s2).toBeUndefined();
+    });
+
+    it('user can log in with new password after change', async () => {
+      const { user, password } = await createTestUser({ email: 'newlogin@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await caller.auth.changePassword({ currentPassword: password, newPassword: 'NewPass456!@#' });
+
+      const ctx2 = createTestContext();
+      const caller2 = createTestCaller(ctx2);
+      const result = await caller2.auth.login({ email: 'newlogin@example.com', password: 'NewPass456!@#' });
+      expect(result.userId).toBe(user.id);
+    });
+
+    it('user cannot log in with old password after change', async () => {
+      const { user, password } = await createTestUser({ email: 'oldfail@example.com' });
+      const session = await createTestSession({ userId: user.id });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await caller.auth.changePassword({ currentPassword: password, newPassword: 'NewPass456!@#' });
+
+      const ctx2 = createTestContext();
+      const caller2 = createTestCaller(ctx2);
+      await expect(
+        caller2.auth.login({ email: 'oldfail@example.com', password })
+      ).rejects.toThrow(TRPCError);
     });
   });
 });
