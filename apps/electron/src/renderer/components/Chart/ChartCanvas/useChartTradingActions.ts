@@ -3,6 +3,7 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
+import { ORDER_LINE_ANIMATION } from '@shared/constants';
 import { getKlineClose, roundTradingPrice } from '@shared/utils';
 import type { MutableRefObject } from 'react';
 import { useCallback, useMemo } from 'react';
@@ -15,6 +16,8 @@ import {
   submitEntryOrder,
   mapExecutionToOrder,
 } from './chartOrderHelpers';
+import { parseCloseTarget } from './closeOrderTargetParser';
+import { buildExchangeMoveRequest } from './exchangeMoveBuilder';
 
 export interface UseChartTradingActionsProps {
   symbol?: string;
@@ -156,70 +159,92 @@ export const useChartTradingActions = ({
   }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions, manager, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
 
   const handleOrderCloseRequest = useCallback((orderId: string | null): void => {
-    if (!orderId) {
-      setOrderToClose(null);
-      return;
-    }
-    if (orderId === 'ts-disable') {
-      if (!backendWalletId || !symbol) return;
-      updateTsConfig.mutate({
-        walletId: backendWalletId,
-        symbol,
-        useIndividualConfig: true,
-        trailingStopEnabled: false,
-      });
-      return;
-    }
-    if (orderId.startsWith('sltp:')) {
-      setOrderToClose(orderId);
-      return;
-    }
-    if (orderId.startsWith('exchange-order-') || orderId.startsWith('exchange-algo-')) {
-      const exchangeOrderId = orderId.replace(/^exchange-(order|algo)-/, '');
-      if (!backendWalletId || !symbol || !exchangeOrderId) return;
-      const cancelPatches = { status: 'cancelled' as const };
-      applyOptimistic(orderId, cancelPatches, { status: 'pending' });
-      orderLoadingMapRef.current.set(orderId, Date.now());
-      manager?.markDirty('overlays');
-      cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
-        .then(() => {
-          orderFlashMapRef.current.set(orderId, performance.now());
-          manager?.markDirty('overlays');
-        })
-        .catch((error) => {
-          clearOptimistic(orderId, cancelPatches);
-          toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
-        })
-        .finally(() => {
-          orderLoadingMapRef.current.delete(orderId);
-          manager?.markDirty('overlays');
+    const target = parseCloseTarget(orderId);
+
+    switch (target.kind) {
+      case 'modal-clear':
+        setOrderToClose(null);
+        return;
+
+      case 'ts-disable':
+        if (!backendWalletId || !symbol) return;
+        updateTsConfig.mutate({
+          walletId: backendWalletId,
+          symbol,
+          useIndividualConfig: true,
+          trailingStopEnabled: false,
         });
-      return;
-    }
-    const exec = allExecutions.find((e) => e.id === orderId);
-    if (!exec) return;
-    if (exec.status === 'pending') {
-      const cancelPatches = { status: 'cancelled' as const };
-      applyOptimistic(exec.id, cancelPatches, { status: exec.status });
-      orderLoadingMapRef.current.set(exec.id, Date.now());
-      manager?.markDirty('overlays');
-      cancelExecution(exec.id).then(() => {
-        orderFlashMapRef.current.set(exec.id, performance.now());
+        return;
+
+      case 'sltp':
+        // Routed to the close-confirm modal — the actual cancel happens in
+        // handleConfirmCloseOrder so the user sees the SL/TP type + position
+        // before committing.
+        if (orderId) setOrderToClose(orderId);
+        return;
+
+      case 'exchange': {
+        if (!backendWalletId || !symbol || !target.exchangeOrderId) return;
+        const cancelPatches = { status: 'cancelled' as const };
+        // Flash up-front so the user sees a deliberate cancel pulse while
+        // the order is still rendered (loading bypasses the cancelled
+        // filter). Deferred finally lets the flash play out.
+        orderFlashMapRef.current.set(target.rawId, performance.now());
+        applyOptimistic(target.rawId, cancelPatches, { status: 'pending' });
+        orderLoadingMapRef.current.set(target.rawId, Date.now());
         manager?.markDirty('overlays');
-      }).catch((error: unknown) => {
-        clearOptimistic(exec.id, cancelPatches);
-        toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
-      }).finally(() => {
-        orderLoadingMapRef.current.delete(exec.id);
-        manager?.markDirty('overlays');
-      });
-      return;
+        cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: target.exchangeOrderId })
+          .then(() => {
+            manager?.markDirty('overlays');
+          })
+          .catch((error) => {
+            clearOptimistic(target.rawId, cancelPatches);
+            toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
+          })
+          .finally(() => {
+            setTimeout(() => {
+              orderLoadingMapRef.current.delete(target.rawId);
+              manager?.markDirty('overlays');
+            }, ORDER_LINE_ANIMATION.FLASH_DURATION_MS);
+          });
+        return;
+      }
+
+      case 'execution': {
+        const exec = allExecutions.find((e) => e.id === target.executionId);
+        if (!exec) return;
+        if (exec.status === 'pending') {
+          const cancelPatches = { status: 'cancelled' as const };
+          orderFlashMapRef.current.set(exec.id, performance.now());
+          applyOptimistic(exec.id, cancelPatches, { status: exec.status });
+          orderLoadingMapRef.current.set(exec.id, Date.now());
+          manager?.markDirty('overlays');
+          cancelExecution(exec.id).then(() => {
+            manager?.markDirty('overlays');
+          }).catch((error: unknown) => {
+            clearOptimistic(exec.id, cancelPatches);
+            toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
+          }).finally(() => {
+            setTimeout(() => {
+              orderLoadingMapRef.current.delete(exec.id);
+              manager?.markDirty('overlays');
+            }, ORDER_LINE_ANIMATION.FLASH_DURATION_MS);
+          });
+          return;
+        }
+        setOrderToClose(target.executionId);
+        return;
+      }
     }
-    setOrderToClose(orderId);
   }, [allExecutions, cancelExecution, setOrderToClose, manager, backendWalletId, symbol, cancelFuturesOrderMutation, applyOptimistic, clearOptimistic, toastError, t, updateTsConfig, orderLoadingMapRef, orderFlashMapRef]);
 
   const handleConfirmCloseOrder = useCallback(async (orderToClose: string | null): Promise<void> => {
     if (!orderToClose || !manager) return;
+
+    // Dismiss the modal immediately on confirm. The order itself stays
+    // visible at its current position with the X-button in loading state
+    // until the backend ACKs (orderLoadingMapRef + closingSnapshotsRef).
+    setOrderToClose(null);
 
     if (orderToClose.startsWith('sltp:')) {
       const firstColon = orderToClose.indexOf(':');
@@ -229,6 +254,17 @@ export const useChartTradingActions = ({
 
       if (executionIds.length > 0) {
         const patchField = type === 'stopLoss' ? 'stopLoss' : 'takeProfit';
+        const flashSuffix = type === 'stopLoss' ? 'sl' : 'tp';
+
+        // Fire the white flash on the SL/TP price tags BEFORE the optimistic
+        // null-out so the user sees a deliberate cancel feedback while the
+        // tags are still rendered. Then apply the optimistic patch — the
+        // flash continues to play out via needsAnimation while loading is
+        // bypassing the cancelled-status filter.
+        executionIds.forEach(id => {
+          orderFlashMapRef.current.set(`${id}-${flashSuffix}`, performance.now());
+        });
+
         executionIds.forEach(id => {
           const exec = allExecutions.find(e => e.id === id);
           applyOptimistic(id, { [patchField]: null }, { [patchField]: exec?.[patchField] });
@@ -237,16 +273,16 @@ export const useChartTradingActions = ({
         manager.markDirty('overlays');
         try {
           await cancelProtectionOrder(executionIds, type);
-          executionIds.forEach(id => {
-            const flashKey = `${id}-${type === 'stopLoss' ? 'sl' : 'tp'}`;
-            orderFlashMapRef.current.set(flashKey, performance.now());
-          });
         } catch (error) {
           executionIds.forEach(id => clearOptimistic(id, { [patchField]: null }));
           toastError(t('trading.order.cancelFailed'), error instanceof Error ? error.message : undefined);
         } finally {
-          executionIds.forEach(id => orderLoadingMapRef.current.delete(id));
-          manager.markDirty('overlays');
+          // Defer the loading-clear so the flash gets to play out instead of
+          // being yanked off-screen the same tick the mutation resolves.
+          setTimeout(() => {
+            executionIds.forEach(id => orderLoadingMapRef.current.delete(id));
+            manager.markDirty('overlays');
+          }, ORDER_LINE_ANIMATION.FLASH_DURATION_MS);
         }
       }
 
@@ -255,6 +291,12 @@ export const useChartTradingActions = ({
 
     const exec = allExecutions.find((e) => e.id === orderToClose);
     if (exec) {
+      // Flash kicks in immediately — order is still rendered (real cache +
+      // snapshot for safety), so the white pulse is visible while the
+      // backend close is in flight. Snapshot keeps the order on-screen
+      // through the cache invalidation; deferred cleanup gives the flash
+      // a full FLASH_DURATION_MS to play out before the order vanishes.
+      orderFlashMapRef.current.set(exec.id, performance.now());
       closingSnapshotsRef.current.set(exec.id, exec);
       setClosingVersion(v => v + 1);
       orderLoadingMapRef.current.set(exec.id, Date.now());
@@ -264,18 +306,19 @@ export const useChartTradingActions = ({
         const lastKline = klines[klines.length - 1];
         const exitPrice = lastKline ? getKlineClose(lastKline).toString() : '0';
         await closeExecution(exec.id, exitPrice);
-        orderFlashMapRef.current.set(exec.id, performance.now());
         manager.markDirty('overlays');
       } catch (error) {
         toastError(t('trading.order.closeFailed'), error instanceof Error ? error.message : undefined);
       } finally {
-        closingSnapshotsRef.current.delete(exec.id);
-        setClosingVersion(v => v + 1);
-        orderLoadingMapRef.current.delete(exec.id);
-        manager.markDirty('overlays');
+        setTimeout(() => {
+          closingSnapshotsRef.current.delete(exec.id);
+          setClosingVersion(v => v + 1);
+          orderLoadingMapRef.current.delete(exec.id);
+          manager.markDirty('overlays');
+        }, ORDER_LINE_ANIMATION.FLASH_DURATION_MS);
       }
     }
-  }, [manager, allExecutions, closeExecution, cancelProtectionOrder, toastError, t, applyOptimistic, clearOptimistic, orderLoadingMapRef, orderFlashMapRef, closingSnapshotsRef, setClosingVersion]);
+  }, [manager, allExecutions, closeExecution, cancelProtectionOrder, toastError, t, applyOptimistic, clearOptimistic, orderLoadingMapRef, orderFlashMapRef, closingSnapshotsRef, setClosingVersion, setOrderToClose]);
 
   const handleUpdateOrder = useCallback((id: string, updates: Partial<Order>) => {
     if (!id) return;
@@ -289,53 +332,41 @@ export const useChartTradingActions = ({
       if (!exec) return;
 
       const newPrice = roundTradingPrice(updates.entryPrice).toString();
+      const { optimisticExecution, newOrderRequest } = buildExchangeMoveRequest(
+        { symbol: exec.symbol, side: exec.side, quantity: exec.quantity, marketType: exec.marketType, entryOrderType: exec.entryOrderType },
+        newPrice,
+        isAlgo,
+      );
+
+      // Move = backend cancel + create. The OLD id should disappear from
+      // the chart immediately (loading flag NOT set on it — would bypass
+      // the cancelled-status filter and render a duplicate next to the
+      // new optimistic). The NEW optimistic at the new price IS the
+      // user-visible "moving" order, with its own loading + flash keys.
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(id, cancelPatches, { status: 'pending' });
-      orderLoadingMapRef.current.set(id, Date.now());
+
+      setOptimisticExecutions(prev => [...prev, optimisticExecution]);
+      orderLoadingMapRef.current.set(optimisticExecution.id, Date.now());
       manager?.markDirty('overlays');
-
-      const optimisticId = `opt-exchange-${Date.now()}`;
-      setOptimisticExecutions(prev => [...prev, {
-        id: optimisticId,
-        symbol: exec.symbol,
-        side: exec.side,
-        entryPrice: newPrice,
-        quantity: exec.quantity,
-        stopLoss: null,
-        takeProfit: null,
-        status: 'pending',
-        setupType: null,
-        marketType: exec.marketType ?? 'FUTURES',
-        openedAt: new Date(),
-        entryOrderType: exec.entryOrderType,
-      }]);
-
-      const side = exec.side === 'LONG' ? 'BUY' as const : 'SELL' as const;
-      const orderType = isAlgo
-        ? (exec.entryOrderType as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET') ?? 'STOP_MARKET' as const
-        : 'LIMIT' as const;
 
       cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
         .then(() => addBackendOrder({
           walletId: backendWalletId,
           symbol,
-          side,
-          type: orderType,
-          quantity: exec.quantity,
-          ...(isAlgo ? { stopPrice: newPrice } : { price: newPrice }),
-          reduceOnly: true,
+          ...newOrderRequest,
         }))
         .then(() => {
-          orderFlashMapRef.current.set(optimisticId, performance.now());
+          orderFlashMapRef.current.set(optimisticExecution.id, performance.now());
           manager?.markDirty('overlays');
         })
         .catch((error) => {
           clearOptimistic(id, cancelPatches);
-          setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticId));
+          setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticExecution.id));
           toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
         })
         .finally(() => {
-          orderLoadingMapRef.current.delete(id);
+          orderLoadingMapRef.current.delete(optimisticExecution.id);
           manager?.markDirty('overlays');
         });
       return;
