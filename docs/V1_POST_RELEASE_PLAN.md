@@ -334,9 +334,13 @@ Apply compact-style rules + primitives to every sidebar. Each sub-phase = 1 PR. 
 
 ---
 
-## Phase 5 — MCP infrastructure
+## Phase 5 — MCP infrastructure ✅ shipped
 
 > User directive: **fazer o mais completo possível**. Four MCP servers ship in v1.1; trading MCP deferred to v1.2 (security design).
+>
+> **Status (2026-04-27):** all four packages built, smoke-tested (tools/list passes for each), `pnpm mcp:install` registers them in `~/.claude.json` automatically. See [`docs/MCP_SERVERS.md`](MCP_SERVERS.md), [`docs/MCP_AGENT_GUIDE.md`](MCP_AGENT_GUIDE.md), [`docs/MCP_SECURITY.md`](MCP_SECURITY.md). Per-package READMEs cover input/output schemas. Trade-execution surface (`mcp-trading`) deferred to v1.2 as planned.
+>
+> **Tool counts shipped:** `mcp-screenshot` 6 · `mcp-app` 19 · `mcp-backend` 14 · `mcp-strategy` 8 — total **47 tools** across 4 servers.
 
 ### 5.0 Security model (apply to every MCP server)
 - **Process isolation**: each server is its own Node process (stdio transport), spawned by Claude Code/Desktop on demand. Servers do NOT share memory with the main app.

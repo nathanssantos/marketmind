@@ -17,6 +17,10 @@ describe('GlobalActionsContext', () => {
     openSettings: vi.fn(),
     openSymbolSelector: vi.fn(),
     navigateToSymbol: vi.fn(),
+    closeAll: vi.fn(),
+    setTimeframe: vi.fn(),
+    setChartType: vi.fn(),
+    setMarketType: vi.fn(),
   };
 
   it('should provide actions to children', () => {
