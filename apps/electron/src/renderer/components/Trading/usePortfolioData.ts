@@ -13,6 +13,15 @@ import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTradi
 import { useToast } from '@renderer/hooks/useToast';
 import { useShallow } from 'zustand/react/shallow';
 import type { PortfolioPosition } from './portfolioTypes';
+import {
+  buildPortfolioPositions,
+  computeEffectiveCapital,
+  computeStopProtectedPnl,
+  computeTotalExposure,
+  computeTotalMargin,
+  computeTpProjectedProfit,
+  hasLeveragedPosition,
+} from './portfolioPositionMath';
 
 export const usePortfolioData = () => {
   const [summaryExpanded, setSummaryExpanded] = useUIPref('portfolioSummaryExpanded', true);
@@ -62,54 +71,10 @@ export const usePortfolioData = () => {
   );
   const centralizedPrices = usePricesForSymbols(openExecutionSymbols);
 
-  const positions: PortfolioPosition[] = useMemo(() => {
-    const openExecutions = tradeExecutions.filter((e) => e.status === 'open');
-    const groups = new Map<string, typeof openExecutions>();
-
-    for (const e of openExecutions) {
-      const key = `${e.symbol}-${e.side}`;
-      const group = groups.get(key) ?? [];
-      group.push(e);
-      groups.set(key, group);
-    }
-
-    return Array.from(groups.values()).flatMap((group) => {
-      const primary = group[0];
-      if (!primary) return [];
-      const totalQty = group.reduce((sum, e) => sum + parseFloat(e.quantity || '0'), 0);
-      const avgPrice = group.reduce((sum, e) => sum + parseFloat(e.entryPrice || '0') * parseFloat(e.quantity || '0'), 0) / (totalQty || 1);
-
-      const centralPrice = centralizedPrices[primary.symbol];
-      const tickerPrice = tickerPrices[primary.symbol];
-      const currentPrice = centralPrice ?? (tickerPrice ? parseFloat(String(tickerPrice)) : avgPrice);
-
-      const pnl = primary.side === 'LONG'
-        ? (currentPrice - avgPrice) * totalQty
-        : (avgPrice - currentPrice) * totalQty;
-      const pnlPercent = avgPrice > 0 ? ((currentPrice - avgPrice) / avgPrice) * 100 * (primary.leverage ?? 1) : 0;
-      const adjustedPnlPercent = primary.side === 'LONG' ? pnlPercent : -pnlPercent;
-
-      return {
-        id: primary.id,
-        symbol: primary.symbol,
-        side: primary.side,
-        quantity: totalQty,
-        avgPrice,
-        currentPrice,
-        pnl,
-        pnlPercent: adjustedPnlPercent,
-        stopLoss: primary.stopLoss ? parseFloat(primary.stopLoss) : undefined,
-        takeProfit: primary.takeProfit ? parseFloat(primary.takeProfit) : undefined,
-        setupType: primary.setupType ?? undefined,
-        openedAt: new Date(primary.openedAt),
-        status: 'open' as const,
-        marketType: primary.marketType ?? 'FUTURES',
-        isAutoTrade: !!primary.setupType,
-        count: group.length,
-        leverage: primary.leverage ?? 1,
-      };
-    });
-  }, [tradeExecutions, tickerPrices, centralizedPrices]);
+  const positions: PortfolioPosition[] = useMemo(
+    () => buildPortfolioPositions(tradeExecutions, centralizedPrices, tickerPrices),
+    [tradeExecutions, tickerPrices, centralizedPrices],
+  );
 
   const wallets = backendWallets.map((w) => ({
     id: w.id,
@@ -127,48 +92,12 @@ export const usePortfolioData = () => {
 
   const { positions: filteredPositions, stats } = usePortfolioFilters(positions, filterOption, sortBy);
 
-  const effectiveCapital = activeWallet
-    ? activeWallet.initialBalance + activeWallet.totalDeposits - activeWallet.totalWithdrawals
-    : 0;
-
-  const stopProtectedPnl = useMemo(() => {
-    let total = 0;
-    let positionsWithStops = 0;
-    for (const pos of positions) {
-      if (!pos.stopLoss) continue;
-      positionsWithStops++;
-      if (pos.side === 'LONG') total += (pos.stopLoss - pos.avgPrice) * pos.quantity;
-      else total += (pos.avgPrice - pos.stopLoss) * pos.quantity;
-    }
-    return { total, positionsWithStops };
-  }, [positions]);
-
-  const tpProjectedProfit = useMemo(() => {
-    let total = 0;
-    let positionsWithTp = 0;
-    for (const pos of positions) {
-      if (!pos.takeProfit) continue;
-      positionsWithTp++;
-      if (pos.side === 'LONG') total += (pos.takeProfit - pos.avgPrice) * pos.quantity;
-      else total += (pos.avgPrice - pos.takeProfit) * pos.quantity;
-    }
-    return { total, positionsWithTp };
-  }, [positions]);
-
-  const totalExposure = useMemo(
-    () => positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity), 0),
-    [positions]
-  );
-
-  const totalMargin = useMemo(
-    () => positions.reduce((sum, pos) => sum + (pos.avgPrice * pos.quantity) / (pos.leverage || 1), 0),
-    [positions]
-  );
-
-  const hasLeverage = useMemo(
-    () => positions.some((pos) => pos.leverage > 1),
-    [positions]
-  );
+  const effectiveCapital = computeEffectiveCapital(activeWallet);
+  const stopProtectedPnl = useMemo(() => computeStopProtectedPnl(positions), [positions]);
+  const tpProjectedProfit = useMemo(() => computeTpProjectedProfit(positions), [positions]);
+  const totalExposure = useMemo(() => computeTotalExposure(positions), [positions]);
+  const totalMargin = useMemo(() => computeTotalMargin(positions), [positions]);
+  const hasLeverage = useMemo(() => hasLeveragedPosition(positions), [positions]);
 
   return {
     isIB,
