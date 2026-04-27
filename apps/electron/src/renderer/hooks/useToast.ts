@@ -1,5 +1,7 @@
 import type { MarketType } from '@marketmind/types';
 import { useCallback } from 'react';
+import { useUIPref } from '../store/preferencesStore';
+import { playNotificationSound } from '../utils/notificationSound';
 import { toaster } from '../utils/toaster';
 
 export interface ToastMeta {
@@ -16,6 +18,8 @@ export interface ToastOptions {
 }
 
 export const useToast = () => {
+  const [soundEnabled] = useUIPref<boolean>('notificationSoundEnabled', false);
+
   const showToast = useCallback((options: ToastOptions) => {
     queueMicrotask(() => {
       toaster.create({
@@ -25,8 +29,11 @@ export const useToast = () => {
         duration: options.duration === null ? undefined : (options.duration ?? 3000),
         meta: options.meta,
       });
+      if (soundEnabled) {
+        playNotificationSound(options.type ?? 'info');
+      }
     });
-  }, []);
+  }, [soundEnabled]);
 
   const success = useCallback((title: string, description?: string, meta?: ToastMeta) => {
     showToast({ title, ...(description && { description }), type: 'success', meta });
