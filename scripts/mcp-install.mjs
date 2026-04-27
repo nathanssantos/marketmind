@@ -13,7 +13,6 @@
  */
 
 import { readFile, readdir, writeFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +30,15 @@ const uninstall = argv.includes('--uninstall');
 
 const log = (...args) => console.log('[mcp-install]', ...args);
 
+const tryReadFile = async (p) => {
+  try {
+    return await readFile(p, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return null;
+    throw err;
+  }
+};
+
 const findMcpPackages = async () => {
   const entries = await readdir(PACKAGES_DIR);
   const out = [];
@@ -38,8 +46,9 @@ const findMcpPackages = async () => {
     if (!entry.startsWith('mcp-')) continue;
     const pkgPath = path.join(PACKAGES_DIR, entry);
     const manifestPath = path.join(pkgPath, 'package.json');
-    if (!existsSync(manifestPath)) continue;
-    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    const raw = await tryReadFile(manifestPath);
+    if (raw === null) continue;
+    const manifest = JSON.parse(raw);
     const binEntry = manifest.bin && (typeof manifest.bin === 'string' ? manifest.bin : Object.values(manifest.bin)[0]);
     const main = manifest.main ?? './dist/index.js';
     const entryPoint = binEntry ?? main;
@@ -78,11 +87,9 @@ const main = async () => {
   for (const p of packages) log(`  - ${p.name} → ${p.entry}`);
 
   let config = {};
-  if (existsSync(CLAUDE_CONFIG_PATH)) {
-    const raw = await readFile(CLAUDE_CONFIG_PATH, 'utf8');
-    if (raw.trim().length > 0) {
-      config = JSON.parse(raw);
-    }
+  const raw = await tryReadFile(CLAUDE_CONFIG_PATH);
+  if (raw !== null && raw.trim().length > 0) {
+    config = JSON.parse(raw);
   }
 
   if (!config.mcpServers || typeof config.mcpServers !== 'object') {
