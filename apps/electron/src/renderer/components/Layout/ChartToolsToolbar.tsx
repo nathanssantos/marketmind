@@ -34,7 +34,6 @@ import {
   LuMagnet,
   LuMessageSquare,
 } from 'react-icons/lu';
-import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 
 
 const DrawingToolButton = memo(({ tool, label, icon }: { tool: DrawingType; label: string; icon: React.ReactNode }) => {
@@ -83,8 +82,6 @@ export const ChartToolsToolbar = memo(() => {
       overflowY="auto"
     >
       <VStack gap={0.5}>
-        <IndicatorTogglePopover />
-        <Separator orientation="horizontal" width="100%" />
         <DrawingToolButton tool="pencil" label={t('chart.tools.pencil', 'Pencil')} icon={<PencilIcon />} />
         <DrawingToolButton tool="highlighter" label={t('chart.tools.highlighter', 'Highlighter')} icon={<HighlighterIcon />} />
         <Separator orientation="horizontal" width="100%" />

@@ -68,12 +68,24 @@ type DialogState =
 export interface IndicatorTogglePopoverGenericProps {
   activeUserIndicatorIdsOverride?: string[];
   onToggleUserIndicatorOverride?: (userIndicatorId: string) => void;
+  /**
+   * `'icon'` (default) — square icon-only button, used by the vertical
+   * left toolbar (legacy slot).
+   * `'labeled'` — full-width Button with the gauge icon AND the
+   * "Indicators" label, intended to sit next to the chart-type selector
+   * in the top toolbar.
+   */
+  triggerVariant?: 'icon' | 'labeled';
+  /** Popover placement override. */
+  popoverPlacement?: 'right-start' | 'bottom-start';
 }
 
 export const IndicatorTogglePopoverGeneric = memo(
   ({
     activeUserIndicatorIdsOverride,
     onToggleUserIndicatorOverride,
+    triggerVariant = 'icon',
+    popoverPlacement = 'right-start',
   }: IndicatorTogglePopoverGenericProps = {}) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -177,23 +189,35 @@ export const IndicatorTogglePopoverGeneric = memo(
         onOpenChange={(e) => setIsOpen(e.open)}
         showArrow={false}
         width="360px"
-        positioning={{ placement: 'right-start', offset: { mainAxis: 8 } }}
+        positioning={{ placement: popoverPlacement, offset: { mainAxis: 8 } }}
         trigger={
           <Flex>
             <TooltipWrapper
               label={t('chart.indicators.configure')}
               showArrow
-              placement="right"
+              placement={popoverPlacement === 'bottom-start' ? 'bottom' : 'right'}
               isDisabled={isOpen}
             >
-              <IconButton
-                aria-label={t('chart.indicators.configure')}
-                size="2xs"
-                variant="outline"
-                color="fg.muted"
-              >
-                <LuGauge />
-              </IconButton>
+              {triggerVariant === 'labeled' ? (
+                <Button
+                  aria-label={t('chart.indicators.configure')}
+                  size="2xs"
+                  variant="outline"
+                  color="fg.muted"
+                >
+                  <LuGauge />
+                  {t('chart.indicators.title')}
+                </Button>
+              ) : (
+                <IconButton
+                  aria-label={t('chart.indicators.configure')}
+                  size="2xs"
+                  variant="outline"
+                  color="fg.muted"
+                >
+                  <LuGauge />
+                </IconButton>
+              )}
             </TooltipWrapper>
           </Flex>
         }

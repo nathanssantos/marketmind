@@ -180,8 +180,8 @@ const renderPositionEntry = (
   const percentBadgeWidth = ctx.measureText(percentText).width + 8;
   const pnl = position.totalPnL;
   const pnlText = pnl === 0
-    ? '$0.00'
-    : `${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}`;
+    ? 'USD 0.00'
+    : `${pnl >= 0 ? '+' : '-'}USD ${Math.abs(pnl).toFixed(2)}`;
   const pnlBadgeX = badgeX + percentBadgeWidth + 4;
   drawPercentBadge(ctx, pnlText, pnlBadgeX, y, pnl >= 0);
 
