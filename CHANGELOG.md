@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.114.0] - 2026-04-27
+
+Four real chart-order bugs the user reported, plus the white-flash UX polish extended to every cancel/close path. +47 unit tests.
+
+### Fixed
+- **SL/TP cancel modal stays open after confirm** (`apps/electron/src/renderer/components/Chart/ChartCanvas/useChartTradingActions.ts`). `handleConfirmCloseOrder` never called `setOrderToClose(null)` after the `sltp:` branch ran — the modal sat open with the loading-X order behind it. Now dismisses immediately on confirm; the order stays visible at its position with the X-button-loading state until the backend ACKs.
+- **Move-order shows duplicate (origin + destination)** (`useChartTradingActions.ts`). `handleUpdateOrder` for exchange-* IDs set `orderLoadingMapRef` on the OLD id, which bypassed the cancelled-status filter in the data merge — so the cancelled original AND the new optimistic-at-new-price both rendered. Loading flag now lives only on the new optimistic; the old id is hidden by the cancelled filter immediately. One order moves.
+- **Close: order disappears, comes back, then disappears again** (`useChartTradingActions.ts`). The flash was set AFTER the mutation resolved, but `finally` ran the same tick — clearing the snapshot/loading and removing the order before the flash had a chance to play. Now the flash is set BEFORE the mutation starts (while the order is fully visible), and the cleanup in `finally` is deferred by `FLASH_DURATION_MS` so the white pulse actually plays out.
+- **Flash effect was only firing on SL/TP move** (multiple paths). Same root cause as above for cancels/closes — entity removed before the flash key applies. Applied the "flash-first, defer cleanup" pattern uniformly to: exchange-* X-cancel, pending exec X-cancel, SL/TP cancel via confirm dialog, position close via confirm dialog. Move-entry already worked because the order persists at the new price.
+
+### Added
+- **`closeOrderTargetParser` + 19 tests** (`apps/electron/src/renderer/components/Chart/ChartCanvas/closeOrderTargetParser.ts` + `__tests__`). Encodes the 5-grammar of close-target ids (`null`, `ts-disable`, `sltp:type:id1,id2,...`, `exchange-(order|algo)-<id>`, `<execId>`) into a discriminated union. Round-tripped against `encodeSltpTarget`. Catches malformed inputs without throwing.
+- **`exchangeMoveBuilder` + 11 tests** (`exchangeMoveBuilder.ts` + `__tests__`). Single source of truth for the optimistic-execution + `addBackendOrder` payload shape when moving an exchange-* order. Covers algo (STOP_MARKET / TAKE_PROFIT_MARKET) vs regular LIMIT, `price` vs `stopPrice` routing, FUTURES default, opt-id determinism, `reduceOnly: true` invariant.
+- **`orderDragValidators` + 17 tests** (`orderDragValidators.ts` + `.test.ts`). `isValidTakeProfit` (LONG above / SHORT below entry), `isTighterStop` (slTightenOnly mode), `clampStopToTighten` (drag-preview clamp), `findRelatedOrdersForSlTp` (multi-entry SL/TP fan-out: same symbol + same side + active).
+
+### Changed
+- `useChartTradingActions.ts` and `useOrderDragHandler.ts` consume the new helpers. ~80 lines of inline math now live behind tested seams.
+
+### Notes
+- Frontend tests: 2079 → 2126 unit + 97 browser. Backend untouched.
+- Cumulative across this session: 1933 → 2126 unit (+193), 0 → 8 boleta e2e, 74 → 153 chromium e2e (+79 stabilized), 10 real production bugs found + fixed.
+
 ## [0.113.0] - 2026-04-27
 
 Coverage parity for the portfolio sidebar's PnL math + orphan-orders classification, two real bug fixes surfaced by the work.
