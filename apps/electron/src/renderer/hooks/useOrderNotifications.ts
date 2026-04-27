@@ -3,6 +3,7 @@ import { useBackendTrading } from './useBackendTrading';
 import { useBackendWallet } from './useBackendWallet';
 import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useUIPref } from '../store/preferencesStore';
 import { useNotification } from './useNotification';
 import { useToast } from './useToast';
 
@@ -10,6 +11,7 @@ export const useOrderNotifications = () => {
   const { t } = useTranslation();
   const { success, info, warning } = useToast();
   const { showNotification, isSupported } = useNotification();
+  const [orderToastsEnabled] = useUIPref<boolean>('orderToastsEnabled', true);
 
   const { wallets } = useBackendWallet();
   const activeWalletId = wallets[0]?.id;
@@ -30,6 +32,11 @@ export const useOrderNotifications = () => {
       return;
     }
 
+    if (!orderToastsEnabled) {
+      prevOrdersRef.current = orderStatusMap;
+      return;
+    }
+
     orderStatusMap.forEach((current, orderId) => {
       const prev = prevOrders.get(orderId);
       if (!prev) return;
@@ -40,7 +47,7 @@ export const useOrderNotifications = () => {
     });
 
     prevOrdersRef.current = orderStatusMap;
-  }, [orderStatusMap, t, success, info, warning]);
+  }, [orderStatusMap, orderToastsEnabled, t, success, info, warning]);
 
   const handleStatusChange = (order: typeof orders[0], oldStatus: OrderStatus, newStatus: OrderStatus) => {
     const isLong = order.side === 'BUY';

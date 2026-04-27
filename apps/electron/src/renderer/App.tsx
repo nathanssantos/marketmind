@@ -24,6 +24,7 @@ import { useChartData } from './hooks/useChartData';
 import { useLayoutSync } from './hooks/useLayoutSync';
 
 import { useOrderNotifications } from './hooks/useOrderNotifications';
+import { useSetupToasts } from './hooks/useSetupToasts';
 import { useAutoActivateDefaultIndicators } from './hooks/useAutoActivateDefaultIndicators';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useShallow } from 'zustand/shallow';
@@ -148,6 +149,7 @@ function AppContent(): ReactElement {
 
   useCurrencyAutoRefresh();
   useOrderNotifications();
+  useSetupToasts();
   useAutoActivateDefaultIndicators();
 
   const [chartType] = useChartPref<ChartType>('chartType', 'kline');
