@@ -1,8 +1,10 @@
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright';
+import { installVisualFixtures } from './trpcMock.js';
 
 const DEFAULT_BASE_URL = process.env.MM_MCP_BASE_URL ?? 'http://localhost:5174';
 const RESTART_AFTER_CAPTURES = 50;
 const IDLE_RESTART_MS = 30 * 60 * 1000;
+const FIXTURES_ENABLED = process.env.MM_MCP_FIXTURES !== 'false';
 
 interface BrowserHandle {
   browser: Browser;
@@ -24,6 +26,9 @@ const launch = async (): Promise<BrowserHandle> => {
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 2,
   });
+  if (FIXTURES_ENABLED) {
+    await installVisualFixtures(context);
+  }
   const page = await context.newPage();
   await page.goto(DEFAULT_BASE_URL, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => typeof (window as { __globalActions?: unknown }).__globalActions !== 'undefined', { timeout: 30_000 });
