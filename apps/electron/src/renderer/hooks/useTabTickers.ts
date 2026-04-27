@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import type { MarketType } from '@marketmind/types';
 import { usePriceStore } from '../store/priceStore';
 import { trpc } from '../utils/trpc';
-import { usePriceSubscription, useSocketEvent } from './socket';
+import { usePriceSubscription } from './socket';
 
 export interface TabTickerTarget {
   symbol: string;
@@ -87,7 +87,8 @@ export const useTabTickers = (targets: TabTickerTarget[]): void => {
 
   usePriceSubscription(allSymbols);
 
-  useSocketEvent('price:update', (data) => {
-    usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
-  });
+  // price:update is forwarded to priceStore by RealtimeTradingSyncProvider
+  // (mounted at the App root), which is the single canonical owner of the
+  // socket-tick → priceStore pipe. Don't add a duplicate listener here —
+  // every active consumer would write the same price twice per tick.
 };

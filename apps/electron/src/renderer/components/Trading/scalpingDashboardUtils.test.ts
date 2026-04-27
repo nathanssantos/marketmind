@@ -11,8 +11,10 @@ describe('formatScalpingPnl', () => {
     expect(formatScalpingPnl(0)).toBe('+$0.00');
   });
 
-  it('negative values produce "$-X.XX" (sign stays inside the dollar prefix — current production format)', () => {
-    expect(formatScalpingPnl(-7.5)).toBe('$-7.50');
+  it('negative values produce "-$X.XX" — sign outside the $ prefix (accounting convention)', () => {
+    expect(formatScalpingPnl(-7.5)).toBe('-$7.50');
+    expect(formatScalpingPnl(-0.01)).toBe('-$0.01');
+    expect(formatScalpingPnl(-100)).toBe('-$100.00');
   });
 
   it('always 2 decimals', () => {
