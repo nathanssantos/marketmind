@@ -61,6 +61,19 @@ export const MM = {
   buttonSize: {
     primary: 'xs' as const,
     secondary: '2xs' as const,
+    /** Tiny pagination/navigation buttons (prev/next, etc.) */
+    nav: '2xs' as const,
+  },
+
+  /**
+   * Spinners shown as the loading state of a dashboard-style panel
+   * (PerformancePanel, EquityCurveChart, PerformanceCalendar, etc.).
+   * Vertical padding ensures the spinner sits at a consistent height
+   * before the panel's first paint.
+   */
+  spinner: {
+    panel: { size: 'md' as const, py: 6 },
+    inline: { size: 'sm' as const, py: 0 },
   },
 
   borderRadius: {

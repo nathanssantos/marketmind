@@ -1,4 +1,6 @@
-import { Box, Flex, Spinner, Text, useToken } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Stack, Text, useToken } from '@chakra-ui/react';
+import { Callout, PanelHeader } from '@renderer/components/ui';
+import { MM } from '@renderer/theme/tokens';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { memo, useMemo } from 'react';
@@ -99,27 +101,23 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
 
   if (isLoadingEquityCurve) {
     return (
-      <Flex justify="center" align="center" py={6}>
-        <Spinner size="md" />
+      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+        <Spinner size={MM.spinner.panel.size} />
       </Flex>
     );
   }
 
   if (chartData.length <= 1) {
     return (
-      <Box p={6} textAlign="center" bg="bg.muted" borderRadius="md">
-        <Text fontSize="sm" color="fg.muted">
-          {t('trading.wallets.noTradesYet')}
-        </Text>
-      </Box>
+      <Callout tone="neutral" compact>
+        {t('trading.wallets.noTradesYet')}
+      </Callout>
     );
   }
 
   return (
-    <Box>
-      <Text fontSize="sm" fontWeight="medium" mb={3}>
-        {t('trading.wallets.equityCurve')}
-      </Text>
+    <Stack gap={3}>
+      <PanelHeader title={t('trading.wallets.equityCurve')} />
       <Box h="280px" minW={0}>
         <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           <AreaChart data={chartData}>
@@ -158,7 +156,7 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
           </AreaChart>
         </ResponsiveContainer>
       </Box>
-    </Box>
+    </Stack>
   );
 });
 

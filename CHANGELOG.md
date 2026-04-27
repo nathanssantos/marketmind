@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — UI standards uplift (during Phase 4)
+- **`<PanelHeader>` new primitive** (`apps/electron/src/renderer/components/ui/panel-header.tsx`). Standard header for dashboard-style panels: title (`MM.font.sectionTitle` = sm/semibold) + optional description + optional right-side action slot, with `pb={2}` + `borderBottomWidth="1px" borderColor="border"` separator. **`<PanelHeader>` vs `<FormSection>`**: FormSection = form group, no border; PanelHeader = data panel, with bottom border. Same title typography.
+- **New tokens**:
+  - `MM.spinner.panel = { size: 'md', py: 6 }` — standard dashboard panel loading state
+  - `MM.spinner.inline = { size: 'sm', py: 0 }` — inline next-to-text loading
+  - `MM.buttonSize.nav = '2xs'` — pagination / prev-next nav buttons
+- **AnalyticsModal panels migrated** to `<PanelHeader>` — `EquityCurveChart`, `PerformanceCalendar`, `PerformancePanel` all use the new primitive. All 3 spinners use `MM.spinner.panel` tokens. Calendar prev/next buttons use `MM.buttonSize.nav`.
+
+### Docs
+- `docs/V1_POST_RELEASE_PLAN.md` — Component primacy table extended with PanelHeader / panel-loading / pagination patterns + dedicated "Panel header vs Form section" sub-section + 3 new forbidden patterns.
+- `docs/UI_STYLE_GUIDE.md` — new "Spinners" token table + dedicated "Panel header pattern" section with usage example.
+- `apps/electron/src/renderer/components/ui/README.md` — PanelHeader added to the Layout catalog with rationale.
+- `CLAUDE.md` — PanelHeader added to the must-use-from-`ui` list + section/row composition guide updated with PanelHeader, MM.spinner.panel, MM.buttonSize.nav usage.
+
+### Changed — Phase 4 (Modals deep review)
+- **OrdersDialog**: stats bar tightened (`gap={6}` → MM.spacing.row.gap, ad-hoc colors `green.500/orange.500` → semantic `green.fg/orange.fg`), filter bar gaps + button sizes adopt MM tokens (`size="sm"` → `xs` for view-mode toggles), empty/loading states tightened to `p={6}` from `p={8}`.
+- **BacktestForm** outer shell: `gap={3}` → `MM.spacing.row.gap`, `py={4}` → `MM.spacing.section.gap`, button group gap → `MM.spacing.inline.gap`, body text size → `MM.font.body.size`.
+- **ScreenerModal** body: `Stack gap={3}` → `MM.spacing.row.gap`; dialog padding `px={4} py={3}` → `MM.spacing.section.gap` / `MM.spacing.dialogPadding`.
+- **AnalyticsModal/EquityCurveChart** "no trades yet" empty state: ad-hoc `<Box p={6} bg="bg.muted">` + Text → `<Callout tone="neutral" compact>`.
+
 ### Changed — Phase 3 (Sidebars deep review)
 Phase 3 of v1 post-release plan. Sidebars came out cleaner than expected from prior v1.0.0 sweeps — no hardcoded shades found in `Trading/TradingSidebar`, `AutoTrading/AutoTradingSidebar`, `OrderFlow/OrderFlowSidebar`, `MarketSidebar/MarketSidebar`, or any tab. Two real touches:
 

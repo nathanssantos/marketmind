@@ -409,10 +409,48 @@ The MarketMind compact style is captured as TS constants under the `MM` namespac
 |---|---|---|
 | `MM.buttonSize.primary` | `xs` | Primary action buttons |
 | `MM.buttonSize.secondary` | `2xs` | Secondary / row action buttons |
+| `MM.buttonSize.nav` | `2xs` | Pagination / prev-next nav buttons |
 | `MM.borderRadius.badge` | `sm` (2px) | Badges |
 | `MM.borderRadius.card` | `md` (4px) | Callouts, cards |
 | `MM.preview.sm` | `48` (px) | Small avatar |
 | `MM.preview.md` | `64` (px) | Profile avatar |
+
+### Spinners
+
+| Token | Value | Use |
+|---|---|---|
+| `MM.spinner.panel` | `{ size: 'md', py: 6 }` | Dashboard panel loading state |
+| `MM.spinner.inline` | `{ size: 'sm', py: 0 }` | Inline next-to-text loading |
+
+## Panel header pattern
+
+For dashboard-style panels (analytics modal, stats sections) that need a visible separation between the title and the body, use `<PanelHeader>`:
+
+```tsx
+import { PanelHeader, Stack } from '@renderer/components/ui';
+
+<Stack gap={3}>
+  <PanelHeader
+    title={t('panel.title')}
+    description={t('panel.description')}  // optional
+    action={<NavButtons />}                // optional period selector / prev-next
+  />
+  {/* panel body */}
+</Stack>
+```
+
+What it provides:
+- Title at `MM.font.sectionTitle` (sm / semibold)
+- Optional description at `MM.font.hint` muted
+- `pb={2}` + `borderBottomWidth="1px" borderColor="border"` separator
+- Right-side `action` slot for period selectors, prev/next, etc.
+- `align` flips between `flex-start` (with description) and `center` (title-only)
+- Wraps on narrow widths
+
+`PanelHeader` vs. `FormSection`:
+- **`FormSection`** is for form/settings groups. **No border**.
+- **`PanelHeader`** is for dashboard panels showing data. **Has bottom border**.
+- Share the same title typography.
 
 ### Usage
 

@@ -89,7 +89,8 @@ See `docs/UI_STYLE_GUIDE.md` for the full import rules and style hierarchy.
 
 | Component | Description |
 |-----------|-------------|
-| `FormSection` | **Standard form section** — header (title / description / optional action) + content stack. Use for all section blocks in dialogs and settings tabs. |
+| `FormSection` | **Standard form section (no border separator)** — header (title / description / optional action) + content stack. Use for all section blocks in dialogs and settings tabs. |
+| `PanelHeader` | **Dashboard-style panel header (with `borderBottom`)** — title + optional description + optional action slot. Use in AnalyticsModal panels and any data-display panel where the title needs visual separation from the body. Same title typography as `FormSection` (sm/semibold). |
 | `FormRow` | **Standard form row** — left label + helper, right control + optional action. Use for switch/select rows where label/control are inline. |
 | `CollapsibleSection` | Expandable section with title, badge, header action. New `variant="static"` renders without chevron (always-open) — use for non-accordion contexts (default `"collapsible"` keeps backwards-compat). |
 | `Separator` | Visual divider |

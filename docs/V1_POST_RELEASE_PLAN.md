@@ -59,21 +59,32 @@ Reference frame: **VSCode density**. Compact and objective — every pixel justi
 
 | Pattern | Component | Forbidden replacement |
 |---|---|---|
-| Section block | `<FormSection title description action>` | `<Box>` + `<Heading>` + `<Stack>` |
+| Section block (no border) | `<FormSection title description action>` | `<Box>` + `<Heading>` + `<Stack>` |
+| **Panel header (with bottom border, for dashboard panels)** | `<PanelHeader title description action>` | `<Flex pb={2} borderBottomWidth="1px">` + manual `<Text>` |
 | Row with label + control | `<FormRow label helper>` | inline `<HStack>` with manual layout |
 | Toned banner | `<Callout tone="info\|success\|warning\|danger\|neutral" compact>` | `<Alert.Root>`, `<Box bg="X.50">` |
 | Pill / status marker | `<Badge colorPalette>` | `<Box bg="green.100" _dark={...}>` |
 | Eyebrow / subtitle | `<SubsectionTitle>` | inline bold `<Text>` |
 | Always-open section header | `<CollapsibleSection variant="static">` | manual heading + content |
 | Collapsible (where it actually helps) | `<CollapsibleSection variant="collapsible">` (default) | hand-rolled accordion |
+| **Panel loading state** | `<Flex py={MM.spinner.panel.py}><Spinner size={MM.spinner.panel.size} /></Flex>` | ad-hoc `<Spinner size="lg" py={8}>` |
+| **Pagination prev/next buttons** | `<Button size={MM.buttonSize.nav} px={1.5} minW="auto">‹</Button>` | `size="xs/sm" px={2}` |
+
+#### Panel header vs. Form section
+- **`<FormSection>`**: form/settings group, **no border separator**. Use in Settings tabs, dialog forms.
+- **`<PanelHeader>`**: dashboard-style panel that shows data, **with `borderBottom`**. Use in AnalyticsModal panels, future stats dashboards.
+- Both share the same title typography (`MM.font.sectionTitle` = sm/semibold).
 
 **Forbidden patterns** (every occurrence is a refactor target):
 - `bg="X.50"` / `bg="X.100"` / `bg="X.900"` shade literals → use `X.subtle` / `X.muted` semantic tokens
 - `_dark={{ bg: 'X.900', color: 'X.200' }}` overrides → use semantic tokens that auto-resolve
 - `<Alert.Root status="...">` for inline contextual messages → use `<Callout>`
 - Hardcoded `color="X.600"` / `X.500` on text → use `.fg` / `.subtle` / `.muted`
-- Custom `<Box>` pretending to be a section header → use `<FormSection>`
+- Custom `<Box>` pretending to be a section header → use `<FormSection>` or `<PanelHeader>`
 - `<Heading size="md+">` inside a dialog → too big; use `<SectionTitle>` or sm
+- Hand-rolled bordered panel header (`<Flex pb={2} borderBottomWidth="1px">`) → use `<PanelHeader>`
+- Inconsistent spinner sizes inside dashboard panels → use `MM.spinner.panel` tokens
+- Pagination/nav buttons sized larger than `2xs` → use `MM.buttonSize.nav` for consistency
 
 ---
 
