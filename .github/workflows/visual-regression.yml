@@ -1,0 +1,88 @@
+name: Visual Regression
+
+on:
+  pull_request:
+    paths:
+      - 'apps/electron/src/renderer/**'
+      - 'apps/electron/src/shared/**'
+      - 'packages/mcp-screenshot/**'
+      - 'apps/electron/screenshots/baseline/**'
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+  VITE_E2E_BYPASS_AUTH: 'true'
+  MM_MCP_BASE_URL: 'http://localhost:5174'
+
+jobs:
+  visual-diff:
+    name: Visual diff vs baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build shared packages
+        run: pnpm --filter "./packages/*" build
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @marketmind/mcp-screenshot exec playwright install --with-deps chromium
+
+      - name: Start renderer dev server
+        run: pnpm --filter @marketmind/electron dev:web > vite.log 2>&1 &
+        env:
+          VITE_E2E_BYPASS_AUTH: 'true'
+
+      - name: Wait for renderer
+        run: |
+          for i in {1..60}; do
+            if curl -fs http://localhost:5174 > /dev/null; then
+              echo "renderer up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "renderer failed to start"
+          tail -100 vite.log
+          exit 1
+
+      - name: Run gallery
+        run: node scripts/visual-gallery.mjs
+
+      - name: Diff vs baseline
+        id: diff
+        run: node scripts/visual-diff.mjs
+
+      - name: Upload diffs on failure
+        if: failure() && steps.diff.conclusion == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: |
+            apps/electron/screenshots/2*/diffs/
+            apps/electron/screenshots/2*/*.png
+          retention-days: 7
+
+      - name: Upload session always
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-session
+          path: apps/electron/screenshots/2*/
+          retention-days: 7
