@@ -6,7 +6,8 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { formatBRL, formatWalletCurrencyWithSign } from '../../utils/currencyFormatter';
 import { trpc } from '../../utils/trpc';
-import { Button } from '@renderer/components/ui';
+import { Button, PanelHeader } from '@renderer/components/ui';
+import { MM } from '@renderer/theme/tokens';
 
 interface PerformanceCalendarProps {
   walletId: string;
@@ -147,26 +148,26 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
 
   return (
     <Stack gap={3}>
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" borderColor="border">
-        <Text fontSize="sm" fontWeight="semibold">
-          {t('trading.analytics.calendar.title')}
-        </Text>
-        <Flex align="center" gap={1.5}>
-          <Button size="2xs" variant="outline" onClick={goToPrev} px={1.5} minW="auto">
-            ‹
-          </Button>
-          <Text fontSize="xs" fontWeight="medium" minW="100px" textAlign="center">
-            {monthLabel}
-          </Text>
-          <Button size="2xs" variant="outline" onClick={goToNext} px={1.5} minW="auto" disabled={isNextDisabled}>
-            ›
-          </Button>
-        </Flex>
-      </Flex>
+      <PanelHeader
+        title={t('trading.analytics.calendar.title')}
+        action={
+          <Flex align="center" gap={1.5}>
+            <Button size={MM.buttonSize.nav} variant="outline" onClick={goToPrev} px={1.5} minW="auto">
+              ‹
+            </Button>
+            <Text fontSize="xs" fontWeight="medium" minW="100px" textAlign="center">
+              {monthLabel}
+            </Text>
+            <Button size={MM.buttonSize.nav} variant="outline" onClick={goToNext} px={1.5} minW="auto" disabled={isNextDisabled}>
+              ›
+            </Button>
+          </Flex>
+        }
+      />
 
       {isLoading ? (
-        <Flex justify="center" align="center" py={6}>
-          <Spinner size="md" />
+        <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+          <Spinner size={MM.spinner.panel.size} />
         </Flex>
       ) : (
         <Box>
