@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
@@ -227,18 +227,11 @@ const FuturesPositionCard = memo(({
         )}
 
         {(isInDanger || wouldBeLiquidated) && (
-          <Box p={2} bg="red.subtle" borderRadius="md" borderWidth="1px" borderColor="red.emphasized">
-            <Flex align="center" gap={2}>
-              <Box color="red.fg">
-                <LuTriangleAlert size={12} />
-              </Box>
-              <Text fontSize="2xs" color="red.fg" fontWeight="medium">
-                {wouldBeLiquidated
-                  ? t('futures.liquidated', 'Position would be liquidated at current price!')
-                  : t('futures.liquidationWarning', 'Warning: Position is close to liquidation.')}
-              </Text>
-            </Flex>
-          </Box>
+          <Callout tone="danger" compact>
+            {wouldBeLiquidated
+              ? t('futures.liquidated', 'Position would be liquidated at current price!')
+              : t('futures.liquidationWarning', 'Warning: Position is close to liquidation.')}
+          </Callout>
         )}
       </VStack>
 

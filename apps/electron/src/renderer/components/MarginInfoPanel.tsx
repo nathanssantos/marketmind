@@ -1,8 +1,8 @@
 import { Box, Flex, Text, VStack } from '@chakra-ui/react';
-import { Badge, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Callout, TooltipWrapper } from '@renderer/components/ui';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuPercent, LuShield, LuTrendingUp, LuTriangleAlert } from 'react-icons/lu';
+import { LuPercent, LuShield, LuTrendingUp } from 'react-icons/lu';
 
 interface MarginRequirements {
   initialMargin: number;
@@ -153,12 +153,9 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
             </Flex>
 
             {!impact.isSafe && impact.warningMessage && (
-              <Flex align="center" gap={2} p={2} borderRadius="md" bg="red.subtle">
-                <LuTriangleAlert size={14} color="var(--chakra-colors-red-fg)" />
-                <Text fontSize="2xs" color="red.fg">
-                  {impact.warningMessage}
-                </Text>
-              </Flex>
+              <Callout tone="danger" compact>
+                {impact.warningMessage}
+              </Callout>
             )}
           </VStack>
         </>

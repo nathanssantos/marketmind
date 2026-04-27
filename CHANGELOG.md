@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Round 3: Backtest tabs no-accordion + final colored-box sweep
+- **Backtest `RiskTab`**: 5 `CollapsibleSection`s converted to `variant="static"` (always-visible — matches AutoTrading pattern). `FiltersTab` left as collapsible (filter groups benefit from collapsing).
+- **`FuturesPositionInfo`**: liquidation-warning panel → `<Callout tone="danger" compact>`.
+- **`Trading/FuturesPositionsPanel`**: same liquidation-warning panel → `<Callout tone="danger" compact>`.
+- **`MarginInfoPanel`**: !isSafe warning → `<Callout tone="danger" compact>`. Removed unused `LuTriangleAlert` import.
+- **`WatcherManager/EmergencyStopSection`**: confirm panel changed from hardcoded `red.50` + `_dark={{ bg: 'red.900/30' }}` to semantic `red.subtle`/`red.muted` tokens; tightened spacing (p=4→3, gap=3→2, button size sm→xs).
+
 ### Changed — Modal sweep round 2 (Callout adoption + semantic tokens)
 - **BacktestModal**: error state now uses `<Callout tone="danger">` instead of `<Alert.Root status="error">`.
 - **ScreenerModal**: error banner now uses `<Callout tone="danger">` instead of an inline `<Box bg="red.subtle">` text block.
