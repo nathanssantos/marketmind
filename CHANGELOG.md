@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Phase 5 (MCP infrastructure)
+- **Four MCP servers** under `packages/mcp-*`, each independently installable, totalling **47 tools**:
+  - `@marketmind/mcp-screenshot` (6 tools) — Playwright + Chromium against the dev renderer; `screenshot.tab`/`modal`/`sidebar`/`fullPage`/`gallery` plus `__health`. Emits side-by-side dark/light HTML galleries to `apps/electron/screenshots/{ts}/`.
+  - `@marketmind/mcp-app` (19 tools) — drives the live dev app: navigation (`openSettings`/`closeSettings`/`closeAll`/`openModal`), symbol/chart (`navigateToSymbol`/`setTimeframe`/`setChartType`/`setMarketType`), UI state (`applyTheme`/`toggleSidebar`/`toggleIndicator`), allowlisted `dispatchToolbar`/`dispatchStore`, escape hatches (`click`/`fill`/`waitFor`/`takeScreenshot`), `inspectStore`. All bridges are dev-only — gated by `VITE_E2E_BYPASS_AUTH=true`.
+  - `@marketmind/mcp-backend` (14 tools) — read-only DB layer: per-table `db.query.{wallets,executions,orders,klines,users,sessions,watchers,setups,autoTradingConfig}` plus SELECT/CTE-only `db.exec`, `trpc.call` HTTP bridge, `audit.tail`, `health.check`. Audit log is JSONL, append-only, local-only.
+  - `@marketmind/mcp-strategy` (8 tools) — Pine strategy CRUD (`list`/`export`/`create` against `apps/backend/strategies/{builtin,user}/`) + backtest proxies (`run`/`diff`/`getResult`/`listBacktests`).
+- **Renderer e2e bridge extended** for MCP control surface: `__globalActions.closeAll`/`setTimeframe`/`setChartType`/`setMarketType` added to `apps/electron/src/renderer/utils/e2eBridge.ts` + `MainLayout.tsx` + `GlobalActionsContext.tsx`. New stores exposed on `window`: `__backtestModalStore`, `__screenerStore`.
+- **One-shot installer** `pnpm mcp:install` (`scripts/mcp-install.mjs`) — auto-detects every `packages/mcp-*` workspace, registers them in `~/.claude.json` under `mcpServers.marketmind-{surface}`. `pnpm mcp:install:dry-run` previews the patch; `pnpm mcp:uninstall` removes the entries; `pnpm mcp:build` compiles all four packages.
+- **Three top-level docs**:
+  - `docs/MCP_SERVERS.md` — overview, install, per-server tool tables, architecture diagram.
+  - `docs/MCP_AGENT_GUIDE.md` — common-flow recipes (gallery sweep, symbol nav, P&L lookup, strategy diff, store inspection, audit tail).
+  - `docs/MCP_SECURITY.md` — threat model, env gates, allowlist enforcement, audit log semantics, why `mcp-trading` is deferred to v1.2.
+
 ### Added — UI standards uplift (during Phase 4)
 - **`<PanelHeader>` new primitive** (`apps/electron/src/renderer/components/ui/panel-header.tsx`). Standard header for dashboard-style panels: title (`MM.font.sectionTitle` = sm/semibold) + optional description + optional right-side action slot, with `pb={2}` + `borderBottomWidth="1px" borderColor="border"` separator. **`<PanelHeader>` vs `<FormSection>`**: FormSection = form group, no border; PanelHeader = data panel, with bottom border. Same title typography.
 - **New tokens**:
