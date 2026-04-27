@@ -7,9 +7,13 @@ import { useUIPref } from '@renderer/store/preferencesStore';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuMinus, LuPlus, LuTrash2 } from 'react-icons/lu';
-
-const FONT_SIZE_STEPS = [6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
-const DEFAULT_FONT_SIZE_INDEX = 6;
+import {
+  clampFontSizeIndex,
+  fontSizeForIndex,
+  isScrolledToBottom,
+  LOGS_TAB_DEFAULT_FONT_SIZE_INDEX,
+  LOGS_TAB_FONT_SIZE_STEPS,
+} from './logsTabUtils';
 
 interface LogLineProps {
   entry: FrontendLogEntry;
@@ -68,10 +72,10 @@ const LogsTabComponent = () => {
   const { logs, clearLogs } = useAutoTradingLogs(activeWalletId ?? '', hasActiveWatchers);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [fontSizeIndex, setFontSizeIndex] = useUIPref<number>('logsTabFontSizeIndex', DEFAULT_FONT_SIZE_INDEX);
+  const [fontSizeIndex, setFontSizeIndex] = useUIPref<number>('logsTabFontSizeIndex', LOGS_TAB_DEFAULT_FONT_SIZE_INDEX);
   const [autoScroll, setAutoScroll] = useUIPref<boolean>('logsTabAutoScroll', true);
 
-  const fontSize = FONT_SIZE_STEPS[fontSizeIndex] ?? 12;
+  const fontSize = fontSizeForIndex(fontSizeIndex);
 
   useEffect(() => {
     if (autoScroll && containerRef.current) {
@@ -82,16 +86,15 @@ const LogsTabComponent = () => {
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
-    setAutoScroll(isAtBottom);
+    setAutoScroll(isScrolledToBottom(scrollTop, scrollHeight, clientHeight));
   }, [setAutoScroll]);
 
   const increaseFontSize = useCallback(() => {
-    setFontSizeIndex((prev) => Math.min(prev + 1, FONT_SIZE_STEPS.length - 1));
+    setFontSizeIndex((prev) => clampFontSizeIndex(prev + 1));
   }, [setFontSizeIndex]);
 
   const decreaseFontSize = useCallback(() => {
-    setFontSizeIndex((prev) => Math.max(prev - 1, 0));
+    setFontSizeIndex((prev) => clampFontSizeIndex(prev - 1));
   }, [setFontSizeIndex]);
 
   if (!activeWalletId) {
@@ -143,7 +146,7 @@ const LogsTabComponent = () => {
             size="2xs"
             variant="ghost"
             onClick={increaseFontSize}
-            disabled={fontSizeIndex === FONT_SIZE_STEPS.length - 1}
+            disabled={fontSizeIndex === LOGS_TAB_FONT_SIZE_STEPS.length - 1}
           >
             <LuPlus />
           </IconButton>
