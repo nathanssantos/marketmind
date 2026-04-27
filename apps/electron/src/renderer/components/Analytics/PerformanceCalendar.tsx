@@ -33,12 +33,12 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
     }
   })();
 
-  const { data = [], isLoading } = trpc.analytics.getDailyPerformance.useQuery(
+  const { data, isLoading } = trpc.analytics.getDailyPerformance.useQuery(
     { walletId, year, month, tz },
     { enabled: !!walletId, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 
-  const dailyMap = new Map(data.map((d) => [d.date, d]));
+  const dailyMap = new Map((data ?? []).map((d) => [d.date, d]));
 
   const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -107,7 +107,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
     return { pnl, pnlPercent, wins, losses, winRate, profitFactor, hasTrades };
   };
 
-  const monthTotal = data.reduce(
+  const monthTotal = (data ?? []).reduce(
     (acc, d) => ({
       pnl: acc.pnl + d.pnl,
       pnlPercent: acc.pnlPercent + d.pnlPercent,
@@ -268,7 +268,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
             );
           })}
 
-          {data.length > 0 && (
+          {(data?.length ?? 0) > 0 && (
             <Grid templateColumns="repeat(8, 1fr)" gap={1} mt={1}>
               <GridItem colSpan={7} />
               <GridItem>
@@ -297,7 +297,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
             </Grid>
           )}
 
-          {data.length === 0 && (
+          {(data?.length ?? 0) === 0 && (
             <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
               {t('trading.analytics.calendar.noData')}
             </Text>
