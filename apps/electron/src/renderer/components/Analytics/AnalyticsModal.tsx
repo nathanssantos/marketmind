@@ -67,12 +67,12 @@ export const AnalyticsModal = memo(() => {
           <DialogBody px={4} py={3} overflowY="auto">
             {activeWalletId ? (
               <Stack gap={4}>
+                <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
                 <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
                 <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
                 {marginRequirements && (
                   <MarginInfoPanel requirements={marginRequirements} />
                 )}
-                <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
               </Stack>
             ) : (
               <Callout tone="info" compact>
