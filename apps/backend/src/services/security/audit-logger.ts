@@ -62,6 +62,30 @@ export interface SecurityEventMetadata {
   [key: string]: unknown;
 }
 
+/**
+ * Mask an email for audit logs. Keeps the first character of the local part
+ * and the full domain so operators can still correlate events for the same
+ * user (and detect impossible-domain typos), but never persists the full
+ * address in clear text.
+ *
+ *   alice@example.com  → a****@example.com
+ *   ab@example.com     → a*@example.com
+ *   a@example.com      → *@example.com
+ */
+const maskEmail = (email: string): string => {
+  const at = email.indexOf('@');
+  if (at < 0) return '***';
+  const local = email.slice(0, at);
+  const domain = email.slice(at + 1);
+  if (local.length <= 1) return `*@${domain}`;
+  return `${local[0]}${'*'.repeat(Math.max(1, local.length - 1))}@${domain}`;
+};
+
+const sanitizeMetadata = (metadata: SecurityEventMetadata): SecurityEventMetadata => {
+  if (typeof metadata.email !== 'string' || metadata.email.length === 0) return metadata;
+  return { ...metadata, email: maskEmail(metadata.email) };
+};
+
 export const logSecurityEvent = (
   event: SecurityEvent,
   userId: string | null,
@@ -71,7 +95,7 @@ export const logSecurityEvent = (
     event,
     userId,
     timestamp: new Date().toISOString(),
-    ...metadata,
+    ...sanitizeMetadata(metadata),
   };
 
   switch (event) {

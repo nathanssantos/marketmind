@@ -161,6 +161,9 @@
     "title": "Paramètres",
     "resetToDefaults": "Réinitialiser aux Valeurs par Défaut",
     "tabs": {
+      "account": "Compte",
+      "security": "Sécurité",
+      "notifications": "Notifications",
       "general": "Général",
       "chart": "Graphique",
       "autoTrading": "Auto-Trading",
@@ -172,9 +175,109 @@
       "setupDetection": "Détection de Setups",
       "tradingSimulator": "Simulateur de Trading",
       "data": "Données",
+      "updates": "Mises à jour",
       "about": "À propos",
       "indicators": "Indicateurs",
       "customSymbols": "Symboles Personnalisés"
+    },
+    "section": {
+      "account": "Compte",
+      "appearance": "Apparence",
+      "trading": "Trading",
+      "system": "Système"
+    },
+    "account": {
+      "saved": "Enregistré",
+      "memberSince": "Membre depuis",
+      "profile": {
+        "title": "Profil",
+        "description": "Informations publiques affichées dans l'application.",
+        "name": "Nom d'affichage",
+        "namePlaceholder": "Votre nom"
+      },
+      "avatar": {
+        "upload": "Télécharger une photo",
+        "helper": "PNG, JPG, WEBP ou GIF jusqu'à {{maxKb}}KB.",
+        "uploadSuccess": "Avatar mis à jour",
+        "deleteSuccess": "Avatar supprimé",
+        "colorLabel": "Ou choisissez une couleur pour vos initiales"
+      },
+      "email": {
+        "title": "E-mail",
+        "description": "Utilisé pour la connexion, les alertes de sécurité et les codes de vérification.",
+        "label": "Adresse e-mail",
+        "verified": "Vérifié",
+        "notVerified": "Non vérifié",
+        "resend": "Renvoyer l'e-mail de vérification",
+        "verificationSent": "E-mail de vérification envoyé"
+      },
+      "errors": {
+        "saveFailed": "Échec de l'enregistrement du profil",
+        "uploadFailed": "Échec du téléchargement de l'avatar",
+        "deleteFailed": "Échec de la suppression de l'avatar",
+        "resendFailed": "Échec de l'envoi de l'e-mail de vérification",
+        "invalidFileType": "Type de fichier non pris en charge. Utilisez PNG, JPG, WEBP ou GIF.",
+        "fileTooLarge": "Image trop grande. Maximum {{maxKb}}KB."
+      }
+    },
+    "security": {
+      "password": {
+        "title": "Mot de passe",
+        "description": "Modifiez le mot de passe de votre compte. Les autres appareils seront déconnectés.",
+        "current": "Mot de passe actuel",
+        "new": "Nouveau mot de passe",
+        "confirm": "Confirmez le nouveau mot de passe",
+        "minLength": "Minimum {{count}} caractères",
+        "tooShort": "Le mot de passe doit comporter au moins {{count}} caractères",
+        "mismatch": "Les mots de passe ne correspondent pas",
+        "submit": "Modifier le mot de passe",
+        "changeSuccess": "Mot de passe modifié",
+        "changeFailed": "Échec de la modification du mot de passe"
+      },
+      "twoFactor": {
+        "title": "Authentification à deux facteurs",
+        "description": "Recevez un code de vérification par e-mail à chaque connexion.",
+        "activeLabel": "Authentification à deux facteurs activée",
+        "inactiveLabel": "Authentification à deux facteurs désactivée",
+        "requiresVerifiedEmail": "Vérifiez d'abord votre e-mail pour activer l'authentification à deux facteurs.",
+        "enabled": "Authentification à deux facteurs activée",
+        "disabled": "Authentification à deux facteurs désactivée",
+        "toggleFailed": "Échec de la mise à jour de l'authentification à deux facteurs"
+      },
+      "sessions": {
+        "title": "Sessions actives",
+        "description": "Appareils actuellement connectés à votre compte.",
+        "current": "Actuelle",
+        "revoke": "Révoquer",
+        "revokeAll": "Déconnecter les autres sessions",
+        "revokeSuccess": "Session révoquée",
+        "revokeAllSuccess": "Autres sessions déconnectées",
+        "revokeFailed": "Échec de la révocation de la session",
+        "empty": "Aucune session active.",
+        "unknownAgent": "Appareil inconnu",
+        "unknownIp": "Emplacement inconnu",
+        "createdAt": "Démarrée le {{date}}"
+      }
+    },
+    "notifications": {
+      "toasts": {
+        "title": "Notifications dans l'application",
+        "description": "Contrôlez les alertes affichées à l'écran.",
+        "orderUpdates": "Mises à jour des ordres",
+        "orderUpdatesHelper": "Avis lorsque les ordres sont exécutés, annulés ou modifiés.",
+        "setupDetected": "Setups détectés",
+        "setupDetectedHelper": "Avis lorsque les watchers détectent un nouveau setup."
+      },
+      "sound": {
+        "title": "Son",
+        "description": "Lire des sons pour les événements importants.",
+        "enable": "Lire les sons de notification",
+        "enableHelper": "Lit un son bref pour les événements à haute priorité."
+      },
+      "comingSoon": {
+        "title": "Plus d'options de notification bientôt",
+        "description": "Les notifications par e-mail et bureau sont sur la feuille de route."
+      }
     },
     "contextConfig": {
       "title": "Configuration du Contexte de Marché",
@@ -226,7 +329,9 @@
       "clearSuccess": "Toutes les conversations ont été effacées."
     },
     "autoUpdate": {
-      "title": "Paramètres de Mise à Jour Automatique",
+      "title": "Mises à jour de l'application",
+      "description": "Gardez MarketMind à jour avec les dernières fonctionnalités et corrections.",
+      "checking": "Vérification…",
       "checkAutomatically": "Vérifier les mises à jour automatiquement",
       "checkAutomaticallyDescription": "Vérifier automatiquement les nouvelles versions en arrière-plan",
       "checkInterval": "Intervalle de vérification : {{hours}} heures",

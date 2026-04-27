@@ -1,6 +1,6 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import { IconButton, Select } from '@renderer/components/ui';
+import { Callout, IconButton, Select } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import type { PortfolioFilterOption, PortfolioSortOption } from '@renderer/store/uiStore';
@@ -58,11 +58,9 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
       {!isIB && <FuturesPositionsPanel />}
 
       {!activeWallet ? (
-        <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
-          <Text fontSize="sm" color="orange.600" _dark={{ color: 'orange.300' }}>
-            {t('trading.portfolio.noWallet')}
-          </Text>
-        </Box>
+        <Callout tone="warning" compact>
+          {t('trading.portfolio.noWallet')}
+        </Callout>
       ) : (
         <>
           <Flex p={3} bg="bg.muted" borderRadius="md" justify="space-between" align="center" fontSize="xs">

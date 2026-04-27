@@ -1,4 +1,4 @@
-import { Badge, CryptoIcon, ProgressBar, ProgressRoot } from '@renderer/components/ui';
+import { Badge, Callout, CryptoIcon, ProgressBar, ProgressRoot } from '@renderer/components/ui';
 import { Box, Flex, Text, VStack } from '@chakra-ui/react';
 import { DEFAULT_CURRENCY, type FuturesPosition } from '@marketmind/types';
 import { useMemo } from 'react';
@@ -176,16 +176,9 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
         </Box>
 
         {isInDanger && (
-          <Box p={2} bg="red.subtle" borderRadius="md" borderWidth="1px" borderColor="red.emphasized">
-            <Flex align="center" gap={2}>
-              <Box color="red.fg">
-                <LuTriangleAlert size={14} />
-              </Box>
-              <Text fontSize="2xs" color="red.fg" fontWeight="medium">
-                {t('futures.liquidationWarning', 'Warning: Position is close to liquidation. Consider reducing position size or adding margin.')}
-              </Text>
-            </Flex>
-          </Box>
+          <Callout tone="danger" compact>
+            {t('futures.liquidationWarning', 'Warning: Position is close to liquidation. Consider reducing position size or adding margin.')}
+          </Callout>
         )}
       </VStack>
     </Box>

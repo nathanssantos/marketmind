@@ -68,10 +68,8 @@ const openAddWatcherDialog = async (page: Page) => {
   await page.getByRole('tab', { name: 'Auto-Trading' }).click();
   const settingsDialog = page.getByRole('dialog').first();
 
-  // Expand the "Active Watchers" collapsible section
-  await settingsDialog.getByRole('button', { name: /^Active Watchers/ }).click();
-
-  // Click "Add Watcher"
+  // After v1: Active Watchers section is variant="static" (always visible).
+  // Click the always-visible "Add Watcher" button directly.
   await settingsDialog.getByRole('button', { name: 'Add Watcher', exact: true }).click();
 
   // The new dialog opens

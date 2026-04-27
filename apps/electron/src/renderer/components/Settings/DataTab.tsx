@@ -1,7 +1,11 @@
-import { Badge, Button, ConfirmationDialog, Input, Separator, Slider } from '@renderer/components/ui';
+import {
+  Badge, Button, Callout, ConfirmationDialog, FormSection, Input, Slider,
+} from '@renderer/components/ui';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { trpc } from '@/renderer/utils/trpc';
-import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '@/renderer/components/Trading/TradingTable';
+import {
+  TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn,
+} from '@/renderer/components/Trading/TradingTable';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,14 +59,14 @@ const HeatmapAlwaysCollectSection = () => {
   };
 
   return (
-    <Box>
-      <Text fontSize="md" fontWeight="medium" mb={1}>{t('settings.data.heatmap.title', 'Liquidity Heatmap')}</Text>
-      <Text fontSize="sm" color="fg.muted" mb={4}>{t('settings.data.heatmap.description', 'Symbols that always collect order book depth for the heatmap, even without a chart open. Requires backend restart to take effect.')}</Text>
-
-      <HStack gap={2} mb={3}>
+    <FormSection
+      title={t('settings.data.heatmap.title', { defaultValue: 'Liquidity Heatmap' })}
+      description={t('settings.data.heatmap.description', { defaultValue: 'Symbols that always collect order book depth for the heatmap, even without a chart open. Requires backend restart to take effect.' })}
+    >
+      <HStack gap={2}>
         <Input
           size="sm"
-          placeholder={t('settings.data.heatmap.placeholder', 'ETHUSDT')}
+          placeholder={t('settings.data.heatmap.placeholder', { defaultValue: 'ETHUSDT' })}
           value={newSymbol}
           onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
           onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
@@ -70,14 +74,14 @@ const HeatmapAlwaysCollectSection = () => {
         />
         <Button size="sm" variant="outline" onClick={handleAdd} loading={addMutation.isPending}>
           <LuPlus />
-          {t('settings.data.heatmap.add', 'Add')}
+          {t('settings.data.heatmap.add', { defaultValue: 'Add' })}
         </Button>
       </HStack>
 
-      {symbols.length > 0 && (
+      {symbols.length > 0 ? (
         <Flex gap={2} flexWrap="wrap">
           {symbols.map((s) => (
-            <Badge key={s} size="lg" px={3} py={1} colorPalette="blue">
+            <Badge key={s} size="md" px={2} py={0.5} colorPalette="blue">
               {s}
               <Box as="button" ml={1} cursor="pointer" opacity={0.7} _hover={{ opacity: 1 }} onClick={() => removeMutation.mutate({ symbol: s })}>
                 <LuX size={12} />
@@ -85,12 +89,12 @@ const HeatmapAlwaysCollectSection = () => {
             </Badge>
           ))}
         </Flex>
+      ) : (
+        <Text fontSize="2xs" color="fg.muted">
+          {t('settings.data.heatmap.empty', { defaultValue: 'No symbols configured. BTCUSDT is used as default.' })}
+        </Text>
       )}
-
-      {symbols.length === 0 && (
-        <Text fontSize="sm" color="fg.muted">{t('settings.data.heatmap.empty', 'No symbols configured. BTCUSDT is used as default.')}</Text>
-      )}
-    </Box>
+    </FormSection>
   );
 };
 
@@ -162,127 +166,95 @@ export const DataTab = () => {
   };
 
   return (
-    <Stack gap={6}>
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={1}>{t('settings.data.maintenance.title')}</Text>
-        <Text fontSize="sm" color="fg.muted" mb={4}>{t('settings.data.maintenance.description')}</Text>
-
-        <Button
-          variant="outline"
-          onClick={() => { setRepairResult(null); repairAllMutation.mutate(); }}
-          loading={repairAllMutation.isPending}
-          loadingText={t('settings.data.maintenance.repairing')}
-        >
-          <LuWrench />
-          {t('settings.data.maintenance.repairAll')}
-        </Button>
-
-        {repairResult && (
-          <HStack mt={3} gap={4} flexWrap="wrap">
-            <Text fontSize="sm">{t('settings.data.maintenance.pairsChecked', { count: repairResult.pairsChecked })}</Text>
-            <Text fontSize="sm" color={repairResult.gapsFilled > 0 ? 'green.500' : 'fg.muted'}>
-              {t('settings.data.maintenance.gapsFilled', { count: repairResult.gapsFilled })}
-            </Text>
-            <Text fontSize="sm" color={repairResult.corruptedFixed > 0 ? 'orange.500' : 'fg.muted'}>
-              {t('settings.data.maintenance.corruptedFixed', { count: repairResult.corruptedFixed })}
-            </Text>
-          </HStack>
-        )}
-      </Box>
-
-      {statusEntries && statusEntries.length > 0 && (
-        <>
-          <Separator />
-          <Box>
-            <Text fontSize="md" fontWeight="medium" mb={3}>{t('settings.data.status.title')}</Text>
-            <TradingTable
-              columns={statusColumns(t)}
-              minW="600px"
-            >
-              {statusEntries.map((entry) => (
-                <TradingTableRow key={`${entry.symbol}-${entry.interval}-${entry.marketType}`}>
-                  <TradingTableCell sticky>{entry.symbol}</TradingTableCell>
-                  <TradingTableCell>{entry.interval}</TradingTableCell>
-                  <TradingTableCell>
-                    <Badge size="sm" px={2} colorPalette={entry.marketType === 'FUTURES' ? 'orange' : 'blue'}>
-                      {entry.marketType}
-                    </Badge>
-                  </TradingTableCell>
-                  <TradingTableCell>{formatTimeAgo(entry.lastGapCheck)}</TradingTableCell>
-                  <TradingTableCell textAlign="right">
-                    <Badge size="sm" px={2} colorPalette={entry.gapsFound > 0 ? 'red' : 'green'}>{entry.gapsFound}</Badge>
-                  </TradingTableCell>
-                  <TradingTableCell textAlign="right">
-                    <Badge size="sm" px={2} colorPalette={entry.corruptedFixed > 0 ? 'orange' : 'green'}>{entry.corruptedFixed}</Badge>
-                  </TradingTableCell>
-                </TradingTableRow>
-              ))}
-            </TradingTable>
-          </Box>
-        </>
-      )}
-
-      <Separator />
-
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={1}>{t('settings.data.cooldowns.title')}</Text>
-        <Text fontSize="sm" color="fg.muted" mb={4}>{t('settings.data.cooldowns.description')}</Text>
-
-        <Stack gap={5}>
-          <Box>
-            <Text fontSize="sm" mb={2}>{t('settings.data.cooldowns.gapCheck', { hours: gapCheckHours })}</Text>
-            <Slider
-              value={[gapCheckHours]}
-              onValueChange={handleGapCheckChange}
-              min={0.5}
-              max={24}
-              step={0.5}
-            />
-          </Box>
-
-          <Box>
-            <Text fontSize="sm" mb={2}>{t('settings.data.cooldowns.corruptionCheck', { hours: corruptionCheckHours })}</Text>
-            <Slider
-              value={[corruptionCheckHours]}
-              onValueChange={handleCorruptionCheckChange}
-              min={0.5}
-              max={24}
-              step={0.5}
-            />
-          </Box>
-
-          <Box>
-            <Button variant="outline" size="sm" onClick={handleResetCooldowns}>
-              <LuRefreshCw />
-              {t('settings.resetToDefaults')}
-            </Button>
-          </Box>
-        </Stack>
-      </Box>
-
-      <Separator />
-
-      <Box>
-        <Text fontSize="md" fontWeight="medium" mb={1}>{t('settings.data.storage.title')}</Text>
-        <Text fontSize="sm" color="fg.muted" mb={4}>{t('settings.data.storage.description')}</Text>
-
-        <HStack gap={4} flexWrap="wrap" align="center">
-          {dbSize !== undefined && (
-            <Text fontSize="sm">
-              {t('settings.data.storage.size', { size: formatBytes(dbSize) })}
-            </Text>
-          )}
+    <Stack gap={5}>
+      <FormSection
+        title={t('settings.data.maintenance.title')}
+        description={t('settings.data.maintenance.description')}
+      >
+        <Box>
           <Button
             variant="outline"
             size="sm"
-            colorPalette="red"
-            onClick={() => setShowClearConfirm(true)}
+            onClick={() => { setRepairResult(null); repairAllMutation.mutate(); }}
+            loading={repairAllMutation.isPending}
+            loadingText={t('settings.data.maintenance.repairing')}
+            data-testid="data-repair-all"
           >
+            <LuWrench />
+            {t('settings.data.maintenance.repairAll')}
+          </Button>
+        </Box>
+
+        {repairResult && (
+          <Callout tone={repairResult.gapsFilled > 0 || repairResult.corruptedFixed > 0 ? 'warning' : 'success'} compact>
+            {t('settings.data.maintenance.pairsChecked', { count: repairResult.pairsChecked })}
+            {' · '}
+            {t('settings.data.maintenance.gapsFilled', { count: repairResult.gapsFilled })}
+            {' · '}
+            {t('settings.data.maintenance.corruptedFixed', { count: repairResult.corruptedFixed })}
+          </Callout>
+        )}
+      </FormSection>
+
+      {statusEntries && statusEntries.length > 0 && (
+        <FormSection title={t('settings.data.status.title')}>
+          <TradingTable columns={statusColumns(t)} minW="600px">
+            {statusEntries.map((entry) => (
+              <TradingTableRow key={`${entry.symbol}-${entry.interval}-${entry.marketType}`}>
+                <TradingTableCell sticky>{entry.symbol}</TradingTableCell>
+                <TradingTableCell>{entry.interval}</TradingTableCell>
+                <TradingTableCell>
+                  <Badge size="sm" px={2} colorPalette={entry.marketType === 'FUTURES' ? 'orange' : 'blue'}>
+                    {entry.marketType}
+                  </Badge>
+                </TradingTableCell>
+                <TradingTableCell>{formatTimeAgo(entry.lastGapCheck)}</TradingTableCell>
+                <TradingTableCell textAlign="right">
+                  <Badge size="sm" px={2} colorPalette={entry.gapsFound > 0 ? 'red' : 'green'}>{entry.gapsFound}</Badge>
+                </TradingTableCell>
+                <TradingTableCell textAlign="right">
+                  <Badge size="sm" px={2} colorPalette={entry.corruptedFixed > 0 ? 'orange' : 'green'}>{entry.corruptedFixed}</Badge>
+                </TradingTableCell>
+              </TradingTableRow>
+            ))}
+          </TradingTable>
+        </FormSection>
+      )}
+
+      <FormSection
+        title={t('settings.data.cooldowns.title')}
+        description={t('settings.data.cooldowns.description')}
+      >
+        <Box>
+          <Text fontSize="xs" mb={1.5}>{t('settings.data.cooldowns.gapCheck', { hours: gapCheckHours })}</Text>
+          <Slider value={[gapCheckHours]} onValueChange={handleGapCheckChange} min={0.5} max={24} step={0.5} />
+        </Box>
+        <Box>
+          <Text fontSize="xs" mb={1.5}>{t('settings.data.cooldowns.corruptionCheck', { hours: corruptionCheckHours })}</Text>
+          <Slider value={[corruptionCheckHours]} onValueChange={handleCorruptionCheckChange} min={0.5} max={24} step={0.5} />
+        </Box>
+        <Box>
+          <Button variant="outline" size="sm" onClick={handleResetCooldowns}>
+            <LuRefreshCw />
+            {t('settings.resetToDefaults')}
+          </Button>
+        </Box>
+      </FormSection>
+
+      <FormSection
+        title={t('settings.data.storage.title')}
+        description={t('settings.data.storage.description')}
+      >
+        <HStack gap={3} flexWrap="wrap" align="center">
+          {dbSize !== undefined && (
+            <Text fontSize="xs">{t('settings.data.storage.size', { size: formatBytes(dbSize) })}</Text>
+          )}
+          <Button variant="outline" size="sm" colorPalette="red" onClick={() => setShowClearConfirm(true)} data-testid="data-clear-storage">
             <LuTrash2 />
             {t('settings.data.storage.clearAll')}
           </Button>
         </HStack>
-      </Box>
+      </FormSection>
 
       <ConfirmationDialog
         isOpen={showClearConfirm}
@@ -295,8 +267,6 @@ export const DataTab = () => {
         isDestructive
         isLoading={clearKlinesMutation.isPending}
       />
-
-      <Separator />
 
       <HeatmapAlwaysCollectSection />
     </Stack>

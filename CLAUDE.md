@@ -81,9 +81,15 @@ The `apps/electron/src/renderer/components/ui/` directory is the **single source
 import { Button, IconButton, Switch, Badge, Tabs } from '@renderer/components/ui';
 ```
 - **ALL** interactive/visual components must come from `@renderer/components/ui` (barrel import via `index.ts`)
-- This includes: `Button`, `IconButton`, `ToggleIconButton`, `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup`, `Field`, `Badge`, `Alert`, `Skeleton`, `Link`, `CloseButton`, `Image`, `Menu`, `Separator`, `Progress`, `Tabs`, `Table`, `Card`, `Stat`, `Dialog`, `FormDialog`, `ConfirmationDialog`, `CollapsibleSection`, `Popover`, `TooltipWrapper`, `EmptyState`, `ErrorMessage`, `LoadingSpinner`, `CryptoIcon`, `MetricCard`, `PnLDisplay`
+- This includes: `Button`, `IconButton`, `ToggleIconButton`, `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup`, `Field`, `Badge`, `Alert`, `Callout`, `Skeleton`, `Link`, `CloseButton`, `Image`, `Menu`, `Separator`, `Progress`, `Tabs`, `Table`, `Card`, `Stat`, `Dialog`, `FormDialog`, `ConfirmationDialog`, `FormSection`, `FormRow`, `CollapsibleSection`, `Popover`, `TooltipWrapper`, `EmptyState`, `ErrorMessage`, `LoadingSpinner`, `CryptoIcon`, `MetricCard`, `PnLDisplay`, `PageTitle`, `SectionTitle`, `SubsectionTitle`, `SectionDescription`, `FieldHint`, `MetaText`
 - **Only layout primitives** come directly from `@chakra-ui/react`: `Box`, `Flex`, `Stack`, `HStack`, `VStack`, `Grid`, `GridItem`, `Text`, `Heading`, `Spinner`, `Portal`, `Group`
 - **NEVER** import `Button`, `IconButton`, `Badge`, `Tabs`, `Table`, `Menu`, `Input`, `Switch`, or any interactive component directly from `@chakra-ui/react` — only the `ui/` wrappers may do that internally
+
+**Section / row composition (use these for every dialog and tab — added in v1.0.0):**
+- `<FormSection title="..." description="..." action={...}>` — standard section block. Pairs with `<Field>`, `<FormRow>`, `<Callout>` inside.
+- `<FormRow label="..." helper="..."><Switch ... /></FormRow>` — left label/helper, right control. Use for switch/select rows.
+- `<Callout tone="info|success|warning|danger|neutral" title="..." compact>...</Callout>` — replaces ad-hoc colored `<Box bg="blue.50" ...>` patterns. Always prefer this over inline colored boxes for inline messages.
+- `<CollapsibleSection variant="static" ...>` — non-accordion mode (no chevron, always-open). Use this in contexts where collapsing is unwanted (e.g. AutoTrading sections).
 
 **Theming rules (mandatory for future multi-theme support):**
 - All colors via **semantic tokens** — never hardcode hex/rgb values

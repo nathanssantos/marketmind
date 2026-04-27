@@ -39,6 +39,7 @@ export const ProfileRiskSection = ({
       description={t('tradingProfiles.sections.riskManagementDescription')}
       badge={<OverrideBadge count={riskBadgeCount} />}
       size="lg"
+      variant="static"
     >
       <Stack gap={4}>
         <HStack justify="space-between">

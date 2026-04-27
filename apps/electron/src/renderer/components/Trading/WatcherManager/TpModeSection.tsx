@@ -39,6 +39,7 @@ export const TpModeSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
       <RadioGroup
         value={tpCalculationMode}

@@ -1,5 +1,5 @@
 import { Box, Flex, Group, HStack, Stack, Text } from '@chakra-ui/react';
-import { Button, CloseButton, Dialog, NumberInput } from '@renderer/components/ui';
+import { Button, Callout, CloseButton, Dialog, NumberInput } from '@renderer/components/ui';
 import type { MarketType, TimeInterval } from '@marketmind/types';
 import { DEFAULT_TIMEFRAME } from '@renderer/constants/defaults';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
@@ -115,11 +115,9 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
               <Dialog.Title>{t('marketSidebar.watchers.startWatchers')}</Dialog.Title>
             </Dialog.Header>
             <Dialog.Body>
-              <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
-                <Text fontSize="sm" color="orange.600" _dark={{ color: 'orange.300' }}>
-                  {t('trading.portfolio.noWallet')}
-                </Text>
-              </Box>
+              <Callout tone="warning" compact>
+                {t('trading.portfolio.noWallet')}
+              </Callout>
             </Dialog.Body>
           </Dialog.Content>
         </Dialog.Positioner>
@@ -137,11 +135,11 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
             <Dialog.Title>{t('marketSidebar.watchers.startWatchers')}</Dialog.Title>
           </Dialog.Header>
 
-          <Dialog.Body py={6}>
-            <Stack gap={4}>
-              <Box p={4} bg="green.50" borderRadius="md" borderWidth="1px" borderColor="green.200" _dark={{ bg: 'green.900/20', borderColor: 'green.800' }}>
-                <Flex justify="space-between" align="center" mb={3}>
-                  <Text fontSize="sm" fontWeight="medium">
+          <Dialog.Body py={4}>
+            <Stack gap={3}>
+              <Box p={3} bg="green.subtle" borderRadius="md" borderWidth="1px" borderColor="green.muted">
+                <Flex justify="space-between" align="center" mb={2}>
+                  <Text fontSize="sm" fontWeight="semibold">
                     {t('tradingProfiles.dynamicSelection.quickStartTitle')}
                   </Text>
                   <DirectionBadge
@@ -231,7 +229,7 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
                     </Button>
                   </HStack>
 
-                  <Text fontSize="sm" color="fg.muted">
+                  <Text fontSize="xs" color="fg.muted">
                     {effectiveMax === 0
                       ? t('tradingProfiles.dynamicSelection.insufficientCapital')
                       : t('tradingProfiles.dynamicSelection.quickStartDescription')}
@@ -239,11 +237,9 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
                 </Stack>
               </Box>
 
-              <Box p={3} bg="blue.50" borderRadius="md" _dark={{ bg: 'blue.900/20' }}>
-                <Text fontSize="xs" color="fg.muted">
-                  {t('tradingProfiles.dynamicSelection.infoText')}
-                </Text>
-              </Box>
+              <Callout tone="info" compact>
+                {t('tradingProfiles.dynamicSelection.infoText')}
+              </Callout>
             </Stack>
           </Dialog.Body>
 

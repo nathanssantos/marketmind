@@ -40,6 +40,7 @@ export const FiltersSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
           <Stack gap={4}>
             <Text fontSize="sm" fontWeight="semibold" color="fg.muted">

@@ -80,6 +80,7 @@ export const PyramidingSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
           <RadioGroup
             value={config?.pyramidingEnabled ? (config?.pyramidingMode ?? 'static') : 'disabled'}

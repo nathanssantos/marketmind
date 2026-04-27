@@ -1,5 +1,5 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
-import { Button, IconButton, Select } from '@renderer/components/ui';
+import { Button, Callout, IconButton, Select } from '@renderer/components/ui';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -194,11 +194,9 @@ const OrdersListComponent = () => {
     <Stack gap={3} p={4}>
 
       {!activeWallet ? (
-        <Box p={4} textAlign="center" bg="orange.50" borderRadius="md" _dark={{ bg: 'orange.900' }}>
-          <Text fontSize="sm" color="orange.600" _dark={{ color: 'orange.300' }}>
-            {t('trading.orders.noWallet')}
-          </Text>
-        </Box>
+        <Callout tone="warning" compact>
+          {t('trading.orders.noWallet')}
+        </Callout>
       ) : (
         <>
           <Box p={3} bg="bg.muted" borderRadius="md">

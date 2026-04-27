@@ -16,7 +16,7 @@ interface SocketTestBridge {
 }
 
 interface GlobalActionsBridge {
-  openSettings: () => void;
+  openSettings: (tab?: string) => void;
   openSymbolSelector: () => void;
   navigateToSymbol: (symbol: string, marketType?: 'SPOT' | 'FUTURES') => void;
 }

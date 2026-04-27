@@ -59,7 +59,8 @@ See `docs/UI_STYLE_GUIDE.md` for the full import rules and style hierarchy.
 
 | Component | Description |
 |-----------|-------------|
-| `Alert` | Alert/notification banner |
+| `Alert` | Alert/notification banner (Chakra-based, multi-part API) |
+| `Callout` | **Compact toned banner** — single component, `tone="info"\|"success"\|"warning"\|"danger"\|"neutral"`, optional `title` + body, `compact` prop. Prefer this over `Alert` for inline contextual messages in dialogs and tabs. |
 | `Skeleton` | Loading placeholder |
 | `ProgressRoot` / `ProgressBar` | Progress indicator |
 | `LoadingSpinner` | Spinner with optional label |
@@ -88,9 +89,22 @@ See `docs/UI_STYLE_GUIDE.md` for the full import rules and style hierarchy.
 
 | Component | Description |
 |-----------|-------------|
-| `CollapsibleSection` | Expandable section with title, badge, header action |
+| `FormSection` | **Standard form section** — header (title / description / optional action) + content stack. Use for all section blocks in dialogs and settings tabs. |
+| `FormRow` | **Standard form row** — left label + helper, right control + optional action. Use for switch/select rows where label/control are inline. |
+| `CollapsibleSection` | Expandable section with title, badge, header action. New `variant="static"` renders without chevron (always-open) — use for non-accordion contexts (default `"collapsible"` keeps backwards-compat). |
 | `Separator` | Visual divider |
 | `SidebarContainer` / `SidebarHeader` | Sidebar layout components |
+
+### Typography
+
+| Component | Description |
+|-----------|-------------|
+| `PageTitle` | Page heading (`fontSize="lg"`, bold) |
+| `SectionTitle` | Section heading (`fontSize="sm"`, semibold) — already provided by `FormSection` |
+| `SubsectionTitle` | Eyebrow heading (`fontSize="2xs"`, uppercase, muted) — for rail/group labels |
+| `SectionDescription` | Section helper text (`fontSize="xs"`, muted) — already provided by `FormSection` |
+| `FieldHint` | Inline field helper (`fontSize="2xs"`, muted) |
+| `MetaText` | Tertiary metadata (`fontSize="2xs"`, muted) |
 
 ### Media & Theme
 

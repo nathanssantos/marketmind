@@ -38,6 +38,7 @@ export const ProfileFiltersSection = ({ actions }: ProfileFiltersSectionProps) =
       description={t('tradingProfiles.sections.filtersDescription')}
       badge={<OverrideBadge count={ovCount(ALL_FILTER_KEYS)} />}
       size="lg"
+      variant="static"
     >
       <Stack gap={4}>
         <Text fontSize="xs" fontWeight="bold" color="fg.muted" textTransform="uppercase">

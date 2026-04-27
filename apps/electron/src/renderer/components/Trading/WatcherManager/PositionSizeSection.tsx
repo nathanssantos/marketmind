@@ -34,6 +34,7 @@ export const PositionSizeSection = ({
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
+      variant="static"
     >
       <Stack gap={6}>
         <Box>

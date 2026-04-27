@@ -1,6 +1,7 @@
 import {
   boolean,
   pgTable,
+  text,
   timestamp,
   varchar
 } from 'drizzle-orm/pg-core';
@@ -12,6 +13,9 @@ export const users = pgTable('users', {
   name: varchar({ length: 255 }),
   emailVerified: boolean('email_verified').default(false).notNull(),
   twoFactorEnabled: boolean('two_factor_enabled').default(false).notNull(),
+  avatarData: text('avatar_data'),
+  avatarMimeType: varchar('avatar_mime_type', { length: 100 }),
+  avatarColor: varchar('avatar_color', { length: 7 }),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 });
@@ -22,6 +26,9 @@ export const sessions = pgTable('sessions', {
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   expiresAt: timestamp('expires_at', { mode: 'date' }).notNull(),
+  createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
+  userAgent: varchar('user_agent', { length: 500 }),
+  ip: varchar({ length: 64 }),
 });
 
 export const passwordResetTokens = pgTable('password_reset_tokens', {
