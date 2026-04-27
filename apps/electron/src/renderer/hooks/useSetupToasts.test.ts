@@ -33,7 +33,7 @@ vi.mock('./useBackendAuth', () => ({
 }));
 
 vi.mock('../store/preferencesStore', () => ({
-  useUIPref: <T,>(_key: string, defaultValue: T): [T, (v: T) => void] => [
+  useUIPref: <T,>(_key: string, _defaultValue: T): [T, (v: T) => void] => [
     setupToastsEnabled as unknown as T,
     () => undefined,
   ],
