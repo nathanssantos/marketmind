@@ -85,6 +85,7 @@
   },
   "customSymbols": {
     "title": "Custom Symbols",
+    "description": "Build custom indices from multiple components with weighted aggregation.",
     "myIndices": "My Indices",
     "createNew": "Create New",
     "name": "Name",

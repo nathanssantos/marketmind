@@ -89,6 +89,7 @@
   },
   "customSymbols": {
     "title": "Symboles Personnalisés",
+    "description": "Créez des indices personnalisés à partir de plusieurs composants avec agrégation pondérée.",
     "myIndices": "Mes Indices",
     "createNew": "Créer Nouveau",
     "name": "Nom",

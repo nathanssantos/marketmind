@@ -230,8 +230,8 @@ export function SymbolSelector({
   const selectedSymbol = popularSymbols.find(s => s.symbol === value);
   const currentSymbol = selectedSymbol?.baseAsset ?? (isStocks ? value : value.replace('USDT', ''));
 
-  const handleSelect = (symbol: string) => {
-    onChange(symbol, marketType, assetClass);
+  const handleSelect = (symbol: string, overrides?: { marketType?: MarketType; assetClass?: AssetClass }) => {
+    onChange(symbol, overrides?.marketType ?? marketType, overrides?.assetClass ?? assetClass);
     setIsOpen(false);
     setSearchQuery('');
   };
@@ -431,7 +431,7 @@ export function SymbolSelector({
                           cursor="pointer"
                           bg={value === cs.symbol ? 'bg.muted' : 'transparent'}
                           _hover={{ bg: 'bg.muted' }}
-                          onClick={() => handleSelect(cs.symbol)}
+                          onClick={() => handleSelect(cs.symbol, { marketType: 'SPOT', assetClass: 'CRYPTO' })}
                           borderBottomWidth="1px"
                           borderColor="border"
                         >
