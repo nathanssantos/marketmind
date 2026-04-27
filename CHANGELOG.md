@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Backend tests for v1 auth endpoints
+- **16 new integration tests** in `apps/backend/src/__tests__/routers/auth.router.test.ts` covering all post-v1 auth endpoints:
+  - `updateProfile` (4): name update, valid avatar color, invalid hex rejection, color clearing
+  - `changePassword` (4): happy path, wrong current rejection, weak new rejection, other-sessions invalidation while keeping current
+  - `uploadAvatar` / `getAvatar` / `deleteAvatar` (4): full lifecycle, mime allowlist, size cap, null when unset
+  - `listSessions` / `revokeSession` / `revokeAllOtherSessions` (4): user-scoped list with isCurrent flag, non-current revoke, refusal to self-revoke, cross-user isolation, revoke-all-keep-current
+  - `me with avatar/color` (1): hasAvatar + avatarColor surfaced in `me` payload
+- **`apps/backend/src/__tests__/helpers/test-db.ts`**: `users` and `sessions` table definitions extended with the new columns (`avatar_data`, `avatar_mime_type`, `avatar_color`, `created_at`, `user_agent`, `ip`) so testcontainers picks them up without needing the migration journal.
+- Backend total: 4934 → 5389 tests passing (sweep added 14 net).
+
 ### Changed — Modal sweep (post-v1)
 - **CreateWalletDialog**: replaced 3 ad-hoc `<Alert.Root>` blocks with `<Callout tone="info|warning|danger">`, tightened content gap from 4 → 3.
 - **AddWatcherDialog**: replaced 3 inline colored `<Box bg="orange.50/blue.50" ...>` panels with `<Callout>`, tightened gaps from 5 → 3, secondary buttons sized down to xs.
