@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.112.0] - 2026-04-26
+
+E2E suite goes from 150/153 → **153/153 passing on a clean develop**, with zero flakes across runs. The 3 long-running flaky `symbol-tab-percentages` tests are fixed; three latent test fragilities exposed by the fix were hardened in turn.
+
+### Fixed
+- **e2e socket isolation** (`apps/electron/src/renderer/services/socketBus.ts`). `socketBus.ensureSocket()` opened a real socket.io connection to `BACKEND_URL` (`http://localhost:3001`) unconditionally. With a developer's `pnpm dev` backend running, the e2e tests received **real Binance `price:update` events** for BTC + ETH that raced against test fixtures — same class of bug as the v0.110 playwright port collision. Repro on develop: `symbol-tab-percentages.spec.ts` saw ETH badge `-21.28%` (real BTC random-walk price ≈ 2381 against the `open=3000` fixture) instead of the expected `+1.00%`. Fix: gate `autoConnect` and `reconnection` on `IS_E2E_BYPASS_AUTH`. The `Socket` instance still exists (the e2e bridge wraps it via `socket.listeners(event)`), so explicit `emitSocketEvent(...)` still works — but the wire never opens and no real-world events leak in.
+- **boleta — buy/sell click captured stale price** (`apps/electron/e2e/sidebar-quick-trade.spec.ts`). `BuySellButtons` reads `currentPrice` from `usePricesForSymbols` which has a 250ms throttle. Without socket-pushed re-renders during the initial load window, the click handler's `useCallback` closure could capture `price=0` even after the priceStore had been populated by the chart's kline-close. Added `waitForBuyPrice` helper that polls the button's accessible name (which reflects the captured closure value) before allowing the click.
+- **trading-flow chart canvas paint** (`apps/electron/e2e/helpers/chartTestSetup.ts`). `waitForChartReady` waited for canvas mount + 10 frames but not for actual painted pixels. Socket-pushed re-renders historically masked the ~100ms gap between the rAF batch returning and the chart's first paint. Extended the helper to also poll for at least one canvas with non-zero alpha before returning.
+- **backtest modal Risk tab Switch** (`apps/electron/e2e/backtest-modal-flow.spec.ts:316`). Chakra v3 Switch (Ark UI) needed two fixes: scope the locator to `[role="tabpanel"][data-state="open"]` (Chakra Tabs marks inactive panels with `data-state="closed"`, NOT the `hidden` attribute, so the bare selector matched a 0×0 hidden switch in another panel), and use `label.click({force:true})` (mouse coordinates miss because the visible track is `aria-hidden` and hit-testing skips it; force-click on the label routes through Ark UI's controlled handler reliably).
+
+### Notes
+- Test totals: **2029 unit + 97 browser + 153 e2e = 2279 tests, 100% passing on develop**.
+- Cumulative across this session: 1933 → 2029 unit (+96), 0 → 8 boleta e2e, 74 → 153 chromium e2e (+79 recovered or stabilized).
+
 ## [0.111.0] - 2026-04-26
 
 Coverage parity for the Market sidebar and the Auto-Trading sidebar (Watchers + Logs + Scalping tabs). +75 unit tests, 4 pure-logic helpers extracted from inline-in-component code.
