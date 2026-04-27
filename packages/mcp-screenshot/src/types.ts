@@ -47,6 +47,9 @@ export const SETTINGS_TABS: SettingsTabId[] = [
 
 export const MODALS: ModalId[] = [
   'settings', 'orders', 'backtest', 'screener', 'analytics',
+];
+
+export const FLOW_MODALS: ModalId[] = [
   'startWatchers', 'createWallet', 'addWatcher', 'importProfile', 'tradingProfiles',
 ];
 
