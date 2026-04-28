@@ -325,8 +325,8 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
           </Text>
         ) : (
           <HStack gap={2}>
-            <ScoreBadgePair letter="L" color="green.fg" score={longScore} />
-            <ScoreBadgePair letter="S" color="red.fg" score={shortScore} />
+            <ScoreBadgePair letter="L" color="trading.profit" score={longScore} />
+            <ScoreBadgePair letter="S" color="trading.loss" score={shortScore} />
           </HStack>
         )}
       </Flex>

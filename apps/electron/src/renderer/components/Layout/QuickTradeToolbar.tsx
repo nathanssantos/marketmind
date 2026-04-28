@@ -464,7 +464,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
                 </Flex>
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('common.side', 'Side')}</Text>
-                  <Text fontWeight="bold" color={isBuy ? 'green.500' : 'red.500'}>{isBuy ? 'LONG' : 'SHORT'}</Text>
+                  <Text fontWeight="bold" color={isBuy ? 'trading.long' : 'trading.short'}>{isBuy ? 'LONG' : 'SHORT'}</Text>
                 </Flex>
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('common.price', 'Price')}</Text>
@@ -489,7 +489,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
                 </Flex>
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('chart.quickTrade.liquidation', 'Liq. Price')}</Text>
-                  <Text color="red.fg">{formatChartPrice(liqPrice)} ({liqPct.toFixed(1)}%)</Text>
+                  <Text color="trading.loss">{formatChartPrice(liqPrice)} ({liqPct.toFixed(1)}%)</Text>
                 </Flex>
               </VStack>
             }

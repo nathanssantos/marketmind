@@ -132,7 +132,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               {pnl !== undefined ? (
-                <Text fontWeight="medium" color={pnl >= 0 ? 'green.500' : 'red.500'}>
+                <Text fontWeight="medium" color={pnl >= 0 ? 'trading.profit' : 'trading.loss'}>
                   {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
                   {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : '-'}${Math.abs(pnlPercent).toFixed(2)}%)`}
                 </Text>
@@ -187,10 +187,10 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
               <Text color="blue.fg">{formatPrice(currentPrice, currency)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="red.fg">{formatPrice(order.stopLoss, currency)}</Text>
+              <Text color="trading.loss">{formatPrice(order.stopLoss, currency)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="green.fg">{formatPrice(order.takeProfit, currency)}</Text>
+              <Text color="trading.profit">{formatPrice(order.takeProfit, currency)}</Text>
             </TradingTableCell>
             <TradingTableCell>
               {order.isAutoTrade && (

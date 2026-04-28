@@ -94,9 +94,9 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               <Flex justify="flex-end" align="center" gap={1}>
-                <Text color="green.fg">{stat.winningTrades}</Text>
+                <Text color="trading.profit">{stat.winningTrades}</Text>
                 <Text color="fg.muted">/</Text>
-                <Text color="red.fg">{stat.losingTrades}</Text>
+                <Text color="trading.loss">{stat.losingTrades}</Text>
               </Flex>
             </TradingTableCell>
             <TradingTableCell textAlign="right">

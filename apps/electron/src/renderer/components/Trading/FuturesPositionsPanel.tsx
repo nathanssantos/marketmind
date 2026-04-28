@@ -173,7 +173,7 @@ const FuturesPositionCard = memo(({
           <Flex justify="space-between">
             <Text color="fg.muted">Unrealized PnL</Text>
             <Stack gap={0} align="flex-end">
-              <Text fontWeight="medium" color={unrealizedPnl >= 0 ? 'green.500' : 'red.500'}>
+              <Text fontWeight="medium" color={unrealizedPnl >= 0 ? 'trading.profit' : 'trading.loss'}>
                 {unrealizedPnl >= 0 ? '+' : ''}${Math.abs(unrealizedPnl).toFixed(2)} ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
               </Text>
               <BrlValue usdtValue={unrealizedPnl} />
@@ -183,7 +183,7 @@ const FuturesPositionCard = memo(({
             <Flex justify="space-between">
               <Text color="fg.muted">Accumulated Funding</Text>
               <Stack gap={0} align="flex-end">
-                <Text color={accumulatedFunding >= 0 ? 'green.500' : 'red.500'}>
+                <Text color={accumulatedFunding >= 0 ? 'trading.profit' : 'trading.loss'}>
                   {accumulatedFunding >= 0 ? '+' : ''}${accumulatedFunding.toFixed(4)}
                 </Text>
                 <BrlValue usdtValue={accumulatedFunding} />

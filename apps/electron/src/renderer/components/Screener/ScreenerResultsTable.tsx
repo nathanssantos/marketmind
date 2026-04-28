@@ -71,7 +71,7 @@ export const ScreenerResultsTable = memo(({
             {row.price < 1 ? row.price.toPrecision(4) : formatNumber(row.price)}
           </TradingTableCell>
           <TradingTableCell textAlign="right">
-            <Text color={row.priceChangePercent24h >= 0 ? 'green.500' : 'red.500'}>
+            <Text color={row.priceChangePercent24h >= 0 ? 'trading.profit' : 'trading.loss'}>
               {row.priceChangePercent24h >= 0 ? '+' : ''}{formatNumber(row.priceChangePercent24h)}%
             </Text>
           </TradingTableCell>

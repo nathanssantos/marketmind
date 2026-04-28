@@ -283,7 +283,7 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
 
           {useIndividualConfig && effectiveValues.activationModeLong === 'manual' && (
             <HStack justify="space-between" p={2} bg="green.subtle" borderRadius="md" borderWidth="1px" borderColor="green.muted">
-              <Text fontSize="xs" fontWeight="medium" color="green.fg">
+              <Text fontSize="xs" fontWeight="medium" color="trading.long">
                 {t('positionTrailingStop.activateTrailingLong')}
               </Text>
               <Switch
@@ -296,7 +296,7 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
 
           {useIndividualConfig && effectiveValues.activationModeShort === 'manual' && (
             <HStack justify="space-between" p={2} bg="red.subtle" borderRadius="md" borderWidth="1px" borderColor="red.muted">
-              <Text fontSize="xs" fontWeight="medium" color="red.fg">
+              <Text fontSize="xs" fontWeight="medium" color="trading.short">
                 {t('positionTrailingStop.activateTrailingShort')}
               </Text>
               <Switch
