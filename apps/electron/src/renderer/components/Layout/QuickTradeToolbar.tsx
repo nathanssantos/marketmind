@@ -476,7 +476,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
                 </Flex>
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('futures.leverage', 'Leverage')}</Text>
-                  <Text color="orange.500" fontWeight="bold">{leverage}x</Text>
+                  <Text color="orange.fg" fontWeight="bold">{leverage}x</Text>
                 </Flex>
                 <Box h="1px" bg="border" />
                 <Flex justify="space-between">

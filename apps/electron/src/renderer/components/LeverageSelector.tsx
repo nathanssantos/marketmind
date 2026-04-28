@@ -66,7 +66,7 @@ export function LeverageSelector({
             {value}x
           </Text>
           {isHighRisk && (
-            <Box color="orange.500">
+            <Box color="orange.fg">
               <LuTriangleAlert size={16} />
             </Box>
           )}
