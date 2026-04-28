@@ -133,7 +133,7 @@ export const PyramidingSection = ({
 
           {config?.pyramidingEnabled && (
             <>
-              <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.500">
+              <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.muted">
                 <Text fontSize="sm" fontWeight="medium" mb={2}>
                   {t('settings.algorithmicAutoTrading.pyramiding.generalSettings')}
                 </Text>
@@ -186,7 +186,7 @@ export const PyramidingSection = ({
               </Box>
 
               {config?.pyramidingMode === 'dynamic' && (
-                <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="purple.500">
+                <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="purple.muted">
                   <Text fontSize="sm" fontWeight="medium" mb={2}>
                     {t('settings.algorithmicAutoTrading.pyramiding.dynamicIndicators')}
                   </Text>
@@ -263,7 +263,7 @@ export const PyramidingSection = ({
               )}
 
               {config?.pyramidingMode === 'fibonacci' && (
-                <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="orange.500">
+                <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="orange.muted">
                   <Text fontSize="sm" fontWeight="medium" mb={2}>
                     {t('settings.algorithmicAutoTrading.pyramiding.fiboLevels')}
                   </Text>

@@ -1,0 +1,96 @@
+#!/usr/bin/env node
+/**
+ * Audit `apps/electron/src/renderer/components/` for forbidden hardcoded
+ * shade literals + `_dark={{}}` overrides per V1_POST_RELEASE_PLAN.md.
+ *
+ * As of v1.2 the renderer is clean. This script protects that invariant —
+ * runs in CI (planned via lint:audit) and exits non-zero on any new violation.
+ *
+ * Forbidden patterns (regex per file):
+ *   - color="X.{50..900}" / bg="X.{50..900}" / borderColor="X.{50..900}"
+ *     where X ∈ {red, green, blue, yellow, orange, purple, gray, pink, teal, cyan}
+ *   - _dark={{ ... }} overrides (semantic tokens auto-resolve dark/light)
+ *
+ * Usage:
+ *   node scripts/audit-shade-literals.mjs            # exits non-zero on any hit
+ *   node scripts/audit-shade-literals.mjs --list     # print every hit (no fail)
+ *
+ * Files explicitly skipped: test files, primitives in ui/ that wrap Chakra
+ * (alert.tsx, slider.tsx) which legitimately use Chakra's own shade scale
+ * for theming hooks.
+ */
+import { readdir, readFile, stat } from 'node:fs/promises';
+import path from 'node:path';
+
+const ROOT = path.resolve('apps/electron/src/renderer/components');
+const LIST_MODE = process.argv.includes('--list');
+
+const FORBIDDEN = [
+  {
+    name: 'shade-literal-color',
+    re: /\b(?:color|bg|borderColor|borderLeftColor|borderTopColor|borderRightColor|borderBottomColor)="(?:red|green|blue|yellow|orange|purple|gray|pink|teal|cyan)\.(?:50|100|200|300|400|500|600|700|800|900)"/g,
+  },
+  {
+    name: '_dark-override',
+    re: /_dark=\{\{/g,
+  },
+];
+
+const SKIP_FILES = new Set([
+  'alert.tsx',
+  'slider.tsx',
+]);
+
+const walk = async (dir) => {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await walk(full)));
+    } else if (entry.name.endsWith('.tsx') && !entry.name.endsWith('.test.tsx') && !SKIP_FILES.has(entry.name)) {
+      files.push(full);
+    }
+  }
+  return files;
+};
+
+const files = await walk(ROOT);
+const violations = [];
+
+for (const file of files) {
+  const content = await readFile(file, 'utf8');
+  for (const rule of FORBIDDEN) {
+    let m;
+    rule.re.lastIndex = 0;
+    while ((m = rule.re.exec(content)) !== null) {
+      const before = content.slice(0, m.index);
+      const line = before.split('\n').length;
+      const col = m.index - before.lastIndexOf('\n');
+      violations.push({
+        file: path.relative(process.cwd(), file),
+        line,
+        col,
+        rule: rule.name,
+        match: m[0],
+      });
+    }
+  }
+}
+
+if (violations.length === 0) {
+  console.log(`✓ ${files.length} files scanned, 0 forbidden patterns.`);
+  process.exit(0);
+}
+
+console.log(`✗ ${violations.length} forbidden pattern(s) in ${files.length} files:\n`);
+for (const v of violations) {
+  console.log(`  ${v.file}:${v.line}:${v.col}  [${v.rule}]  ${v.match}`);
+}
+console.log(`\nSee docs/UI_STYLE_GUIDE.md § Color tokens for the semantic-token alternatives.`);
+
+if (LIST_MODE) {
+  process.exit(0);
+}
+process.exit(1);

@@ -28,20 +28,20 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
       alignItems="center"
       justifyContent="center"
       minH="100vh"
-      bg="gray.900"
+      bg="bg.subtle"
       p={8}
     >
       <VStack gap={6} maxW="600px" textAlign="center">
         <Heading size="xl" color="red.fg">
           Something went wrong
         </Heading>
-        <Text color="gray.300">
+        <Text color="fg.muted">
           An unexpected error occurred. This might be due to a temporary connection issue.
         </Text>
         {err && (
           <Box
             p={4}
-            bg="gray.800"
+            bg="bg.subtle"
             borderRadius="md"
             w="100%"
             maxH="200px"
@@ -51,7 +51,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
               {err.message}
             </Text>
             {err.stack && (
-              <Text color="gray.500" fontSize="xs" fontFamily="mono" mt={2}>
+              <Text color="fg.muted" fontSize="xs" fontFamily="mono" mt={2}>
                 {err.stack.split('\n').slice(0, 5).join('\n')}
               </Text>
             )}

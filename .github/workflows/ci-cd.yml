@@ -40,6 +40,9 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      - name: Audit forbidden shade literals
+        run: pnpm run lint:shades
+
       - name: Type check (Frontend)
         run: pnpm --filter @marketmind/electron type-check
 

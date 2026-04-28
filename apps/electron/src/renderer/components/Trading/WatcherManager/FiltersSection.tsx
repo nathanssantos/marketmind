@@ -131,7 +131,7 @@ export const FiltersSection = ({
                 disabled={isPending}
               />
               {config?.useDirectionFilter && (
-                <Box gridColumn="span 2" pl={4} borderLeftWidth="2px" borderLeftColor="green.500">
+                <Box gridColumn="span 2" pl={4} borderLeftWidth="2px" borderLeftColor="green.muted">
                   <Grid templateColumns="repeat(2, 1fr)" gap={3}>
                     <FilterToggle
                       label={t('settings.algorithmicAutoTrading.filters.direction.enableLongInBear')}
@@ -233,7 +233,7 @@ export const FiltersSection = ({
                 disabled={isPending}
               />
               {config?.useConfluenceScoring && (
-                <Box gridColumn="span 2" pl={4} borderLeftWidth="2px" borderLeftColor="blue.500">
+                <Box gridColumn="span 2" pl={4} borderLeftWidth="2px" borderLeftColor="blue.muted">
                   <Text fontSize="sm" fontWeight="medium" mb={1}>
                     {t('settings.algorithmicAutoTrading.filters.confluence.minScore')}
                   </Text>

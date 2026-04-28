@@ -79,7 +79,7 @@ export const RiskManagementSection = ({
         </HStack>
 
         {maxDrawdownEnabled && (
-          <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="red.500">
+          <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="red.muted">
             <HStack gap={4}>
               <Slider
                 value={[maxDrawdownPercent]}
@@ -118,7 +118,7 @@ export const RiskManagementSection = ({
         </HStack>
 
         {maxRiskPerStopEnabled && (
-          <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.500">
+          <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.muted">
             <HStack gap={4}>
               <Slider
                 value={[maxRiskPerStopPercent]}
@@ -159,7 +159,7 @@ export const RiskManagementSection = ({
             </HStack>
 
             {marginTopUpEnabled && (
-              <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="orange.500">
+              <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="orange.muted">
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" mb={2}>
                     {t('watcherManager.riskManagement.marginTopUp.threshold')}

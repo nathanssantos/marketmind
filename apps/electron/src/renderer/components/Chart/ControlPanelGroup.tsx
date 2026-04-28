@@ -34,7 +34,7 @@ export const ControlPanelGroup = ({
     >
       <Stack gap={2}>
         <Box
-          bg="gray.800"
+          bg="bg.subtle"
           borderRadius="md"
           boxShadow="lg"
           opacity={0.95}
@@ -45,13 +45,13 @@ export const ControlPanelGroup = ({
             px={3}
             py={2}
             borderBottom={isExpanded ? '1px solid' : 'none'}
-            borderColor="gray.700"
+            borderColor="border"
             cursor="pointer"
             onClick={() => setIsExpanded(!isExpanded)}
             _hover={{ bg: 'gray.750' }}
             borderTopRadius="md"
           >
-            <Text fontSize="sm" fontWeight="semibold" color="gray.200">
+            <Text fontSize="sm" fontWeight="semibold" color="fg.muted">
               {title}
             </Text>
             <IconButton
@@ -59,7 +59,7 @@ export const ControlPanelGroup = ({
               aria-label={isExpanded ? 'Collapse panel' : 'Expand panel'}
               variant="ghost"
               colorPalette="gray"
-              color="gray.400"
+              color="fg.muted"
             >
               {isExpanded ? <LuChevronUp size={14} /> : <LuChevronDown size={14} />}
             </IconButton>

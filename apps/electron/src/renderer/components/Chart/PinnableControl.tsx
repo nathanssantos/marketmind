@@ -35,7 +35,7 @@ export const PinnableControl = ({
       position="relative"
     >
       <HStack justify="space-between">
-        <Text fontSize="xs" color="gray.300">{label}</Text>
+        <Text fontSize="xs" color="fg.muted">{label}</Text>
         <HStack gap={1}>
           <ToggleIconButton
             active={pinned}
@@ -58,7 +58,7 @@ export const PinnableControl = ({
             step={step}
             min={min}
             max={max}
-            color="gray.300"
+            color="fg.muted"
           />
         </HStack>
       </HStack>
