@@ -18,7 +18,11 @@ export type ModalId =
   | 'orders'
   | 'backtest'
   | 'screener'
-  | 'analytics';
+  | 'analytics'
+  | 'createWallet'
+  | 'addWatcher'
+  | 'startWatchers'
+  | 'importProfile';
 
 export type SidebarId = 'trading' | 'autoTrading' | 'market' | 'orderFlow';
 
@@ -42,7 +46,10 @@ export const SETTINGS_TABS: SettingsTabId[] = [
   'data', 'updates', 'about',
 ];
 
-export const MODALS: ModalId[] = ['settings', 'orders', 'backtest', 'screener', 'analytics'];
+export const MODALS: ModalId[] = [
+  'settings', 'orders', 'backtest', 'screener', 'analytics',
+  'createWallet', 'addWatcher', 'startWatchers', 'importProfile',
+];
 
 export const SIDEBARS: SidebarId[] = ['trading', 'autoTrading', 'market', 'orderFlow'];
 

@@ -41,6 +41,11 @@ const openSettingsTab = async (page: Page, tabId: SettingsTabId): Promise<void> 
   await page.waitForTimeout(300);
 };
 
+const clickTrigger = async (page: Page, testid: string, settleMs = 400): Promise<void> => {
+  await page.locator(`[data-testid="${testid}"]`).first().click({ timeout: 5000 });
+  await page.waitForTimeout(settleMs);
+};
+
 const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
   if (modalId === 'settings') {
     await openSettingsTab(page, 'account');
@@ -48,6 +53,29 @@ const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
   }
   if (modalId === 'orders') {
     await toggleSidebar(page, 'trading', true);
+  }
+  // Flow modals — click triggers from real UI affordances (data-testid)
+  if (modalId === 'createWallet') {
+    await openSettingsTab(page, 'wallets');
+    await clickTrigger(page, 'trigger-create-wallet');
+    return;
+  }
+  if (modalId === 'tradingProfiles' || modalId === 'importProfile') {
+    await openSettingsTab(page, 'tradingProfiles');
+    if (modalId === 'importProfile') {
+      await clickTrigger(page, 'trigger-import-profile');
+    }
+    return;
+  }
+  if (modalId === 'addWatcher') {
+    await openSettingsTab(page, 'autoTrading');
+    await clickTrigger(page, 'trigger-add-watcher');
+    return;
+  }
+  if (modalId === 'startWatchers') {
+    await toggleSidebar(page, 'autoTrading', true);
+    await clickTrigger(page, 'trigger-start-watchers');
+    return;
   }
   await page.evaluate((id) => {
     const w = window as Window & {

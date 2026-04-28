@@ -78,6 +78,7 @@ export const WatchersList = ({
             size="sm"
             variant="outline"
             onClick={onAddWatcher}
+            data-testid="trigger-add-watcher"
           >
             <LuPlus />
             {t('tradingProfiles.watchers.add')}

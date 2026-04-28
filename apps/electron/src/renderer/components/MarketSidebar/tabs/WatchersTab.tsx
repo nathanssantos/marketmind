@@ -80,6 +80,7 @@ const WatchersTabComponent = () => {
               onClick={() => setIsModalOpen(true)}
               colorPalette="green"
               variant="solid"
+              data-testid="trigger-start-watchers"
             >
               <LuPlay />
             </IconButton>

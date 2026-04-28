@@ -47,10 +47,11 @@ export const SETTINGS_TABS: SettingsTabId[] = [
 
 export const MODALS: ModalId[] = [
   'settings', 'orders', 'backtest', 'screener', 'analytics',
+  // Flow modals — driven by data-testid clicks via mcp-screenshot/capture.ts
+  'createWallet', 'addWatcher', 'startWatchers', 'importProfile',
+  // 'tradingProfiles' — same content as settings-tradingProfiles, skipped
 ];
 
-export const FLOW_MODALS: ModalId[] = [
-  'startWatchers', 'createWallet', 'addWatcher', 'importProfile', 'tradingProfiles',
-];
+export const FLOW_MODALS: ModalId[] = [];
 
 export const SIDEBARS: SidebarId[] = ['trading', 'autoTrading', 'market', 'orderFlow'];

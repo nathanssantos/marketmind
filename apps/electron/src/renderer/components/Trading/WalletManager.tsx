@@ -120,6 +120,7 @@ export const WalletManager = () => {
           variant="outline"
           onClick={() => setShowCreateDialog(true)}
           loading={isCreatingPaper || isCreating}
+          data-testid="trigger-create-wallet"
         >
           <LuPlus />
           {t('trading.wallets.create')}
