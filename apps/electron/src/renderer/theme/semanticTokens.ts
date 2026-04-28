@@ -6,7 +6,10 @@ export const semanticTokenColors = {
   'bg.muted': { value: { base: '#edf2f7', _dark: '#4a5568' } },
   border: { value: { base: '#e2e8f0', _dark: '#4a5568' } },
   fg: { value: { base: '#1a202c', _dark: '#f7fafc' } },
-  'fg.muted': { value: { base: '#718096', _dark: '#a0aec0' } },
+  // a11y: fg.muted darkened in light, lightened in dark to clear WCAG AA
+  // 4.5:1 against bg.muted. Old values (#718096 / #a0aec0) gave ~3.7:1 light
+  // and ~3.2:1 dark — readable but below the AA floor for body text.
+  'fg.muted': { value: { base: '#5a6878', _dark: '#cbd5e0' } },
   'chart.background': { value: { base: '#ffffff', _dark: '#1e222d' } },
   'chart.bullish': { value: { base: '#16a34a', _dark: '#26a69a' } },
   'chart.bearish': { value: { base: '#dc2626', _dark: '#ef5350' } },
