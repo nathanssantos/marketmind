@@ -147,24 +147,53 @@ export const SettingsDialog = ({
                       <Spinner size={MM.spinner.panel.size} />
                     </Flex>
                   }>
-                    {activeTab === 'account' && <AccountTab />}
-                    {activeTab === 'security' && <SecurityTab />}
-                    {activeTab === 'notifications' && <NotificationsTab />}
-                    {activeTab === 'general' && <GeneralTab />}
-                    {activeTab === 'chart' && (
-                      <ChartSettingsTab
-                        config={advancedConfig}
-                        onConfigChange={onAdvancedConfigChange}
-                      />
-                    )}
-                    {activeTab === 'wallets' && <WalletManager />}
-                    {activeTab === 'tradingProfiles' && <TradingProfilesTab />}
-                    {activeTab === 'autoTrading' && <AutoTradingTab />}
-                    {activeTab === 'indicators' && <IndicatorsTab />}
-                    {activeTab === 'customSymbols' && <CustomSymbolsTab />}
-                    {activeTab === 'data' && <DataTab />}
-                    {activeTab === 'updates' && <UpdatesTab />}
-                    {activeTab === 'about' && <AboutTab />}
+                    {/* Tabs.Content wrappers stay so aria-controls on the
+                        triggers still resolves to a panel id; lazy-loaded
+                        bodies render only when active to skip mount cost. */}
+                    <Tabs.Content value="account" pt={0}>
+                      {activeTab === 'account' && <AccountTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="security" pt={0}>
+                      {activeTab === 'security' && <SecurityTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="notifications" pt={0}>
+                      {activeTab === 'notifications' && <NotificationsTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="general" pt={0}>
+                      {activeTab === 'general' && <GeneralTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="chart" pt={0}>
+                      {activeTab === 'chart' && (
+                        <ChartSettingsTab
+                          config={advancedConfig}
+                          onConfigChange={onAdvancedConfigChange}
+                        />
+                      )}
+                    </Tabs.Content>
+                    <Tabs.Content value="wallets" pt={0}>
+                      {activeTab === 'wallets' && <WalletManager />}
+                    </Tabs.Content>
+                    <Tabs.Content value="tradingProfiles" pt={0}>
+                      {activeTab === 'tradingProfiles' && <TradingProfilesTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="autoTrading" pt={0}>
+                      {activeTab === 'autoTrading' && <AutoTradingTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="indicators" pt={0}>
+                      {activeTab === 'indicators' && <IndicatorsTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="customSymbols" pt={0}>
+                      {activeTab === 'customSymbols' && <CustomSymbolsTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="data" pt={0}>
+                      {activeTab === 'data' && <DataTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="updates" pt={0}>
+                      {activeTab === 'updates' && <UpdatesTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="about" pt={0}>
+                      {activeTab === 'about' && <AboutTab />}
+                    </Tabs.Content>
                   </Suspense>
                 </Box>
               </Flex>
