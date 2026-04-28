@@ -205,13 +205,10 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
   return (
     <Box
       p={3}
-      bg={isActive ? 'blue.50' : 'bg.muted'}
+      bg={isActive ? 'blue.subtle' : 'bg.muted'}
       borderRadius="md"
-      borderLeft="4px solid"
-      borderColor={isActive ? 'blue.500' : isProfitable ? 'green.500' : 'red.500'}
-      _dark={{
-        bg: isActive ? 'blue.900' : 'bg.muted',
-      }}
+      borderLeftWidth="3px"
+      borderLeftColor={isActive ? 'blue.muted' : isProfitable ? 'green.muted' : 'red.muted'}
     >
       <Flex justify="space-between" align="center" mb={2}>
         <Flex align="center" gap={2}>
@@ -274,7 +271,7 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
                   <MenuItem
                     value="delete"
                     onClick={onDelete}
-                    color="red.500"
+                    color="red.fg"
                     px={4}
                     py={2.5}
                     _hover={{ bg: 'bg.muted' }}
@@ -313,7 +310,7 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.wallets.netDeposits', 'Net Deposits')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color={netDeposits > 0 ? 'blue.500' : 'orange.500'}>
+              <Text color={netDeposits > 0 ? 'blue.fg' : 'orange.fg'}>
                 {netDeposits > 0 ? '+' : ''}{netDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </Text>
               <BrlValue usdtValue={netDeposits} />
@@ -324,7 +321,7 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
           <Text color="fg.muted">{t('trading.wallets.netPnL')}</Text>
           <TooltipWrapper label={`${t('trading.analytics.performance.grossPnL')}: ${grossPnL >= 0 ? '+' : ''}${grossPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.fees')}: ${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.funding')}: ${totalFunding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isDisabled={totalFees === 0 && totalFunding === 0}>
             <Stack gap={0} align="flex-end">
-              <Text color={isProfitable ? 'green.500' : 'red.500'} fontWeight="medium" cursor={totalFees > 0 || totalFunding !== 0 ? 'help' : 'default'}>
+              <Text color={isProfitable ? 'trading.profit' : 'trading.loss'} fontWeight="medium" cursor={totalFees > 0 || totalFunding !== 0 ? 'help' : 'default'}>
                 {isProfitable ? '+' : ''}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {' '}({isProfitable ? '+' : ''}{netPnLPercent.toFixed(2)}%)
                 {(totalFees > 0 || totalFunding !== 0) && <LuInfo style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />}

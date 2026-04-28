@@ -116,15 +116,15 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
       p={4}
       bg="bg.muted"
       borderRadius="md"
-      borderLeft="4px solid"
-      borderColor={profile.isDefault ? 'yellow.500' : 'blue.500'}
+      borderLeftWidth="3px"
+      borderLeftColor={profile.isDefault ? 'yellow.muted' : 'blue.muted'}
       position="relative"
     >
       <Flex justify="space-between" align="flex-start" mb={3}>
         <Flex align="center" gap={2}>
           {profile.isDefault && (
-            <Box color="yellow.500">
-              <LuStar size={16} />
+            <Box color="yellow.fg" aria-label={t('tradingProfiles.defaultMarker')}>
+              <LuStar size={14} />
             </Box>
           )}
           <Text fontWeight="bold" fontSize="md">
