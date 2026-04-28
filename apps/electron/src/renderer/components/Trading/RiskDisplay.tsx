@@ -108,7 +108,7 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
           <Text
             fontSize="sm"
             fontWeight="bold"
-            color={metrics.dailyPnL.value > 0 ? 'green.500' : metrics.dailyPnL.value < 0 ? 'red.500' : undefined}
+            color={metrics.dailyPnL.value > 0 ? 'trading.profit' : metrics.dailyPnL.value < 0 ? 'trading.loss' : undefined}
           >
             {metrics.dailyPnL.value >= 0 ? '+' : ''}${metrics.dailyPnL.value.toFixed(2)}
           </Text>

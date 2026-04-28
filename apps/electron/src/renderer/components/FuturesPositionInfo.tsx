@@ -86,7 +86,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
           </Flex>
           <Text
             fontWeight="bold"
-            color={pnlPercent >= 0 ? 'green.500' : 'red.500'}
+            color={pnlPercent >= 0 ? 'trading.profit' : 'trading.loss'}
           >
             {pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
           </Text>
@@ -124,7 +124,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
             <Text
               fontSize="sm"
               fontWeight="medium"
-              color={unrealizedPnl >= 0 ? 'green.500' : 'red.500'}
+              color={unrealizedPnl >= 0 ? 'trading.profit' : 'trading.loss'}
             >
               {formatPnl(unrealizedPnl)}
             </Text>

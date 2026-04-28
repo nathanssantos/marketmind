@@ -51,8 +51,8 @@ const PortfolioSummaryComponent = ({
               <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
               <Flex gap={3} align="center">
                 <Text fontWeight="medium">{positionsCount}</Text>
-                <Text color="green.fg">{profitableCount}W</Text>
-                <Text color="red.fg">{losingCount}L</Text>
+                <Text color="trading.profit">{profitableCount}W</Text>
+                <Text color="trading.loss">{losingCount}L</Text>
               </Flex>
             </Flex>
 
@@ -82,7 +82,7 @@ const PortfolioSummaryComponent = ({
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
                 <Stack gap={0} align="flex-end">
-                  <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
+                  <Text fontWeight="medium" color={totalPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
                     {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
                   </Text>
                   <BrlValue usdtValue={totalPnL} />
@@ -90,7 +90,7 @@ const PortfolioSummaryComponent = ({
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.pnlVsBalance')}</Text>
-                <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
+                <Text fontWeight="medium" color={totalPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
                   {totalPnL >= 0 ? '+' : ''}{effectiveCapital > 0 ? ((totalPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
                 </Text>
               </Flex>
@@ -107,13 +107,13 @@ const PortfolioSummaryComponent = ({
                         {t('trading.portfolio.stopProtected')} ({stopProtectedPnl.positionsWithStops}/{positionsCount})
                       </Text>
                       <Stack gap={0} align="flex-end">
-                        <Text fontWeight="medium" color={stopProtectedPnl.total >= 0 ? 'green.500' : 'red.500'} textAlign="right">
+                        <Text fontWeight="medium" color={stopProtectedPnl.total >= 0 ? 'trading.profit' : 'trading.loss'} textAlign="right">
                           {stopProtectedPnl.total >= 0 ? '+' : ''}{currency} {stopProtectedPnl.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Text>
-                        <Text color={stopProtectedPnl.total >= 0 ? 'green.500' : 'red.500'} textAlign="right">
+                        <Text color={stopProtectedPnl.total >= 0 ? 'trading.profit' : 'trading.loss'} textAlign="right">
                           {totalMargin > 0 ? `${stopProtectedPnl.total >= 0 ? '+' : ''}${((stopProtectedPnl.total / totalMargin) * 100).toFixed(1)}` : '0.0'}% {t('trading.portfolio.stopProtectedOfMargin')}
                         </Text>
-                        <Text color={stopProtectedPnl.total >= 0 ? 'green.500' : 'red.500'} textAlign="right">
+                        <Text color={stopProtectedPnl.total >= 0 ? 'trading.profit' : 'trading.loss'} textAlign="right">
                           {walletBalance > 0 ? `${stopProtectedPnl.total >= 0 ? '+' : ''}${((stopProtectedPnl.total / walletBalance) * 100).toFixed(1)}` : '0.0'}% {t('trading.portfolio.stopProtectedOfBalance')}
                         </Text>
                         <BrlValue usdtValue={stopProtectedPnl.total} />
@@ -126,13 +126,13 @@ const PortfolioSummaryComponent = ({
                         {t('trading.portfolio.tpProjected')} ({tpProjectedProfit.positionsWithTp}/{positionsCount})
                       </Text>
                       <Stack gap={0} align="flex-end">
-                        <Text fontWeight="medium" color="green.fg" textAlign="right">
+                        <Text fontWeight="medium" color="trading.profit" textAlign="right">
                           +{currency} {tpProjectedProfit.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </Text>
-                        <Text color="green.fg" textAlign="right">
+                        <Text color="trading.profit" textAlign="right">
                           {totalMargin > 0 ? ((tpProjectedProfit.total / totalMargin) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfMargin')}
                         </Text>
-                        <Text color="green.fg" textAlign="right">
+                        <Text color="trading.profit" textAlign="right">
                           {walletBalance > 0 ? ((tpProjectedProfit.total / walletBalance) * 100).toFixed(1) : '0.0'}% {t('trading.portfolio.tpProjectedOfBalance')}
                         </Text>
                         <BrlValue usdtValue={tpProjectedProfit.total} />
@@ -149,7 +149,7 @@ const PortfolioSummaryComponent = ({
           <Stack gap={1}>
             <Flex justify="space-between" align="center">
               <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
-              <Text fontWeight="medium" color={totalPnL >= 0 ? 'green.500' : 'red.500'}>
+              <Text fontWeight="medium" color={totalPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
                 {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
               </Text>
             </Flex>

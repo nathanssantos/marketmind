@@ -227,7 +227,7 @@ const RankingsTab = ({ symbolScores, isLoading, activeSymbols, t }: RankingsTabP
             flex="0 0 80px"
             fontSize="xs"
             textAlign="right"
-            color={score.rawData.priceChange24h >= 0 ? 'green.500' : 'red.500'}
+            color={score.rawData.priceChange24h >= 0 ? 'trading.profit' : 'trading.loss'}
           >
             {score.rawData.priceChange24h >= 0 ? '+' : ''}
             {score.rawData.priceChange24h.toFixed(2)}%
@@ -298,7 +298,7 @@ const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
           <Flex gap={4} flexWrap="wrap">
             {rotation.added.length > 0 && (
               <Box>
-                <Text fontSize="xs" color="green.fg" fontWeight="medium" mb={1}>
+                <Text fontSize="xs" color="trading.profit" fontWeight="medium" mb={1}>
                   + {t('tradingProfiles.dynamicSelection.added')} ({rotation.added.length})
                 </Text>
                 <HStack flexWrap="wrap" gap={1}>
@@ -313,7 +313,7 @@ const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
 
             {rotation.removed.length > 0 && (
               <Box>
-                <Text fontSize="xs" color="red.fg" fontWeight="medium" mb={1}>
+                <Text fontSize="xs" color="trading.loss" fontWeight="medium" mb={1}>
                   - {t('tradingProfiles.dynamicSelection.removed')} ({rotation.removed.length})
                 </Text>
                 <HStack flexWrap="wrap" gap={1}>

@@ -101,7 +101,7 @@ const PerformanceStats = memo(({ data }: { data: StrategyVisualizationData }) =>
       </Box>
       <Box>
         <Text color="fg.muted">{t('strategyInfo.winRate')}</Text>
-        <Text fontWeight="medium" color={winRate >= 50 ? 'green.500' : 'red.500'}>
+        <Text fontWeight="medium" color={winRate >= 50 ? 'trading.profit' : 'trading.loss'}>
           {winRate.toFixed(1)}%
         </Text>
       </Box>
