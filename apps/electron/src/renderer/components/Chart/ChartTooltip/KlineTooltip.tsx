@@ -44,13 +44,13 @@ export const KlineTooltip = ({ kline, left, top }: KlineTooltipProps) => {
       </HStack>
       <HStack justify="space-between">
         <Text color="fg.muted">High:</Text>
-        <Text fontWeight="medium" color="green.500">
+        <Text fontWeight="medium" color="green.fg">
           {formatPriceDisplay(getKlineHigh(kline))}
         </Text>
       </HStack>
       <HStack justify="space-between">
         <Text color="fg.muted">Low:</Text>
-        <Text fontWeight="medium" color="red.500">
+        <Text fontWeight="medium" color="red.fg">
           {formatPriceDisplay(getKlineLow(kline))}
         </Text>
       </HStack>

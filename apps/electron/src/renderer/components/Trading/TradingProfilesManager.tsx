@@ -176,7 +176,7 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
                 <MenuItem
                   value="delete"
                   onClick={onDelete}
-                  color="red.500"
+                  color="red.fg"
                   px={4}
                   py={2.5}
                   _hover={{ bg: 'bg.muted' }}

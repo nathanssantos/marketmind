@@ -179,15 +179,15 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
               <Text fontWeight="medium">{formatPrice(position.currentPrice)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="red.500">{formatPrice(position.stopLoss)}</Text>
+              <Text color="red.fg">{formatPrice(position.stopLoss)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="green.500">{formatPrice(position.takeProfit)}</Text>
+              <Text color="green.fg">{formatPrice(position.takeProfit)}</Text>
             </TradingTableCell>
             <TradingTableCell>
               {position.isAutoTrade && (
                 <TooltipWrapper label={t('trading.orders.autoTrade')} showArrow>
-                  <Box color="blue.500"><LuBot size={14} /></Box>
+                  <Box color="blue.fg"><LuBot size={14} /></Box>
                 </TooltipWrapper>
               )}
             </TradingTableCell>

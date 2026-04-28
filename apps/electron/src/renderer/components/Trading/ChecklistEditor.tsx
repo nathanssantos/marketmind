@@ -219,7 +219,7 @@ export const ChecklistEditor = ({
                     <Text fontSize="xs" color="fg.muted">
                       {opLabel} {thresholdLabel(cond.threshold)}
                       {!catalogDef && indicator && (
-                        <Text as="span" ml={2} color="red.500">
+                        <Text as="span" ml={2} color="red.fg">
                           {t('checklist.editor.unknownCatalog', {
                             defaultValue: '(unknown indicator type)',
                           })}

@@ -58,7 +58,7 @@ export const WatcherCardCompact = ({
                 <MenuItem
                   value="stop"
                   onClick={onStop}
-                  color="red.500"
+                  color="red.fg"
                   px={3}
                   py={2}
                   _hover={{ bg: 'bg.muted' }}

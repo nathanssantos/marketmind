@@ -199,7 +199,7 @@ export const Select = ({
 
             {isLoading && (
               <Box p={4} textAlign="center">
-                <Spinner size="sm" color="blue.500" />
+                <Spinner size="sm" color="blue.fg" />
               </Box>
             )}
 
@@ -287,7 +287,7 @@ export const Select = ({
 
             {isLoading && (
               <Box p={4} textAlign="center">
-                <Spinner size="sm" color="blue.500" />
+                <Spinner size="sm" color="blue.fg" />
               </Box>
             )}
 
