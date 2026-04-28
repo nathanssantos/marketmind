@@ -17,10 +17,10 @@ const CardRoot = ({ children, ...props }: CardRootProps) => (
     // @ts-expect-error Chakra v3 accentColor BoxProps spread type conflict
     <Box
         borderWidth="1px"
+        borderColor="border"
         borderRadius="lg"
         overflow="hidden"
-        bg="white"
-        _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
+        bg="bg.panel"
         {...props}
     >
         {children}
@@ -29,7 +29,7 @@ const CardRoot = ({ children, ...props }: CardRootProps) => (
 
 const CardHeader = ({ children, ...props }: CardHeaderProps) => (
     // @ts-expect-error Chakra v3 accentColor BoxProps spread type conflict
-    <Box p={4} borderBottomWidth="1px" _dark={{ borderColor: 'gray.700' }} {...props}>
+    <Box p={4} borderBottomWidth="1px" borderColor="border" {...props}>
         {children}
     </Box>
 );
