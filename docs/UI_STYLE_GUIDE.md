@@ -523,7 +523,21 @@ As of v1.2, `apps/electron/src/renderer/components/` contains **0** hardcoded sh
 | `trading.profit` | PnL gain — prefer over generic `green.fg` for trade values |
 | `trading.loss` | PnL loss — prefer over generic `red.fg` for trade values |
 
-Adding a new shade literal in `renderer/components/` will be caught by `grep`-based audits in CI (planned). Always prefer a semantic token; if the design needs a new tone, add it to `theme/tokens.ts` first.
+Adding a new shade literal in `renderer/components/` is caught by `pnpm lint:shades` (`scripts/audit-shade-literals.mjs`) and gated in CI. Always prefer a semantic token; if the design needs a new tone, add it to `theme/semanticTokens.ts` first.
+
+### WCAG AA contrast (v1.3 F.1)
+
+The text-on-bg pairs below clear the WCAG AA 4.5:1 floor for body text:
+
+| Pair | Light | Dark |
+|---|---|---|
+| `fg.muted` over `bg.muted` | 5.16:1 ✓ | 5.00:1 ✓ |
+| `fg.muted` over `bg.panel` | 5.83:1 ✓ | 11.1:1 ✓ |
+| `fg` over `bg.panel` | 16.5:1 ✓ | 16.0:1 ✓ |
+
+The `trading.profit / .loss / .warning / .info` tokens render below 4.5:1 in some pairings but consistently pass the 3:1 floor for **bold** or **large** text (WCAG AA's relaxed criterion), which matches how these tokens are used in the codebase (PnL values, status pills — always semibold or larger). If a new use site renders these tokens at body size + normal weight, prefer `green.fg / red.fg / yellow.fg / blue.fg` instead.
+
+Borders (`border` token) intentionally fall below 3:1 against `bg.panel` — they're structural, not informational, and 3:1 borders read as "boxed-in" instead of "subtle".
 
 ---
 
