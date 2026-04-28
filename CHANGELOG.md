@@ -7,21 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added — v1.2 standardization sweep
-- **`docs/V1_2_PLAN.md`** — cross-surface UI standardization plan. 8 PRs, EmptyState + DataCard primitives, P2 cleanup, baseline refresh, release.
-- **`<EmptyState dashed>` opt-in** — wraps the empty state in a dashed-border card for surfaces without their own card framing. Two new tests.
-- **Visual regression CI** — `.github/workflows/visual-regression.yml` runs the gallery on PRs touching renderer/, shared/, mcp-screenshot/ or the baseline; pixelmatch diff with `maxDiffPixels=25000` (~1.93%) and `threshold=0.2`. Uploads diffs + session as artifacts on failure.
-- **`scripts/visual-diff.mjs`** — pixelmatch + pngjs implementation. Writes red-overlay diff PNGs per divergent file.
-- **`scripts/visual-gallery.mjs`** — thin driver around `captureGallery` for local iterations.
+## [1.2.0] - 2026-04-28
 
-### Changed — v1.2 standardization sweep
-- **EmptyState applied across 7 surfaces**: IndicatorLibrary, Trading/Portfolio, Trading/OrdersList, Trading/WatcherManager/WatchersList (with dashed + Add Watcher action), CustomSymbols/CustomSymbolsTab, Trading/WalletManager (loading + empty), Screener/ScreenerResultsTable. Replaces ad-hoc `<Box p textAlign="center"><Text color="fg.muted">…</Text></Box>` patterns.
-- **Manual section headers → `<FormSection>`** in IndicatorLibrary, CustomSymbolsTab, TradingProfilesManager. Single change-point if compact spec shifts.
-- **`mcp-screenshot.setTheme`** now waits for the theme class to actually land on `documentElement` before returning, with 400ms settle (was 150ms timeout). Fixes ~30% diff cluster on slow CI runners caused by mid-transition captures.
-- **Visual regression baseline** captured on Linux Chromium (CI environment) instead of macOS. Local and CI captures diverge ~30% in light mode due to subpixel antialiasing differences; the comparison must run against same-OS captures.
+**v1.2 release** — Cross-surface UI standardization sweep. The semantic-token migration is now complete: 0 forbidden patterns (`color="X.500"`, `bg="X.50"`, `_dark={{}}` overrides) remain in `apps/electron/src/renderer/components/`. Every color flows through the semantic-token system (`X.fg / X.subtle / X.muted / X.solid` plus `bg.panel / bg.muted / fg.muted`), so dark/light parity is automatic. Visual regression now runs on every PR that touches renderer code.
+
+### Added — Phase A (Primitives)
+- **`<EmptyState dashed>` opt-in** — wraps the empty state in a dashed-border card for surfaces without their own card framing. Two new tests for the new prop.
+- **Visual regression CI** — `.github/workflows/visual-regression.yml` runs the gallery on PRs touching renderer/, shared/, mcp-screenshot/ or the baseline. Pixelmatch diff with `maxDiffPixels=40000` (~3.1%) and `threshold=0.2` (tuned empirically to absorb CI noise without hiding real layout shifts). Uploads diffs + session as artifacts on failure.
+- **`scripts/visual-diff.mjs`** — pixelmatch + pngjs implementation. Writes red-overlay diff PNGs per divergent file. Tolerance overridable via `VISUAL_DIFF_MAX_PIXELS` / `VISUAL_DIFF_THRESHOLD` env vars.
+- **`scripts/visual-gallery.mjs`** — thin driver around `captureGallery` for local iterations without going through the MCP stdio transport.
+- **`docs/V1_2_PLAN.md`** — cross-surface standardization plan + sequencing.
+
+### Changed — Phase A (Apply primitives across surfaces)
+- **EmptyState applied across 8 surfaces**: IndicatorLibrary, Trading/Portfolio, Trading/OrdersList, Trading/WatcherManager/WatchersList (with `dashed` + Add Watcher action), CustomSymbols/CustomSymbolsTab, Trading/WalletManager (loading + empty), Screener/ScreenerResultsTable, TradingProfilesManager. Replaces ad-hoc `<Box p textAlign="center"><Text color="fg.muted">…</Text></Box>` patterns.
+- **Manual section headers → `<FormSection>`** in IndicatorLibrary, CustomSymbolsTab, TradingProfilesManager. Single change-point if compact spec shifts later.
+- **`mcp-screenshot.setTheme`** now waits for the theme class to actually land on `documentElement` before returning, with 400ms settle (was 150ms). Fixes the ~30% diff cluster on slow CI runners caused by mid-transition captures.
+- **Visual regression baseline** captured on Linux Chromium (CI environment) instead of macOS — local and CI captures diverge ~30% in light mode due to subpixel antialiasing differences.
+
+### Changed — Phase B (Semantic-token migration, 7 PRs across 6 batches)
+**Goal: 0 hardcoded shade literals or `_dark` overrides anywhere in `renderer/components/`.**
+
+- **Batch 1** (#218, 8 files) — Settings/AboutTab links, ui/ErrorMessage, ui/LoadingSpinner, Update/UpdateNotification, Layout/LeveragePopover, Layout/QuickTradeToolbar, LeverageSelector, MarketSidebar/tabs/WatchersTab. `color="X.500"` → `X.fg` / `trading.profit` / `trading.loss`.
+- **Batch 2** (#219, 22 files, bulk sed) — Chart tooltips (Order/Kline/Setup/Measurement), Trading/* (Portfolio, Orders, Watchers, Profiles), ui/logo, ui/select. Every remaining `color="X.500"` literal in the renderer.
+- **Batch 3** (#220) — Trading/WatcherManager/WatcherCardCompact `borderColor="green.500"` → `green.muted`, status dot → `green.fg`. ui/card.tsx primitive: `bg="white"` + `_dark` override → `bg="bg.panel"`; both `CardRoot` and `CardHeader` semantic tokens.
+- **Batch 4** (#221, 5 files) — Trading badges/pills using `bg="X.100" + color="X.800" + _dark={...}` triplets → `bg="X.subtle" + color="X.fg"` (5 `_dark` overrides removed).
+- **Batch 5** (#222, 7 files, bulk sed) — Mid-range shades (`X.{400,600,700,800}`) for status indicators → `X.fg` (text) / `X.solid` (fill).
+- **Batch 6** (#223, 7 files) — Final cleanup: SymbolSelector, ErrorBoundary, SetupStatsTable, SetupToggleSection (4-prop `_dark` override), BulkSymbolSelector, TpModeSection (drop redundant `_dark`), MarketIndicatorSections (dynamic `${rateColor}` template).
+- **Phase B P2 sweep** (#217) — DomLadder header renders `—` instead of `0.00` when no price; ProfileCard yellow accent `yellow.500` → semantic + new `aria-label` `tradingProfiles.defaultMarker` (en/pt/es/fr); WalletCard semantic-token migration.
 
 ### Docs
-- `CLAUDE.md` — Project Version 0.85.0 → 1.1.0; Current Focus + System Status updated; Testing Status bumped to ~8,400 tests with visual regression block.
+- **`CLAUDE.md`** — Project Version `0.85.0` → `1.1.0`; Current Focus + System Status rewritten; Testing Status bumped to ~8,400 tests with visual regression block.
+- **`CHANGELOG.md`** — `[Unreleased]` drained; v1.2.0 section added.
+
+### Stats
+- **8,400+ tests** passing — 5,416 backend + 2,239 frontend unit + 27 frontend browser + 722 indicators
+- **0** forbidden-pattern violations remaining in renderer/components/
+- **44-PNG visual regression baseline** + CI gate active
 
 ## [1.1.0] - 2026-04-27
 
