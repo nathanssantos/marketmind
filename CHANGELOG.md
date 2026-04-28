@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Work on develop after v1.2.0 — slated for the next release.
+
+### Added — Performance instrumentation + dev tools
+- **`pnpm bundle:analyze`** (#236) — wires `rollup-plugin-visualizer` behind `ANALYZE=1`. Generates `dist-web/bundle-stats.html` treemap + extended `manualChunks` to split `vendor-pinets`, `vendor-recharts`, `vendor-d3`, `vendor-grid`, `vendor-trpc`, `vendor-socket`, `vendor-icons` into their own chunks. Cumulative main-bundle reduction across this and the lazy-load PRs: 2,124 KB → 850 KB raw (587 → 237 KB gz). **−60%.**
+- **`useDialogMount(name, isOpen)` hook + `perfMonitor.recordDialogMount`** (#236) — measures dialog body render to post-commit effect. Wired into `SettingsDialog`, `BacktestModal`, `AnalyticsModal`. Visible in `ChartPerfOverlay` when `localStorage['chart.perf']='1'`.
+- **`docs/V1_3_BUNDLE_AUDIT.md`** — cumulative audit + follow-up recommendations.
+- **MCP `app.openModal` flow handlers** (#234) — `createWallet`, `addWatcher`, `startWatchers`, `importProfile`, `tradingProfiles` now drive the trigger button via `data-testid` so agents can open these without hand-rolled click chains. Same wiring used by `mcp-screenshot/capture.ts` so the visual-regression gallery now covers all 5 flow modals.
+- **`scripts/audit-shade-literals.mjs` + CI gate** (#232) — fails CI if a `color="X.500"` / `bg="X.50"` shade literal or `_dark={{}}` override is reintroduced anywhere under `apps/electron/src/renderer/components/` (excluding the `ui/alert.tsx`/`slider.tsx` Chakra wrappers).
+- **`scripts/visual-diff.mjs` HTML gallery** (#231) — failed visual-diff sessions emit `<session>/diffs/index.html` with a side-by-side baseline / session / diff column per failing surface. Speeds up the diff-investigation loop in CI.
+
+### Changed — Performance + a11y
+- **Lazy-load Settings dialog tabs** (#235) — all 13 tabs are now individual chunks via `React.lazy`. Body renders only when the tab is active; `<Tabs.Content>` wrappers stay so `aria-controls` resolves and a11y is preserved.
+- **Lazy-load locale JSONs** (#237) — only English ships in the main bundle; `pt`/`es`/`fr` load via dynamic `import()` registered through `addResourceBundle` when the user switches language. New `loadLanguageBundle(lang)` + `changeLanguageLazy(lang)` helpers in `@renderer/i18n`.
+- **Lazy-load `pinets` engine** (#237) — `pineWorkerService.ts` dynamic-imports the engine inside `runPine()`; the 484 KB / 117 KB gz vendor chunk loads only when the chart computes its first indicator.
+- **Lazy-load `recharts` consumers** (#238) — `MarketSidebar` lazy-loads `MarketIndicatorsTab`; `AnalyticsModal` lazy-loads `EquityCurveChart`. The 296 KB / 83 KB gz `vendor-recharts` chunk no longer downloads on first paint.
+- **`fg.muted` contrast bumped to clear WCAG AA** (#233) — light `#5a6878` (5.16:1 over `bg.muted`) and dark `#cbd5e0` (5.00:1). Was 3.72/3.17 — readable but below the AA floor for body text.
+
+### Changed — Cross-surface UI standardization (continuation of v1.2 sweep)
+- **Logo brand-lock** (#240) — the `.500` → `.fg` mechanical sweeps in v1.2 #219/#222 collapsed the Logo's brand colors to Chakra's theme-aware `X.fg`, lightening the brand in dark mode. Restored the original brand shades (`#3182ce` blue, `#48bb78` green) via dedicated `brand.logo.primary` / `brand.logo.secondary` semantic tokens that lock to the same hex in light and dark.
+- **P&L green/red unification** (#241) — anything that conveys gain/loss across 18 surfaces (Portfolio, PortfolioSummary, PositionCard, OrdersTableContent, FuturesPositionsPanel, SetupStatsTable, StrategyInfoPopover, RiskDisplay, ChecklistSection, DynamicSymbolRankings, QuickTradeToolbar, TrailingStopPopover, KlineOHLCRow, ChartTooltip/OrderTooltip, ChartCloseDialog, ScreenerResultsTable, FuturesPositionInfo, MarginInfoPanel) now flows through canonical `trading.profit` / `trading.loss`. LONG/SHORT direction labels use `trading.long` / `trading.short`. Eliminates the visible "different shades of green" the user reported in the Portfolio panel.
+
+### Added — Tests
+- **Empty-state semantics tests** (#242) — 7 surfaces: `ScreenerResultsTable`, `ChecklistEditor`, `IndicatorLibrary`, `WatchersList`, `TradingProfilesManager`, `CustomSymbolsTab`, `WalletManager`. +11 new tests; total 2,264 unit tests passing.
+
+### Docs
+- **`CLAUDE.md`** — already at `Project Version 1.2.0` from the v1.2.0 release.
+- **`docs/UI_STYLE_GUIDE.md`** — added "Applied surfaces" line under PanelHeader (PerformancePanel, SetupStatsTable, PerformanceCalendar, EquityCurveChart).
+- **`docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`** / **`docs/V1_3_PLAN.md`** — backlog refresh: G.1 (per-wallet theme override) dropped (theme stays per-user); G.3 (Pine migration) marked already-complete; sequencing rewritten to reflect what's already on develop.
+- **`apps/electron/src/renderer/components/ui/README.md`** — note that `<MarketNoData>` is a private MarketSidebar helper (not a `ui/` primitive).
+- **Chart input units** (#239) — Padding fields (top/bottom/left/right) now show `(px)` on labels in all 4 locales. Line Width helper updated to include the unit.
+
 ## [1.2.0] - 2026-04-28
 
 **v1.2 release** — Cross-surface UI standardization sweep. The semantic-token migration is now complete: 0 forbidden patterns (`color="X.500"`, `bg="X.50"`, `_dark={{}}` overrides) remain in `apps/electron/src/renderer/components/`. Every color flows through the semantic-token system (`X.fg / X.subtle / X.muted / X.solid` plus `bg.panel / bg.muted / fg.muted`), so dark/light parity is automatic. Visual regression now runs on every PR that touches renderer code.
