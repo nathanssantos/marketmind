@@ -66,6 +66,45 @@ if (!baselineExists) {
 const diffsDir = path.join(sessionDir, 'diffs');
 await mkdir(diffsDir, { recursive: true });
 
+const renderDiffsHtml = (failed) => {
+  const cards = failed
+    .map((r) => {
+      if (r.status === 'dimension-change') {
+        return `<section><h2>${r.file}</h2><p class="warn">dimensions differ between baseline and session — no pixel diff available</p></section>`;
+      }
+      const pct = ((r.diffPixels / r.totalPixels) * 100).toFixed(3);
+      return `<section>
+        <h2>${r.file}</h2>
+        <p class="meta"><span class="px">${r.diffPixels}px</span> · <span class="pct">${pct}%</span></p>
+        <div class="row">
+          <figure><figcaption>baseline</figcaption><img src="../baseline/${r.file}" alt="baseline ${r.file}"/></figure>
+          <figure><figcaption>session</figcaption><img src="../${r.file}" alt="session ${r.file}"/></figure>
+          <figure><figcaption>diff</figcaption><img src="./${r.file}" alt="diff ${r.file}"/></figure>
+        </div>
+      </section>`;
+    })
+    .join('');
+  return `<!doctype html>
+<html><head><meta charset="utf-8"><title>Visual diff — ${path.basename(sessionDir)}</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:#1a1a1a;color:#eee;margin:0;padding:24px}
+h1{font-size:18px;margin:0 0 24px}
+section{margin-bottom:32px;padding-bottom:16px;border-bottom:1px solid #333}
+section h2{font-size:14px;margin:0 0 4px;color:#aaa;font-weight:600;font-family:monospace}
+.meta{font-size:11px;color:#888;margin:0 0 12px}
+.meta .px{color:#f48fb1;font-weight:600}
+.meta .pct{color:#90caf9;font-weight:600}
+.warn{color:#ffb74d;font-size:12px}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+figure{margin:0;display:flex;flex-direction:column;gap:8px}
+figcaption{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em}
+img{max-width:100%;border:1px solid #333;border-radius:4px;background:#000}
+</style></head><body>
+<h1>Visual diff — ${path.basename(sessionDir)}<br><small style="font-size:12px;color:#888;font-weight:400">vs apps/electron/screenshots/baseline · maxDiffPixels=${MAX_DIFF_PIXELS} threshold=${THRESHOLD}</small></h1>
+${cards || '<p style="color:#888">No diffs detected.</p>'}
+</body></html>`;
+};
+
 console.log(`session:  ${sessionDir}`);
 console.log(`baseline: ${BASELINE_DIR}`);
 console.log(`tolerance: maxDiffPixels=${MAX_DIFF_PIXELS} threshold=${THRESHOLD}\n`);
@@ -130,6 +169,9 @@ if (failed.length > 0) {
       console.log(`  [${r.diffPixels}px ${pct}%]  ${r.file}  → diffs/${r.file}`);
     }
   }
+  const diffsHtmlPath = path.join(diffsDir, 'index.html');
+  await writeFile(diffsHtmlPath, renderDiffsHtml(failed), 'utf8');
+  console.log(`\n  view all: ${diffsHtmlPath}`);
 }
 if (missingFromSession.length > 0) {
   console.log('\n--- MISSING FROM SESSION ---');
