@@ -113,7 +113,7 @@ export const BulkSymbolSelector = ({
                       minW="32px"
                       textAlign="center"
                     >
-                      <Text fontSize="xs" fontWeight="bold" color="gray.600" _dark={{ color: 'gray.300' }}>
+                      <Text fontSize="xs" fontWeight="bold" color="fg.muted">
                         #{coin.marketCapRank}
                       </Text>
                     </Box>

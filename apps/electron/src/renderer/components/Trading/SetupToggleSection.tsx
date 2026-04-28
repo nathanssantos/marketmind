@@ -106,15 +106,11 @@ export const SetupToggleSection = memo(() => {
             <Box
               px={2}
               py={0.5}
-              bg={enabledCount === setupList.length ? 'green.100' : 'blue.100'}
-              color={enabledCount === setupList.length ? 'green.800' : 'blue.800'}
+              bg={enabledCount === setupList.length ? 'green.subtle' : 'blue.subtle'}
+              color={enabledCount === setupList.length ? 'green.fg' : 'blue.fg'}
               borderRadius="full"
               fontSize="xs"
               fontWeight="medium"
-              _dark={{
-                bg: enabledCount === setupList.length ? 'green.900' : 'blue.900',
-                color: enabledCount === setupList.length ? 'green.200' : 'blue.200',
-              }}
             >
               {enabledCount}/{setupList.length}
             </Box>
