@@ -92,4 +92,22 @@ describe('EmptyState', () => {
 
     expect(screen.getByRole('button', { name: 'Add' })).toBeInTheDocument();
   });
+
+  it('should wrap in dashed border when dashed prop is set', () => {
+    const { container } = renderWithChakra(
+      <EmptyState title="No items" dashed />
+    );
+
+    const wrapper = container.firstChild as HTMLElement;
+    const style = window.getComputedStyle(wrapper);
+    expect(wrapper.tagName.toLowerCase()).toBe('div');
+    expect(style.borderStyle).toBe('dashed');
+  });
+
+  it('should not wrap by default', () => {
+    const { container } = renderWithChakra(<EmptyState title="No items" />);
+    const root = container.firstChild as HTMLElement;
+    const style = window.getComputedStyle(root);
+    expect(style.borderStyle === 'dashed').toBe(false);
+  });
 });

@@ -1,7 +1,7 @@
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import type { UserIndicator } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
-import { Badge, Button, ConfirmationDialog, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, ConfirmationDialog, EmptyState, FormSection, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useUserIndicators } from '@renderer/hooks';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -76,44 +76,36 @@ export const IndicatorLibrary = () => {
 
   return (
     <Stack gap={4} h="full">
-      <Flex justify="space-between" align="center">
-        <Stack gap={0}>
-          <Text fontSize="md" fontWeight="bold">
-            {t('settings.indicators.title')}
-          </Text>
-          <Text fontSize="xs" color="fg.muted">
-            {t('settings.indicators.count', { count: indicators.length })}
-          </Text>
-        </Stack>
-        <HStack gap={2}>
-          <Button
-            size="2xs"
-            variant="outline"
-            onClick={() => setConfirmReset(true)}
-            disabled={isLoading || reset.isPending}
-          >
-            <LuRotateCcw />
-            {t('settings.indicators.reset')}
-          </Button>
-          <Button
-            size="2xs"
-            colorPalette="blue"
-            onClick={() => setDialog({ kind: 'create' })}
-            disabled={isLoading}
-          >
-            <LuPlus />
-            {t('settings.indicators.new')}
-          </Button>
-        </HStack>
-      </Flex>
+      <FormSection
+        title={t('settings.indicators.title')}
+        description={t('settings.indicators.count', { count: indicators.length })}
+        action={
+          <HStack gap={2}>
+            <Button
+              size="2xs"
+              variant="outline"
+              onClick={() => setConfirmReset(true)}
+              disabled={isLoading || reset.isPending}
+            >
+              <LuRotateCcw />
+              {t('settings.indicators.reset')}
+            </Button>
+            <Button
+              size="2xs"
+              colorPalette="blue"
+              onClick={() => setDialog({ kind: 'create' })}
+              disabled={isLoading}
+            >
+              <LuPlus />
+              {t('settings.indicators.new')}
+            </Button>
+          </HStack>
+        }
+      />
 
       <Stack gap={4} flex={1} overflowY="auto" pr={1}>
         {groups.length === 0 && !isLoading && (
-          <Box py={6} textAlign="center">
-            <Text fontSize="sm" color="fg.muted">
-              {t('settings.indicators.empty')}
-            </Text>
-          </Box>
+          <EmptyState size="sm" title={t('settings.indicators.empty')} />
         )}
 
         {groups.map((group) => (

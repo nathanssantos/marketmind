@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LuPlus, LuRefreshCw, LuTrash2, LuX } from 'react-icons/lu';
 import { useBackendCustomSymbols } from '../../hooks/useBackendCustomSymbols';
 import { toaster } from '../../utils/toaster';
-import { Badge, BetaBadge, Button, IconButton, Input, Tabs } from '../ui';
+import { Badge, BetaBadge, Button, EmptyState, FormSection, IconButton, Input, Tabs } from '../ui';
 
 const CATEGORIES = ['politics', 'defi', 'gaming', 'ai', 'other'] as const;
 const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL'] as const;
@@ -104,18 +104,18 @@ export const CustomSymbolsTab = memo(() => {
 
   return (
     <Stack gap={4}>
-      <Flex justify="space-between" align="start">
-        <Stack gap={0}>
+      <FormSection
+        title={
           <Flex align="center" gap={2}>
-            <Text fontSize="md" fontWeight="bold">{t('customSymbols.title')}</Text>
+            <Text as="span">{t('customSymbols.title')}</Text>
             <BetaBadge />
             {(customSymbols.data?.length ?? 0) > 0 && (
               <Badge size="sm" colorPalette="blue">{customSymbols.data?.length ?? 0}</Badge>
             )}
           </Flex>
-          <Text fontSize="xs" color="fg.muted">{t('customSymbols.description')}</Text>
-        </Stack>
-      </Flex>
+        }
+        description={t('customSymbols.description')}
+      />
       <Tabs.Root defaultValue="list" variant="line" size="sm">
       <Tabs.List>
         <Tabs.Trigger value="list" px={3} py={1.5}>
@@ -129,9 +129,7 @@ export const CustomSymbolsTab = memo(() => {
       <Tabs.Content value="list">
         <Stack gap={3} pt={3}>
           {customSymbols.data?.length === 0 && (
-            <Text color="fg.muted" fontSize="sm" textAlign="center" py={4}>
-              {t('common.noResults')}
-            </Text>
+            <EmptyState size="sm" title={t('common.noResults')} />
           )}
           {customSymbols.data?.map((cs) => (
             <Box key={cs.id} p={3} borderWidth="1px" borderColor="border" borderRadius="md">

@@ -1,5 +1,5 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
-import { Button, Callout, IconButton, Select } from '@renderer/components/ui';
+import { Button, Callout, EmptyState, IconButton, Select } from '@renderer/components/ui';
 import { MM } from '@renderer/theme/tokens';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
@@ -286,11 +286,7 @@ const OrdersListComponent = () => {
           </Flex>
 
           {filteredOrders.length === 0 ? (
-            <Box p={4} textAlign="center" minH="100px">
-              <Text fontSize="sm" color="fg.muted">
-                {t('trading.orders.empty')}
-              </Text>
-            </Box>
+            <EmptyState size="sm" title={t('trading.orders.empty')} />
           ) : viewMode === 'table' ? (
             <OrdersTableContent
               orders={filteredOrders}

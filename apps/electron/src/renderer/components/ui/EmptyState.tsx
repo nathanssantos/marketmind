@@ -13,6 +13,11 @@ interface EmptyStateProps {
     colorPalette?: string;
   };
   size?: 'sm' | 'md' | 'lg';
+  /**
+   * When true, wraps the empty state in a dashed-border card. Use when the
+   * surrounding surface doesn't already have its own card/panel framing.
+   */
+  dashed?: boolean;
   children?: ReactNode;
 }
 
@@ -28,11 +33,12 @@ export const EmptyState = ({
   description,
   action,
   size = 'md',
+  dashed = false,
   children,
 }: EmptyStateProps) => {
   const config = sizeConfig[size];
 
-  return (
+  const content = (
     <VStack gap={config.gap} py={config.py} align="center" justify="center" w="100%">
       <Box color="fg.muted">
         <Icon as={IconComponent} boxSize={config.iconSize} />
@@ -60,4 +66,20 @@ export const EmptyState = ({
       {children}
     </VStack>
   );
+
+  if (dashed) {
+    return (
+      <Box
+        borderWidth="1px"
+        borderStyle="dashed"
+        borderColor="border"
+        borderRadius="md"
+        px={4}
+      >
+        {content}
+      </Box>
+    );
+  }
+
+  return content;
 };
