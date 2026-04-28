@@ -30,6 +30,27 @@ const launch = async (): Promise<BrowserHandle> => {
   if (FIXTURES_ENABLED) {
     await installVisualFixtures(context);
   }
+  // Disable CSS animations + transitions globally so dialog enter/exit
+  // animations don't end up captured mid-frame (transparent backdrop,
+  // half-slid sheet, etc.) — sources of false-positive visual diffs.
+  // addInitScript runs before any page script, so the rule beats Chakra's
+  // own keyframes the first time they'd play.
+  await context.addInitScript(() => {
+    const apply = () => {
+      const style = document.createElement('style');
+      style.textContent = `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+        }
+      `;
+      document.head.appendChild(style);
+    };
+    if (document.head) apply();
+    else document.addEventListener('DOMContentLoaded', apply);
+  });
   const page = await context.newPage();
   await page.goto(DEFAULT_BASE_URL, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => typeof (window as { __globalActions?: unknown }).__globalActions !== 'undefined', { timeout: 30_000 });
