@@ -47,18 +47,18 @@ These docs lag the post-v1.2 reality.
 ### C.1 — Backend: custom-symbol-service deeper testing
 - v1.1 work made `backfillKlines` smart about marketType fallback + Binance auto-fetch + weight renormalization
 - No unit tests cover those branches (the integration path is exercised by the live POLITIFI flow only)
-- **Effort**: ~3h with testcontainers + Binance mock
+- **Effort**: revised ~half-day. The service uses private state + `db` + `smartBackfillKlines`; meaningful tests need testcontainers + a Binance mock harness, which is bigger than the original 3h estimate.
 - **Value**: high — these branches caused the v1.1 POLITIFI shipping to require multiple fixup commits
+- **Note**: better tackled as a focused PR with the test infra (component fixture factory + smartBackfillKlines mock) shared with future backend tests.
 
 ### C.2 — Frontend: visual regression baseline coverage holes
 - Flow modals (AddWatcher / CreateWallet / StartWatchers / ImportProfile / TradingProfiles) don't render in the gallery because they need real click-flows. They're missing from baseline → no regression catch on these surfaces.
 - **Effort**: ~2h adding click-driven captures via mcp-app
 - **Value**: closes one of the deferred items from the v1.1 visual review
 
-### C.3 — Empty-state semantics tests
-- The 11 surfaces that adopted `<EmptyState>` in v1.2 don't have explicit tests asserting the empty branch renders. If a refactor accidentally short-circuits the empty path, only visual regression catches it.
-- **Effort**: ~1h adding "renders EmptyState when X" tests where missing
-- **Value**: medium — defense in depth
+### C.3 — Empty-state semantics tests ✅ shipped (mostly)
+- 7 surfaces now have explicit "renders EmptyState when X" tests: `ScreenerResultsTable`, `ChecklistEditor`, `IndicatorLibrary`, `WatchersList`, `TradingProfilesManager`, `CustomSymbolsTab`, `WalletManager`.
+- Skipped: `Portfolio`, `OrdersList` — too many hooks and global state to mock cleanly; the visual-regression baseline still catches regressions on these surfaces.
 
 ---
 
@@ -132,11 +132,8 @@ v1 Phase 1.4 did a high-level a11y audit on Settings dialog. v1.2 didn't add any
 
 ## G. Net-new ideas
 
-### G.1 — Per-wallet light/dark theme override
-- Some users want dark mode for live trading (eye fatigue), light mode for analytics review. Currently theme is a global setting.
-- Could add `wallet.themeOverride: 'light' | 'dark' | null`
-- **Effort**: ~3h
-- **Value**: niche but a real ask we've heard
+### G.1 — Per-wallet light/dark theme override ❌ dropped
+- Confirmed with the user that theme should stay per-user (which is what we already have via UI preferences). No per-wallet override needed.
 
 ### G.2 — Visual review automation
 - The `docs/visual-review-2026-04.md` was a 1-shot manual scoring. A recurring `pnpm visual:review` script that walks the baseline + flags surfaces missing tokens, has hardcoded shades, or oversized headings would catch regressions before CI does.
@@ -149,28 +146,30 @@ v1 Phase 1.4 did a high-level a11y audit on Settings dialog. v1.2 didn't add any
 
 ---
 
-## Sequencing (when v1.3 release is scoped)
+## Sequencing (current state)
 
-Suggested release-scope grouping:
+**Already shipped on develop after v1.2.0**:
+- A.3, B.1, B.2, B.3 (doc drains + chart input units)
+- C.2, E.1, E.3 (visual gallery flow-modal coverage + mcp-app flow tools + pixelmatch HTML gallery)
+- D.1, D.2, D.3 (bundle chunk split + lazy Settings tabs + dialog mount perf)
+- F.1 (fg.muted contrast bumped to clear WCAG AA)
+- G.2 audit script (forbidden shade-literal CI gate)
+- Bundle follow-ups #1+#2+#3 (lazy locales, lazy pinets, lazy recharts) — main bundle −60%
+- Logo brand-lock (PR #240)
+- P&L color sweep to canonical trading.profit/loss tokens (PR #241)
 
-**v1.3.0 — "DX + finish v1.2 trim"** (small, ~1 week)
-- B.1 + B.2 + B.3 (doc drains) — ~2h
-- C.1 (custom-symbol-service tests) — 3h
-- E.3 (pixelmatch web gallery) — 2h
-- E.1 (mcp-app flow tools) — 4h
-- C.2 (gallery flow-modal coverage) — 2h
-- A.3 (chart input units) — 30min
-- Total: ~2 days
+**Open backlog (still candidates for v1.3 release)**:
+- C.1 — backend custom-symbol-service tests (~3h)
+- C.3 — empty-state semantics tests (~1h-3h depending on mock surface)
+- F.2 — keyboard nav in chart (~1d)
+- F.3 — screen-reader pass on dialogs (~half-day)
+- G.2 — visual review automation script (~1d)
+- G.3 — Pine migration completion review (research)
+- Smaller bundle follow-ups (react-router subset, indicators catalog lazy, react-icons consolidation)
 
-**v1.3.1 or v1.4 — "Performance"** (~1 week)
-- D.1 (bundle audit)
-- D.2 (lazy-load Settings tabs)
-- D.3 (perfMonitor for dialogs)
-
-**v1.4+ — "Big swings"** (each one-week-plus)
+**Deferred to v1.4+**:
 - D.4 (Storybook + ui package extraction)
 - E.2 (mcp-trading)
-- F.1+F.2+F.3 (a11y deep sweep)
 
 ---
 
