@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — v1.2 standardization sweep
+- **`docs/V1_2_PLAN.md`** — cross-surface UI standardization plan. 8 PRs, EmptyState + DataCard primitives, P2 cleanup, baseline refresh, release.
+- **`<EmptyState dashed>` opt-in** — wraps the empty state in a dashed-border card for surfaces without their own card framing. Two new tests.
+- **Visual regression CI** — `.github/workflows/visual-regression.yml` runs the gallery on PRs touching renderer/, shared/, mcp-screenshot/ or the baseline; pixelmatch diff with `maxDiffPixels=25000` (~1.93%) and `threshold=0.2`. Uploads diffs + session as artifacts on failure.
+- **`scripts/visual-diff.mjs`** — pixelmatch + pngjs implementation. Writes red-overlay diff PNGs per divergent file.
+- **`scripts/visual-gallery.mjs`** — thin driver around `captureGallery` for local iterations.
+
+### Changed — v1.2 standardization sweep
+- **EmptyState applied across 7 surfaces**: IndicatorLibrary, Trading/Portfolio, Trading/OrdersList, Trading/WatcherManager/WatchersList (with dashed + Add Watcher action), CustomSymbols/CustomSymbolsTab, Trading/WalletManager (loading + empty), Screener/ScreenerResultsTable. Replaces ad-hoc `<Box p textAlign="center"><Text color="fg.muted">…</Text></Box>` patterns.
+- **Manual section headers → `<FormSection>`** in IndicatorLibrary, CustomSymbolsTab, TradingProfilesManager. Single change-point if compact spec shifts.
+- **`mcp-screenshot.setTheme`** now waits for the theme class to actually land on `documentElement` before returning, with 400ms settle (was 150ms timeout). Fixes ~30% diff cluster on slow CI runners caused by mid-transition captures.
+- **Visual regression baseline** captured on Linux Chromium (CI environment) instead of macOS. Local and CI captures diverge ~30% in light mode due to subpixel antialiasing differences; the comparison must run against same-OS captures.
+
+### Docs
+- `CLAUDE.md` — Project Version 0.85.0 → 1.1.0; Current Focus + System Status updated; Testing Status bumped to ~8,400 tests with visual regression block.
+
 ## [1.1.0] - 2026-04-27
 
 **v1.1 release** — Phase 6 visual-verification baseline shipped, custom-symbols loadability fully wired (POLITIFI now loads, real-time tab % works, components auto-backfill from Binance), MCP infrastructure populated for fixture-driven review, CryptoIcon source caching, NaN-guard in price store, full DailyPerformance + Market sidebar fixtures.

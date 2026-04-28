@@ -587,10 +587,10 @@ describe('Wallet Router', () => {
 
 ## 📊 Current Development Phase
 
-**Version:** v0.53.0
-**Current Focus:** Backtesting infrastructure, strategy optimization, exchange abstraction (IB)
+**Version:** v1.1.0
+**Current Focus:** Cross-surface UI standardization (v1.2 sweep — see `docs/V1_2_PLAN.md`); MCP infra populated for fixture-driven visual review; visual regression CI gating PRs touching renderer/.
 
-### System Status (v0.53.0)
+### System Status (v1.1.0)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
 - **✅ Authentication**: Argon2 + session management
@@ -608,10 +608,11 @@ describe('Wallet Router', () => {
 `7day-momentum-crypto`, `breakout-retest`, `bull-trap`, `cumulative-rsi-r3`, `divergence-rsi-macd`, `golden-cross-sma`, `hull-ma-trend`, `liquidity-sweep`, `macd-divergence`, `momentum-breakout-2025`, `nr7-breakout`, `pin-inside-combo`, `triple-ema-confluence`
 
 ### Testing Status
-- **~7,248 total tests** (171 backend files + 212 frontend files)
-- **Backend**: 4,934 passing + 40 skipped (IB integration tests requiring Gateway)
-- **Frontend**: 2,316 passing (2,289 unit + 27 browser)
+- **~8,400 total tests**
+- **Backend**: 5,416 passing (204 test files) + 40 skipped (IB integration tests requiring Gateway)
+- **Frontend**: 2,239 unit (182 files) + 27 browser
 - **Indicators**: 722 passing (60 files)
+- **Visual regression**: 44-PNG baseline (`apps/electron/screenshots/baseline/`) + CI gate via `.github/workflows/visual-regression.yml` (pixelmatch, `maxDiffPixels=25000` ≈ 1.93%, `threshold=0.2`)
 
 ### Backtesting Scripts
 ```bash
@@ -1202,5 +1203,5 @@ When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: ver
 ---
 
 **Last Updated:** April 2026
-**Version:** 1.5
-**Project Version:** 0.85.0
+**Version:** 1.6
+**Project Version:** 1.1.0
