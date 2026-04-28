@@ -30,12 +30,12 @@ export const WatcherCardCompact = ({
       p={2}
       bg="bg.muted"
       borderRadius="md"
-      borderLeft="3px solid"
-      borderColor="green.500"
+      borderLeftWidth="3px"
+      borderLeftColor="green.muted"
       position="relative"
     >
       <Flex align="center" gap={1.5} mb={1}>
-        <Box w={1.5} h={1.5} borderRadius="full" bg="green.500" />
+        <Box w={1.5} h={1.5} borderRadius="full" bg="green.fg" />
         <CryptoIcon symbol={symbol} size={16} />
         <Text fontWeight="semibold" fontSize="sm" truncate flex={1}>
           {symbol.replace('USDT', '')}
