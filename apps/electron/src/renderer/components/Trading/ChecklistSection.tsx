@@ -218,7 +218,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
 
   if (isError) {
     return (
-      <HStack gap={1} px={1} py={0.5} fontSize="2xs" color="red.400">
+      <HStack gap={1} px={1} py={0.5} fontSize="2xs" color="red.fg">
         <LuTriangle size={10} />
         <Text>{t('checklist.section.error', { defaultValue: 'Checklist error' })}</Text>
       </HStack>
@@ -325,8 +325,8 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
           </Text>
         ) : (
           <HStack gap={2}>
-            <ScoreBadgePair letter="L" color="green.400" score={longScore} />
-            <ScoreBadgePair letter="S" color="red.400" score={shortScore} />
+            <ScoreBadgePair letter="L" color="green.fg" score={longScore} />
+            <ScoreBadgePair letter="S" color="red.fg" score={shortScore} />
           </HStack>
         )}
       </Flex>
