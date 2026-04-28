@@ -1,5 +1,6 @@
 import { ButtonGroup, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui';
+import { Button, PanelHeader } from '@renderer/components/ui';
+import { MM } from '@renderer/theme/tokens';
 import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
@@ -17,30 +18,30 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
 
   if (isLoadingSetupStats) {
     return (
-      <Flex justify="center" align="center" py={8}>
-        <Spinner size="lg" />
+      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+        <Spinner size={MM.spinner.panel.size} />
       </Flex>
     );
   }
 
   if (setupStats.length === 0) {
     return (
-      <Text textAlign="center" color="gray.500" py={8}>
+      <Text textAlign="center" color="fg.muted" py={8}>
         {t('trading.analytics.setupStats.noData')}
       </Text>
     );
   }
 
   const getPnLColor = (pnl: number) => {
-    if (pnl > 0) return 'green.500';
-    if (pnl < 0) return 'red.500';
-    return 'gray.500';
+    if (pnl > 0) return 'trading.profit';
+    if (pnl < 0) return 'trading.loss';
+    return 'fg.muted';
   };
 
   const getWinRateColor = (winRate: number) => {
-    if (winRate >= 60) return 'green.500';
-    if (winRate >= 50) return 'yellow.500';
-    return 'red.500';
+    if (winRate >= 60) return 'green.fg';
+    if (winRate >= 50) return 'yellow.fg';
+    return 'red.fg';
   };
 
   const periods: { value: AnalyticsPeriod; labelKey: string }[] = [
@@ -61,23 +62,23 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
 
   return (
     <Stack gap={4}>
-      <Flex justify="space-between" align="center" pb={2} borderBottomWidth="1px" flexWrap="wrap" gap={2}>
-        <Text fontSize="lg" fontWeight="bold">
-          {t('trading.analytics.setupStats.title')}
-        </Text>
-        <ButtonGroup size="xs" variant="outline" flexWrap="wrap">
-          {periods.map((p) => (
-            <Button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              variant={period === p.value ? 'solid' : 'outline'}
-              px={2}
-            >
-              {t(p.labelKey)}
-            </Button>
-          ))}
-        </ButtonGroup>
-      </Flex>
+      <PanelHeader
+        title={t('trading.analytics.setupStats.title')}
+        action={
+          <ButtonGroup size="xs" variant="outline" flexWrap="wrap">
+            {periods.map((p) => (
+              <Button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                variant={period === p.value ? 'solid' : 'outline'}
+                px={2}
+              >
+                {t(p.labelKey)}
+              </Button>
+            ))}
+          </ButtonGroup>
+        }
+      />
 
       <TradingTable columns={columns} minW="600px">
         {setupStats.map((stat) => (
@@ -94,7 +95,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
             <TradingTableCell textAlign="right">
               <Flex justify="flex-end" align="center" gap={1}>
                 <Text color="green.fg">{stat.winningTrades}</Text>
-                <Text color="gray.400">/</Text>
+                <Text color="fg.muted">/</Text>
                 <Text color="red.fg">{stat.losingTrades}</Text>
               </Flex>
             </TradingTableCell>

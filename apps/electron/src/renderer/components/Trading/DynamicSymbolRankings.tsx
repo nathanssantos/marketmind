@@ -1,4 +1,5 @@
 import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
+import { MM } from '@renderer/theme/tokens';
 import type { MarketType } from '@marketmind/types';
 import {
   Badge,
@@ -152,8 +153,8 @@ interface RankingsTabProps {
 const RankingsTab = ({ symbolScores, isLoading, activeSymbols, t }: RankingsTabProps) => {
   if (isLoading) {
     return (
-      <Flex justify="center" py={8}>
-        <Spinner size="lg" />
+      <Flex justify="center" py={MM.spinner.panel.py}>
+        <Spinner size={MM.spinner.panel.size} />
       </Flex>
     );
   }
@@ -264,8 +265,8 @@ interface HistoryTabProps {
 const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
   if (isLoading) {
     return (
-      <Flex justify="center" py={8}>
-        <Spinner size="lg" />
+      <Flex justify="center" py={MM.spinner.panel.py}>
+        <Spinner size={MM.spinner.panel.size} />
       </Flex>
     );
   }
