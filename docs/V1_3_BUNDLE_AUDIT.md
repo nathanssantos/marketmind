@@ -25,7 +25,7 @@ The script sets `ANALYZE=1`, which enables `rollup-plugin-visualizer` in `apps/e
 | `vendor-query` | 34 KB | 10 KB |
 | `vendor-zustand` | 19 KB | 6 KB |
 
-### After chunk splitting (this PR)
+### After chunk splitting (PR #236)
 
 | Chunk | Raw | Gzipped |
 |---|---|---|
@@ -44,6 +44,24 @@ The script sets `ANALYZE=1`, which enables `rollup-plugin-visualizer` in `apps/e
 | `AutoTradingTab` (lazy) | 70 KB | 13 KB |
 
 Total bytes shipped on first load is roughly the same — the win is **caching granularity** (vendor chunks now invalidate independently) and **lazy-load potential** (any callsite that switches to dynamic `import()` will only pull in the relevant vendor chunk).
+
+### After lazy-loading locales + pinets (this PR)
+
+| Chunk | Raw | Gzipped |
+|---|---|---|
+| `index.js` (main) | **866 KB** | **241 KB** (-59% vs baseline, -23% vs PR #236) |
+| `vendor-chakra` | 519 KB | 139 KB |
+| `vendor-pinets` (lazy on first indicator) | 484 KB | 117 KB |
+| `vendor-recharts` | 296 KB | 83 KB |
+| `vendor-react` | 178 KB | 56 KB |
+| `translation-pt.js` (lazy on switch) | 87 KB | 29 KB |
+| `translation-es.js` (lazy on switch) | 86 KB | 29 KB |
+| `translation-fr.js` (lazy on switch) | 84 KB | 29 KB |
+| ...rest unchanged | | |
+
+**Cumulative reduction vs baseline**: main bundle 2,124 KB → 866 KB raw (587 KB → 241 KB gz). **−1,258 KB raw / −346 KB gz / −59%.**
+
+The pinets engine no longer ships in the main bundle; it loads when the chart computes its first PineTS indicator. The 3 non-default locale bundles (~28 KB gz each) load only when the user picks that language.
 
 ## What's still in the main bundle (top 10 modules)
 
@@ -66,9 +84,9 @@ The chunk-splitting in this PR is the easy mechanical win. The genuine size redu
 
 ### High-impact (pursue next)
 
-1. **Lazy-load locale JSONs** — currently all 4 locales (376 KB raw / 113 KB gz) ship eagerly. `i18next-http-backend` or per-language dynamic `import()` would cut ~85% of locale weight from first load. **Effort:** ~3h.
+1. ✅ **Lazy-load locale JSONs** (shipped) — i18next now starts with only English; `pt`/`es`/`fr` load via dynamic `import()` registered through `addResourceBundle` when a user switches.
 
-2. **Lazy-load `pinets` (`vendor-pinets` chunk, 484 KB / 116 KB gz)** — only needed by indicator workers. The static import in `useGenericChartIndicators` keeps it on the critical path. Switch to dynamic `import('pinets')` inside the worker bridge so it loads only when an indicator is computed. **Effort:** ~2h.
+2. ✅ **Lazy-load `pinets`** (shipped) — the `pineWorkerService` runtime now dynamic-imports the engine on first compute. `vendor-pinets` is fetched lazily from the chart's first indicator render.
 
 3. **Lazy-load `recharts` consumers** — `EquityCurveChart` already lives behind `AnalyticsModal` (lazy via `React.lazy`). Verify the recharts import chain doesn't leak into main. `MarketIndicatorCharts.tsx` is the bigger leak — it's pulled in eagerly by `MarketIndicatorsTab` which the sidebar mounts on render. Consider lazy-loading the indicators panel similar to Settings tabs (V1_3 D.2). **Effort:** ~3h.
 
