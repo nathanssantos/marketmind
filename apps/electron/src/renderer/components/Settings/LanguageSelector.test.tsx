@@ -3,7 +3,10 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { LanguageSelector } from './LanguageSelector';
 
-const mockChangeLanguage = vi.fn();
+const { mockChangeLanguage, mockChangeLanguageLazy } = vi.hoisted(() => ({
+    mockChangeLanguage: vi.fn(),
+    mockChangeLanguageLazy: vi.fn(),
+}));
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -13,6 +16,11 @@ vi.mock('react-i18next', () => ({
             changeLanguage: mockChangeLanguage,
         },
     }),
+}));
+
+vi.mock('@renderer/i18n', () => ({
+    changeLanguageLazy: mockChangeLanguageLazy,
+    default: { language: 'en' },
 }));
 
 const renderWithChakra = (component: React.ReactElement) => {
