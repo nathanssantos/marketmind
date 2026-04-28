@@ -12,6 +12,7 @@ const emptySnapshot: PerfSnapshot = {
   componentRenders: [],
   storeWakes: [],
   socketDispatches: [],
+  dialogMounts: [],
 };
 
 const subscribe = (cb: () => void): (() => void) => perfMonitor.subscribe(cb);
@@ -122,6 +123,19 @@ export const ChartPerfOverlay = (): ReactElement | null => {
               <span>{s.event}</span>
               <span>
                 {s.handlersPerSec.toFixed(1)} <span style={{ color: '#6b7280' }}>({s.total})</span>
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+      {snap.dialogMounts.length > 0 && (
+        <>
+          <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>dialog mount (last/avg/max ms)</div>
+          {snap.dialogMounts.slice(0, 6).map((d) => (
+            <div key={d.name} style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>{d.name}</span>
+              <span>
+                {fmtMs(d.lastMs)} <span style={{ color: '#6b7280' }}>/ {fmtMs(d.avgMs)} / {fmtMs(d.maxMs)} ({d.opens})</span>
               </span>
             </div>
           ))}

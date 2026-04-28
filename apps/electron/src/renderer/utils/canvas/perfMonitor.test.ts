@@ -121,6 +121,33 @@ describe('perfMonitor', () => {
     spy.mockRestore();
   });
 
+  it('records dialog mount times and exposes lastMs/avgMs/maxMs', () => {
+    perfMonitor.recordDialogMount('Settings', 12);
+    perfMonitor.recordDialogMount('Settings', 30);
+    perfMonitor.recordDialogMount('Backtest', 7);
+    const snap = perfMonitor.getSnapshot();
+    expect(snap.dialogMounts).toHaveLength(2);
+    const settings = snap.dialogMounts.find((d) => d.name === 'Settings')!;
+    expect(settings.opens).toBe(2);
+    expect(settings.lastMs).toBe(30);
+    expect(settings.maxMs).toBe(30);
+    expect(settings.avgMs).toBe(21);
+    expect(snap.dialogMounts[0]!.name).toBe('Settings');
+  });
+
+  it('skips dialog mounts when disabled', () => {
+    localStorage.removeItem(FLAG_KEY);
+    perfMonitor.refreshFlag();
+    perfMonitor.recordDialogMount('Settings', 99);
+    expect(perfMonitor.getSnapshot().dialogMounts).toHaveLength(0);
+  });
+
+  it('clears dialog mounts on reset', () => {
+    perfMonitor.recordDialogMount('Settings', 12);
+    perfMonitor.reset();
+    expect(perfMonitor.getSnapshot().dialogMounts).toHaveLength(0);
+  });
+
   it('exposes window.__mmPerf', () => {
     expect((window as unknown as { __mmPerf: typeof perfMonitor }).__mmPerf).toBe(perfMonitor);
   });

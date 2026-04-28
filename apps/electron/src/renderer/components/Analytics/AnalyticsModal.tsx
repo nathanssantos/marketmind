@@ -15,6 +15,7 @@ import { LuX } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
+import { useDialogMount } from '../../hooks/useDialogMount';
 import { useUIStore } from '../../store/uiStore';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
@@ -33,6 +34,7 @@ export const AnalyticsModal = memo(() => {
       setAnalyticsOpen: s.setAnalyticsOpen,
     }))
   );
+  useDialogMount('AnalyticsModal', isAnalyticsOpen);
 
   const marginRequirements = useMemo(() => {
     if (!isIBWallet) return null;

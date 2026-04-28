@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useBacktestModalStore } from '../../store/backtestModalStore';
 import { useBacktestRun } from '../../hooks/useBacktestRun';
 import { useBacktestShortcut } from '../../hooks/useBacktestShortcut';
+import { useDialogMount } from '../../hooks/useDialogMount';
 import { perfMonitor } from '../../utils/canvas/perfMonitor';
 import { BacktestForm } from './BacktestForm';
 import { BacktestProgress } from './BacktestProgress';
@@ -24,6 +25,7 @@ export const BacktestModal = () => {
 
   const run = useBacktestRun();
   useBacktestShortcut();
+  useDialogMount('BacktestModal', isBacktestOpen);
 
   useEffect(() => {
     if (isBacktestOpen) perfMonitor.recordComponentRender('BacktestModal');
