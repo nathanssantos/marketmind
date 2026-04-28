@@ -88,7 +88,7 @@ describe('SettingsDialog', () => {
     expect(screen.getByText('settings.section.system')).toBeDefined();
   });
 
-  it('renders Account tab content by default', () => {
+  it('renders Account tab content by default', async () => {
     renderWithChakra(
       <SettingsDialog
         isOpen={true}
@@ -97,10 +97,10 @@ describe('SettingsDialog', () => {
         onAdvancedConfigChange={mockOnAdvancedConfigChange}
       />
     );
-    expect(screen.getByText('AccountTab Content')).toBeDefined();
+    expect(await screen.findByText('AccountTab Content')).toBeDefined();
   });
 
-  it('opens on the requested initialTab', () => {
+  it('opens on the requested initialTab', async () => {
     renderWithChakra(
       <SettingsDialog
         isOpen={true}
@@ -110,10 +110,10 @@ describe('SettingsDialog', () => {
         onAdvancedConfigChange={mockOnAdvancedConfigChange}
       />
     );
-    expect(screen.getByText('SecurityTab Content')).toBeDefined();
+    expect(await screen.findByText('SecurityTab Content')).toBeDefined();
   });
 
-  it('switches to a different tab via initialTab prop', () => {
+  it('switches to a different tab via initialTab prop', async () => {
     const { rerender } = renderWithChakra(
       <SettingsDialog
         isOpen={true}
@@ -123,7 +123,7 @@ describe('SettingsDialog', () => {
         onAdvancedConfigChange={mockOnAdvancedConfigChange}
       />
     );
-    expect(screen.getByText('AccountTab Content')).toBeDefined();
+    expect(await screen.findByText('AccountTab Content')).toBeDefined();
 
     rerender(
       <ChakraProvider value={defaultSystem}>
@@ -136,7 +136,7 @@ describe('SettingsDialog', () => {
         />
       </ChakraProvider>
     );
-    expect(screen.getByText('ChartSettingsTab Content')).toBeDefined();
+    expect(await screen.findByText('ChartSettingsTab Content')).toBeDefined();
   });
 
   it('renders an icon-prefixed trigger for each tab', () => {
