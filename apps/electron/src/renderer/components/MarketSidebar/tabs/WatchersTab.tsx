@@ -274,13 +274,13 @@ const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRe
         {suggestion.stopLoss && (
           <Box>
             <Text fontSize="2xs" color="fg.muted">{t('common.stopLoss')}</Text>
-            <Text fontSize="xs" fontWeight="medium" color="red.500">{formatSuggestionPrice(suggestion.stopLoss)}</Text>
+            <Text fontSize="xs" fontWeight="medium" color="trading.loss">{formatSuggestionPrice(suggestion.stopLoss)}</Text>
           </Box>
         )}
         {suggestion.takeProfit && (
           <Box>
             <Text fontSize="2xs" color="fg.muted">{t('common.takeProfit')}</Text>
-            <Text fontSize="xs" fontWeight="medium" color="green.500">{formatSuggestionPrice(suggestion.takeProfit)}</Text>
+            <Text fontSize="xs" fontWeight="medium" color="trading.profit">{formatSuggestionPrice(suggestion.takeProfit)}</Text>
           </Box>
         )}
         {suggestion.riskRewardRatio && (
