@@ -7,7 +7,7 @@ import enTranslation from './locales/en/translation.json';
 // English ships in the main bundle so first paint has copy. The other
 // languages are loaded on demand via `loadLanguageBundle` — saves ~280 KB raw
 // (~85 KB gz) off first load.
-const lazyLoaders: Record<string, () => Promise<{ default: Record<string, unknown> } | Record<string, unknown>>> = {
+const lazyLoaders: Record<string, () => Promise<{ default: Record<string, unknown> }>> = {
   pt: () => import('./locales/pt/translation.json'),
   es: () => import('./locales/es/translation.json'),
   fr: () => import('./locales/fr/translation.json'),
@@ -20,8 +20,7 @@ export const loadLanguageBundle = async (lang: string): Promise<void> => {
   const loader = lazyLoaders[lang];
   if (!loader) return;
   const mod = await loader();
-  const translations = (mod as { default?: Record<string, unknown> }).default ?? (mod as Record<string, unknown>);
-  i18n.addResourceBundle(lang, 'translation', translations, true, true);
+  i18n.addResourceBundle(lang, 'translation', mod.default, true, true);
   loaded.add(lang);
 };
 

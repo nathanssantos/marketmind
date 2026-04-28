@@ -1,13 +1,14 @@
+import type { PineTS as PineTSType } from 'pinets';
 import type { Kline } from '@marketmind/types';
 
 // Dynamic import — pinets is ~484 KB raw / 116 KB gz. Static import pulls the
 // engine into every consumer's chunk (main bundle + each worker bundle); a
 // dynamic import inside runPine() means the engine is fetched once on first
 // indicator computation and cached as a singleton promise.
-type PineTSConstructor = typeof import('pinets').PineTS;
+type PineTSConstructor = typeof PineTSType;
 let pineTSPromise: Promise<PineTSConstructor> | null = null;
 const getPineTS = (): Promise<PineTSConstructor> => {
-  if (!pineTSPromise) pineTSPromise = import('pinets').then((m) => m.PineTS);
+  pineTSPromise ??= import('pinets').then((m) => m.PineTS);
   return pineTSPromise;
 };
 
