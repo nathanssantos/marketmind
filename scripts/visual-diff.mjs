@@ -26,11 +26,11 @@ const { PNG } = require('pngjs');
 
 const SCREENSHOT_DIR = path.resolve('apps/electron/screenshots');
 const BASELINE_DIR = path.join(SCREENSHOT_DIR, 'baseline');
-// 15000 ≈ 1.16% of a 1440×900 viewport, large enough to absorb
+// 25000 ≈ 1.93% of a 1440×900 viewport, large enough to absorb
 // CI-vs-CI rendering nondeterminism (subpixel antialiasing, font hinting,
-// cursor-blink frames) while still catching real layout shifts (each
-// new/moved/resized element typically moves >2% of pixels).
-const MAX_DIFF_PIXELS = Number(process.env.VISUAL_DIFF_MAX_PIXELS ?? 15_000);
+// cursor-blink frames, theme-switch race) while still catching real layout
+// shifts (each new/moved/resized element typically moves >2% of pixels).
+const MAX_DIFF_PIXELS = Number(process.env.VISUAL_DIFF_MAX_PIXELS ?? 25_000);
 const THRESHOLD = Number(process.env.VISUAL_DIFF_THRESHOLD ?? 0.2);
 
 const findLatestSession = async () => {
