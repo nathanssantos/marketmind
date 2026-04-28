@@ -3,6 +3,7 @@ import { Box, Flex, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Area, AreaChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, YAxis } from 'recharts';
+import { MarketNoData } from './MarketNoData';
 import {
   CHART_MARGIN,
   FEAR_GREED_LEVELS,
@@ -113,7 +114,7 @@ export const FearGreedSection = ({ fearGreed, isLoading, hasWidth }: FearGreedSe
           </ResponsiveContainer>
         </Box>
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
     </Box>
   );
@@ -195,7 +196,7 @@ export const MvrvSection = ({ mvrv, isLoading, hasWidth }: MvrvSectionProps) => 
           referenceLine={1}
         />
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
     </Box>
   );
@@ -243,7 +244,7 @@ export const ProductionCostSection = ({ btcProductionCost, isLoading, hasWidth }
           </ResponsiveContainer>
         </Box>
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
     </Box>
   );
@@ -317,7 +318,7 @@ export const LongShortSection = ({ longShortRatio, isLoading, hasWidth }: LongSh
           referenceLine={0.5}
         />
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
       {longShortRatio?.topTraders && (
         <Text fontSize="2xs" color="fg.muted" mt={1}>

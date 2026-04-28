@@ -2,6 +2,7 @@ import { Badge, CryptoIcon, Skeleton } from '@renderer/components/ui';
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowDown, LuArrowUp, LuMinus } from 'react-icons/lu';
+import { MarketNoData } from './MarketNoData';
 import {
   formatFundingRate,
   formatLargeNumber,
@@ -28,7 +29,6 @@ interface AltcoinSeasonSectionProps {
 }
 
 export const AltcoinSeasonSection = ({ altcoinSeason, isLoading, hasWidth }: AltcoinSeasonSectionProps) => {
-  const { t } = useTranslation();
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>Altcoin Season Index</SectionTitle>
@@ -74,7 +74,7 @@ export const AltcoinSeasonSection = ({ altcoinSeason, isLoading, hasWidth }: Alt
           )}
         </>
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
     </Box>
   );
@@ -97,7 +97,6 @@ interface AdxSectionProps {
 }
 
 export const AdxSection = ({ adxTrendStrength, isLoading, hasWidth }: AdxSectionProps) => {
-  const { t } = useTranslation();
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>ADX Trend Strength (BTC)</SectionTitle>
@@ -140,7 +139,7 @@ export const AdxSection = ({ adxTrendStrength, isLoading, hasWidth }: AdxSection
           <Text>{adxTrendStrength.isBullish ? 'Bullish' : adxTrendStrength.isBearish ? 'Bearish' : 'Neutral'}</Text>
         </Flex>
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
     </Box>
   );
@@ -160,7 +159,6 @@ interface OrderBookSectionProps {
 }
 
 export const OrderBookSection = ({ orderBook, isLoading }: OrderBookSectionProps) => {
-  const { t } = useTranslation();
   return (
     <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
       <SectionTitle>Order Book (BTC)</SectionTitle>
@@ -189,7 +187,7 @@ export const OrderBookSection = ({ orderBook, isLoading }: OrderBookSectionProps
           )}
         </>
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
     </Box>
   );
@@ -245,7 +243,7 @@ export const FundingRatesSection = ({ fundingRates, isLoading }: FundingRatesSec
           })}
         </Stack>
       ) : (
-        <Text fontSize="xs" color="fg.muted">{t('common.noData')}</Text>
+        <MarketNoData />
       )}
       <Text fontSize="2xs" color="fg.muted" mt={2}>
         Positive = longs pay shorts | Negative = shorts pay longs
