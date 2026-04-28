@@ -65,7 +65,7 @@ See `docs/UI_STYLE_GUIDE.md` for the full import rules and style hierarchy.
 | `ProgressRoot` / `ProgressBar` | Progress indicator |
 | `LoadingSpinner` | Spinner with optional label |
 | `ErrorMessage` | Error display |
-| `EmptyState` | **Empty state placeholder** — `<EmptyState title description action icon size dashed>`. `dashed` opt-in wraps in dashed-border card for surfaces without their own card framing. `size="sm"` for compact contexts. Used across IndicatorLibrary, Trading/Portfolio, Trading/OrdersList, WatchersList, CustomSymbolsTab, WalletManager, ScreenerResultsTable, TradingProfilesManager. |
+| `EmptyState` | **Empty state placeholder** — `<EmptyState title description action icon size dashed>`. `dashed` opt-in wraps in dashed-border card for surfaces without their own card framing. `size="sm"` for compact contexts. Used across IndicatorLibrary, Trading/Portfolio, Trading/OrdersList, WatchersList, CustomSymbolsTab, WalletManager, ScreenerResultsTable, TradingProfilesManager. <br/>**Note**: `MarketSidebar` uses a private `<MarketNoData>` helper (just an icon + muted text) for ultra-compact in-sidebar empty states; not a `ui/` primitive. |
 
 ### Navigation
 

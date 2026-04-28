@@ -17,11 +17,10 @@ These were in `docs/V1_2_PLAN.md` but consciously deferred — captured here so 
 **Effort**: ~2h to migrate + verify; low product value
 **Revisit when**: We touch the form for unrelated reasons.
 
-### A.3 — Chart input units (deferred from B.4)
-**Status**: deferred
-**Why**: Cosmetic — Chart settings panel inputs (Right Margin, Volume Height Ratio, Kline Spacing, Wick Width) are bare numbers without unit hints in the placeholder. Users figure it out by trying values. Low impact.
-**Effort**: ~30min — just add `placeholder` hints
-**Revisit when**: User feedback complains, OR during a Chart-tab UX pass.
+### A.3 — Chart input units ✅ shipped
+- Padding fields (Top/Bottom/Left/Right) now have `(px)` suffix on labels.
+- Line Width helper updated to include `(px)`.
+- Other Chart Dimensions fields already had unit hints in helperText.
 
 ---
 
@@ -29,22 +28,17 @@ These were in `docs/V1_2_PLAN.md` but consciously deferred — captured here so 
 
 These docs lag the post-v1.2 reality.
 
-### B.1 — `CLAUDE.md` Project Version → `1.2.0`
-- Currently shows `1.1.0` (last bumped in PR #216)
-- System Status block reflects v1.1.0 status; should mention "0 forbidden patterns in renderer/components/" and the visual-regression CI gate
-- Testing Status counts unchanged; v1.2 didn't add tests (only refactors)
-- **Effort**: 5 min
+### B.1 — `CLAUDE.md` Project Version ✅ already current
+- `CLAUDE.md` already shows `Project Version: 1.2.0` and the System Status block already references "0 forbidden patterns" + visual-regression CI gate. No change needed.
 
-### B.2 — `docs/UI_STYLE_GUIDE.md` sync
-- Document the new `<EmptyState dashed>` opt-in (with the dashed-border use-case)
-- Add "PanelHeader applied surfaces" note for SetupStatsTable
-- Note that all `_dark={{ bg: 'X.900' }}` overrides have been eliminated; semantic tokens (`X.subtle/.muted/.fg/.solid`) are now the only color path
-- **Effort**: ~1h
+### B.2 — `docs/UI_STYLE_GUIDE.md` sync ✅ shipped
+- `<EmptyState dashed>` already documented with full prop table.
+- Added "Applied surfaces" line under PanelHeader (PerformancePanel, SetupStatsTable, PerformanceCalendar, EquityCurveChart).
+- `_dark={{}}` elimination already documented in the "0 forbidden patterns" callout.
 
-### B.3 — `apps/electron/src/renderer/components/ui/README.md` catalog refresh
-- Cross-reference EmptyState's `dashed` prop addition
-- Note that `<MarketNoData>` exists as a tiny inline helper (private to MarketSidebar)
-- **Effort**: 30 min
+### B.3 — `apps/electron/src/renderer/components/ui/README.md` catalog refresh ✅ shipped
+- EmptyState row already cross-referenced `dashed` prop and applied surfaces.
+- Added a note that `<MarketNoData>` is a private helper inside MarketSidebar (not a `ui/` primitive).
 
 ---
 

@@ -452,6 +452,8 @@ What it provides:
 - **`PanelHeader`** is for dashboard panels showing data. **Has bottom border**.
 - Share the same title typography.
 
+**Applied surfaces (as of v1.2):** `Trading/PerformancePanel`, `Trading/SetupStatsTable`, `Analytics/PerformanceCalendar`, `Analytics/EquityCurveChart`. New analytics-style panels should follow this pattern.
+
 ### Usage
 
 ```tsx
