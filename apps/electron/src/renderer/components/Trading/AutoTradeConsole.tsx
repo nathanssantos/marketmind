@@ -38,10 +38,10 @@ const LogLine = memo(({ entry, fontSize }: LogLineProps) => {
       py="1px"
       _hover={{ bg: 'whiteAlpha.50' }}
     >
-      <Text color="gray.500" flexShrink={0}>{time}</Text>
+      <Text color="fg.muted" flexShrink={0}>{time}</Text>
       <Text flexShrink={0}>{entry.emoji}</Text>
       {entry.symbol && (
-        <Text color="cyan.400" fontWeight="medium" flexShrink={0}>
+        <Text color="cyan.fg" fontWeight="medium" flexShrink={0}>
           [{entry.symbol}]
         </Text>
       )}
@@ -95,10 +95,10 @@ export const AutoTradeConsole = memo(({ walletId, hasActiveWatchers = false }: A
 
   return (
     <Box
-      bg="gray.900"
+      bg="bg.subtle"
       borderRadius="md"
       border="1px solid"
-      borderColor="gray.700"
+      borderColor="border"
       overflow="hidden"
       mt={3}
     >
@@ -109,15 +109,15 @@ export const AutoTradeConsole = memo(({ walletId, hasActiveWatchers = false }: A
         gap={2}
         px={3}
         py={2}
-        bg="gray.800"
+        bg="bg.subtle"
         borderBottom="1px solid"
-        borderColor="gray.700"
+        borderColor="border"
       >
         <Flex align="center" gap={2}>
-          <Text fontSize="sm" fontWeight="bold" color="gray.300">
+          <Text fontSize="sm" fontWeight="bold" color="fg.muted">
             {t('autoTrading.console.title')}
           </Text>
-          <Text fontSize="xs" color="gray.500">
+          <Text fontSize="xs" color="fg.muted">
             ({logs.length})
           </Text>
         </Flex>
@@ -179,7 +179,7 @@ export const AutoTradeConsole = memo(({ walletId, hasActiveWatchers = false }: A
           }}
         >
           {logs.length === 0 ? (
-            <Text color="gray.500" fontSize="xs" fontStyle="italic">
+            <Text color="fg.muted" fontSize="xs" fontStyle="italic">
               {t('autoTrading.console.waiting')}
             </Text>
           ) : (

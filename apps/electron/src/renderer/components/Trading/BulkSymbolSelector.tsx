@@ -126,7 +126,7 @@ export const BulkSymbolSelector = ({
           </Box>
         )}
 
-        <Text fontSize="xs" color="gray.500" mt={2}>
+        <Text fontSize="xs" color="fg.muted" mt={2}>
           {t('tradingProfiles.watchers.selectedCount', '{{count}} symbols selected', { count: selectedSymbols.length })}
         </Text>
       </Box>

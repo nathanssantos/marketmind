@@ -28,7 +28,7 @@ const OrphanOrderCardComponent = ({ orphan, onCancel, onNavigateToSymbol }: Orph
     <Box
       borderRadius="md"
       borderLeftWidth="3px"
-      borderLeftColor="orange.500"
+      borderLeftColor="orange.muted"
       bg="bg.muted"
       px={3}
       py={2}

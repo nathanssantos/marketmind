@@ -109,7 +109,7 @@ export const TpModeSection = ({
             </RadioGroup>
           </Box>
 
-          <Box pl={4} borderLeftWidth="2px" borderLeftColor="green.500">
+          <Box pl={4} borderLeftWidth="2px" borderLeftColor="green.muted">
             <Text fontSize="sm" fontWeight="medium" mb={2} color="green.fg">
               {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.titleLong')}
             </Text>
@@ -153,7 +153,7 @@ export const TpModeSection = ({
             </RadioGroup>
           </Box>
 
-          <Box pl={4} borderLeftWidth="2px" borderLeftColor="red.500">
+          <Box pl={4} borderLeftWidth="2px" borderLeftColor="red.muted">
             <Text fontSize="sm" fontWeight="medium" mb={2} color="red.fg">
               {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.titleShort')}
             </Text>

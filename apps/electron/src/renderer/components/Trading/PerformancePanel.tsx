@@ -41,7 +41,7 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
 
   if (!performance) {
     return (
-      <Text textAlign="center" color="gray.500" py={8}>
+      <Text textAlign="center" color="fg.muted" py={8}>
         {t('trading.analytics.performance.noData')}
       </Text>
     );
