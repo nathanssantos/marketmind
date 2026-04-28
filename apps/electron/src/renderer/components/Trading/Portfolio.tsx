@@ -177,7 +177,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
 
           {orphanOrders.length > 0 && (
             <>
-              <Text fontSize="xs" fontWeight="semibold" color="orange.500" textTransform="uppercase" letterSpacing="wide">
+              <Text fontSize="xs" fontWeight="semibold" color="orange.fg" textTransform="uppercase" letterSpacing="wide">
                 {t('trading.portfolio.orphanOrdersTitle')} ({orphanOrders.length})
               </Text>
 

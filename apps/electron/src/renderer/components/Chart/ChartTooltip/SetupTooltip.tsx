@@ -65,7 +65,7 @@ export const SetupTooltip = ({ setup, left, top }: SetupTooltipProps) => {
       {riskRewardRatio && (
         <HStack justify="space-between">
           <Text color="fg.muted">R:R {t('common.ratio')}:</Text>
-          <Text fontWeight="medium" color="blue.500">
+          <Text fontWeight="medium" color="blue.fg">
             1:{riskRewardRatio.toFixed(2)}
           </Text>
         </HStack>
@@ -88,14 +88,14 @@ export const SetupTooltip = ({ setup, left, top }: SetupTooltipProps) => {
       {setup.stopLoss && (
         <HStack justify="space-between">
           <Text color="fg.muted">{t('common.stopLoss')}:</Text>
-          <Text fontWeight="medium" color="red.500">{formatPriceDisplay(setup.stopLoss)}</Text>
+          <Text fontWeight="medium" color="red.fg">{formatPriceDisplay(setup.stopLoss)}</Text>
         </HStack>
       )}
 
       {setup.takeProfit && (
         <HStack justify="space-between">
           <Text color="fg.muted">{t('common.takeProfit')}:</Text>
-          <Text fontWeight="medium" color="green.500">{formatPriceDisplay(setup.takeProfit)}</Text>
+          <Text fontWeight="medium" color="green.fg">{formatPriceDisplay(setup.takeProfit)}</Text>
         </HStack>
       )}
     </TooltipContainer>

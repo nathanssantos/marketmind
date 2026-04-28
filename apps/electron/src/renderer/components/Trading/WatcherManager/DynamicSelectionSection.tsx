@@ -143,7 +143,7 @@ export const DynamicSelectionSection = ({
                     {t('common.loading')}
                   </Text>
                 ) : rotationStatus?.isActive ? (
-                  <Text fontSize="xs" color="green.500">
+                  <Text fontSize="xs" color="green.fg">
                     {t('tradingProfiles.dynamicSelection.nextRotation', {
                       time: rotationStatus.nextRotation
                         ? new Date(rotationStatus.nextRotation).toLocaleTimeString()

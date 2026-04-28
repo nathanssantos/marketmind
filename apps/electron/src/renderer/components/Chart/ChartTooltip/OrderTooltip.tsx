@@ -145,14 +145,14 @@ export const OrderTooltip = ({ order, currentPrice, left, top }: OrderTooltipPro
       {order.stopLoss !== undefined && order.stopLoss > 0 && (
         <HStack justify="space-between">
           <Text color="fg.muted">Stop Loss:</Text>
-          <Text fontWeight="medium" color="red.500">{order.stopLoss.toFixed(2)}</Text>
+          <Text fontWeight="medium" color="red.fg">{order.stopLoss.toFixed(2)}</Text>
         </HStack>
       )}
 
       {order.takeProfit !== undefined && order.takeProfit > 0 && (
         <HStack justify="space-between">
           <Text color="fg.muted">Take Profit:</Text>
-          <Text fontWeight="medium" color="green.500">{order.takeProfit.toFixed(2)}</Text>
+          <Text fontWeight="medium" color="green.fg">{order.takeProfit.toFixed(2)}</Text>
         </HStack>
       )}
 
@@ -160,7 +160,7 @@ export const OrderTooltip = ({ order, currentPrice, left, top }: OrderTooltipPro
         <>
           <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
             <Text color="fg.muted">Trading Fees:</Text>
-            <Text fontWeight="medium" color="orange.500">
+            <Text fontWeight="medium" color="orange.fg">
               {parseFloat(order.totalFees).toFixed(4)}
             </Text>
           </HStack>

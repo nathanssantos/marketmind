@@ -21,7 +21,7 @@ export const MeasurementTooltip = ({ measurement, kline, left, top }: Measuremen
       </Text>
       <HStack gap={1.5}>
         <Text>📏</Text>
-        <Text fontWeight="semibold" color="blue.500">
+        <Text fontWeight="semibold" color="blue.fg">
           Measurement
         </Text>
       </HStack>

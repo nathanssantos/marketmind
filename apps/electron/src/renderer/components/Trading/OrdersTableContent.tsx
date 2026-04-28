@@ -184,18 +184,18 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
             </TradingTableCell>
             <TradingTableCell textAlign="right">{formatPrice(getOrderPrice(order), currency)}</TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="blue.500">{formatPrice(currentPrice, currency)}</Text>
+              <Text color="blue.fg">{formatPrice(currentPrice, currency)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="red.500">{formatPrice(order.stopLoss, currency)}</Text>
+              <Text color="red.fg">{formatPrice(order.stopLoss, currency)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="green.500">{formatPrice(order.takeProfit, currency)}</Text>
+              <Text color="green.fg">{formatPrice(order.takeProfit, currency)}</Text>
             </TradingTableCell>
             <TradingTableCell>
               {order.isAutoTrade && (
                 <TooltipWrapper label={t('trading.orders.autoTrade')} showArrow>
-                  <Box color="blue.500"><LuBot size={14} /></Box>
+                  <Box color="blue.fg"><LuBot size={14} /></Box>
                 </TooltipWrapper>
               )}
             </TradingTableCell>
@@ -226,7 +226,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
                           <MenuItem
                             value="cancel"
                             onClick={() => onCancel(getOrderId(order))}
-                            color="red.500"
+                            color="red.fg"
                             px={3}
                             py={2}
                             _hover={{ bg: 'bg.muted' }}

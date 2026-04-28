@@ -208,11 +208,11 @@ const OrdersListComponent = () => {
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.orders.active')}</Text>
-                <Text fontWeight="medium" color="green.500">{activeOrders}</Text>
+                <Text fontWeight="medium" color="green.fg">{activeOrders}</Text>
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.orders.pending')}</Text>
-                <Text fontWeight="medium" color="orange.500">{pendingOrders}</Text>
+                <Text fontWeight="medium" color="orange.fg">{pendingOrders}</Text>
               </Flex>
             </Stack>
           </Box>
