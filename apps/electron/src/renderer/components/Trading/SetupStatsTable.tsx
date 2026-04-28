@@ -113,7 +113,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
       </TradingTable>
 
       <Flex justify="center" pt={2} borderTopWidth="1px">
-        <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.400' }}>
+        <Text fontSize="sm" color="fg.muted">
           {t('trading.analytics.setupStats.totalAnalyzed')}: <strong>{setupStats.length}</strong>
         </Text>
       </Flex>

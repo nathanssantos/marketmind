@@ -47,7 +47,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
             maxH="200px"
             overflow="auto"
           >
-            <Text color="red.300" fontSize="sm" fontFamily="mono">
+            <Text color="red.fg" fontSize="sm" fontFamily="mono">
               {err.message}
             </Text>
             {err.stack && (

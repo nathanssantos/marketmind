@@ -276,7 +276,7 @@ export function SymbolSelector({
         </Flex>
         <Flex align="center" gap={1}>
           {hasOpenPosition && isSearching && (
-            <Box w="6px" h="6px" borderRadius="full" bg="green.500" />
+            <Box w="6px" h="6px" borderRadius="full" bg="green.fg" />
           )}
           <Badge
             size="xs"
