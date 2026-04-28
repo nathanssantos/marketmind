@@ -12,7 +12,7 @@ export const Logo = ({ size = 24 }: LogoProps) => {
       <Box position="absolute" top={0} left={0} color="blue.fg">
         <LuBrain size={size} />
       </Box>
-      <Box position="absolute" top={0} left={0} color="green.400" opacity={0.85}>
+      <Box position="absolute" top={0} left={0} color="green.fg" opacity={0.85}>
         <MdShowChart size={size} />
       </Box>
     </Box>
