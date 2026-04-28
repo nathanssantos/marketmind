@@ -70,20 +70,21 @@ These docs lag the post-v1.2 reality.
 
 ## D. Performance + DX
 
-### D.1 — Bundle size audit
-- We've never measured. Renderer + chart workspace likely overshoots a 2MB budget given recharts + drizzle types leaking + 105 strategy JSONs that are imported.
-- **Effort**: 2-4h to add `vite-bundle-visualizer` and document findings
-- **Value**: medium-high — first-paint matters for desktop launch UX
+### D.1 — Bundle size audit ✅ shipped (this PR)
+- Wired `pnpm bundle:analyze` (rollup-plugin-visualizer behind `ANALYZE=1`).
+- Extended `manualChunks` to split pinets, recharts, d3, grid, trpc, socket.io, react-icons into their own vendor chunks.
+- Main bundle: 2,124 KB → 1,121 KB raw (587 KB → 325 KB gz). −44%.
+- Findings + follow-up recommendations: `docs/V1_3_BUNDLE_AUDIT.md`.
 
 ### D.2 — Lazy-load Settings tabs
 - Settings dialog mounts every tab on open (13 tabs). Most users only look at 1-2.
 - **Effort**: ~3h to split each tab into a lazy chunk + loading skeleton
 - **Value**: medium — reduces dialog open time, especially on cold cache
 
-### D.3 — `perfMonitor` for dialogs/modals
-- `perfMonitor` already records component render times. Extending it to mount-time-to-interactive for dialogs would close the V1 plan's "Performance instrumentation depth" open question.
-- **Effort**: ~2h
-- **Value**: medium — needed before any real perf optimization
+### D.3 — `perfMonitor` for dialogs/modals ✅ shipped (this PR)
+- Added `recordDialogMount(name, ms)` to `perfMonitor` + `dialogMounts: DialogMountStat[]` field on `PerfSnapshot`.
+- New `useDialogMount(name, isOpen)` hook captures the elapsed time between body render (when `isOpen` flips true) and the post-commit effect.
+- Wired into `SettingsDialog`, `BacktestModal`, `AnalyticsModal`. Visible in `ChartPerfOverlay` when `localStorage['chart.perf']='1'`.
 
 ### D.4 — Storybook for primitives
 - Primitives in `apps/electron/src/renderer/components/ui/` are documented in README + Style Guide but have no isolated playground. As `@marketmind/ui` package extraction approaches (planned for v1.2+), Storybook becomes the natural home.

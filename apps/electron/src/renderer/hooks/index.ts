@@ -2,6 +2,7 @@ export { useBoundsWorker } from './useBoundsWorker';
 export { useKlineOptimizerWorker } from './useKlineOptimizerWorker';
 
 export { useDebounce } from './useDebounce';
+export { useDialogMount } from './useDialogMount';
 export { useDebounceCallback } from './useDebounceCallback';
 
 export { useToast } from './useToast';
