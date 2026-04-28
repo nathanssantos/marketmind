@@ -106,8 +106,7 @@ export const BulkSymbolSelector = ({
                       onCheckedChange={() => handleSymbolToggle(coin.binanceSymbol)}
                     />
                     <Box
-                      bg="gray.100"
-                      _dark={{ bg: 'gray.700' }}
+                      bg="bg.muted"
                       px={1.5}
                       py={0.5}
                       borderRadius="sm"
