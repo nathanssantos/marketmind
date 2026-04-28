@@ -45,7 +45,7 @@ The script sets `ANALYZE=1`, which enables `rollup-plugin-visualizer` in `apps/e
 
 Total bytes shipped on first load is roughly the same — the win is **caching granularity** (vendor chunks now invalidate independently) and **lazy-load potential** (any callsite that switches to dynamic `import()` will only pull in the relevant vendor chunk).
 
-### After lazy-loading locales + pinets (this PR)
+### After lazy-loading locales + pinets (PR #237)
 
 | Chunk | Raw | Gzipped |
 |---|---|---|
@@ -62,6 +62,19 @@ Total bytes shipped on first load is roughly the same — the win is **caching g
 **Cumulative reduction vs baseline**: main bundle 2,124 KB → 866 KB raw (587 KB → 241 KB gz). **−1,258 KB raw / −346 KB gz / −59%.**
 
 The pinets engine no longer ships in the main bundle; it loads when the chart computes its first PineTS indicator. The 3 non-default locale bundles (~28 KB gz each) load only when the user picks that language.
+
+### After lazy-loading recharts consumers (this PR)
+
+| Chunk | Raw | Gzipped |
+|---|---|---|
+| `index.js` (main) | **850 KB** | **237 KB** (-60% vs baseline) |
+| `vendor-recharts` (lazy on first Market sidebar open or Analytics modal) | 296 KB | 83 KB |
+| `MarketIndicatorsTab.js` (lazy with sidebar) | 15 KB | 4 KB |
+| `EquityCurveChart.js` (lazy with Analytics modal body) | small | small |
+
+`MarketIndicatorsTab` is now `React.lazy`-loaded inside `MarketSidebar` (closed by default). `EquityCurveChart` is lazy-loaded inside `AnalyticsModal`. Both shifted recharts onto the on-demand import graph; `vendor-recharts` no longer downloads on first paint.
+
+**Cumulative reduction vs baseline**: main bundle 2,124 KB → 850 KB raw (587 KB → 237 KB gz). **−1,274 KB raw / −350 KB gz / −60%.**
 
 ## What's still in the main bundle (top 10 modules)
 
@@ -88,7 +101,7 @@ The chunk-splitting in this PR is the easy mechanical win. The genuine size redu
 
 2. ✅ **Lazy-load `pinets`** (shipped) — the `pineWorkerService` runtime now dynamic-imports the engine on first compute. `vendor-pinets` is fetched lazily from the chart's first indicator render.
 
-3. **Lazy-load `recharts` consumers** — `EquityCurveChart` already lives behind `AnalyticsModal` (lazy via `React.lazy`). Verify the recharts import chain doesn't leak into main. `MarketIndicatorCharts.tsx` is the bigger leak — it's pulled in eagerly by `MarketIndicatorsTab` which the sidebar mounts on render. Consider lazy-loading the indicators panel similar to Settings tabs (V1_3 D.2). **Effort:** ~3h.
+3. ✅ **Lazy-load `recharts` consumers** (shipped) — `MarketIndicatorsTab` is now `React.lazy`-loaded inside `MarketSidebar` (closed by default). `EquityCurveChart` is also lazy inside `AnalyticsModal`. Recharts is no longer in the eager import graph.
 
 ### Medium-impact
 
