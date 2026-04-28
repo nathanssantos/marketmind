@@ -1,11 +1,18 @@
-import { Box, Flex, Text } from '@chakra-ui/react';
-import { memo } from 'react';
+import { Box, Flex, Spinner, Text } from '@chakra-ui/react';
+import { Suspense, lazy, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../store/uiStore';
+import { MM } from '../../theme/tokens';
 import { IconButton, SidebarContainer } from '../ui';
-import { MarketIndicatorsTab } from './tabs/MarketIndicatorsTab';
+
+// V1_3 bundle follow-up — MarketIndicatorsTab pulls recharts (~296 KB raw /
+// 83 KB gz). Lazy-load so the chunk only ships when the user first opens the
+// Market sidebar (closed by default).
+const MarketIndicatorsTab = lazy(() =>
+  import('./tabs/MarketIndicatorsTab').then((m) => ({ default: m.MarketIndicatorsTab })),
+);
 
 interface MarketSidebarProps {
   width: number;
@@ -38,7 +45,15 @@ const MarketSidebarComponent = ({ width }: MarketSidebarProps) => {
           </IconButton>
         </Flex>
         <Box flex={1} overflowY="auto">
-          <MarketIndicatorsTab />
+          <Suspense
+            fallback={
+              <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+                <Spinner size={MM.spinner.panel.size} />
+              </Flex>
+            }
+          >
+            <MarketIndicatorsTab />
+          </Suspense>
         </Box>
       </Flex>
     </SidebarContainer>
