@@ -206,8 +206,7 @@ const RankingsTab = ({ symbolScores, isLoading, activeSymbols, t }: RankingsTabP
             <Box
               px={1.5}
               py={0.5}
-              bg="gray.100"
-              _dark={{ bg: 'gray.700' }}
+              bg="bg.muted"
               borderRadius="sm"
               fontSize="2xs"
             >

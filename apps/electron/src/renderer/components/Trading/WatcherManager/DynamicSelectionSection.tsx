@@ -85,7 +85,7 @@ export const DynamicSelectionSection = ({
       size="lg"
       variant="static"
       badge={isAutoRotationEnabled ? (
-        <Box px={2} py={0.5} bg="blue.100" color="blue.800" borderRadius="full" fontSize="xs" fontWeight="medium" _dark={{ bg: 'blue.900', color: 'blue.200' }}>
+        <Box px={2} py={0.5} bg="blue.subtle" color="blue.fg" borderRadius="full" fontSize="xs" fontWeight="medium">
           <Flex align="center" gap={1}>
             <LuZap size={10} />
             {t('tradingProfiles.dynamicSelection.autoRotation')}

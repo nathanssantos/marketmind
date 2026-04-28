@@ -31,12 +31,11 @@ export const OverrideBadge = ({ count }: { count: number }) => {
     <Box
       px={2}
       py={0.5}
-      bg="blue.100"
-      color="blue.800"
+      bg="blue.subtle"
+      color="blue.fg"
       borderRadius="full"
       fontSize="xs"
       fontWeight="medium"
-      _dark={{ bg: 'blue.900', color: 'blue.200' }}
     >
       {count}
     </Box>

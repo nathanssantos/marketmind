@@ -34,7 +34,7 @@ export const OpportunityCostSection = ({
       size="lg"
       variant="static"
       badge={config?.opportunityCostEnabled ? (
-        <Box px={2} py={0.5} bg="purple.100" color="purple.800" borderRadius="full" fontSize="xs" fontWeight="medium" _dark={{ bg: 'purple.900', color: 'purple.200' }}>
+        <Box px={2} py={0.5} bg="purple.subtle" color="purple.fg" borderRadius="full" fontSize="xs" fontWeight="medium">
           {t('common.active')}
         </Box>
       ) : undefined}
