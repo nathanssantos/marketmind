@@ -587,10 +587,10 @@ describe('Wallet Router', () => {
 
 ## 📊 Current Development Phase
 
-**Version:** v1.1.0
-**Current Focus:** Cross-surface UI standardization (v1.2 sweep — see `docs/V1_2_PLAN.md`); MCP infra populated for fixture-driven visual review; visual regression CI gating PRs touching renderer/.
+**Version:** v1.2.0
+**Current Focus:** Backlog work tracked in `docs/V1_3_PLAN.md` (doc drains, more test coverage, perf audit, mcp-app flow tools, mcp-trading writeup). v1.2 sweep is complete: cross-surface UI standardization shipped, semantic-token migration finished (0 forbidden patterns in renderer/components/), visual regression CI active.
 
-### System Status (v1.1.0)
+### System Status (v1.2.0)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
 - **✅ Authentication**: Argon2 + session management
@@ -612,7 +612,8 @@ describe('Wallet Router', () => {
 - **Backend**: 5,416 passing (204 test files) + 40 skipped (IB integration tests requiring Gateway)
 - **Frontend**: 2,239 unit (182 files) + 27 browser
 - **Indicators**: 722 passing (60 files)
-- **Visual regression**: 44-PNG baseline (`apps/electron/screenshots/baseline/`) + CI gate via `.github/workflows/visual-regression.yml` (pixelmatch, `maxDiffPixels=25000` ≈ 1.93%, `threshold=0.2`)
+- **Visual regression**: 44-PNG baseline (`apps/electron/screenshots/baseline/`) + CI gate via `.github/workflows/visual-regression.yml` (pixelmatch, `maxDiffPixels=40000` ≈ 3.1%, `threshold=0.2`, tuned empirically to absorb CI noise)
+- **Standardization**: 0 hardcoded shade literals (`color="X.500"`, `bg="X.50"`) and 0 `_dark={{}}` overrides remaining in `apps/electron/src/renderer/components/`. All colors flow through semantic tokens (`X.fg / .subtle / .muted / .solid`, `bg.panel / bg.muted`, `fg.muted`, `trading.profit / .loss`).
 
 ### Backtesting Scripts
 ```bash
@@ -1203,5 +1204,5 @@ When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: ver
 ---
 
 **Last Updated:** April 2026
-**Version:** 1.6
-**Project Version:** 1.1.0
+**Version:** 1.7
+**Project Version:** 1.2.0
