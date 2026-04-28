@@ -126,7 +126,7 @@ const screenshotTo = async (page: Page, label: string, theme: Theme): Promise<Ca
   await ensureDir(sessionDir);
   const filename = `${label}__${theme}.png`;
   const filepath = path.join(sessionDir, filename);
-  await page.screenshot({ path: filepath, fullPage: false });
+  await page.screenshot({ path: filepath, fullPage: false, animations: 'disabled' });
   return { label, path: filepath, theme };
 };
 
