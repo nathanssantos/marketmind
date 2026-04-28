@@ -9,10 +9,10 @@ interface LogoProps {
 export const Logo = ({ size = 24 }: LogoProps) => {
   return (
     <Box position="relative" width={`${size}px`} height={`${size}px`}>
-      <Box position="absolute" top={0} left={0} color="blue.fg">
+      <Box position="absolute" top={0} left={0} color="brand.logo.primary">
         <LuBrain size={size} />
       </Box>
-      <Box position="absolute" top={0} left={0} color="green.fg" opacity={0.85}>
+      <Box position="absolute" top={0} left={0} color="brand.logo.secondary" opacity={0.85}>
         <MdShowChart size={size} />
       </Box>
     </Box>

@@ -42,6 +42,12 @@ export const semanticTokenColors = {
   'bg.error': { value: { base: '#fef2f2', _dark: '#1c1917' } },
   'bg.success': { value: { base: '#f0fdf4', _dark: '#14532d' } },
   'bg.warning': { value: { base: '#fffbeb', _dark: '#451a03' } },
+  // Brand-locked logo colors — must not theme-shift. The mechanical
+  // .500 → .fg sweep in PRs #219/#222 collapsed these to Chakra's
+  // theme-aware fg, which lightens the brain and chart-line in dark mode
+  // (.300 shade) — that's a brand-identity drift, not a theme decision.
+  'brand.logo.primary': { value: { base: '#3182ce', _dark: '#3182ce' } },
+  'brand.logo.secondary': { value: { base: '#48bb78', _dark: '#48bb78' } },
   'overlay.dark': { value: 'rgba(0, 0, 0, 0.5)' },
   'overlay.light': { value: 'rgba(255, 255, 255, 0.5)' },
   'canvas.text': { value: { base: '#ffffff', _dark: '#ffffff' } },
