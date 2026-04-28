@@ -472,6 +472,61 @@ import { FormSection, FormRow, Switch } from '@renderer/components/ui';
 
 ---
 
+## EmptyState pattern
+
+`<EmptyState>` is the canonical empty-state primitive. Used in 8 surfaces as of v1.2.
+
+### Usage
+
+```tsx
+import { EmptyState } from '@renderer/components/ui';
+
+// Inline — for surfaces with their own card framing
+<EmptyState size="sm" title={t('common.noData')} />
+
+// Dashed — for surfaces without surrounding card; wraps content in dashed-border box
+<EmptyState
+  dashed
+  title={t('tradingProfiles.watchers.empty')}
+  action={{ label: t('tradingProfiles.watchers.addFirst'), onClick: handleAdd }}
+/>
+```
+
+### Props
+- `title` (required) — the headline copy
+- `description` — optional secondary copy
+- `action` — `{ label, onClick, colorPalette? }` for an outline button below
+- `icon` — defaults to `LuInbox`; pass any `react-icons` component
+- `size` — `'sm' | 'md' | 'lg'` (default `md`); use `sm` in compact contexts (sidebars, inline)
+- `dashed` — wraps in a dashed-border box for surfaces without their own card
+
+### Don't
+- Hand-roll `<Box p={N} textAlign="center"><Text color="fg.muted">No data</Text></Box>` patterns. Use EmptyState.
+- Stack EmptyState inside another card with its own border — pick one framing.
+
+---
+
+## Color tokens
+
+As of v1.2, `apps/electron/src/renderer/components/` contains **0** hardcoded shade literals (`color="X.500"`, `bg="X.50"`, `borderColor="X.500"`, etc.) and **0** `_dark={{}}` overrides. Every color flows through one of these semantic tokens:
+
+| Token | Use |
+|-------|-----|
+| `X.fg` | Foreground text/icon for color X (resolves to `.500` light / `.300` dark approx) |
+| `X.subtle` | Background tone-on-tone for X (resolves to `.50` light / `.900` dark) |
+| `X.muted` | Border or secondary text for X |
+| `X.solid` | Solid fill — status dots, badges with strong tone |
+| `bg.panel` | Card-style panel background (Card primitive default) |
+| `bg.muted` | Subtle muted background — section panels |
+| `bg.subtle` | Even more muted — hover states |
+| `fg.muted` | Muted text (description, helper, captions) |
+| `trading.profit` | PnL gain — prefer over generic `green.fg` for trade values |
+| `trading.loss` | PnL loss — prefer over generic `red.fg` for trade values |
+
+Adding a new shade literal in `renderer/components/` will be caught by `grep`-based audits in CI (planned). Always prefer a semantic token; if the design needs a new tone, add it to `theme/tokens.ts` first.
+
+---
+
 ## File References
 
 - Theme definition: `apps/electron/src/renderer/theme/index.ts`
