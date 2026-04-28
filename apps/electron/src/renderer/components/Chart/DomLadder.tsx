@@ -75,8 +75,8 @@ export const DomLadder = memo(({ bids, asks, currentPrice, onPriceClick }: DomLa
           borderY="1px solid"
           borderColor="border.default"
         >
-          <Text flex={1} textAlign="center" fontWeight="bold" color="fg.default">
-            {currentPrice.toFixed(2)}
+          <Text flex={1} textAlign="center" fontWeight="bold" color={currentPrice > 0 ? 'fg.default' : 'fg.muted'}>
+            {currentPrice > 0 ? currentPrice.toFixed(2) : '—'}
           </Text>
         </HStack>
 

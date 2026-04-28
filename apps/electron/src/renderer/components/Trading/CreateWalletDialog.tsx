@@ -162,10 +162,10 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
           <Callout tone="info" title={t('trading.wallets.testnetInfo', 'Binance Testnet')} compact>
             <Text mb={1}>{t('trading.wallets.testnetDescription', 'Use testnet to practice with fake funds.')}</Text>
             <Flex gap={3}>
-              <Link href="https://testnet.binance.vision/" target="_blank" color="blue.500" fontSize="2xs">
+              <Link href="https://testnet.binance.vision/" target="_blank" color="blue.fg" fontSize="2xs">
                 Spot Testnet <LuExternalLink style={{ display: 'inline' }} />
               </Link>
-              <Link href="https://testnet.binancefuture.com/" target="_blank" color="blue.500" fontSize="2xs">
+              <Link href="https://testnet.binancefuture.com/" target="_blank" color="blue.fg" fontSize="2xs">
                 Futures Testnet <LuExternalLink style={{ display: 'inline' }} />
               </Link>
             </Flex>
@@ -175,7 +175,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
         {isIB && (
           <Callout tone="info" title={t('trading.wallets.ibInfo', 'Interactive Brokers')} compact>
             <Text mb={1}>{t('trading.wallets.ibDescription', 'Requires IB Gateway or TWS running locally.')}</Text>
-            <Link href="https://www.interactivebrokers.com/en/trading/ibgateway-stable.php" target="_blank" color="blue.500" fontSize="2xs">
+            <Link href="https://www.interactivebrokers.com/en/trading/ibgateway-stable.php" target="_blank" color="blue.fg" fontSize="2xs">
               {t('trading.wallets.downloadGateway', 'Download IB Gateway')} <LuExternalLink style={{ display: 'inline' }} />
             </Link>
           </Callout>

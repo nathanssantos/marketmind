@@ -235,8 +235,7 @@ export const FundingRatesSection = ({ fundingRates, isLoading }: FundingRatesSec
                   <Text
                     fontSize="xs"
                     fontWeight="medium"
-                    color={`${rateColor}.600`}
-                    _dark={{ color: `${rateColor}.400` }}
+                    color={`${rateColor}.fg`}
                   >
                     {formatFundingRate(fr.rate)}
                   </Text>

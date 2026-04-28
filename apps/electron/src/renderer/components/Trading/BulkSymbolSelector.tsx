@@ -106,15 +106,14 @@ export const BulkSymbolSelector = ({
                       onCheckedChange={() => handleSymbolToggle(coin.binanceSymbol)}
                     />
                     <Box
-                      bg="gray.100"
-                      _dark={{ bg: 'gray.700' }}
+                      bg="bg.muted"
                       px={1.5}
                       py={0.5}
                       borderRadius="sm"
                       minW="32px"
                       textAlign="center"
                     >
-                      <Text fontSize="xs" fontWeight="bold" color="gray.600" _dark={{ color: 'gray.300' }}>
+                      <Text fontSize="xs" fontWeight="bold" color="fg.muted">
                         #{coin.marketCapRank}
                       </Text>
                     </Box>

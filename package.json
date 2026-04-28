@@ -1,6 +1,6 @@
 {
   "name": "marketmind-monorepo",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "MarketMind Monorepo - trading platform",
   "keywords": [
     "trading",
@@ -54,6 +54,8 @@
     "@typescript-eslint/parser": "^8.59.0",
     "eslint": "^10.2.1",
     "globals": "^17.5.0",
+    "pixelmatch": "^7.1.0",
+    "pngjs": "^7.0.0",
     "prettier": "^3.8.3",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"

@@ -205,7 +205,7 @@ export const TrailingStopSection = ({
                     </Text>
                   )}
                 </Box>
-                <Text fontSize={labelSize} fontWeight="bold" color="green.500">
+                <Text fontSize={labelSize} fontWeight="bold" color="green.fg">
                   {(trailingActivationPercentLong * 100).toFixed(1)}%
                 </Text>
               </Flex>
@@ -232,7 +232,7 @@ export const TrailingStopSection = ({
                     </Text>
                   )}
                 </Box>
-                <Text fontSize={labelSize} fontWeight="bold" color="red.500">
+                <Text fontSize={labelSize} fontWeight="bold" color="red.fg">
                   {(trailingActivationPercentShort * 100).toFixed(1)}%
                 </Text>
               </Flex>
@@ -308,7 +308,7 @@ export const TrailingStopSection = ({
                     </Text>
                   )}
                 </Box>
-                <Text fontSize={labelSize} fontWeight="bold" color="blue.500">
+                <Text fontSize={labelSize} fontWeight="bold" color="blue.fg">
                   {(trailingStopOffsetPercent * 100).toFixed(1)}%
                 </Text>
               </Flex>
@@ -334,7 +334,7 @@ export const TrailingStopSection = ({
                   </Text>
                 )}
               </Box>
-              <Text fontSize={labelSize} fontWeight="bold" color="green.500">
+              <Text fontSize={labelSize} fontWeight="bold" color="green.fg">
                 {(trailingDistancePercentLong * 100).toFixed(1)}%
               </Text>
             </Flex>
@@ -359,7 +359,7 @@ export const TrailingStopSection = ({
                   </Text>
                 )}
               </Box>
-              <Text fontSize={labelSize} fontWeight="bold" color="red.500">
+              <Text fontSize={labelSize} fontWeight="bold" color="red.fg">
                 {(trailingDistancePercentShort * 100).toFixed(1)}%
               </Text>
             </Flex>

@@ -125,7 +125,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="red.500">{currency} {position.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="red.fg">{currency} {position.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={position.stopLoss} />
             </Stack>
           </Flex>
@@ -134,7 +134,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.takeProfit')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="green.500">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="green.fg">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={position.takeProfit} />
             </Stack>
           </Flex>

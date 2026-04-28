@@ -1,6 +1,6 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Flex, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import { Callout, IconButton, Select } from '@renderer/components/ui';
+import { Callout, EmptyState, IconButton, Select } from '@renderer/components/ui';
 import { MM } from '@renderer/theme/tokens';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -78,11 +78,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
           </Flex>
 
           {positions.length === 0 && orphanOrders.length === 0 ? (
-            <Box p={4} textAlign="center">
-              <Text fontSize="sm" color="fg.muted">
-                {t('trading.portfolio.empty')}
-              </Text>
-            </Box>
+            <EmptyState size="sm" title={t('trading.portfolio.empty')} />
           ) : (
           <>
           {positions.length > 0 && (
@@ -181,7 +177,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
 
           {orphanOrders.length > 0 && (
             <>
-              <Text fontSize="xs" fontWeight="semibold" color="orange.500" textTransform="uppercase" letterSpacing="wide">
+              <Text fontSize="xs" fontWeight="semibold" color="orange.fg" textTransform="uppercase" letterSpacing="wide">
                 {t('trading.portfolio.orphanOrdersTitle')} ({orphanOrders.length})
               </Text>
 

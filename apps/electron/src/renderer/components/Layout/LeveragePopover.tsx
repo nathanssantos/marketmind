@@ -84,7 +84,7 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
             disabled={!walletId || !symbol || hasOpenPosition}
           />
           {hasOpenPosition && (
-            <Text fontSize="2xs" color="orange.500" mt={2} textAlign="center">
+            <Text fontSize="2xs" color="orange.fg" mt={2} textAlign="center">
               {t('futures.leverageLockedPosition', 'Close position to change leverage')}
             </Text>
           )}

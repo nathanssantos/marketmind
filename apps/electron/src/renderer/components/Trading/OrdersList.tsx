@@ -1,5 +1,5 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
-import { Button, Callout, IconButton, Select } from '@renderer/components/ui';
+import { Button, Callout, EmptyState, IconButton, Select } from '@renderer/components/ui';
 import { MM } from '@renderer/theme/tokens';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
@@ -208,11 +208,11 @@ const OrdersListComponent = () => {
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.orders.active')}</Text>
-                <Text fontWeight="medium" color="green.500">{activeOrders}</Text>
+                <Text fontWeight="medium" color="green.fg">{activeOrders}</Text>
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.orders.pending')}</Text>
-                <Text fontWeight="medium" color="orange.500">{pendingOrders}</Text>
+                <Text fontWeight="medium" color="orange.fg">{pendingOrders}</Text>
               </Flex>
             </Stack>
           </Box>
@@ -286,11 +286,7 @@ const OrdersListComponent = () => {
           </Flex>
 
           {filteredOrders.length === 0 ? (
-            <Box p={4} textAlign="center" minH="100px">
-              <Text fontSize="sm" color="fg.muted">
-                {t('trading.orders.empty')}
-              </Text>
-            </Box>
+            <EmptyState size="sm" title={t('trading.orders.empty')} />
           ) : viewMode === 'table' ? (
             <OrdersTableContent
               orders={filteredOrders}

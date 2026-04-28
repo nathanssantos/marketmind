@@ -27,13 +27,13 @@ export const AboutTab = () => {
 
       <FormSection title={t('about.resources')}>
         <Stack gap={1.5} fontSize="xs">
-          <Link href="https://github.com/nathanssantos/marketmind" target="_blank" color="blue.500" display="inline-flex" alignItems="center" gap={1}>
+          <Link href="https://github.com/nathanssantos/marketmind" target="_blank" color="blue.fg" display="inline-flex" alignItems="center" gap={1}>
             {t('about.resourcesList.github')} <LuExternalLink />
           </Link>
-          <Link href="https://github.com/nathanssantos/marketmind/blob/main/.github/copilot-instructions.md" target="_blank" color="blue.500" display="inline-flex" alignItems="center" gap={1}>
+          <Link href="https://github.com/nathanssantos/marketmind/blob/main/.github/copilot-instructions.md" target="_blank" color="blue.fg" display="inline-flex" alignItems="center" gap={1}>
             {t('about.resourcesList.documentation')} <LuExternalLink />
           </Link>
-          <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/CHANGELOG.md" target="_blank" color="blue.500" display="inline-flex" alignItems="center" gap={1}>
+          <Link href="https://github.com/nathanssantos/marketmind/blob/main/docs/CHANGELOG.md" target="_blank" color="blue.fg" display="inline-flex" alignItems="center" gap={1}>
             {t('about.resourcesList.changelog')} <LuExternalLink />
           </Link>
         </Stack>

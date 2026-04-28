@@ -1,5 +1,5 @@
-import { Badge, Button, IconButton } from '@renderer/components/ui';
-import { Box, Flex, Grid, Heading, Portal, Stack, Text } from '@chakra-ui/react';
+import { Badge, Button, EmptyState, FormSection, IconButton } from '@renderer/components/ui';
+import { Box, Flex, Grid, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { TradingProfile } from '@marketmind/types';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
@@ -31,55 +31,40 @@ export const TradingProfilesManager = () => {
 
   return (
     <Stack gap={4}>
-      <Flex justify="space-between" align="flex-start" gap={4}>
-        <Box>
+      <FormSection
+        title={
           <Flex align="center" gap={2}>
-            <Heading size="md">{t('tradingProfiles.title')}</Heading>
+            <Text as="span">{t('tradingProfiles.title')}</Text>
             {profiles.length > 0 && (
               <Badge size="sm" colorPalette="blue">
                 {profiles.length}
               </Badge>
             )}
           </Flex>
-          <Text fontSize="sm" color="fg.muted">
-            {t('tradingProfiles.description')}
-          </Text>
-        </Box>
-        <Flex gap={2}>
-          <Button size="sm" variant="outline" onClick={() => setShowImportDialog(true)}>
-            <LuUpload />
-            {t('tradingProfiles.import.openImport')}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setShowCreateDialog(true)}>
-            <LuPlus />
-            {t('tradingProfiles.create')}
-          </Button>
-        </Flex>
-      </Flex>
+        }
+        description={t('tradingProfiles.description')}
+        action={
+          <Flex gap={2}>
+            <Button size="sm" variant="outline" onClick={() => setShowImportDialog(true)}>
+              <LuUpload />
+              {t('tradingProfiles.import.openImport')}
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowCreateDialog(true)}>
+              <LuPlus />
+              {t('tradingProfiles.create')}
+            </Button>
+          </Flex>
+        }
+      />
 
       {isLoadingProfiles ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">
-            {t('common.loading')}
-          </Text>
-        </Box>
+        <EmptyState size="sm" title={t('common.loading')} />
       ) : profiles.length === 0 ? (
-        <Box
-          p={6}
-          textAlign="center"
-          borderWidth="1px"
-          borderStyle="dashed"
-          borderRadius="lg"
-          borderColor="border"
-        >
-          <Text fontSize="sm" color="fg.muted" mb={2}>
-            {t('tradingProfiles.empty')}
-          </Text>
-          <Button size="sm" variant="outline" onClick={() => setShowCreateDialog(true)}>
-            <LuPlus />
-            {t('tradingProfiles.createFirst')}
-          </Button>
-        </Box>
+        <EmptyState
+          dashed
+          title={t('tradingProfiles.empty')}
+          action={{ label: t('tradingProfiles.createFirst'), onClick: () => setShowCreateDialog(true) }}
+        />
       ) : (
         <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={4}>
           {profiles.map((profile) => (
@@ -131,15 +116,15 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
       p={4}
       bg="bg.muted"
       borderRadius="md"
-      borderLeft="4px solid"
-      borderColor={profile.isDefault ? 'yellow.500' : 'blue.500'}
+      borderLeftWidth="3px"
+      borderLeftColor={profile.isDefault ? 'yellow.muted' : 'blue.muted'}
       position="relative"
     >
       <Flex justify="space-between" align="flex-start" mb={3}>
         <Flex align="center" gap={2}>
           {profile.isDefault && (
-            <Box color="yellow.500">
-              <LuStar size={16} />
+            <Box color="yellow.fg" aria-label={t('tradingProfiles.defaultMarker')}>
+              <LuStar size={14} />
             </Box>
           )}
           <Text fontWeight="bold" fontSize="md">
@@ -191,7 +176,7 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
                 <MenuItem
                   value="delete"
                   onClick={onDelete}
-                  color="red.500"
+                  color="red.fg"
                   px={4}
                   py={2.5}
                   _hover={{ bg: 'bg.muted' }}

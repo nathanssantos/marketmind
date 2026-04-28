@@ -85,7 +85,7 @@ export const DynamicSelectionSection = ({
       size="lg"
       variant="static"
       badge={isAutoRotationEnabled ? (
-        <Box px={2} py={0.5} bg="blue.100" color="blue.800" borderRadius="full" fontSize="xs" fontWeight="medium" _dark={{ bg: 'blue.900', color: 'blue.200' }}>
+        <Box px={2} py={0.5} bg="blue.subtle" color="blue.fg" borderRadius="full" fontSize="xs" fontWeight="medium">
           <Flex align="center" gap={1}>
             <LuZap size={10} />
             {t('tradingProfiles.dynamicSelection.autoRotation')}
@@ -143,7 +143,7 @@ export const DynamicSelectionSection = ({
                     {t('common.loading')}
                   </Text>
                 ) : rotationStatus?.isActive ? (
-                  <Text fontSize="xs" color="green.500">
+                  <Text fontSize="xs" color="green.fg">
                     {t('tradingProfiles.dynamicSelection.nextRotation', {
                       time: rotationStatus.nextRotation
                         ? new Date(rotationStatus.nextRotation).toLocaleTimeString()

@@ -2,6 +2,7 @@ import type { ScreenerResultRow, ScreenerSortField } from '@marketmind/types';
 import { Box, Text } from '@chakra-ui/react';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '../ui';
 import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn } from '../Trading/TradingTable';
 
 interface ScreenerResultsTableProps {
@@ -47,11 +48,7 @@ export const ScreenerResultsTable = memo(({
   ], [t]);
 
   if (results.length === 0) {
-    return (
-      <Box textAlign="center" py={8} color="fg.muted" fontSize="sm">
-        {t('screener.results.empty')}
-      </Box>
-    );
+    return <EmptyState size="sm" title={t('screener.results.empty')} />;
   }
 
   return (

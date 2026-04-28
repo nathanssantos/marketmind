@@ -157,7 +157,7 @@ export const UpdateNotification = () => {
         {status === 'error' && error && (
           <>
             <Box>
-              <Text fontSize="lg" fontWeight="bold" color="red.500">
+              <Text fontSize="lg" fontWeight="bold" color="red.fg">
                 {t('update.error')}
               </Text>
               <Text fontSize="sm" color="fg.muted">

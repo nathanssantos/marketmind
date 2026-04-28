@@ -127,7 +127,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
                     <MenuItem
                       value="cancel"
                       onClick={() => onCancel(getOrderId(order))}
-                      color="red.500"
+                      color="red.fg"
                       px={4}
                       py={2.5}
                       _hover={{ bg: 'bg.muted' }}
@@ -196,7 +196,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.currentPrice')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="blue.500" fontWeight="medium">{currency} {order.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="blue.fg" fontWeight="medium">{currency} {order.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={order.currentPrice} />
             </Stack>
           </Flex>
@@ -205,7 +205,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="red.500">{currency} {order.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="red.fg">{currency} {order.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={order.stopLoss} />
             </Stack>
           </Flex>
@@ -214,7 +214,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.takeProfit')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="green.500">{currency} {order.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="green.fg">{currency} {order.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={order.takeProfit} />
             </Stack>
           </Flex>

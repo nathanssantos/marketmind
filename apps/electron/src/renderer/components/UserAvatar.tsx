@@ -87,7 +87,7 @@ export const UserAvatar = () => {
               {t('account.settings')}
             </Menu.Item>
             <Menu.Separator />
-            <Menu.Item value="logout" onClick={() => { void handleLogout(); }} color="red.400">
+            <Menu.Item value="logout" onClick={() => { void handleLogout(); }} color="red.fg">
               <LuLogOut />
               {t('account.logout')}
             </Menu.Item>

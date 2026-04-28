@@ -34,8 +34,8 @@ export const ErrorMessage = ({
         <Box
           p={3}
           borderRadius="full"
-          bg="red.500/10"
-          color="red.500"
+          bg="red.subtle"
+          color="red.fg"
         >
           <LuTriangleAlert size={32} />
         </Box>

@@ -32,7 +32,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
       p={8}
     >
       <VStack gap={6} maxW="600px" textAlign="center">
-        <Heading size="xl" color="red.400">
+        <Heading size="xl" color="red.fg">
           Something went wrong
         </Heading>
         <Text color="gray.300">
@@ -47,7 +47,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
             maxH="200px"
             overflow="auto"
           >
-            <Text color="red.300" fontSize="sm" fontFamily="mono">
+            <Text color="red.fg" fontSize="sm" fontFamily="mono">
               {err.message}
             </Text>
             {err.stack && (

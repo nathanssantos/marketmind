@@ -35,7 +35,7 @@ function StreamHealthDotComponent({ status }: StreamHealthDotProps) {
         width={`${DOT_SIZE_PX}px`}
         height={`${DOT_SIZE_PX}px`}
         borderRadius="full"
-        bg="orange.400"
+        bg="orange.solid"
         flexShrink={0}
         animation="pulse 2s ease-in-out infinite"
         css={{

@@ -1432,6 +1432,7 @@
     "title": "Perfiles de Trading",
     "modalTitle": "Trading Automático",
     "description": "Cree perfiles con diferentes configuraciones de setups para trading multi-activos",
+    "defaultMarker": "Perfil por defecto",
     "create": "Nuevo Perfil",
     "createFirst": "Cree Su Primer Perfil",
     "empty": "Aún no hay perfiles de trading",

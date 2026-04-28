@@ -81,5 +81,10 @@ export const setTheme = async (theme: 'light' | 'dark'): Promise<void> => {
     html.classList.add(t);
     html.dataset.theme = t;
   }, theme);
-  await page.waitForTimeout(150);
+  await page.waitForFunction(
+    (t) => document.documentElement.classList.contains(t),
+    theme,
+    { timeout: 5000 },
+  );
+  await page.waitForTimeout(400);
 };

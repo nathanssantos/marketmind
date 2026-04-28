@@ -1376,6 +1376,7 @@
     "title": "Trading Profiles",
     "modalTitle": "Auto Trading",
     "description": "Create profiles with different setup configurations for multi-asset trading",
+    "defaultMarker": "Default profile",
     "create": "New Profile",
     "createFirst": "Create Your First Profile",
     "empty": "No trading profiles yet",

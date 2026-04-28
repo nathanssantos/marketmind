@@ -18,9 +18,9 @@ export const LoadingSpinner = ({ message, size = 'lg' }: LoadingSpinnerProps) =>
       textAlign="center"
     >
       <Stack gap={4} alignItems="center">
-        <Spinner 
-          size={size} 
-          color="blue.500"
+        <Spinner
+          size={size}
+          color="blue.fg"
           borderWidth="4px"
         />
         <Text 
