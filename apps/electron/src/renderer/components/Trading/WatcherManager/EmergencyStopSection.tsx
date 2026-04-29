@@ -1,5 +1,5 @@
-import { Box, Flex, Text } from '@chakra-ui/react';
-import { Button } from '@renderer/components/ui';
+import { Flex, Stack } from '@chakra-ui/react';
+import { Button, Callout } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuTriangleAlert } from 'react-icons/lu';
 
@@ -24,46 +24,34 @@ export const EmergencyStopSection = ({
 
   if (showConfirm) {
     return (
-      <Box
-        p={3}
-        bg="red.subtle"
-        borderRadius="md"
-        borderWidth="1px"
-        borderColor="red.muted"
+      <Callout
+        tone="danger"
+        icon={<LuTriangleAlert />}
+        title={t('tradingProfiles.emergencyStop.confirmTitle')}
       >
-        <Flex align="center" gap={2} mb={2}>
-          <Box color="red.fg">
-            <LuTriangleAlert size={18} />
-          </Box>
-          <Box>
-            <Text fontSize="sm" fontWeight="semibold" color="red.fg">
-              {t('tradingProfiles.emergencyStop.confirmTitle')}
-            </Text>
-            <Text fontSize="xs" color="fg.muted">
-              {t('tradingProfiles.emergencyStop.confirmDescription')}
-            </Text>
-          </Box>
-        </Flex>
-        <Flex gap={2} justify="flex-end">
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={onHideConfirm}
-            disabled={isEmergencyStopping}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            size="xs"
-            colorPalette="red"
-            onClick={onEmergencyStop}
-            loading={isEmergencyStopping}
-          >
-            <LuTriangleAlert />
-            {t('tradingProfiles.emergencyStop.confirm')}
-          </Button>
-        </Flex>
-      </Box>
+        <Stack gap={2}>
+          {t('tradingProfiles.emergencyStop.confirmDescription')}
+          <Flex gap={2} justify="flex-end">
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={onHideConfirm}
+              disabled={isEmergencyStopping}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              size="xs"
+              colorPalette="red"
+              onClick={onEmergencyStop}
+              loading={isEmergencyStopping}
+            >
+              <LuTriangleAlert />
+              {t('tradingProfiles.emergencyStop.confirm')}
+            </Button>
+          </Flex>
+        </Stack>
+      </Callout>
     );
   }
 
