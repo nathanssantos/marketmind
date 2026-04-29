@@ -34,7 +34,7 @@ export const semanticTokenColors = {
   'trading.profit': { value: { base: '#16a34a', _dark: '#22c55e' } },
   'trading.loss': { value: { base: '#dc2626', _dark: '#ef4444' } },
   'trading.neutral': { value: { base: '#64748b', _dark: '#94a3b8' } },
-  'trading.warning': { value: { base: '#f59e0b', _dark: '#fbbf24' } },
+  'trading.warning': { value: { base: '#dd6b20', _dark: '#f6ad55' } },
   'trading.info': { value: { base: '#2563eb', _dark: '#3b82f6' } },
   'trading.long': { value: { base: '#16a34a', _dark: '#22c55e' } },
   'trading.short': { value: { base: '#dc2626', _dark: '#ef4444' } },

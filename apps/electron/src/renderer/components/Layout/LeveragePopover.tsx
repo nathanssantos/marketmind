@@ -40,6 +40,16 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
 
   const leverage = symbolLeverage?.leverage ?? 1;
 
+  // Match the LeverageSelector's risk-tier colors so the trigger button,
+  // popover header, and (semantically) the preset grid all agree on
+  // what color "Nx" should be at a glance. 1x is muted (no risk); 2-20x
+  // is profit/safe; 21-50x warning; >50x loss/extreme.
+  const triggerColor: string =
+    leverage <= 1 ? 'fg.muted'
+    : leverage > 50 ? 'trading.loss'
+    : leverage > 20 ? 'trading.warning'
+    : 'trading.profit';
+
   const handleLeverageChange = useCallback((newLeverage: number) => {
     if (!walletId || !symbol) return;
     setLeverageMutation.mutate({ walletId, symbol, leverage: newLeverage });
@@ -63,7 +73,7 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
               <Button
                 size="2xs"
                 variant="outline"
-                color={leverage > 1 ? 'trading.warning' : 'fg.muted'}
+                color={triggerColor}
                 aria-label={t('futures.leverage', 'Leverage')}
                 onClick={() => setIsOpen((prev) => !prev)}
                 px={leverage > 1 ? 1.5 : undefined}
