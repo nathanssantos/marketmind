@@ -44,6 +44,26 @@ const FORBIDDEN = [
     name: 'tinted-card-Box',
     re: /\bbg="(?:red|green|blue|yellow|orange|purple|teal|pink)\.subtle"[^>]*\bborderColor="(?:red|green|blue|yellow|orange|purple|teal|pink)\.muted"/g,
   },
+  {
+    // V1_4 rule: dynamic shade pair in JSX expression — usually expresses
+    // bidirectional trading semantics (LONG/SHORT, profit/loss,
+    // bullish/bearish) with raw shade literals. The static-shade rule above
+    // only catches `color="X.500"`; this catches the JSX-expression form
+    // `color={cond ? 'green.500' : 'red.500'}` (and variants on bg /
+    // borderColor / borderLeftColor / valueColor). Both `green.NNN` AND
+    // `red.NNN` must appear in the same prop expression — that's the
+    // signature of bidirectional semantics.
+    //
+    // Use semantic tokens instead:
+    //   trading.long / trading.short  (side)
+    //   trading.profit / trading.loss  (P&L)
+    //
+    // Single-shade dynamic uses (`'blue.500' : 'fg.muted'`) are intentionally
+    // not flagged — those are usually UI accent colors (active state, focus
+    // border) and have a different migration path (colorPalette tokens).
+    name: 'dynamic-shade-pair',
+    re: /(?:color|bg|borderColor|borderLeftColor|borderRightColor|borderTopColor|borderBottomColor|valueColor)=\{[^}]*'(?:green|red)\.\d{2,3}'[^}]*'(?:green|red)\.\d{2,3}'/g,
+  },
 ];
 
 const SKIP_FILES = new Set([
