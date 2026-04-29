@@ -1,5 +1,4 @@
-import { Box, HStack, Text } from '@chakra-ui/react';
-import { CollapsibleSection, Radio, RadioGroup } from '@renderer/components/ui';
+import { CollapsibleSection, Field, Select } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface StopModeSectionProps {
@@ -15,7 +14,6 @@ export const StopModeSection = ({
   onToggle,
   initialStopMode,
   onInitialStopModeChange,
-  isPending,
 }: StopModeSectionProps) => {
   const { t } = useTranslation();
 
@@ -28,34 +26,25 @@ export const StopModeSection = ({
       size="lg"
       variant="static"
     >
-      <RadioGroup
-        value={initialStopMode}
-        onValueChange={onInitialStopModeChange}
-        disabled={isPending}
+      <Field
+        label={t('settings.algorithmicAutoTrading.stopMode.label', 'Initial stop placement')}
+        helperText={
+          initialStopMode === 'fibo_target'
+            ? t('settings.algorithmicAutoTrading.stopMode.fiboTargetDescription')
+            : t('settings.algorithmicAutoTrading.stopMode.nearestSwingDescription')
+        }
       >
-        <HStack gap={6}>
-          <Radio value="fibo_target">
-            <Box>
-              <Text fontSize="sm" fontWeight="medium">
-                {t('settings.algorithmicAutoTrading.stopMode.fiboTarget')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted">
-                {t('settings.algorithmicAutoTrading.stopMode.fiboTargetDescription')}
-              </Text>
-            </Box>
-          </Radio>
-          <Radio value="nearest_swing">
-            <Box>
-              <Text fontSize="sm" fontWeight="medium">
-                {t('settings.algorithmicAutoTrading.stopMode.nearestSwing')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted">
-                {t('settings.algorithmicAutoTrading.stopMode.nearestSwingDescription')}
-              </Text>
-            </Box>
-          </Radio>
-        </HStack>
-      </RadioGroup>
+        <Select
+          value={initialStopMode}
+          options={[
+            { value: 'fibo_target', label: t('settings.algorithmicAutoTrading.stopMode.fiboTarget') },
+            { value: 'nearest_swing', label: t('settings.algorithmicAutoTrading.stopMode.nearestSwing') },
+          ]}
+          onChange={(v) => onInitialStopModeChange({ value: v })}
+          size="sm"
+          usePortal={false}
+        />
+      </Field>
     </CollapsibleSection>
   );
 };

@@ -1,5 +1,5 @@
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
-import { Badge, CollapsibleSection, NumberInput, Radio, RadioGroup, Switch } from '@renderer/components/ui';
+import { Badge, CollapsibleSection, Field, NumberInput, Select, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import type { WatcherConfig } from './types';
 
@@ -82,58 +82,33 @@ export const PyramidingSection = ({
       size="lg"
       variant="static"
     >
-          <RadioGroup
-            value={config?.pyramidingEnabled ? (config?.pyramidingMode ?? 'static') : 'disabled'}
-            onValueChange={(e) => handlePyramidModeChange(e.value)}
-            disabled={isPending}
+          <Field
+            label={t('settings.algorithmicAutoTrading.pyramiding.modeLabel', 'Mode')}
+            helperText={(() => {
+              const v = config?.pyramidingEnabled ? (config?.pyramidingMode ?? 'static') : 'disabled';
+              if (v === 'disabled') return t('settings.algorithmicAutoTrading.pyramiding.modeDisabledDesc');
+              if (v === 'static') return t('settings.algorithmicAutoTrading.pyramiding.modeStaticDesc');
+              if (v === 'dynamic') return t('settings.algorithmicAutoTrading.pyramiding.modeDynamicDesc');
+              return t('settings.algorithmicAutoTrading.pyramiding.modeFibonacciDesc');
+            })()}
           >
-            <HStack gap={6}>
-              <Radio value="disabled">
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeDisabled')}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeDisabledDesc')}
-                  </Text>
-                </Box>
-              </Radio>
-              <Radio value="static">
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeStatic')}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeStaticDesc')}
-                  </Text>
-                </Box>
-              </Radio>
-              <Radio value="dynamic">
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeDynamic')}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeDynamicDesc')}
-                  </Text>
-                </Box>
-              </Radio>
-              <Radio value="fibonacci">
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeFibonacci')}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted">
-                    {t('settings.algorithmicAutoTrading.pyramiding.modeFibonacciDesc')}
-                  </Text>
-                </Box>
-              </Radio>
-            </HStack>
-          </RadioGroup>
+            <Select
+              value={config?.pyramidingEnabled ? (config?.pyramidingMode ?? 'static') : 'disabled'}
+              options={[
+                { value: 'disabled', label: t('settings.algorithmicAutoTrading.pyramiding.modeDisabled') },
+                { value: 'static', label: t('settings.algorithmicAutoTrading.pyramiding.modeStatic') },
+                { value: 'dynamic', label: t('settings.algorithmicAutoTrading.pyramiding.modeDynamic') },
+                { value: 'fibonacci', label: t('settings.algorithmicAutoTrading.pyramiding.modeFibonacci') },
+              ]}
+              onChange={handlePyramidModeChange}
+              size="sm"
+              usePortal={false}
+            />
+          </Field>
 
           {config?.pyramidingEnabled && (
             <>
-              <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.muted">
+              <Box mt={4}>
                 <Text fontSize="sm" fontWeight="medium" mb={2}>
                   {t('settings.algorithmicAutoTrading.pyramiding.generalSettings')}
                 </Text>
@@ -186,7 +161,7 @@ export const PyramidingSection = ({
               </Box>
 
               {config?.pyramidingMode === 'dynamic' && (
-                <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="purple.muted">
+                <Box mt={4}>
                   <Text fontSize="sm" fontWeight="medium" mb={2}>
                     {t('settings.algorithmicAutoTrading.pyramiding.dynamicIndicators')}
                   </Text>
@@ -263,45 +238,31 @@ export const PyramidingSection = ({
               )}
 
               {config?.pyramidingMode === 'fibonacci' && (
-                <Box mt={4} pl={4} borderLeftWidth="2px" borderLeftColor="orange.muted">
-                  <Text fontSize="sm" fontWeight="medium" mb={2}>
-                    {t('settings.algorithmicAutoTrading.pyramiding.fiboLevels')}
-                  </Text>
-                  <Text fontSize="xs" color="fg.muted" mb={3}>
-                    {t('settings.algorithmicAutoTrading.pyramiding.fiboLevelsDesc')}
-                  </Text>
-                  <RadioGroup
-                    value={getCurrentFiboPreset()}
-                    onValueChange={(e) => handleFiboLevelsChange(e.value)}
-                    disabled={isPending}
+                <Box mt={4}>
+                  <Field
+                    label={t('settings.algorithmicAutoTrading.pyramiding.fiboLevels')}
+                    helperText={(() => {
+                      const v = getCurrentFiboPreset();
+                      if (v === '1.618') return t('settings.algorithmicAutoTrading.pyramiding.fiboGoldenDesc');
+                      if (v === 'conservative') return t('settings.algorithmicAutoTrading.pyramiding.fiboConservativeDesc');
+                      if (v === 'moderate') return t('settings.algorithmicAutoTrading.pyramiding.fiboModerateDesc');
+                      if (v === 'all') return t('settings.algorithmicAutoTrading.pyramiding.fiboAllDesc');
+                      return t('settings.algorithmicAutoTrading.pyramiding.fiboLevelsDesc');
+                    })()}
                   >
-                    <Stack gap={2}>
-                      <Radio value="1.618">
-                        <Box>
-                          <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.fiboGolden')}</Text>
-                          <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.fiboGoldenDesc')}</Text>
-                        </Box>
-                      </Radio>
-                      <Radio value="conservative">
-                        <Box>
-                          <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.fiboConservative')}</Text>
-                          <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.fiboConservativeDesc')}</Text>
-                        </Box>
-                      </Radio>
-                      <Radio value="moderate">
-                        <Box>
-                          <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.fiboModerate')}</Text>
-                          <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.fiboModerateDesc')}</Text>
-                        </Box>
-                      </Radio>
-                      <Radio value="all">
-                        <Box>
-                          <Text fontSize="sm">{t('settings.algorithmicAutoTrading.pyramiding.fiboAll')}</Text>
-                          <Text fontSize="xs" color="fg.muted">{t('settings.algorithmicAutoTrading.pyramiding.fiboAllDesc')}</Text>
-                        </Box>
-                      </Radio>
-                    </Stack>
-                  </RadioGroup>
+                    <Select
+                      value={getCurrentFiboPreset()}
+                      options={[
+                        { value: '1.618', label: t('settings.algorithmicAutoTrading.pyramiding.fiboGolden') },
+                        { value: 'conservative', label: t('settings.algorithmicAutoTrading.pyramiding.fiboConservative') },
+                        { value: 'moderate', label: t('settings.algorithmicAutoTrading.pyramiding.fiboModerate') },
+                        { value: 'all', label: t('settings.algorithmicAutoTrading.pyramiding.fiboAll') },
+                      ]}
+                      onChange={handleFiboLevelsChange}
+                      size="sm"
+                      usePortal={false}
+                    />
+                  </Field>
                 </Box>
               )}
             </>

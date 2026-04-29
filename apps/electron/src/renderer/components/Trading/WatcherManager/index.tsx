@@ -402,8 +402,6 @@ export const WatcherManager = () => {
         onFilterToggle={handleFilterToggle}
         isPending={updateConfig.isPending}
         isIB={isIB}
-        directionMode={directionMode}
-        onDirectionModeChange={handleDirectionModeChange}
         confluenceMinScore={config?.confluenceMinScore ?? 60}
         onConfluenceMinScoreChange={handleConfluenceMinScoreChange}
       />
