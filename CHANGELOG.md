@@ -31,6 +31,25 @@ Work on develop after v1.2.0 — slated for the next release.
 ### Added — Tests
 - **Empty-state semantics tests** (#242) — 7 surfaces: `ScreenerResultsTable`, `ChecklistEditor`, `IndicatorLibrary`, `WatchersList`, `TradingProfilesManager`, `CustomSymbolsTab`, `WalletManager`. +11 new tests; total 2,264 unit tests passing.
 
+### Changed — v1.4 UI consistency sweep (Phase 1: AutoTrading + cross-surface cleanup)
+After the v1.2 mechanical color migration, a structural pass across the AutoTrading tab and adjacent surfaces. Lots of small structural fixes summing to a much more consistent app.
+
+- **i18n: 8 hardcoded English strings** (#251) — `RiskDisplay` and `FuturesPositionsPanel` labels wrapped with `t()`; new keys under `trading.portfolio` and a new top-level `futures` namespace.
+- **AutoTrading pass 1** (#246) — Trading-mode block converted from raw `<Box>` to `<CollapsibleSection variant="static">`; empty-wallet state replaced with `<EmptyState size="sm">`; QuickStartSection / StockPresetsSection lost their green-tinted `<Box bg="green.subtle">` wrappers.
+- **SecurityTab + WalletManager cleanup** (#247) — 2FA icon wrapped in `<Box color="trading.profit">` instead of inline hex; redundant outer `p={4}` and nested scroll wrapper dropped.
+- **IndicatorLibrary nested-scroll fix** (#248) — dropped `h="full"` and inner `flex={1} overflowY="auto"` that double-scrolled inside the Settings dialog.
+- **EmptyState `action.icon` + 5 surface sweep** (#249) — `<EmptyState>` `action` prop extended with `icon`; applied to `WatchersTab`, `OrdersDialog`, `FuturesPositionsPanel`, `DynamicSymbolRankings`, `StartWatchersModal`.
+- **Audit script: `tinted-card-Box` rule** (#250) — flags the `<Box bg="X.subtle" ... borderColor="X.muted">` heavy-tinted-container anti-pattern in CI; cleaned 3 violations (`EmergencyStopSection`, `TrailingStopPopover` manual rows, plus catch-all). 249 files scanned, 0 patterns.
+- **AutoTrading pass 2** (#252) — `RiskManagementSection`: outer `Stack gap` 6 → 4; dropped 3 `<Separator />` between rows; dropped 3 colored left-borders (red/blue/orange `.muted`); 4 ad-hoc switch rows → `<FormRow>`. `PositionSizeSection`: outer gap 6 → 4. Net −52/+26 lines.
+- **AutoTrading pass 3** (#253) — `OpportunityCostSection` (−4 tinted-box wrappers + switch row → `<FormRow>`); `DynamicSelectionSection` (−1 auto-rotation tinted-box wrapper); `EntrySettingsSection` (info note → `<Callout tone="info" compact>`). Net −15 lines.
+- **AutoTrading pass 4** (#254) — `TrailingStopSection`: hoisted per-row `bg="bg.subtle"` wrappers into a `rowWrapperProps` const conditional on `compact`. Compact popover keeps the wrappers (visual delineation), Settings tab gets flat rows. Plus dynamic shade literals in pill toggles (`green.500/red.500/blue.500` → `trading.long/short/info`).
+- **Dynamic shade literal sweep — Trading/** (#255) — 11 files swept from JSX-expression form `color={cond ? 'green.500' : 'red.500'}` to `trading.long/short/profit/loss/warning/info` semantic tokens (`PositionCard`, `FuturesPositionsPanel`, `OrdersTableContent`, `PortfolioTable`, `OrderCard`, `PerformancePanel`, `ProfileEditorDialog`, `SetupToggleSection`, `FilterToggle`, `ChecklistEditor`, `TradingTable`).
+- **Dynamic shade literal sweep — chart tooltips + sidebars + analytics** (#257) — same anti-pattern in `WatchersTab` (LONG/SHORT card border), `SetupTooltip` / `KlineTooltip` / `MeasurementTooltip` (bullish/bearish, side, 3-tier confidence), `EquityCurveChart` (P&L), `FuturesPositionInfo` (liquidation severity).
+- **Audit script: `dynamic-shade-pair` rule** (#258) — codifies the JSX-expression-form anti-pattern in CI: flags any expression containing both `green.NNN` AND `red.NNN` shade literals on `color`/`bg`/`borderColor`/etc props. Scoped narrow (only the bidirectional green+red pair) so single-shade UI accents (`'blue.500' : 'fg.muted'`) aren't false-positives. Plus 2 stragglers cleaned (`RecentRunsPanel` P&L, `ScreenerResultsTable` RSI zones).
+
+### Fixed
+- **EMA/SMA price tags missing on right axis** (#256) — when the legacy `renderMAIndicators` was dropped in #75 (generic indicator pipeline cutover), the second pass that drew the per-MA price tag on the right axis went with it. The replacement `renderOverlayLine` only drew the line. Restored via a `drawPriceTag` call after the line stroke. Also fixed a clip-rect bug exposed by the fix: the parent `renderAllOverlayIndicators` clip was `(0, 0, chartWidth, chartHeight)` which clipped the tag's rectangle (drawn from `chartWidth` to `chartWidth + 64` in the price-scale strip); extended horizontal clip to `dimensions.width`.
+
 ### Docs
 - **`CLAUDE.md`** — already at `Project Version 1.2.0` from the v1.2.0 release.
 - **`docs/UI_STYLE_GUIDE.md`** — added "Applied surfaces" line under PanelHeader (PerformancePanel, SetupStatsTable, PerformanceCalendar, EquityCurveChart).
