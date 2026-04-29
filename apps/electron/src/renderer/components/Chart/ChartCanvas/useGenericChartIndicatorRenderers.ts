@@ -130,9 +130,13 @@ export const useGenericChartIndicatorRenderers = ({
     }
     if (overlayCount === 0) return;
 
+    // Clip extends to the full canvas width (not just chartWidth) so that
+    // overlay renderers can draw their price-axis tag in the right-side
+    // price scale area. Lines themselves are kline-index-bounded and stay
+    // within the chart area regardless.
     canvasCtx.save();
     canvasCtx.beginPath();
-    canvasCtx.rect(0, 0, dimensions.chartWidth, dimensions.chartHeight);
+    canvasCtx.rect(0, 0, dimensions.width, dimensions.chartHeight);
     canvasCtx.clip();
     for (const { instance, definition } of resolvedList) {
       if (!isOverlayKind(definition.render.kind)) continue;
