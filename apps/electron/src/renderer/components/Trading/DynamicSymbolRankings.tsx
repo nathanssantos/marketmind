@@ -16,6 +16,7 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
+  EmptyState,
 } from '@renderer/components/ui';
 import {
   useBackendAutoTrading,
@@ -160,11 +161,7 @@ const RankingsTab = ({ symbolScores, isLoading, activeSymbols, t }: RankingsTabP
   }
 
   if (symbolScores.length === 0) {
-    return (
-      <Box p={4} textAlign="center" color="fg.muted">
-        <Text>{t('tradingProfiles.dynamicSelection.noScores')}</Text>
-      </Box>
-    );
+    return <EmptyState size="sm" title={t('tradingProfiles.dynamicSelection.noScores')} />;
   }
 
   return (
@@ -272,11 +269,7 @@ const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
   }
 
   if (rotationHistory.length === 0) {
-    return (
-      <Box p={4} textAlign="center" color="fg.muted">
-        <Text>{t('tradingProfiles.dynamicSelection.noHistory')}</Text>
-      </Box>
-    );
+    return <EmptyState size="sm" title={t('tradingProfiles.dynamicSelection.noHistory')} />;
   }
 
   return (

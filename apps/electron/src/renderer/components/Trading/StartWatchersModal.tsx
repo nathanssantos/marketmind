@@ -137,20 +137,19 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
 
           <Dialog.Body py={4}>
             <Stack gap={3}>
-              <Box p={3} bg="green.subtle" borderRadius="md" borderWidth="1px" borderColor="green.muted">
-                <Flex justify="space-between" align="center" mb={2}>
-                  <Text fontSize="sm" fontWeight="semibold">
-                    {t('tradingProfiles.dynamicSelection.quickStartTitle')}
-                  </Text>
-                  <DirectionBadge
-                    directionMode={directionMode}
-                    btcTrendStatus={btcTrendStatus}
-                    showBtcTrend={showBtcTrend}
-                    skippedTrendCount={skippedTrend.length}
-                  />
-                </Flex>
+              <Flex justify="space-between" align="center">
+                <Text fontSize="sm" fontWeight="semibold">
+                  {t('tradingProfiles.dynamicSelection.quickStartTitle')}
+                </Text>
+                <DirectionBadge
+                  directionMode={directionMode}
+                  btcTrendStatus={btcTrendStatus}
+                  showBtcTrend={showBtcTrend}
+                  skippedTrendCount={skippedTrend.length}
+                />
+              </Flex>
 
-                <Stack gap={3}>
+              <Stack gap={3}>
                   <Flex gap={3} align="center" wrap="wrap">
                     <Group attached flex="0 0 180px">
                       <Button
@@ -229,13 +228,12 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
                     </Button>
                   </HStack>
 
-                  <Text fontSize="xs" color="fg.muted">
-                    {effectiveMax === 0
-                      ? t('tradingProfiles.dynamicSelection.insufficientCapital')
-                      : t('tradingProfiles.dynamicSelection.quickStartDescription')}
-                  </Text>
-                </Stack>
-              </Box>
+                <Text fontSize="xs" color="fg.muted">
+                  {effectiveMax === 0
+                    ? t('tradingProfiles.dynamicSelection.insufficientCapital')
+                    : t('tradingProfiles.dynamicSelection.quickStartDescription')}
+                </Text>
+              </Stack>
 
               <Callout tone="info" compact>
                 {t('tradingProfiles.dynamicSelection.infoText')}
