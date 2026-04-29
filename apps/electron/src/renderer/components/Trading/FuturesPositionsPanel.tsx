@@ -79,6 +79,12 @@ const FuturesPositionCard = memo(({
     return 'green';
   };
 
+  const getLiquidationTextColor = (): string => {
+    if (isInDanger || wouldBeLiquidated) return 'trading.loss';
+    if (isWarning) return 'trading.warning';
+    return 'trading.profit';
+  };
+
   const formatPrice = (price: number): string => {
     if (price >= 1000) return price.toLocaleString(undefined, { maximumFractionDigits: 2 });
     if (price >= 1) return price.toFixed(4);
@@ -91,7 +97,7 @@ const FuturesPositionCard = memo(({
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={side === 'LONG' ? 'green.500' : 'red.500'}
+      borderColor={side === 'LONG' ? 'trading.long' : 'trading.short'}
     >
       <VStack gap={2} align="stretch">
         <Flex justify="space-between" align="center">
@@ -198,12 +204,12 @@ const FuturesPositionCard = memo(({
               <Flex align="center" gap={1}>
                 <Text fontSize="2xs" color="fg.muted">{t('futures.liquidationPrice', 'Liquidation Price')}</Text>
                 {(isWarning || wouldBeLiquidated) && (
-                  <Box color={isInDanger || wouldBeLiquidated ? 'red.500' : 'orange.500'}>
+                  <Box color={isInDanger || wouldBeLiquidated ? 'trading.loss' : 'trading.warning'}>
                     <LuTriangleAlert size={10} />
                   </Box>
                 )}
               </Flex>
-              <Text fontSize="xs" fontWeight="bold" color={`${getLiquidationColor()}.500`}>
+              <Text fontSize="xs" fontWeight="bold" color={getLiquidationTextColor()}>
                 ${formatPrice(liquidationPrice)}
               </Text>
             </Flex>
@@ -219,7 +225,7 @@ const FuturesPositionCard = memo(({
 
             <Flex justify="space-between" mt={0.5}>
               <Text fontSize="2xs" color="fg.muted">{t('futures.distanceToLiq', 'Distance to liquidation')}</Text>
-              <Text fontSize="2xs" fontWeight="medium" color={`${getLiquidationColor()}.500`}>
+              <Text fontSize="2xs" fontWeight="medium" color={getLiquidationTextColor()}>
                 {liquidationDistance.toFixed(1)}%
               </Text>
             </Flex>

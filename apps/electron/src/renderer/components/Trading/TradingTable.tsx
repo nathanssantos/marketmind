@@ -28,7 +28,6 @@ const STICKY_STYLES = {
   left: 0,
   zIndex: 1,
   bg: 'bg.panel',
-  _dark: { bg: 'gray.800' },
   borderRight: '1px solid',
   borderColor: 'border.muted',
 };

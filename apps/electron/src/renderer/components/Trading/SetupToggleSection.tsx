@@ -154,7 +154,7 @@ export const SetupToggleSection = memo(() => {
                     bg="bg.muted"
                     borderRadius="md"
                     borderLeft="3px solid"
-                    borderColor={enabledStrategies.includes(setup.value) ? 'green.500' : 'gray.400'}
+                    borderColor={enabledStrategies.includes(setup.value) ? 'trading.profit' : 'border'}
                   >
                     <Checkbox
                       checked={enabledStrategies.includes(setup.value)}
