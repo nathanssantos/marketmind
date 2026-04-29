@@ -1,4 +1,6 @@
-import { INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import type { GenericRenderer, IndicatorValueSeries } from './types';
 import { getInstanceParam } from './types';
 
@@ -80,4 +82,32 @@ export const renderOverlayBands: GenericRenderer = (ctx, input) => {
   if (middlePts.length > 0) {
     drawPolyline(canvasCtx, middlePts, baseColor, INDICATOR_LINE_WIDTHS.OVERLAY_MIDDLE, true);
   }
+
+  // Right-axis price tags for the band's last visible upper + lower
+  // values (the boundary lines users care about as price levels).
+  const dimensions = manager.getDimensions();
+  if (!dimensions) return;
+  const findLastValid = (s: IndicatorValueSeries): number | null => {
+    for (let i = visibleEnd - 1; i >= visibleStart; i--) {
+      const v = s[i];
+      if (v != null && !Number.isNaN(v)) return v;
+    }
+    return null;
+  };
+  const drawBoundTag = (s: IndicatorValueSeries) => {
+    const value = findLastValid(s);
+    if (value === null) return;
+    const y = manager.priceToY(value);
+    if (y < 0 || y > dimensions.chartHeight) return;
+    drawPriceTag(
+      canvasCtx,
+      formatChartPrice(value),
+      y,
+      dimensions.chartWidth,
+      baseColor,
+      CHART_CONFIG.CANVAS_PADDING_RIGHT,
+    );
+  };
+  drawBoundTag(upperSeries);
+  drawBoundTag(lowerSeries);
 };
