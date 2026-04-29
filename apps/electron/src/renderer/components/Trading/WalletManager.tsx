@@ -113,8 +113,8 @@ export const WalletManager = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   return (
-    <Stack gap={2} p={4}>
-      <Flex justify="flex-end" align="center" mb={2}>
+    <Stack gap={2}>
+      <Flex justify="flex-end" align="center">
         <Button
           size="2xs"
           variant="outline"
@@ -127,28 +127,26 @@ export const WalletManager = () => {
         </Button>
       </Flex>
 
-      <Box maxH="calc(100vh - 250px)" overflowY="auto">
-        {isLoading ? (
-          <EmptyState size="sm" title={t('common.loading')} />
-        ) : wallets.length === 0 ? (
-          <EmptyState size="sm" title={t('trading.wallets.emptyReal')} />
-        ) : (
-          <Stack gap={2}>
-            {wallets.map((wallet) => (
-              <WalletCard
-                key={wallet.id}
-                wallet={wallet}
-                isActive={wallet.id === activeWalletId}
-                onDelete={() => { void handleDeleteWallet(wallet.id); }}
-                onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
-                onSync={() => { void handleSyncBalance(wallet.id); }}
-                isDeleting={isDeleting}
-                isSyncing={syncingWalletId === wallet.id || isSyncing}
-              />
-            ))}
-          </Stack>
-        )}
-      </Box>
+      {isLoading ? (
+        <EmptyState size="sm" title={t('common.loading')} />
+      ) : wallets.length === 0 ? (
+        <EmptyState size="sm" title={t('trading.wallets.emptyReal')} />
+      ) : (
+        <Stack gap={2}>
+          {wallets.map((wallet) => (
+            <WalletCard
+              key={wallet.id}
+              wallet={wallet}
+              isActive={wallet.id === activeWalletId}
+              onDelete={() => { void handleDeleteWallet(wallet.id); }}
+              onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
+              onSync={() => { void handleSyncBalance(wallet.id); }}
+              isDeleting={isDeleting}
+              isSyncing={syncingWalletId === wallet.id || isSyncing}
+            />
+          ))}
+        </Stack>
+      )}
 
       <CreateWalletDialog
         isOpen={showCreateDialog}

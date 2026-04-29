@@ -154,11 +154,9 @@ export const SecurityTab = () => {
         <FormRow
           label={
             <HStack gap={1.5} align="center">
-              {currentUser?.twoFactorEnabled ? (
-                <LuShieldCheck color="var(--chakra-colors-green-500)" />
-              ) : (
-                <LuShieldX color="var(--chakra-colors-fg-muted)" />
-              )}
+              <Box color={currentUser?.twoFactorEnabled ? 'trading.profit' : 'fg.muted'} display="inline-flex">
+                {currentUser?.twoFactorEnabled ? <LuShieldCheck /> : <LuShieldX />}
+              </Box>
               <span>
                 {currentUser?.twoFactorEnabled
                   ? t('settings.security.twoFactor.activeLabel')
