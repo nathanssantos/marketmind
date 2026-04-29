@@ -36,7 +36,7 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
           flex={1}
           size="sm"
           variant="outline"
-          color={value === 'ISOLATED' ? 'blue.500' : 'fg.muted'}
+          color={value === 'ISOLATED' ? 'trading.info' : 'fg.muted'}
           onClick={() => onChange('ISOLATED')}
           disabled={disabled}
         >
@@ -49,7 +49,7 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
           flex={1}
           size="sm"
           variant="outline"
-          color={value === 'CROSSED' ? 'orange.500' : 'fg.muted'}
+          color={value === 'CROSSED' ? 'trading.warning' : 'fg.muted'}
           onClick={() => onChange('CROSSED')}
           disabled={disabled}
         >

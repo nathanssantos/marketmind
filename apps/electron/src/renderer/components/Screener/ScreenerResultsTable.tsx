@@ -98,7 +98,7 @@ export const ScreenerResultsTable = memo(({
             {formatNumber(row.indicators['ATR_PERCENT'])}%
           </TradingTableCell>
           <TradingTableCell textAlign="right">
-            <Text color={(row.indicators['VOLUME_RATIO'] ?? 0) > 2 ? 'orange.500' : 'fg'}>
+            <Text color={(row.indicators['VOLUME_RATIO'] ?? 0) > 2 ? 'trading.warning' : 'fg'}>
               {formatNumber(row.indicators['VOLUME_RATIO'])}x
             </Text>
           </TradingTableCell>

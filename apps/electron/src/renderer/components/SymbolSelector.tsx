@@ -328,7 +328,7 @@ export function SymbolSelector({
             <Button
               size="2xs"
               variant="outline"
-              color={!isStocks ? 'blue.500' : 'fg.muted'}
+              color={!isStocks ? 'trading.info' : 'fg.muted'}
               onClick={() => handleAssetClassToggle('CRYPTO')}
               flex={1}
             >
@@ -338,7 +338,7 @@ export function SymbolSelector({
             <Button
               size="2xs"
               variant="outline"
-              color={isStocks ? 'green.500' : 'fg.muted'}
+              color={isStocks ? 'trading.profit' : 'fg.muted'}
               onClick={() => handleAssetClassToggle('STOCKS')}
               flex={1}
             >
@@ -352,7 +352,7 @@ export function SymbolSelector({
             <Button
               size="2xs"
               variant="outline"
-              color={!isFutures ? 'blue.500' : 'fg.muted'}
+              color={!isFutures ? 'trading.info' : 'fg.muted'}
               onClick={() => handleMarketTypeToggle('SPOT')}
               flex={1}
             >
@@ -361,7 +361,7 @@ export function SymbolSelector({
             <Button
               size="2xs"
               variant="outline"
-              color={isFutures ? 'orange.500' : 'fg.muted'}
+              color={isFutures ? 'trading.warning' : 'fg.muted'}
               onClick={() => handleMarketTypeToggle('FUTURES')}
               flex={1}
             >
