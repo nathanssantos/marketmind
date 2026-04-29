@@ -214,10 +214,10 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
   return (
     <Box
       p={3}
-      bg={isActive ? 'blue.subtle' : 'bg.muted'}
+      bg={isActive ? 'accent.subtle' : 'bg.muted'}
       borderRadius="md"
-      borderLeftWidth="3px"
-      borderLeftColor={isActive ? 'blue.muted' : isProfitable ? 'green.muted' : 'red.muted'}
+      borderWidth={isActive ? '1px' : 0}
+      borderColor={isActive ? 'accent.solid' : 'transparent'}
     >
       <Flex justify="space-between" align="center" mb={2}>
         <Flex align="center" gap={2}>
