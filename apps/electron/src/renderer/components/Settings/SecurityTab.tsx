@@ -209,22 +209,22 @@ export const SecurityTab = () => {
                 borderWidth="1px"
                 borderColor="border"
                 borderRadius="md"
-                align="center"
+                align="flex-start"
                 justify="space-between"
                 gap={3}
                 data-testid={`security-session-${s.id}`}
               >
                 <Box flex={1} minW={0}>
-                  <HStack gap={2} mb={0.5}>
-                    <Text fontSize="xs" fontWeight="medium" truncate>
+                  <Flex gap={2} mb={0.5} align="flex-start" wrap="wrap">
+                    <Text fontSize="xs" fontWeight="medium" wordBreak="break-all" lineHeight="short">
                       {s.userAgent ?? t('settings.security.sessions.unknownAgent')}
                     </Text>
                     {s.isCurrent && (
-                      <Badge colorPalette="green" size="sm" px={1.5}>
+                      <Badge colorPalette="green" size="sm" px={1.5} flexShrink={0}>
                         {t('settings.security.sessions.current')}
                       </Badge>
                     )}
-                  </HStack>
+                  </Flex>
                   <Text fontSize="2xs" color="fg.muted">
                     {s.ip ?? t('settings.security.sessions.unknownIp')} · {t('settings.security.sessions.createdAt', { date: formatRelative(s.createdAt, i18n.language) })}
                   </Text>

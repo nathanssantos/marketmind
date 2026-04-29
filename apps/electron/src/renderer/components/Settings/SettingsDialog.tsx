@@ -143,7 +143,7 @@ export const SettingsDialog = ({
                   </Stack>
                 </Box>
 
-                <Box flex={1} overflowY="auto" p={4} data-testid="settings-content">
+                <Box flex={1} overflowY="auto" px={5} pt={4} pb={8} data-testid="settings-content">
                   <Suspense fallback={
                     <Flex justify="center" align="center" py={MM.spinner.panel.py}>
                       <Spinner size={MM.spinner.panel.size} />
@@ -152,19 +152,19 @@ export const SettingsDialog = ({
                     {/* Tabs.Content wrappers stay so aria-controls on the
                         triggers still resolves to a panel id; lazy-loaded
                         bodies render only when active to skip mount cost. */}
-                    <Tabs.Content value="account" pt={0}>
+                    <Tabs.Content value="account" pt={0} w="100%">
                       {activeTab === 'account' && <AccountTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="security" pt={0}>
+                    <Tabs.Content value="security" pt={0} w="100%">
                       {activeTab === 'security' && <SecurityTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="notifications" pt={0}>
+                    <Tabs.Content value="notifications" pt={0} w="100%">
                       {activeTab === 'notifications' && <NotificationsTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="general" pt={0}>
+                    <Tabs.Content value="general" pt={0} w="100%">
                       {activeTab === 'general' && <GeneralTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="chart" pt={0}>
+                    <Tabs.Content value="chart" pt={0} w="100%">
                       {activeTab === 'chart' && (
                         <ChartSettingsTab
                           config={advancedConfig}
@@ -172,28 +172,28 @@ export const SettingsDialog = ({
                         />
                       )}
                     </Tabs.Content>
-                    <Tabs.Content value="wallets" pt={0}>
+                    <Tabs.Content value="wallets" pt={0} w="100%">
                       {activeTab === 'wallets' && <WalletManager />}
                     </Tabs.Content>
-                    <Tabs.Content value="tradingProfiles" pt={0}>
+                    <Tabs.Content value="tradingProfiles" pt={0} w="100%">
                       {activeTab === 'tradingProfiles' && <TradingProfilesTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="autoTrading" pt={0}>
+                    <Tabs.Content value="autoTrading" pt={0} w="100%">
                       {activeTab === 'autoTrading' && <AutoTradingTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="indicators" pt={0}>
+                    <Tabs.Content value="indicators" pt={0} w="100%">
                       {activeTab === 'indicators' && <IndicatorsTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="customSymbols" pt={0}>
+                    <Tabs.Content value="customSymbols" pt={0} w="100%">
                       {activeTab === 'customSymbols' && <CustomSymbolsTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="data" pt={0}>
+                    <Tabs.Content value="data" pt={0} w="100%">
                       {activeTab === 'data' && <DataTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="updates" pt={0}>
+                    <Tabs.Content value="updates" pt={0} w="100%">
                       {activeTab === 'updates' && <UpdatesTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="about" pt={0}>
+                    <Tabs.Content value="about" pt={0} w="100%">
                       {activeTab === 'about' && <AboutTab />}
                     </Tabs.Content>
                   </Suspense>
