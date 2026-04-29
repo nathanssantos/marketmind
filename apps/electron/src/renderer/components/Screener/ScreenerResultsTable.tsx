@@ -83,8 +83,8 @@ export const ScreenerResultsTable = memo(({
           </TradingTableCell>
           <TradingTableCell textAlign="right">
             <Text color={
-              (row.indicators['RSI'] ?? 50) < 30 ? 'green.500' :
-              (row.indicators['RSI'] ?? 50) > 70 ? 'red.500' : 'fg'
+              (row.indicators['RSI'] ?? 50) < 30 ? 'trading.long' :
+              (row.indicators['RSI'] ?? 50) > 70 ? 'trading.short' : 'fg'
             }>
               {formatNumber(row.indicators['RSI'])}
             </Text>

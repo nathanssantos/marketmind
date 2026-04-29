@@ -57,7 +57,7 @@ export const RecentRunsPanel = ({ onSelect }: RecentRunsPanelProps) => {
                 </Badge>
                 <Text
                   fontSize="xs"
-                  color={item.totalPnlPercent >= 0 ? 'green.500' : 'red.500'}
+                  color={item.totalPnlPercent >= 0 ? 'trading.profit' : 'trading.loss'}
                   fontWeight="medium"
                 >
                   {item.totalPnlPercent >= 0 ? '+' : ''}{item.totalPnlPercent.toFixed(2)}%
