@@ -70,8 +70,8 @@ export const QuickStartSection = ({
   const { t } = useTranslation();
 
   return (
-    <Box p={3} bg="green.subtle" borderRadius="md" borderWidth="1px" borderColor="green.muted">
-      <Flex justify="space-between" align="center" mb={3}>
+    <Stack gap={3}>
+      <Flex justify="space-between" align="center">
         <Text fontSize="sm" fontWeight="medium">
           {t('tradingProfiles.dynamicSelection.quickStartTitle')}
         </Text>
@@ -83,8 +83,7 @@ export const QuickStartSection = ({
           isIB={isIB}
         />
       </Flex>
-      <Stack gap={3}>
-        <Flex gap={3} align="center">
+      <Flex gap={3} align="center">
           {!isIB && (
             <Group attached flex="0 0 180px">
               <Button
@@ -141,8 +140,7 @@ export const QuickStartSection = ({
             <LuPlay />
             {t('tradingProfiles.dynamicSelection.quickStartButton', { count: Math.min(count, effectiveMax) })}
           </Button>
-        </Flex>
-      </Stack>
-    </Box>
+      </Flex>
+    </Stack>
   );
 };
