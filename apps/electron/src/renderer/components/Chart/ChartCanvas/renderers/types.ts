@@ -1,5 +1,5 @@
 import type { IndicatorDefinition, IndicatorParamValue, RenderKind } from '@marketmind/trading-core';
-import type { FootprintBar, LiquidityHeatmapSnapshot, MarketEvent } from '@marketmind/types';
+import type { LiquidityHeatmapSnapshot, MarketEvent } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { LiquidityColorMode } from '@renderer/components/Chart/liquidityLUTs';
@@ -10,7 +10,6 @@ export type IndicatorValueSeries = (number | null | undefined)[];
 
 export interface GenericRendererExternal {
   marketEvents?: MarketEvent[];
-  footprintBars?: FootprintBar[];
   liquidityHeatmapRef?: MutableRefObject<LiquidityHeatmapSnapshot | null>;
   liquidityColorMode?: LiquidityColorMode;
   timeframe?: string;

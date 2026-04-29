@@ -212,7 +212,6 @@ function AppContent(): ReactElement {
     effectiveSymbol,
     effectiveMarketType,
     effectiveTimeframe,
-    effectiveChartType,
     handleSymbolChange,
     handleTimeframeChange,
     handleChartTypeChange,
@@ -246,7 +245,6 @@ function AppContent(): ReactElement {
         marketType={effectiveMarketType}
         onMarketTypeChange={handleMarketTypeChange}
         timeframe={effectiveTimeframe}
-        chartType={effectiveChartType}
         onChartTypeChange={handleChartTypeChange}
         onSymbolChange={handleSymbolChange}
         onTimeframeChange={handleTimeframeChange}

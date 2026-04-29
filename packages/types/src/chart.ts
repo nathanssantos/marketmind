@@ -1,4 +1,4 @@
-export type ChartType = 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
+export type ChartType = 'kline' | 'line';
 
 export interface ChartConfig {
   type: ChartType;
