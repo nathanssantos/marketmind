@@ -84,7 +84,7 @@ export const ColorPicker = forwardRef<HTMLButtonElement, ColorPickerProps>(
           opacity={disabled ? 0.4 : 1}
           flexShrink={0}
           onClick={() => !disabled && setOpen((o) => !o)}
-          _hover={disabled ? undefined : { borderColor: 'blue.400' }}
+          _hover={disabled ? undefined : { borderColor: 'accent.solid' }}
         />
       ),
       [ariaLabel, disabled, dim, ref, value],
@@ -112,7 +112,7 @@ export const ColorPicker = forwardRef<HTMLButtonElement, ColorPickerProps>(
                   borderRadius="sm"
                   bg={preset}
                   border={selected ? '2px solid' : '1px solid'}
-                  borderColor={selected ? 'blue.400' : 'border'}
+                  borderColor={selected ? 'accent.solid' : 'border'}
                   cursor="pointer"
                   onClick={() => {
                     onChange(preset);

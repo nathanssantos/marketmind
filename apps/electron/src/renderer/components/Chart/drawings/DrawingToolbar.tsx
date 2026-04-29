@@ -74,7 +74,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
               borderRadius="full"
               bg={color}
               border={selectedDrawing.color === color ? '2px solid' : '1px solid'}
-              borderColor={selectedDrawing.color === color ? 'blue.400' : 'border'}
+              borderColor={selectedDrawing.color === color ? 'accent.solid' : 'border'}
               cursor="pointer"
               flexShrink={0}
               onClick={() => !isLocked && updateDrawing({ color })}

@@ -240,7 +240,7 @@ export const CustomSymbolsTab = memo(() => {
                     key={m}
                     size="2xs"
                     variant="outline"
-                    color={formMethod === m ? 'blue.500' : 'fg.muted'}
+                    color={formMethod === m ? 'accent.solid' : 'fg.muted'}
                     onClick={() => setFormMethod(m)}
                   >
                     {t(`customSymbols.methods.${m}`)}

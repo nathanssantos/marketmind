@@ -90,7 +90,7 @@ export const ScreenerResultsTable = memo(({
             </Text>
           </TradingTableCell>
           <TradingTableCell textAlign="right">
-            <Text color={(row.indicators['ADX'] ?? 0) > 25 ? 'blue.500' : 'fg.muted'}>
+            <Text color={(row.indicators['ADX'] ?? 0) > 25 ? 'accent.solid' : 'fg.muted'}>
               {formatNumber(row.indicators['ADX'])}
             </Text>
           </TradingTableCell>
