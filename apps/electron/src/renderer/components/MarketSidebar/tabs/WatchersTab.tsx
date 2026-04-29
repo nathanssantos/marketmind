@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
+import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, EmptyState, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { MM } from '@renderer/theme/tokens';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -114,25 +114,18 @@ const WatchersTabComponent = () => {
           {t('trading.portfolio.noWallet')}
         </Callout>
       ) : isLoadingWatcherStatus ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">{t('common.loading')}</Text>
-        </Box>
+        <EmptyState size="sm" title={t('common.loading')} />
       ) : activeWatchers.length === 0 ? (
-        <Box p={4} textAlign="center" bg="bg.muted" borderRadius="md">
-          <Text fontSize="sm" color="fg.muted">
-            {t('marketSidebar.watchers.empty')}
-          </Text>
-          <Button
-            size="sm"
-            variant="outline"
-            mt={3}
-            px={4}
-            onClick={() => setIsModalOpen(true)}
-          >
-            <LuPlay />
-            {t('marketSidebar.watchers.startWatchers')}
-          </Button>
-        </Box>
+        <EmptyState
+          size="sm"
+          dashed
+          title={t('marketSidebar.watchers.empty')}
+          action={{
+            label: t('marketSidebar.watchers.startWatchers'),
+            onClick: () => setIsModalOpen(true),
+            icon: <LuPlay />,
+          }}
+        />
       ) : (
         <>
           <WatchersTable

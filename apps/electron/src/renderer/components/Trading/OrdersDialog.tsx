@@ -1,4 +1,4 @@
-import { Button, Dialog, IconButton, Input, Select } from '@renderer/components/ui';
+import { Button, Dialog, EmptyState, IconButton, Input, Select } from '@renderer/components/ui';
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MM } from '@renderer/theme/tokens';
@@ -232,13 +232,9 @@ const OrdersDialogComponent = () => {
             </Flex>
 
             {isLoading ? (
-              <Box p={6} textAlign="center">
-                <Text color="fg.muted" fontSize={MM.font.body.size}>{t('common.loading')}</Text>
-              </Box>
+              <EmptyState size="sm" title={t('common.loading')} />
             ) : filteredOrders.length === 0 ? (
-              <Box p={6} textAlign="center">
-                <Text color="fg.muted" fontSize={MM.font.body.size}>{t('trading.orders.noResults')}</Text>
-              </Box>
+              <EmptyState size="sm" title={t('trading.orders.noResults')} />
             ) : activeWallet ? (
               viewMode === 'table' ? (
                 <OrdersTableContent

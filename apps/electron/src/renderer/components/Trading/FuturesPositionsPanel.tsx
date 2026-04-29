@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, EmptyState, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
@@ -298,11 +298,7 @@ const FuturesPositionsPanelComponent = () => {
   if (!activeWalletId) return null;
 
   if (isLoadingPositions) {
-    return (
-      <Box p={4} textAlign="center">
-        <Text fontSize="sm" color="fg.muted">Loading futures positions...</Text>
-      </Box>
-    );
+    return <EmptyState size="sm" title={t('common.loading')} />;
   }
 
   if (openPositions.length === 0) return null;
