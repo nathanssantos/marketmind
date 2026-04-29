@@ -89,7 +89,7 @@ export function LeverageSelector({
             key={preset}
             size="2xs"
             variant={value === preset ? 'solid' : 'outline'}
-            colorPalette={preset > 50 ? 'red' : preset > 20 ? 'orange' : 'gray'}
+            colorPalette={preset > 50 ? 'red' : preset > 20 ? 'orange' : 'green'}
             onClick={() => handlePresetClick(preset)}
             disabled={disabled}
             minW="40px"
