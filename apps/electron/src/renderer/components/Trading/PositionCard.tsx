@@ -25,7 +25,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={isLong ? 'green.500' : 'red.500'}
+      borderColor={isLong ? 'trading.long' : 'trading.short'}
     >
       <Stack gap={1.5} mb={2}>
         <Flex justify="space-between" align="center">

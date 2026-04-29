@@ -192,7 +192,7 @@ export const ChecklistEditor = ({
                 bg="bg.muted"
                 borderRadius="md"
                 borderLeft="3px solid"
-                borderColor={cond.tier === 'required' ? 'orange.500' : 'blue.400'}
+                borderColor={cond.tier === 'required' ? 'trading.warning' : 'trading.info'}
                 opacity={cond.enabled ? 1 : 0.5}
               >
                 <Flex justify="space-between" align="center" gap={2}>

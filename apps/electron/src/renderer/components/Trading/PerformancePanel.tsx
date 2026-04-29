@@ -48,9 +48,9 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
   }
 
   const getValueColor = (value: number) => {
-    if (value > 0) return 'green.500';
-    if (value < 0) return 'red.500';
-    return 'gray.500';
+    if (value > 0) return 'trading.profit';
+    if (value < 0) return 'trading.loss';
+    return 'fg.muted';
   };
 
   const formatPercent = (value: number) => {
@@ -145,17 +145,17 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
         <MetricCard
           label={t('trading.analytics.performance.profitFactor')}
           value={performance.profitFactor.toFixed(2)}
-          valueColor={performance.profitFactor >= 1 ? 'green.500' : 'red.500'}
+          valueColor={performance.profitFactor >= 1 ? 'trading.profit' : 'trading.loss'}
         />
         <MetricCard
           label={t('trading.analytics.performance.avgWin')}
           value={formatCurrency(performance.avgWin)}
-          valueColor="green.500"
+          valueColor="trading.profit"
         />
         <MetricCard
           label={t('trading.analytics.performance.avgLoss')}
           value={formatCurrency(performance.avgLoss)}
-          valueColor="red.500"
+          valueColor="trading.loss"
         />
       </Grid>
 
@@ -163,17 +163,17 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
         <MetricCard
           label={t('trading.analytics.performance.maxDrawdown')}
           value={`-${performance.maxDrawdown.toFixed(2)}%`}
-          valueColor="red.500"
+          valueColor="trading.loss"
         />
         <MetricCard
           label={t('trading.analytics.performance.largestWin')}
           value={formatCurrency(performance.largestWin)}
-          valueColor="green.500"
+          valueColor="trading.profit"
         />
         <MetricCard
           label={t('trading.analytics.performance.largestLoss')}
           value={formatCurrency(performance.largestLoss)}
-          valueColor="red.500"
+          valueColor="trading.loss"
         />
       </Grid>
     </Stack>

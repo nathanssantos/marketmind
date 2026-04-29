@@ -223,7 +223,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.pnl')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text fontWeight="medium" color={parseFloat(order.pnl) >= 0 ? 'green.500' : 'red.500'}>
+              <Text fontWeight="medium" color={parseFloat(order.pnl) >= 0 ? 'trading.profit' : 'trading.loss'}>
                 {parseFloat(order.pnl) >= 0 ? '+' : ''}{parseFloat(order.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {order.pnlPercent !== undefined && ` (${parseFloat(order.pnl) >= 0 ? '+' : '-'}${Math.abs(parseFloat(order.pnlPercent)).toFixed(2)}%)`}
               </Text>

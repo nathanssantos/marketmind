@@ -113,7 +113,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
         return (
           <TradingTableRow key={getOrderId(order)}>
             <TradingTableCell sticky>
-              <Flex align="center" gap={1} borderLeft="3px solid" borderColor={isOrderLong(order) ? 'green.500' : 'red.500'} pl={1.5} ml={-1.5} my={-1}>
+              <Flex align="center" gap={1} borderLeft="3px solid" borderColor={isOrderLong(order) ? 'trading.long' : 'trading.short'} pl={1.5} ml={-1.5} my={-1}>
                 <CryptoIcon
                   symbol={order.symbol}
                   size={14}

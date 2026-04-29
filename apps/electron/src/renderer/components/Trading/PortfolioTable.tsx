@@ -96,7 +96,7 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
         return (
           <TradingTableRow key={position.id}>
             <TradingTableCell sticky>
-              <Flex align="center" gap={1} borderLeft="3px solid" borderColor={isLong ? 'green.500' : 'red.500'} pl={1.5} ml={-1.5} my={-1}>
+              <Flex align="center" gap={1} borderLeft="3px solid" borderColor={isLong ? 'trading.long' : 'trading.short'} pl={1.5} ml={-1.5} my={-1}>
                 <CryptoIcon
                   symbol={position.symbol}
                   size={14}
@@ -114,7 +114,7 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
               </Flex>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
+              <Text fontWeight="medium" color={isProfitable ? 'trading.profit' : 'trading.loss'}>
                 {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
               </Text>
