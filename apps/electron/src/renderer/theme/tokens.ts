@@ -3,7 +3,7 @@
  *
  * Source of truth for spacing + typography across every primitive
  * (FormSection / FormRow / Callout / typography). Mirrors the table in
- * `docs/V1_POST_RELEASE_PLAN.md` § Design language.
+ * `docs/archive/V1_POST_RELEASE_PLAN.md` § Design language.
  *
  * Why tokens instead of literals:
  * - Single change point when the density target shifts

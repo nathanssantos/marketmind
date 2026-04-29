@@ -1,6 +1,6 @@
 # `@marketmind/ui` extraction plan
 
-> Status: **audit only** (Phase 2.2 of `docs/V1_POST_RELEASE_PLAN.md`).
+> Status: **audit only** (Phase 2.2 of `docs/archive/V1_POST_RELEASE_PLAN.md`).
 > Actual extraction is v1.2 work.
 
 ## Why extract

@@ -153,4 +153,4 @@ After creating: export from `index.ts`, update this file, update `docs/UI_STYLE_
 - [Chakra UI v3 Docs](https://www.chakra-ui.com/docs/components)
 - Style Guide: `docs/UI_STYLE_GUIDE.md`
 - Theme: `src/renderer/theme/index.ts`
-- Standardization Plan: `docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`
+- Standardization Plan: `docs/archive/UI_COMPONENTS_STANDARDIZATION_PLAN.md`

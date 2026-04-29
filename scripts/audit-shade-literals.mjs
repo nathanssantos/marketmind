@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Audit `apps/electron/src/renderer/components/` for forbidden hardcoded
- * shade literals + `_dark={{}}` overrides per V1_POST_RELEASE_PLAN.md.
+ * shade literals + `_dark={{}}` overrides per docs/archive/V1_POST_RELEASE_PLAN.md.
  *
  * As of v1.2 the renderer is clean. This script protects that invariant —
  * runs in CI (planned via lint:audit) and exits non-zero on any new violation.
