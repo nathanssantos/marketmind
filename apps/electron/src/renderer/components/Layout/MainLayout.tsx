@@ -40,7 +40,6 @@ interface MainLayoutProps {
   marketType?: MarketType;
   onMarketTypeChange?: (marketType: MarketType) => void;
   timeframe: Timeframe;
-  chartType: ChartType;
   onChartTypeChange: (type: ChartType) => void;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
@@ -67,7 +66,6 @@ const MainLayoutComponent = ({
   marketType,
   onMarketTypeChange,
   timeframe,
-  chartType,
   onChartTypeChange,
   onSymbolChange,
   onTimeframeChange,
@@ -190,8 +188,6 @@ const MainLayoutComponent = ({
           marketType={marketType}
           onMarketTypeChange={onMarketTypeChange}
           timeframe={timeframe}
-          chartType={chartType}
-          onChartTypeChange={onChartTypeChange}
           isTradingOpen={isTradingOpen}
           isAutoTradingOpen={isAutoTradingOpen}
           onSymbolChange={onSymbolChange}

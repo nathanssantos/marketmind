@@ -263,11 +263,10 @@ export const useGenericChartIndicators = (
 
   const ctxSignature = useMemo(() => {
     const events = externalCtx.marketEvents?.length ?? 0;
-    const fp = externalCtx.footprintBars?.length ?? 0;
     const heat = externalCtx.liquidityHeatmap?.buckets.length ?? 0;
     const liq = externalCtx.liquidityHeatmap?.liquidations?.length ?? 0;
     const interval = externalCtx.intervalMinutes ?? 0;
-    return `e${events}|f${fp}|h${heat}|l${liq}|i${interval}`;
+    return `e${events}|h${heat}|l${liq}|i${interval}`;
   }, [externalCtx]);
 
   useEffect(() => {

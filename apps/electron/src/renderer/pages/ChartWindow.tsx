@@ -28,10 +28,8 @@ function ChartWindowContent(): ReactElement {
     effectiveSymbol,
     effectiveMarketType,
     effectiveTimeframe,
-    effectiveChartType,
     handleSymbolChange,
     handleTimeframeChange,
-    handleChartTypeChange,
     handleMarketTypeChange,
   } = useLayoutSync();
 
@@ -48,8 +46,6 @@ function ChartWindowContent(): ReactElement {
           onMarketTypeChange={handleMarketTypeChange}
           onSymbolChange={handleSymbolChange}
           timeframe={effectiveTimeframe}
-          chartType={effectiveChartType}
-          onChartTypeChange={handleChartTypeChange}
           onTimeframeChange={handleTimeframeChange}
           showNewWindowButton={false}
           showSidebarButtons={false}

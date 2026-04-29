@@ -21,13 +21,11 @@ const OPTIMISTIC_OVERRIDE_TTL_MS = 5_000;
 export interface UseChartTradingDataProps {
   symbol?: string;
   marketType?: MarketType;
-  chartType: string;
 }
 
 export const useChartTradingData = ({
   symbol,
   marketType,
-  chartType,
 }: UseChartTradingDataProps) => {
   const { activeWallet } = useActiveWallet();
   const backendWalletId = activeWallet?.id;
@@ -263,15 +261,7 @@ export const useChartTradingData = ({
     { enabled: !!symbol, staleTime: 60 * 60 * 1000 }
   );
 
-  const isTickOrVolumeChart = chartType === 'tick' || chartType === 'volume';
   const { needsScalpingMetrics, needsVolumeProfile } = useIndicatorVisibility();
-
-  const { data: scalpingCfg } = trpc.scalping.getConfig.useQuery(
-    { walletId: backendWalletId ?? '' },
-    { enabled: isTickOrVolumeChart && !!backendWalletId },
-  );
-  const resolvedTicksPerBar = scalpingCfg?.ticksPerBar ?? SCALPING_DEFAULTS.TICK_SIZE;
-  const resolvedVolumePerBar = scalpingCfg?.volumePerBar ? Number(scalpingCfg.volumePerBar) : SCALPING_DEFAULTS.VOLUME_BAR_SIZE;
 
   const { data: volumeProfileData } = trpc.scalping.getVolumeProfile.useQuery(
     { walletId: backendWalletId ?? '', symbol: symbol ?? '' },
@@ -301,9 +291,6 @@ export const useChartTradingData = ({
     exchangeOpenOrders,
     exchangeAlgoOrders,
     needsScalpingMetrics,
-    scalpingCfg,
-    resolvedTicksPerBar,
-    resolvedVolumePerBar,
     needsVolumeProfile,
     volumeProfileData,
     symbolTrailingConfig,

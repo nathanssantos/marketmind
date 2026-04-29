@@ -24,9 +24,8 @@ import { useChartWindows } from '../../hooks/useChartWindows';
 import { useUIZoom } from '../../hooks/useUIZoom';
 import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
-import { ChartTypeSelector } from '../Chart/ChartTypeSelector';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
-import type { ChartType, MarketType } from '@marketmind/types';
+import type { MarketType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
 import { UserAvatar } from '../UserAvatar';
 import { WalletSelector } from '../WalletSelector';
@@ -82,8 +81,6 @@ export interface ToolbarProps {
   marketType?: MarketType;
   onMarketTypeChange?: (marketType: MarketType) => void;
   timeframe: Timeframe;
-  chartType: ChartType;
-  onChartTypeChange: (type: ChartType) => void;
   isTradingOpen: boolean;
   isAutoTradingOpen: boolean;
   showNewWindowButton?: boolean;
@@ -101,8 +98,6 @@ export const Toolbar = memo(({
   marketType,
   onMarketTypeChange,
   timeframe,
-  chartType,
-  onChartTypeChange,
   isTradingOpen,
   isAutoTradingOpen,
   showNewWindowButton = true,
@@ -203,11 +198,6 @@ export const Toolbar = memo(({
         />
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
-
-        <ChartTypeSelector
-          chartType={chartType}
-          onChartTypeChange={onChartTypeChange}
-        />
 
         <IndicatorTogglePopover triggerVariant="labeled" popoverPlacement="bottom-start" />
 

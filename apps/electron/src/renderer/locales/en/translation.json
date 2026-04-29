@@ -740,10 +740,7 @@
     },
     "type": {
       "candle": "Candle",
-      "line": "Line",
-      "tick": "Tick",
-      "volume": "Volume",
-      "footprint": "Footprint"
+      "line": "Line"
     },
     "tools": {
       "pencil": "Pencil",
