@@ -68,9 +68,17 @@ export const TrailingStopSection = ({
   const sectionPadding = compact ? 2 : 3;
   const gapSize = compact ? 2 : 4;
 
+  // In compact mode (TrailingStopPopover) each row keeps its own card-like
+  // wrapper so the rows visually delineate inside the popover. In the
+  // Settings/AutoTrading path the section already lives inside a
+  // CollapsibleSection — drop the panel-in-panel wrappers (V1_4 rule 4).
+  const rowWrapperProps = compact
+    ? ({ p: sectionPadding, bg: 'bg.subtle' as const, borderRadius: 'md' as const })
+    : {};
+
   const content = (
     <VStack gap={gapSize} align="stretch">
-      <HStack justify="space-between" p={sectionPadding} bg="bg.subtle" borderRadius="md">
+      <HStack justify="space-between" {...rowWrapperProps}>
         <Box>
           <Text fontSize={labelSize} fontWeight="medium">
             {t('watcherManager.trailingStop.enabled')}
@@ -92,7 +100,7 @@ export const TrailingStopSection = ({
       {trailingStopEnabled && (
         <>
           {onIndicatorIntervalChange && (
-            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Box {...rowWrapperProps}>
               <Flex justify="space-between" align="center">
                 <Box>
                   <Text fontSize={labelSize} fontWeight="medium">
@@ -113,7 +121,7 @@ export const TrailingStopSection = ({
           )}
 
           {onActivationModeLongChange && (
-            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Box {...rowWrapperProps}>
               <Flex justify="space-between" align="center">
                 <Text fontSize={labelSize} fontWeight="medium">
                   {t('watcherManager.trailingStop.activationModeLong')}
@@ -127,7 +135,7 @@ export const TrailingStopSection = ({
                     fontWeight="semibold"
                     borderRadius="full"
                     cursor="pointer"
-                    bg={activationModeLong === 'auto' ? 'green.500' : 'bg.emphasized'}
+                    bg={activationModeLong === 'auto' ? 'trading.long' : 'bg.emphasized'}
                     color={activationModeLong === 'auto' ? 'white' : 'fg.muted'}
                     onClick={() => onActivationModeLongChange('auto')}
                   >
@@ -141,7 +149,7 @@ export const TrailingStopSection = ({
                     fontWeight="semibold"
                     borderRadius="full"
                     cursor="pointer"
-                    bg={activationModeLong === 'manual' ? 'green.500' : 'bg.emphasized'}
+                    bg={activationModeLong === 'manual' ? 'trading.long' : 'bg.emphasized'}
                     color={activationModeLong === 'manual' ? 'white' : 'fg.muted'}
                     onClick={() => onActivationModeLongChange('manual')}
                   >
@@ -153,7 +161,7 @@ export const TrailingStopSection = ({
           )}
 
           {onActivationModeShortChange && (
-            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Box {...rowWrapperProps}>
               <Flex justify="space-between" align="center">
                 <Text fontSize={labelSize} fontWeight="medium">
                   {t('watcherManager.trailingStop.activationModeShort')}
@@ -167,7 +175,7 @@ export const TrailingStopSection = ({
                     fontWeight="semibold"
                     borderRadius="full"
                     cursor="pointer"
-                    bg={activationModeShort === 'auto' ? 'red.500' : 'bg.emphasized'}
+                    bg={activationModeShort === 'auto' ? 'trading.short' : 'bg.emphasized'}
                     color={activationModeShort === 'auto' ? 'white' : 'fg.muted'}
                     onClick={() => onActivationModeShortChange('auto')}
                   >
@@ -181,7 +189,7 @@ export const TrailingStopSection = ({
                     fontWeight="semibold"
                     borderRadius="full"
                     cursor="pointer"
-                    bg={activationModeShort === 'manual' ? 'red.500' : 'bg.emphasized'}
+                    bg={activationModeShort === 'manual' ? 'trading.short' : 'bg.emphasized'}
                     color={activationModeShort === 'manual' ? 'white' : 'fg.muted'}
                     onClick={() => onActivationModeShortChange('manual')}
                   >
@@ -193,7 +201,7 @@ export const TrailingStopSection = ({
           )}
 
           {activationModeLong !== 'manual' && (
-            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Box {...rowWrapperProps}>
               <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
                 <Box>
                   <Text fontSize={labelSize} fontWeight="medium">
@@ -205,7 +213,7 @@ export const TrailingStopSection = ({
                     </Text>
                   )}
                 </Box>
-                <Text fontSize={labelSize} fontWeight="bold" color="green.fg">
+                <Text fontSize={labelSize} fontWeight="bold" color="trading.long">
                   {(trailingActivationPercentLong * 100).toFixed(1)}%
                 </Text>
               </Flex>
@@ -220,7 +228,7 @@ export const TrailingStopSection = ({
           )}
 
           {activationModeShort !== 'manual' && (
-            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Box {...rowWrapperProps}>
               <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
                 <Box>
                   <Text fontSize={labelSize} fontWeight="medium">
@@ -232,7 +240,7 @@ export const TrailingStopSection = ({
                     </Text>
                   )}
                 </Box>
-                <Text fontSize={labelSize} fontWeight="bold" color="red.fg">
+                <Text fontSize={labelSize} fontWeight="bold" color="trading.short">
                   {(trailingActivationPercentShort * 100).toFixed(1)}%
                 </Text>
               </Flex>
@@ -247,7 +255,7 @@ export const TrailingStopSection = ({
           )}
 
           {onTrailingDistanceModeChange && (
-            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Box {...rowWrapperProps}>
               <Flex justify="space-between" align="center">
                 <Box>
                   <Text fontSize={labelSize} fontWeight="medium">
@@ -270,7 +278,7 @@ export const TrailingStopSection = ({
                     fontWeight="semibold"
                     borderRadius="full"
                     cursor="pointer"
-                    bg={trailingDistanceMode === 'auto' ? 'blue.500' : 'bg.emphasized'}
+                    bg={trailingDistanceMode === 'auto' ? 'trading.info' : 'bg.emphasized'}
                     color={trailingDistanceMode === 'auto' ? 'white' : 'fg.muted'}
                     onClick={() => onTrailingDistanceModeChange('auto')}
                   >
@@ -284,7 +292,7 @@ export const TrailingStopSection = ({
                     fontWeight="semibold"
                     borderRadius="full"
                     cursor="pointer"
-                    bg={trailingDistanceMode === 'fixed' ? 'blue.500' : 'bg.emphasized'}
+                    bg={trailingDistanceMode === 'fixed' ? 'trading.info' : 'bg.emphasized'}
                     color={trailingDistanceMode === 'fixed' ? 'white' : 'fg.muted'}
                     onClick={() => onTrailingDistanceModeChange('fixed')}
                   >
@@ -296,7 +304,7 @@ export const TrailingStopSection = ({
           )}
 
           {trailingDistanceMode === 'fixed' && onTrailingStopOffsetPercentChange && (
-            <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+            <Box {...rowWrapperProps}>
               <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
                 <Box>
                   <Text fontSize={labelSize} fontWeight="medium">
@@ -308,7 +316,7 @@ export const TrailingStopSection = ({
                     </Text>
                   )}
                 </Box>
-                <Text fontSize={labelSize} fontWeight="bold" color="blue.fg">
+                <Text fontSize={labelSize} fontWeight="bold" color="trading.info">
                   {(trailingStopOffsetPercent * 100).toFixed(1)}%
                 </Text>
               </Flex>
@@ -322,7 +330,7 @@ export const TrailingStopSection = ({
             </Box>
           )}
 
-          <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+          <Box {...rowWrapperProps}>
             <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
               <Box>
                 <Text fontSize={labelSize} fontWeight="medium">
@@ -334,7 +342,7 @@ export const TrailingStopSection = ({
                   </Text>
                 )}
               </Box>
-              <Text fontSize={labelSize} fontWeight="bold" color="green.fg">
+              <Text fontSize={labelSize} fontWeight="bold" color="trading.long">
                 {(trailingDistancePercentLong * 100).toFixed(1)}%
               </Text>
             </Flex>
@@ -347,7 +355,7 @@ export const TrailingStopSection = ({
             />
           </Box>
 
-          <Box p={sectionPadding} bg="bg.subtle" borderRadius="md">
+          <Box {...rowWrapperProps}>
             <Flex justify="space-between" align="center" mb={compact ? 1 : 2}>
               <Box>
                 <Text fontSize={labelSize} fontWeight="medium">
@@ -359,7 +367,7 @@ export const TrailingStopSection = ({
                   </Text>
                 )}
               </Box>
-              <Text fontSize={labelSize} fontWeight="bold" color="red.fg">
+              <Text fontSize={labelSize} fontWeight="bold" color="trading.short">
                 {(trailingDistancePercentShort * 100).toFixed(1)}%
               </Text>
             </Flex>
@@ -372,7 +380,7 @@ export const TrailingStopSection = ({
             />
           </Box>
 
-          <HStack justify="space-between" p={sectionPadding} bg="bg.subtle" borderRadius="md">
+          <HStack justify="space-between" {...rowWrapperProps}>
             <Box>
               <Text fontSize={labelSize} fontWeight="medium">
                 {t('watcherManager.trailingStop.adaptiveMode')}
