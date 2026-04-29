@@ -38,6 +38,20 @@ const openSettingsTab = async (page: Page, tabId: SettingsTabId): Promise<void> 
     const actions = (window as { __globalActions?: { openSettings?: (tab?: string) => void } }).__globalActions;
     actions?.openSettings?.(id);
   }, tabId);
+  // Wait for the tab body to actually mount + hydrate. Tabs are lazy-loaded
+  // via React.lazy (since #235), so the Suspense fallback (a Chakra Spinner)
+  // shows briefly while the chunk fetches. Capturing during that window
+  // produces useless "loading" screenshots.
+  await page.waitForFunction(() => {
+    const content = document.querySelector('[data-testid="settings-content"]');
+    if (!content) return false;
+    // Spinner has role="progressbar" via Chakra. If absent, the body has
+    // mounted.
+    return !content.querySelector('[role="progressbar"]');
+  }, undefined, { timeout: 5000 }).catch(() => {
+    // Fall through with a settle timeout if waitForFunction times out —
+    // better to capture a partial state than fail the whole gallery.
+  });
   await page.waitForTimeout(300);
 };
 
