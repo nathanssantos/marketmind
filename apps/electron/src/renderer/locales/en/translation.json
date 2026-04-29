@@ -1049,7 +1049,14 @@
       "orphanOrdersTitle": "Orphan Orders",
       "orphanOrdersCancel": "Cancel",
       "orphanOrdersCancelSuccess": "Order cancelled",
-      "orphanOrdersCancelFailed": "Failed to cancel order"
+      "orphanOrdersCancelFailed": "Failed to cancel order",
+      "openPositions": "Open Positions",
+      "dailyPnLLabel": "Daily PnL",
+      "dailyLimit": "Limit: -{{percent}}%",
+      "sizePerWatcher": "Size per Watcher",
+      "watchersSuffix": "watchers",
+      "perWatcher": "100% / {{count}} watchers",
+      "watchersRatio": "/ {{count}} watchers"
     },
     "viewMode": {
       "cards": "Card view",
@@ -2418,5 +2425,13 @@
     },
     "weight": "Weight (× multiplier)",
     "weightHint": "Higher timeframes weigh more. Required conditions count 2×; preferred 1×."
+  },
+  "futures": {
+    "entryPrice": "Entry Price",
+    "markPrice": "Mark Price",
+    "size": "Size",
+    "accumulatedFunding": "Accumulated Funding",
+    "liquidationPrice": "Liquidation Price",
+    "distanceToLiq": "Distance to liquidation"
   }
 }
