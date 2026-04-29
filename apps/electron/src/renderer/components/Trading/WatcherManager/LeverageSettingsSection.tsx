@@ -1,5 +1,5 @@
-import { Box, Stack, Text } from '@chakra-ui/react';
-import { Callout, CollapsibleSection, NumberInput } from '@renderer/components/ui';
+import { Stack } from '@chakra-ui/react';
+import { Callout, CollapsibleSection, Field, NumberInput } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface LeverageSettingsSectionProps {
@@ -28,24 +28,21 @@ export const LeverageSettingsSection = ({
       size="lg"
       variant="static"
     >
-          <Stack gap={4}>
-            <Box flex="0 0 120px">
-              <Text fontSize="sm" fontWeight="medium" mb={1}>
-                {t('settings.algorithmicAutoTrading.leverage.label', 'Leverage')}
-              </Text>
-              <NumberInput
-                min={1}
-                max={125}
-                value={leverage}
-                onChange={onLeverageChange}
-                size="sm"
-                disabled={isPending}
-              />
-            </Box>
-            <Callout tone="warning" compact>
-              {t('settings.algorithmicAutoTrading.leverage.warning', 'Higher leverage increases both potential gains and losses. Use with caution.')}
-            </Callout>
-          </Stack>
+      <Stack gap={3}>
+        <Field label={t('settings.algorithmicAutoTrading.leverage.label', 'Leverage')}>
+          <NumberInput
+            min={1}
+            max={125}
+            value={leverage}
+            onChange={onLeverageChange}
+            size="sm"
+            disabled={isPending}
+          />
+        </Field>
+        <Callout tone="warning" compact>
+          {t('settings.algorithmicAutoTrading.leverage.warning', 'Higher leverage increases both potential gains and losses. Use with caution.')}
+        </Callout>
+      </Stack>
     </CollapsibleSection>
   );
 };

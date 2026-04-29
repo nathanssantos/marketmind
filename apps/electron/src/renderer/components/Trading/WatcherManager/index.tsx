@@ -1,7 +1,7 @@
-import { HStack, Stack } from '@chakra-ui/react';
+import { Stack } from '@chakra-ui/react';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import type { MarketType, TimeInterval } from '@marketmind/types';
-import { Button, CollapsibleSection, EmptyState, Separator } from '@renderer/components/ui';
+import { CollapsibleSection, EmptyState, Select, Separator } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
@@ -194,28 +194,16 @@ export const WatcherManager = () => {
         variant="static"
         size="lg"
       >
-        <HStack gap={1}>
-          <Button
-            size="2xs"
-            variant={tradingMode === 'auto' ? 'solid' : 'outline'}
-            colorPalette={tradingMode === 'auto' ? 'blue' : 'gray'}
-            onClick={() => handleTradingModeChange('auto')}
-            disabled={updateConfig.isPending}
-            flex={1}
-          >
-            {t('trading.mode.auto')}
-          </Button>
-          <Button
-            size="2xs"
-            variant={tradingMode === 'semi_assisted' ? 'solid' : 'outline'}
-            colorPalette={tradingMode === 'semi_assisted' ? 'yellow' : 'gray'}
-            onClick={() => handleTradingModeChange('semi_assisted')}
-            disabled={updateConfig.isPending}
-            flex={1}
-          >
-            {t('trading.mode.semiAssisted')}
-          </Button>
-        </HStack>
+        <Select
+          value={tradingMode}
+          options={[
+            { value: 'auto', label: t('trading.mode.auto') },
+            { value: 'semi_assisted', label: t('trading.mode.semiAssisted') },
+          ]}
+          onChange={(v) => handleTradingModeChange(v as 'auto' | 'semi_assisted')}
+          size="sm"
+          usePortal={false}
+        />
       </CollapsibleSection>
 
       <Separator />
@@ -414,8 +402,6 @@ export const WatcherManager = () => {
         onFilterToggle={handleFilterToggle}
         isPending={updateConfig.isPending}
         isIB={isIB}
-        directionMode={directionMode}
-        onDirectionModeChange={handleDirectionModeChange}
         confluenceMinScore={config?.confluenceMinScore ?? 60}
         onConfluenceMinScoreChange={handleConfluenceMinScoreChange}
       />

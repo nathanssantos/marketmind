@@ -126,10 +126,16 @@ test.describe('WatcherManager — open path + trading mode', () => {
   });
 
   test('clicking Semi-Assisted fires updateConfig with tradingMode', async ({ page }) => {
-    const dialog = await openWatcherManager(page);
+    await openWatcherManager(page);
 
     const before = await getTrpcHitCount(page, 'autoTrading.updateConfig');
-    await dialog.getByRole('button', { name: 'Semi-Assisted', exact: true }).click();
+    // Trading Mode is now a <Select>. Scope to the settings tab body so we
+    // don't match the "Auto-Trading" tab trigger in the left rail. The
+    // Trading Mode Select is the first one in the content; open it and pick
+    // Semi-Assisted.
+    const content = page.getByTestId('settings-content');
+    await content.getByText('Auto', { exact: true }).first().click();
+    await content.getByText('Semi-Assisted', { exact: true }).first().click();
 
     await expect.poll(
       () => getTrpcHitCount(page, 'autoTrading.updateConfig'),

@@ -137,9 +137,11 @@ test.describe('WatchersTab — populated state', () => {
     await openWatchersTab(page);
     const before = await getTrpcHitCount(page, 'autoTrading.updateConfig');
 
-    // The DirectionModeSelector renders 3 buttons (Long Only / Auto / Short Only).
-    // Click "Long Only" to switch.
-    await page.getByRole('button', { name: 'Long Only', exact: true }).first().click();
+    // DirectionModeSelector is now a <Select>. Open the trigger by clicking
+    // the visible "Auto" text (event bubbles to the parent button), then
+    // click "Long Only" from the dropdown.
+    await page.getByText('Auto', { exact: true }).first().click();
+    await page.getByText('Long Only', { exact: true }).first().click();
 
     await expect.poll(
       () => getTrpcHitCount(page, 'autoTrading.updateConfig'),
