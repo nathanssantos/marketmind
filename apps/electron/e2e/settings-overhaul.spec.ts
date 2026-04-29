@@ -141,7 +141,7 @@ test.describe('Settings a11y (axe-core)', () => {
         // Rules disabled with rationale:
         // - region / aria-allowed-attr: Chakra's portal-hosted patterns; not real-user impact
         // - color-contrast: tracked separately — needs Chakra theme token audit (see
-        //   docs/V1_POST_RELEASE_PLAN.md Phase 2.1). The 2xs muted text on muted bg in
+        //   docs/archive/V1_POST_RELEASE_PLAN.md Phase 2.1). The 2xs muted text on muted bg in
         //   dark theme falls below 4.5:1. Will land in a focused theme PR.
         .disableRules(['region', 'aria-allowed-attr', 'color-contrast'])
         .analyze();

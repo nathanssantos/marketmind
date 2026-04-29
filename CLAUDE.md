@@ -588,7 +588,7 @@ describe('Wallet Router', () => {
 ## 📊 Current Development Phase
 
 **Version:** v1.2.0
-**Current Focus:** Backlog work tracked in `docs/V1_3_PLAN.md` (doc drains, more test coverage, perf audit, mcp-app flow tools, mcp-trading writeup). v1.2 sweep is complete: cross-surface UI standardization shipped, semantic-token migration finished (0 forbidden patterns in renderer/components/), visual regression CI active.
+**Current Focus:** Backlog work tracked in `docs/V1_5_PLAN.md`. v1.2 + v1.4 sweeps complete: cross-surface UI standardization shipped, semantic-token migration finished (0 forbidden patterns in renderer/components/), visual regression CI active, audit script enforces 5 anti-pattern rules. Older plans archived in `docs/archive/` (V1_2, V1_3, V1_4, post-release, visual-review-2026-04, UI components standardization, bundle audit).
 
 ### System Status (v1.2.0)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
