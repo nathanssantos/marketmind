@@ -19,6 +19,7 @@ export { ColorPicker, DEFAULT_COLOR_PRESETS } from './color-picker';
 export type { ColorPickerProps } from './color-picker';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { CryptoIcon } from './CryptoIcon';
+export { DataCard } from './data-card';
 export { DirectionModeSelector } from './DirectionModeSelector';
 export type { DirectionMode } from './DirectionModeSelector';
 export { Dialog, DialogActionTrigger, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogPositioner, DialogRoot, DialogTitle } from './dialog';

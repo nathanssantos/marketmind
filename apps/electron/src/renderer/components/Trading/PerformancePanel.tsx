@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   ButtonGroup,
   Flex,
@@ -11,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
-import { PanelHeader } from '../ui';
+import { DataCard, PanelHeader } from '../ui';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
@@ -86,19 +85,7 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
     subtext?: string;
   }) => (
     <GridItem>
-      <Box px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
-        <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">
-          {label}
-        </Text>
-        <Text fontSize="sm" fontWeight="bold" color={valueColor}>
-          {value}
-        </Text>
-        {subtext && (
-          <Text fontSize="2xs" color="fg.muted">
-            {subtext}
-          </Text>
-        )}
-      </Box>
+      <DataCard label={label} value={value} valueColor={valueColor} subtext={subtext} />
     </GridItem>
   );
 

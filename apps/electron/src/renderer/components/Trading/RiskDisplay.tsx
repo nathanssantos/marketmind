@@ -1,9 +1,5 @@
-import {
-  Flex,
-  Grid,
-  GridItem,
-  Text
-} from '@chakra-ui/react';
+import { Grid, GridItem } from '@chakra-ui/react';
+import { DataCard } from '@renderer/components/ui';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '../../utils/trpc';
@@ -82,49 +78,43 @@ export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
 
   const hasWatchers = metrics.positions.activeWatchers > 0;
   const columns = hasWatchers ? 4 : 3;
+  const dailyPnL = metrics.dailyPnL.value;
+  const dailyPnLColor = dailyPnL > 0 ? 'trading.profit' : dailyPnL < 0 ? 'trading.loss' : undefined;
+  const dailyPnLValue = `${dailyPnL >= 0 ? '+' : ''}$${dailyPnL.toFixed(2)}`;
 
   return (
     <Grid templateColumns={`repeat(${columns}, 1fr)`} gap={2}>
       <GridItem>
-        <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
-          <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">{t('trading.portfolio.openPositions')}</Text>
-          <Flex align="baseline" gap={1}>
-            <Text fontSize="sm" fontWeight="bold">{metrics.positions.open}</Text>
-            {hasWatchers && (
-              <Text fontSize="2xs" color="fg.muted">{t('trading.portfolio.watchersRatio', { count: metrics.positions.activeWatchers })}</Text>
-            )}
-          </Flex>
-        </Flex>
+        <DataCard
+          label={t('trading.portfolio.openPositions')}
+          value={String(metrics.positions.open)}
+          valueAside={hasWatchers ? t('trading.portfolio.watchersRatio', { count: metrics.positions.activeWatchers }) : undefined}
+        />
       </GridItem>
 
       <GridItem>
-        <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
-          <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">{t('trading.portfolio.totalExposure')}</Text>
-          <Text fontSize="sm" fontWeight="bold">${metrics.exposure.current.toFixed(2)}</Text>
-        </Flex>
+        <DataCard
+          label={t('trading.portfolio.totalExposure')}
+          value={`$${metrics.exposure.current.toFixed(2)}`}
+        />
       </GridItem>
 
       <GridItem>
-        <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
-          <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">{t('trading.portfolio.dailyPnLLabel')}</Text>
-          <Text
-            fontSize="sm"
-            fontWeight="bold"
-            color={metrics.dailyPnL.value > 0 ? 'trading.profit' : metrics.dailyPnL.value < 0 ? 'trading.loss' : undefined}
-          >
-            {metrics.dailyPnL.value >= 0 ? '+' : ''}${metrics.dailyPnL.value.toFixed(2)}
-          </Text>
-          <Text fontSize="2xs" color="fg.muted">{t('trading.portfolio.dailyLimit', { percent: metrics.dailyPnL.limit })}</Text>
-        </Flex>
+        <DataCard
+          label={t('trading.portfolio.dailyPnLLabel')}
+          value={dailyPnLValue}
+          valueColor={dailyPnLColor}
+          subtext={t('trading.portfolio.dailyLimit', { percent: metrics.dailyPnL.limit })}
+        />
       </GridItem>
 
       {hasWatchers && (
         <GridItem>
-          <Flex direction="column" px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
-            <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">{t('trading.portfolio.sizePerWatcher')}</Text>
-            <Text fontSize="sm" fontWeight="bold">{(100 / metrics.positions.activeWatchers).toFixed(1)}%</Text>
-            <Text fontSize="2xs" color="fg.muted">{t('trading.portfolio.perWatcher', { count: metrics.positions.activeWatchers })}</Text>
-          </Flex>
+          <DataCard
+            label={t('trading.portfolio.sizePerWatcher')}
+            value={`${(100 / metrics.positions.activeWatchers).toFixed(1)}%`}
+            subtext={t('trading.portfolio.perWatcher', { count: metrics.positions.activeWatchers })}
+          />
         </GridItem>
       )}
     </Grid>
