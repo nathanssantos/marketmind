@@ -31,14 +31,14 @@ export const MeasurementTooltip = ({ measurement, kline, left, top }: Measuremen
       </HStack>
       <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
         <Text color="fg.muted">Price Change:</Text>
-        <Text fontWeight="semibold" color={isPositive ? 'green.500' : 'red.500'}>
+        <Text fontWeight="semibold" color={isPositive ? 'trading.profit' : 'trading.loss'}>
           {isPositive ? '+' : ''}
           {formatPriceDisplay(measurement.priceChange)}
         </Text>
       </HStack>
       <HStack justify="space-between">
         <Text color="fg.muted">Percentage:</Text>
-        <Text fontWeight="semibold" color={isPositive ? 'green.500' : 'red.500'}>
+        <Text fontWeight="semibold" color={isPositive ? 'trading.profit' : 'trading.loss'}>
           {isPositive ? '+' : ''}
           {measurement.percentChange.toFixed(2)}%
         </Text>

@@ -89,7 +89,7 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
             <Text style={{ color: chartPrimary }}>
               {t('trading.wallets.equity')}: {formatCurrency(equity)}
             </Text>
-            <Text color={pnl >= 0 ? 'green.500' : 'red.500'}>
+            <Text color={pnl >= 0 ? 'trading.profit' : 'trading.loss'}>
               {t('trading.wallets.pnl')}: {formatCurrency(pnl, true)} ({formatPercent(pnlPercent)})
             </Text>
           </Box>

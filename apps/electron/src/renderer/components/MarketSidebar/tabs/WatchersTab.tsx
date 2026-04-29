@@ -229,7 +229,7 @@ const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRe
       borderRadius="md"
       p={3}
       borderLeft="3px solid"
-      borderLeftColor={isLong ? 'green.500' : 'red.500'}
+      borderLeftColor={isLong ? 'trading.long' : 'trading.short'}
     >
       <Flex justify="space-between" align="center" mb={2}>
         <Flex align="center" gap={2}>
