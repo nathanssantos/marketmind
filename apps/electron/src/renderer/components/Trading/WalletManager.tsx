@@ -1,7 +1,7 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { Badge, Button, EmptyState, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, EmptyState, FormSection, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -113,19 +113,29 @@ export const WalletManager = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   return (
-    <Stack gap={2}>
-      <Flex justify="flex-end" align="center">
-        <Button
-          size="2xs"
-          variant="outline"
-          onClick={() => setShowCreateDialog(true)}
-          loading={isCreatingPaper || isCreating}
-          data-testid="trigger-create-wallet"
-        >
-          <LuPlus />
-          {t('trading.wallets.create')}
-        </Button>
-      </Flex>
+    <Stack gap={4} w="100%">
+      <FormSection
+        title={
+          <Flex align="center" gap={2}>
+            <Text as="span">{t('trading.wallets.title')}</Text>
+            {wallets.length > 0 && (
+              <Badge size="sm" colorPalette="blue">{wallets.length}</Badge>
+            )}
+          </Flex>
+        }
+        action={
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowCreateDialog(true)}
+            loading={isCreatingPaper || isCreating}
+            data-testid="trigger-create-wallet"
+          >
+            <LuPlus />
+            {t('trading.wallets.create')}
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <EmptyState size="sm" title={t('common.loading')} />

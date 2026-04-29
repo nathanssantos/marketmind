@@ -84,7 +84,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
           <Switch checked={chartFlipped} onCheckedChange={setChartFlipped} size="sm" data-testid="chart-flipped">
             {t('chart.controls.flipVertical')}
           </Switch>
-          <Text fontSize="2xs" color="fg.muted" ml={6} mt={-1}>
+          <Text fontSize="2xs" color="fg.muted" mt={-1}>
             {t('chart.controls.flipVerticalHelper')}
           </Text>
           <Switch
@@ -95,7 +95,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
           >
             {t('settings.chart.liquidityIntensity')}
           </Switch>
-          <Text fontSize="2xs" color="fg.muted" ml={6} mt={-1}>
+          <Text fontSize="2xs" color="fg.muted" mt={-1}>
             {t('settings.chart.liquidityIntensityHelper')}
           </Text>
         </Stack>
