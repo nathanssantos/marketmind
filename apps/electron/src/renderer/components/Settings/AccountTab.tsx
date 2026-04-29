@@ -142,7 +142,7 @@ export const AccountTab = () => {
             w="64px"
             h="64px"
             borderRadius="full"
-            bg={avatarColor ?? 'blue.500'}
+            bg={avatarColor ?? 'accent.solid'}
             color="white"
             display="flex"
             alignItems="center"

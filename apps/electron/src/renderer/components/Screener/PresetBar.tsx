@@ -24,7 +24,7 @@ export const PresetBar = memo(({ presets, activePresetId, onSelectPreset }: Pres
         <Button
           size="2xs"
           variant="outline"
-          color={activePresetId === null ? 'blue.500' : 'fg.muted'}
+          color={activePresetId === null ? 'accent.solid' : 'fg.muted'}
           onClick={() => onSelectPreset(null)}
         >
           {t('screener.presets.custom')}
@@ -34,7 +34,7 @@ export const PresetBar = memo(({ presets, activePresetId, onSelectPreset }: Pres
             <Button
               size="2xs"
               variant="outline"
-              color={activePresetId === preset.id ? 'blue.500' : 'fg.muted'}
+              color={activePresetId === preset.id ? 'accent.solid' : 'fg.muted'}
               onClick={() => onSelectPreset(preset.id)}
               title={t(`screener.presets.descriptions.${preset.id}`, preset.description)}
             >

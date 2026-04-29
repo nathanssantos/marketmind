@@ -44,7 +44,7 @@ export const PinnableControl = ({
             onClick={() => togglePin(controlKey)}
             opacity={isHovered || pinned ? 1 : 0}
             transition="opacity 0.2s"
-            color={pinned ? 'blue.400' : 'gray.400'}
+            color={pinned ? 'accent.solid' : 'fg.muted'}
           >
             <LuStar size={12} fill={pinned ? 'currentColor' : 'none'} />
           </ToggleIconButton>

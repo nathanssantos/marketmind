@@ -58,7 +58,7 @@ function GridWindowComponent({
       direction="column"
       h="100%"
       borderWidth="1px"
-      borderColor={isFocused && showFocusBorder ? 'blue.500' : 'border'}
+      borderColor={isFocused && showFocusBorder ? 'accent.solid' : 'border'}
       borderRadius="sm"
       overflow="hidden"
       onMouseDown={handleFocus}

@@ -33,7 +33,7 @@ export const UserAvatar = () => {
   };
 
   const initials = getInitials(currentUser?.name, currentUser?.email);
-  const fallbackBg = currentUser?.avatarColor ?? 'blue.500';
+  const fallbackBg = currentUser?.avatarColor ?? 'accent.solid';
 
   return (
     <Menu.Root>

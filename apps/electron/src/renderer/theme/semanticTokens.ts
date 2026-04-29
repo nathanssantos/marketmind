@@ -36,6 +36,11 @@ export const semanticTokenColors = {
   'trading.neutral': { value: { base: '#64748b', _dark: '#94a3b8' } },
   'trading.warning': { value: { base: '#dd6b20', _dark: '#f6ad55' } },
   'trading.info': { value: { base: '#2563eb', _dark: '#3b82f6' } },
+  // Generic UI accent — active-state highlights (selected tab/preset/mode,
+  // focus border, pinned marker). Was scattered as raw `blue.500`/`blue.400`
+  // shade literals before being centralized here in v1.4. Resolves to the
+  // brand-blue tone in both modes; tweak in one place if the accent shifts.
+  'accent.solid': { value: { base: '#3182ce', _dark: '#4299e1' } },
   'trading.long': { value: { base: '#16a34a', _dark: '#22c55e' } },
   'trading.short': { value: { base: '#dc2626', _dark: '#ef4444' } },
   'bg.loading': { value: { base: '#f7fafc', _dark: '#1a1a2e' } },

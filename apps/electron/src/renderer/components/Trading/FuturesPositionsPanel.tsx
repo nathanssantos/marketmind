@@ -112,7 +112,7 @@ const FuturesPositionCard = memo(({
               fontWeight="bold"
               fontSize="sm"
               cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              _hover={onNavigateToSymbol ? { color: 'accent.solid', textDecoration: 'underline' } : undefined}
               onClick={() => onNavigateToSymbol?.(position.symbol, 'FUTURES')}
             >
               {position.symbol}

@@ -8,7 +8,7 @@ export interface ToggleIconButtonProps extends Omit<IconButtonProps, 'variant' |
 }
 
 export const ToggleIconButton = forwardRef<HTMLButtonElement, ToggleIconButtonProps>(
-  ({ active, activeColor = 'blue.500', ...props }, ref) => (
+  ({ active, activeColor = 'accent.solid', ...props }, ref) => (
     // @ts-expect-error
     <IconButton
       ref={ref}

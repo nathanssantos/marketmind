@@ -243,7 +243,7 @@ const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRe
             fontWeight="bold"
             fontSize="xs"
             cursor={onNavigate ? 'pointer' : 'default'}
-            _hover={onNavigate ? { color: 'blue.500' } : undefined}
+            _hover={onNavigate ? { color: 'accent.solid' } : undefined}
             onClick={() => onNavigate?.(suggestion.symbol, 'FUTURES')}
           >
             {suggestion.symbol}
@@ -393,7 +393,7 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
               <Text
                 fontWeight="medium"
                 cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-                _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+                _hover={onNavigateToSymbol ? { color: 'accent.solid', textDecoration: 'underline' } : undefined}
                 onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
               >
                 {watcher.symbol}
