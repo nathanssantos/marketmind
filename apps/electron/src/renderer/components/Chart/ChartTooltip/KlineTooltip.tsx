@@ -61,7 +61,7 @@ export const KlineTooltip = ({ kline, left, top }: KlineTooltipProps) => {
 
       <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
         <Text color="fg.muted">Change:</Text>
-        <Text fontWeight="semibold" color={isBullish ? 'green.500' : 'red.500'}>
+        <Text fontWeight="semibold" color={isBullish ? 'trading.profit' : 'trading.loss'}>
           {isBullish ? '+' : ''}
           {formatPriceDisplay(change)} ({changePercent}%)
         </Text>
@@ -92,7 +92,7 @@ export const KlineTooltip = ({ kline, left, top }: KlineTooltipProps) => {
         <HStack gap={1}>
           <Text
             fontWeight="semibold"
-            color={pressureType === 'buy' ? 'green.500' : pressureType === 'sell' ? 'red.500' : 'gray.500'}
+            color={pressureType === 'buy' ? 'trading.long' : pressureType === 'sell' ? 'trading.short' : 'trading.neutral'}
           >
             {pressureType === 'buy' ? '🟢' : pressureType === 'sell' ? '🔴' : '⚪'}
           </Text>
