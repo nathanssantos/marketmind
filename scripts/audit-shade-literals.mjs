@@ -35,6 +35,15 @@ const FORBIDDEN = [
     re: /_dark=\{\{/g,
   },
   {
+    // Same anti-pattern as `_dark={{...}}` but nested inside an object
+    // literal (e.g. `_hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}`,
+    // or a top-level styles const that's spread later). Semantic tokens
+    // (bg.muted etc.) auto-resolve dark/light, so the nested override
+    // duplicates the work and locks specific shades that bypass the theme.
+    name: '_dark-override-nested',
+    re: /^\s*_dark:\s*\{/gm,
+  },
+  {
     // V1_4 rule: tinted-card anti-pattern — <Box bg="X.subtle" ... borderColor="X.muted">
     // wraps content in a heavy colored container. Use <Callout> for inline
     // messages or plain Stack/Box (no tint) for content groups inside a section.
