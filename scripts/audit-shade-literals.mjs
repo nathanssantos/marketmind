@@ -34,6 +34,16 @@ const FORBIDDEN = [
     name: '_dark-override',
     re: /_dark=\{\{/g,
   },
+  {
+    // V1_4 rule: tinted-card anti-pattern — <Box bg="X.subtle" ... borderColor="X.muted">
+    // wraps content in a heavy colored container. Use <Callout> for inline
+    // messages or plain Stack/Box (no tint) for content groups inside a section.
+    // Only flags when Box has BOTH the colored bg AND a matching colored
+    // border (the visually heavy tinted-card variant), not the lighter
+    // `bg="X.subtle"`-only badges/pills.
+    name: 'tinted-card-Box',
+    re: /\bbg="(?:red|green|blue|yellow|orange|purple|teal|pink)\.subtle"[^>]*\bborderColor="(?:red|green|blue|yellow|orange|purple|teal|pink)\.muted"/g,
+  },
 ];
 
 const SKIP_FILES = new Set([
