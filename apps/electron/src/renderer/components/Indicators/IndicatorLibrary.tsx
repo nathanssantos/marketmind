@@ -75,7 +75,7 @@ export const IndicatorLibrary = () => {
   }, [reset]);
 
   return (
-    <Stack gap={4} h="full">
+    <Stack gap={4}>
       <FormSection
         title={t('settings.indicators.title')}
         description={t('settings.indicators.count', { count: indicators.length })}
@@ -103,7 +103,7 @@ export const IndicatorLibrary = () => {
         }
       />
 
-      <Stack gap={4} flex={1} overflowY="auto" pr={1}>
+      <Stack gap={4}>
         {groups.length === 0 && !isLoading && (
           <EmptyState size="sm" title={t('settings.indicators.empty')} />
         )}
