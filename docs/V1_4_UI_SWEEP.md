@@ -95,6 +95,42 @@ A phase is "done" when:
 | 7 | General + Chart + Data + Updates + About | ~3h | low (smallest tabs) |
 | 8 | Style guide section for the unified rules + audit-script extensions | ~3h | low |
 
+## Shipped (post-plan, 2026-04-29 sweep)
+
+Phase 1 came in heavier and tighter than the original sequencing — most of it landed in 9 PRs:
+
+| # | PR | What |
+|---|---|---|
+| 246 | AutoTrading pass 1 | Trading-mode block → `CollapsibleSection`; empty-wallet → `EmptyState`; QuickStart/StockPresets green wrappers stripped. |
+| 247 | SecurityTab + WalletManager | 2FA icon to `trading.profit`; redundant scroll wrapper dropped. |
+| 248 | IndicatorLibrary | Nested-scroll fix (no double overflow inside Settings). |
+| 249 | EmptyState + colored-Box sweep | Extended `<EmptyState>` `action.icon`; cleaned 5 surfaces. |
+| 250 | Audit `tinted-card-Box` rule | New CI gate; cleaned 3 violations. |
+| 252 | AutoTrading pass 2 | `RiskManagementSection` lost 3 `<Separator />`, 3 colored left-borders, 4 switch HStacks → `<FormRow>`. `PositionSizeSection` outer gap normalized. **−52/+26 lines.** |
+| 253 | AutoTrading pass 3 | `OpportunityCost` (−4 tinted boxes), `DynamicSelection` (−1 auto-rotation wrapper), `EntrySettings` (info note → `<Callout>`). |
+| 254 | AutoTrading pass 4 (TrailingStop) | Per-row `bg="bg.subtle"` hoisted into `rowWrapperProps` conditional on `compact`. Settings flat, popover preserved. Pill-toggle shade literals (`green.500/red.500/blue.500`) → `trading.long/short/info`. |
+| 251 | i18n hardcoded strings | 8 RiskDisplay + FuturesPositionsPanel labels wrapped with `t()`. |
+| 255 | Dynamic shade literals — Trading/ | 11 files migrated to `trading.long/short/profit/loss/warning/info`. |
+| 257 | Dynamic shade literals — chart tooltips + sidebars + analytics | Same fix in `WatchersTab`, `Setup/Kline/MeasurementTooltip`, `EquityCurveChart`, `FuturesPositionInfo`. |
+| 258 | Audit `dynamic-shade-pair` rule | Codifies the JSX-expression form in CI. Plus 2 stragglers (`RecentRunsPanel`, `ScreenerResultsTable`). |
+| 256 | EMA/SMA price tag fix (bug) | Restored right-axis price tag dropped in #75; fixed clip-rect bug. |
+
+The AutoTrading tab — the user's "pior carnaval" — is now structurally aligned to V1_4 rules across 5 sweeps (#246, #250, #252, #253, #254).
+
+## Remaining Phase 1 work
+
+The other tabs were already mostly clean (most use `FormSection`/`FormRow`/`Callout` correctly):
+- **Notifications**, **Indicators**, **Account**, **General**, **Chart**, **Data**, **Updates**, **About** — verified clean.
+- **TradingProfiles**, **Wallets** — already in good shape; cards are legit cards (not panel-in-panel).
+
+If anything pops up during a focused review, it'll be small targeted PRs.
+
+## Phase 2-4 status
+
+- **Phase 2 (Sidebars)** — `MarketIndicatorCharts/Sections` use `bg="bg.muted"` cards but they ARE cards (vertical sidebar widget pattern, not panel-in-panel). Legitimate.
+- **Phase 3 (Modals)** — `OrdersDialog` stats bar is a stats card (legit). `TradingProfilesModal` separator transitions between two distinct content groups (legit per V1_4 rule 6). Most modals already use `Dialog` + `FormSection` primitives correctly.
+- **Phase 4 (Layout/Toolbar/Chart UI)** — `QuickTradeToolbar` clean. `TrailingStopPopover` row wrappers preserved (popover delineation needed). Chart overlays: case-by-case as bugs surface (e.g. EMA tags fix #256).
+
 ## What this doc is not
 
 A specification of every pixel change. The intent is to align on *what kinds of changes* the sweep makes so each tab refactor PR is a focused execution of these rules, not a re-litigation of approach.
