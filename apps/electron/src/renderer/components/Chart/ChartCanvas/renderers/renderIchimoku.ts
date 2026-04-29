@@ -1,3 +1,6 @@
+import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
 
@@ -115,4 +118,25 @@ export const renderIchimoku: GenericRenderer = (ctx, input) => {
   drawLine(chikou, chikouColor);
 
   canvasCtx.restore();
+
+  // Right-axis tags drawn outside the inner clip so they land in the
+  // price-scale strip. The parent renderAllOverlayIndicators clip
+  // extends to dimensions.width, so we have room here.
+  const findLastValid = (s: (number | null | undefined)[]): number | null => {
+    for (let i = visibleEnd - 1; i >= visibleStart; i--) {
+      const v = s[i];
+      if (v != null && !Number.isNaN(v)) return v;
+    }
+    return null;
+  };
+  const drawLineTag = (s: (number | null | undefined)[], color: string) => {
+    const value = findLastValid(s);
+    if (value === null) return;
+    const y = manager.priceToY(value);
+    if (y < 0 || y > chartHeight) return;
+    drawPriceTag(canvasCtx, formatChartPrice(value), y, chartWidth, color, CHART_CONFIG.CANVAS_PADDING_RIGHT);
+  };
+  drawLineTag(tenkan, tenkanColor);
+  drawLineTag(kijun, kijunColor);
+  drawLineTag(chikou, chikouColor);
 };
