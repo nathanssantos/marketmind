@@ -140,9 +140,11 @@ v1 Phase 1.4 did a high-level a11y audit on Settings dialog. v1.2 didn't add any
 - **Effort**: ~1 day for a v0
 - **Value**: medium — useful as the codebase grows
 
-### G.3 — Strategy JSON → Pine migration completion
-- Memory mentions "PineTS migration" as ongoing. Status unclear from the codebase. Could be a v1.3 deliverable if close to done.
-- **Action**: review `apps/backend/strategies/` and the memory entry to scope
+### G.3 — Strategy JSON → Pine migration ✅ already complete
+- Reviewed `apps/backend/strategies/builtin/` — 106 `.pine` files; no JSON strategies remaining.
+- `PineStrategyRunner`, `PineStrategyLoader`, `PineIndicatorService` are in `services/pine/`. SetupDetectionService, BacktestEngine, ExitManager, auto-trading all run Pine-only.
+- Frontend: `pineWorkerService.ts` covers 15 indicator workers via PineTS; the rest stay on `@marketmind/indicators` for indicators PineTS can't compute (FVG, swing points, Fibonacci, Ichimoku, etc.) — by design.
+- **Remaining minor work**: `useATRRenderer`, `useVWAPRenderer`, `IndicatorLayer`, `useChartIndicators` still consume `@marketmind/indicators` directly. Not blocking, not a v1.3 release blocker.
 
 ---
 
