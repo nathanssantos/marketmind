@@ -87,6 +87,24 @@ const FORBIDDEN = [
     name: 'template-string-shade',
     re: /(?:color|bg|borderColor|borderLeftColor|borderRightColor|borderTopColor|borderBottomColor|valueColor)=\{`\$\{[^}`]+\}\.(?:50|100|200|300|400|500|600|700|800|900)`\}/g,
   },
+  {
+    // V1_5 rule: object-literal shade — same shade-literal class as rule
+    // #1 but lifted out of the JSX prop into an object literal that's
+    // either spread later or used by a hook prop like `_hover` /
+    // `_focus` / `_active` / `_selected`. The first rule needs the prop
+    // ON the element (`bg="X.500"`); this catches the form
+    // `_hover={{ bg: 'X.500' }}` and shade-literal-string color maps
+    // (`{ info: 'gray.400', warn: 'red.500' }`).
+    //
+    // Caught: AutoTradeConsole + LogsTab levelColor maps (~v1.5),
+    //         MainLayout resizer hovers, MetricCard getTrendColor return,
+    //         select.tsx _focus, ControlPanelGroup gray.750 typo.
+    //
+    // Use semantic tokens (`trading.*` / `accent.solid` / `bg.muted` /
+    // `fg.muted` etc.).
+    name: 'object-literal-shade',
+    re: /\b(?:bg|color|borderColor|borderLeftColor|borderRightColor|borderTopColor|borderBottomColor):\s*['"](?:red|green|blue|yellow|orange|purple|gray|pink|teal|cyan)\.(?:50|100|200|300|400|500|600|700|800|900)['"]/g,
+  },
 ];
 
 const SKIP_FILES = new Set([

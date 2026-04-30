@@ -23,10 +23,10 @@ const LogLine = memo(({ entry, fontSize }: LogLineProps) => {
   });
 
   const levelColor = {
-    info: 'gray.400',
-    warn: 'yellow.400',
-    error: 'red.400',
-    debug: 'blue.400',
+    info: 'fg.muted',
+    warn: 'trading.warning',
+    error: 'trading.loss',
+    debug: 'accent.solid',
   }[entry.level];
 
   return (

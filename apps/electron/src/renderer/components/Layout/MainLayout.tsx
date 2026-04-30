@@ -212,7 +212,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={handleMarketMouseDown}
                 userSelect="none"
               />
@@ -227,7 +227,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={handleOrderFlowMouseDown}
                 userSelect="none"
               />
@@ -269,7 +269,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={(e) => startResize(e, 'autoTrading', autoTradingWidth)}
                 userSelect="none"
               />
@@ -284,7 +284,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={handleMouseDown}
                 userSelect="none"
               />
