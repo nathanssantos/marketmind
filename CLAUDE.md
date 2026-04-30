@@ -587,10 +587,10 @@ describe('Wallet Router', () => {
 
 ## 📊 Current Development Phase
 
-**Version:** v1.3.1
-**Current Focus:** v1.5 plan complete and archived. v1.3.1 ships two critical fixes: (1) the renderer's `auth.me` retry policy so backend restarts no longer bounce to /login on transient network errors; (2) layoutStore persistence is gated on hydration completing successfully — closes a regression introduced by (1) where transient backend failures during hydrate would let the default in-memory state overwrite the user's saved tabs/layouts. Older plans archived in `docs/archive/`.
+**Version:** v1.4.0
+**Current Focus:** v1.4 ships three V1_4_PLAN items together: (A.1) password complexity policy enforced on register/changePassword/resetPassword via a shared `validatePassword` in `@marketmind/utils`, plus an inline `<PasswordStrengthMeter>` UI; (A.2) `user_layouts_history` snapshot table + server-side guard that refuses to overwrite a non-default layout with the default state — defense in depth on top of v1.3.1's renderer-side `isHydrated` gate; (B.1) `serializeError` leads with the Drizzle/PG cause so the actual error survives the 500-char log truncation. v1.5 + earlier plans archived in `docs/archive/`.
 
-### System Status (v1.3.1)
+### System Status (v1.4.0)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
 - **✅ Authentication**: Argon2 + session management
@@ -1204,5 +1204,5 @@ When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: ver
 ---
 
 **Last Updated:** April 2026
-**Version:** 1.9
-**Project Version:** 1.3.1
+**Version:** 1.10
+**Project Version:** 1.4.0

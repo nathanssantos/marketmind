@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-04-30
+
+**v1.4 release** — Three V1_4_PLAN items shipped together. Two are post-incident hardening (layout durability + log readability) on top of the v1.3.1 fixes; one is the user-requested password complexity policy. Backend grows from 5,433 to 5,449 tests; frontend adds the `<PasswordStrengthMeter>` primitive plus 6 new component/policy tests; `@marketmind/utils` gains a `passwordPolicy` module with 11 unit tests.
+
+### Added — Password complexity policy (V1_4 A.1)
+- **Shared validator in `@marketmind/utils`** — `validatePassword(input)` returns `{ valid, issues[] }` with codes `tooShort | noUppercase | noLowercase | noDigit | noSymbol | common`. `passwordStrength(input)` returns a 0-4 score for the meter. Default policy: min 10 chars + ≥1 of each character class. Built-in blocklist of ~30 common passwords (Password123, qwerty123, etc.).
+- **Backend enforcement** — `auth.register`, `auth.changePassword`, `auth.resetPassword` use a `passwordPolicySchema` Zod refinement. Login (`auth.login`) intentionally keeps `z.string()` so existing users with old weaker passwords can still sign in.
+- **`<PasswordStrengthMeter>`** — new `ui/` primitive: 5-segment strength bar + per-rule checklist (LuCheck/LuX) with score-derived label. Theme-token only (`trading.profit/loss/warning`, `fg.muted`, `bg.muted`). Wired into `RegisterPage`, `ResetPasswordPage`, and Settings → SecurityTab. SecurityTab's `canSubmit` now gates on `validatePassword().valid` rather than length-only.
+- **i18n** — `auth.passwordPolicy.{title,tooShort,noUppercase,noLowercase,noDigit,noSymbol,common,weak,fair,good,strong,excellent}` in en/pt/es/fr. `auth.validation.passwordMin` updated 8 → 10.
+- **Tests** — 11 password policy unit tests + 5 PasswordStrengthMeter component tests + 2 new auth.router enforcement tests + 1 new SecurityTab "rejects no-symbol" test. Existing SecurityTab and auth.router tests updated to use policy-compliant fixtures (`NewPass123!`, `Test123!@#`).
+
+### Added — Layout durability (V1_4 A.2)
+- **`user_layouts_history` table** — copies of prior layouts keyed by `(user_id, snapshot_at)` with retention of 30 days. New Drizzle schema export `userLayoutsHistory`, migration `0034_user_layouts_history.sql`, plus inline schema in `test-db.ts` and cleanup wiring.
+- **Snapshot on save** — `layout.save` now snapshots the existing row when it's >24h old and the data actually changed; prunes >30-day-old snapshots on the same write.
+- **Server-side default-overwrite guard** — `layout.save` refuses (`PRECONDITION_FAILED`) any write that would replace a non-default layout with the default state (1 default tab + 3 named presets single/dual/quad). Defense in depth on top of v1.3.1's renderer-side `isHydrated` gate.
+- **Self-service recovery** — `layout.listSnapshots` lists snapshot timestamps; `layout.restoreSnapshot({ snapshotId })` swaps a prior state into `user_layouts` and snapshots the current state first so restore is itself reversible.
+- **Tests** — 14 router-level tests covering create/update/refuse/snapshot/list/restore + cross-user isolation.
+
+### Fixed — Logger cause hygiene (V1_4 B.1)
+- **`serializeError` leads with the cause, then the message** (`apps/backend/src/services/logger.ts`) — was `${msg} (cause: ${causeStr})` truncated at 500 chars, so a `DrizzleQueryError.message` containing the full `SELECT id, user_id, ... FROM trade_executions WHERE ...` (~1.5KB for the 60-column trade_executions select) pushed the actual postgres error code (`57P01 terminating connection due to administrator command`, etc.) off the end. Flipped to `${cause} | ${msg}` so the useful info stays before truncation kicks in. 8 unit tests covering plain Error, with-cause, very-long-message truncation, string causes, JSON causes, missing-cause, plain objects, and primitive coercion.
+
+### Changed
+- **`@marketmind/utils` tsconfig** — `__tests__/**` and `**/*.test.ts` excluded from the build output so `dist/` no longer leaks test sources.
+- **`apps/backend/src/__tests__/helpers/test-db.ts` cleanup** — adds `userLayouts` and `userLayoutsHistory` to the explicit table-clear list (cascade-by-FK doesn't fire under `session_replication_role = 'replica'`).
+
 ## [1.3.1] - 2026-04-30
 
 **v1.3.1 patch** — Two paired bug fixes that together close a layout-data-loss regression. The first fix changes how the renderer reacts to transient backend failures (no more bounce to /login on backend restart). The second seals a latent persistence bug that the first fix exposed.
