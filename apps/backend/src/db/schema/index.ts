@@ -9,3 +9,4 @@ export * from './misc';
 export * from './layouts';
 export * from './heatmap';
 export * from './indicators';
+export * from './backtest';

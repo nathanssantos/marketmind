@@ -1,15 +1,17 @@
 import type { BacktestConfig, SimpleBacktestInput } from '@marketmind/types';
 import { simpleBacktestInputSchema } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { DEFAULT_ENABLED_SETUPS } from '../../constants';
+import { backtestRuns } from '../../db/schema';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { BacktestProgressReporter } from '../../services/backtesting/BacktestProgressReporter';
 import { logger } from '../../services/logger';
 import { protectedProcedure } from '../../trpc';
 import { serializeError } from '../../utils/errors';
 import { generateEntityId } from '../../utils/id';
-import { backtestResults, getCacheEntry, setCacheEntry } from './shared';
+import { backtestResults, findRunForUser, inFlightRuns, listRunsForUser, persistTerminalRun, setCacheEntry } from './shared';
 
 const buildBacktestConfig = (input: SimpleBacktestInput): BacktestConfig => ({
   ...input,
@@ -46,21 +48,23 @@ export const simpleProcedures = {
         wsService: ctx.websocket,
       });
 
-      void (async () => {
+      const runPromise = (async () => {
         try {
           const config = buildBacktestConfig(input);
           const engine = new BacktestEngine();
           const result = await engine.run(config, undefined, reporter);
 
-          setCacheEntry(backtestId, {
+          const completedEntry = {
             ...result,
             id: backtestId,
-            status: 'COMPLETED',
+            status: 'COMPLETED' as const,
             config: input,
             startTime: new Date(startTime).toISOString(),
             endTime: new Date().toISOString(),
             duration: Date.now() - startTime,
-          });
+          };
+          setCacheEntry(backtestId, completedEntry);
+          await persistTerminalRun(userId, completedEntry);
 
           logger.info({
             backtestId,
@@ -84,27 +88,33 @@ export const simpleProcedures = {
             stack: error instanceof Error ? error.stack : undefined,
           }, 'Backtest failed');
 
-          setCacheEntry(backtestId, {
+          const failedEntry = {
             id: backtestId,
-            status: 'FAILED',
+            status: 'FAILED' as const,
             config: input,
             error: message,
             startTime: new Date(startTime).toISOString(),
             endTime: new Date().toISOString(),
             duration: Date.now() - startTime,
-          });
+          };
+          setCacheEntry(backtestId, failedEntry);
+          await persistTerminalRun(userId, failedEntry);
 
           reporter.fail(message);
+        } finally {
+          inFlightRuns.delete(backtestId);
         }
       })();
+      inFlightRuns.set(backtestId, runPromise);
+      void runPromise;
 
       return { backtestId };
     }),
 
   getResult: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const result = getCacheEntry(input.id);
+    .query(async ({ ctx, input }) => {
+      const result = await findRunForUser(input.id, String(ctx.user.id));
 
       if (!result) {
         throw new TRPCError({
@@ -129,10 +139,11 @@ export const simpleProcedures = {
     return active;
   }),
 
-  list: protectedProcedure.query(async () => {
-    const results = Array.from(backtestResults.values())
-      .map((entry) => {
-        const result = entry.data;
+  list: protectedProcedure.query(async ({ ctx }) => {
+    const userId = String(ctx.user.id);
+    const entries = await listRunsForUser(userId);
+    const results = entries
+      .map((result) => {
         const config = result.config;
         const metrics = result.metrics;
         return {
@@ -162,10 +173,25 @@ export const simpleProcedures = {
 
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const deleted = backtestResults.delete(input.id);
+    .mutation(async ({ ctx, input }) => {
+      const userId = String(ctx.user.id);
 
-      if (!deleted) {
+      // If the run is still going, let the IIFE settle (cache write +
+      // DB persistence) before we try to delete — otherwise a delete
+      // racing with persistence leaves an orphaned DB row.
+      const inflight = inFlightRuns.get(input.id);
+      if (inflight) {
+        await inflight.catch(() => {});
+      }
+
+      const cacheDeleted = backtestResults.delete(input.id);
+
+      const dbResult = await ctx.db
+        .delete(backtestRuns)
+        .where(and(eq(backtestRuns.id, input.id), eq(backtestRuns.userId, userId)))
+        .returning({ id: backtestRuns.id });
+
+      if (!cacheDeleted && dbResult.length === 0) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Backtest result not found',
