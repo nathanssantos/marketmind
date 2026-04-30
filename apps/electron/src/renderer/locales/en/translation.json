@@ -291,6 +291,19 @@
         "unknownAgent": "Unknown device",
         "unknownIp": "Unknown location",
         "createdAt": "Started {{date}}"
+      },
+      "agentTrading": {
+        "title": "AI Agent Trading",
+        "description": "Allow MCP-connected agents (Claude Code, ChatGPT desktop, custom agents) to drive trade execution on a per-wallet basis. Read-only inspection always works; this toggle gates write operations only.",
+        "warning": "Enabling this lets connected agents place real orders on your behalf. Every action is logged in the audit trail. Disable any time.",
+        "noWallets": "No wallets configured yet. Add a wallet to control per-wallet agent trading.",
+        "perWalletHelper": "Allow agents to place / cancel / modify orders on this wallet",
+        "enabled": "Agent trading enabled for {{name}}",
+        "disabled": "Agent trading disabled for {{name}}",
+        "toggleFailed": "Could not update agent trading",
+        "confirmTitle": "Enable agent trading on this wallet?",
+        "confirmBody": "MCP-connected agents will be able to place real orders on this wallet. Every action will be recorded in the audit log. You can revoke this any time.",
+        "confirmCta": "Enable agent trading"
       }
     },
     "notifications": {

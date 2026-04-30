@@ -166,6 +166,43 @@ describe('Wallet Router', () => {
         caller2.wallet.update({ id: wallet.id, name: 'Hacked' })
       ).rejects.toThrow(expect.objectContaining({ code: 'NOT_FOUND' }));
     });
+
+    it('agentTradingEnabled defaults to false on a new paper wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const wallet = await caller.wallet.createPaper({ name: 'Default Off' });
+      const list = await caller.wallet.list();
+      const found = list.find((w) => w.id === wallet.id);
+      expect(found?.agentTradingEnabled).toBe(false);
+    });
+
+    it('toggles agentTradingEnabled on/off via update', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const wallet = await caller.wallet.createPaper({ name: 'Toggle Test' });
+
+      await caller.wallet.update({ id: wallet.id, agentTradingEnabled: true });
+      const enabled = await caller.wallet.list();
+      expect(enabled.find((w) => w.id === wallet.id)?.agentTradingEnabled).toBe(true);
+
+      await caller.wallet.update({ id: wallet.id, agentTradingEnabled: false });
+      const disabled = await caller.wallet.list();
+      expect(disabled.find((w) => w.id === wallet.id)?.agentTradingEnabled).toBe(false);
+    });
+
+    it('does not change agentTradingEnabled when omitted from update payload', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const wallet = await caller.wallet.createPaper({ name: 'Preserve Test' });
+
+      await caller.wallet.update({ id: wallet.id, agentTradingEnabled: true });
+      await caller.wallet.update({ id: wallet.id, name: 'Renamed' });
+
+      const list = await caller.wallet.list();
+      const found = list.find((w) => w.id === wallet.id);
+      expect(found?.name).toBe('Renamed');
+      expect(found?.agentTradingEnabled).toBe(true);
+    });
   });
 
   describe('delete', () => {

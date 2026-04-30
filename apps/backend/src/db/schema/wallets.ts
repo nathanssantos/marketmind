@@ -29,6 +29,14 @@ export const wallets = pgTable('wallets', {
   currency: varchar({ length: 10 }).default(DEFAULT_CURRENCY),
   exchange: varchar({ length: 20 }).default('BINANCE'),
   isActive: boolean('is_active').default(true),
+  /**
+   * Per-wallet opt-in for MCP-connected agents to drive trade-execution
+   * tools (place_order, cancel_order, close_position, etc.) on this
+   * wallet. Default false. Read-only tools work without this; only
+   * write tools check the flag. See docs/MCP_TRADING_CONCEPT.md and
+   * V1_5_PLAN C.1.
+   */
+  agentTradingEnabled: boolean('agent_trading_enabled').default(false).notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 });

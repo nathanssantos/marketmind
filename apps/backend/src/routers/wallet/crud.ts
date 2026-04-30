@@ -181,6 +181,7 @@ export const walletCrudRouter = router({
         id: z.string(),
         name: z.string().min(1).max(255).optional(),
         isActive: z.boolean().optional(),
+        agentTradingEnabled: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -203,6 +204,7 @@ export const walletCrudRouter = router({
 
       if (input.name !== undefined) updateData.name = input.name;
       if (input.isActive !== undefined) updateData.isActive = input.isActive;
+      if (input.agentTradingEnabled !== undefined) updateData.agentTradingEnabled = input.agentTradingEnabled;
 
       await ctx.db.update(wallets).set(updateData).where(eq(wallets.id, input.id));
 

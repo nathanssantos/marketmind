@@ -32,6 +32,7 @@ DROP TABLE IF EXISTS trade_cooldowns CASCADE;
 DROP TABLE IF EXISTS klines CASCADE;
 DROP TABLE IF EXISTS price_cache CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
+DROP TABLE IF EXISTS mcp_trading_audit CASCADE;
 DROP TABLE IF EXISTS user_indicators CASCADE;
 DROP TABLE IF EXISTS user_layouts_audit CASCADE;
 DROP TABLE IF EXISTS user_layouts_history CASCADE;
@@ -113,9 +114,26 @@ CREATE TABLE IF NOT EXISTS wallets (
   currency VARCHAR(10) DEFAULT 'USDT',
   exchange VARCHAR(20) DEFAULT 'BINANCE',
   is_active BOOLEAN DEFAULT true,
+  agent_trading_enabled BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS mcp_trading_audit (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  wallet_id VARCHAR(255) REFERENCES wallets(id) ON DELETE SET NULL,
+  tool VARCHAR(64) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  input_json TEXT,
+  result_json TEXT,
+  error_message TEXT,
+  idempotency_key VARCHAR(255),
+  duration_ms INTEGER,
+  ts TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX mcp_trading_audit_user_ts_idx ON mcp_trading_audit (user_id, ts);
+CREATE INDEX mcp_trading_audit_idempotency_idx ON mcp_trading_audit (user_id, idempotency_key);
 
 CREATE TABLE IF NOT EXISTS trading_profiles (
   id VARCHAR(255) PRIMARY KEY,
@@ -811,6 +829,7 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.autoTradingConfig);
   await db.delete(schema.activeWatchers);
   await db.delete(schema.apiKeys);
+  await db.delete(schema.mcpTradingAudit);
   await db.delete(schema.userIndicators);
   await db.delete(schema.userLayoutsAudit);
   await db.delete(schema.userLayoutsHistory);

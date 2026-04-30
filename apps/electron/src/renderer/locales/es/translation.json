@@ -297,6 +297,19 @@
         "unknownAgent": "Dispositivo desconocido",
         "unknownIp": "Ubicación desconocida",
         "createdAt": "Iniciada {{date}}"
+      },
+      "agentTrading": {
+        "title": "Trading con Agente IA",
+        "description": "Permitir que agentes conectados por MCP (Claude Code, ChatGPT desktop, agentes personalizados) ejecuten trades por billetera. La inspección de solo lectura siempre funciona; este toggle controla únicamente las operaciones de escritura.",
+        "warning": "Habilitarlo permite que los agentes coloquen órdenes reales en tu nombre. Cada acción se registra en el log de auditoría. Puedes desactivarlo cuando quieras.",
+        "noWallets": "Aún no hay billeteras configuradas. Agrega una para controlar el trading por agente.",
+        "perWalletHelper": "Permitir que los agentes coloquen / cancelen / modifiquen órdenes en esta billetera",
+        "enabled": "Trading por agente habilitado para {{name}}",
+        "disabled": "Trading por agente deshabilitado para {{name}}",
+        "toggleFailed": "No se pudo actualizar el trading por agente",
+        "confirmTitle": "¿Habilitar trading por agente en esta billetera?",
+        "confirmBody": "Los agentes conectados por MCP podrán colocar órdenes reales en esta billetera. Cada acción quedará en el log de auditoría. Puedes revocar esto cuando quieras.",
+        "confirmCta": "Habilitar trading por agente"
       }
     },
     "notifications": {
