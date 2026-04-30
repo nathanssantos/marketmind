@@ -80,6 +80,21 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
         </VStack>
       </Button>
       <VStack gap={0} h="34px" w="32px" flexShrink={0} justify="stretch">
+        <Box
+          h="17px"
+          w="32px"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          borderWidth="1px"
+          borderBottomWidth={0}
+          borderColor="border"
+          borderTopRadius="md"
+        >
+          <Text fontSize="2xs" color="fg.muted" lineHeight="1" whiteSpace="nowrap">
+            {spread > 0 ? spread.toFixed(2) : '—'}
+          </Text>
+        </Box>
         <TooltipWrapper label={toggleAdvancedLabel} showArrow>
           <IconButton
             size="2xs"
@@ -89,26 +104,11 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
             h="17px"
             w="32px"
             minW="32px"
-            borderBottomRadius={0}
+            borderTopRadius={0}
           >
             {showAdvanced ? <LuChevronUp /> : <LuChevronDown />}
           </IconButton>
         </TooltipWrapper>
-        <Box
-          h="17px"
-          w="32px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          borderWidth="1px"
-          borderTopWidth={0}
-          borderColor="border"
-          borderBottomRadius="md"
-        >
-          <Text fontSize="2xs" color="fg.muted" lineHeight="1" whiteSpace="nowrap">
-            {spread > 0 ? formatChartPrice(spread) : '—'}
-          </Text>
-        </Box>
       </VStack>
       <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={onSell} loading={isCreatingOrder} flex={1}>
         <VStack gap={0} lineHeight="1">

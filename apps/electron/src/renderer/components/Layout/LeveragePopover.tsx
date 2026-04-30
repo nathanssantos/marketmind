@@ -76,8 +76,10 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
                 color={triggerColor}
                 aria-label={t('futures.leverage', 'Leverage')}
                 onClick={() => setIsOpen((prev) => !prev)}
-                px={leverage > 1 ? 1.5 : undefined}
-                minW={0}
+                h="20px"
+                minH="20px"
+                px={1.5}
+                minW="32px"
                 fontSize="xs"
                 fontWeight="bold"
               >
