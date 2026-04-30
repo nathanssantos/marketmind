@@ -25,6 +25,16 @@
       "resetZoom": "Réinitialiser le zoom vertical",
       "goToStart": "Aller au début des données",
       "goToEnd": "Aller à la dernière bougie"
+    },
+    "drawing": {
+      "delete": "Supprimer le dessin sélectionné",
+      "copy": "Copier le dessin sélectionné",
+      "paste": "Coller le dessin"
+    },
+    "trading": {
+      "cancelSlTpPlacement": "Annuler le placement de SL/TP",
+      "cancelTrailingStopPlacement": "Annuler le placement de trailing stop",
+      "cancelOrderDrag": "Annuler le glissement d'ordre"
     }
   },
   "common": {
