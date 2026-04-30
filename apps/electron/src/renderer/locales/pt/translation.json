@@ -1973,6 +1973,8 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Abrir backtest",
+    "runningTooltip": "{{count}} backtest rodando",
+    "runningTooltip_other": "{{count}} backtests rodando",
     "comingSoon": "Configuração de backtest em breve.",
     "tabs": {
       "basic": "Básico",
