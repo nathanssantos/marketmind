@@ -497,6 +497,22 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/mcp-trading:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.0.4
+        version: 1.29.0(zod@4.3.6)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   packages/risk:
     dependencies:
       '@marketmind/types':
