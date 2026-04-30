@@ -2,7 +2,18 @@ import { verify } from '@node-rs/argon2';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
+import { validatePassword } from '@marketmind/utils';
 import type { FastifyReply } from 'fastify';
+
+const passwordPolicySchema = z.string().superRefine((value, ctx) => {
+  const result = validatePassword(value);
+  if (result.valid) return;
+  ctx.addIssue({
+    code: 'custom',
+    message: `Password does not meet policy: ${result.issues.join(', ')}`,
+    params: { issues: result.issues },
+  });
+});
 import { sessions, users } from '../db/schema';
 import {
   AVATAR_LIMITS,
@@ -76,7 +87,7 @@ export const authRouter = router({
     .input(
       z.object({
         email: z.string().email(),
-        password: z.string().min(8),
+        password: passwordPolicySchema,
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -350,7 +361,7 @@ export const authRouter = router({
   changePassword: protectedProcedure
     .input(z.object({
       currentPassword: z.string(),
-      newPassword: z.string().min(8),
+      newPassword: passwordPolicySchema,
     }))
     .mutation(async ({ input, ctx }) => {
       const req = ctx.req;
@@ -489,7 +500,7 @@ export const authRouter = router({
     .input(
       z.object({
         token: z.string(),
-        password: z.string().min(8),
+        password: passwordPolicySchema,
       })
     )
     .mutation(async ({ input, ctx }) => {

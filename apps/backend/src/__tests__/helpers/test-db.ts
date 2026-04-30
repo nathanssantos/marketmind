@@ -33,6 +33,8 @@ DROP TABLE IF EXISTS klines CASCADE;
 DROP TABLE IF EXISTS price_cache CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
 DROP TABLE IF EXISTS user_indicators CASCADE;
+DROP TABLE IF EXISTS user_layouts_history CASCADE;
+DROP TABLE IF EXISTS user_layouts CASCADE;
 DROP TABLE IF EXISTS user_preferences CASCADE;
 DROP TABLE IF EXISTS trading_profiles CASCADE;
 DROP TABLE IF EXISTS two_factor_codes CASCADE;
@@ -665,6 +667,22 @@ CREATE TABLE IF NOT EXISTS user_indicators (
 );
 CREATE INDEX user_indicators_user_id_idx ON user_indicators(user_id);
 
+CREATE TABLE IF NOT EXISTS user_layouts (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  data TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_layouts_history (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  data TEXT NOT NULL,
+  snapshot_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX user_layouts_history_user_snapshot_idx ON user_layouts_history(user_id, snapshot_at);
+
 CREATE TABLE IF NOT EXISTS income_events (
   id SERIAL PRIMARY KEY,
   wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
@@ -765,6 +783,8 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.activeWatchers);
   await db.delete(schema.apiKeys);
   await db.delete(schema.userIndicators);
+  await db.delete(schema.userLayoutsHistory);
+  await db.delete(schema.userLayouts);
   await db.delete(schema.userPreferences);
   await db.delete(schema.tradingProfiles);
   await db.delete(schema.twoFactorCodes);

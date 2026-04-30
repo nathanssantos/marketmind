@@ -2345,9 +2345,23 @@
       "emailRequired": "Email é obrigatório",
       "emailInvalid": "Insira um email válido",
       "passwordRequired": "Senha é obrigatória",
-      "passwordMin": "A senha deve ter no mínimo 8 caracteres",
+      "passwordMin": "A senha deve ter no mínimo 10 caracteres",
       "codeRequired": "Código é obrigatório",
       "codeLength": "O código deve ter 6 dígitos"
+    },
+    "passwordPolicy": {
+      "title": "Requisitos da senha",
+      "tooShort": "No mínimo 10 caracteres",
+      "noUppercase": "Uma letra maiúscula (A-Z)",
+      "noLowercase": "Uma letra minúscula (a-z)",
+      "noDigit": "Um dígito (0-9)",
+      "noSymbol": "Um símbolo (!@#$ etc.)",
+      "common": "Não pode ser uma senha comum",
+      "weak": "Fraca",
+      "fair": "Razoável",
+      "good": "Boa",
+      "strong": "Forte",
+      "excellent": "Excelente"
     }
   },
   "account": {

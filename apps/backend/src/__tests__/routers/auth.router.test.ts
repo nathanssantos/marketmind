@@ -74,6 +74,30 @@ describe('Auth Router Integration', () => {
       ).rejects.toThrow();
     });
 
+    it('should reject registration when password lacks a symbol', async () => {
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.auth.register({
+          email: 'nosymbol@example.com',
+          password: 'NoSymbol123',
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should reject registration when password is on the common-passwords list', async () => {
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+
+      await expect(
+        caller.auth.register({
+          email: 'common@example.com',
+          password: 'Password123',
+        })
+      ).rejects.toThrow();
+    });
+
     it('should reject registration with invalid email', async () => {
       const ctx = createTestContext();
       const caller = createTestCaller(ctx);

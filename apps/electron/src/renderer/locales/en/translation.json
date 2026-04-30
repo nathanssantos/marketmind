@@ -2311,9 +2311,23 @@
       "emailRequired": "Email is required",
       "emailInvalid": "Please enter a valid email",
       "passwordRequired": "Password is required",
-      "passwordMin": "Password must be at least 8 characters",
+      "passwordMin": "Password must be at least 10 characters",
       "codeRequired": "Code is required",
       "codeLength": "Code must be 6 digits"
+    },
+    "passwordPolicy": {
+      "title": "Password requirements",
+      "tooShort": "At least 10 characters",
+      "noUppercase": "An uppercase letter (A-Z)",
+      "noLowercase": "A lowercase letter (a-z)",
+      "noDigit": "A digit (0-9)",
+      "noSymbol": "A symbol (!@#$ etc.)",
+      "common": "Not a commonly-used password",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong",
+      "excellent": "Excellent"
     }
   },
   "account": {

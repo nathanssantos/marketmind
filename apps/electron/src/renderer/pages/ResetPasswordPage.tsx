@@ -3,7 +3,7 @@ import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 import { AuthLayout } from '../components/Auth/AuthLayout';
-import { Alert, Button, Field, Link, PasswordInput } from '../components/ui';
+import { Alert, Button, Field, Link, PasswordInput, PasswordStrengthMeter } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { AUTH_UI } from '../utils/auth';
 import { trpc } from '../utils/trpc';
@@ -107,9 +107,10 @@ export const ResetPasswordPage = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={10}
               autoFocus
             />
+            <PasswordStrengthMeter password={password} />
           </Field>
 
           <Field label={t('auth.resetPassword.confirmPassword')}>
@@ -117,7 +118,7 @@ export const ResetPasswordPage = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={10}
             />
           </Field>
 
