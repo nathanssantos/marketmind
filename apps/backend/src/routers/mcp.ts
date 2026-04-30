@@ -1,10 +1,13 @@
 import { TRPCError } from '@trpc/server';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { mcpTradingAudit, wallets } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 
 const auditStatusSchema = z.enum(['success', 'failure', 'denied', 'rate_limited']);
+
+export const MCP_WRITES_PER_HOUR = 30;
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 /**
  * MCP-side endpoints. Owns:
@@ -107,6 +110,38 @@ export const mcpRouter = router({
           message: 'agent trading is disabled for this wallet',
         });
       }
+
+      // Rate limit: at most MCP_WRITES_PER_HOUR successful writes in
+      // the last hour, scoped to (user, wallet). Counts only 'success'
+      // rows so a flurry of failures doesn't lock the wallet out.
+      // When exceeded, throw TOO_MANY_REQUESTS and write a
+      // 'rate_limited' audit row so the user can see in Settings →
+      // Security → AI Agent Activity that the throttle fired.
+      const since = new Date(Date.now() - ONE_HOUR_MS);
+      const counts = await ctx.db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(mcpTradingAudit)
+        .where(and(
+          eq(mcpTradingAudit.userId, ctx.user.id),
+          eq(mcpTradingAudit.walletId, wallet.id),
+          eq(mcpTradingAudit.status, 'success'),
+          gte(mcpTradingAudit.ts, since),
+        ));
+      const recentSuccessCount = counts[0]?.count ?? 0;
+      if (recentSuccessCount >= MCP_WRITES_PER_HOUR) {
+        await ctx.db.insert(mcpTradingAudit).values({
+          userId: ctx.user.id,
+          walletId: wallet.id,
+          tool: input.tool,
+          status: 'rate_limited',
+          errorMessage: `rate limit exceeded (${MCP_WRITES_PER_HOUR}/hour)`,
+        });
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: `rate limit exceeded (${MCP_WRITES_PER_HOUR}/hour for this wallet); try again later`,
+        });
+      }
+
       return { ok: true as const };
     }),
 

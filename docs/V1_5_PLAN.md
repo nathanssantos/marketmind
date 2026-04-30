@@ -86,6 +86,16 @@ Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capabilit
 
 **Sequencing within C.1**: split across multiple PRs — read tools + audit table + toggle UI as one foundation PR, write tools (paper) as a second, live unlock as a third.
 
+**Status (as of 2026-04-30)**:
+- ✅ C.1.a foundation — toggle column + audit table + Settings UI (#314)
+- ✅ C.1.b read tools package + recordAudit/listAudit (#315)
+- ✅ C.1.c hard-gate `mcp.assertWriteAllowed` (#316) — denied → FORBIDDEN + denied audit row
+- ✅ C.1.d paper-mode write tools — place/cancel/close (#317)
+- ✅ C.1.e "AI Agent Activity" audit log panel (#318)
+- C.1.f rate limit (30 writes/hour per wallet) — TODO
+- C.1.g `set_sl_tp` write tool — TODO
+- C.1.h live unlock (remove paper-only client check) — TODO
+
 ---
 
 ## D — Accessibility (deferred from V1_3 F.2/F.3)
@@ -93,7 +103,7 @@ Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capabilit
 ### D.1 — Keyboard navigation in chart ✅ shipped (#302)
 Centralized registry + dispatcher + `?` help modal. 11 chart shortcuts (pan / zoom / home / end / reset zoom) registered via the new system.
 
-### D.1.b — Migrate remaining keyboard handlers to the registry
+### D.1.b — Migrate remaining keyboard handlers to the registry ✅ shipped (#304)
 After #302 the chart-pan shortcuts go through `useKeyboardShortcut`, but the other handlers in `apps/electron/src/renderer/components/Chart/ChartCanvas/useChartKeyboardShortcuts.ts` still attach their own `window.addEventListener('keydown', ...)`:
 
 - `Esc` → cancel `slTpPlacement` mode

@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { mcpTradingAudit } from '../../db/schema';
+import { MCP_WRITES_PER_HOUR } from '../../routers/mcp';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createAuthenticatedUser, createTestWallet } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
@@ -182,6 +183,54 @@ describe('MCP Router', () => {
       const db = getTestDatabase();
       const rows = await db.select().from(mcpTradingAudit).where(eq(mcpTradingAudit.userId, user.id));
       expect(rows).toHaveLength(0);
+    });
+
+    it('throws TOO_MANY_REQUESTS and writes a rate_limited row when the per-hour cap is exceeded', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, name: 'rl', agentTradingEnabled: true });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      for (let i = 0; i < MCP_WRITES_PER_HOUR; i++) {
+        await caller.mcp.recordAudit({
+          tool: 'trading.place_order',
+          status: 'success',
+          walletId: wallet.id,
+        });
+      }
+
+      await expect(
+        caller.mcp.assertWriteAllowed({ walletId: wallet.id, tool: 'trading.place_order' }),
+      ).rejects.toThrow(expect.objectContaining({ code: 'TOO_MANY_REQUESTS' }));
+
+      const rateLimitedRows = await db
+        .select()
+        .from(mcpTradingAudit)
+        .where(and(
+          eq(mcpTradingAudit.userId, user.id),
+          eq(mcpTradingAudit.status, 'rate_limited'),
+        ));
+      expect(rateLimitedRows).toHaveLength(1);
+      expect(rateLimitedRows[0]?.walletId).toBe(wallet.id);
+      expect(rateLimitedRows[0]?.errorMessage).toMatch(/rate limit/i);
+    });
+
+    it('does not count denied or failure rows against the per-hour cap', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, name: 'mixed', agentTradingEnabled: true });
+      const caller = createAuthenticatedCaller(user, session);
+
+      for (let i = 0; i < MCP_WRITES_PER_HOUR; i++) {
+        await caller.mcp.recordAudit({
+          tool: 'trading.place_order',
+          status: i % 2 === 0 ? 'failure' : 'denied',
+          walletId: wallet.id,
+          errorMessage: 'simulated',
+        });
+      }
+
+      const result = await caller.mcp.assertWriteAllowed({ walletId: wallet.id, tool: 'trading.place_order' });
+      expect(result.ok).toBe(true);
     });
   });
 });
