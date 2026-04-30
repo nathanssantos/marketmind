@@ -263,8 +263,10 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
 }));
 
 let persistDebounce: ReturnType<typeof setTimeout> | null = null;
+let isHydrated = false;
 
 const persistLayout = (): void => {
+  if (!isHydrated) return;
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
     const { symbolTabs, activeSymbolTabId, layoutPresets } = useLayoutStore.getState();
@@ -285,21 +287,28 @@ export const hydrateLayoutStore = async (): Promise<void> => {
         ...(saved.activeSymbolTabId && { activeSymbolTabId: saved.activeSymbolTabId }),
         ...(saved.layoutPresets && { layoutPresets: saved.layoutPresets }),
       });
+      isHydrated = true;
       return;
     }
+
+    const chartPrefs = usePreferencesStore.getState().chart;
+    const savedSymbol = chartPrefs['symbol'] as string | undefined;
+    const savedMarketType = chartPrefs['marketType'] as MarketType | undefined;
+
+    if (savedSymbol) {
+      useLayoutStore.getState().updateTabSymbol(
+        'default',
+        savedSymbol,
+        savedMarketType ?? 'FUTURES',
+      );
+    }
+    isHydrated = true;
   } catch (e) {
-    console.warn('layoutStore hydrate failed', e);
-  }
-
-  const chartPrefs = usePreferencesStore.getState().chart;
-  const savedSymbol = chartPrefs['symbol'] as string | undefined;
-  const savedMarketType = chartPrefs['marketType'] as MarketType | undefined;
-
-  if (savedSymbol) {
-    useLayoutStore.getState().updateTabSymbol(
-      'default',
-      savedSymbol,
-      savedMarketType ?? 'FUTURES',
-    );
+    // Don't unlock persistence — if the layout query failed (backend down,
+    // session not yet established, etc.), allowing writes would let the
+    // default in-memory state overwrite the user's saved layouts on the
+    // next state change. Stay locked; user changes are lost in this session
+    // but the persisted layout is protected.
+    console.warn('layoutStore hydrate failed; persistence remains locked', e);
   }
 };

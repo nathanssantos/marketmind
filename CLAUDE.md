@@ -587,10 +587,10 @@ describe('Wallet Router', () => {
 
 ## 📊 Current Development Phase
 
-**Version:** v1.3.0
-**Current Focus:** v1.5 plan complete and archived. v1.3 ships the v1.4 + v1.5 cross-surface UI sweeps plus a 60% main-bundle reduction (Settings tabs, locale JSONs, `pinets`, `recharts` lazy-loaded). Audit script grew from 1 → 7 forbidden-pattern rules; all at 0 violations. Three browser test suites lock the right-axis price tag regression class (overlay-line, overlay-bands, FVG). All older plans archived in `docs/archive/`.
+**Version:** v1.3.1
+**Current Focus:** v1.5 plan complete and archived. v1.3.1 ships two critical fixes: (1) the renderer's `auth.me` retry policy so backend restarts no longer bounce to /login on transient network errors; (2) layoutStore persistence is gated on hydration completing successfully — closes a regression introduced by (1) where transient backend failures during hydrate would let the default in-memory state overwrite the user's saved tabs/layouts. Older plans archived in `docs/archive/`.
 
-### System Status (v1.3.0)
+### System Status (v1.3.1)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
 - **✅ Authentication**: Argon2 + session management
@@ -1204,5 +1204,5 @@ When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: ver
 ---
 
 **Last Updated:** April 2026
-**Version:** 1.8
-**Project Version:** 1.3.0
+**Version:** 1.9
+**Project Version:** 1.3.1
