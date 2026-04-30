@@ -66,24 +66,43 @@ if (!baselineExists) {
 const diffsDir = path.join(sessionDir, 'diffs');
 await mkdir(diffsDir, { recursive: true });
 
-const renderDiffsHtml = (failed) => {
-  const cards = failed
-    .map((r) => {
+const toDataUri = async (file) => {
+  try {
+    const buf = await readFile(file);
+    return `data:image/png;base64,${buf.toString('base64')}`;
+  } catch {
+    return null;
+  }
+};
+
+const renderDiffsHtml = async (failed) => {
+  // Embed baseline / session / diff PNGs as data URIs so the HTML is
+  // self-contained when downloaded as a CI artifact (the baseline dir
+  // lives outside the session dir, so a plain `<img src="../baseline/...">`
+  // breaks once the artifact is unzipped). Cost: a few MB per failing
+  // image, which is fine — we only render this on actual failures.
+  const sections = await Promise.all(
+    failed.map(async (r) => {
       if (r.status === 'dimension-change') {
         return `<section><h2>${r.file}</h2><p class="warn">dimensions differ between baseline and session — no pixel diff available</p></section>`;
       }
       const pct = ((r.diffPixels / r.totalPixels) * 100).toFixed(3);
+      const [baselineUri, sessionUri, diffUri] = await Promise.all([
+        toDataUri(path.join(BASELINE_DIR, r.file)),
+        toDataUri(path.join(sessionDir, r.file)),
+        toDataUri(path.join(diffsDir, r.file)),
+      ]);
       return `<section>
         <h2>${r.file}</h2>
         <p class="meta"><span class="px">${r.diffPixels}px</span> · <span class="pct">${pct}%</span></p>
         <div class="row">
-          <figure><figcaption>baseline</figcaption><img src="../baseline/${r.file}" alt="baseline ${r.file}"/></figure>
-          <figure><figcaption>session</figcaption><img src="../${r.file}" alt="session ${r.file}"/></figure>
-          <figure><figcaption>diff</figcaption><img src="./${r.file}" alt="diff ${r.file}"/></figure>
+          <figure><figcaption>baseline</figcaption>${baselineUri ? `<img src="${baselineUri}" alt="baseline ${r.file}"/>` : '<p class="warn">baseline missing</p>'}</figure>
+          <figure><figcaption>session</figcaption>${sessionUri ? `<img src="${sessionUri}" alt="session ${r.file}"/>` : '<p class="warn">session missing</p>'}</figure>
+          <figure><figcaption>diff</figcaption>${diffUri ? `<img src="${diffUri}" alt="diff ${r.file}"/>` : '<p class="warn">diff missing</p>'}</figure>
         </div>
       </section>`;
-    })
-    .join('');
+    }),
+  );
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Visual diff — ${path.basename(sessionDir)}</title>
 <style>
@@ -101,7 +120,7 @@ figcaption{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05
 img{max-width:100%;border:1px solid #333;border-radius:4px;background:#000}
 </style></head><body>
 <h1>Visual diff — ${path.basename(sessionDir)}<br><small style="font-size:12px;color:#888;font-weight:400">vs apps/electron/screenshots/baseline · maxDiffPixels=${MAX_DIFF_PIXELS} threshold=${THRESHOLD}</small></h1>
-${cards || '<p style="color:#888">No diffs detected.</p>'}
+${sections.join('') || '<p style="color:#888">No diffs detected.</p>'}
 </body></html>`;
 };
 
@@ -170,7 +189,7 @@ if (failed.length > 0) {
     }
   }
   const diffsHtmlPath = path.join(diffsDir, 'index.html');
-  await writeFile(diffsHtmlPath, renderDiffsHtml(failed), 'utf8');
+  await writeFile(diffsHtmlPath, await renderDiffsHtml(failed), 'utf8');
   console.log(`\n  view all: ${diffsHtmlPath}`);
 }
 if (missingFromSession.length > 0) {
