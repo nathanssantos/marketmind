@@ -129,30 +129,14 @@ Each one duplicates the typing-target check + the input-detection logic the disp
 - DialogCloseTrigger wrapper now defaults `aria-label="Close"` so any consumer auto-passes the `button-name` rule.
 - 2 rules currently disabled with documented justification — see D.2.b/D.2.c below.
 
-### D.2.b — Manual VoiceOver pass on dialogs (needs human in the loop)
-The axe spec from D.2.a catches missing labels and structural issues automatically, but doesn't verify the actual screen-reader experience. Things only a real VoiceOver run will catch:
-- Focus order on tab navigation
-- Whether `aria-describedby` correctly associates error text with its field
-- Whether `aria-live` regions actually announce inline success/error toasts
-- Trap behavior inside `<Dialog>` — does `Tab` from the last focusable element wrap back to the first
-- Reading order of grouped content (e.g. SettingsDialog's vertical tab rail + content panel)
-
-**What ships**: VoiceOver run on Settings / Analytics / Backtest / ChartCloseDialog. Notes every place focus order is wrong, labels are missing, or `aria-live` regions are silent. Per-finding fix in a follow-up PR.
-
-**Effort**: ~half-day testing + ~half-day fixes. **Risk**: low. **Blocked by**: needs the developer (or an a11y QA contractor) to run VoiceOver — can't be automated.
+### D.2.b — Manual VoiceOver pass on dialogs ❌ out of scope
+**Decision (2026-04-30):** product is not pursuing screen-reader-grade a11y. The axe automated rules (D.2.a) and color-contrast fixes (D.2.c) stay — they catch obvious regressions cheaply — but full WCAG 2.1 AA conformance is not a goal. Skip this task indefinitely.
 
 ### D.2.c — Color-contrast violations in Analytics ✅ shipped (#308)
 Root cause was `bg.muted` (`#4a5568` _dark) being too light — `trading.loss/profit` over it gave ~2.3:1 contrast, well below 4.5:1 AA. Fixed by switching `<DataCard>` from a `bg.muted` fill to a `border` outline, which moves the text onto `bg.panel` (`#1a202c` _dark) where contrast clears comfortably. Also migrated `PerformanceCalendar`'s `getSignColor` from `red.500/green.500` literals to `trading.loss/profit` semantic tokens. `color-contrast` rule re-enabled in `e2e/a11y-dialogs.spec.ts`.
 
-### D.2.d — Chakra/Ark useId() ARIA strictness (deferred from D.2.a skip list)
-The axe spec also disables `aria-valid-attr-value` because Chakra/Ark UI generate IDs via React's `useId()` (e.g. `tabs:_r_2a_:content-account`). axe-core's strict IDREF check rejects these even though they're valid HTML5 and screen readers handle them correctly.
-
-**What ships** (only if it ever blocks something real):
-- Configure Ark UI's `idPrefix` on every Tabs/Accordion/Dialog instance to use a colon-free pattern.
-- Or wait for Chakra v3 / Ark UI to ship a fix and re-enable the rule.
-- Skip otherwise — this is a known-cosmetic violation, not an a11y regression.
-
-**Effort**: ~half-day audit + sweep, **OR** zero if we keep the skip. **Risk**: zero either way.
+### D.2.d — Chakra/Ark useId() ARIA strictness ❌ out of scope
+Same call as D.2.b — pure-conformance work, not pursuing it. The axe spec keeps the rule disabled with the documented justification; that's the end state.
 
 ---
 
