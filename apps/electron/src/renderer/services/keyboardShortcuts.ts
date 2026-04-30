@@ -18,6 +18,13 @@ export interface ShortcutDefinition {
   when?: () => boolean;
   preventDefault?: boolean;
   hidden?: boolean;
+  /**
+   * When true, the shortcut still fires while the user is typing in
+   * an INPUT / TEXTAREA / contentEditable element. Default false.
+   * Use only for modal-cancel patterns (Esc) where the shortcut is
+   * conceptually "more important" than the input focus.
+   */
+  allowInTypingTarget?: boolean;
 }
 
 interface KeyboardShortcutState {

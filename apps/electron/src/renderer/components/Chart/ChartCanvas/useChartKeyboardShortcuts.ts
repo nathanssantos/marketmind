@@ -1,6 +1,7 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { getDrawingClipboard, setDrawingClipboard, useDrawingStore } from '@renderer/store/drawingStore';
 import { useEffect } from 'react';
+import { useKeyboardShortcut } from '@renderer/hooks/useKeyboardShortcut';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { useOrderDragHandler } from '../useOrderDragHandler';
 import type { useSlTpPlacementMode } from '@renderer/hooks/useSlTpPlacementMode';
@@ -26,114 +27,144 @@ export const useChartKeyboardShortcuts = ({
   orderDragHandler,
   allExecutions,
 }: UseChartKeyboardShortcutsProps): void => {
-  useEffect(() => {
-    if (!slTpPlacement.active) return;
+  useKeyboardShortcut({
+    id: 'trading.cancelSlTpPlacement',
+    keys: 'Escape',
+    scope: 'when-condition',
+    group: 'trading',
+    description: 'Cancel SL/TP placement mode',
+    descriptionKey: 'shortcuts.trading.cancelSlTpPlacement',
+    allowInTypingTarget: true,
+    when: () => slTpPlacement.active,
+    action: () => {
+      slTpPlacement.deactivate();
+      manager?.markDirty('overlays');
+    },
+  });
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        slTpPlacement.deactivate();
-        manager?.markDirty('overlays');
-      }
-    };
+  useKeyboardShortcut({
+    id: 'trading.cancelTrailingStopPlacement',
+    keys: 'Escape',
+    scope: 'when-condition',
+    group: 'trading',
+    description: 'Cancel trailing stop placement mode',
+    descriptionKey: 'shortcuts.trading.cancelTrailingStopPlacement',
+    allowInTypingTarget: true,
+    when: () => tsPlacementActive,
+    action: () => {
+      tsPlacementDeactivate();
+      manager?.markDirty('overlays');
+    },
+  });
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [slTpPlacement.active, slTpPlacement.deactivate, manager]);
+  useKeyboardShortcut({
+    id: 'trading.cancelOrderDrag',
+    keys: 'Escape',
+    scope: 'when-condition',
+    group: 'trading',
+    description: 'Cancel order drag',
+    descriptionKey: 'shortcuts.trading.cancelOrderDrag',
+    allowInTypingTarget: true,
+    when: () => orderDragHandler.isDragging,
+    action: () => orderDragHandler.cancelDrag(),
+  });
 
-  useEffect(() => {
-    if (!tsPlacementActive) return;
+  useKeyboardShortcut(symbol ? {
+    id: 'drawing.delete',
+    keys: 'Delete',
+    scope: 'when-condition',
+    group: 'drawing',
+    description: 'Delete selected drawing',
+    descriptionKey: 'shortcuts.drawing.delete',
+    when: () => {
+      const state = useDrawingStore.getState();
+      if (!state.selectedDrawingId) return false;
+      const drawings = state.getDrawingsForSymbol(symbol, timeframe);
+      const selected = drawings.find((d) => d.id === state.selectedDrawingId);
+      return !!selected && !selected.locked;
+    },
+    action: () => {
+      const state = useDrawingStore.getState();
+      if (!state.selectedDrawingId) return;
+      state.deleteDrawing(state.selectedDrawingId, symbol, timeframe);
+      manager?.markDirty('overlays');
+    },
+  } : null);
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        tsPlacementDeactivate();
-        manager?.markDirty('overlays');
-      }
-    };
+  useKeyboardShortcut(symbol ? {
+    id: 'drawing.deleteBackspace',
+    keys: 'Backspace',
+    scope: 'when-condition',
+    group: 'drawing',
+    description: 'Delete selected drawing (Backspace)',
+    descriptionKey: 'shortcuts.drawing.delete',
+    hidden: true,
+    when: () => {
+      const state = useDrawingStore.getState();
+      if (!state.selectedDrawingId) return false;
+      const drawings = state.getDrawingsForSymbol(symbol, timeframe);
+      const selected = drawings.find((d) => d.id === state.selectedDrawingId);
+      return !!selected && !selected.locked;
+    },
+    action: () => {
+      const state = useDrawingStore.getState();
+      if (!state.selectedDrawingId) return;
+      state.deleteDrawing(state.selectedDrawingId, symbol, timeframe);
+      manager?.markDirty('overlays');
+    },
+  } : null);
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [tsPlacementActive, tsPlacementDeactivate, manager]);
+  useKeyboardShortcut(symbol ? {
+    id: 'drawing.copy',
+    keys: 'Mod+C',
+    scope: 'when-condition',
+    group: 'drawing',
+    description: 'Copy selected drawing',
+    descriptionKey: 'shortcuts.drawing.copy',
+    when: () => {
+      const state = useDrawingStore.getState();
+      if (!state.selectedDrawingId) return false;
+      const drawings = state.getDrawingsForSymbol(symbol, timeframe);
+      return drawings.some((d) => d.id === state.selectedDrawingId);
+    },
+    action: () => {
+      const state = useDrawingStore.getState();
+      if (!state.selectedDrawingId) return;
+      const drawings = state.getDrawingsForSymbol(symbol, timeframe);
+      const selected = drawings.find((d) => d.id === state.selectedDrawingId);
+      if (selected) setDrawingClipboard(selected);
+    },
+  } : null);
+
+  useKeyboardShortcut(symbol ? {
+    id: 'drawing.paste',
+    keys: 'Mod+V',
+    scope: 'when-condition',
+    group: 'drawing',
+    description: 'Paste drawing',
+    descriptionKey: 'shortcuts.drawing.paste',
+    when: () => getDrawingClipboard() !== null,
+    action: () => {
+      const source = getDrawingClipboard();
+      if (!source) return;
+      useDrawingStore.getState().duplicateDrawing(source, {
+        offsetIndex: 3,
+        targetSymbol: symbol,
+        targetInterval: timeframe,
+      });
+      manager?.markDirty('overlays');
+    },
+  } : null);
 
   useEffect(() => {
     if (tsPlacementActive) tsPlacementDeactivate();
   }, [symbol]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      if (orderDragHandler.isDragging) orderDragHandler.cancelDrag();
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [orderDragHandler.isDragging, orderDragHandler.cancelDrag]);
-
-  useEffect(() => {
-    const handleDeleteDrawing = (event: KeyboardEvent) => {
-      if (event.key === 'Delete' || event.key === 'Backspace') {
-        const target = event.target as HTMLElement;
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-        const drawingState = useDrawingStore.getState();
-        if (drawingState.selectedDrawingId && symbol) {
-          const drawings = drawingState.getDrawingsForSymbol(symbol, timeframe);
-          const selected = drawings.find(d => d.id === drawingState.selectedDrawingId);
-          if (selected?.locked) return;
-          drawingState.deleteDrawing(drawingState.selectedDrawingId, symbol, timeframe);
-          manager?.markDirty('overlays');
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleDeleteDrawing);
-    return () => window.removeEventListener('keydown', handleDeleteDrawing);
-  }, [symbol, manager, timeframe]);
-
-  useEffect(() => {
     if (!slTpPlacement.active || !slTpPlacement.executionId) return;
-    const targetExec = allExecutions.find(e => e.id === slTpPlacement.executionId);
+    const targetExec = allExecutions.find((e) => e.id === slTpPlacement.executionId);
     if (targetExec && targetExec.status !== 'open') {
       slTpPlacement.deactivate();
     }
   }, [allExecutions, slTpPlacement]);
-
-  useEffect(() => {
-    const handleClipboardShortcut = (event: KeyboardEvent) => {
-      if (!event.metaKey && !event.ctrlKey) return;
-      const key = event.key.toLowerCase();
-      if (key !== 'c' && key !== 'v') return;
-
-      const target = event.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
-      }
-
-      const store = useDrawingStore.getState();
-
-      if (key === 'c') {
-        if (!store.selectedDrawingId || !symbol) return;
-        const drawings = store.getDrawingsForSymbol(symbol, timeframe);
-        const selected = drawings.find((d) => d.id === store.selectedDrawingId);
-        if (!selected) return;
-        event.preventDefault();
-        setDrawingClipboard(selected);
-        return;
-      }
-
-      if (key === 'v') {
-        const source = getDrawingClipboard();
-        if (!source || !symbol) return;
-        event.preventDefault();
-        store.duplicateDrawing(source, {
-          offsetIndex: 3,
-          targetSymbol: symbol,
-          targetInterval: timeframe,
-        });
-        manager?.markDirty('overlays');
-      }
-    };
-
-    window.addEventListener('keydown', handleClipboardShortcut);
-    return () => window.removeEventListener('keydown', handleClipboardShortcut);
-  }, [symbol, timeframe, manager]);
 };

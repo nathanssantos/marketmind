@@ -25,7 +25,7 @@ export const KeyboardShortcutDispatcher = (): null => {
       for (const shortcut of allShortcuts) {
         if (!matchesShortcut(event, shortcut.keys)) continue;
 
-        if (typing && shortcut.scope !== 'when-condition') continue;
+        if (typing && !shortcut.allowInTypingTarget) continue;
 
         if (shortcut.scope === 'chart-focus') {
           const active = document.activeElement;
