@@ -139,7 +139,7 @@ export const Select = ({
         textAlign="left"
         cursor="pointer"
         borderRadius="md"
-        _hover={{ bg: 'bg.muted', borderColor: isBordered ? 'gray.600' : undefined }}
+        _hover={{ bg: 'bg.muted', borderColor: isBordered ? 'fg.muted' : undefined }}
         onClick={() => setIsOpen(!isOpen)}
       >
         <HStack justify="space-between">
@@ -190,7 +190,7 @@ export const Select = ({
                   size="sm"
                   bg="bg.muted"
                   borderColor="border"
-                  _focus={{ borderColor: 'blue.500' }}
+                  _focus={{ borderColor: 'accent.solid' }}
                   autoFocus
                   px={3}
                 />
@@ -278,7 +278,7 @@ export const Select = ({
                   size="sm"
                   bg="bg.muted"
                   borderColor="border"
-                  _focus={{ borderColor: 'blue.500' }}
+                  _focus={{ borderColor: 'accent.solid' }}
                   autoFocus
                   px={3}
                 />

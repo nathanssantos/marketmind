@@ -48,7 +48,7 @@ export const ControlPanelGroup = ({
             borderColor="border"
             cursor="pointer"
             onClick={() => setIsExpanded(!isExpanded)}
-            _hover={{ bg: 'gray.750' }}
+            _hover={{ bg: 'bg.muted' }}
             borderTopRadius="md"
           >
             <Text fontSize="sm" fontWeight="semibold" color="fg.muted">

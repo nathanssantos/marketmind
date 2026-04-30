@@ -377,7 +377,7 @@ export function SymbolSelector({
             size="xs"
             bg="bg.muted"
             borderColor="border"
-            _focus={{ borderColor: 'blue.500' }}
+            _focus={{ borderColor: 'accent.solid' }}
             autoFocus
             px={3}
           />
