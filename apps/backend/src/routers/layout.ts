@@ -1,7 +1,29 @@
-import { eq } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
+import { and, desc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
-import { userLayouts } from '../db/schema';
+import { userLayouts, userLayoutsHistory } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+
+const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const HISTORY_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+const isDefaultLayoutData = (raw: string): boolean => {
+  try {
+    const parsed = JSON.parse(raw) as {
+      symbolTabs?: Array<{ id?: string; symbol?: string }>;
+      layoutPresets?: Array<{ id?: string }>;
+    };
+    const tabs = parsed.symbolTabs ?? [];
+    const presets = parsed.layoutPresets ?? [];
+    if (tabs.length !== 1) return false;
+    if (tabs[0]?.id !== 'default' || tabs[0]?.symbol !== 'BTCUSDT') return false;
+    if (presets.length !== 3) return false;
+    const presetIds = presets.map((p) => p.id).sort();
+    return presetIds[0] === 'dual' && presetIds[1] === 'quad' && presetIds[2] === 'single';
+  } catch {
+    return false;
+  }
+};
 
 export const layoutRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
@@ -23,6 +45,31 @@ export const layoutRouter = router({
       data: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.db.query.userLayouts.findFirst({
+        where: eq(userLayouts.userId, ctx.user.id),
+      });
+
+      if (existing && !isDefaultLayoutData(existing.data) && isDefaultLayoutData(input.data)) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'Refusing to overwrite a non-default layout with the default state. This typically indicates a hydration race; reload the app and try again.',
+        });
+      }
+
+      if (existing) {
+        const ageMs = Date.now() - existing.updatedAt.getTime();
+        if (ageMs >= SNAPSHOT_INTERVAL_MS && existing.data !== input.data) {
+          await ctx.db.insert(userLayoutsHistory).values({
+            userId: ctx.user.id,
+            data: existing.data,
+          });
+          const cutoff = new Date(Date.now() - HISTORY_RETENTION_MS);
+          await ctx.db
+            .delete(userLayoutsHistory)
+            .where(and(eq(userLayoutsHistory.userId, ctx.user.id), lt(userLayoutsHistory.snapshotAt, cutoff)));
+        }
+      }
+
       const [result] = await ctx.db
         .insert(userLayouts)
         .values({
@@ -36,5 +83,53 @@ export const layoutRouter = router({
         .returning();
 
       return { success: true, id: result!.id };
+    }),
+
+  listSnapshots: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db
+      .select({
+        id: userLayoutsHistory.id,
+        snapshotAt: userLayoutsHistory.snapshotAt,
+      })
+      .from(userLayoutsHistory)
+      .where(eq(userLayoutsHistory.userId, ctx.user.id))
+      .orderBy(desc(userLayoutsHistory.snapshotAt));
+    return rows;
+  }),
+
+  restoreSnapshot: protectedProcedure
+    .input(z.object({ snapshotId: z.number().int().positive() }))
+    .mutation(async ({ ctx, input }) => {
+      const snapshot = await ctx.db.query.userLayoutsHistory.findFirst({
+        where: and(
+          eq(userLayoutsHistory.id, input.snapshotId),
+          eq(userLayoutsHistory.userId, ctx.user.id),
+        ),
+      });
+
+      if (!snapshot) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Snapshot not found' });
+      }
+
+      const existing = await ctx.db.query.userLayouts.findFirst({
+        where: eq(userLayouts.userId, ctx.user.id),
+      });
+
+      if (existing) {
+        await ctx.db.insert(userLayoutsHistory).values({
+          userId: ctx.user.id,
+          data: existing.data,
+        });
+      }
+
+      await ctx.db
+        .insert(userLayouts)
+        .values({ userId: ctx.user.id, data: snapshot.data })
+        .onConflictDoUpdate({
+          target: [userLayouts.userId],
+          set: { data: snapshot.data, updatedAt: new Date() },
+        });
+
+      return { success: true };
     }),
 });
