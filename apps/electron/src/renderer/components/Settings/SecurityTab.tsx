@@ -1,6 +1,6 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import {
-  Badge, Button, Field, FormRow, FormSection, MetaText, PasswordInput, PasswordStrengthMeter, Switch,
+  Badge, Button, Callout, ConfirmationDialog, Field, FormRow, FormSection, MetaText, PasswordInput, PasswordStrengthMeter, Switch,
 } from '@renderer/components/ui';
 import { validatePassword } from '@marketmind/utils';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
@@ -8,7 +8,7 @@ import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuLogOut, LuShieldCheck, LuShieldX } from 'react-icons/lu';
+import { LuBot, LuLogOut, LuShieldCheck, LuShieldX } from 'react-icons/lu';
 
 const formatRelative = (iso: string, locale: string): string =>
   new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -30,6 +30,11 @@ export const SecurityTab = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   const sessionsQuery = trpc.auth.listSessions.useQuery();
+  const walletsQuery = trpc.wallet.list.useQuery();
+  const updateWalletMutation = trpc.wallet.update.useMutation({
+    onSuccess: () => utils.wallet.list.invalidate(),
+  });
+  const [agentTradingPending, setAgentTradingPending] = useState<{ walletId: string; enable: boolean } | null>(null);
   const revokeSession = trpc.auth.revokeSession.useMutation({
     onSuccess: () => utils.auth.listSessions.invalidate(),
   });
@@ -246,6 +251,79 @@ export const SecurityTab = () => {
           </Stack>
         )}
       </FormSection>
+
+      <FormSection
+        title={t('settings.security.agentTrading.title')}
+        description={t('settings.security.agentTrading.description')}
+      >
+        <Callout tone="warning" compact>
+          {t('settings.security.agentTrading.warning')}
+        </Callout>
+        {walletsQuery.isLoading ? (
+          <Text fontSize="xs" color="fg.muted">{t('common.loading')}</Text>
+        ) : (walletsQuery.data ?? []).length === 0 ? (
+          <Text fontSize="xs" color="fg.muted">{t('settings.security.agentTrading.noWallets')}</Text>
+        ) : (
+          <Stack gap={1.5}>
+            {(walletsQuery.data ?? []).map((wallet) => (
+              <FormRow
+                key={wallet.id}
+                label={
+                  <HStack gap={2}>
+                    <Box color="fg.muted"><LuBot size={14} /></Box>
+                    <Text fontSize="sm">{wallet.name}</Text>
+                    <Badge size="sm" colorPalette={wallet.walletType === 'paper' ? 'gray' : 'orange'}>
+                      {wallet.walletType ?? 'paper'}
+                    </Badge>
+                  </HStack>
+                }
+                helper={t('settings.security.agentTrading.perWalletHelper')}
+              >
+                <Switch
+                  checked={!!wallet.agentTradingEnabled}
+                  disabled={updateWalletMutation.isPending}
+                  onCheckedChange={(enable) => {
+                    if (enable) {
+                      setAgentTradingPending({ walletId: wallet.id, enable: true });
+                    } else {
+                      void updateWalletMutation.mutateAsync({ id: wallet.id, agentTradingEnabled: false })
+                        .then(() => toastSuccess(t('settings.security.agentTrading.disabled', { name: wallet.name })))
+                        .catch((err) => toastError(t('settings.security.agentTrading.toggleFailed'), err instanceof Error ? err.message : undefined));
+                    }
+                  }}
+                  data-testid={`agent-trading-toggle-${wallet.id}`}
+                />
+              </FormRow>
+            ))}
+          </Stack>
+        )}
+      </FormSection>
+
+      <ConfirmationDialog
+        isOpen={agentTradingPending !== null}
+        onClose={() => setAgentTradingPending(null)}
+        onConfirm={async () => {
+          if (!agentTradingPending) return;
+          try {
+            await updateWalletMutation.mutateAsync({
+              id: agentTradingPending.walletId,
+              agentTradingEnabled: agentTradingPending.enable,
+            });
+            const wallet = (walletsQuery.data ?? []).find((w) => w.id === agentTradingPending.walletId);
+            toastSuccess(t('settings.security.agentTrading.enabled', { name: wallet?.name ?? '' }));
+          } catch (err) {
+            toastError(t('settings.security.agentTrading.toggleFailed'), err instanceof Error ? err.message : undefined);
+          } finally {
+            setAgentTradingPending(null);
+          }
+        }}
+        title={t('settings.security.agentTrading.confirmTitle')}
+        description={t('settings.security.agentTrading.confirmBody')}
+        confirmLabel={t('settings.security.agentTrading.confirmCta')}
+        colorPalette="orange"
+        isDestructive
+        isLoading={updateWalletMutation.isPending}
+      />
 
       {currentUser?.createdAt && (
         <MetaText>

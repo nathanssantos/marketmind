@@ -13,6 +13,7 @@ export const WALLET_SAFE_COLUMNS = {
   totalDeposits: wallets.totalDeposits,
   totalWithdrawals: wallets.totalWithdrawals,
   isActive: wallets.isActive,
+  agentTradingEnabled: wallets.agentTradingEnabled,
   createdAt: wallets.createdAt,
   updatedAt: wallets.updatedAt,
 } as const;
