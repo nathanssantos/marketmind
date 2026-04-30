@@ -381,6 +381,16 @@
         "placeholder": "ETHUSDT",
         "add": "Adicionar",
         "empty": "BTCUSDT está sempre coletando."
+      },
+      "layouts": {
+        "title": "Histórico de Layouts",
+        "description": "Snapshots diários das suas abas e presets de layout, mantidos por 30 dias. Restaure qualquer snapshot anterior se seu estado atual foi perdido ou se você quer voltar.",
+        "empty": "Nenhum snapshot ainda — o primeiro é criado no dia seguinte ao primeiro ajuste no layout.",
+        "restore": "Restaurar",
+        "restoreConfirmTitle": "Restaurar este snapshot de layout?",
+        "restoreConfirmBody": "Seu layout atual será arquivado no histórico antes deste snapshot ficar ativo. Você sempre pode voltar pra ele.",
+        "restored": "Layout restaurado",
+        "restoreFailed": "Não foi possível restaurar o snapshot"
       }
     },
     "chart": {

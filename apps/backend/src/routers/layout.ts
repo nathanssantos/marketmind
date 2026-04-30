@@ -149,6 +149,13 @@ export const layoutRouter = router({
           set: { data: snapshot.data, updatedAt: new Date() },
         });
 
+      await ctx.db.insert(userLayoutsAudit).values({
+        userId: ctx.user.id,
+        prevDataHash: existing ? sha256(existing.data) : null,
+        newDataHash: sha256(snapshot.data),
+        source: 'restore',
+      });
+
       return { success: true };
     }),
 });

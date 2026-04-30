@@ -381,6 +381,16 @@
         "placeholder": "ETHUSDT",
         "add": "Agregar",
         "empty": "BTCUSDT siempre está recopilando."
+      },
+      "layouts": {
+        "title": "Historial de Diseños",
+        "description": "Snapshots diarios de tus pestañas y presets de diseño, retenidos por 30 días. Restaura cualquier snapshot previo si tu estado actual se perdió o quieres volver.",
+        "empty": "Sin snapshots aún — el primero se crea al día siguiente del primer cambio en tu diseño.",
+        "restore": "Restaurar",
+        "restoreConfirmTitle": "¿Restaurar este snapshot de diseño?",
+        "restoreConfirmBody": "Tu diseño actual se archivará en el historial antes de activar este snapshot. Siempre puedes volver a él.",
+        "restored": "Diseño restaurado",
+        "restoreFailed": "No se pudo restaurar el snapshot"
       }
     },
     "chart": {
