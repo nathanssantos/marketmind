@@ -83,11 +83,8 @@ const installCommonMocks = (page: Page) =>
 //
 // - aria-valid-attr-value: Chakra/Ark UI auto-generates IDs via React's
 //   useId() (e.g. ":r_2a_:") which are valid HTML5 but axe-core's strict
-//   check flags them. Screen readers handle them correctly.
-// - color-contrast: Analytics has 6 nodes with insufficient contrast on the
-//   PnL display (red text on bg.muted, ratio ~1.99). Real issue tracked in
-//   V1_5_PLAN as D.2.c — needs a coordinated semantic-token sweep.
-const SKIPPED_RULES = ['aria-valid-attr-value', 'color-contrast'];
+//   check flags them. Screen readers handle them correctly. Tracked as D.2.d.
+const SKIPPED_RULES = ['aria-valid-attr-value'];
 
 const auditDialog = async (page: Page, dialogSelector: string) => {
   const results = await new AxeBuilder({ page })

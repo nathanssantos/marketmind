@@ -130,16 +130,8 @@ The axe spec from D.2.a catches missing labels and structural issues automatical
 
 **Effort**: ~half-day testing + ~half-day fixes. **Risk**: low. **Blocked by**: needs the developer (or an a11y QA contractor) to run VoiceOver — can't be automated.
 
-### D.2.c — Color-contrast violations in Analytics (deferred from D.2.a skip list)
-The axe spec ran with `color-contrast` disabled because Analytics has 6 nodes with insufficient contrast on the PnL display: red text (`#e44546` — close to but not quite our `trading.loss` token) on `bg.muted` (`#475163`) yields a contrast ratio of **1.99** — well below the WCAG AA 4.5:1 floor.
-
-**What ships**:
-- Identify the source: likely a hardcoded hex inside `EquityCurveChart` / a recharts default / a non-token color in `MetricCard`. Grep for `#e44546` and `#e445` should localize it fast.
-- Migrate to `trading.loss` (which resolves to `#dc2626` / `#ef4444` and meets contrast over `bg.muted`). Or use a darker shade specifically for that surface.
-- Re-enable `color-contrast` in `e2e/a11y-dialogs.spec.ts` (delete the rule from `SKIPPED_RULES`).
-- Verify the spec stays green; if other surfaces fail too, fix or document each.
-
-**Effort**: ~1-2h. **Risk**: low (visual-only, no behavior change).
+### D.2.c — Color-contrast violations in Analytics ✅ shipped (#308)
+Root cause was `bg.muted` (`#4a5568` _dark) being too light — `trading.loss/profit` over it gave ~2.3:1 contrast, well below 4.5:1 AA. Fixed by switching `<DataCard>` from a `bg.muted` fill to a `border` outline, which moves the text onto `bg.panel` (`#1a202c` _dark) where contrast clears comfortably. Also migrated `PerformanceCalendar`'s `getSignColor` from `red.500/green.500` literals to `trading.loss/profit` semantic tokens. `color-contrast` rule re-enabled in `e2e/a11y-dialogs.spec.ts`.
 
 ### D.2.d — Chakra/Ark useId() ARIA strictness (deferred from D.2.a skip list)
 The axe spec also disables `aria-valid-attr-value` because Chakra/Ark UI generate IDs via React's `useId()` (e.g. `tabs:_r_2a_:content-account`). axe-core's strict IDREF check rejects these even though they're valid HTML5 and screen readers handle them correctly.
@@ -280,7 +272,7 @@ Proposed:
 8. ✅ **B.3** Postgres archive_mode (#305)
 9. ✅ **D.2.a** axe-core dialog spec (#306)
 10. **D.2.b** manual VoiceOver pass — needs human-in-the-loop, deferred
-11. **D.2.c** Analytics color-contrast fix — small, hex grep + token swap
+11. ✅ **D.2.c** Analytics color-contrast fix — DataCard outline + trading.* token sweep (#308)
 12. **G.2** backend custom-symbol tests — coverage closure
 13. **E.1–E.6** Backtest UI modal — biggest single-feature push, sequenced as 6 separate PRs
 14. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
