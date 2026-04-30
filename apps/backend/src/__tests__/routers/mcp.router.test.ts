@@ -134,4 +134,54 @@ describe('MCP Router', () => {
       expect(list).toHaveLength(3);
     });
   });
+
+  describe('assertWriteAllowed', () => {
+    it('rejects unauthenticated callers', async () => {
+      const caller = createUnauthenticatedCaller();
+      await expect(
+        caller.mcp.assertWriteAllowed({ walletId: 'x', tool: 't' }),
+      ).rejects.toThrow('UNAUTHORIZED');
+    });
+
+    it('throws NOT_FOUND when the wallet is not owned by the caller', async () => {
+      const { user: u1 } = await createAuthenticatedUser({ email: 'a@test.com' });
+      const { user: u2, session: s2 } = await createAuthenticatedUser({ email: 'b@test.com' });
+      const wallet = await createTestWallet({ userId: u1.id, name: 'u1 wallet' });
+      const c2 = createAuthenticatedCaller(u2, s2);
+      await expect(
+        c2.mcp.assertWriteAllowed({ walletId: wallet.id, tool: 'trading.place_order' }),
+      ).rejects.toThrow(expect.objectContaining({ code: 'NOT_FOUND' }));
+    });
+
+    it('throws FORBIDDEN and writes a denied audit row when agentTradingEnabled is false', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, name: 'gated' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        caller.mcp.assertWriteAllowed({ walletId: wallet.id, tool: 'trading.place_order' }),
+      ).rejects.toThrow(expect.objectContaining({ code: 'FORBIDDEN' }));
+
+      const db = getTestDatabase();
+      const rows = await db.select().from(mcpTradingAudit).where(eq(mcpTradingAudit.userId, user.id));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe('denied');
+      expect(rows[0]?.tool).toBe('trading.place_order');
+      expect(rows[0]?.walletId).toBe(wallet.id);
+      expect(rows[0]?.errorMessage).toMatch(/disabled/i);
+    });
+
+    it('returns ok when agentTradingEnabled is true and writes no audit row', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, name: 'ok', agentTradingEnabled: true });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.mcp.assertWriteAllowed({ walletId: wallet.id, tool: 'trading.place_order' });
+      expect(result.ok).toBe(true);
+
+      const db = getTestDatabase();
+      const rows = await db.select().from(mcpTradingAudit).where(eq(mcpTradingAudit.userId, user.id));
+      expect(rows).toHaveLength(0);
+    });
+  });
 });

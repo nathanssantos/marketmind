@@ -2,6 +2,18 @@ import { callProcedure } from './trpc.js';
 
 export type AuditStatus = 'success' | 'failure' | 'denied' | 'rate_limited';
 
+/**
+ * Hard-gate every write tool calls before touching the exchange. The
+ * backend checks `wallet.agentTradingEnabled === true` and throws
+ * FORBIDDEN (also writing a `denied` audit row) when the toggle is
+ * off. Read tools never call this. Write-tool authors: invoke this
+ * BEFORE the audited(...) wrapper so a denied call doesn't end up
+ * looking like a normal failure.
+ */
+export const assertWriteAllowed = async (walletId: string, tool: string): Promise<void> => {
+  await callProcedure('mcp.assertWriteAllowed', { walletId, tool });
+};
+
 export interface AuditOptions {
   walletId?: string | null;
   inputJson?: string | null;
