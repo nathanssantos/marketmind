@@ -283,6 +283,27 @@ describe('Layout Router', () => {
       expect(remaining.length).toBeGreaterThanOrEqual(2);
     });
 
+    it("records a 'restore' source audit row when restoreSnapshot runs", async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      await caller.layout.save({ data: NON_DEFAULT_LAYOUT });
+      const [snap] = await db
+        .insert(userLayoutsHistory)
+        .values({ userId: user.id, data: '{"older":"state"}' })
+        .returning();
+
+      await caller.layout.restoreSnapshot({ snapshotId: snap!.id });
+
+      const rows = await db
+        .select()
+        .from(userLayoutsAudit)
+        .where(eq(userLayoutsAudit.userId, user.id))
+        .orderBy(userLayoutsAudit.id);
+      expect(rows.some((r) => r.source === 'restore')).toBe(true);
+    });
+
     it('does not surface audit rows from other users when filtering', async () => {
       const { user: u1, session: s1 } = await createAuthenticatedUser({ email: 'a@test.com' });
       const { user: u2, session: s2 } = await createAuthenticatedUser({ email: 'b@test.com' });
