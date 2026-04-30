@@ -19,7 +19,7 @@ export interface OrderCardProps {
   onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }
 
-const getTypeColor = (isLong: boolean): string => isLong ? 'green' : 'red';
+const getTypePalette = (isLong: boolean): string => isLong ? 'green' : 'red';
 
 export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol }: OrderCardProps) => {
   const { t } = useTranslation();
@@ -33,7 +33,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={`${getTypeColor(isOrderLong(order))}.500`}
+      borderColor={isOrderLong(order) ? 'trading.long' : 'trading.short'}
     >
       <Flex justify="space-between" align="flex-start" mb={2}>
         <Stack gap={1.5}>
@@ -48,14 +48,14 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
               fontWeight="bold"
               fontSize="sm"
               cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              _hover={onNavigateToSymbol ? { color: 'accent.solid', textDecoration: 'underline' } : undefined}
               onClick={() => onNavigateToSymbol?.(order.symbol, order.marketType)}
             >
               {order.symbol}
             </Text>
           </Flex>
           <Flex gap={2} align="center" flexWrap="wrap">
-            <Badge colorPalette={getTypeColor(isOrderLong(order))} size="xs">
+            <Badge colorPalette={getTypePalette(isOrderLong(order))} size="xs">
               {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
             </Badge>
             <Badge colorPalette={getStatusColor(order.status)} size="xs">
@@ -223,7 +223,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.pnl')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text fontWeight="medium" color={parseFloat(order.pnl) >= 0 ? 'green.500' : 'red.500'}>
+              <Text fontWeight="medium" color={parseFloat(order.pnl) >= 0 ? 'trading.profit' : 'trading.loss'}>
                 {parseFloat(order.pnl) >= 0 ? '+' : ''}{parseFloat(order.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 {order.pnlPercent !== undefined && ` (${parseFloat(order.pnl) >= 0 ? '+' : '-'}${Math.abs(parseFloat(order.pnlPercent)).toFixed(2)}%)`}
               </Text>

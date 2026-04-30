@@ -41,14 +41,14 @@ export const SetupTooltip = ({ setup, left, top }: SetupTooltipProps) => {
 
       <HStack gap={1.5}>
         <Text>{isLong ? '📈' : '📉'}</Text>
-        <Text fontWeight="semibold" color={isLong ? 'green.500' : 'red.500'}>
+        <Text fontWeight="semibold" color={isLong ? 'trading.long' : 'trading.short'}>
           {setup.type.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
         </Text>
       </HStack>
 
       <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
         <Text color="fg.muted">{t('common.direction')}:</Text>
-        <Text fontWeight="medium" color={isLong ? 'green.500' : 'red.500'}>
+        <Text fontWeight="medium" color={isLong ? 'trading.long' : 'trading.short'}>
           {isLong ? t('common.long') : t('common.short')}
         </Text>
       </HStack>
@@ -56,7 +56,7 @@ export const SetupTooltip = ({ setup, left, top }: SetupTooltipProps) => {
       {setup.confidence !== undefined && (
         <HStack justify="space-between">
           <Text color="fg.muted">{t('aiTrading.confidence')}:</Text>
-          <Text fontWeight="medium" color={setup.confidence >= 0.7 ? 'green.500' : setup.confidence >= 0.5 ? 'yellow.500' : 'orange.500'}>
+          <Text fontWeight="medium" color={setup.confidence >= 0.7 ? 'trading.profit' : setup.confidence >= 0.5 ? 'trading.warning' : 'trading.loss'}>
             {Math.round(setup.confidence * 100)}%
           </Text>
         </HStack>

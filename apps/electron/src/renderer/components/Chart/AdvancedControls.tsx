@@ -46,7 +46,7 @@ export const AdvancedControls = ({
       defaultExpanded={false}
     >
       <Box>
-        <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+        <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
           {t('chart.advanced.chartDimensions')}
         </Text>
         <Box>
@@ -71,7 +71,7 @@ export const AdvancedControls = ({
       </Box>
 
       <Box>
-        <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+        <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
           {t('chart.advanced.klineSettings')}
         </Text>
         <Box>
@@ -93,7 +93,7 @@ export const AdvancedControls = ({
       </Box>
 
       <Box>
-        <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+        <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
           {t('chart.advanced.gridSettings')}
         </Text>
         <PinnableControl
@@ -105,7 +105,7 @@ export const AdvancedControls = ({
       </Box>
 
       <Box>
-        <Text fontSize="xs" color="gray.400" mb={2} fontWeight="semibold">
+        <Text fontSize="xs" color="fg.muted" mb={2} fontWeight="semibold">
           {t('chart.advanced.padding')}
         </Text>
         <Box>

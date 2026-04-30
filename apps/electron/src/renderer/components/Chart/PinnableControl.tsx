@@ -35,7 +35,7 @@ export const PinnableControl = ({
       position="relative"
     >
       <HStack justify="space-between">
-        <Text fontSize="xs" color="gray.300">{label}</Text>
+        <Text fontSize="xs" color="fg.muted">{label}</Text>
         <HStack gap={1}>
           <ToggleIconButton
             active={pinned}
@@ -44,7 +44,7 @@ export const PinnableControl = ({
             onClick={() => togglePin(controlKey)}
             opacity={isHovered || pinned ? 1 : 0}
             transition="opacity 0.2s"
-            color={pinned ? 'blue.400' : 'gray.400'}
+            color={pinned ? 'accent.solid' : 'fg.muted'}
           >
             <LuStar size={12} fill={pinned ? 'currentColor' : 'none'} />
           </ToggleIconButton>
@@ -58,7 +58,7 @@ export const PinnableControl = ({
             step={step}
             min={min}
             max={max}
-            color="gray.300"
+            color="fg.muted"
           />
         </HStack>
       </HStack>

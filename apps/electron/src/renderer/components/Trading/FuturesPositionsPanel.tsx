@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, EmptyState, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
@@ -79,6 +79,12 @@ const FuturesPositionCard = memo(({
     return 'green';
   };
 
+  const getLiquidationTextColor = (): string => {
+    if (isInDanger || wouldBeLiquidated) return 'trading.loss';
+    if (isWarning) return 'trading.warning';
+    return 'trading.profit';
+  };
+
   const formatPrice = (price: number): string => {
     if (price >= 1000) return price.toLocaleString(undefined, { maximumFractionDigits: 2 });
     if (price >= 1) return price.toFixed(4);
@@ -91,7 +97,7 @@ const FuturesPositionCard = memo(({
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={side === 'LONG' ? 'green.500' : 'red.500'}
+      borderColor={side === 'LONG' ? 'trading.long' : 'trading.short'}
     >
       <VStack gap={2} align="stretch">
         <Flex justify="space-between" align="center">
@@ -106,7 +112,7 @@ const FuturesPositionCard = memo(({
               fontWeight="bold"
               fontSize="sm"
               cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              _hover={onNavigateToSymbol ? { color: 'accent.solid', textDecoration: 'underline' } : undefined}
               onClick={() => onNavigateToSymbol?.(position.symbol, 'FUTURES')}
             >
               {position.symbol}
@@ -153,27 +159,27 @@ const FuturesPositionCard = memo(({
 
         <Stack gap={1} fontSize="xs">
           <Flex justify="space-between">
-            <Text color="fg.muted">Entry Price</Text>
+            <Text color="fg.muted">{t('futures.entryPrice', 'Entry Price')}</Text>
             <Stack gap={0} align="flex-end">
               <Text>${formatPrice(entryPrice)}</Text>
               <BrlValue usdtValue={entryPrice} />
             </Stack>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">Mark Price</Text>
+            <Text color="fg.muted">{t('futures.markPrice', 'Mark Price')}</Text>
             <Stack gap={0} align="flex-end">
               <Text fontWeight="medium">${formatPrice(markPrice)}</Text>
               <BrlValue usdtValue={markPrice} />
             </Stack>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">Size</Text>
+            <Text color="fg.muted">{t('futures.size', 'Size')}</Text>
             <Text>{quantity.toFixed(4)}</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">Unrealized PnL</Text>
+            <Text color="fg.muted">{t('futures.unrealizedPnl', 'Unrealized PnL')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text fontWeight="medium" color={unrealizedPnl >= 0 ? 'green.500' : 'red.500'}>
+              <Text fontWeight="medium" color={unrealizedPnl >= 0 ? 'trading.profit' : 'trading.loss'}>
                 {unrealizedPnl >= 0 ? '+' : ''}${Math.abs(unrealizedPnl).toFixed(2)} ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
               </Text>
               <BrlValue usdtValue={unrealizedPnl} />
@@ -181,9 +187,9 @@ const FuturesPositionCard = memo(({
           </Flex>
           {accumulatedFunding !== 0 && (
             <Flex justify="space-between">
-              <Text color="fg.muted">Accumulated Funding</Text>
+              <Text color="fg.muted">{t('futures.accumulatedFunding', 'Accumulated Funding')}</Text>
               <Stack gap={0} align="flex-end">
-                <Text color={accumulatedFunding >= 0 ? 'green.500' : 'red.500'}>
+                <Text color={accumulatedFunding >= 0 ? 'trading.profit' : 'trading.loss'}>
                   {accumulatedFunding >= 0 ? '+' : ''}${accumulatedFunding.toFixed(4)}
                 </Text>
                 <BrlValue usdtValue={accumulatedFunding} />
@@ -196,14 +202,14 @@ const FuturesPositionCard = memo(({
           <Box>
             <Flex justify="space-between" align="center" mb={1}>
               <Flex align="center" gap={1}>
-                <Text fontSize="2xs" color="fg.muted">Liquidation Price</Text>
+                <Text fontSize="2xs" color="fg.muted">{t('futures.liquidationPrice', 'Liquidation Price')}</Text>
                 {(isWarning || wouldBeLiquidated) && (
-                  <Box color={isInDanger || wouldBeLiquidated ? 'red.500' : 'orange.500'}>
+                  <Box color={isInDanger || wouldBeLiquidated ? 'trading.loss' : 'trading.warning'}>
                     <LuTriangleAlert size={10} />
                   </Box>
                 )}
               </Flex>
-              <Text fontSize="xs" fontWeight="bold" color={`${getLiquidationColor()}.500`}>
+              <Text fontSize="xs" fontWeight="bold" color={getLiquidationTextColor()}>
                 ${formatPrice(liquidationPrice)}
               </Text>
             </Flex>
@@ -218,8 +224,8 @@ const FuturesPositionCard = memo(({
             </ProgressRoot>
 
             <Flex justify="space-between" mt={0.5}>
-              <Text fontSize="2xs" color="fg.muted">Distance to liq.</Text>
-              <Text fontSize="2xs" fontWeight="medium" color={`${getLiquidationColor()}.500`}>
+              <Text fontSize="2xs" color="fg.muted">{t('futures.distanceToLiq', 'Distance to liquidation')}</Text>
+              <Text fontSize="2xs" fontWeight="medium" color={getLiquidationTextColor()}>
                 {liquidationDistance.toFixed(1)}%
               </Text>
             </Flex>
@@ -298,11 +304,7 @@ const FuturesPositionsPanelComponent = () => {
   if (!activeWalletId) return null;
 
   if (isLoadingPositions) {
-    return (
-      <Box p={4} textAlign="center">
-        <Text fontSize="sm" color="fg.muted">Loading futures positions...</Text>
-      </Box>
-    );
+    return <EmptyState size="sm" title={t('common.loading')} />;
   }
 
   if (openPositions.length === 0) return null;

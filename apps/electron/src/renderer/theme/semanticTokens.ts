@@ -6,7 +6,10 @@ export const semanticTokenColors = {
   'bg.muted': { value: { base: '#edf2f7', _dark: '#4a5568' } },
   border: { value: { base: '#e2e8f0', _dark: '#4a5568' } },
   fg: { value: { base: '#1a202c', _dark: '#f7fafc' } },
-  'fg.muted': { value: { base: '#718096', _dark: '#a0aec0' } },
+  // a11y: fg.muted darkened in light, lightened in dark to clear WCAG AA
+  // 4.5:1 against bg.muted. Old values (#718096 / #a0aec0) gave ~3.7:1 light
+  // and ~3.2:1 dark — readable but below the AA floor for body text.
+  'fg.muted': { value: { base: '#5a6878', _dark: '#cbd5e0' } },
   'chart.background': { value: { base: '#ffffff', _dark: '#1e222d' } },
   'chart.bullish': { value: { base: '#16a34a', _dark: '#26a69a' } },
   'chart.bearish': { value: { base: '#dc2626', _dark: '#ef5350' } },
@@ -31,14 +34,25 @@ export const semanticTokenColors = {
   'trading.profit': { value: { base: '#16a34a', _dark: '#22c55e' } },
   'trading.loss': { value: { base: '#dc2626', _dark: '#ef4444' } },
   'trading.neutral': { value: { base: '#64748b', _dark: '#94a3b8' } },
-  'trading.warning': { value: { base: '#f59e0b', _dark: '#fbbf24' } },
+  'trading.warning': { value: { base: '#dd6b20', _dark: '#f6ad55' } },
   'trading.info': { value: { base: '#2563eb', _dark: '#3b82f6' } },
+  // Generic UI accent — active-state highlights (selected tab/preset/mode,
+  // focus border, pinned marker). Was scattered as raw `blue.500`/`blue.400`
+  // shade literals before being centralized here in v1.4. Resolves to the
+  // brand-blue tone in both modes; tweak in one place if the accent shifts.
+  'accent.solid': { value: { base: '#3182ce', _dark: '#4299e1' } },
   'trading.long': { value: { base: '#16a34a', _dark: '#22c55e' } },
   'trading.short': { value: { base: '#dc2626', _dark: '#ef4444' } },
   'bg.loading': { value: { base: '#f7fafc', _dark: '#1a1a2e' } },
   'bg.error': { value: { base: '#fef2f2', _dark: '#1c1917' } },
   'bg.success': { value: { base: '#f0fdf4', _dark: '#14532d' } },
   'bg.warning': { value: { base: '#fffbeb', _dark: '#451a03' } },
+  // Brand-locked logo colors — must not theme-shift. The mechanical
+  // .500 → .fg sweep in PRs #219/#222 collapsed these to Chakra's
+  // theme-aware fg, which lightens the brain and chart-line in dark mode
+  // (.300 shade) — that's a brand-identity drift, not a theme decision.
+  'brand.logo.primary': { value: { base: '#3182ce', _dark: '#3182ce' } },
+  'brand.logo.secondary': { value: { base: '#48bb78', _dark: '#48bb78' } },
   'overlay.dark': { value: 'rgba(0, 0, 0, 0.5)' },
   'overlay.light': { value: 'rgba(255, 255, 255, 0.5)' },
   'canvas.text': { value: { base: '#ffffff', _dark: '#ffffff' } },

@@ -1,21 +1,27 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
 import { CloseButton, Dialog, Tabs } from '@renderer/components/ui';
-import { useEffect, useMemo, useState } from 'react';
+import { useDialogMount } from '@renderer/hooks/useDialogMount';
+import { MM } from '@renderer/theme/tokens';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
-import { CustomSymbolsTab } from '../CustomSymbols';
-import { WalletManager } from '../Trading/WalletManager';
-import { AboutTab } from './AboutTab';
-import { AccountTab } from './AccountTab';
-import { AutoTradingTab } from './AutoTradingTab';
-import { ChartSettingsTab } from './ChartSettingsTab';
-import { DataTab } from './DataTab';
-import { GeneralTab } from './GeneralTab';
-import { IndicatorsTab } from './IndicatorsTab';
-import { NotificationsTab } from './NotificationsTab';
-import { SecurityTab } from './SecurityTab';
-import { TradingProfilesTab } from './TradingProfilesTab';
-import { UpdatesTab } from './UpdatesTab';
+
+// v1.3 D.2 — lazy-load every tab body so opening the Settings dialog
+// only mounts the tab the user actually views (was: 13 tabs mounted on
+// every open). Each tab is its own chunk after the next prod build.
+const AccountTab = lazy(() => import('./AccountTab').then((m) => ({ default: m.AccountTab })));
+const SecurityTab = lazy(() => import('./SecurityTab').then((m) => ({ default: m.SecurityTab })));
+const NotificationsTab = lazy(() => import('./NotificationsTab').then((m) => ({ default: m.NotificationsTab })));
+const GeneralTab = lazy(() => import('./GeneralTab').then((m) => ({ default: m.GeneralTab })));
+const ChartSettingsTab = lazy(() => import('./ChartSettingsTab').then((m) => ({ default: m.ChartSettingsTab })));
+const WalletManager = lazy(() => import('../Trading/WalletManager').then((m) => ({ default: m.WalletManager })));
+const TradingProfilesTab = lazy(() => import('./TradingProfilesTab').then((m) => ({ default: m.TradingProfilesTab })));
+const AutoTradingTab = lazy(() => import('./AutoTradingTab').then((m) => ({ default: m.AutoTradingTab })));
+const IndicatorsTab = lazy(() => import('./IndicatorsTab').then((m) => ({ default: m.IndicatorsTab })));
+const CustomSymbolsTab = lazy(() => import('../CustomSymbols').then((m) => ({ default: m.CustomSymbolsTab })));
+const DataTab = lazy(() => import('./DataTab').then((m) => ({ default: m.DataTab })));
+const UpdatesTab = lazy(() => import('./UpdatesTab').then((m) => ({ default: m.UpdatesTab })));
+const AboutTab = lazy(() => import('./AboutTab').then((m) => ({ default: m.AboutTab })));
 import {
   DEFAULT_SETTINGS_TAB,
   SETTINGS_GROUPS,
@@ -42,6 +48,7 @@ export const SettingsDialog = ({
 }: SettingsDialogProps) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab ?? DEFAULT_SETTINGS_TAB);
+  useDialogMount('SettingsDialog', isOpen);
 
   useEffect(() => {
     if (isOpen && initialTab && isSettingsTab(initialTab)) {
@@ -136,49 +143,60 @@ export const SettingsDialog = ({
                   </Stack>
                 </Box>
 
-                <Box flex={1} overflowY="auto" p={4} data-testid="settings-content">
-                  <Tabs.Content value="account" pt={0}>
-                    <AccountTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="security" pt={0}>
-                    <SecurityTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="notifications" pt={0}>
-                    <NotificationsTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="general" pt={0}>
-                    <GeneralTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="chart" pt={0}>
-                    <ChartSettingsTab
-                      config={advancedConfig}
-                      onConfigChange={onAdvancedConfigChange}
-                    />
-                  </Tabs.Content>
-                  <Tabs.Content value="wallets" pt={0}>
-                    <WalletManager />
-                  </Tabs.Content>
-                  <Tabs.Content value="tradingProfiles" pt={0}>
-                    <TradingProfilesTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="autoTrading" pt={0}>
-                    <AutoTradingTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="indicators" pt={0}>
-                    <IndicatorsTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="customSymbols" pt={0}>
-                    <CustomSymbolsTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="data" pt={0}>
-                    <DataTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="updates" pt={0}>
-                    <UpdatesTab />
-                  </Tabs.Content>
-                  <Tabs.Content value="about" pt={0}>
-                    <AboutTab />
-                  </Tabs.Content>
+                <Box flex={1} overflowY="auto" px={5} pt={4} pb={8} data-testid="settings-content">
+                  <Suspense fallback={
+                    <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+                      <Spinner size={MM.spinner.panel.size} />
+                    </Flex>
+                  }>
+                    {/* Tabs.Content wrappers stay so aria-controls on the
+                        triggers still resolves to a panel id; lazy-loaded
+                        bodies render only when active to skip mount cost. */}
+                    <Tabs.Content value="account" pt={0} w="100%">
+                      {activeTab === 'account' && <AccountTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="security" pt={0} w="100%">
+                      {activeTab === 'security' && <SecurityTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="notifications" pt={0} w="100%">
+                      {activeTab === 'notifications' && <NotificationsTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="general" pt={0} w="100%">
+                      {activeTab === 'general' && <GeneralTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="chart" pt={0} w="100%">
+                      {activeTab === 'chart' && (
+                        <ChartSettingsTab
+                          config={advancedConfig}
+                          onConfigChange={onAdvancedConfigChange}
+                        />
+                      )}
+                    </Tabs.Content>
+                    <Tabs.Content value="wallets" pt={0} w="100%">
+                      {activeTab === 'wallets' && <WalletManager />}
+                    </Tabs.Content>
+                    <Tabs.Content value="tradingProfiles" pt={0} w="100%">
+                      {activeTab === 'tradingProfiles' && <TradingProfilesTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="autoTrading" pt={0} w="100%">
+                      {activeTab === 'autoTrading' && <AutoTradingTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="indicators" pt={0} w="100%">
+                      {activeTab === 'indicators' && <IndicatorsTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="customSymbols" pt={0} w="100%">
+                      {activeTab === 'customSymbols' && <CustomSymbolsTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="data" pt={0} w="100%">
+                      {activeTab === 'data' && <DataTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="updates" pt={0} w="100%">
+                      {activeTab === 'updates' && <UpdatesTab />}
+                    </Tabs.Content>
+                    <Tabs.Content value="about" pt={0} w="100%">
+                      {activeTab === 'about' && <AboutTab />}
+                    </Tabs.Content>
+                  </Suspense>
                 </Box>
               </Flex>
             </Tabs.Root>

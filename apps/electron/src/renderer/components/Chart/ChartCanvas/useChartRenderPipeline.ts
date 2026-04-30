@@ -116,10 +116,10 @@ export const useChartRenderPipeline = ({
       timed('watermark', b.renderWatermark);
       timed('grid', b.renderGrid);
       timed('customIndicators', g.renderAllCustomIndicators);
-      if (r.chartType === 'kline' || r.chartType === 'tick' || r.chartType === 'volume' || r.chartType === 'footprint') {
-        timed('klines', b.renderKlines);
-      } else {
+      if (r.chartType === 'line') {
         timed('lineChart', b.renderLineChart);
+      } else {
+        timed('klines', b.renderKlines);
       }
       timed('overlayIndicators', g.renderAllOverlayIndicators);
       timed('panelIndicators', g.renderAllPanelIndicators);

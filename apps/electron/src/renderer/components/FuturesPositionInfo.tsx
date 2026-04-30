@@ -47,6 +47,12 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
     return 'green';
   };
 
+  const getLiquidationTextColor = (): string => {
+    if (isInDanger) return 'trading.loss';
+    if (isWarning) return 'trading.warning';
+    return 'trading.profit';
+  };
+
   const formatPrice = (price: number): string => {
     if (price >= 1000) return price.toLocaleString(undefined, { maximumFractionDigits: 2 });
     if (price >= 1) return price.toFixed(4);
@@ -86,7 +92,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
           </Flex>
           <Text
             fontWeight="bold"
-            color={pnlPercent >= 0 ? 'green.500' : 'red.500'}
+            color={pnlPercent >= 0 ? 'trading.profit' : 'trading.loss'}
           >
             {pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
           </Text>
@@ -124,7 +130,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
             <Text
               fontSize="sm"
               fontWeight="medium"
-              color={unrealizedPnl >= 0 ? 'green.500' : 'red.500'}
+              color={unrealizedPnl >= 0 ? 'trading.profit' : 'trading.loss'}
             >
               {formatPnl(unrealizedPnl)}
             </Text>
@@ -138,7 +144,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
                 {t('futures.liquidationPrice', 'Liquidation Price')}
               </Text>
               {isWarning && (
-                <Box color={isInDanger ? 'red.500' : 'orange.500'}>
+                <Box color={isInDanger ? 'trading.loss' : 'trading.warning'}>
                   <LuTriangleAlert size={12} />
                 </Box>
               )}
@@ -146,7 +152,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
             <Text
               fontSize="sm"
               fontWeight="bold"
-              color={`${getLiquidationColor()}.500`}
+              color={getLiquidationTextColor()}
             >
               ${formatPrice(liquidationPrice)}
             </Text>
@@ -168,7 +174,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
             <Text
               fontSize="2xs"
               fontWeight="medium"
-              color={`${getLiquidationColor()}.500`}
+              color={getLiquidationTextColor()}
             >
               {liquidationDistance.toFixed(1)}%
             </Text>

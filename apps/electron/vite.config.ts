@@ -3,9 +3,11 @@ import { resolve } from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import electron from 'vite-plugin-electron';
 import { VitePWA } from 'vite-plugin-pwa';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 const target = process.env.VITE_TARGET || 'electron';
 const isWeb = target === 'web';
+const analyze = process.env.ANALYZE === '1';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -123,9 +125,22 @@ export default defineConfig(({ mode }) => {
             if (id.includes('/node_modules/@tanstack/react-query/')) return 'vendor-query';
             if (/[\\/]node_modules[\\/](i18next|react-i18next)[\\/]/.test(id)) return 'vendor-i18n';
             if (/[\\/]node_modules[\\/](zustand|immer)[\\/]/.test(id)) return 'vendor-zustand';
+            // V1_3 D.1 — split heavy single-purpose deps into their own chunks so
+            // they can be cached independently and lazy-loaded callsites benefit
+            // from a smaller main bundle.
+            if (id.includes('/node_modules/pinets/')) return 'vendor-pinets';
+            if (id.includes('/node_modules/recharts/')) return 'vendor-recharts';
+            if (id.includes('/node_modules/d3-')) return 'vendor-d3';
+            if (/[\\/]node_modules[\\/](socket\.io-client|engine\.io-client|socket\.io-parser|engine\.io-parser)[\\/]/.test(id)) return 'vendor-socket';
+            if (id.includes('/node_modules/react-icons/')) return 'vendor-icons';
+            if (/[\\/]node_modules[\\/](react-grid-layout|react-draggable|react-resizable)[\\/]/.test(id)) return 'vendor-grid';
+            if (id.includes('/node_modules/@trpc/')) return 'vendor-trpc';
             return undefined;
           },
         },
+        plugins: analyze
+          ? [visualizer({ filename: 'dist-web/bundle-stats.html', template: 'treemap', gzipSize: true, brotliSize: true, open: false })]
+          : [],
       },
     },
     server: {

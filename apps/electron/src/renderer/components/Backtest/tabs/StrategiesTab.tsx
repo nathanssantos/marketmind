@@ -1,5 +1,5 @@
 import { Box, Flex, HStack, Text, VStack } from '@chakra-ui/react';
-import { Alert, Badge, Button, Checkbox, LoadingSpinner, Switch } from '@renderer/components/ui';
+import { Badge, Button, Callout, Checkbox, LoadingSpinner, Switch } from '@renderer/components/ui';
 import { DEFAULT_ENABLED_SETUP_IDS, type SimpleBacktestInput } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -88,26 +88,21 @@ export const StrategiesTab = ({ state, setField }: StrategiesTabProps) => {
       </HStack>
 
       {intervalRecommendationMismatch && (
-        <Alert.Root status="warning">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Title>{t('backtest.strategies.intervalMismatchTitle')}</Alert.Title>
-            <Alert.Description>
-              {t('backtest.strategies.intervalMismatchBody', { interval: state.interval })}
-            </Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Callout
+          tone="warning"
+          compact
+          title={t('backtest.strategies.intervalMismatchTitle')}
+        >
+          {t('backtest.strategies.intervalMismatchBody', { interval: state.interval })}
+        </Callout>
       )}
 
       {query.isLoading && <Flex justify="center" py={8}><LoadingSpinner /></Flex>}
 
       {query.isError && (
-        <Alert.Root status="error">
-          <Alert.Indicator />
-          <Alert.Content>
-            <Alert.Description>{t('backtest.strategies.loadFailed')}</Alert.Description>
-          </Alert.Content>
-        </Alert.Root>
+        <Callout tone="danger" compact>
+          {t('backtest.strategies.loadFailed')}
+        </Callout>
       )}
 
       {query.data && (
@@ -120,7 +115,7 @@ export const StrategiesTab = ({ state, setField }: StrategiesTabProps) => {
               key={s.id}
               p={2}
               borderWidth="1px"
-              borderColor={selected.has(s.id) ? 'blue.500' : 'border'}
+              borderColor={selected.has(s.id) ? 'blue.muted' : 'border'}
               borderRadius="md"
               cursor="pointer"
               onClick={() => toggleStrategy(s.id)}

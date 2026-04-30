@@ -38,7 +38,26 @@ const openSettingsTab = async (page: Page, tabId: SettingsTabId): Promise<void> 
     const actions = (window as { __globalActions?: { openSettings?: (tab?: string) => void } }).__globalActions;
     actions?.openSettings?.(id);
   }, tabId);
+  // Wait for the tab body to actually mount + hydrate. Tabs are lazy-loaded
+  // via React.lazy (since #235), so the Suspense fallback (a Chakra Spinner)
+  // shows briefly while the chunk fetches. Capturing during that window
+  // produces useless "loading" screenshots.
+  await page.waitForFunction(() => {
+    const content = document.querySelector('[data-testid="settings-content"]');
+    if (!content) return false;
+    // Spinner has role="progressbar" via Chakra. If absent, the body has
+    // mounted.
+    return !content.querySelector('[role="progressbar"]');
+  }, undefined, { timeout: 5000 }).catch(() => {
+    // Fall through with a settle timeout if waitForFunction times out —
+    // better to capture a partial state than fail the whole gallery.
+  });
   await page.waitForTimeout(300);
+};
+
+const clickTrigger = async (page: Page, testid: string, settleMs = 400): Promise<void> => {
+  await page.locator(`[data-testid="${testid}"]`).first().click({ timeout: 5000 });
+  await page.waitForTimeout(settleMs);
 };
 
 const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
@@ -48,6 +67,29 @@ const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
   }
   if (modalId === 'orders') {
     await toggleSidebar(page, 'trading', true);
+  }
+  // Flow modals — click triggers from real UI affordances (data-testid)
+  if (modalId === 'createWallet') {
+    await openSettingsTab(page, 'wallets');
+    await clickTrigger(page, 'trigger-create-wallet');
+    return;
+  }
+  if (modalId === 'tradingProfiles' || modalId === 'importProfile') {
+    await openSettingsTab(page, 'tradingProfiles');
+    if (modalId === 'importProfile') {
+      await clickTrigger(page, 'trigger-import-profile');
+    }
+    return;
+  }
+  if (modalId === 'addWatcher') {
+    await openSettingsTab(page, 'autoTrading');
+    await clickTrigger(page, 'trigger-add-watcher');
+    return;
+  }
+  if (modalId === 'startWatchers') {
+    await toggleSidebar(page, 'autoTrading', true);
+    await clickTrigger(page, 'trigger-start-watchers');
+    return;
   }
   await page.evaluate((id) => {
     const w = window as Window & {
@@ -98,7 +140,7 @@ const screenshotTo = async (page: Page, label: string, theme: Theme): Promise<Ca
   await ensureDir(sessionDir);
   const filename = `${label}__${theme}.png`;
   const filepath = path.join(sessionDir, filename);
-  await page.screenshot({ path: filepath, fullPage: false });
+  await page.screenshot({ path: filepath, fullPage: false, animations: 'disabled' });
   return { label, path: filepath, theme };
 };
 

@@ -143,7 +143,17 @@ test.describe('LogsTab — socket-driven log rendering', () => {
     await expect(errorLine).toBeVisible();
 
     const color = await errorLine.evaluate((el) => window.getComputedStyle(el).color);
-    // red.400 in Chakra is roughly rgb(248, 113, 113)
-    expect(color).toMatch(/^rgb\(248,\s*113,\s*113\)|^rgb\(252,\s*129,\s*129\)|^rgba\(.*\)$/);
+    // After the V1_5 object-literal-shade-leak sweep, error level uses
+    // the `trading.loss` semantic token. That resolves to:
+    //   light: #dc2626 → rgb(220, 38, 38)
+    //   dark:  #ef4444 → rgb(239, 68, 68)
+    // Either is fine; assert R-channel dominance so we don't lock the
+    // exact theme value (and we tolerate browser color-space rounding).
+    const m = color.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    expect(m, `expected rgb-style color, got ${color}`).not.toBeNull();
+    const [r, g, b] = [Number(m![1]), Number(m![2]), Number(m![3])];
+    expect(r, `expected red dominance in ${color}`).toBeGreaterThan(180);
+    expect(r).toBeGreaterThan(g + 80);
+    expect(r).toBeGreaterThan(b + 80);
   });
 });

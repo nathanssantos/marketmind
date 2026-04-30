@@ -1,7 +1,7 @@
-import { Box, HStack, Stack, Text } from '@chakra-ui/react';
+import { Stack } from '@chakra-ui/react';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import type { MarketType, TimeInterval } from '@marketmind/types';
-import { Button, Separator } from '@renderer/components/ui';
+import { CollapsibleSection, EmptyState, Select, Separator } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
@@ -174,13 +174,7 @@ export const WatcherManager = () => {
   };
 
   if (!walletId) {
-    return (
-      <Box p={4} textAlign="center">
-        <Text fontSize="sm" color="fg.muted">
-          {t('tradingProfiles.noWallet')}
-        </Text>
-      </Box>
-    );
+    return <EmptyState size="sm" title={t('tradingProfiles.noWallet')} />;
   }
 
   return (
@@ -194,34 +188,23 @@ export const WatcherManager = () => {
         hasActiveWatchers={activeWatchers.length > 0 || persistedWatchers > 0}
       />
 
-      <Box>
-        <Text fontSize="xs" fontWeight="medium" mb={2}>{t('trading.mode.title')}</Text>
-        <HStack gap={1}>
-          <Button
-            size="2xs"
-            variant="outline"
-            color={tradingMode === 'auto' ? 'blue.500' : 'fg.muted'}
-            onClick={() => handleTradingModeChange('auto')}
-            disabled={updateConfig.isPending}
-            flex={1}
-          >
-            {t('trading.mode.auto')}
-          </Button>
-          <Button
-            size="2xs"
-            variant="outline"
-            color={tradingMode === 'semi_assisted' ? 'yellow.500' : 'fg.muted'}
-            onClick={() => handleTradingModeChange('semi_assisted')}
-            disabled={updateConfig.isPending}
-            flex={1}
-          >
-            {t('trading.mode.semiAssisted')}
-          </Button>
-        </HStack>
-        <Text fontSize="2xs" color="fg.muted" mt={1}>
-          {tradingMode === 'auto' ? t('trading.mode.autoDescription') : t('trading.mode.semiAssistedDescription')}
-        </Text>
-      </Box>
+      <CollapsibleSection
+        title={t('trading.mode.title')}
+        description={tradingMode === 'auto' ? t('trading.mode.autoDescription') : t('trading.mode.semiAssistedDescription')}
+        variant="static"
+        size="lg"
+      >
+        <Select
+          value={tradingMode}
+          options={[
+            { value: 'auto', label: t('trading.mode.auto') },
+            { value: 'semi_assisted', label: t('trading.mode.semiAssisted') },
+          ]}
+          onChange={(v) => handleTradingModeChange(v as 'auto' | 'semi_assisted')}
+          size="sm"
+          usePortal={false}
+        />
+      </CollapsibleSection>
 
       <Separator />
 
@@ -419,8 +402,6 @@ export const WatcherManager = () => {
         onFilterToggle={handleFilterToggle}
         isPending={updateConfig.isPending}
         isIB={isIB}
-        directionMode={directionMode}
-        onDirectionModeChange={handleDirectionModeChange}
         confluenceMinScore={config?.confluenceMinScore ?? 60}
         onConfluenceMinScoreChange={handleConfluenceMinScoreChange}
       />

@@ -11,6 +11,7 @@ interface EmptyStateProps {
     label: string;
     onClick: () => void;
     colorPalette?: string;
+    icon?: ReactNode;
   };
   size?: 'sm' | 'md' | 'lg';
   /**
@@ -60,6 +61,7 @@ export const EmptyState = ({
           colorPalette={action.colorPalette}
           onClick={action.onClick}
         >
+          {action.icon}
           {action.label}
         </Button>
       )}

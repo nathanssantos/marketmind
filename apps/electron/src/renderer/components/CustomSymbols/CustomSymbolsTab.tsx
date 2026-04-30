@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LuPlus, LuRefreshCw, LuTrash2, LuX } from 'react-icons/lu';
 import { useBackendCustomSymbols } from '../../hooks/useBackendCustomSymbols';
 import { toaster } from '../../utils/toaster';
-import { Badge, BetaBadge, Button, EmptyState, FormSection, IconButton, Input, Tabs } from '../ui';
+import { Badge, BetaBadge, Button, EmptyState, Field, FormSection, IconButton, Input, Tabs } from '../ui';
 
 const CATEGORIES = ['politics', 'defi', 'gaming', 'ai', 'other'] as const;
 const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL'] as const;
@@ -184,79 +184,85 @@ export const CustomSymbolsTab = memo(() => {
         <Stack gap={3} pt={3}>
           <Flex gap={3}>
             <Box flex={1}>
-              <Text fontSize="xs" fontWeight="medium" mb={1}>{t('customSymbols.newIndex')}</Text>
-              <Input
-                size="xs"
-                placeholder={t('customSymbols.symbolPlaceholder')}
-                value={formSymbol}
-                onChange={(e) => setFormSymbol(e.target.value.toUpperCase())}
-              />
+              <Field label={t('customSymbols.newIndex')}>
+                <Input
+                  size="xs"
+                  placeholder={t('customSymbols.symbolPlaceholder')}
+                  value={formSymbol}
+                  onChange={(e) => setFormSymbol(e.target.value.toUpperCase())}
+                />
+              </Field>
             </Box>
             <Box flex={2}>
-              <Text fontSize="xs" fontWeight="medium" mb={1}>{t('customSymbols.name')}</Text>
-              <Input
-                size="xs"
-                placeholder={t('customSymbols.namePlaceholder')}
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-              />
+              <Field label={t('customSymbols.name')}>
+                <Input
+                  size="xs"
+                  placeholder={t('customSymbols.namePlaceholder')}
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                />
+              </Field>
             </Box>
           </Flex>
 
           <Flex gap={3}>
             <Box flex={1}>
-              <Text fontSize="xs" fontWeight="medium" mb={1}>{t('customSymbols.category')}</Text>
-              <Flex gap={1} flexWrap="wrap">
-                {CATEGORIES.map((cat) => (
-                  <Button
-                    key={cat}
-                    size="2xs"
-                    variant={formCategory === cat ? 'solid' : 'outline'}
-                    colorPalette={formCategory === cat ? categoryColor(cat) : 'gray'}
-                    onClick={() => setFormCategory(cat)}
-                  >
-                    {t(`customSymbols.categories.${cat}`)}
-                  </Button>
-                ))}
-              </Flex>
+              <Field label={t('customSymbols.category')}>
+                <Flex gap={1} flexWrap="wrap">
+                  {CATEGORIES.map((cat) => (
+                    <Button
+                      key={cat}
+                      size="2xs"
+                      variant={formCategory === cat ? 'solid' : 'outline'}
+                      colorPalette={formCategory === cat ? categoryColor(cat) : 'gray'}
+                      onClick={() => setFormCategory(cat)}
+                    >
+                      {t(`customSymbols.categories.${cat}`)}
+                    </Button>
+                  ))}
+                </Flex>
+              </Field>
             </Box>
             <Box flex={1}>
-              <Text fontSize="xs" fontWeight="medium" mb={1}>{t('customSymbols.baseValue')}</Text>
-              <Input
-                size="xs"
-                type="number"
-                value={formBaseValue}
-                onChange={(e) => setFormBaseValue(Number(e.target.value))}
-              />
-            </Box>
-          </Flex>
-
-          <Flex gap={3}>
-            <Box flex={1}>
-              <Text fontSize="xs" fontWeight="medium" mb={1}>{t('customSymbols.weightingMethod')}</Text>
-              <Flex gap={1} flexWrap="wrap">
-                {WEIGHTING_METHODS.map((m) => (
-                  <Button
-                    key={m}
-                    size="2xs"
-                    variant="outline"
-                    color={formMethod === m ? 'blue.500' : 'fg.muted'}
-                    onClick={() => setFormMethod(m)}
-                  >
-                    {t(`customSymbols.methods.${m}`)}
-                  </Button>
-                ))}
-              </Flex>
-            </Box>
-            {formMethod === 'CAPPED_MARKET_CAP' && (
-              <Box w="100px">
-                <Text fontSize="xs" fontWeight="medium" mb={1}>{t('customSymbols.capPercent')}</Text>
+              <Field label={t('customSymbols.baseValue')}>
                 <Input
                   size="xs"
                   type="number"
-                  value={formCapPercent}
-                  onChange={(e) => setFormCapPercent(Number(e.target.value))}
+                  value={formBaseValue}
+                  onChange={(e) => setFormBaseValue(Number(e.target.value))}
                 />
+              </Field>
+            </Box>
+          </Flex>
+
+          <Flex gap={3}>
+            <Box flex={1}>
+              <Field label={t('customSymbols.weightingMethod')}>
+                <Flex gap={1} flexWrap="wrap">
+                  {WEIGHTING_METHODS.map((m) => (
+                    <Button
+                      key={m}
+                      size="2xs"
+                      variant="outline"
+                      color={formMethod === m ? 'accent.solid' : 'fg.muted'}
+                      onClick={() => setFormMethod(m)}
+                    >
+                      {t(`customSymbols.methods.${m}`)}
+                    </Button>
+                  ))}
+                </Flex>
+              </Field>
+            </Box>
+            {formMethod === 'CAPPED_MARKET_CAP' && (
+              <Box w="100px">
+                <Field label={t('customSymbols.capPercent')}>
+                  <Input
+                    size="xs"
+                    type="number"
+                    value={formCapPercent}
+                    onChange={(e) => setFormCapPercent(Number(e.target.value))}
+                  />
+                </Field>
               </Box>
             )}
           </Flex>

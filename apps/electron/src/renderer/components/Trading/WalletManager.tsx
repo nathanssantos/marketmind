@@ -1,7 +1,7 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { Badge, Button, EmptyState, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Button, EmptyState, FormSection, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -113,41 +113,50 @@ export const WalletManager = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   return (
-    <Stack gap={2} p={4}>
-      <Flex justify="flex-end" align="center" mb={2}>
-        <Button
-          size="2xs"
-          variant="outline"
-          onClick={() => setShowCreateDialog(true)}
-          loading={isCreatingPaper || isCreating}
-        >
-          <LuPlus />
-          {t('trading.wallets.create')}
-        </Button>
-      </Flex>
+    <Stack gap={4} w="100%">
+      <FormSection
+        title={
+          <Flex align="center" gap={2}>
+            <Text as="span">{t('trading.wallets.title')}</Text>
+            {wallets.length > 0 && (
+              <Badge size="sm" colorPalette="blue">{wallets.length}</Badge>
+            )}
+          </Flex>
+        }
+        action={
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowCreateDialog(true)}
+            loading={isCreatingPaper || isCreating}
+            data-testid="trigger-create-wallet"
+          >
+            <LuPlus />
+            {t('trading.wallets.create')}
+          </Button>
+        }
+      />
 
-      <Box maxH="calc(100vh - 250px)" overflowY="auto">
-        {isLoading ? (
-          <EmptyState size="sm" title={t('common.loading')} />
-        ) : wallets.length === 0 ? (
-          <EmptyState size="sm" title={t('trading.wallets.emptyReal')} />
-        ) : (
-          <Stack gap={2}>
-            {wallets.map((wallet) => (
-              <WalletCard
-                key={wallet.id}
-                wallet={wallet}
-                isActive={wallet.id === activeWalletId}
-                onDelete={() => { void handleDeleteWallet(wallet.id); }}
-                onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
-                onSync={() => { void handleSyncBalance(wallet.id); }}
-                isDeleting={isDeleting}
-                isSyncing={syncingWalletId === wallet.id || isSyncing}
-              />
-            ))}
-          </Stack>
-        )}
-      </Box>
+      {isLoading ? (
+        <EmptyState size="sm" title={t('common.loading')} />
+      ) : wallets.length === 0 ? (
+        <EmptyState size="sm" title={t('trading.wallets.emptyReal')} />
+      ) : (
+        <Stack gap={2}>
+          {wallets.map((wallet) => (
+            <WalletCard
+              key={wallet.id}
+              wallet={wallet}
+              isActive={wallet.id === activeWalletId}
+              onDelete={() => { void handleDeleteWallet(wallet.id); }}
+              onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
+              onSync={() => { void handleSyncBalance(wallet.id); }}
+              isDeleting={isDeleting}
+              isSyncing={syncingWalletId === wallet.id || isSyncing}
+            />
+          ))}
+        </Stack>
+      )}
 
       <CreateWalletDialog
         isOpen={showCreateDialog}
@@ -205,10 +214,10 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
   return (
     <Box
       p={3}
-      bg={isActive ? 'blue.subtle' : 'bg.muted'}
+      bg={isActive ? 'accent.subtle' : 'bg.muted'}
       borderRadius="md"
-      borderLeftWidth="3px"
-      borderLeftColor={isActive ? 'blue.muted' : isProfitable ? 'green.muted' : 'red.muted'}
+      borderWidth={isActive ? '1px' : 0}
+      borderColor={isActive ? 'accent.solid' : 'transparent'}
     >
       <Flex justify="space-between" align="center" mb={2}>
         <Flex align="center" gap={2}>

@@ -52,10 +52,43 @@ export const closeAll = async (): Promise<{ ok: true }> => {
   return { ok: true };
 };
 
+const clickTrigger = async (testid: string, settleMs = 400): Promise<void> => {
+  const page = await getPage();
+  await page.locator(`[data-testid="${testid}"]`).first().click({ timeout: 5000 });
+  await page.waitForTimeout(settleMs);
+};
+
 export const openModal = async (modalId: ModalId): Promise<{ ok: true; modalId: ModalId }> => {
   const page = await getPage();
   if (modalId === 'settings') {
     await openSettings();
+    return { ok: true, modalId };
+  }
+  // Flow modals — driven by data-testid clicks on real UI affordances
+  if (modalId === 'createWallet') {
+    await openSettings('wallets');
+    await clickTrigger('trigger-create-wallet');
+    return { ok: true, modalId };
+  }
+  if (modalId === 'importProfile') {
+    await openSettings('tradingProfiles');
+    await clickTrigger('trigger-import-profile');
+    return { ok: true, modalId };
+  }
+  if (modalId === 'addWatcher') {
+    await openSettings('autoTrading');
+    await clickTrigger('trigger-add-watcher');
+    return { ok: true, modalId };
+  }
+  if (modalId === 'startWatchers') {
+    await page.evaluate(() => {
+      const w = window as unknown as {
+        __preferencesStore?: { getState: () => { set: (cat: string, key: string, v: unknown) => void } };
+      };
+      w.__preferencesStore?.getState().set('ui', 'autoTradingSidebarOpen', true);
+    });
+    await page.waitForTimeout(200);
+    await clickTrigger('trigger-start-watchers');
     return { ok: true, modalId };
   }
   await page.evaluate((id) => {

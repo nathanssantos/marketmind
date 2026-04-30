@@ -190,7 +190,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                           bg="bg.muted"
                           borderRadius="md"
                           borderLeft="3px solid"
-                          borderColor={form.enabledSetupTypes.includes(setup.id) ? 'green.500' : 'gray.400'}
+                          borderColor={form.enabledSetupTypes.includes(setup.id) ? 'trading.profit' : 'border'}
                           cursor="pointer"
                           _hover={{ bg: 'bg.subtle' }}
                           onClick={() => form.handleToggleSetup(setup.id)}

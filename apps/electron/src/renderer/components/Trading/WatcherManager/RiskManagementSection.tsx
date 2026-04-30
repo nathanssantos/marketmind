@@ -1,4 +1,4 @@
-import { CollapsibleSection, NumberInput, Separator, Slider, Switch } from '@renderer/components/ui';
+import { CollapsibleSection, FormRow, NumberInput, Slider, Switch } from '@renderer/components/ui';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 
@@ -62,24 +62,19 @@ export const RiskManagementSection = ({
       size="lg"
       variant="static"
     >
-      <Stack gap={6}>
-        <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
-          <Box>
-            <Text fontSize="sm" fontWeight="semibold">
-              {t('watcherManager.riskManagement.maxDrawdown.title')}
-            </Text>
-            <Text fontSize="xs" color="fg.muted">
-              {t('watcherManager.riskManagement.maxDrawdown.description')}
-            </Text>
-          </Box>
+      <Stack gap={4}>
+        <FormRow
+          label={t('watcherManager.riskManagement.maxDrawdown.title')}
+          helper={t('watcherManager.riskManagement.maxDrawdown.description')}
+        >
           <Switch
             checked={maxDrawdownEnabled}
             onCheckedChange={onMaxDrawdownEnabledChange}
           />
-        </HStack>
+        </FormRow>
 
         {maxDrawdownEnabled && (
-          <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="red.500">
+          <Stack gap={4} pl={4}>
             <HStack gap={4}>
               <Slider
                 value={[maxDrawdownPercent]}
@@ -100,25 +95,18 @@ export const RiskManagementSection = ({
           </Stack>
         )}
 
-        <Separator />
-
-        <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
-          <Box>
-            <Text fontSize="sm" fontWeight="semibold">
-              {t('watcherManager.riskManagement.maxRiskPerStop.title')}
-            </Text>
-            <Text fontSize="xs" color="fg.muted">
-              {t('watcherManager.riskManagement.maxRiskPerStop.description')}
-            </Text>
-          </Box>
+        <FormRow
+          label={t('watcherManager.riskManagement.maxRiskPerStop.title')}
+          helper={t('watcherManager.riskManagement.maxRiskPerStop.description')}
+        >
           <Switch
             checked={maxRiskPerStopEnabled}
             onCheckedChange={onMaxRiskPerStopEnabledChange}
           />
-        </HStack>
+        </FormRow>
 
         {maxRiskPerStopEnabled && (
-          <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="blue.500">
+          <Stack gap={4} pl={4}>
             <HStack gap={4}>
               <Slider
                 value={[maxRiskPerStopPercent]}
@@ -141,25 +129,18 @@ export const RiskManagementSection = ({
 
         {!isIB && (
           <>
-            <Separator />
-
-            <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold">
-                  {t('watcherManager.riskManagement.marginTopUp.title')}
-                </Text>
-                <Text fontSize="xs" color="fg.muted">
-                  {t('watcherManager.riskManagement.marginTopUp.description')}
-                </Text>
-              </Box>
+            <FormRow
+              label={t('watcherManager.riskManagement.marginTopUp.title')}
+              helper={t('watcherManager.riskManagement.marginTopUp.description')}
+            >
               <Switch
                 checked={marginTopUpEnabled}
                 onCheckedChange={onMarginTopUpEnabledChange}
               />
-            </HStack>
+            </FormRow>
 
             {marginTopUpEnabled && (
-              <Stack gap={4} pl={4} borderLeftWidth="2px" borderLeftColor="orange.500">
+              <Stack gap={4} pl={4}>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" mb={2}>
                     {t('watcherManager.riskManagement.marginTopUp.threshold')}
@@ -224,22 +205,15 @@ export const RiskManagementSection = ({
           </>
         )}
 
-        <Separator />
-
-        <HStack justify="space-between" p={3} bg="bg.subtle" borderRadius="md">
-          <Box>
-            <Text fontSize="sm" fontWeight="semibold">
-              {t('watcherManager.riskManagement.autoCancelOrphans.title')}
-            </Text>
-            <Text fontSize="xs" color="fg.muted">
-              {t('watcherManager.riskManagement.autoCancelOrphans.description')}
-            </Text>
-          </Box>
+        <FormRow
+          label={t('watcherManager.riskManagement.autoCancelOrphans.title')}
+          helper={t('watcherManager.riskManagement.autoCancelOrphans.description')}
+        >
           <Switch
             checked={autoCancelOrphans}
             onCheckedChange={onAutoCancelOrphansChange}
           />
-        </HStack>
+        </FormRow>
       </Stack>
     </CollapsibleSection>
   );

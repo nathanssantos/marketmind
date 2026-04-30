@@ -96,12 +96,87 @@ All colors use semantic tokens defined in `theme/index.ts`. This enables future 
 ```
 
 Current token categories:
-- `bg.*` - Background colors
-- `fg.*` - Foreground/text colors
-- `border` - Border colors
-- `chart.*` - Chart visualization colors
-- `trading.*` - Trading UI colors (profit/loss/long/short)
+- `bg.*` - Background colors (`bg.panel`, `bg.muted`, `bg.subtle`, `bg.surface`, `bg.success`, `bg.warning`, `bg.error`, `bg.loading`)
+- `fg.*` - Foreground/text colors (`fg`, `fg.muted`)
+- `border` / `border.muted` - Border colors
+- `chart.*` - Chart visualization colors (candle bullish/bearish, MAs, axis, etc.)
+- `trading.*` - Trading UI colors:
+  - `trading.long` / `trading.short` — direction (LONG/SHORT)
+  - `trading.profit` / `trading.loss` — P&L sign
+  - `trading.warning` — risky/elevated state (orange `#dd6b20`)
+  - `trading.info` — informational (blue `#2563eb`)
+  - `trading.neutral` — neutral state
+- `accent.solid` - UI accent for active/selected/focused state (brand-blue, `#3182ce`)
+- `brand.logo.primary` / `brand.logo.secondary` - Brand-locked logo colors
 - `canvas.*` - Canvas rendering colors
+
+### Forbidden patterns (enforced by `scripts/audit-shade-literals.mjs` in CI)
+
+Five patterns the audit rejects automatically. Each entry shows the
+**forbidden form** + the **semantic-token alternative**.
+
+#### 1. `shade-literal-color` — static shade literals on JSX props
+
+```tsx
+// ❌ Forbidden — raw shade scale on a JSX prop
+<Text color="green.500">+$123</Text>
+<Box bg="red.50" borderColor="red.500" />
+
+// ✅ Use semantic tokens
+<Text color="trading.profit">+$123</Text>
+<Box bg="bg.error" borderColor="trading.loss" />
+```
+
+#### 2. `_dark-override` — `_dark={{}}` JSX-prop overrides
+
+```tsx
+// ❌ Forbidden — manual dark-mode override on a prop
+<Box bg="gray.50" _dark={{ bg: 'gray.700' }} />
+
+// ✅ Use semantic tokens (auto-resolve dark/light)
+<Box bg="bg.muted" />
+```
+
+#### 3. `_dark-override-nested` — same anti-pattern inside object literals
+
+```tsx
+// ❌ Forbidden — nested _dark in _hover (or any style object)
+<MenuItem _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }} />
+
+// ✅ Single semantic token, dark/light resolves automatically
+<MenuItem _hover={{ bg: 'bg.muted' }} />
+```
+
+#### 4. `tinted-card-Box` — colored-bg + colored-border container
+
+```tsx
+// ❌ Forbidden — heavy "tinted card" wrapper around content
+<Box bg="green.subtle" borderColor="green.muted" borderWidth={1}>
+  <Stack>...</Stack>
+</Box>
+
+// ✅ Inline messages → <Callout tone="success" compact>
+//    Content groups → plain Stack/Box (no tint) inside the parent panel
+<Callout tone="success" compact>...</Callout>
+```
+
+#### 5. `dynamic-shade-pair` — both `green.NNN` AND `red.NNN` in a JSX expression
+
+```tsx
+// ❌ Forbidden — bidirectional shade literals (LONG/SHORT, P&L, etc.)
+<Text color={isLong ? 'green.500' : 'red.500'}>{side}</Text>
+<Box borderColor={isProfit ? 'green.500' : 'red.500'} />
+
+// ✅ Map to the matching semantic-token pair
+<Text color={isLong ? 'trading.long' : 'trading.short'}>{side}</Text>
+<Box borderColor={isProfit ? 'trading.profit' : 'trading.loss'} />
+```
+
+> Single-shade dynamic uses (`'orange.500' : 'fg.muted'`, `'blue.500' : 'fg.muted'`)
+> are intentionally not flagged — those are usually UI accents (active state,
+> warning highlight) and have a different migration path:
+> `'blue.500'` → `'accent.solid'`, `'orange.500'` → `'trading.warning'`,
+> `'green.500'` (alone) → `'trading.profit'` etc.
 
 ### Wrapper Components and Theming
 
@@ -452,6 +527,8 @@ What it provides:
 - **`PanelHeader`** is for dashboard panels showing data. **Has bottom border**.
 - Share the same title typography.
 
+**Applied surfaces (as of v1.2):** `Trading/PerformancePanel`, `Trading/SetupStatsTable`, `Analytics/PerformanceCalendar`, `Analytics/EquityCurveChart`. New analytics-style panels should follow this pattern.
+
 ### Usage
 
 ```tsx
@@ -469,6 +546,75 @@ import { FormSection, FormRow, Switch } from '@renderer/components/ui';
 ```
 
 **Don't** hardcode literals where a token exists. If a value needs to change, change the token — primitives pick it up automatically.
+
+---
+
+## EmptyState pattern
+
+`<EmptyState>` is the canonical empty-state primitive. Used in 8 surfaces as of v1.2.
+
+### Usage
+
+```tsx
+import { EmptyState } from '@renderer/components/ui';
+
+// Inline — for surfaces with their own card framing
+<EmptyState size="sm" title={t('common.noData')} />
+
+// Dashed — for surfaces without surrounding card; wraps content in dashed-border box
+<EmptyState
+  dashed
+  title={t('tradingProfiles.watchers.empty')}
+  action={{ label: t('tradingProfiles.watchers.addFirst'), onClick: handleAdd }}
+/>
+```
+
+### Props
+- `title` (required) — the headline copy
+- `description` — optional secondary copy
+- `action` — `{ label, onClick, colorPalette? }` for an outline button below
+- `icon` — defaults to `LuInbox`; pass any `react-icons` component
+- `size` — `'sm' | 'md' | 'lg'` (default `md`); use `sm` in compact contexts (sidebars, inline)
+- `dashed` — wraps in a dashed-border box for surfaces without their own card
+
+### Don't
+- Hand-roll `<Box p={N} textAlign="center"><Text color="fg.muted">No data</Text></Box>` patterns. Use EmptyState.
+- Stack EmptyState inside another card with its own border — pick one framing.
+
+---
+
+## Color tokens
+
+As of v1.2, `apps/electron/src/renderer/components/` contains **0** hardcoded shade literals (`color="X.500"`, `bg="X.50"`, `borderColor="X.500"`, etc.) and **0** `_dark={{}}` overrides. Every color flows through one of these semantic tokens:
+
+| Token | Use |
+|-------|-----|
+| `X.fg` | Foreground text/icon for color X (resolves to `.500` light / `.300` dark approx) |
+| `X.subtle` | Background tone-on-tone for X (resolves to `.50` light / `.900` dark) |
+| `X.muted` | Border or secondary text for X |
+| `X.solid` | Solid fill — status dots, badges with strong tone |
+| `bg.panel` | Card-style panel background (Card primitive default) |
+| `bg.muted` | Subtle muted background — section panels |
+| `bg.subtle` | Even more muted — hover states |
+| `fg.muted` | Muted text (description, helper, captions) |
+| `trading.profit` | PnL gain — prefer over generic `green.fg` for trade values |
+| `trading.loss` | PnL loss — prefer over generic `red.fg` for trade values |
+
+Adding a new shade literal in `renderer/components/` is caught by `pnpm lint:shades` (`scripts/audit-shade-literals.mjs`) and gated in CI. Always prefer a semantic token; if the design needs a new tone, add it to `theme/semanticTokens.ts` first.
+
+### WCAG AA contrast (v1.3 F.1)
+
+The text-on-bg pairs below clear the WCAG AA 4.5:1 floor for body text:
+
+| Pair | Light | Dark |
+|---|---|---|
+| `fg.muted` over `bg.muted` | 5.16:1 ✓ | 5.00:1 ✓ |
+| `fg.muted` over `bg.panel` | 5.83:1 ✓ | 11.1:1 ✓ |
+| `fg` over `bg.panel` | 16.5:1 ✓ | 16.0:1 ✓ |
+
+The `trading.profit / .loss / .warning / .info` tokens render below 4.5:1 in some pairings but consistently pass the 3:1 floor for **bold** or **large** text (WCAG AA's relaxed criterion), which matches how these tokens are used in the codebase (PnL values, status pills — always semibold or larger). If a new use site renders these tokens at body size + normal weight, prefer `green.fg / red.fg / yellow.fg / blue.fg` instead.
+
+Borders (`border` token) intentionally fall below 3:1 against `bg.panel` — they're structural, not informational, and 3:1 borders read as "boxed-in" instead of "subtle".
 
 ---
 

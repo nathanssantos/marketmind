@@ -37,12 +37,7 @@ export const ChartContextMenuManager = ({
                             display="flex"
                             alignItems="center"
                             whiteSpace="nowrap"
-                            _hover={{
-                                bg: 'gray.100',
-                                _dark: {
-                                    bg: 'gray.700',
-                                },
-                            }}
+                            _hover={{ bg: 'bg.muted' }}
                         >
                             <LuTrash2 />
                             {t('chart.contextMenu.clearAllDrawings', 'Clear All Drawings')}

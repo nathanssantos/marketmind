@@ -50,9 +50,9 @@ export function LeverageSelector({
   const isExtremeRisk = value > 50;
 
   const getLeverageColor = (): string => {
-    if (isExtremeRisk) return 'red.500';
-    if (isHighRisk) return 'orange.500';
-    return 'green.500';
+    if (isExtremeRisk) return 'trading.loss';
+    if (isHighRisk) return 'trading.warning';
+    return 'trading.profit';
   };
 
   return (
@@ -89,7 +89,7 @@ export function LeverageSelector({
             key={preset}
             size="2xs"
             variant={value === preset ? 'solid' : 'outline'}
-            colorPalette={preset > 50 ? 'red' : preset > 20 ? 'orange' : 'gray'}
+            colorPalette={preset > 50 ? 'red' : preset > 20 ? 'orange' : 'green'}
             onClick={() => handlePresetClick(preset)}
             disabled={disabled}
             minW="40px"

@@ -15,6 +15,13 @@ const openSettings = async (page: Page, tab?: string) => {
     window.__globalActions?.openSettings(t);
   }, tab);
   await expect(page.getByRole('dialog').first()).toBeVisible({ timeout: 10_000 });
+  // Tabs are lazy-loaded — wait for the Suspense fallback spinner to detach
+  // before returning. catch() swallows the wait timeout in case the chunk
+  // was already cached and the spinner never rendered.
+  await page
+    .locator('[data-testid="settings-content"] .chakra-spinner')
+    .waitFor({ state: 'detached', timeout: 5_000 })
+    .catch(() => { /* spinner may have never rendered */ });
 };
 
 test.describe('Settings overhaul', () => {
@@ -134,7 +141,7 @@ test.describe('Settings a11y (axe-core)', () => {
         // Rules disabled with rationale:
         // - region / aria-allowed-attr: Chakra's portal-hosted patterns; not real-user impact
         // - color-contrast: tracked separately — needs Chakra theme token audit (see
-        //   docs/V1_POST_RELEASE_PLAN.md Phase 2.1). The 2xs muted text on muted bg in
+        //   docs/archive/V1_POST_RELEASE_PLAN.md Phase 2.1). The 2xs muted text on muted bg in
         //   dark theme falls below 4.5:1. Will land in a focused theme PR.
         .disableRules(['region', 'aria-allowed-attr', 'color-contrast'])
         .analyze();

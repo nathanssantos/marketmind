@@ -1,4 +1,4 @@
-import { Flex, Stack } from '@chakra-ui/react';
+import { Flex, Spinner, Stack } from '@chakra-ui/react';
 import {
   Callout,
   DialogBackdrop,
@@ -10,16 +10,24 @@ import {
   DialogTitle,
   IconButton,
 } from '@renderer/components/ui';
-import { memo, useCallback, useMemo } from 'react';
+import { Suspense, lazy, memo, useCallback, useMemo } from 'react';
 import { LuX } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
+import { useDialogMount } from '../../hooks/useDialogMount';
 import { useUIStore } from '../../store/uiStore';
+import { MM } from '../../theme/tokens';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
-import { EquityCurveChart } from './EquityCurveChart';
 import { PerformanceCalendar } from './PerformanceCalendar';
+
+// V1_3 bundle follow-up — EquityCurveChart pulls recharts (~296 KB raw /
+// 83 KB gz). Lazy-load so the chunk only ships when the user opens the
+// Analytics modal.
+const EquityCurveChart = lazy(() =>
+  import('./EquityCurveChart').then((m) => ({ default: m.EquityCurveChart })),
+);
 
 export const AnalyticsModal = memo(() => {
   const { t } = useTranslation();
@@ -33,6 +41,7 @@ export const AnalyticsModal = memo(() => {
       setAnalyticsOpen: s.setAnalyticsOpen,
     }))
   );
+  useDialogMount('AnalyticsModal', isAnalyticsOpen);
 
   const marginRequirements = useMemo(() => {
     if (!isIBWallet) return null;
@@ -72,7 +81,15 @@ export const AnalyticsModal = memo(() => {
                 {marginRequirements && (
                   <MarginInfoPanel requirements={marginRequirements} />
                 )}
-                <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
+                <Suspense
+                  fallback={
+                    <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+                      <Spinner size={MM.spinner.panel.size} />
+                    </Flex>
+                  }
+                >
+                  <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
+                </Suspense>
               </Stack>
             ) : (
               <Callout tone="info" compact>

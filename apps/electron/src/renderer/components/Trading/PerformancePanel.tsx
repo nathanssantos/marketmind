@@ -1,5 +1,4 @@
 import {
-  Box,
   Button,
   ButtonGroup,
   Flex,
@@ -11,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
-import { PanelHeader } from '../ui';
+import { DataCard, PanelHeader } from '../ui';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
@@ -41,16 +40,16 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
 
   if (!performance) {
     return (
-      <Text textAlign="center" color="gray.500" py={8}>
+      <Text textAlign="center" color="fg.muted" py={8}>
         {t('trading.analytics.performance.noData')}
       </Text>
     );
   }
 
   const getValueColor = (value: number) => {
-    if (value > 0) return 'green.500';
-    if (value < 0) return 'red.500';
-    return 'gray.500';
+    if (value > 0) return 'trading.profit';
+    if (value < 0) return 'trading.loss';
+    return 'fg.muted';
   };
 
   const formatPercent = (value: number) => {
@@ -86,19 +85,7 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
     subtext?: string;
   }) => (
     <GridItem>
-      <Box px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
-        <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">
-          {label}
-        </Text>
-        <Text fontSize="sm" fontWeight="bold" color={valueColor}>
-          {value}
-        </Text>
-        {subtext && (
-          <Text fontSize="2xs" color="fg.muted">
-            {subtext}
-          </Text>
-        )}
-      </Box>
+      <DataCard label={label} value={value} valueColor={valueColor} subtext={subtext} />
     </GridItem>
   );
 
@@ -145,17 +132,17 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
         <MetricCard
           label={t('trading.analytics.performance.profitFactor')}
           value={performance.profitFactor.toFixed(2)}
-          valueColor={performance.profitFactor >= 1 ? 'green.500' : 'red.500'}
+          valueColor={performance.profitFactor >= 1 ? 'trading.profit' : 'trading.loss'}
         />
         <MetricCard
           label={t('trading.analytics.performance.avgWin')}
           value={formatCurrency(performance.avgWin)}
-          valueColor="green.500"
+          valueColor="trading.profit"
         />
         <MetricCard
           label={t('trading.analytics.performance.avgLoss')}
           value={formatCurrency(performance.avgLoss)}
-          valueColor="red.500"
+          valueColor="trading.loss"
         />
       </Grid>
 
@@ -163,17 +150,17 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
         <MetricCard
           label={t('trading.analytics.performance.maxDrawdown')}
           value={`-${performance.maxDrawdown.toFixed(2)}%`}
-          valueColor="red.500"
+          valueColor="trading.loss"
         />
         <MetricCard
           label={t('trading.analytics.performance.largestWin')}
           value={formatCurrency(performance.largestWin)}
-          valueColor="green.500"
+          valueColor="trading.profit"
         />
         <MetricCard
           label={t('trading.analytics.performance.largestLoss')}
           value={formatCurrency(performance.largestLoss)}
-          valueColor="red.500"
+          valueColor="trading.loss"
         />
       </Grid>
     </Stack>

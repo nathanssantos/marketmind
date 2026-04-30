@@ -20,7 +20,7 @@ const CandlePatternTable = memo(({ data }: { data: StrategyVisualizationData }) 
   const { t } = useTranslation();
 
   if (!data.patternCandles || data.patternCandles.length === 0) {
-    return <Text color="gray.500" fontSize="xs">{t('strategyInfo.noCandleData')}</Text>;
+    return <Text color="fg.muted" fontSize="xs">{t('strategyInfo.noCandleData')}</Text>;
   }
 
   return (
@@ -96,17 +96,17 @@ const PerformanceStats = memo(({ data }: { data: StrategyVisualizationData }) =>
   return (
     <Flex gap={3} fontSize="xs">
       <Box>
-        <Text color="gray.500">{t('strategyInfo.trades')}</Text>
+        <Text color="fg.muted">{t('strategyInfo.trades')}</Text>
         <Text fontWeight="medium">{totalTrades}</Text>
       </Box>
       <Box>
-        <Text color="gray.500">{t('strategyInfo.winRate')}</Text>
-        <Text fontWeight="medium" color={winRate >= 50 ? 'green.500' : 'red.500'}>
+        <Text color="fg.muted">{t('strategyInfo.winRate')}</Text>
+        <Text fontWeight="medium" color={winRate >= 50 ? 'trading.profit' : 'trading.loss'}>
           {winRate.toFixed(1)}%
         </Text>
       </Box>
       <Box>
-        <Text color="gray.500">{t('strategyInfo.avgRR')}</Text>
+        <Text color="fg.muted">{t('strategyInfo.avgRR')}</Text>
         <Text fontWeight="medium">{avgRiskReward.toFixed(2)}</Text>
       </Box>
     </Flex>
@@ -129,7 +129,7 @@ const PopoverContent = memo(({ data, isLoading }: { data: StrategyVisualizationD
   if (!data) {
     return (
       <Box p={4}>
-        <Text color="gray.500" fontSize="sm">{t('strategyInfo.noData')}</Text>
+        <Text color="fg.muted" fontSize="sm">{t('strategyInfo.noData')}</Text>
       </Box>
     );
   }
@@ -144,7 +144,7 @@ const PopoverContent = memo(({ data, isLoading }: { data: StrategyVisualizationD
           )}
         </Flex>
         {data.education?.howItWorks?.summaryKey && (
-          <Text fontSize="xs" color="gray.600">
+          <Text fontSize="xs" color="fg.muted">
             {t(data.education.howItWorks.summaryKey)}
           </Text>
         )}
@@ -154,11 +154,11 @@ const PopoverContent = memo(({ data, isLoading }: { data: StrategyVisualizationD
         <Box>
           <Text fontSize="xs" fontWeight="medium" mb={1}>{t('strategyInfo.howItWorks')}</Text>
           <Stack gap={1}>
-            <Text fontSize="xs" color="gray.600">
+            <Text fontSize="xs" color="fg.muted">
               <Text as="span" fontWeight="medium">{t('strategyInfo.entry')}: </Text>
               {t(data.education.howItWorks.entryKey)}
             </Text>
-            <Text fontSize="xs" color="gray.600">
+            <Text fontSize="xs" color="fg.muted">
               <Text as="span" fontWeight="medium">{t('strategyInfo.exit')}: </Text>
               {t(data.education.howItWorks.exitKey)}
             </Text>

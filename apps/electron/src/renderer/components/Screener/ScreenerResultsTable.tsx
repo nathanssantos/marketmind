@@ -71,7 +71,7 @@ export const ScreenerResultsTable = memo(({
             {row.price < 1 ? row.price.toPrecision(4) : formatNumber(row.price)}
           </TradingTableCell>
           <TradingTableCell textAlign="right">
-            <Text color={row.priceChangePercent24h >= 0 ? 'green.500' : 'red.500'}>
+            <Text color={row.priceChangePercent24h >= 0 ? 'trading.profit' : 'trading.loss'}>
               {row.priceChangePercent24h >= 0 ? '+' : ''}{formatNumber(row.priceChangePercent24h)}%
             </Text>
           </TradingTableCell>
@@ -83,14 +83,14 @@ export const ScreenerResultsTable = memo(({
           </TradingTableCell>
           <TradingTableCell textAlign="right">
             <Text color={
-              (row.indicators['RSI'] ?? 50) < 30 ? 'green.500' :
-              (row.indicators['RSI'] ?? 50) > 70 ? 'red.500' : 'fg'
+              (row.indicators['RSI'] ?? 50) < 30 ? 'trading.long' :
+              (row.indicators['RSI'] ?? 50) > 70 ? 'trading.short' : 'fg'
             }>
               {formatNumber(row.indicators['RSI'])}
             </Text>
           </TradingTableCell>
           <TradingTableCell textAlign="right">
-            <Text color={(row.indicators['ADX'] ?? 0) > 25 ? 'blue.500' : 'fg.muted'}>
+            <Text color={(row.indicators['ADX'] ?? 0) > 25 ? 'accent.solid' : 'fg.muted'}>
               {formatNumber(row.indicators['ADX'])}
             </Text>
           </TradingTableCell>
@@ -98,7 +98,7 @@ export const ScreenerResultsTable = memo(({
             {formatNumber(row.indicators['ATR_PERCENT'])}%
           </TradingTableCell>
           <TradingTableCell textAlign="right">
-            <Text color={(row.indicators['VOLUME_RATIO'] ?? 0) > 2 ? 'orange.500' : 'fg'}>
+            <Text color={(row.indicators['VOLUME_RATIO'] ?? 0) > 2 ? 'trading.warning' : 'fg'}>
               {formatNumber(row.indicators['VOLUME_RATIO'])}x
             </Text>
           </TradingTableCell>

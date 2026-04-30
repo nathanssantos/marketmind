@@ -217,8 +217,8 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
                 )}
 
                 {isLoading ? (
-                  <Flex justify="center" py={8}>
-                    <Spinner size="lg" />
+                  <Flex justify="center" py={MM.spinner.panel.py}>
+                    <Spinner size={MM.spinner.panel.size} />
                   </Flex>
                 ) : results ? (
                   <ScreenerResultsTable

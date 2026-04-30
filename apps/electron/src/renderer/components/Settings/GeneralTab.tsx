@@ -26,7 +26,7 @@ export const GeneralTab = () => {
             flex={1}
             size="sm"
             variant="outline"
-            color={colorMode === 'light' ? 'blue.500' : 'fg.muted'}
+            color={colorMode === 'light' ? 'accent.solid' : 'fg.muted'}
             onClick={() => setColorMode('light')}
             data-testid="theme-light-button"
           >
@@ -37,7 +37,7 @@ export const GeneralTab = () => {
             flex={1}
             size="sm"
             variant="outline"
-            color={colorMode === 'dark' ? 'blue.500' : 'fg.muted'}
+            color={colorMode === 'dark' ? 'accent.solid' : 'fg.muted'}
             onClick={() => setColorMode('dark')}
             data-testid="theme-dark-button"
           >

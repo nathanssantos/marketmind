@@ -97,7 +97,7 @@ export const ChartCloseDialog = ({
                     <Box
                       fontSize="lg"
                       fontWeight="bold"
-                      color={isProfit ? 'green.500' : 'red.500'}
+                      color={isProfit ? 'trading.profit' : 'trading.loss'}
                     >
                       {percentChange >= 0 ? '+' : ''}{percentChange.toFixed(2)}%
                     </Box>

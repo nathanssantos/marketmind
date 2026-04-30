@@ -46,17 +46,17 @@ export const KlineOHLCRow = ({ kline, compact = false }: KlineOHLCRowProps) => {
       </HStack>
       <HStack gap={1} flexShrink={0}>
         <Text color="fg.muted">H</Text>
-        <Text fontWeight="medium" color="green.fg">{formatPriceDisplay(high)}</Text>
+        <Text fontWeight="medium" color="trading.profit">{formatPriceDisplay(high)}</Text>
       </HStack>
       <HStack gap={1} flexShrink={0}>
         <Text color="fg.muted">L</Text>
-        <Text fontWeight="medium" color="red.fg">{formatPriceDisplay(low)}</Text>
+        <Text fontWeight="medium" color="trading.loss">{formatPriceDisplay(low)}</Text>
       </HStack>
       <HStack gap={1} flexShrink={0}>
         <Text color="fg.muted">C</Text>
-        <Text fontWeight="medium" color={isBullish ? 'green.500' : 'red.500'}>{formatPriceDisplay(close)}</Text>
+        <Text fontWeight="medium" color={isBullish ? 'trading.profit' : 'trading.loss'}>{formatPriceDisplay(close)}</Text>
       </HStack>
-      <Text fontWeight="semibold" color={isBullish ? 'green.500' : 'red.500'} flexShrink={0}>
+      <Text fontWeight="semibold" color={isBullish ? 'trading.profit' : 'trading.loss'} flexShrink={0}>
         {isBullish ? '+' : ''}{changePercent.toFixed(2)}%
       </Text>
       <HStack gap={1} flexShrink={0}>
@@ -64,9 +64,9 @@ export const KlineOHLCRow = ({ kline, compact = false }: KlineOHLCRowProps) => {
         <Text fontWeight="medium">{volume.toLocaleString(undefined, { maximumFractionDigits: 0 })}</Text>
       </HStack>
       <HStack gap={1} flexShrink={0}>
-        <Text color="green.fg" fontWeight="medium">{(buyPressure * 100).toFixed(0)}%</Text>
+        <Text color="trading.profit" fontWeight="medium">{(buyPressure * 100).toFixed(0)}%</Text>
         <Text color="fg.muted">/</Text>
-        <Text color="red.fg" fontWeight="medium">{(sellPressure * 100).toFixed(0)}%</Text>
+        <Text color="trading.loss" fontWeight="medium">{(sellPressure * 100).toFixed(0)}%</Text>
       </HStack>
     </HStack>
   );

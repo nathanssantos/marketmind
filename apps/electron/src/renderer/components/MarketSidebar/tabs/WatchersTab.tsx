@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
+import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, EmptyState, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { MM } from '@renderer/theme/tokens';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -80,6 +80,7 @@ const WatchersTabComponent = () => {
               onClick={() => setIsModalOpen(true)}
               colorPalette="green"
               variant="solid"
+              data-testid="trigger-start-watchers"
             >
               <LuPlay />
             </IconButton>
@@ -113,25 +114,18 @@ const WatchersTabComponent = () => {
           {t('trading.portfolio.noWallet')}
         </Callout>
       ) : isLoadingWatcherStatus ? (
-        <Box p={4} textAlign="center">
-          <Text fontSize="sm" color="fg.muted">{t('common.loading')}</Text>
-        </Box>
+        <EmptyState size="sm" title={t('common.loading')} />
       ) : activeWatchers.length === 0 ? (
-        <Box p={4} textAlign="center" bg="bg.muted" borderRadius="md">
-          <Text fontSize="sm" color="fg.muted">
-            {t('marketSidebar.watchers.empty')}
-          </Text>
-          <Button
-            size="sm"
-            variant="outline"
-            mt={3}
-            px={4}
-            onClick={() => setIsModalOpen(true)}
-          >
-            <LuPlay />
-            {t('marketSidebar.watchers.startWatchers')}
-          </Button>
-        </Box>
+        <EmptyState
+          size="sm"
+          dashed
+          title={t('marketSidebar.watchers.empty')}
+          action={{
+            label: t('marketSidebar.watchers.startWatchers'),
+            onClick: () => setIsModalOpen(true),
+            icon: <LuPlay />,
+          }}
+        />
       ) : (
         <>
           <WatchersTable
@@ -235,7 +229,7 @@ const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRe
       borderRadius="md"
       p={3}
       borderLeft="3px solid"
-      borderLeftColor={isLong ? 'green.500' : 'red.500'}
+      borderLeftColor={isLong ? 'trading.long' : 'trading.short'}
     >
       <Flex justify="space-between" align="center" mb={2}>
         <Flex align="center" gap={2}>
@@ -249,7 +243,7 @@ const SuggestionCard = memo(({ suggestion, onAccept, onReject, isAccepting, isRe
             fontWeight="bold"
             fontSize="xs"
             cursor={onNavigate ? 'pointer' : 'default'}
-            _hover={onNavigate ? { color: 'blue.500' } : undefined}
+            _hover={onNavigate ? { color: 'accent.solid' } : undefined}
             onClick={() => onNavigate?.(suggestion.symbol, 'FUTURES')}
           >
             {suggestion.symbol}
@@ -399,7 +393,7 @@ const WatchersTable = memo(({ watchers, onNavigateToSymbol }: WatchersTableProps
               <Text
                 fontWeight="medium"
                 cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-                _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+                _hover={onNavigateToSymbol ? { color: 'accent.solid', textDecoration: 'underline' } : undefined}
                 onClick={() => onNavigateToSymbol?.(watcher.symbol, watcher.marketType)}
               >
                 {watcher.symbol}

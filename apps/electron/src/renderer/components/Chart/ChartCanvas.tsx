@@ -69,7 +69,7 @@ export interface ChartCanvasProps {
   height?: string | number;
   initialViewport?: Viewport;
   onViewportChange?: (viewport: Viewport) => void;
-  chartType?: 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
+  chartType?: 'kline' | 'line';
   advancedConfig?: AdvancedControlsConfig;
   timeframe?: string;
   onNearLeftEdge?: () => void;
@@ -131,7 +131,7 @@ const ChartCanvasInternal = ({
     return () => unsubscribe();
   }, []);
 
-  const tradingData = useChartTradingData({ symbol, marketType, chartType });
+  const tradingData = useChartTradingData({ symbol, marketType });
   const {
     backendWalletId,
     hasTradingEnabled,
@@ -150,8 +150,6 @@ const ChartCanvasInternal = ({
     exchangeOpenOrders,
     exchangeAlgoOrders,
     needsScalpingMetrics,
-    resolvedTicksPerBar,
-    resolvedVolumePerBar,
   } = tradingData;
 
   const managerRef = useRef<CanvasManager | null>(null);
@@ -168,13 +166,10 @@ const ChartCanvasInternal = ({
     return () => unsubscribe();
   }, []);
 
-  const { effectiveKlines, footprintBars } = useChartAlternativeKlines({
+  const { effectiveKlines } = useChartAlternativeKlines({
     klines,
-    chartType,
     symbol,
     needsScalpingMetrics,
-    resolvedTicksPerBar,
-    resolvedVolumePerBar,
     managerRef,
   });
 
@@ -365,7 +360,6 @@ const ChartCanvasInternal = ({
     klines,
     {
       marketEvents,
-      footprintBars,
       liquidityHeatmap: heatmapDataRef.current,
     },
     managerRef,
@@ -375,13 +369,12 @@ const ChartCanvasInternal = ({
   const volumeHeightRatio = advancedConfig?.volumeHeightRatio;
   const external = useMemo(() => ({
     marketEvents,
-    footprintBars,
     liquidityHeatmapRef: heatmapDataRef,
     liquidityColorMode,
     timeframe,
     hoveredKlineIndexRef,
     ...(volumeHeightRatio !== undefined && { volumeHeightRatio }),
-  }), [marketEvents, footprintBars, heatmapDataRef, liquidityColorMode, timeframe, hoveredKlineIndexRef, volumeHeightRatio]);
+  }), [marketEvents, heatmapDataRef, liquidityColorMode, timeframe, hoveredKlineIndexRef, volumeHeightRatio]);
 
   const genericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, outputsRef: genericOutputsRef,

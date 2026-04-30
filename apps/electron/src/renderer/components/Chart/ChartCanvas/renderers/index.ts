@@ -1,5 +1,4 @@
 import { renderFibonacci } from './renderFibonacci';
-import { renderFootprint } from './renderFootprint';
 import { renderFVG } from './renderFVG';
 import { renderIchimoku } from './renderIchimoku';
 import { renderLiquidationMarkers } from './renderLiquidationMarkers';
@@ -47,14 +46,12 @@ export const CUSTOM_RENDERER_REGISTRY: Record<string, GenericRenderer> = {
   orb: renderORB,
   pivotPoints: renderPivotPoints,
   sessionBoundaries: renderSessionBoundaries,
-  footprint: renderFootprint,
   volume: renderVolume,
   volumeProfile: renderVolumeProfile,
 };
 
 export {
   renderFibonacci,
-  renderFootprint,
   renderFVG,
   renderIchimoku,
   renderLiquidationMarkers,

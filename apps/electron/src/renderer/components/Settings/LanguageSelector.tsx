@@ -1,5 +1,6 @@
 import { Select } from '@renderer/components/ui';
 import { useUIPreferences } from '@/renderer/hooks/useUserPreferences';
+import { changeLanguageLazy } from '@renderer/i18n';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -21,14 +22,14 @@ export const LanguageSelector = () => {
     if (preferences && !isHydratedRef.current) {
       const savedLanguage = preferences[LANGUAGE_KEY] as string | undefined;
       if (savedLanguage && ['en', 'pt', 'es', 'fr'].includes(savedLanguage)) {
-        void i18n.changeLanguage(savedLanguage);
+        void changeLanguageLazy(savedLanguage);
       }
       isHydratedRef.current = true;
     }
-  }, [preferences, i18n]);
+  }, [preferences]);
 
   const handleLanguageChange = async (newLanguage: string) => {
-    await i18n.changeLanguage(newLanguage);
+    await changeLanguageLazy(newLanguage);
     await set(LANGUAGE_KEY, newLanguage);
   };
 

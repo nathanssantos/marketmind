@@ -45,11 +45,21 @@ export const TradingProfilesManager = () => {
         description={t('tradingProfiles.description')}
         action={
           <Flex gap={2}>
-            <Button size="sm" variant="outline" onClick={() => setShowImportDialog(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowImportDialog(true)}
+              data-testid="trigger-import-profile"
+            >
               <LuUpload />
               {t('tradingProfiles.import.openImport')}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowCreateDialog(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowCreateDialog(true)}
+              data-testid="trigger-create-profile"
+            >
               <LuPlus />
               {t('tradingProfiles.create')}
             </Button>
@@ -116,8 +126,6 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
       p={4}
       bg="bg.muted"
       borderRadius="md"
-      borderLeftWidth="3px"
-      borderLeftColor={profile.isDefault ? 'yellow.muted' : 'blue.muted'}
       position="relative"
     >
       <Flex justify="space-between" align="flex-start" mb={3}>

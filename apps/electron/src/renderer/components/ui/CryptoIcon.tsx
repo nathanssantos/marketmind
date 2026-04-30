@@ -55,7 +55,7 @@ const CryptoIconComponent = ({ symbol, size = 16, onClick, cursor }: CryptoIconP
                 w={`${size}px`}
                 h={`${size}px`}
                 borderRadius="full"
-                bg="gray.500"
+                bg="bg.subtle"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"

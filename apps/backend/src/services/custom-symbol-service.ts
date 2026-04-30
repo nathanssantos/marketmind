@@ -24,7 +24,7 @@ const COMPONENT_BACKFILL_TARGET = 5_000;
 
 export { computeWeights, fetchBinancePrice, fetchMarketCaps } from './custom-symbol-helpers';
 
-class CustomSymbolService {
+export class CustomSymbolService {
   private definitions = new Map<string, CustomSymbolState>();
   private customSymbolSet = new Set<string>();
   private priceObserverRegistered = false;

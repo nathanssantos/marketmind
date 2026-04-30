@@ -1,5 +1,5 @@
-import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import { CollapsibleSection, Radio, RadioGroup } from '@renderer/components/ui';
+import { Stack } from '@chakra-ui/react';
+import { CollapsibleSection, Field, Select } from '@renderer/components/ui';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { useTranslation } from 'react-i18next';
 
@@ -28,9 +28,21 @@ export const TpModeSection = ({
   onFibonacciLevelLongChange,
   onFibonacciLevelShortChange,
   onFibonacciSwingRangeChange,
-  isPending,
 }: TpModeSectionProps) => {
   const { t } = useTranslation();
+
+  const fibLevelOptions = [
+    { value: 'auto', label: t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.auto') },
+    { value: '1', label: `100% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.conservative')}` },
+    { value: '1.272', label: `127.2% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderate')}` },
+    { value: '1.382', label: `138.2% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderateAggressive')}` },
+    { value: '1.618', label: `161.8% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressive')}` },
+    { value: '2', label: `200% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extended')}` },
+    { value: '2.618', label: `261.8% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.superExtended')}` },
+    { value: '3', label: `300% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.triple')}` },
+    { value: '3.618', label: `361.8% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.ultraExtended')}` },
+    { value: '4.236', label: `423.6% — ${t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.maximum')}` },
+  ];
 
   return (
     <CollapsibleSection
@@ -41,163 +53,71 @@ export const TpModeSection = ({
       size="lg"
       variant="static"
     >
-      <RadioGroup
-        value={tpCalculationMode}
-        onValueChange={onTpModeChange}
-        disabled={isPending}
-      >
-        <HStack gap={6}>
-          <Radio value="default">
-            <Box>
-              <Text fontSize="sm" fontWeight="medium">
-                {t('settings.algorithmicAutoTrading.tpMode.default')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted">
-                {t('settings.algorithmicAutoTrading.tpMode.defaultDescription')}
-              </Text>
-            </Box>
-          </Radio>
-          <Radio value="fibonacci">
-            <Box>
-              <Text fontSize="sm" fontWeight="medium">
-                {t('settings.algorithmicAutoTrading.tpMode.fibonacci')}
-              </Text>
-              <Text fontSize="xs" color="fg.muted">
-                {t('settings.algorithmicAutoTrading.tpMode.fibonacciDescription')}
-              </Text>
-            </Box>
-          </Radio>
-        </HStack>
-      </RadioGroup>
+      <Stack gap={4}>
+        <Field
+          label={t('settings.algorithmicAutoTrading.tpMode.calculationLabel', 'Calculation method')}
+          helperText={
+            tpCalculationMode === 'default'
+              ? t('settings.algorithmicAutoTrading.tpMode.defaultDescription')
+              : t('settings.algorithmicAutoTrading.tpMode.fibonacciDescription')
+          }
+        >
+          <Select
+            value={tpCalculationMode}
+            options={[
+              { value: 'default', label: t('settings.algorithmicAutoTrading.tpMode.default') },
+              { value: 'fibonacci', label: t('settings.algorithmicAutoTrading.tpMode.fibonacci') },
+            ]}
+            onChange={(v) => onTpModeChange({ value: v })}
+            size="sm"
+            usePortal={false}
+          />
+        </Field>
 
-      {tpCalculationMode === 'fibonacci' && (
-        <Stack mt={4} gap={4}>
-          <Box>
-            <Text fontSize="sm" fontWeight="medium" mb={2}>
-              {t('settings.algorithmicAutoTrading.tpMode.swingRange.title')}
-            </Text>
-            <Text fontSize="xs" color="fg.muted" mb={2}>
-              {t('settings.algorithmicAutoTrading.tpMode.swingRange.description')}
-            </Text>
-            <RadioGroup
-              value={fibonacciSwingRange}
-              onValueChange={onFibonacciSwingRangeChange}
-              disabled={isPending}
+        {tpCalculationMode === 'fibonacci' && (
+          <Stack gap={4}>
+            <Field
+              label={t('settings.algorithmicAutoTrading.tpMode.swingRange.title')}
+              helperText={
+                fibonacciSwingRange === 'extended'
+                  ? t('settings.algorithmicAutoTrading.tpMode.swingRange.extendedDescription')
+                  : t('settings.algorithmicAutoTrading.tpMode.swingRange.nearestDescription')
+              }
             >
-              <HStack gap={6}>
-                <Radio value="extended">
-                  <Box>
-                    <Text fontSize="sm" fontWeight="medium">
-                      {t('settings.algorithmicAutoTrading.tpMode.swingRange.extended')}
-                    </Text>
-                    <Text fontSize="xs" color="fg.muted">
-                      {t('settings.algorithmicAutoTrading.tpMode.swingRange.extendedDescription')}
-                    </Text>
-                  </Box>
-                </Radio>
-                <Radio value="nearest">
-                  <Box>
-                    <Text fontSize="sm" fontWeight="medium">
-                      {t('settings.algorithmicAutoTrading.tpMode.swingRange.nearest')}
-                    </Text>
-                    <Text fontSize="xs" color="fg.muted">
-                      {t('settings.algorithmicAutoTrading.tpMode.swingRange.nearestDescription')}
-                    </Text>
-                  </Box>
-                </Radio>
-              </HStack>
-            </RadioGroup>
-          </Box>
+              <Select
+                value={fibonacciSwingRange}
+                options={[
+                  { value: 'extended', label: t('settings.algorithmicAutoTrading.tpMode.swingRange.extended') },
+                  { value: 'nearest', label: t('settings.algorithmicAutoTrading.tpMode.swingRange.nearest') },
+                ]}
+                onChange={(v) => onFibonacciSwingRangeChange({ value: v })}
+                size="sm"
+                usePortal={false}
+              />
+            </Field>
 
-          <Box pl={4} borderLeftWidth="2px" borderLeftColor="green.500">
-            <Text fontSize="sm" fontWeight="medium" mb={2} color="green.fg">
-              {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.titleLong')}
-            </Text>
-            <RadioGroup
-              value={fibonacciTargetLevelLong}
-              onValueChange={onFibonacciLevelLongChange}
-              disabled={isPending}
-            >
-              <Stack gap={2}>
-                <Radio value="auto">
-                  <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.auto')}</Text>
-                </Radio>
-                <Radio value="1">
-                  <Text fontSize="sm">100% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.conservative')}</Text>
-                </Radio>
-                <Radio value="1.272">
-                  <Text fontSize="sm">127.2% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderate')}</Text>
-                </Radio>
-                <Radio value="1.382">
-                  <Text fontSize="sm">138.2% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderateAggressive')}</Text>
-                </Radio>
-                <Radio value="1.618">
-                  <Text fontSize="sm">161.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressive')}</Text>
-                </Radio>
-                <Radio value="2">
-                  <Text fontSize="sm">200% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extended')}</Text>
-                </Radio>
-                <Radio value="2.618">
-                  <Text fontSize="sm">261.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.superExtended')}</Text>
-                </Radio>
-                <Radio value="3">
-                  <Text fontSize="sm">300% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.triple')}</Text>
-                </Radio>
-                <Radio value="3.618">
-                  <Text fontSize="sm">361.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.ultraExtended')}</Text>
-                </Radio>
-                <Radio value="4.236">
-                  <Text fontSize="sm">423.6% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.maximum')}</Text>
-                </Radio>
-              </Stack>
-            </RadioGroup>
-          </Box>
+            <Field label={t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.titleLong')}>
+              <Select
+                value={fibonacciTargetLevelLong}
+                options={fibLevelOptions}
+                onChange={(v) => onFibonacciLevelLongChange({ value: v })}
+                size="sm"
+                usePortal={false}
+              />
+            </Field>
 
-          <Box pl={4} borderLeftWidth="2px" borderLeftColor="red.500">
-            <Text fontSize="sm" fontWeight="medium" mb={2} color="red.fg">
-              {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.titleShort')}
-            </Text>
-            <RadioGroup
-              value={fibonacciTargetLevelShort}
-              onValueChange={onFibonacciLevelShortChange}
-              disabled={isPending}
-            >
-              <Stack gap={2}>
-                <Radio value="auto">
-                  <Text fontSize="sm">{t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.auto')}</Text>
-                </Radio>
-                <Radio value="1">
-                  <Text fontSize="sm">100% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.conservative')}</Text>
-                </Radio>
-                <Radio value="1.272">
-                  <Text fontSize="sm">127.2% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderate')}</Text>
-                </Radio>
-                <Radio value="1.382">
-                  <Text fontSize="sm">138.2% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.moderateAggressive')}</Text>
-                </Radio>
-                <Radio value="1.618">
-                  <Text fontSize="sm">161.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.aggressive')}</Text>
-                </Radio>
-                <Radio value="2">
-                  <Text fontSize="sm">200% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.extended')}</Text>
-                </Radio>
-                <Radio value="2.618">
-                  <Text fontSize="sm">261.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.superExtended')}</Text>
-                </Radio>
-                <Radio value="3">
-                  <Text fontSize="sm">300% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.triple')}</Text>
-                </Radio>
-                <Radio value="3.618">
-                  <Text fontSize="sm">361.8% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.ultraExtended')}</Text>
-                </Radio>
-                <Radio value="4.236">
-                  <Text fontSize="sm">423.6% - {t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.maximum')}</Text>
-                </Radio>
-              </Stack>
-            </RadioGroup>
-          </Box>
-        </Stack>
-      )}
+            <Field label={t('settings.algorithmicAutoTrading.tpMode.fibonacciLevel.titleShort')}>
+              <Select
+                value={fibonacciTargetLevelShort}
+                options={fibLevelOptions}
+                onChange={(v) => onFibonacciLevelShortChange({ value: v })}
+                size="sm"
+                usePortal={false}
+              />
+            </Field>
+          </Stack>
+        )}
+      </Stack>
     </CollapsibleSection>
   );
 };

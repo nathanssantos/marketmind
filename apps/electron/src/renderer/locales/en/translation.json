@@ -366,30 +366,30 @@
       "defaultChartTypeHelper": "The default chart visualization style",
       "chartDimensions": "Chart Dimensions",
       "rightMargin": "Right Margin",
-      "rightMarginHelper": "Space reserved on the right side of the chart",
+      "rightMarginHelper": "Space reserved on the right side of the chart (px)",
       "volumeHeightRatio": "Volume Height Ratio",
-      "volumeHeightRatioHelper": "Height of volume bars relative to chart (0-1)",
+      "volumeHeightRatioHelper": "Height of volume bars relative to chart (0–1)",
       "klineSettings": "Kline Settings",
       "klineSpacing": "Kline Spacing",
-      "klineSpacingHelper": "Space between klines",
+      "klineSpacingHelper": "Space between klines (px)",
       "wickWidth": "Wick Width",
-      "wickWidthHelper": "Width of kline wicks",
+      "wickWidthHelper": "Width of kline wicks (px)",
       "gridSettings": "Grid Settings",
       "gridLineWidth": "Grid Line Width",
-      "gridLineWidthHelper": "Thickness of grid lines",
+      "gridLineWidthHelper": "Thickness of grid lines (px)",
       "currentPriceLine": "Current Price Line",
       "lineWidth": "Line Width",
-      "lineWidthHelper": "Thickness of the current price line",
+      "lineWidthHelper": "Thickness of the current price line (px)",
       "lineStyle": "Line Style",
       "lineStyleHelper": "Style of the current price line",
       "solid": "Solid",
       "dashed": "Dashed",
       "dotted": "Dotted",
       "chartPadding": "Chart Padding",
-      "topPadding": "Top Padding",
-      "bottomPadding": "Bottom Padding",
-      "leftPadding": "Left Padding",
-      "rightPadding": "Right Padding",
+      "topPadding": "Top Padding (px)",
+      "bottomPadding": "Bottom Padding (px)",
+      "leftPadding": "Left Padding (px)",
+      "rightPadding": "Right Padding (px)",
       "colorPalette": "Color Palette",
       "trading": "Trading",
       "enableShiftAltOrderEntry": "Enable Shift/Alt Order Entry",
@@ -740,10 +740,7 @@
     },
     "type": {
       "candle": "Candle",
-      "line": "Line",
-      "tick": "Tick",
-      "volume": "Volume",
-      "footprint": "Footprint"
+      "line": "Line"
     },
     "tools": {
       "pencil": "Pencil",
@@ -1049,7 +1046,14 @@
       "orphanOrdersTitle": "Orphan Orders",
       "orphanOrdersCancel": "Cancel",
       "orphanOrdersCancelSuccess": "Order cancelled",
-      "orphanOrdersCancelFailed": "Failed to cancel order"
+      "orphanOrdersCancelFailed": "Failed to cancel order",
+      "openPositions": "Open Positions",
+      "dailyPnLLabel": "Daily PnL",
+      "dailyLimit": "Limit: -{{percent}}%",
+      "sizePerWatcher": "Size per Watcher",
+      "watchersSuffix": "watchers",
+      "perWatcher": "100% / {{count}} watchers",
+      "watchersRatio": "/ {{count}} watchers"
     },
     "viewMode": {
       "cards": "Card view",
@@ -2418,5 +2422,13 @@
     },
     "weight": "Weight (× multiplier)",
     "weightHint": "Higher timeframes weigh more. Required conditions count 2×; preferred 1×."
+  },
+  "futures": {
+    "entryPrice": "Entry Price",
+    "markPrice": "Mark Price",
+    "size": "Size",
+    "accumulatedFunding": "Accumulated Funding",
+    "liquidationPrice": "Liquidation Price",
+    "distanceToLiq": "Distance to liquidation"
   }
 }

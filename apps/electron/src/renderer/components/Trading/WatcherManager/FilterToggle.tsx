@@ -30,7 +30,7 @@ export const FilterToggle = ({
       bg="bg.muted"
       borderRadius="md"
       borderWidth="1px"
-      borderColor={!forceDisabled && checked ? 'green.500' : 'border'}
+      borderColor={!forceDisabled && checked ? 'trading.profit' : 'border'}
       opacity={forceDisabled ? 0.45 : isDisabled ? 0.6 : 1}
     >
       <Flex justify="space-between" align="flex-start" gap={3}>

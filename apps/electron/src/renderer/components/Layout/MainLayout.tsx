@@ -40,7 +40,6 @@ interface MainLayoutProps {
   marketType?: MarketType;
   onMarketTypeChange?: (marketType: MarketType) => void;
   timeframe: Timeframe;
-  chartType: ChartType;
   onChartTypeChange: (type: ChartType) => void;
   onSymbolChange: (symbol: string) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
@@ -67,7 +66,6 @@ const MainLayoutComponent = ({
   marketType,
   onMarketTypeChange,
   timeframe,
-  chartType,
   onChartTypeChange,
   onSymbolChange,
   onTimeframeChange,
@@ -190,8 +188,6 @@ const MainLayoutComponent = ({
           marketType={marketType}
           onMarketTypeChange={onMarketTypeChange}
           timeframe={timeframe}
-          chartType={chartType}
-          onChartTypeChange={onChartTypeChange}
           isTradingOpen={isTradingOpen}
           isAutoTradingOpen={isAutoTradingOpen}
           onSymbolChange={onSymbolChange}
@@ -216,7 +212,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={handleMarketMouseDown}
                 userSelect="none"
               />
@@ -231,7 +227,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={handleOrderFlowMouseDown}
                 userSelect="none"
               />
@@ -273,7 +269,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={(e) => startResize(e, 'autoTrading', autoTradingWidth)}
                 userSelect="none"
               />
@@ -288,7 +284,7 @@ const MainLayoutComponent = ({
                 width="4px"
                 bg="border"
                 cursor="col-resize"
-                _hover={{ bg: 'green.500' }}
+                _hover={{ bg: 'accent.solid' }}
                 onMouseDown={handleMouseDown}
                 userSelect="none"
               />

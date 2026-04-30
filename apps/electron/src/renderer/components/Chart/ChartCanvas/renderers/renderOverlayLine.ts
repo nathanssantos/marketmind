@@ -1,3 +1,6 @@
+import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
 
@@ -31,6 +34,7 @@ export const renderOverlayLine: GenericRenderer = (ctx, input) => {
   canvasCtx.beginPath();
 
   let started = false;
+  let lastValue: number | null = null;
   for (let i = visibleStart; i < visibleEnd; i++) {
     const value = series[i];
     if (value === null || value === undefined || Number.isNaN(value)) {
@@ -45,6 +49,25 @@ export const renderOverlayLine: GenericRenderer = (ctx, input) => {
     } else {
       canvasCtx.lineTo(x, y);
     }
+    lastValue = value;
   }
   canvasCtx.stroke();
+
+  // Right-axis price tag for the indicator's last visible value. Mirrors
+  // the legacy MA renderer's tag pass (dropped in 398bc71b alongside the
+  // generic pipeline cutover) so EMAs/SMAs/etc. show their current value
+  // on the price scale.
+  if (lastValue === null) return;
+  const dimensions = manager.getDimensions();
+  if (!dimensions) return;
+  const tagY = manager.priceToY(lastValue);
+  if (tagY < 0 || tagY > dimensions.chartHeight) return;
+  drawPriceTag(
+    canvasCtx,
+    formatChartPrice(lastValue),
+    tagY,
+    dimensions.chartWidth,
+    color,
+    CHART_CONFIG.CANVAS_PADDING_RIGHT,
+  );
 };

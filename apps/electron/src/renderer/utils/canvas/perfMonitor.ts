@@ -44,6 +44,14 @@ export interface LongSectionEntry {
   ts: number;
 }
 
+export interface DialogMountStat {
+  name: string;
+  opens: number;
+  lastMs: number;
+  avgMs: number;
+  maxMs: number;
+}
+
 export interface PerfSnapshot {
   enabled: boolean;
   fps: number;
@@ -54,6 +62,7 @@ export interface PerfSnapshot {
   componentRenders: ComponentRenderStat[];
   storeWakes: StoreWakeStat[];
   socketDispatches: SocketDispatchStat[];
+  dialogMounts: DialogMountStat[];
 }
 
 interface SectionState {
@@ -81,6 +90,13 @@ interface SocketDispatchState {
   windowStart: number;
 }
 
+interface DialogMountState {
+  opens: number;
+  lastMs: number;
+  sumMs: number;
+  maxMs: number;
+}
+
 const EMPTY_SNAPSHOT: PerfSnapshot = {
   enabled: false,
   fps: 0,
@@ -91,6 +107,7 @@ const EMPTY_SNAPSHOT: PerfSnapshot = {
   componentRenders: [],
   storeWakes: [],
   socketDispatches: [],
+  dialogMounts: [],
 };
 
 class PerfMonitor {
@@ -106,6 +123,7 @@ class PerfMonitor {
   private componentRenders: Map<string, ComponentState> = new Map();
   private storeWakes: Map<string, StoreWakeState> = new Map();
   private socketDispatches: Map<string, SocketDispatchState> = new Map();
+  private dialogMounts: Map<string, DialogMountState> = new Map();
   private subscribers: Set<() => void> = new Set();
   private lastNotify: number = 0;
   private cachedSnapshot: PerfSnapshot = EMPTY_SNAPSHOT;
@@ -219,6 +237,17 @@ class PerfMonitor {
     this.storeWakes.set(key, state);
   }
 
+  recordDialogMount(name: string, mountMs: number): void {
+    if (!this.enabled) return;
+    const state = this.dialogMounts.get(name) ?? { opens: 0, lastMs: 0, sumMs: 0, maxMs: 0 };
+    state.opens += 1;
+    state.lastMs = mountMs;
+    state.sumMs += mountMs;
+    if (mountMs > state.maxMs) state.maxMs = mountMs;
+    this.dialogMounts.set(name, state);
+    this.snapshotDirty = true;
+  }
+
   recordSocketDispatch(event: string, handlerCount: number): void {
     if (!this.enabled) return;
     const now = performance.now();
@@ -251,6 +280,7 @@ class PerfMonitor {
     this.componentRenders.clear();
     this.storeWakes.clear();
     this.socketDispatches.clear();
+    this.dialogMounts.clear();
     this.snapshotDirty = true;
     this.notifyAll();
   }
@@ -303,6 +333,18 @@ class PerfMonitor {
     }
     socketDispatches.sort((a, b) => b.handlersPerSec - a.handlersPerSec);
 
+    const dialogMounts: DialogMountStat[] = [];
+    for (const [name, state] of this.dialogMounts) {
+      dialogMounts.push({
+        name,
+        opens: state.opens,
+        lastMs: state.lastMs,
+        avgMs: state.opens > 0 ? state.sumMs / state.opens : 0,
+        maxMs: state.maxMs,
+      });
+    }
+    dialogMounts.sort((a, b) => b.maxMs - a.maxMs);
+
     const orderedLongSections: LongSectionEntry[] = [];
     if (this.longSections.length < LONG_SECTION_BUFFER_SIZE) {
       orderedLongSections.push(...this.longSections);
@@ -323,6 +365,7 @@ class PerfMonitor {
       componentRenders,
       storeWakes,
       socketDispatches,
+      dialogMounts,
     };
     this.cachedSnapshot = snap;
     this.snapshotDirty = false;

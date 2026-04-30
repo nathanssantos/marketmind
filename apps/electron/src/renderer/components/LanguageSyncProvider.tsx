@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { QUERY_CONFIG } from '@shared/constants';
+import { changeLanguageLazy } from '../i18n';
 import { trpc } from '../utils/trpc';
 
 const LANGUAGE_KEY = 'language';
@@ -34,7 +35,7 @@ export const LanguageSyncProvider = ({ children }: LanguageSyncProviderProps) =>
     if (preferences && !isHydratedRef.current) {
       const savedLanguage = preferences[LANGUAGE_KEY] as string | undefined;
       if (savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage) && savedLanguage !== i18n.language) {
-        void i18n.changeLanguage(savedLanguage);
+        void changeLanguageLazy(savedLanguage);
       }
       isHydratedRef.current = true;
     }

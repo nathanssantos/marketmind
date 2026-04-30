@@ -12,14 +12,14 @@ export const Stat = ({ label, value, helpText, valueColor, ...rest }: StatProps)
     return (
         // @ts-expect-error Chakra v3 accentColor BoxProps spread type conflict
         <Box {...rest}>
-            <Text fontSize="sm" color="gray.500" mb={1}>
+            <Text fontSize="sm" color="fg.muted" mb={1}>
                 {label}
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color={valueColor}>
                 {value}
             </Text>
             {helpText && (
-                <Text fontSize="sm" color="gray.400" mt={1}>
+                <Text fontSize="sm" color="fg.muted" mt={1}>
                     {helpText}
                 </Text>
             )}
@@ -35,7 +35,7 @@ interface StatRowProps {
 export const StatRow = ({ label, value }: StatRowProps) => {
     return (
         <HStack>
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="sm" color="fg.muted">
                 {label}:
             </Text>
             <Text fontSize="sm" fontWeight="medium">

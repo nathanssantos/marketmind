@@ -1,5 +1,5 @@
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
-import { CollapsibleSection, Slider, Switch } from '@renderer/components/ui';
+import { Callout, CollapsibleSection, Slider, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface EntrySettingsSectionProps {
@@ -166,7 +166,7 @@ export const EntrySettingsSection = ({
               />
             </Flex>
             {dragSlEnabled && (
-              <Flex justify="space-between" align="center" pl={4} borderLeftWidth="2px" borderColor="border.muted">
+              <Flex justify="space-between" align="center" pl={4}>
                 <Box>
                   <Text fontSize="sm">{t('settings.algorithmicAutoTrading.entrySettings.chartDrag.slTightenOnly')}</Text>
                   <Text fontSize="xs" color="fg.muted">
@@ -194,11 +194,9 @@ export const EntrySettingsSection = ({
           </Stack>
         </Box>
 
-        <Box p={3} bg="bg.subtle" borderRadius="md" borderWidth="1px" borderColor="border.muted">
-          <Text fontSize="xs" color="fg.muted">
-            {t('settings.algorithmicAutoTrading.entrySettings.optimizedNote')}
-          </Text>
-        </Box>
+        <Callout tone="info" compact>
+          {t('settings.algorithmicAutoTrading.entrySettings.optimizedNote')}
+        </Callout>
       </Stack>
     </CollapsibleSection>
   );

@@ -83,7 +83,7 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
       <VStack gap={2} align="stretch">
         <Flex justify="space-between" fontSize="2xs">
           <Text color="fg.muted">{t('marginInfo.buyingPower')}</Text>
-          <Text fontWeight="medium" color="green.fg">
+          <Text fontWeight="medium" color="trading.profit">
             {formatCurrency(requirements.buyingPower)}
           </Text>
         </Flex>
@@ -147,7 +147,7 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
 
             <Flex justify="space-between" fontSize="2xs">
               <Text color="fg.muted">{t('marginInfo.newBuyingPower')}</Text>
-              <Text fontWeight="medium" color={impact.isSafe ? 'green.fg' : 'red.fg'}>
+              <Text fontWeight="medium" color={impact.isSafe ? 'trading.profit' : 'trading.loss'}>
                 {formatCurrency(impact.newBuyingPower)}
               </Text>
             </Flex>

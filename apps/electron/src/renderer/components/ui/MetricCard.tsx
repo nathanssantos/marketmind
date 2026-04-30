@@ -50,9 +50,9 @@ const formatValue = (value: string | number, format: MetricFormat, currency: str
 const getTrendColor = (trend: TrendDirection): string => {
   switch (trend) {
     case 'up':
-      return 'green.500';
+      return 'trading.profit';
     case 'down':
-      return 'red.500';
+      return 'trading.loss';
     case 'neutral':
     default:
       return 'fg.muted';

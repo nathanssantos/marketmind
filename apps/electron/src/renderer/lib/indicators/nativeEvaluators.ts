@@ -1,5 +1,4 @@
 import type {
-  FootprintBar,
   Kline,
   LiquidityHeatmapSnapshot,
   MarketEvent,
@@ -11,7 +10,6 @@ export type NativeEvaluatorOutput = Record<string, (number | null)[]>;
 
 export interface NativeEvaluatorContext {
   marketEvents?: MarketEvent[];
-  footprintBars?: FootprintBar[];
   liquidityHeatmap?: LiquidityHeatmapSnapshot | null;
   intervalMinutes?: number;
 }

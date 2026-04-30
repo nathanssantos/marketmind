@@ -1,5 +1,16 @@
-import { PineTS } from 'pinets';
+import type { PineTS as PineTSType } from 'pinets';
 import type { Kline } from '@marketmind/types';
+
+// Dynamic import — pinets is ~484 KB raw / 116 KB gz. Static import pulls the
+// engine into every consumer's chunk (main bundle + each worker bundle); a
+// dynamic import inside runPine() means the engine is fetched once on first
+// indicator computation and cached as a singleton promise.
+type PineTSConstructor = typeof PineTSType;
+let pineTSPromise: Promise<PineTSConstructor> | null = null;
+const getPineTS = (): Promise<PineTSConstructor> => {
+  pineTSPromise ??= import('pinets').then((m) => m.PineTS);
+  return pineTSPromise;
+};
 
 interface PineTSKline {
   openTime: number;
@@ -112,8 +123,9 @@ const extractPlotValues = (plots: Record<string, PlotResult>, name: string): (nu
 };
 
 const runPine = async (klines: Kline[], source: string): Promise<Record<string, PlotResult>> => {
+  const PineTSCtor = await getPineTS();
   const pineTSKlines = klines.map(mapKline);
-  const pine = new PineTS(pineTSKlines, 'IND', '1h');
+  const pine = new PineTSCtor(pineTSKlines, 'IND', '1h');
   await pine.ready();
   const ctx = await pine.run(source);
   return ctx.plots as Record<string, PlotResult>;

@@ -25,7 +25,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={isLong ? 'green.500' : 'red.500'}
+      borderColor={isLong ? 'trading.long' : 'trading.short'}
     >
       <Stack gap={1.5} mb={2}>
         <Flex justify="space-between" align="center">
@@ -40,7 +40,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
               fontWeight="bold"
               fontSize="sm"
               cursor={onNavigateToSymbol ? 'pointer' : 'default'}
-              _hover={onNavigateToSymbol ? { color: 'blue.500', textDecoration: 'underline' } : undefined}
+              _hover={onNavigateToSymbol ? { color: 'accent.solid', textDecoration: 'underline' } : undefined}
               onClick={() => onNavigateToSymbol?.(position.symbol, position.marketType)}
             >
               {position.symbol}
@@ -125,7 +125,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="red.fg">{currency} {position.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="trading.loss">{currency} {position.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={position.stopLoss} />
             </Stack>
           </Flex>
@@ -134,7 +134,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.takeProfit')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="green.fg">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="trading.profit">{currency} {position.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={position.takeProfit} />
             </Stack>
           </Flex>
@@ -142,7 +142,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.portfolio.pnl')}</Text>
           <Stack gap={0} align="flex-end">
-            <Text fontWeight="medium" color={isProfitable ? 'green.500' : 'red.500'}>
+            <Text fontWeight="medium" color={isProfitable ? 'trading.profit' : 'trading.loss'}>
               {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
             </Text>

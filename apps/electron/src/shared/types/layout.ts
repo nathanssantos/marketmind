@@ -1,6 +1,6 @@
 import type { MarketType } from '@marketmind/types';
 
-export type ChartType = 'kline' | 'line' | 'tick' | 'volume' | 'footprint';
+export type ChartType = 'kline' | 'line';
 
 export type PanelWindowState = 'normal' | 'minimized' | 'maximized';
 

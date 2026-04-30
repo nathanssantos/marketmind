@@ -1,3 +1,6 @@
+import { CHART_CONFIG } from '@shared/constants/chartConfig';
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { formatChartPrice } from '@renderer/utils/formatters';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
 
@@ -25,6 +28,7 @@ export const renderOverlayPoints: GenericRenderer = (ctx, input) => {
   const color = getInstanceParam<string>(input.instance, input.definition, 'color') ?? DEFAULT_POINT_COLOR;
 
   canvasCtx.fillStyle = color;
+  let lastValue: number | null = null;
   for (let i = visibleStart; i < visibleEnd; i++) {
     const value = series[i];
     if (value === null || value === undefined || Number.isNaN(value)) continue;
@@ -33,5 +37,20 @@ export const renderOverlayPoints: GenericRenderer = (ctx, input) => {
     canvasCtx.beginPath();
     canvasCtx.arc(x, y, DEFAULT_RADIUS, 0, Math.PI * 2);
     canvasCtx.fill();
+    lastValue = value;
   }
+
+  if (lastValue === null) return;
+  const dimensions = manager.getDimensions();
+  if (!dimensions) return;
+  const tagY = manager.priceToY(lastValue);
+  if (tagY < 0 || tagY > dimensions.chartHeight) return;
+  drawPriceTag(
+    canvasCtx,
+    formatChartPrice(lastValue),
+    tagY,
+    dimensions.chartWidth,
+    color,
+    CHART_CONFIG.CANVAS_PADDING_RIGHT,
+  );
 };

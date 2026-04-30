@@ -70,7 +70,7 @@ export const OrderTooltip = ({ order, currentPrice, left, top }: OrderTooltipPro
       </Text>
       <HStack gap={1.5}>
         <Text>{isLong ? '📈' : '📉'}</Text>
-        <Text fontWeight="semibold" color={isLong ? 'green.500' : 'red.500'}>
+        <Text fontWeight="semibold" color={isLong ? 'trading.long' : 'trading.short'}>
           {t(`trading.ticket.${getOrderType(order)}`)} {isPosition ? '' : isPending ? `(${t('trading.orders.statusPending')})` : ''}
         </Text>
       </HStack>
@@ -133,7 +133,7 @@ export const OrderTooltip = ({ order, currentPrice, left, top }: OrderTooltipPro
 
           <HStack justify="space-between" pt={1} borderTopWidth={1} borderColor="border">
             <Text color="fg.muted">{t('trading.portfolio.pnl')}:</Text>
-            <Text fontWeight="semibold" color={isProfitable ? 'green.500' : 'red.500'}>
+            <Text fontWeight="semibold" color={isProfitable ? 'trading.profit' : 'trading.loss'}>
               {isProfitable ? '+' : ''}
               {pnl.toFixed(2)} ({isProfitable ? '+' : ''}
               {pnlPercent.toFixed(2)}%)
@@ -145,14 +145,14 @@ export const OrderTooltip = ({ order, currentPrice, left, top }: OrderTooltipPro
       {order.stopLoss !== undefined && order.stopLoss > 0 && (
         <HStack justify="space-between">
           <Text color="fg.muted">Stop Loss:</Text>
-          <Text fontWeight="medium" color="red.fg">{order.stopLoss.toFixed(2)}</Text>
+          <Text fontWeight="medium" color="trading.loss">{order.stopLoss.toFixed(2)}</Text>
         </HStack>
       )}
 
       {order.takeProfit !== undefined && order.takeProfit > 0 && (
         <HStack justify="space-between">
           <Text color="fg.muted">Take Profit:</Text>
-          <Text fontWeight="medium" color="green.fg">{order.takeProfit.toFixed(2)}</Text>
+          <Text fontWeight="medium" color="trading.profit">{order.takeProfit.toFixed(2)}</Text>
         </HStack>
       )}
 
@@ -182,7 +182,7 @@ export const OrderTooltip = ({ order, currentPrice, left, top }: OrderTooltipPro
       {order.netPnl !== undefined && isActive && currentPrice && (
         <HStack justify="space-between">
           <Text color="fg.muted">Net P&L:</Text>
-          <Text fontWeight="semibold" color={parseFloat(order.netPnl) >= 0 ? 'green.500' : 'red.500'}>
+          <Text fontWeight="semibold" color={parseFloat(order.netPnl) >= 0 ? 'trading.profit' : 'trading.loss'}>
             {parseFloat(order.netPnl) >= 0 ? '+' : ''}
             {parseFloat(order.netPnl).toFixed(2)}
             {order.netPnlPercent !== undefined && ` (${parseFloat(order.netPnl) >= 0 ? '+' : ''}${parseFloat(order.netPnlPercent).toFixed(2)}%)`}

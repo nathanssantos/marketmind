@@ -1,4 +1,4 @@
-import { Box, Flex, Grid, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
 import { Badge, Button, CollapsibleSection, DirectionModeSelector, EmptyState } from '@renderer/components/ui';
 import type { DirectionMode } from '@renderer/components/ui';
@@ -78,6 +78,7 @@ export const WatchersList = ({
             size="sm"
             variant="outline"
             onClick={onAddWatcher}
+            data-testid="trigger-add-watcher"
           >
             <LuPlus />
             {t('tradingProfiles.watchers.add')}
@@ -97,10 +98,7 @@ export const WatchersList = ({
             action={{ label: t('tradingProfiles.watchers.addFirst'), onClick: onAddWatcher }}
           />
         ) : (
-          <Grid
-            templateColumns="repeat(auto-fill, minmax(160px, 1fr))"
-            gap={2}
-          >
+          <Stack gap={1}>
             {activeWatchers.map((watcher) => {
               const profile = watcher.profileId ? getProfileById(watcher.profileId) : null;
 
@@ -116,7 +114,7 @@ export const WatchersList = ({
                 />
               );
             })}
-          </Grid>
+          </Stack>
         )}
       </Stack>
     </CollapsibleSection>

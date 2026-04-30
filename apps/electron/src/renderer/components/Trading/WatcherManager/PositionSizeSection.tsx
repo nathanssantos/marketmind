@@ -36,7 +36,7 @@ export const PositionSizeSection = ({
       size="lg"
       variant="static"
     >
-      <Stack gap={6}>
+      <Stack gap={4}>
         <Box>
           <Text fontSize="sm" fontWeight="semibold" mb={2}>
             {t('watcherManager.positionSize.globalExposure')}
