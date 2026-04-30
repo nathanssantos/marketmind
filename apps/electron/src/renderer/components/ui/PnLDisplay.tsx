@@ -1,5 +1,5 @@
 import { Text } from '@chakra-ui/react';
-import { getPnLColor } from '@/renderer/theme';
+import { getPnLColor } from '@marketmind/tokens';
 import { useColorMode } from './color-mode';
 import type { ReactNode } from 'react';
 

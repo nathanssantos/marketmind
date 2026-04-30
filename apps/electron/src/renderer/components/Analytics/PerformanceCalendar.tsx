@@ -7,7 +7,7 @@ import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { formatBRL, formatWalletCurrencyWithSign } from '../../utils/currencyFormatter';
 import { trpc } from '../../utils/trpc';
 import { Button, PanelHeader } from '@renderer/components/ui';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 
 interface PerformanceCalendarProps {
   walletId: string;

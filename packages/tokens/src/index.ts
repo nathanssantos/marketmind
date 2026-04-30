@@ -2,7 +2,7 @@ import { createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
 import { badgeRecipe, collapsibleSectionRecipe, filterToggleRecipe } from './recipes';
 import { semanticTokenColors } from './semanticTokens';
 
-const customConfig = defineConfig({
+export const config = defineConfig({
   theme: {
     recipes: {
       badge: badgeRecipe,
@@ -24,7 +24,10 @@ const customConfig = defineConfig({
   },
 });
 
-export const system = createSystem(defaultConfig, customConfig);
+export const system = createSystem(defaultConfig, config);
 
-export { badgeRecipe, collapsibleSectionRecipe, filterToggleRecipe } from './recipes';
-export { getChartColors, getTradingColors, getCanvasColors, getPnLColor, getSideColor } from './colorResolvers';
+export * from './tokens';
+export * from './semanticTokens';
+export * from './recipes';
+export * from './colorResolvers';
+export * from './chartIndicatorTokens';

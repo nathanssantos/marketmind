@@ -1,6 +1,6 @@
 import { Box, HStack, Text, VStack } from '@chakra-ui/react';
 import { Button, Tabs } from '@renderer/components/ui';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import {
   getDefaultBacktestInput,
   simpleBacktestInputSchema,

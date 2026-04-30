@@ -1,6 +1,6 @@
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Button, Callout, EmptyState, IconButton, Select } from '@renderer/components/ui';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';

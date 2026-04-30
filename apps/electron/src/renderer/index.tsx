@@ -21,7 +21,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TwoFactorPage } from './pages/TwoFactorPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { ChartWindow } from './pages/ChartWindow';
-import { system } from './theme';
+import { system } from '@marketmind/tokens';
 
 const PERFORMANCE_CLEANUP = {
   INTERVAL_MS: 30_000,

@@ -6,7 +6,7 @@ import { LuRefreshCw, LuSave } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { useScreener } from '../../hooks/useScreener';
 import { useScreenerStore } from '../../store/screenerStore';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import {
   BetaBadge,
   Button,

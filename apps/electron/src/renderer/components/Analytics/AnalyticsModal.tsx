@@ -17,7 +17,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useDialogMount } from '../../hooks/useDialogMount';
 import { useUIStore } from '../../store/uiStore';
-import { MM } from '../../theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
 import { PerformanceCalendar } from './PerformanceCalendar';

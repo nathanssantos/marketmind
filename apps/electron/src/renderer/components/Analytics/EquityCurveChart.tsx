@@ -1,6 +1,6 @@
 import { Box, Flex, Spinner, Stack, Text, useToken } from '@chakra-ui/react';
 import { Callout, PanelHeader } from '@renderer/components/ui';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { memo, useMemo } from 'react';

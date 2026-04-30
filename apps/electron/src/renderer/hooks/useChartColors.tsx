@@ -1,5 +1,5 @@
 import { useColorMode } from '@renderer/components/ui';
-import { getChartColors } from '@/renderer/theme';
+import { getChartColors } from '@marketmind/tokens';
 import { getPalette } from '@/renderer/constants/chartPalettes';
 import { usePreferencesStore } from '@/renderer/store/preferencesStore';
 import type { ChartColors as BaseChartColors } from '@marketmind/types';

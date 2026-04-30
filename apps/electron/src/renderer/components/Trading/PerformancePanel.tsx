@@ -14,7 +14,7 @@ import { DataCard, PanelHeader } from '../ui';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
-import { MM } from '../../theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { formatBRL, formatWalletCurrency, formatWalletCurrencyWithSign } from '../../utils/currencyFormatter';
 
 interface PerformancePanelProps {

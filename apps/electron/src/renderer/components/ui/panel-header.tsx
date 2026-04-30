@@ -1,6 +1,6 @@
 import { Box, Flex, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
-import { MM } from '../../theme/tokens';
+import { MM } from '@marketmind/tokens';
 
 interface PanelHeaderProps {
   title: ReactNode;
