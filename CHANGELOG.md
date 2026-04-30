@@ -57,6 +57,29 @@ After the v1.2 mechanical color migration, a structural pass across the AutoTrad
 
 ### Tests
 - **Browser tests for `renderOverlayLine` price tag** (#264) — locks in the #256 fix with pixel-sampling tests on a real `<canvas>`. Verifies the tag paints in the right-axis strip (catches the line + tag + clip-rect-bug failure modes), no tag for all-null series, and the tag fill picks up the indicator's `color` param. Mirrors the FVG browser test pattern.
+- **Browser tests for `renderOverlayBands` (V1_5 B.1)** (#279) — closes the third sibling in the indicator-pipeline test surface (overlay-line and FVG already had Canvas-backed tests; bands didn't). 8 tests: fill polygon paints between bands, early-returns when upper/lower/klines are missing, middle dashed polyline shows up only when a `middle` series is supplied, instance-param `color` propagates to upper/lower lines, right-axis price tags paint at the last valid value of upper + lower, alternate output keys (`top`/`bottom`) resolve via `pickSeries`.
+
+### Changed — v1.5 cross-surface UI standardization (continuation)
+After the v1.4 sweep, a second pass on the surfaces the previous round didn't reach. Theme is the same: drop colored stripes, RadioGroups + button-row toggles → `<Select>`, cards → list rows, replace ad-hoc tinted pills with `<Badge colorPalette>`.
+
+- **DataCard primitive + apply to RiskDisplay + PerformancePanel (V1_5 A.1)** (#270) — small atom for the very common "label + value + optional aside + subtext" panel cell. Same surface footprint as the hand-rolled `<Box bg="bg.muted" px py><Text uppercase>` recipe; centralizes the typography choices.
+- **Custom Symbols form rows → `<Field>` (V1_5 A.2)** (#271) — Create-New flow wraps each input in `<Field label helperText>` instead of stacked `<Text>` + control siblings. Matches the rest of the app.
+- **`accent.solid` semantic token + blue-accent sweep** (#268) — the "selected / active accent" color now flows through one token (`accent.solid` / `accent.subtle`) instead of `blue.500` / `blue.subtle` literals scattered through 12 surfaces. Visible on active wallet, link hovers, focus rings.
+- **Settings dialog widths + sessions wrap + helper alignment** (#275) — every Tabs.Content gets `w="100%"` and `pb={8}` so tabs no longer shift left/right when the active tab changes. SecurityTab's session list switched from `<Text truncate>` to `wordBreak="break-all"` so long IPs wrap instead of cropping. ChartSettingsTab's flipVertical / liquidityIntensity helper text got the rogue `ml={6}` indents dropped. WalletManager wrapped in a top-level `<FormSection title action>` so the page has a header + create button.
+- **Trading Mode + DirectionModeSelector + 5 RadioGroups → `<Select>` (#277)** — User feedback (with screenshots): Trading Mode rendered as 2 huge full-width buttons; DirectionMode as 3 buttons; TpModeSection / StopModeSection / PyramidingSection had vertical radio stacks. All migrated to `<Select usePortal=false>`. DirectionModeSelector primitive update propagates to `WatchersList`, `ScalpingDashboard`, `ScalpingConfig`, `MarketSidebar/WatchersTab`. Same PR drops the colored left-borders inside FiltersSection / TpModeSection / PyramidingSection (5 stripes total) and removes a duplicate Direction Mode picker that lived inside FiltersSection.
+- **SetupToggle + WatcherCard + OpportunityCost + Wallet/Profile borders (#278)** — second wave of the same theme:
+  - **SetupToggleSection (Enabled Setups, ~100 strategies)** — manual collapsible scaffolding → standard `<CollapsibleSection>`. Per-row colored `borderLeft` (green for enabled) dropped; rows are plain checkbox + label inside `<Box _hover>`. Search input added (renders only when >8 strategies). Count pill → `<Badge colorPalette={allEnabled ? 'green' : 'gray'}>`.
+  - **WatcherCardCompact** — drop `borderLeftColor=green.muted`. 4 hardcoded shade pairs (blue.100/orange.100/green.100 + their `_dark` counterparts) → `<Badge colorPalette + variant="subtle">`. Layout collapses from 2-row card to single horizontal row. `WatchersList` Grid auto-fill → Stack so they read as list items.
+  - **WalletManager** — drop the colored borderLeft. Active wallet now indicated by `bg=accent.subtle + 1px accent.solid border`.
+  - **OpportunityCostSection** — 3-way "Action when stale" RadioGroup → `<Select>`; NumberInput rows in `<Field label>`; `<Badge colorPalette="purple">` replaces the hand-rolled "Active" pill; `pl={4}` indentations dropped.
+  - **TradingProfilesManager** — drop the yellow.muted/blue.muted borderLeft on profile cards (default profile already shown by the yellow star icon).
+
+### Fixed
+- **mcp-screenshot timing for lazy-loaded Settings tabs** (#276) — after #235 made every Settings tab lazy via `React.lazy`, the screenshot pipeline started capturing the loading spinner instead of the tab body for the first capture of each tab. Fixed by polling for absence of `[role="progressbar"]` inside `[data-testid="settings-content"]` after the tab click + a short post-mount settle wait.
+
+### Changed — Test + CI infra (V1_5 B + C series)
+- **Visual-diff HTML self-contained for CI artifacts (V1_5 B.2)** (#280) — `scripts/visual-diff.mjs` now embeds baseline / session / diff PNGs as base64 data URIs in `diffs/index.html` instead of `<img src="../baseline/X.png">` refs. The previous setup worked locally but broke in the `visual-diffs` CI artifact upload (the `screenshots/baseline/` dir lives outside the session and isn't included in the upload, so the baseline column rendered as broken images once the artifact was unzipped). Cost: ~1 MB embed per failing image; well under 5 MB total for normal regressions.
+- **Document the 5 audit-script forbidden patterns (V1_5 C.1)** (#274) — `docs/UI_STYLE_GUIDE.md` now has Don't / Do examples for each of the rules `audit-shade-literals.mjs` enforces in CI: `shade-literal-color`, `_dark-override`, `_dark-override-nested`, `tinted-card-Box`, `dynamic-shade-pair`. Reduces the "wait, why did CI flag this?" loop for new contributors.
 
 ### Docs
 - **`CLAUDE.md`** — already at `Project Version 1.2.0` from the v1.2.0 release.
@@ -64,6 +87,8 @@ After the v1.2 mechanical color migration, a structural pass across the AutoTrad
 - **`docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`** / **`docs/V1_3_PLAN.md`** — backlog refresh: G.1 (per-wallet theme override) dropped (theme stays per-user); G.3 (Pine migration) marked already-complete; sequencing rewritten to reflect what's already on develop.
 - **`apps/electron/src/renderer/components/ui/README.md`** — note that `<MarketNoData>` is a private MarketSidebar helper (not a `ui/` primitive).
 - **Chart input units** (#239) — Padding fields (top/bottom/left/right) now show `(px)` on labels in all 4 locales. Line Width helper updated to include the unit.
+- **Archive completed plans** (#273) — moved V1_2_PLAN, V1_3_PLAN, V1_4_UI_SWEEP, V1_POST_RELEASE_PLAN, UI_COMPONENTS_STANDARDIZATION_PLAN, V1_3_BUNDLE_AUDIT, visual-review-2026-04 from `docs/` to `docs/archive/`. Top-level `docs/` is now just the live references (UI_STYLE_GUIDE, RELEASE_PROCESS, BROWSER_TESTING, MCP_*) plus the early-stage MCP_TRADING_CONCEPT.
+- **`docs/MCP_TRADING_CONCEPT.md`** (#272) — early-stage concept doc for an opt-in toggle that would gate the (currently deferred) `mcp-trading` server. 5-step rollout sequence, toggle UX options, safety layers — not implementation, just exploration so the concept is on paper before the feature lands.
 
 ## [1.2.0] - 2026-04-28
 
