@@ -89,16 +89,29 @@ Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capabilit
 
 ## D — Accessibility (deferred from V1_3 F.2/F.3)
 
-### D.1 — Keyboard navigation in chart
-Chart canvas accepts mouse + scroll; keyboard support is partial (arrow-pan exists but isn't documented or comprehensive).
+### D.1 — Keyboard navigation in chart ✅ shipped (#302)
+Centralized registry + dispatcher + `?` help modal. 11 chart shortcuts (pan / zoom / home / end / reset zoom) registered via the new system.
+
+### D.1.b — Migrate remaining keyboard handlers to the registry
+After #302 the chart-pan shortcuts go through `useKeyboardShortcut`, but the other handlers in `apps/electron/src/renderer/components/Chart/ChartCanvas/useChartKeyboardShortcuts.ts` still attach their own `window.addEventListener('keydown', ...)`:
+
+- `Esc` → cancel `slTpPlacement` mode
+- `Esc` → cancel `tsPlacement` mode
+- `Esc` → cancel order drag
+- `Delete` / `Backspace` → delete selected drawing
+- `Mod+C` → copy selected drawing
+- `Mod+V` → paste drawing
+
+Each one duplicates the typing-target check + the input-detection logic the dispatcher already does. Easy to drift.
 
 **What ships**:
-- Audit + document the existing arrow-pan + add: `Home`/`End` (jump to start/end), `+`/`-` (zoom), `,`/`.` (timeframe prev/next), `Tab` (cycle indicator focus), `Esc` (clear focus). Surface a help modal triggered by `?`.
-- Focus ring on the canvas wrapper (currently invisible).
-- Update `docs/UI_STYLE_GUIDE.md` with the keyboard reference.
-- Tests: vitest browser test that arrow keys dispatch the expected viewport changes.
+- Convert each handler to a `useKeyboardShortcut({ scope: 'when-condition', when: () => predicate, action })` registration. Drop the bare `useEffect` + `addEventListener` blocks.
+- Drawings shortcuts gain a `group: 'drawing'` so they show up in the help modal next to chart navigation.
+- Trading shortcuts (placement-mode escapes, order-drag escape) gain `group: 'trading'`.
+- Existing behavior preserved exactly — only the dispatch path changes.
+- Tests: drop the per-effect listener tests in favor of registration assertions on the registry (mirrors what `useKeyboardNavigation.test.ts` does post-#302).
 
-**Effort**: ~1 day. **Risk**: low. **Visible**: yes (power-user reach).
+**Effort**: ~half-day. **Risk**: low (mechanical refactor). **Visible**: yes — adds drawing/trading entries to the `?` help modal so users discover them.
 
 ### D.2 — Screen-reader pass on dialogs
 Settings dialog has aria-labels but the full open → navigate → save → close flow with VoiceOver hasn't been verified end-to-end. Same for Backtest, Analytics, ChartCloseDialog.
@@ -229,19 +242,20 @@ The v1.4 logger fix should now expose the underlying postgres error code on the 
 
 Proposed:
 
-1. **H.1** MEMORY.md trim — eliminates context-loss hazard for future autonomous sessions
-2. **B.2** layout audit log — 1h, gives observability for any future incident, low risk
-3. **A.1.b** login soft-nudge — most user-visible quick win
-4. **B.1** snapshot UI — biggest user-visible payoff (recovery tool)
-5. **F.1** design tokens extraction — sets up F.2 + better cross-package theme reuse
-6. **D.1** keyboard nav in chart — power-user reach, ~1d
-7. **B.3** Postgres archive_mode — infra, ship after a soak window
-8. **D.2** screen-reader pass — half-day per dialog
-9. **G.2** backend custom-symbol tests — coverage closure
-10. **E.1–E.6** Backtest UI modal — biggest single-feature push, sequenced as 6 separate PRs
-11. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
-12. **F.2** ui extraction plan — audit doc, gates the actual extraction
-13. **G.1** visual review automation — speculative, do only if regressions warrant
+1. ✅ **H.1** MEMORY.md trim (auto-memory)
+2. ✅ **B.2** layout audit log (#298)
+3. ✅ **A.1.b** login soft-nudge (#299)
+4. ✅ **B.1** snapshot UI (#300)
+5. ✅ **F.1** design tokens extraction (#301)
+6. ✅ **D.1** keyboard nav in chart — registry + dispatcher + help modal (#302)
+7. **D.1.b** migrate remaining `useChartKeyboardShortcuts` handlers (Esc / Cmd+C/V / Delete) to the registry — half-day, mechanical
+8. **B.3** Postgres archive_mode — infra, ship after a soak window
+9. **D.2** screen-reader pass — half-day per dialog
+10. **G.2** backend custom-symbol tests — coverage closure
+11. **E.1–E.6** Backtest UI modal — biggest single-feature push, sequenced as 6 separate PRs
+12. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
+13. **F.2** ui extraction plan — audit doc, gates the actual extraction
+14. **G.1** visual review automation — speculative, do only if regressions warrant
 
 Skip H.3 unless logs show the error.
 
