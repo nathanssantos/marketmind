@@ -6,6 +6,7 @@ import { backtestRouter } from '../routers/backtest';
 import { customSymbolRouter } from '../routers/custom-symbol';
 import { drawingRouter } from '../routers/drawing';
 import { layoutRouter } from '../routers/layout';
+import { mcpRouter } from '../routers/mcp';
 import { economicCalendarRouter } from '../routers/economic-calendar';
 import { feesRouter } from '../routers/fees';
 import { futuresTradingRouter } from '../routers/futures-trading/index';
@@ -49,6 +50,7 @@ export const appRouter = router({
   customSymbol: customSymbolRouter,
   drawing: drawingRouter,
   layout: layoutRouter,
+  mcp: mcpRouter,
   scalping: scalpingRouter,
   economicCalendar: economicCalendarRouter,
   heatmap: heatmapRouter,

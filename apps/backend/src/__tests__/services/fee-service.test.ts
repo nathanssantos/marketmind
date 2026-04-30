@@ -61,6 +61,7 @@ describe('FeeService', () => {
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
+    agentTradingEnabled: false,
     ...overrides,
   });
 

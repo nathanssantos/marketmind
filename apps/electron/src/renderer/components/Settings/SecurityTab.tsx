@@ -302,20 +302,22 @@ export const SecurityTab = () => {
       <ConfirmationDialog
         isOpen={agentTradingPending !== null}
         onClose={() => setAgentTradingPending(null)}
-        onConfirm={async () => {
+        onConfirm={() => {
           if (!agentTradingPending) return;
-          try {
-            await updateWalletMutation.mutateAsync({
-              id: agentTradingPending.walletId,
-              agentTradingEnabled: agentTradingPending.enable,
-            });
-            const wallet = (walletsQuery.data ?? []).find((w) => w.id === agentTradingPending.walletId);
-            toastSuccess(t('settings.security.agentTrading.enabled', { name: wallet?.name ?? '' }));
-          } catch (err) {
-            toastError(t('settings.security.agentTrading.toggleFailed'), err instanceof Error ? err.message : undefined);
-          } finally {
-            setAgentTradingPending(null);
-          }
+          void (async () => {
+            try {
+              await updateWalletMutation.mutateAsync({
+                id: agentTradingPending.walletId,
+                agentTradingEnabled: agentTradingPending.enable,
+              });
+              const wallet = (walletsQuery.data ?? []).find((w) => w.id === agentTradingPending.walletId);
+              toastSuccess(t('settings.security.agentTrading.enabled', { name: wallet?.name ?? '' }));
+            } catch (err) {
+              toastError(t('settings.security.agentTrading.toggleFailed'), err instanceof Error ? err.message : undefined);
+            } finally {
+              setAgentTradingPending(null);
+            }
+          })();
         }}
         title={t('settings.security.agentTrading.confirmTitle')}
         description={t('settings.security.agentTrading.confirmBody')}
