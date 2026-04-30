@@ -6,8 +6,19 @@ import {
   ListToolsRequestSchema,
   type Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-import { audited } from './audit.js';
+import { assertWriteAllowed, audited } from './audit.js';
 import { callProcedure, getTrpcBaseUrl, trpcHealthCheck } from './trpc.js';
+
+interface WalletStatus { id: string; walletType?: string | null; name?: string | null }
+
+const assertPaperWallet = async (walletId: string, tool: string): Promise<void> => {
+  const wallet = (await callProcedure('wallet.getById', { id: walletId })) as WalletStatus;
+  if (wallet.walletType !== 'paper') {
+    throw new Error(
+      `${tool} is paper-only in this version of mm-mcp-trading. Wallet "${wallet.name ?? walletId}" is "${wallet.walletType}". Live trading via MCP lands in a follow-up release.`,
+    );
+  }
+};
 
 const tools: Tool[] = [
   {
@@ -61,6 +72,60 @@ const tools: Tool[] = [
     },
   },
   {
+    name: 'trading.place_order',
+    description: 'Place an order on a paper wallet. Gated by per-wallet agentTradingEnabled toggle in Settings → Security; throws FORBIDDEN if disabled. This version is paper-only — live wallets are blocked client-side.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        walletId: { type: 'string' },
+        symbol: { type: 'string', description: 'e.g. BTCUSDT' },
+        side: { type: 'string', enum: ['BUY', 'SELL'] },
+        type: {
+          type: 'string',
+          enum: ['LIMIT', 'MARKET', 'STOP_LOSS', 'STOP_LOSS_LIMIT', 'TAKE_PROFIT', 'TAKE_PROFIT_LIMIT', 'STOP_MARKET', 'TAKE_PROFIT_MARKET'],
+        },
+        quantity: { type: 'string', description: 'Base asset quantity. Provide either quantity or percent.' },
+        percent: { type: 'number', minimum: 0.01, maximum: 100, description: 'Position size as % of balance. Requires referencePrice (or price/stopPrice).' },
+        referencePrice: { type: 'number' },
+        price: { type: 'string' },
+        stopPrice: { type: 'string' },
+        marketType: { type: 'string', enum: ['SPOT', 'FUTURES'], default: 'FUTURES' },
+        reduceOnly: { type: 'boolean' },
+        idempotencyKey: { type: 'string', description: 'UUID; duplicate keys return the prior result without re-executing.' },
+      },
+      required: ['walletId', 'symbol', 'side', 'type'],
+    },
+  },
+  {
+    name: 'trading.cancel_order',
+    description: 'Cancel an open order on a paper wallet. Gated by agentTradingEnabled.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        walletId: { type: 'string' },
+        symbol: { type: 'string' },
+        orderId: { type: 'string' },
+        marketType: { type: 'string', enum: ['SPOT', 'FUTURES'], default: 'FUTURES' },
+        idempotencyKey: { type: 'string' },
+      },
+      required: ['walletId', 'symbol', 'orderId'],
+    },
+  },
+  {
+    name: 'trading.close_position',
+    description: 'Close an open position on a paper wallet. Gated by agentTradingEnabled. Provide walletId so the gate can run before fetching the position.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        walletId: { type: 'string' },
+        positionId: { type: 'string' },
+        exitPrice: { type: 'string', description: 'Optional override; defaults to market price.' },
+        idempotencyKey: { type: 'string' },
+      },
+      required: ['walletId', 'positionId'],
+    },
+  },
+  {
     name: 'health.check',
     description: 'Confirm the backend tRPC endpoint is reachable.',
     inputSchema: { type: 'object', properties: {} },
@@ -76,6 +141,33 @@ interface ListOrdersArgs { walletId: string; marketType?: 'SPOT' | 'FUTURES'; sy
 interface ListPositionsArgs { walletId: string }
 interface ListExecutionsArgs { walletId: string; symbol?: string; status?: 'open' | 'closed' | 'pending'; limit?: number }
 interface GetWalletStatusArgs { walletId: string }
+interface PlaceOrderArgs {
+  walletId: string;
+  symbol: string;
+  side: 'BUY' | 'SELL';
+  type: 'LIMIT' | 'MARKET' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT' | 'STOP_MARKET' | 'TAKE_PROFIT_MARKET';
+  quantity?: string;
+  percent?: number;
+  referencePrice?: number;
+  price?: string;
+  stopPrice?: string;
+  marketType?: 'SPOT' | 'FUTURES';
+  reduceOnly?: boolean;
+  idempotencyKey?: string;
+}
+interface CancelOrderArgs {
+  walletId: string;
+  symbol: string;
+  orderId: string;
+  marketType?: 'SPOT' | 'FUTURES';
+  idempotencyKey?: string;
+}
+interface ClosePositionArgs {
+  walletId: string;
+  positionId: string;
+  exitPrice?: string;
+  idempotencyKey?: string;
+}
 
 const handle = async (name: string, args: Record<string, unknown> | undefined): Promise<unknown> => {
   switch (name) {
@@ -110,6 +202,35 @@ const handle = async (name: string, args: Record<string, unknown> | undefined): 
       const a = (args ?? {}) as unknown as GetWalletStatusArgs;
       return audited(name, { walletId: a.walletId, inputJson: JSON.stringify(a) }, () =>
         callProcedure('wallet.getById', { id: a.walletId }),
+      );
+    }
+    case 'trading.place_order': {
+      const a = (args ?? {}) as unknown as PlaceOrderArgs;
+      await assertWriteAllowed(a.walletId, name);
+      await assertPaperWallet(a.walletId, name);
+      const { idempotencyKey, ...orderInput } = a;
+      return audited(name, { walletId: a.walletId, inputJson: JSON.stringify(a), idempotencyKey: idempotencyKey ?? null }, () =>
+        callProcedure('trading.createOrder', { marketType: 'FUTURES', ...orderInput }),
+      );
+    }
+    case 'trading.cancel_order': {
+      const a = (args ?? {}) as unknown as CancelOrderArgs;
+      await assertWriteAllowed(a.walletId, name);
+      await assertPaperWallet(a.walletId, name);
+      const { idempotencyKey, ...cancelInput } = a;
+      return audited(name, { walletId: a.walletId, inputJson: JSON.stringify(a), idempotencyKey: idempotencyKey ?? null }, () =>
+        callProcedure('trading.cancelOrder', { marketType: 'FUTURES', ...cancelInput }),
+      );
+    }
+    case 'trading.close_position': {
+      const a = (args ?? {}) as unknown as ClosePositionArgs;
+      await assertWriteAllowed(a.walletId, name);
+      await assertPaperWallet(a.walletId, name);
+      return audited(name, { walletId: a.walletId, inputJson: JSON.stringify(a), idempotencyKey: a.idempotencyKey ?? null }, () =>
+        callProcedure('trading.closePosition', {
+          id: a.positionId,
+          ...(a.exitPrice ? { exitPrice: a.exitPrice } : {}),
+        }),
       );
     }
     case 'health.check': {
