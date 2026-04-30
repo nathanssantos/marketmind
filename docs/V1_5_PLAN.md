@@ -113,15 +113,43 @@ Each one duplicates the typing-target check + the input-detection logic the disp
 
 **Effort**: ~half-day. **Risk**: low (mechanical refactor). **Visible**: yes — adds drawing/trading entries to the `?` help modal so users discover them.
 
-### D.2 — Screen-reader pass on dialogs
-Settings dialog has aria-labels but the full open → navigate → save → close flow with VoiceOver hasn't been verified end-to-end. Same for Backtest, Analytics, ChartCloseDialog.
+### D.2.a — axe-core dialog a11y spec ✅ shipped (#306)
+- `apps/electron/e2e/a11y-dialogs.spec.ts` opens Settings / Backtest / Analytics / KeyboardShortcutHelpModal and asserts no critical/serious axe violations.
+- DialogCloseTrigger wrapper now defaults `aria-label="Close"` so any consumer auto-passes the `button-name` rule.
+- 2 rules currently disabled with documented justification — see D.2.b/D.2.c below.
+
+### D.2.b — Manual VoiceOver pass on dialogs (needs human in the loop)
+The axe spec from D.2.a catches missing labels and structural issues automatically, but doesn't verify the actual screen-reader experience. Things only a real VoiceOver run will catch:
+- Focus order on tab navigation
+- Whether `aria-describedby` correctly associates error text with its field
+- Whether `aria-live` regions actually announce inline success/error toasts
+- Trap behavior inside `<Dialog>` — does `Tab` from the last focusable element wrap back to the first
+- Reading order of grouped content (e.g. SettingsDialog's vertical tab rail + content panel)
+
+**What ships**: VoiceOver run on Settings / Analytics / Backtest / ChartCloseDialog. Notes every place focus order is wrong, labels are missing, or `aria-live` regions are silent. Per-finding fix in a follow-up PR.
+
+**Effort**: ~half-day testing + ~half-day fixes. **Risk**: low. **Blocked by**: needs the developer (or an a11y QA contractor) to run VoiceOver — can't be automated.
+
+### D.2.c — Color-contrast violations in Analytics (deferred from D.2.a skip list)
+The axe spec ran with `color-contrast` disabled because Analytics has 6 nodes with insufficient contrast on the PnL display: red text (`#e44546` — close to but not quite our `trading.loss` token) on `bg.muted` (`#475163`) yields a contrast ratio of **1.99** — well below the WCAG AA 4.5:1 floor.
 
 **What ships**:
-- VoiceOver pass on Settings, Analytics, Backtest, ChartCloseDialog. Note every place focus order is wrong, labels are missing, or `aria-live` regions are silent.
-- Fix the gaps (likely `aria-describedby` on Field rows, focus-trap inside `<Dialog>`, `aria-live="polite"` on inline error/success toasts).
-- New `apps/electron/e2e/a11y-dialogs.spec.ts` running `@axe-core/playwright` on each dialog open, asserting no critical/serious violations.
+- Identify the source: likely a hardcoded hex inside `EquityCurveChart` / a recharts default / a non-token color in `MetricCard`. Grep for `#e44546` and `#e445` should localize it fast.
+- Migrate to `trading.loss` (which resolves to `#dc2626` / `#ef4444` and meets contrast over `bg.muted`). Or use a darker shade specifically for that surface.
+- Re-enable `color-contrast` in `e2e/a11y-dialogs.spec.ts` (delete the rule from `SKIPPED_RULES`).
+- Verify the spec stays green; if other surfaces fail too, fix or document each.
 
-**Effort**: ~half-day testing + ~half-day fixes. **Risk**: low.
+**Effort**: ~1-2h. **Risk**: low (visual-only, no behavior change).
+
+### D.2.d — Chakra/Ark useId() ARIA strictness (deferred from D.2.a skip list)
+The axe spec also disables `aria-valid-attr-value` because Chakra/Ark UI generate IDs via React's `useId()` (e.g. `tabs:_r_2a_:content-account`). axe-core's strict IDREF check rejects these even though they're valid HTML5 and screen readers handle them correctly.
+
+**What ships** (only if it ever blocks something real):
+- Configure Ark UI's `idPrefix` on every Tabs/Accordion/Dialog instance to use a colon-free pattern.
+- Or wait for Chakra v3 / Ark UI to ship a fix and re-enable the rule.
+- Skip otherwise — this is a known-cosmetic violation, not an a11y regression.
+
+**Effort**: ~half-day audit + sweep, **OR** zero if we keep the skip. **Risk**: zero either way.
 
 ---
 
@@ -248,14 +276,16 @@ Proposed:
 4. ✅ **B.1** snapshot UI (#300)
 5. ✅ **F.1** design tokens extraction (#301)
 6. ✅ **D.1** keyboard nav in chart — registry + dispatcher + help modal (#302)
-7. **D.1.b** migrate remaining `useChartKeyboardShortcuts` handlers (Esc / Cmd+C/V / Delete) to the registry — half-day, mechanical
-8. **B.3** Postgres archive_mode — infra, ship after a soak window
-9. **D.2** screen-reader pass — half-day per dialog
-10. **G.2** backend custom-symbol tests — coverage closure
-11. **E.1–E.6** Backtest UI modal — biggest single-feature push, sequenced as 6 separate PRs
-12. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
-13. **F.2** ui extraction plan — audit doc, gates the actual extraction
-14. **G.1** visual review automation — speculative, do only if regressions warrant
+7. ✅ **D.1.b** migrate remaining `useChartKeyboardShortcuts` handlers (#304)
+8. ✅ **B.3** Postgres archive_mode (#305)
+9. ✅ **D.2.a** axe-core dialog spec (#306)
+10. **D.2.b** manual VoiceOver pass — needs human-in-the-loop, deferred
+11. **D.2.c** Analytics color-contrast fix — small, hex grep + token swap
+12. **G.2** backend custom-symbol tests — coverage closure
+13. **E.1–E.6** Backtest UI modal — biggest single-feature push, sequenced as 6 separate PRs
+14. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
+15. **F.2** ui extraction plan — audit doc, gates the actual extraction
+16. **G.1** visual review automation — speculative, do only if regressions warrant
 
 Skip H.3 unless logs show the error.
 
