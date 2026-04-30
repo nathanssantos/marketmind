@@ -1,4 +1,32 @@
 {
+  "shortcuts": {
+    "help": {
+      "title": "Atajos de Teclado",
+      "empty": "No hay atajos registrados todavía."
+    },
+    "group": {
+      "chart": "Gráfico",
+      "drawing": "Dibujo",
+      "trading": "Trading",
+      "global": "Global"
+    },
+    "global": {
+      "help": "Abrir esta ayuda de atajos"
+    },
+    "chart": {
+      "panLeft": "Desplazar a la izquierda",
+      "panRight": "Desplazar a la derecha",
+      "panLeftFast": "Desplazar a la izquierda (rápido)",
+      "panRightFast": "Desplazar a la derecha (rápido)",
+      "panUp": "Desplazar arriba",
+      "panDown": "Desplazar abajo",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "resetZoom": "Restablecer zoom vertical",
+      "goToStart": "Ir al inicio de los datos",
+      "goToEnd": "Ir a la última vela"
+    }
+  },
   "common": {
     "cancel": "Cancelar",
     "save": "Guardar",

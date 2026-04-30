@@ -1,4 +1,32 @@
 {
+  "shortcuts": {
+    "help": {
+      "title": "Raccourcis Clavier",
+      "empty": "Aucun raccourci enregistré pour l'instant."
+    },
+    "group": {
+      "chart": "Graphique",
+      "drawing": "Dessin",
+      "trading": "Trading",
+      "global": "Global"
+    },
+    "global": {
+      "help": "Ouvrir cette aide des raccourcis"
+    },
+    "chart": {
+      "panLeft": "Déplacer à gauche",
+      "panRight": "Déplacer à droite",
+      "panLeftFast": "Déplacer à gauche (rapide)",
+      "panRightFast": "Déplacer à droite (rapide)",
+      "panUp": "Déplacer vers le haut",
+      "panDown": "Déplacer vers le bas",
+      "zoomIn": "Zoomer",
+      "zoomOut": "Dézoomer",
+      "resetZoom": "Réinitialiser le zoom vertical",
+      "goToStart": "Aller au début des données",
+      "goToEnd": "Aller à la dernière bougie"
+    }
+  },
   "common": {
     "cancel": "Annuler",
     "save": "Enregistrer",

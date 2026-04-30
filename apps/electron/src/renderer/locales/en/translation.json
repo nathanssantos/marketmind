@@ -1,4 +1,32 @@
 {
+  "shortcuts": {
+    "help": {
+      "title": "Keyboard Shortcuts",
+      "empty": "No shortcuts registered yet."
+    },
+    "group": {
+      "chart": "Chart",
+      "drawing": "Drawing",
+      "trading": "Trading",
+      "global": "Global"
+    },
+    "global": {
+      "help": "Open this shortcuts help"
+    },
+    "chart": {
+      "panLeft": "Pan left",
+      "panRight": "Pan right",
+      "panLeftFast": "Pan left (fast)",
+      "panRightFast": "Pan right (fast)",
+      "panUp": "Pan up",
+      "panDown": "Pan down",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset vertical zoom",
+      "goToStart": "Go to start of data",
+      "goToEnd": "Go to latest candle"
+    }
+  },
   "common": {
     "cancel": "Cancel",
     "save": "Save",

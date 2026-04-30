@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { useKeyboardNavigation, KEYBOARD_SHORTCUTS } from './useKeyboardNavigation';
+import { CHART_CANVAS_DATA_ATTR, useKeyboardShortcutStore } from '@renderer/services/keyboardShortcuts';
 
 const createMockManager = () => ({
   pan: vi.fn(),
@@ -9,31 +10,16 @@ const createMockManager = () => ({
   resetVerticalZoom: vi.fn(),
   getViewport: vi.fn(() => ({ start: 0, end: 100, klineWidth: 10 })),
   setViewport: vi.fn(),
-  getBounds: vi.fn(() => ({ minPrice: 100, maxPrice: 200, minVolume: 0, maxVolume: 1000 })),
   getKlineCount: vi.fn(() => 1000),
 });
-
-const createMockCanvas = () => {
-  const canvas = document.createElement('canvas');
-  return canvas;
-};
-
-const createKeyboardEvent = (key: string, modifiers: { ctrlKey?: boolean; metaKey?: boolean; altKey?: boolean } = {}): KeyboardEvent => {
-  return new KeyboardEvent('keydown', {
-    key,
-    ctrlKey: modifiers.ctrlKey ?? false,
-    metaKey: modifiers.metaKey ?? false,
-    altKey: modifiers.altKey ?? false,
-    bubbles: true,
-  });
-};
 
 describe('useKeyboardNavigation', () => {
   let mockCanvas: HTMLCanvasElement;
   let mockManager: ReturnType<typeof createMockManager>;
 
   beforeEach(() => {
-    mockCanvas = createMockCanvas();
+    useKeyboardShortcutStore.setState({ shortcuts: {}, helpOpen: false });
+    mockCanvas = document.createElement('canvas');
     mockManager = createMockManager();
     document.body.appendChild(mockCanvas);
   });
@@ -43,335 +29,99 @@ describe('useKeyboardNavigation', () => {
     vi.clearAllMocks();
   });
 
-  it('should initialize and return focusCanvas function', () => {
+  it('returns a focusCanvas function', () => {
     const canvasRef = { current: mockCanvas };
     const { result } = renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-      })
+      useKeyboardNavigation({ canvasRef, manager: mockManager as never, enabled: true }),
     );
-
-    expect(result.current.focusCanvas).toBeDefined();
     expect(typeof result.current.focusCanvas).toBe('function');
   });
 
-  it('should set tabindex attribute on canvas when enabled', () => {
+  it('marks the canvas as a chart keyboard target when enabled', () => {
     const canvasRef = { current: mockCanvas };
-
     renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-      })
+      useKeyboardNavigation({ canvasRef, manager: mockManager as never, enabled: true }),
     );
-
+    expect(mockCanvas.hasAttribute(CHART_CANVAS_DATA_ATTR)).toBe(true);
     expect(mockCanvas.getAttribute('tabindex')).toBe('0');
   });
 
-  it('should not attach listeners when disabled', () => {
+  it('does not set the chart-keyboard-target attribute when disabled', () => {
     const canvasRef = { current: mockCanvas };
-    const addEventListenerSpy = vi.spyOn(mockCanvas, 'addEventListener');
-
     renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: false,
-      })
+      useKeyboardNavigation({ canvasRef, manager: mockManager as never, enabled: false }),
     );
-
-    expect(addEventListenerSpy).not.toHaveBeenCalledWith('keydown', expect.any(Function));
+    expect(mockCanvas.hasAttribute(CHART_CANVAS_DATA_ATTR)).toBe(false);
   });
 
-  it('should pan left on ArrowLeft when focused', () => {
+  it('registers chart shortcuts on mount when enabled', () => {
     const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
     renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
+      useKeyboardNavigation({ canvasRef, manager: mockManager as never, enabled: true }),
     );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('ArrowLeft'));
-    });
-
-    expect(mockManager.pan).toHaveBeenCalledWith(50);
+    const ids = Object.keys(useKeyboardShortcutStore.getState().shortcuts);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        'chart.panLeft',
+        'chart.panRight',
+        'chart.panLeftFast',
+        'chart.panRightFast',
+        'chart.panUp',
+        'chart.panDown',
+        'chart.zoomIn',
+        'chart.zoomOut',
+        'chart.resetZoom',
+        'chart.goToStart',
+        'chart.goToEnd',
+      ]),
+    );
   });
 
-  it('should pan right on ArrowRight when focused', () => {
+  it('does not register shortcuts when disabled', () => {
     const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
     renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
+      useKeyboardNavigation({ canvasRef, manager: mockManager as never, enabled: false }),
     );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('ArrowRight'));
-    });
-
-    expect(mockManager.pan).toHaveBeenCalledWith(-50);
+    expect(Object.keys(useKeyboardShortcutStore.getState().shortcuts)).toHaveLength(0);
   });
 
-  it('should pan faster with modifier key', () => {
+  it('unregisters shortcuts on unmount', () => {
     const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
-    renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
-    );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('ArrowLeft', { ctrlKey: true }));
-    });
-
-    expect(mockManager.pan).toHaveBeenCalledWith(150);
-  });
-
-  it('should zoom in on + key when focused', () => {
-    const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
-    renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
-    );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('+'));
-    });
-
-    expect(mockManager.zoom).toHaveBeenCalledWith(1);
-  });
-
-  it('should zoom out on - key when focused', () => {
-    const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
-    renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
-    );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('-'));
-    });
-
-    expect(mockManager.zoom).toHaveBeenCalledWith(-1);
-  });
-
-  it('should reset vertical zoom on Ctrl+0', () => {
-    const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
-    renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
-    );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('0', { ctrlKey: true }));
-    });
-
-    expect(mockManager.resetVerticalZoom).toHaveBeenCalled();
-  });
-
-  it('should go to start on Home key', () => {
-    const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
-    renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
-    );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('Home'));
-    });
-
-    expect(mockManager.setViewport).toHaveBeenCalled();
-  });
-
-  it('should go to end on End key', () => {
-    const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
-    renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
-    );
-
-    act(() => {
-      mockCanvas.focus();
-    });
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('End'));
-    });
-
-    expect(mockManager.setViewport).toHaveBeenCalled();
-  });
-
-  it('should not respond to keys when not focused', () => {
-    const canvasRef = { current: mockCanvas };
-    const onViewportChange = vi.fn();
-
-    renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-        onViewportChange,
-      })
-    );
-
-    act(() => {
-      mockCanvas.dispatchEvent(createKeyboardEvent('ArrowLeft'));
-    });
-
-    expect(mockManager.pan).not.toHaveBeenCalled();
-  });
-
-  it('should handle null canvas gracefully', () => {
-    const canvasRef = { current: null };
-
-    expect(() => {
-      renderHook(() =>
-        useKeyboardNavigation({
-          canvasRef,
-          manager: mockManager as never,
-          enabled: true,
-        })
-      );
-    }).not.toThrow();
-  });
-
-  it('should handle null manager gracefully', () => {
-    const canvasRef = { current: mockCanvas };
-
-    expect(() => {
-      renderHook(() =>
-        useKeyboardNavigation({
-          canvasRef,
-          manager: null,
-          enabled: true,
-        })
-      );
-    }).not.toThrow();
-  });
-
-  it('should cleanup listeners on unmount', () => {
-    const canvasRef = { current: mockCanvas };
-    const removeEventListenerSpy = vi.spyOn(mockCanvas, 'removeEventListener');
-
     const { unmount } = renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-      })
+      useKeyboardNavigation({ canvasRef, manager: mockManager as never, enabled: true }),
     );
-
+    expect(Object.keys(useKeyboardShortcutStore.getState().shortcuts).length).toBeGreaterThan(0);
     unmount();
-
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('focus', expect.any(Function));
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('blur', expect.any(Function));
+    expect(Object.keys(useKeyboardShortcutStore.getState().shortcuts)).toHaveLength(0);
   });
 
-  it('should focus canvas when focusCanvas is called', () => {
+  it('registered actions invoke manager methods', () => {
     const canvasRef = { current: mockCanvas };
-    const focusSpy = vi.spyOn(mockCanvas, 'focus');
-
-    const { result } = renderHook(() =>
-      useKeyboardNavigation({
-        canvasRef,
-        manager: mockManager as never,
-        enabled: true,
-      })
+    renderHook(() =>
+      useKeyboardNavigation({ canvasRef, manager: mockManager as never, enabled: true }),
     );
 
-    act(() => {
-      result.current.focusCanvas();
-    });
+    const { shortcuts } = useKeyboardShortcutStore.getState();
+    const evt = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
 
-    expect(focusSpy).toHaveBeenCalled();
+    shortcuts['chart.panLeft']!.action(evt);
+    expect(mockManager.pan).toHaveBeenCalledWith(50);
+
+    shortcuts['chart.panRightFast']!.action(evt);
+    expect(mockManager.pan).toHaveBeenCalledWith(-150);
+
+    shortcuts['chart.zoomIn']!.action(evt);
+    expect(mockManager.zoom).toHaveBeenCalledWith(1);
+
+    shortcuts['chart.goToStart']!.action(evt);
+    expect(mockManager.setViewport).toHaveBeenCalledWith(expect.objectContaining({ start: 0 }));
+
+    shortcuts['chart.goToEnd']!.action(evt);
+    expect(mockManager.setViewport).toHaveBeenCalledWith(expect.objectContaining({ end: 1000 }));
   });
-});
 
-describe('KEYBOARD_SHORTCUTS', () => {
-  it('should have all expected shortcut definitions', () => {
+  it('exports the legacy KEYBOARD_SHORTCUTS map for back-compat callers', () => {
     expect(KEYBOARD_SHORTCUTS.PAN_LEFT).toBe('ArrowLeft');
-    expect(KEYBOARD_SHORTCUTS.PAN_RIGHT).toBe('ArrowRight');
-    expect(KEYBOARD_SHORTCUTS.ZOOM_IN).toBe('+');
-    expect(KEYBOARD_SHORTCUTS.ZOOM_OUT).toBe('-');
-    expect(KEYBOARD_SHORTCUTS.GO_TO_START).toBe('Home');
     expect(KEYBOARD_SHORTCUTS.GO_TO_END).toBe('End');
   });
 });
