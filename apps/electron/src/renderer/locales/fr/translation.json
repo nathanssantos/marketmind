@@ -310,6 +310,28 @@
         "confirmTitle": "Activer le trading par agent sur ce portefeuille ?",
         "confirmBody": "Les agents connectés via MCP pourront placer de vrais ordres sur ce portefeuille. Chaque action sera enregistrée dans le journal d'audit. Vous pouvez révoquer à tout moment.",
         "confirmCta": "Activer le trading par agent"
+      },
+      "agentActivity": {
+        "title": "Activité de l'Agent IA",
+        "description": "Journal d'audit de toutes les actions menées par les agents connectés via MCP. Enregistre les appels réussis, échoués et refusés (gate désactivé), avec la durée.",
+        "empty": "Aucune activité d'agent pour l'instant.",
+        "loading": "Chargement de l'activité…",
+        "columns": {
+          "ts": "Quand",
+          "tool": "Outil",
+          "wallet": "Portefeuille",
+          "status": "Statut",
+          "duration": "Durée",
+          "details": "Détails"
+        },
+        "status": {
+          "success": "succès",
+          "failure": "échec",
+          "denied": "refusé",
+          "rate_limited": "rate limit"
+        },
+        "noWallet": "—",
+        "durationMs": "{{ms}}ms"
       }
     },
     "notifications": {

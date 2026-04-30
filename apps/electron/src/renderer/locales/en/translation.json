@@ -304,6 +304,28 @@
         "confirmTitle": "Enable agent trading on this wallet?",
         "confirmBody": "MCP-connected agents will be able to place real orders on this wallet. Every action will be recorded in the audit log. You can revoke this any time.",
         "confirmCta": "Enable agent trading"
+      },
+      "agentActivity": {
+        "title": "AI Agent Activity",
+        "description": "Audit trail of every action taken by MCP-connected agents. Records succeed, fail, and denied (gate off) calls with timing.",
+        "empty": "No agent activity yet.",
+        "loading": "Loading activity…",
+        "columns": {
+          "ts": "When",
+          "tool": "Tool",
+          "wallet": "Wallet",
+          "status": "Status",
+          "duration": "Duration",
+          "details": "Details"
+        },
+        "status": {
+          "success": "success",
+          "failure": "failure",
+          "denied": "denied",
+          "rate_limited": "rate limited"
+        },
+        "noWallet": "—",
+        "durationMs": "{{ms}}ms"
       }
     },
     "notifications": {

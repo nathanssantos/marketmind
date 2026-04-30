@@ -9,6 +9,7 @@ import { trpc } from '@renderer/utils/trpc';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuBot, LuLogOut, LuShieldCheck, LuShieldX } from 'react-icons/lu';
+import { AgentActivityPanel } from './AgentActivityPanel';
 
 const formatRelative = (iso: string, locale: string): string =>
   new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -298,6 +299,8 @@ export const SecurityTab = () => {
           </Stack>
         )}
       </FormSection>
+
+      <AgentActivityPanel />
 
       <ConfirmationDialog
         isOpen={agentTradingPending !== null}
