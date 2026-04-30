@@ -14,7 +14,7 @@
 
 ## A — Auth follow-throughs
 
-### A.1.b — Login soft-nudge for users with policy-violating passwords
+### A.1.b — Login soft-nudge for users with policy-violating passwords ✅ shipped (#299)
 The v1.4 password policy is enforced on register / changePassword / resetPassword but **not** on login. Plan A.1 originally specified a soft warning post-login when `validatePassword` flags the existing password — deferred from #293 to keep the PR focused.
 
 **What ships**:
@@ -30,7 +30,7 @@ The v1.4 password policy is enforced on register / changePassword / resetPasswor
 
 ## B — Layout durability follow-throughs
 
-### B.1 — Snapshot list + restore UI in Settings
+### B.1 — Snapshot list + restore UI in Settings ✅ shipped (#300, e2e #309)
 Backend has `layout.listSnapshots` + `layout.restoreSnapshot` from #293 but no frontend yet. Without UI the recovery is dev-only.
 
 **What ships**:
@@ -42,7 +42,7 @@ Backend has `layout.listSnapshots` + `layout.restoreSnapshot` from #293 but no f
 
 **Effort**: ~3-4h. **Risk**: low.
 
-### B.2 — Audit log of layout writes
+### B.2 — Audit log of layout writes ✅ shipped (#298)
 Tracks every `user_layouts.save` so any future overwrite can be correlated with the release that caused it.
 
 **What ships**:
@@ -53,7 +53,7 @@ Tracks every `user_layouts.save` so any future overwrite can be correlated with 
 
 **Effort**: ~1h. **Risk**: zero.
 
-### B.3 — Postgres `archive_mode=on` + WAL archiving
+### B.3 — Postgres `archive_mode=on` + WAL archiving ✅ shipped (#305)
 PITR-recoverable Postgres so future incidents (like the 2026-04-30 layout loss) can be recovered.
 
 **What ships**:
@@ -67,7 +67,7 @@ PITR-recoverable Postgres so future incidents (like the 2026-04-30 layout loss) 
 
 ## C — MCP capability extensions
 
-### C.1 — `mcp-trading` server (deferred from V1_POST_RELEASE 5.6 / V1_3 E.2)
+### C.1 — `mcp-trading` server (deferred from V1_POST_RELEASE 5.6 / V1_3 E.2) ✅ paper-complete (#314-#321)
 Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capability — moves real money — and the user explicitly asked for a deliberate enablement gesture.
 
 **What ships**:
@@ -93,8 +93,8 @@ Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capabilit
 - ✅ C.1.d paper-mode write tools — place/cancel/close (#317)
 - ✅ C.1.e "AI Agent Activity" audit log panel (#318)
 - ✅ C.1.f rate limit (30 writes/hour per wallet) (#319)
-- ✅ C.1.g `set_sl_tp` write tool — paper-mode
-- C.1.h live unlock (remove paper-only client check) — TODO, real-money territory
+- ✅ C.1.g `set_sl_tp` write tool — paper-mode (#321)
+- C.1.h live unlock — deferred indefinitely; revisit only after the paper toolkit has been used in a real workflow and the user explicitly opts into real-money MCP writes
 
 ---
 
@@ -152,7 +152,7 @@ The 6-wave plan from #148/#149 was deleted in #200, but the work shipped quietly
 - ✅ **E.6/Wave 6**: `Cmd+Shift+B` keyboard shortcut, useDialogMount perf tag, e2e specs (`backtest-modal-open.spec.ts`, `backtest-modal-flow.spec.ts`)
 - ✅ **E.1/Wave 1**: getActiveRuns query + failed-path coverage (#310)
 
-### E.7 — Wire `getActiveRuns` into the frontend for reload-recovery
+### E.7 — Wire `getActiveRuns` into the frontend for reload-recovery ✅ shipped (#312)
 The backend exposes `backtest.getActiveRuns` (#310) but `useBacktestRun` doesn't consume it. If a user starts a backtest and reloads the page, the in-memory state is lost — the run is still going on the server, but the UI shows nothing.
 
 **What ships**:
@@ -163,7 +163,7 @@ The backend exposes `backtest.getActiveRuns` (#310) but `useBacktestRun` doesn't
 
 **Effort**: ~half-day. **Risk**: low. **Visible**: yes — fixes the "reload kills my running backtest progress" UX hole.
 
-### E.8 — Persist completed runs to a `backtest_runs` table
+### E.8 — Persist completed runs to a `backtest_runs` table ✅ shipped (#313)
 Currently `backtestResults` is an in-memory Map with eviction at 100 entries. After a server restart, all run history is gone. RecentRunsPanel only sees what's still in memory.
 
 **What ships**:
@@ -179,7 +179,7 @@ Currently `backtestResults` is an in-memory Map with eviction at 100 entries. Af
 
 ## F — Package + token system (deferred from V1_POST_RELEASE 2.1/2.2)
 
-### F.1 — Design tokens phase
+### F.1 — Design tokens phase ✅ shipped (#301)
 The v1.4 sweep finished migrating to semantic tokens (`X.fg / .subtle / .muted / .solid`, `trading.*`, `accent.*`). The tokens themselves still live inside `apps/electron/src/renderer/theme/` — not a shared package.
 
 **What ships**:
@@ -197,7 +197,7 @@ Audit doc lives at `docs/UI_EXTRACTION_PLAN.md`. Inventories all 73 named bindin
 
 ## G — Test + CI infra
 
-### G.1 — Visual review automation script (deferred from V1_3 G.2 / V1_5 archive C.2)
+### G.1 — Visual review automation script (deferred from V1_3 G.2 / V1_5 archive C.2) ⏸ skip per plan
 Speculative tier below the audit script. Walks renderer + flags surfaces missing tokens, oversized headings, or non-MM spacing.
 
 **What ships**:
@@ -215,7 +215,7 @@ On audit (2026-04-30), `apps/backend/src/__tests__/services/custom-symbol-servic
 
 ## H — Maintenance / housekeeping
 
-### H.1 — `MEMORY.md` consolidation (currently 219 lines, cap 200)
+### H.1 — `MEMORY.md` consolidation (currently 219 lines, cap 200) ✅ done — index now 44 lines
 Auto-memory index has grown past the 200-line cap that gets loaded into context at conversation start. Lines 200+ were truncated during this session. Each entry should be one line under ~150 chars per the auto-memory spec.
 
 **What ships**:
@@ -247,17 +247,19 @@ Proposed:
 7. ✅ **D.1.b** migrate remaining `useChartKeyboardShortcuts` handlers (#304)
 8. ✅ **B.3** Postgres archive_mode (#305)
 9. ✅ **D.2.a** axe-core dialog spec (#306)
-10. **D.2.b** manual VoiceOver pass — needs human-in-the-loop, deferred
+10. ❌ **D.2.b** manual VoiceOver pass — out of scope (#322)
 11. ✅ **D.2.c** Analytics color-contrast fix — DataCard outline + trading.* token sweep (#308)
-12. **G.2** backend custom-symbol tests — coverage closure
+12. ✅ **G.2** backend custom-symbol tests (#307)
 13. ✅ **E.1–E.6** Backtest UI modal — already shipped (E.1 capped by #310)
-13a. **E.7** wire getActiveRuns into frontend for reload-recovery
-13b. **E.8** persist completed runs to backtest_runs table (DB-backed history)
-14. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
-15. **F.2** ui extraction plan — audit doc, gates the actual extraction
-16. **G.1** visual review automation — speculative, do only if regressions warrant
+13a. ✅ **E.7** wire getActiveRuns into frontend for reload-recovery (#312)
+13b. ✅ **E.8** persist completed runs to backtest_runs table (#313)
+14. ✅ **C.1** mcp-trading paper-complete (#314, #315, #316, #317, #318, #319, #321) — live unlock deferred indefinitely
+15. ✅ **F.2** ui extraction plan (#320)
+16. ⏸ **G.1** visual review automation — skipped; revisit only if a regression wave hits
 
 Skip H.3 unless logs show the error.
+
+**v1.5 is feature-complete on develop.** Next concrete step is the release cut per `docs/RELEASE_PROCESS.md`.
 
 ## Acceptance
 
