@@ -1,4 +1,32 @@
 {
+  "shortcuts": {
+    "help": {
+      "title": "Atalhos do Teclado",
+      "empty": "Nenhum atalho registrado ainda."
+    },
+    "group": {
+      "chart": "Gráfico",
+      "drawing": "Desenho",
+      "trading": "Trading",
+      "global": "Global"
+    },
+    "global": {
+      "help": "Abrir esta ajuda de atalhos"
+    },
+    "chart": {
+      "panLeft": "Mover para esquerda",
+      "panRight": "Mover para direita",
+      "panLeftFast": "Mover para esquerda (rápido)",
+      "panRightFast": "Mover para direita (rápido)",
+      "panUp": "Mover para cima",
+      "panDown": "Mover para baixo",
+      "zoomIn": "Aumentar zoom",
+      "zoomOut": "Diminuir zoom",
+      "resetZoom": "Resetar zoom vertical",
+      "goToStart": "Ir para o início dos dados",
+      "goToEnd": "Ir para o candle mais recente"
+    }
+  },
   "common": {
     "cancel": "Cancelar",
     "save": "Salvar",

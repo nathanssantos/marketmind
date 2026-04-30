@@ -5,7 +5,10 @@ import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
+import { KeyboardShortcutDispatcher } from './components/KeyboardShortcutDispatcher';
+import { KeyboardShortcutHelpModal } from './components/KeyboardShortcutHelpModal';
 import { PreferencesHydrator } from './components/PreferencesHydrator';
+import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
 
 import { PinnedControlsProvider } from './components/Chart/PinnedControlsContext';
@@ -122,6 +125,9 @@ function App(): ReactElement {
         <Toaster toaster={toaster}>
           {(toast) => <ToastContent toast={toast as ToastLike} />}
         </Toaster>
+        <KeyboardShortcutDispatcher />
+        <KeyboardShortcutHelpModal />
+        <GlobalShortcuts />
         <ChartProvider>
           <PinnedControlsProvider>
             <RealtimeSyncWrapper>
@@ -132,6 +138,11 @@ function App(): ReactElement {
       </PreferencesHydrator>
     </ErrorBoundary>
   );
+}
+
+function GlobalShortcuts(): null {
+  useGlobalKeyboardShortcuts();
+  return null;
 }
 
 function AppContent(): ReactElement {
