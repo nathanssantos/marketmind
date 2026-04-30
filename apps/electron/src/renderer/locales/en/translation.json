@@ -1939,6 +1939,8 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Open backtest",
+    "runningTooltip": "{{count}} backtest running",
+    "runningTooltip_other": "{{count}} backtests running",
     "comingSoon": "Backtest configuration coming soon.",
     "tabs": {
       "basic": "Basic",

@@ -1978,6 +1978,8 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Ouvrir le backtest",
+    "runningTooltip": "{{count}} backtest en cours",
+    "runningTooltip_other": "{{count}} backtests en cours",
     "comingSoon": "Configuration du backtest bientôt disponible.",
     "tabs": {
       "basic": "Général",
