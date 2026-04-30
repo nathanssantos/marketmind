@@ -129,6 +129,9 @@ describe('Auth Router Integration', () => {
       expect(result.userId).toBe(user.id);
       expect(result.sessionId).toBeDefined();
       expect(result.expiresAt).toBeDefined();
+      if (!('requiresTwoFactor' in result) || result.requiresTwoFactor === false) {
+        expect(result.passwordPolicyViolated).toBe(false);
+      }
 
       expect(ctx.res.setCookie).toHaveBeenCalledWith(
         'session',
@@ -138,6 +141,25 @@ describe('Auth Router Integration', () => {
           path: '/',
         })
       );
+    });
+
+    it('flags passwordPolicyViolated=true when an existing user signs in with a weak password', async () => {
+      await createTestUser({
+        email: 'legacy-weak@example.com',
+        password: 'oldweakpw',
+      });
+
+      const ctx = createTestContext();
+      const caller = createTestCaller(ctx);
+
+      const result = await caller.auth.login({
+        email: 'legacy-weak@example.com',
+        password: 'oldweakpw',
+      });
+
+      if (!('requiresTwoFactor' in result) || result.requiresTwoFactor === false) {
+        expect(result.passwordPolicyViolated).toBe(true);
+      }
     });
 
     it('should reject login with wrong password', async () => {

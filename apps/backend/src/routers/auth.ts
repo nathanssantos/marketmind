@@ -229,6 +229,7 @@ export const authRouter = router({
         userId: user.id,
         sessionId,
         expiresAt,
+        passwordPolicyViolated: !validatePassword(input.password).valid,
       };
     }),
 

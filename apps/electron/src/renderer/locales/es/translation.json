@@ -2359,7 +2359,11 @@
       "fair": "Aceptable",
       "good": "Buena",
       "strong": "Fuerte",
-      "excellent": "Excelente"
+      "excellent": "Excelente",
+      "softNudge": {
+        "title": "Tu contraseña no cumple la nueva política",
+        "body": "Actualízala en Ajustes → Seguridad para mantener tu cuenta segura."
+      }
     }
   },
   "account": {
