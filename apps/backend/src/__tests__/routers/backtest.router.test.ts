@@ -3,47 +3,37 @@ import { setupTestDatabase, teardownTestDatabase, cleanupTables } from '../helpe
 import { createAuthenticatedUser } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
 
+const DEFAULT_BACKTEST_RESULT = {
+  trades: [
+    {
+      id: 'trade-1', symbol: 'BTCUSDT', side: 'LONG' as const,
+      entryPrice: 50000, exitPrice: 51000, quantity: 0.1,
+      pnl: 100, pnlPercent: 2,
+      entryTime: Date.now() - 3600000, exitTime: Date.now(),
+      setupType: 'test-setup', exitReason: 'TAKE_PROFIT' as const,
+    },
+  ],
+  metrics: {
+    totalTrades: 10, winningTrades: 7, losingTrades: 3, winRate: 70,
+    totalPnl: 500, totalPnlPercent: 5,
+    avgWin: 100, avgLoss: -50, avgRiskReward: 2,
+    maxDrawdown: 100, maxDrawdownPercent: 1,
+    profitFactor: 3.5, sharpeRatio: 1.5,
+    maxConsecutiveLosses: 2, avgHoldTime: 3600000,
+  },
+  equityCurve: [
+    { time: Date.now() - 86400000, equity: 10000 },
+    { time: Date.now(), equity: 10500 },
+  ],
+};
+
+const engineRunMock = vi.fn().mockResolvedValue(DEFAULT_BACKTEST_RESULT);
+
 vi.mock('../../services/backtesting/BacktestEngine', () => ({
   BacktestEngine: class {
-    run = vi.fn().mockResolvedValue({
-      trades: [
-        {
-          id: 'trade-1',
-          symbol: 'BTCUSDT',
-          side: 'LONG',
-          entryPrice: 50000,
-          exitPrice: 51000,
-          quantity: 0.1,
-          pnl: 100,
-          pnlPercent: 2,
-          entryTime: Date.now() - 3600000,
-          exitTime: Date.now(),
-          setupType: 'test-setup',
-          exitReason: 'TAKE_PROFIT',
-        },
-      ],
-      metrics: {
-        totalTrades: 10,
-        winningTrades: 7,
-        losingTrades: 3,
-        winRate: 70,
-        totalPnl: 500,
-        totalPnlPercent: 5,
-        avgWin: 100,
-        avgLoss: -50,
-        avgRiskReward: 2,
-        maxDrawdown: 100,
-        maxDrawdownPercent: 1,
-        profitFactor: 3.5,
-        sharpeRatio: 1.5,
-        maxConsecutiveLosses: 2,
-        avgHoldTime: 3600000,
-      },
-      equityCurve: [
-        { time: Date.now() - 86400000, equity: 10000 },
-        { time: Date.now(), equity: 10500 },
-      ],
-    });
+    run(config: unknown, klines: unknown, reporter: unknown) {
+      return engineRunMock(config, klines, reporter);
+    }
   },
 }));
 
@@ -72,6 +62,7 @@ describe('Backtest Router', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    engineRunMock.mockResolvedValue(DEFAULT_BACKTEST_RESULT);
   });
 
   afterEach(async () => {
@@ -328,6 +319,87 @@ describe('Backtest Router', () => {
       for (let i = 1; i < times.length; i++) {
         expect(times[i - 1]).toBeGreaterThanOrEqual(times[i]!);
       }
+    });
+  });
+
+  describe('getActiveRuns', () => {
+    it('should reject unauthenticated access', async () => {
+      const caller = createUnauthenticatedCaller();
+      await expect(caller.backtest.getActiveRuns()).rejects.toThrow('UNAUTHORIZED');
+    });
+
+    it('returns runs with status RUNNING and skips COMPLETED ones', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      // Run one to completion (mock resolves immediately).
+      const completed = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      // Sanity: completed row exists and is COMPLETED
+      const fetched = await caller.backtest.getResult({ id: completed.backtestId }) as { status: string };
+      expect(fetched.status).toBe('COMPLETED');
+
+      const active = await caller.backtest.getActiveRuns();
+      expect(active.find((r) => r.id === completed.backtestId)).toBeUndefined();
+    });
+
+    it('shape: each entry has id/symbol/interval/startTime', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      // Make the engine pend so the run stays in RUNNING state.
+      let resolveEngineRef: ((v: typeof DEFAULT_BACKTEST_RESULT) => void) | undefined;
+      engineRunMock.mockImplementationOnce(
+        () => new Promise<typeof DEFAULT_BACKTEST_RESULT>((resolve) => {
+          resolveEngineRef = resolve;
+        })
+      );
+
+      const run = await caller.backtest.run({
+        symbol: 'ETHUSDT', interval: '15m',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+
+      const active = await caller.backtest.getActiveRuns();
+      const found = active.find((r) => r.id === run.backtestId);
+      expect(found).toBeDefined();
+      expect(found?.symbol).toBe('ETHUSDT');
+      expect(found?.interval).toBe('15m');
+      expect(found?.startTime).toEqual(expect.any(String));
+
+      // Let the engine finish so cleanup can proceed.
+      if (resolveEngineRef) resolveEngineRef(DEFAULT_BACKTEST_RESULT);
+      await flushBackground();
+    });
+  });
+
+  describe('failed path', () => {
+    it('caches FAILED status when the engine throws', async () => {
+      engineRunMock.mockRejectedValueOnce(new Error('synthetic engine failure'));
+
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const runResult = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+
+      await flushBackground();
+
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as {
+        status: string; error?: string; duration?: number;
+      };
+      expect(cached.status).toBe('FAILED');
+      expect(cached.error).toContain('synthetic engine failure');
+      expect(cached.duration).toEqual(expect.any(Number));
     });
   });
 

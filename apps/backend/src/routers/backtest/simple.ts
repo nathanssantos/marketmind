@@ -116,6 +116,19 @@ export const simpleProcedures = {
       return result;
     }),
 
+  getActiveRuns: protectedProcedure.query(async () => {
+    const active = Array.from(backtestResults.entries())
+      .filter(([, entry]) => entry.data.status === 'RUNNING')
+      .map(([id, entry]) => ({
+        id,
+        symbol: entry.data.config?.symbol ?? '',
+        interval: entry.data.config?.interval ?? '',
+        startTime: entry.data.startTime ?? '',
+      }))
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+    return active;
+  }),
+
   list: protectedProcedure.query(async () => {
     const results = Array.from(backtestResults.values())
       .map((entry) => {
