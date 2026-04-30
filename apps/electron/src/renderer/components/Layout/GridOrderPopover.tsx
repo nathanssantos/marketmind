@@ -53,7 +53,9 @@ export const GridOrderPopover = memo(({ triggerElement }: GridOrderPopoverProps 
         width="220px"
         positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
         trigger={
-          triggerElement ?? (
+          triggerElement ? (
+            <Box>{triggerElement}</Box>
+          ) : (
             <Box>
               <TooltipWrapper
                 label={t('chart.gridOrders.title')}

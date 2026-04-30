@@ -188,7 +188,9 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
         width="280px"
         positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
         trigger={
-          triggerElement ?? (
+          triggerElement ? (
+            <Box>{triggerElement}</Box>
+          ) : (
             <Box>
               <TooltipWrapper
                 label={tooltipLabel}

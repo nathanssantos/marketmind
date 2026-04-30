@@ -58,12 +58,16 @@ interface BuySellButtonsProps {
   onPlaceOrder: (side: 'BUY' | 'SELL', price: number) => void;
   buyLabel: string;
   sellLabel: string;
+  showAdvanced: boolean;
+  onToggleAdvanced: () => void;
+  toggleAdvancedLabel: string;
 }
 
-const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrder, buyLabel, sellLabel }: BuySellButtonsProps) => {
+const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrder, buyLabel, sellLabel, showAdvanced, onToggleAdvanced, toggleAdvancedLabel }: BuySellButtonsProps) => {
   const { bidPrice, askPrice } = useBookTicker(symbol);
   const buyPrice = askPrice > 0 ? askPrice : currentPrice;
   const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
+  const spread = askPrice > 0 && bidPrice > 0 ? askPrice - bidPrice : 0;
   const onBuy = useCallback(() => onPlaceOrder('BUY', buyPrice), [onPlaceOrder, buyPrice]);
   const onSell = useCallback(() => onPlaceOrder('SELL', sellPrice), [onPlaceOrder, sellPrice]);
 
@@ -75,6 +79,37 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
           <Text fontSize="2xs" fontWeight="bold">{buyPrice > 0 ? formatChartPrice(buyPrice) : '—'}</Text>
         </VStack>
       </Button>
+      <VStack gap={0} h="34px" w="32px" flexShrink={0} justify="stretch">
+        <Box
+          h="17px"
+          w="32px"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          borderWidth="1px"
+          borderBottomWidth={0}
+          borderColor="border"
+          borderTopRadius="md"
+        >
+          <Text fontSize="2xs" color="fg.muted" lineHeight="1" whiteSpace="nowrap">
+            {spread > 0 ? spread.toFixed(2) : '—'}
+          </Text>
+        </Box>
+        <TooltipWrapper label={toggleAdvancedLabel} showArrow>
+          <IconButton
+            size="2xs"
+            variant="outline"
+            aria-label="Toggle advanced"
+            onClick={onToggleAdvanced}
+            h="17px"
+            w="32px"
+            minW="32px"
+            borderTopRadius={0}
+          >
+            {showAdvanced ? <LuChevronUp /> : <LuChevronDown />}
+          </IconButton>
+        </TooltipWrapper>
+      </VStack>
       <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={onSell} loading={isCreatingOrder} flex={1}>
         <VStack gap={0} lineHeight="1">
           <Text fontSize="2xs">{sellLabel}</Text>
@@ -363,18 +398,10 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
             onPlaceOrder={handleQuickOrder}
             buyLabel={t('chart.quickTrade.buy')}
             sellLabel={t('chart.quickTrade.sell')}
+            showAdvanced={showAdvanced}
+            onToggleAdvanced={() => setShowAdvanced((prev) => !prev)}
+            toggleAdvancedLabel={showAdvanced ? t('common.hideActions', 'Hide actions') : t('common.moreActions', 'More actions')}
           />
-          <TooltipWrapper label={showAdvanced ? t('common.hideActions', 'Hide actions') : t('common.moreActions', 'More actions')} showArrow>
-            <IconButton
-              size="2xs"
-              variant="outline"
-              aria-label="Toggle advanced"
-              onClick={() => setShowAdvanced((prev) => !prev)}
-              h="34px"
-            >
-              {showAdvanced ? <LuChevronUp /> : <LuChevronDown />}
-            </IconButton>
-          </TooltipWrapper>
         </HStack>
 
         {showAdvanced && (
