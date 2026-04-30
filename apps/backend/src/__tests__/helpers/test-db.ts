@@ -33,6 +33,7 @@ DROP TABLE IF EXISTS klines CASCADE;
 DROP TABLE IF EXISTS price_cache CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
 DROP TABLE IF EXISTS user_indicators CASCADE;
+DROP TABLE IF EXISTS user_layouts_audit CASCADE;
 DROP TABLE IF EXISTS user_layouts_history CASCADE;
 DROP TABLE IF EXISTS user_layouts CASCADE;
 DROP TABLE IF EXISTS user_preferences CASCADE;
@@ -683,6 +684,17 @@ CREATE TABLE IF NOT EXISTS user_layouts_history (
 );
 CREATE INDEX user_layouts_history_user_snapshot_idx ON user_layouts_history(user_id, snapshot_at);
 
+CREATE TABLE IF NOT EXISTS user_layouts_audit (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  prev_data_hash VARCHAR(64),
+  new_data_hash VARCHAR(64) NOT NULL,
+  source VARCHAR(64) DEFAULT 'renderer' NOT NULL,
+  client_version VARCHAR(20),
+  ts TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX user_layouts_audit_user_ts_idx ON user_layouts_audit(user_id, ts);
+
 CREATE TABLE IF NOT EXISTS income_events (
   id SERIAL PRIMARY KEY,
   wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
@@ -783,6 +795,7 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.activeWatchers);
   await db.delete(schema.apiKeys);
   await db.delete(schema.userIndicators);
+  await db.delete(schema.userLayoutsAudit);
   await db.delete(schema.userLayoutsHistory);
   await db.delete(schema.userLayouts);
   await db.delete(schema.userPreferences);
