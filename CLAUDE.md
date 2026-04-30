@@ -587,10 +587,10 @@ describe('Wallet Router', () => {
 
 ## 📊 Current Development Phase
 
-**Version:** v1.2.0
-**Current Focus:** Backlog work tracked in `docs/V1_5_PLAN.md`. v1.2 + v1.4 sweeps complete: cross-surface UI standardization shipped, semantic-token migration finished (0 forbidden patterns in renderer/components/), visual regression CI active, audit script enforces 5 anti-pattern rules. Older plans archived in `docs/archive/` (V1_2, V1_3, V1_4, post-release, visual-review-2026-04, UI components standardization, bundle audit).
+**Version:** v1.3.0
+**Current Focus:** v1.5 plan complete and archived. v1.3 ships the v1.4 + v1.5 cross-surface UI sweeps plus a 60% main-bundle reduction (Settings tabs, locale JSONs, `pinets`, `recharts` lazy-loaded). Audit script grew from 1 → 7 forbidden-pattern rules; all at 0 violations. Three browser test suites lock the right-axis price tag regression class (overlay-line, overlay-bands, FVG). All older plans archived in `docs/archive/`.
 
-### System Status (v1.2.0)
+### System Status (v1.3.0)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
 - **✅ Authentication**: Argon2 + session management
@@ -1204,5 +1204,5 @@ When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: ver
 ---
 
 **Last Updated:** April 2026
-**Version:** 1.7
-**Project Version:** 1.2.0
+**Version:** 1.8
+**Project Version:** 1.3.0

@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Work on develop after v1.2.0 — slated for the next release.
+## [1.3.0] - 2026-04-30
+
+**v1.3 release** — Performance + cross-surface UI continuation. Three threads land here: (1) bundle audit + lazy-loading reduces the main bundle 2,124 KB → 850 KB raw (587 → 237 KB gz, −60%) via Settings tabs / locale JSONs / `pinets` engine / `recharts` consumers; (2) v1.4 + v1.5 UI sweeps continue the v1.2 semantic-token migration with structural cleanup across AutoTrading, chart tooltips, sidebars, leverage popover, settings; (3) audit-script grows from 1 → 7 forbidden-pattern rules with all of them at 0 violations. WCAG AA contrast bump on `fg.muted`. Three browser test suites lock in the chart-renderer right-axis price tag regressions (overlay-line, overlay-bands, FVG). Visual-diff CI gallery is now self-contained for artifact uploads. Docs: 5 audit rules now have Don't / Do examples in `UI_STYLE_GUIDE.md`. 60 commits since v1.2.0.
 
 ### Added — Performance instrumentation + dev tools
 - **`pnpm bundle:analyze`** (#236) — wires `rollup-plugin-visualizer` behind `ANALYZE=1`. Generates `dist-web/bundle-stats.html` treemap + extended `manualChunks` to split `vendor-pinets`, `vendor-recharts`, `vendor-d3`, `vendor-grid`, `vendor-trpc`, `vendor-socket`, `vendor-icons` into their own chunks. Cumulative main-bundle reduction across this and the lazy-load PRs: 2,124 KB → 850 KB raw (587 → 237 KB gz). **−60%.**
@@ -81,13 +83,22 @@ After the v1.4 sweep, a second pass on the surfaces the previous round didn't re
 - **Visual-diff HTML self-contained for CI artifacts (V1_5 B.2)** (#280) — `scripts/visual-diff.mjs` now embeds baseline / session / diff PNGs as base64 data URIs in `diffs/index.html` instead of `<img src="../baseline/X.png">` refs. The previous setup worked locally but broke in the `visual-diffs` CI artifact upload (the `screenshots/baseline/` dir lives outside the session and isn't included in the upload, so the baseline column rendered as broken images once the artifact was unzipped). Cost: ~1 MB embed per failing image; well under 5 MB total for normal regressions.
 - **Document the 5 audit-script forbidden patterns (V1_5 C.1)** (#274) — `docs/UI_STYLE_GUIDE.md` now has Don't / Do examples for each of the rules `audit-shade-literals.mjs` enforces in CI: `shade-literal-color`, `_dark-override`, `_dark-override-nested`, `tinted-card-Box`, `dynamic-shade-pair`. Reduces the "wait, why did CI flag this?" loop for new contributors.
 
+### Changed — v1.5 follow-up sweep + boleta polish
+- **Template-string shade leak rule + cosmetic stripe sweep (V1_4 follow-up)** (#282) — codifies the dynamic template-string shade leak (`borderColor={\`${getTypeColor(...)}.500\`}`) as the audit script's 6th rule, then cleans the 2 violations: `OrderCard` (LONG/SHORT border) and `MetricCard` trend palette (both routed through `trading.long/short/profit/loss`).
+- **Object-literal shade-leak sweep + audit rule (V1_5 follow-up)** (#284) — 7th audit rule catches shade literals inside object-property syntax (`_hover={{ bg: 'green.500' }}`, `levelColor = { error: 'red.400' }`) — the existing rules only caught JSX-prop syntax. Cleaned 6 sites: `MainLayout` column resizers (4× `_hover` greens → `accent.solid`), `select.tsx` focus border `blue.500` → `accent.solid`, `SymbolSelector` focus border, `ControlPanelGroup` `gray.750` typo → `bg.muted`, `MetricCard` trend palette, `AutoTradeConsole` + `LogsTab` level color maps. The E2E `auto-trading-logs-tab.spec.ts` red-error assertion was loosened to R-channel dominance instead of an exact-RGB match so it's resilient to token swaps.
+- **QuickTradeToolbar boleta polish** (#285) — chevron + spread merged into a single 32px-wide column between Buy/Sell, vertically split (spread on top, chevron below) so the boleta footprint stays balanced; spread display switched from native-precision `formatChartPrice` to `toFixed(2)` for consistency. Fixed two popover anchor regressions where `triggerElement` was a non-forwardRef element (`Flex` etc.) — `TrailingStopPopover` and `GridOrderPopover` now wrap `triggerElement` in `<Box>` so Chakra's `Popover.Trigger asChild` can attach the ref (Floating UI was bailing to viewport (0,0) when the ref was null, putting the popover at the screen corner). Leverage popover trigger button alignment normalized (`h="20px" minW="32px" px={1.5}` to match sibling IconButtons in the slider row).
+
+### Tests
+- **Portfolio + OrdersList empty-state coverage (V1_5 B.3)** (#283) — 5 new tests across the two surfaces, closing the V1_3 C.3 deferral. `Portfolio`: 3 tests covering no-wallet → noWallet Callout, wallet-with-empty-positions/orphans → EmptyState, wallet-with-orphan-order → empty state suppressed. `OrdersList`: 2 tests for the same empty-vs-suppressed cycle. The visual-regression baseline already catches missing renders, but unit tests now document intent.
+
 ### Docs
-- **`CLAUDE.md`** — already at `Project Version 1.2.0` from the v1.2.0 release.
+- **`CLAUDE.md`** — `Project Version` bumped to 1.3.0.
 - **`docs/UI_STYLE_GUIDE.md`** — added "Applied surfaces" line under PanelHeader (PerformancePanel, SetupStatsTable, PerformanceCalendar, EquityCurveChart).
 - **`docs/UI_COMPONENTS_STANDARDIZATION_PLAN.md`** / **`docs/V1_3_PLAN.md`** — backlog refresh: G.1 (per-wallet theme override) dropped (theme stays per-user); G.3 (Pine migration) marked already-complete; sequencing rewritten to reflect what's already on develop.
 - **`apps/electron/src/renderer/components/ui/README.md`** — note that `<MarketNoData>` is a private MarketSidebar helper (not a `ui/` primitive).
 - **Chart input units** (#239) — Padding fields (top/bottom/left/right) now show `(px)` on labels in all 4 locales. Line Width helper updated to include the unit.
 - **Archive completed plans** (#273) — moved V1_2_PLAN, V1_3_PLAN, V1_4_UI_SWEEP, V1_POST_RELEASE_PLAN, UI_COMPONENTS_STANDARDIZATION_PLAN, V1_3_BUNDLE_AUDIT, visual-review-2026-04 from `docs/` to `docs/archive/`. Top-level `docs/` is now just the live references (UI_STYLE_GUIDE, RELEASE_PROCESS, BROWSER_TESTING, MCP_*) plus the early-stage MCP_TRADING_CONCEPT.
+- **Archive V1_5 plan with completion markers** (#269) — `docs/V1_5_PLAN.md` → `docs/archive/V1_5_PLAN.md` with the front-matter rewritten to show what shipped (A.1 #270, A.2 #271, B.1 #279, B.2 #280, B.3 #283, C.1 #274) plus follow-up sweeps that emerged during execution.
 - **`docs/MCP_TRADING_CONCEPT.md`** (#272) — early-stage concept doc for an opt-in toggle that would gate the (currently deferred) `mcp-trading` server. 5-step rollout sequence, toggle UX options, safety layers — not implementation, just exploration so the concept is on paper before the feature lands.
 
 ## [1.2.0] - 2026-04-28
