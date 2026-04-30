@@ -206,16 +206,8 @@ The v1.4 sweep finished migrating to semantic tokens (`X.fg / .subtle / .muted /
 
 **Effort**: ~half-day. **Risk**: low (pure refactor).
 
-### F.2 — `@marketmind/ui` extraction (audit + plan only)
-The `apps/electron/src/renderer/components/ui/` directory has been the single source of truth for ~30 wrappers since v1.0. Per `CLAUDE.md`: "designed for future extraction into a standalone `@marketmind/ui` package."
-
-**What ships** (this PR is plan-only — extraction is its own follow-up):
-- Inventory every export, group by stability tier (Tier-1 = stable wrappers, Tier-2 = composed primitives, Tier-3 = trading-specific).
-- Document peer-dependency boundaries (which wrappers pull from `@marketmind/types` / `@marketmind/utils` / `@marketmind/tokens` once F.1 lands).
-- Extraction sequencing proposal (Tier-1 first behind a `@marketmind/ui-core` workspace alias; Tier-2 next; Tier-3 stays in app indefinitely).
-- Risk register: Storybook setup, snapshot test infra, electron-specific imports (toaster, cryptoIcon, etc.).
-
-**Effort**: ~3-4h for the audit doc. **Risk**: zero.
+### F.2 — `@marketmind/ui` extraction (audit + plan only) ✅ shipped
+Audit doc lives at `docs/UI_EXTRACTION_PLAN.md`. Inventories all 73 named bindings, groups by tier, defines peer-dep boundaries, and proposes a 4-PR extraction sequence behind a temporary `@marketmind/ui-core` alias. Tier-1 is the next concrete action when extraction begins.
 
 ---
 
@@ -232,14 +224,8 @@ Speculative tier below the audit script. Walks renderer + flags surfaces missing
 
 **Effort**: ~1 day. **Risk**: zero.
 
-### G.2 — Backend custom-symbol-service deeper testing (deferred from V1_3 C.1)
-`backfillKlines` is smart about marketType fallback + auto-fetch + weight renormalization. Branches aren't unit-tested; integration-only via the live POLITIFI flow.
-
-**What ships**:
-- Component fixture factory for custom symbols (composable in `__tests__/helpers/`).
-- `smartBackfillKlines` mock harness so unit tests can exercise the marketType fallback without testcontainers.
-- 6-8 unit tests covering each branch.
-- **Effort**: ~half-day.
+### G.2 — Backend custom-symbol-service deeper testing (deferred from V1_3 C.1) ✅ already shipped
+On audit (2026-04-30), `apps/backend/src/__tests__/services/custom-symbol-service.test.ts` + `custom-symbol-helpers.test.ts` already total 31 tests with explicit coverage of marketType fallback, FUTURES→SPOT smartBackfill cascade, error-swallowing, weight renormalization, no-usable-components edge case, and synthetic-index produce. The plan was stale.
 
 ---
 
