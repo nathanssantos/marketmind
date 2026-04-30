@@ -73,6 +73,43 @@ export const mcpRouter = router({
       return { id: row!.id, deduped: false as const };
     }),
 
+  /**
+   * Hard-gate for MCP write tools. Every write tool in
+   * @marketmind/mcp-trading must call this before touching the
+   * exchange — when wallet.agentTradingEnabled is false, this throws
+   * FORBIDDEN and writes a `denied` audit row so the user can see the
+   * blocked attempt in Settings → Security → AI Agent Activity. The
+   * accident-prevention gate the user explicitly asked for: an MCP
+   * client cannot place an order on a wallet whose toggle is off.
+   */
+  assertWriteAllowed: protectedProcedure
+    .input(z.object({
+      walletId: z.string(),
+      tool: z.string().min(1).max(64),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const wallet = await ctx.db.query.wallets.findFirst({
+        where: and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)),
+      });
+      if (!wallet) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+      }
+      if (!wallet.agentTradingEnabled) {
+        await ctx.db.insert(mcpTradingAudit).values({
+          userId: ctx.user.id,
+          walletId: wallet.id,
+          tool: input.tool,
+          status: 'denied',
+          errorMessage: 'agent trading is disabled for this wallet',
+        });
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'agent trading is disabled for this wallet',
+        });
+      }
+      return { ok: true as const };
+    }),
+
   listAudit: protectedProcedure
     .input(z.object({
       limit: z.number().int().min(1).max(500).default(100),
