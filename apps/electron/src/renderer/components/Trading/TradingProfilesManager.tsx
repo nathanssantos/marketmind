@@ -126,8 +126,6 @@ const ProfileCard = ({ profile, onEdit, onDelete, onDuplicate, isDeleting = fals
       p={4}
       bg="bg.muted"
       borderRadius="md"
-      borderLeftWidth="3px"
-      borderLeftColor={profile.isDefault ? 'yellow.muted' : 'blue.muted'}
       position="relative"
     >
       <Flex justify="space-between" align="flex-start" mb={3}>

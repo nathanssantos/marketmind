@@ -1,9 +1,8 @@
-import { Checkbox } from '@renderer/components/ui';
-import { Box, Collapsible, Flex, SimpleGrid, Stack, Text } from '@chakra-ui/react';
+import { Badge, Checkbox, CollapsibleSection, Input } from '@renderer/components/ui';
+import { Box, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import type { StrategyDefinition } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useStrategyList } from '../../hooks/useSetupDetection';
 import { trpc } from '../../utils/trpc';
@@ -40,6 +39,14 @@ export const SetupToggleSection = memo(() => {
 
   const enabledStrategies = useMemo(() => config?.enabledSetupTypes ?? [], [config?.enabledSetupTypes]);
 
+  const [search, setSearch] = useState('');
+
+  const filteredSetups = useMemo(() => {
+    if (!search.trim()) return setupList;
+    const q = search.toLowerCase();
+    return setupList.filter((s: { value: string; title: string }) => s.title.toLowerCase().includes(q) || s.value.toLowerCase().includes(q));
+  }, [setupList, search]);
+
   const toggleSetup = useCallback(
     (strategyId: string): void => {
       if (!walletId) return;
@@ -69,8 +76,6 @@ export const SetupToggleSection = memo(() => {
     });
   }, [walletId, setupList, enabledStrategies, updateConfigMutation]);
 
-  const [setupsExpanded, setSetupsExpanded] = useState(false);
-
   const isLoading = isLoadingConfig || isLoadingStrategies;
   const allEnabled =
     setupList.length > 0 && setupList.every((s: { value: string }) => enabledStrategies.includes(s.value));
@@ -86,91 +91,71 @@ export const SetupToggleSection = memo(() => {
     );
   }
 
+  const countBadge = (
+    <Badge colorPalette={enabledCount === setupList.length ? 'green' : 'gray'} size="sm">
+      {enabledCount}/{setupList.length}
+    </Badge>
+  );
+
   return (
-    <Box>
-      <Flex
-        justify="space-between"
-        align="center"
-        cursor="pointer"
-        onClick={() => setSetupsExpanded(!setupsExpanded)}
-        _hover={{ bg: 'bg.muted' }}
-        p={2}
-        mx={-2}
-        borderRadius="md"
-      >
-        <Box>
-          <Flex align="center" gap={2}>
-            <Text fontSize="lg" fontWeight="bold">
-              {t('setupConfig.enabledSetups')}
-            </Text>
-            <Box
-              px={2}
-              py={0.5}
-              bg={enabledCount === setupList.length ? 'green.subtle' : 'blue.subtle'}
-              color={enabledCount === setupList.length ? 'green.fg' : 'blue.fg'}
-              borderRadius="full"
-              fontSize="xs"
-              fontWeight="medium"
-            >
-              {enabledCount}/{setupList.length}
-            </Box>
-          </Flex>
-          <Text fontSize="sm" color="fg.muted">
-            {t('setupConfig.enabledSetupsDescription', 'Select which trading setups the watchers will monitor')}
+    <CollapsibleSection
+      title={t('setupConfig.enabledSetups')}
+      description={t('setupConfig.enabledSetupsDescription', 'Select which trading setups the watchers will monitor')}
+      defaultOpen={false}
+      size="lg"
+      badge={countBadge}
+    >
+      <Stack gap={3}>
+        <Checkbox checked={allEnabled} onCheckedChange={toggleAll} disabled={updateConfigMutation.isPending}>
+          <Text fontWeight="semibold" fontSize="sm">
+            {t('setupConfig.toggleAll')}
           </Text>
-        </Box>
-        {setupsExpanded ? <LuChevronUp size={20} /> : <LuChevronDown size={20} />}
-      </Flex>
+        </Checkbox>
 
-      <Collapsible.Root open={setupsExpanded}>
-        <Collapsible.Content>
-          <Stack gap={4} mt={4}>
-            <Box>
-              <Checkbox checked={allEnabled} onCheckedChange={toggleAll} disabled={updateConfigMutation.isPending}>
-                <Text fontWeight="semibold" fontSize="sm">
-                  {t('setupConfig.toggleAll')}
-                </Text>
-              </Checkbox>
-            </Box>
+        {setupList.length > 8 && (
+          <Input
+            placeholder={t('common.search')}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size="sm"
+          />
+        )}
 
-            {isLoading ? (
-              <Box p={4} textAlign="center">
-                <Text fontSize="sm" color="fg.muted">
-                  {t('common.loading')}
-                </Text>
+        {isLoading ? (
+          <Box p={4} textAlign="center">
+            <Text fontSize="sm" color="fg.muted">
+              {t('common.loading')}
+            </Text>
+          </Box>
+        ) : filteredSetups.length === 0 ? (
+          <Box p={4} textAlign="center">
+            <Text fontSize="sm" color="fg.muted">
+              {search ? t('common.noResults') : t('setupConfig.noStrategiesAvailable')}
+            </Text>
+          </Box>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2 }} gap={1}>
+            {filteredSetups.map((setup: { value: string; title: string }) => (
+              <Box
+                key={setup.value}
+                px={2}
+                py={1}
+                borderRadius="md"
+                _hover={{ bg: 'bg.muted' }}
+              >
+                <Checkbox
+                  checked={enabledStrategies.includes(setup.value)}
+                  onCheckedChange={() => toggleSetup(setup.value)}
+                  disabled={updateConfigMutation.isPending}
+                >
+                  <Text fontSize="sm">{setup.title}</Text>
+                </Checkbox>
               </Box>
-            ) : setupList.length === 0 ? (
-              <Box p={4} textAlign="center">
-                <Text fontSize="sm" color="fg.muted">
-                  {t('setupConfig.noStrategiesAvailable')}
-                </Text>
-              </Box>
-            ) : (
-              <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
-                {setupList.map((setup: { value: string; title: string }) => (
-                  <Box
-                    key={setup.value}
-                    p={2}
-                    bg="bg.muted"
-                    borderRadius="md"
-                    borderLeft="3px solid"
-                    borderColor={enabledStrategies.includes(setup.value) ? 'trading.profit' : 'border'}
-                  >
-                    <Checkbox
-                      checked={enabledStrategies.includes(setup.value)}
-                      onCheckedChange={() => toggleSetup(setup.value)}
-                      disabled={updateConfigMutation.isPending}
-                    >
-                      <Text fontSize="sm">{setup.title}</Text>
-                    </Checkbox>
-                  </Box>
-                ))}
-              </SimpleGrid>
-            )}
-          </Stack>
-        </Collapsible.Content>
-      </Collapsible.Root>
-    </Box>
+            ))}
+          </SimpleGrid>
+        )}
+      </Stack>
+    </CollapsibleSection>
   );
 });
 
