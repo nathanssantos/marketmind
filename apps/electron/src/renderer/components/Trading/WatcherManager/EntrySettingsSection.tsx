@@ -166,7 +166,7 @@ export const EntrySettingsSection = ({
               />
             </Flex>
             {dragSlEnabled && (
-              <Flex justify="space-between" align="center" pl={4} borderLeftWidth="2px" borderColor="border.muted">
+              <Flex justify="space-between" align="center" pl={4}>
                 <Box>
                   <Text fontSize="sm">{t('settings.algorithmicAutoTrading.entrySettings.chartDrag.slTightenOnly')}</Text>
                   <Text fontSize="xs" color="fg.muted">
