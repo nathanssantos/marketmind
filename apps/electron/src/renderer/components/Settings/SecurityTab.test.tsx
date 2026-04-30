@@ -101,8 +101,17 @@ describe('SecurityTab', () => {
   it('disables submit when passwords do not match', () => {
     renderTab();
     fireEvent.change(screen.getByTestId('security-current-password'), { target: { value: 'oldpass1' } });
-    fireEvent.change(screen.getByTestId('security-new-password'), { target: { value: 'newpass123' } });
+    fireEvent.change(screen.getByTestId('security-new-password'), { target: { value: 'NewPass123!' } });
     fireEvent.change(screen.getByTestId('security-confirm-password'), { target: { value: 'mismatch' } });
+    const btn = screen.getByTestId('security-change-password-submit') as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+  });
+
+  it('disables submit when new password violates policy (no symbol)', () => {
+    renderTab();
+    fireEvent.change(screen.getByTestId('security-current-password'), { target: { value: 'oldpass1' } });
+    fireEvent.change(screen.getByTestId('security-new-password'), { target: { value: 'NewPass1234' } });
+    fireEvent.change(screen.getByTestId('security-confirm-password'), { target: { value: 'NewPass1234' } });
     const btn = screen.getByTestId('security-change-password-submit') as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
   });
@@ -110,10 +119,10 @@ describe('SecurityTab', () => {
   it('calls changePassword on valid submit', async () => {
     renderTab();
     fireEvent.change(screen.getByTestId('security-current-password'), { target: { value: 'oldpass1' } });
-    fireEvent.change(screen.getByTestId('security-new-password'), { target: { value: 'newpass123' } });
-    fireEvent.change(screen.getByTestId('security-confirm-password'), { target: { value: 'newpass123' } });
+    fireEvent.change(screen.getByTestId('security-new-password'), { target: { value: 'NewPass123!' } });
+    fireEvent.change(screen.getByTestId('security-confirm-password'), { target: { value: 'NewPass123!' } });
     fireEvent.click(screen.getByTestId('security-change-password-submit'));
-    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('oldpass1', 'newpass123'));
+    await waitFor(() => expect(mockChangePassword).toHaveBeenCalledWith('oldpass1', 'NewPass123!'));
     expect(mockToastSuccess).toHaveBeenCalled();
   });
 
