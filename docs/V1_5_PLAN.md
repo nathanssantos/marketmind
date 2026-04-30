@@ -1,115 +1,254 @@
-# v1.5 — Backlog
+# v1.5 — Backlog (rescued)
 
-> Captured 2026-04-30 after v1.4.0 shipped. Pulls together the deferred sub-items from V1_4_PLAN A.1/A.2 plus maintenance items that surfaced during the v1.3.0 → v1.4.0 cycle.
+> Captured 2026-04-30 after v1.4.0 shipped. Rescued and consolidated from:
 >
-> v1.4.0 is in production; A.1 (password policy on register/change/reset), A.2 (layout snapshot/history + server guard), and B.1 (logger leads with cause) are done. The items below are the loose ends from those threads + housekeeping.
+> - V1_4 follow-throughs (login soft-nudge, snapshot UI, audit log, archive_mode)
+> - V1_3 deferred items (a11y, visual-review automation, package extraction)
+> - V1_POST_RELEASE deferrals (mcp-trading, design tokens, ui extraction)
+> - The BACKTEST_UI_PLAN that was deleted with #200 — Wave 0 shipped, waves 1–6 still pending
+> - Maintenance items surfaced this session (MEMORY.md cap, log cause format already shipped)
+>
+> Order = highest user value first. Anything user-visible before infra; anything operationally cheap (audit log, MEMORY.md trim) interleaved between bigger items so the cadence stays even.
+
+---
 
 ## A — Auth follow-throughs
 
 ### A.1.b — Login soft-nudge for users with policy-violating passwords
+The v1.4 password policy is enforced on register / changePassword / resetPassword but **not** on login. Plan A.1 originally specified a soft warning post-login when `validatePassword` flags the existing password — deferred from #293 to keep the PR focused.
 
-The v1.4 password policy is enforced on register / changePassword / resetPassword but **not** on login (existing users with old weaker passwords must still be able to sign in). Plan A.1 specified a soft warning post-login when `validatePassword` flags the existing password — this got deferred to keep PR #293 focused.
-
-What ships:
-- `auth.login` validates `input.password` against the policy after a successful `verify()`. Adds `passwordPolicyViolated: boolean` to the response (when `requiresTwoFactor` is false).
-- `auth.verifyTwoFactor` does the same. Tricky: the 2FA flow doesn't carry the plaintext password between login and verify. Two options:
-  1. Keep the plaintext in a short-lived in-memory map keyed on the temp 2FA challenge id (security: 10-min TTL matches `AUTH_EXPIRY.TWO_FACTOR_CODE`).
-  2. Skip the soft-nudge on 2FA users (they'll see it the next non-2FA login, which never happens for 2FA-enabled accounts — so really skip).
-  Pick option 2 unless we want the nudge to reach 2FA users. Document the choice.
-- Frontend `useBackendAuth.login` returns the flag. `LoginPage` shows a one-shot toast ("Sua senha não atende aos novos requisitos. Trocar agora?" with a CTA navigating to Settings → Security) when the flag is true. Don't repeat per-session.
+**What ships**:
+- `auth.login` validates `input.password` against the policy after a successful `verify()`. Adds `passwordPolicyViolated: boolean` to the response.
+- 2FA flow: skip the nudge (plaintext doesn't carry across the verify step; piping it would expand the threat surface). Document the choice.
+- `useBackendAuth.login` returns the flag. `LoginPage` shows a one-shot toast with a "Trocar agora" CTA navigating to Settings → Security. Don't repeat per-session.
 - i18n: `auth.passwordPolicy.softNudge.{title,body,changeNow,laterCta}` in en/pt/es/fr.
-- Tests: `auth.router` test that login returns the flag for a weak password and not for a strong one. Frontend `LoginPage` test: nudge toast renders when flag is true, doesn't render when false.
+- Tests: `auth.router` returns flag for weak / not for strong; `LoginPage` toast renders when flag is true.
 
-**Effort**: ~2-3h. **Risk**: low. **Visible**: yes (only to users with weak passwords, one-shot per login).
+**Effort**: ~2-3h. **Risk**: low.
+
+---
 
 ## B — Layout durability follow-throughs
 
 ### B.1 — Snapshot list + restore UI in Settings
-
 Backend has `layout.listSnapshots` + `layout.restoreSnapshot` from #293 but no frontend yet. Without UI the recovery is dev-only.
 
-What ships:
-- New "Layouts" section under Settings → Data tab (alongside the kline storage block from v1.2). Renders list of snapshots: `<SnapshotAt> · <Tab count> tabs · <Layout count> presets`. Click → preview side panel showing parsed tabs/presets summary. "Restore" CTA → confirmation dialog → calls `layout.restoreSnapshot.mutate({ snapshotId })`.
+**What ships**:
+- New "Layouts" section under Settings → Data tab. Lists snapshots: `<SnapshotAt> · <Tab count> tabs · <Layout count> presets`. Click → preview side panel. "Restore" CTA → confirmation dialog → calls `layout.restoreSnapshot.mutate({ snapshotId })`.
 - After restore, `useLayoutStore.getState().hydrate(...)` re-runs from the new authoritative state in the DB so the in-memory store stays in sync without a reload.
 - Empty state: `<EmptyState>` ("No snapshots yet — they're created automatically once a day when the layout changes").
 - i18n: `settings.data.layouts.{title,description,empty,restore,restoreConfirmTitle,restoreConfirmBody,restored,restoreFailed,tabsCount,presetsCount,snapshotAt}` in en/pt/es/fr.
-- Tests: component test that lists snapshots, opens preview, calls restoreMutation on confirm; mocks `trpc.layout.listSnapshots.useQuery` + `restoreSnapshot.useMutation`.
+- Tests: component test that lists, opens preview, calls restoreMutation on confirm.
 
-**Effort**: ~3-4h. **Risk**: low. **Visible**: yes (Settings tab, optional path).
+**Effort**: ~3-4h. **Risk**: low.
 
 ### B.2 — Audit log of layout writes
+Tracks every `user_layouts.save` so any future overwrite can be correlated with the release that caused it.
 
-Tracks every `user_layouts.save` so any future overwrite can be correlated with the release that caused it. Doesn't restore data — that's what B.1 is for — but tells us *when* the write happened and from where.
+**What ships**:
+- New `user_layouts_audit` table: `(id serial, user_id, prev_data_hash varchar(64), new_data_hash varchar(64), source varchar(64), client_version varchar(20), ts timestamp)`. SHA256 hash over data strings.
+- `layout.save` writes a row on every successful save; `source` defaults to `'renderer'`.
+- 90-day retention pruned on write.
+- 3 router tests: audit row created, hash differs from prior, retention prune.
 
-What ships:
-- New `user_layouts_audit` table: `(id serial, user_id, prev_data_hash varchar(64), new_data_hash varchar(64), source varchar(64), client_version varchar(20), ts timestamp)`. Hash with sha256 over `data` strings (cheap, stable).
-- `layout.save` writes a row on every successful save. Source defaults to `'renderer'`; future clients can override (e.g. `'mcp'`, `'cli'`).
-- Retention: 90 days. Pruned on write (same pattern as `userLayoutsHistory`).
-- No UI. Read via `psql` or future support tooling.
-- Tests: 3 router tests covering audit row created, hash differs from prior, retention prune.
-
-**Effort**: ~1h. **Risk**: zero. **Visible**: no (operational only).
+**Effort**: ~1h. **Risk**: zero.
 
 ### B.3 — Postgres `archive_mode=on` + WAL archiving
+PITR-recoverable Postgres so future incidents (like the 2026-04-30 layout loss) can be recovered.
 
-Infra change in `docker-compose.yml` (and the user's local PG, if running outside docker) so future incidents are PITR-recoverable. Out of app scope but documented here so it's not lost.
-
-What ships:
+**What ships**:
 - `docker-compose.yml` postgres service: `command: postgres -c archive_mode=on -c archive_command='cp %p /var/lib/postgresql/wal_archive/%f' -c wal_level=replica`. Mount `wal_archive` as a separate named volume.
-- `docs/RELEASE_PROCESS.md` (or new `docs/INFRA_RECOVERY.md`) section: "How to PITR recover a row" — point-in-time-recovery walk-through for the `user_layouts` data-loss case.
-- Disk usage note: WAL archive grows ~10-50MB/day for this workload. Add a cron in the doc for weekly prune of >30-day archives.
+- New `docs/INFRA_RECOVERY.md`: "How to PITR recover a row" walk-through for a `user_layouts` style data-loss case.
+- Disk usage note: WAL archive ~10-50MB/day for this workload. Cron snippet for weekly prune of >30-day archives.
 
-**Effort**: ~1h infra + ~30min docs. **Risk**: low (additive). **Visible**: no.
+**Effort**: ~1h infra + ~30min docs. **Risk**: low.
 
-## C — Maintenance / housekeeping
+---
 
-### C.1 — `MEMORY.md` consolidation (currently 219 lines, limit 200)
+## C — MCP capability extensions
 
-The auto-memory index has grown past the 200-line cap that gets loaded into context at conversation start. Lines 200+ were truncated during this session's load, which means agents starting fresh miss the tail. Each entry should be one line under ~150 chars per the auto-memory spec.
+### C.1 — `mcp-trading` server (deferred from V1_POST_RELEASE 5.6 / V1_3 E.2)
+Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capability — moves real money — and the user explicitly asked for a deliberate enablement gesture.
 
-What ships:
-- Audit each entry; merge or split detail topic files where the index has bled into descriptions.
-- Move long descriptions into the underlying `*.md` file each entry points at; keep the index line tight.
-- Target: under 180 lines.
-- Validate by reading the truncated portion at lines 200-219 to confirm no critical info was load-blocked during this session.
+**What ships**:
+- New `packages/mcp-trading/` package mirroring the structure of `mcp-app` / `mcp-backend`.
+- Tools (mirroring `apps/backend/src/routers/trading/`): `trading.place_order`, `trading.cancel_order`, `trading.close_position`, `trading.set_sl_tp`, `trading.list_orders`, `trading.list_positions`. All read-tools always available; write-tools gated.
+- **Enablement toggle**: new `agentTradingEnabled: boolean` in user preferences, default `false`. Settings → Security → "AI Agent Trading" subsection with explicit confirm dialog (`"Allow MCP-connected agents to place real orders on your behalf? This affects real money."`). Toggle is per-wallet so it can be enabled for paper but not live.
+- **Audit log**: new `mcp_trading_audit` table — `(id, user_id, wallet_id, tool, input_json, result_json, status, ts)`. Every write tool writes a row; user can review in Settings → Security → "AI Agent Activity".
+- **Rate limit**: 30 writes/hour per wallet (enforced server-side via `@fastify/rate-limit`). 429 with retry-after.
+- **Idempotency keys**: every write tool accepts an `idempotency_key` (UUID); duplicate keys return the prior result without re-executing.
+- **Dry-run mode**: `dry_run: true` flag returns the projected order/position state without hitting the exchange.
+- Per-package `README.md` covering threat model + tool schema. Update `docs/MCP_SERVERS.md` + `docs/MCP_AGENT_GUIDE.md` + `docs/MCP_SECURITY.md`.
+- Tests: contract tests for each tool (mirror existing `mcp-strategy` pattern), idempotency-key dedup test, audit-row written test, rate-limit-429 test.
 
-**Effort**: ~30min. **Risk**: zero (memory only). **Visible**: no.
+**Effort**: ~1 week. **Risk**: high blast radius — gated by toggle + paper-first default. Ship in stages: read tools → toggle UI + audit log → write tools (paper only) → write tools (live, gated by per-wallet toggle).
 
-### C.2 — Move `V1_4_PLAN.md` into `docs/archive/`
+**Sequencing within C.1**: split across multiple PRs — read tools + audit table + toggle UI as one foundation PR, write tools (paper) as a second, live unlock as a third.
 
-A.1 / A.2 / B.1 all shipped in v1.4.0. The plan file is stale; archive with completion markers per the `V1_5_PLAN` precedent (`Shipped: A.1 #293, A.2 #293, B.1 #293`). Pairs naturally with this PR — the new live plan is V1_5_PLAN, the old one moves out.
+---
 
-**Effort**: ~5min. **Risk**: zero.
+## D — Accessibility (deferred from V1_3 F.2/F.3)
 
-## D — Optional / observation-driven
+### D.1 — Keyboard navigation in chart
+Chart canvas accepts mouse + scroll; keyboard support is partial (arrow-pan exists but isn't documented or comprehensive).
 
-### D.1 — Trade_executions error post-mortem (only if it reappears)
+**What ships**:
+- Audit + document the existing arrow-pan + add: `Home`/`End` (jump to start/end), `+`/`-` (zoom), `,`/`.` (timeframe prev/next), `Tab` (cycle indicator focus), `Esc` (clear focus). Surface a help modal triggered by `?`.
+- Focus ring on the canvas wrapper (currently invisible).
+- Update `docs/UI_STYLE_GUIDE.md` with the keyboard reference.
+- Tests: vitest browser test that arrow keys dispatch the expected viewport changes.
 
-The user pasted a `Failed query: select ... from trade_executions where (symbol = $1 and status = $2) | params: SOLUSDT,open` log line during this session. Cause was truncated past the 500-char cap; the B.1 fix should now expose it.
+**Effort**: ~1 day. **Risk**: low. **Visible**: yes (power-user reach).
 
-What to do:
-- If the error reappears after v1.4.0 ships, the log will now lead with the postgres error code (e.g. `57P01 terminating connection due to administrator command`).
-- Most likely a transient connection drop during backend restart — `binance-price-stream.ts:245 getOpenExecutionsForSymbol` runs on every price tick for active symbols and races a backend restart.
-- Fix would be: pool-level retry on `57P01` / `08006` / `08001` codes (1-2 retries with 100ms backoff). Or just guard the call site with a try/catch that logs at `debug` instead of `error` for known-transient codes.
+### D.2 — Screen-reader pass on dialogs
+Settings dialog has aria-labels but the full open → navigate → save → close flow with VoiceOver hasn't been verified end-to-end. Same for Backtest, Analytics, ChartCloseDialog.
 
-**Trigger**: re-observe with v1.4.0+ logs to confirm the cause class. Don't speculate further until the data lands.
+**What ships**:
+- VoiceOver pass on Settings, Analytics, Backtest, ChartCloseDialog. Note every place focus order is wrong, labels are missing, or `aria-live` regions are silent.
+- Fix the gaps (likely `aria-describedby` on Field rows, focus-trap inside `<Dialog>`, `aria-live="polite"` on inline error/success toasts).
+- New `apps/electron/e2e/a11y-dialogs.spec.ts` running `@axe-core/playwright` on each dialog open, asserting no critical/serious violations.
 
-## E — Sequencing
+**Effort**: ~half-day testing + ~half-day fixes. **Risk**: low.
 
-Proposed order:
-1. C.2 (archive V1_4_PLAN — bundled with this PR)
-2. C.1 (MEMORY.md trim — cheap, eliminates a context-loss hazard)
-3. B.2 (audit log — 1h, gives observability for any future incident)
-4. A.1.b (login soft-nudge — most user-visible)
-5. B.1 (snapshots UI — biggest user-visible payoff)
-6. B.3 (postgres archive_mode — infra, ship when comfortable)
+---
 
-Skip D.1 unless the error reappears.
+## E — Backtest UI modal (rescued from deleted BACKTEST_UI_PLAN)
 
-## F — Acceptance
+The 6-wave plan from #148/#149 was deleted in #200. Wave 0 (shared zod schema, #150) shipped. Waves 1–6 are unimplemented. Backtest CLI exists; the UI modal does not.
+
+### E.1 — Wave 1: shape the backend mutation for fire-and-forget + progress events
+- `backtest.run.useMutation` returns `{ runId }` immediately; results stream via socket `backtest:progress` + `backtest:complete` events.
+- Server-side: backend keeps a `Map<runId, BacktestState>` in memory. On `complete`, persist the result row and emit final.
+- Tests: contract test for the new return shape; integration test that progress events fire for a 100-bar backtest.
+- **Effort**: ~half-day.
+
+### E.2 — Wave 2: modal shell + 4-tab form
+- New `<BacktestModal>` rendering on the toolbar (next to the existing screener button — `Toolbar.tsx:233-242`).
+- 4 tabs: **Strategy** (which JSON/Pine), **Period** (start/end + interval), **Filters** (FilterManager preset), **Risk** (SL/TP/trailing).
+- All inputs use the shared `@marketmind/types` zod schema from Wave 0.
+- Reuses `<FormSection>` / `<FormRow>` / `<Field>` primitives. `Select inside Dialog` carries `usePortal={false}`.
+- **Effort**: ~1 day.
+
+### E.3 — Wave 3: progress UI + ETA smoothing
+- After Run, modal switches to a progress view: percent bar + bars-processed counter + smoothed ETA. Cancel button.
+- ETA uses a 5-window moving average of bars/sec to avoid bouncing.
+- **Effort**: ~half-day.
+
+### E.4 — Wave 4: results view
+- On `backtest:complete`, modal switches to results: equity curve (lazy-loaded recharts), trade list, summary stats (win rate, profit factor, max DD).
+- Reuses `<EquityCurveChart>` from `apps/electron/src/renderer/components/Trading/AnalyticsModal/`.
+- **Effort**: ~1 day.
+
+### E.5 — Wave 5: recent runs + persistence
+- New tab "Recent Runs" lists past 50 runs; click loads results without re-running.
+- Backend: `backtest_runs` table (already exists per Wave 0 zod schema layout) — wire CRUD.
+- **Effort**: ~half-day.
+
+### E.6 — Wave 6: polish
+- Keyboard shortcut to open (`Ctrl/Cmd+Shift+B`).
+- Modal-mount perf tag via `useDialogMount('BacktestModal', isOpen)` (already wired pattern from v1.3.0).
+- Visual regression baseline for the modal (open + form state + progress + results).
+- **Effort**: ~half-day.
+
+**Total**: ~4 person-days across 6 PRs. **Risk**: medium — new modal touches toolbar + backend mutation contract, but Wave 0's zod schema removed the CLI/router drift risk.
+
+---
+
+## F — Package + token system (deferred from V1_POST_RELEASE 2.1/2.2)
+
+### F.1 — Design tokens phase
+The v1.4 sweep finished migrating to semantic tokens (`X.fg / .subtle / .muted / .solid`, `trading.*`, `accent.*`). The tokens themselves still live inside `apps/electron/src/renderer/theme/` — not a shared package.
+
+**What ships**:
+- Extract `apps/electron/src/renderer/theme/` into `packages/tokens/`.
+- Re-export from `@marketmind/types` so backend (e.g. for chart screenshots, future tooling) can reference token names.
+- `@marketmind/tokens/system` re-exports `defaultSystem` for any Chakra v3 consumer.
+- Document the token taxonomy in `docs/UI_STYLE_GUIDE.md`.
+
+**Effort**: ~half-day. **Risk**: low (pure refactor).
+
+### F.2 — `@marketmind/ui` extraction (audit + plan only)
+The `apps/electron/src/renderer/components/ui/` directory has been the single source of truth for ~30 wrappers since v1.0. Per `CLAUDE.md`: "designed for future extraction into a standalone `@marketmind/ui` package."
+
+**What ships** (this PR is plan-only — extraction is its own follow-up):
+- Inventory every export, group by stability tier (Tier-1 = stable wrappers, Tier-2 = composed primitives, Tier-3 = trading-specific).
+- Document peer-dependency boundaries (which wrappers pull from `@marketmind/types` / `@marketmind/utils` / `@marketmind/tokens` once F.1 lands).
+- Extraction sequencing proposal (Tier-1 first behind a `@marketmind/ui-core` workspace alias; Tier-2 next; Tier-3 stays in app indefinitely).
+- Risk register: Storybook setup, snapshot test infra, electron-specific imports (toaster, cryptoIcon, etc.).
+
+**Effort**: ~3-4h for the audit doc. **Risk**: zero.
+
+---
+
+## G — Test + CI infra
+
+### G.1 — Visual review automation script (deferred from V1_3 G.2 / V1_5 archive C.2)
+Speculative tier below the audit script. Walks renderer + flags surfaces missing tokens, oversized headings, or non-MM spacing.
+
+**What ships**:
+- `scripts/visual-review.mjs` reads `.tsx` files under `renderer/components/`, looks for: `fontSize` outside `MM.fontSize.*`, padding/margin outside `MM.spacing.*`, components that don't reference any semantic token.
+- Reports findings as a markdown table (no auto-fix).
+- Optional CI gate behind `RUN_VISUAL_REVIEW=1` (off by default).
+- **Skip unless** we hit a wave of token-style regressions after v1.4.
+
+**Effort**: ~1 day. **Risk**: zero.
+
+### G.2 — Backend custom-symbol-service deeper testing (deferred from V1_3 C.1)
+`backfillKlines` is smart about marketType fallback + auto-fetch + weight renormalization. Branches aren't unit-tested; integration-only via the live POLITIFI flow.
+
+**What ships**:
+- Component fixture factory for custom symbols (composable in `__tests__/helpers/`).
+- `smartBackfillKlines` mock harness so unit tests can exercise the marketType fallback without testcontainers.
+- 6-8 unit tests covering each branch.
+- **Effort**: ~half-day.
+
+---
+
+## H — Maintenance / housekeeping
+
+### H.1 — `MEMORY.md` consolidation (currently 219 lines, cap 200)
+Auto-memory index has grown past the 200-line cap that gets loaded into context at conversation start. Lines 200+ were truncated during this session. Each entry should be one line under ~150 chars per the auto-memory spec.
+
+**What ships**:
+- Audit each entry; merge or move detail into topic files.
+- Drop entries that violate the "What NOT to save" rule (architecture, file paths, debug recipes — derivable from code).
+- Target: under 150 lines.
+
+**Effort**: ~30min. **Risk**: zero.
+
+### H.2 — Archive `V1_4_PLAN` ✅ shipped (#296)
+
+### H.3 — Trade_executions error post-mortem (only if it reappears)
+The v1.4 logger fix should now expose the underlying postgres error code on the `Failed query: ... from trade_executions` log. Most likely a transient connection drop during backend restart — `binance-price-stream.ts:245 getOpenExecutionsForSymbol` runs on every price tick.
+
+**Trigger**: re-observe with v1.4.0+ logs to confirm the cause class. If `57P01 / 08006 / 08001` appears, add pool-level retry on those codes (1-2 retries with 100ms backoff). If it doesn't reappear, drop.
+
+---
+
+## Sequencing
+
+Proposed:
+
+1. **H.1** MEMORY.md trim — eliminates context-loss hazard for future autonomous sessions
+2. **B.2** layout audit log — 1h, gives observability for any future incident, low risk
+3. **A.1.b** login soft-nudge — most user-visible quick win
+4. **B.1** snapshot UI — biggest user-visible payoff (recovery tool)
+5. **F.1** design tokens extraction — sets up F.2 + better cross-package theme reuse
+6. **D.1** keyboard nav in chart — power-user reach, ~1d
+7. **B.3** Postgres archive_mode — infra, ship after a soak window
+8. **D.2** screen-reader pass — half-day per dialog
+9. **G.2** backend custom-symbol tests — coverage closure
+10. **E.1–E.6** Backtest UI modal — biggest single-feature push, sequenced as 6 separate PRs
+11. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
+12. **F.2** ui extraction plan — audit doc, gates the actual extraction
+13. **G.1** visual review automation — speculative, do only if regressions warrant
+
+Skip H.3 unless logs show the error.
+
+## Acceptance
 
 A v1.5 phase is "done" when:
 - The deliverable lands on develop with green CI
-- `pnpm test` passes (currently 5,449 backend + 2,279 unit + 108 browser + 11 utils + 722 indicators ≈ 8,569 total)
+- `pnpm test` passes (currently 5,449 backend + 2,279 unit + 108 browser + 11 utils + ~722 indicators ≈ 8,569 total)
 - Type-check + lint clean across all workspaces
 - Audit script (`scripts/audit-shade-literals.mjs`) reports 0 forbidden patterns
