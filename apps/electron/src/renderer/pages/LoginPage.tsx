@@ -5,12 +5,14 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../components/Auth/AuthLayout';
 import { Alert, Button, Checkbox, Field, Input, Link, PasswordInput } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
+import { useToast } from '../hooks/useToast';
 import { AUTH_UI, isRateLimited } from '../utils/auth';
 
 export const LoginPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login, isLoggingIn, loginError } = useBackendAuth();
+  const { warning } = useToast();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +25,12 @@ export const LoginPage = () => {
       if (result.requiresTwoFactor) {
         void navigate('/two-factor', { state: { userId: result.userId, rememberMe } });
       } else {
+        if ('passwordPolicyViolated' in result && result.passwordPolicyViolated) {
+          warning(
+            t('auth.passwordPolicy.softNudge.title'),
+            t('auth.passwordPolicy.softNudge.body'),
+          );
+        }
         void navigate('/');
       }
     } catch {

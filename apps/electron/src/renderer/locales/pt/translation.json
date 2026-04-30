@@ -2361,7 +2361,11 @@
       "fair": "Razoável",
       "good": "Boa",
       "strong": "Forte",
-      "excellent": "Excelente"
+      "excellent": "Excelente",
+      "softNudge": {
+        "title": "Sua senha está abaixo da nova política",
+        "body": "Atualize em Configurações → Segurança para manter sua conta segura."
+      }
     }
   },
   "account": {

@@ -2348,7 +2348,11 @@
       "fair": "Acceptable",
       "good": "Bon",
       "strong": "Fort",
-      "excellent": "Excellent"
+      "excellent": "Excellent",
+      "softNudge": {
+        "title": "Votre mot de passe ne respecte pas la nouvelle politique",
+        "body": "Mettez-le à jour dans Paramètres → Sécurité pour garder votre compte sécurisé."
+      }
     }
   },
   "account": {

@@ -2327,7 +2327,11 @@
       "fair": "Fair",
       "good": "Good",
       "strong": "Strong",
-      "excellent": "Excellent"
+      "excellent": "Excellent",
+      "softNudge": {
+        "title": "Your password is below the new policy",
+        "body": "Update it in Settings → Security to keep your account secure."
+      }
     }
   },
   "account": {
