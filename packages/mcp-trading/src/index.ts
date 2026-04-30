@@ -126,6 +126,21 @@ const tools: Tool[] = [
     },
   },
   {
+    name: 'trading.set_sl_tp',
+    description: 'Set or update stop-loss / take-profit on an open trade execution. Provide at least one of stopLoss or takeProfit. Gated by agentTradingEnabled; paper-only this version.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        walletId: { type: 'string' },
+        executionId: { type: 'string' },
+        stopLoss: { type: 'number', description: 'Trigger price for stop-loss.' },
+        takeProfit: { type: 'number', description: 'Trigger price for take-profit.' },
+        idempotencyKey: { type: 'string' },
+      },
+      required: ['walletId', 'executionId'],
+    },
+  },
+  {
     name: 'health.check',
     description: 'Confirm the backend tRPC endpoint is reachable.',
     inputSchema: { type: 'object', properties: {} },
@@ -166,6 +181,13 @@ interface ClosePositionArgs {
   walletId: string;
   positionId: string;
   exitPrice?: string;
+  idempotencyKey?: string;
+}
+interface SetSlTpArgs {
+  walletId: string;
+  executionId: string;
+  stopLoss?: number;
+  takeProfit?: number;
   idempotencyKey?: string;
 }
 
@@ -230,6 +252,21 @@ const handle = async (name: string, args: Record<string, unknown> | undefined): 
         callProcedure('trading.closePosition', {
           id: a.positionId,
           ...(a.exitPrice ? { exitPrice: a.exitPrice } : {}),
+        }),
+      );
+    }
+    case 'trading.set_sl_tp': {
+      const a = (args ?? {}) as unknown as SetSlTpArgs;
+      if (a.stopLoss === undefined && a.takeProfit === undefined) {
+        throw new Error('trading.set_sl_tp: at least one of stopLoss or takeProfit must be provided');
+      }
+      await assertWriteAllowed(a.walletId, name);
+      await assertPaperWallet(a.walletId, name);
+      return audited(name, { walletId: a.walletId, inputJson: JSON.stringify(a), idempotencyKey: a.idempotencyKey ?? null }, () =>
+        callProcedure('trading.updateTradeExecutionSLTP', {
+          id: a.executionId,
+          ...(a.stopLoss !== undefined ? { stopLoss: a.stopLoss } : {}),
+          ...(a.takeProfit !== undefined ? { takeProfit: a.takeProfit } : {}),
         }),
       );
     }

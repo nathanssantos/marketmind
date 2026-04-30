@@ -2,7 +2,7 @@
 
 MCP server that exposes the MarketMind trading surface to any MCP-connected agent (Claude Code, ChatGPT desktop, custom agents).
 
-**Current scope:** read tools + paper-only write tools (`place_order`, `cancel_order`, `close_position`). Live unlock + `set_sl_tp` land in follow-up PRs.
+**Current scope:** read tools + paper-only write tools (`place_order`, `cancel_order`, `close_position`, `set_sl_tp`). Live unlock lands in a follow-up PR.
 
 > **Hard gate for write tools (follow-up PRs):** the backend trading routers themselves must check `wallet.agentTradingEnabled === true` before executing any order/position mutation initiated by an MCP client. If the flag is off, return `FORBIDDEN` and write a `denied` audit row — never reach the exchange. Default is `false` on every wallet (including newly-imported live ones); the toggle is per-wallet so paper can be enabled while live stays off. This is a deliberate accident-prevention gate, not a UI nicety.
 
@@ -19,6 +19,7 @@ Every tool invocation writes a row to `mcp_trading_audit` via the backend `mcp.r
 | `trading.place_order` | **Write.** Place an order on a paper wallet | `mcp.assertWriteAllowed` → `trading.createOrder` |
 | `trading.cancel_order` | **Write.** Cancel an open order on a paper wallet | `mcp.assertWriteAllowed` → `trading.cancelOrder` |
 | `trading.close_position` | **Write.** Close an open position on a paper wallet | `mcp.assertWriteAllowed` → `trading.closePosition` |
+| `trading.set_sl_tp` | **Write.** Set / update stop-loss or take-profit on an execution | `mcp.assertWriteAllowed` → `trading.updateTradeExecutionSLTP` |
 | `health.check` | Confirm tRPC reachability | — |
 | `__health` | Heartbeat | — |
 

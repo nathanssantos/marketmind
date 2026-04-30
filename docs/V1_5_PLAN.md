@@ -92,9 +92,9 @@ Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capabilit
 - ✅ C.1.c hard-gate `mcp.assertWriteAllowed` (#316) — denied → FORBIDDEN + denied audit row
 - ✅ C.1.d paper-mode write tools — place/cancel/close (#317)
 - ✅ C.1.e "AI Agent Activity" audit log panel (#318)
-- C.1.f rate limit (30 writes/hour per wallet) — TODO
-- C.1.g `set_sl_tp` write tool — TODO
-- C.1.h live unlock (remove paper-only client check) — TODO
+- ✅ C.1.f rate limit (30 writes/hour per wallet) (#319)
+- ✅ C.1.g `set_sl_tp` write tool — paper-mode
+- C.1.h live unlock (remove paper-only client check) — TODO, real-money territory
 
 ---
 
