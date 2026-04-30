@@ -133,8 +133,8 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
   };
 
   const getSignColor = (value: number) => {
-    if (value > 0) return 'green.500';
-    if (value < 0) return 'red.500';
+    if (value > 0) return 'trading.profit';
+    if (value < 0) return 'trading.loss';
     return 'fg.muted';
   };
 
