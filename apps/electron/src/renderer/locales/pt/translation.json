@@ -310,6 +310,28 @@
         "confirmTitle": "Habilitar trading por agente nesta carteira?",
         "confirmBody": "Agentes conectados via MCP poderão colocar ordens reais nesta carteira. Toda ação será registrada no log de auditoria. Você pode revogar a qualquer momento.",
         "confirmCta": "Habilitar trading por agente"
+      },
+      "agentActivity": {
+        "title": "Atividade do Agente IA",
+        "description": "Trilha de auditoria de toda ação tomada por agentes conectados via MCP. Registra chamadas com sucesso, falha e negadas (gate desligado), com tempo.",
+        "empty": "Nenhuma atividade de agente ainda.",
+        "loading": "Carregando atividade…",
+        "columns": {
+          "ts": "Quando",
+          "tool": "Ferramenta",
+          "wallet": "Carteira",
+          "status": "Status",
+          "duration": "Duração",
+          "details": "Detalhes"
+        },
+        "status": {
+          "success": "sucesso",
+          "failure": "falha",
+          "denied": "negado",
+          "rate_limited": "rate limit"
+        },
+        "noWallet": "—",
+        "durationMs": "{{ms}}ms"
       }
     },
     "notifications": {

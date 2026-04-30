@@ -60,6 +60,9 @@ vi.mock('@renderer/utils/trpc', () => ({
       list: { useQuery: () => ({ data: [], isLoading: false }) },
       update: { useMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue({ success: true }), isPending: false }) },
     },
+    mcp: {
+      listAudit: { useQuery: () => ({ data: [], isLoading: false }) },
+    },
     useUtils: () => ({
       auth: { listSessions: { invalidate: vi.fn() } },
       wallet: { list: { invalidate: vi.fn() } },

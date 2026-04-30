@@ -310,6 +310,28 @@
         "confirmTitle": "¿Habilitar trading por agente en esta billetera?",
         "confirmBody": "Los agentes conectados por MCP podrán colocar órdenes reales en esta billetera. Cada acción quedará en el log de auditoría. Puedes revocar esto cuando quieras.",
         "confirmCta": "Habilitar trading por agente"
+      },
+      "agentActivity": {
+        "title": "Actividad del Agente IA",
+        "description": "Registro de auditoría de todas las acciones de los agentes conectados por MCP. Incluye llamadas con éxito, fallidas y denegadas (con el gate desactivado), con la duración.",
+        "empty": "Sin actividad de agente todavía.",
+        "loading": "Cargando actividad…",
+        "columns": {
+          "ts": "Cuándo",
+          "tool": "Herramienta",
+          "wallet": "Billetera",
+          "status": "Estado",
+          "duration": "Duración",
+          "details": "Detalles"
+        },
+        "status": {
+          "success": "éxito",
+          "failure": "fallo",
+          "denied": "denegado",
+          "rate_limited": "rate limit"
+        },
+        "noWallet": "—",
+        "durationMs": "{{ms}}ms"
       }
     },
     "notifications": {
