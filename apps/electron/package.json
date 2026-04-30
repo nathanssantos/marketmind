@@ -67,6 +67,7 @@
     "@emotion/react": "^11.14.0",
     "@marketmind/chart-studies": "workspace:*",
     "@marketmind/fibonacci": "workspace:*",
+    "@marketmind/tokens": "workspace:*",
     "@marketmind/types": "workspace:*",
     "@marketmind/utils": "workspace:*",
     "@tanstack/react-query": "^5.100.3",

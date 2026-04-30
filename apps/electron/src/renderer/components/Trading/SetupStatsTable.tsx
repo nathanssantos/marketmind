@@ -1,6 +1,6 @@
 import { ButtonGroup, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
 import { Button, PanelHeader } from '@renderer/components/ui';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';

@@ -1,0 +1,29 @@
+{
+  "name": "@marketmind/tokens",
+  "version": "1.0.0",
+  "description": "MarketMind design tokens — semantic colors, recipes, MM constants, color resolvers. Extracted for cross-package reuse.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^3.35.0",
+    "@marketmind/fibonacci": "workspace:*",
+    "@marketmind/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

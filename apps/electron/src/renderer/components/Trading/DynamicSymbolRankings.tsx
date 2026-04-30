@@ -1,5 +1,5 @@
 import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import type { MarketType } from '@marketmind/types';
 import {
   Badge,

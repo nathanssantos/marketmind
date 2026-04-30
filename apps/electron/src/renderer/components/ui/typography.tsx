@@ -1,6 +1,6 @@
 import { Box, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
-import { MM } from '../../theme/tokens';
+import { MM } from '@marketmind/tokens';
 
 interface TypographyProps {
   children?: ReactNode;
