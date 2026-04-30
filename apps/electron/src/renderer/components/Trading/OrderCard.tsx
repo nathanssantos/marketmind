@@ -19,7 +19,7 @@ export interface OrderCardProps {
   onNavigateToSymbol?: (symbol: string, marketType?: MarketType) => void;
 }
 
-const getTypeColor = (isLong: boolean): string => isLong ? 'green' : 'red';
+const getTypePalette = (isLong: boolean): string => isLong ? 'green' : 'red';
 
 export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateToSymbol }: OrderCardProps) => {
   const { t } = useTranslation();
@@ -33,7 +33,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
       bg="bg.muted"
       borderRadius="md"
       borderLeft="4px solid"
-      borderColor={`${getTypeColor(isOrderLong(order))}.500`}
+      borderColor={isOrderLong(order) ? 'trading.long' : 'trading.short'}
     >
       <Flex justify="space-between" align="flex-start" mb={2}>
         <Stack gap={1.5}>
@@ -55,7 +55,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
             </Text>
           </Flex>
           <Flex gap={2} align="center" flexWrap="wrap">
-            <Badge colorPalette={getTypeColor(isOrderLong(order))} size="xs">
+            <Badge colorPalette={getTypePalette(isOrderLong(order))} size="xs">
               {t(`trading.ticket.${isOrderLong(order) ? 'long' : 'short'}`)}
             </Badge>
             <Badge colorPalette={getStatusColor(order.status)} size="xs">

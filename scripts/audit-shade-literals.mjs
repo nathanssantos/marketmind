@@ -73,6 +73,20 @@ const FORBIDDEN = [
     name: 'dynamic-shade-pair',
     re: /(?:color|bg|borderColor|borderLeftColor|borderRightColor|borderTopColor|borderBottomColor|valueColor)=\{[^}]*'(?:green|red)\.\d{2,3}'[^}]*'(?:green|red)\.\d{2,3}'/g,
   },
+  {
+    // V1_5 rule: template-string shade literal — same shade-literal class as
+    // rule #1 but smuggled through a JSX expression with template literals,
+    // e.g. `borderColor={`${getTypeColor(isLong)}.500`}` where getTypeColor
+    // returns `'green'` / `'red'`. Bypasses every other rule because the
+    // shade literal is built at runtime. Still ends up rendering as
+    // `green.500` / `red.500` which is what we banned. Detected by looking
+    // for `${...}.NNN` inside a backtick-quoted string assigned to a color
+    // prop. Use semantic tokens (`trading.long` / `trading.short` etc.).
+    //
+    // Caught: OrderCard.tsx ~v1.5 — `borderColor={`${getTypeColor(...)}.500`}`
+    name: 'template-string-shade',
+    re: /(?:color|bg|borderColor|borderLeftColor|borderRightColor|borderTopColor|borderBottomColor|valueColor)=\{`\$\{[^}`]+\}\.(?:50|100|200|300|400|500|600|700|800|900)`\}/g,
+  },
 ];
 
 const SKIP_FILES = new Set([
