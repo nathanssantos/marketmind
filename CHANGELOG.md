@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-04-30
+
+**v1.3.1 patch** — Two paired bug fixes that together close a layout-data-loss regression. The first fix changes how the renderer reacts to transient backend failures (no more bounce to /login on backend restart). The second seals a latent persistence bug that the first fix exposed.
+
+### Fixed
+- **`auth.me` retries on network errors instead of immediately treating failure as logged-out (#288)** — `useBackendAuth` had `retry: false` since the original auth implementation. A single network blip during a backend restart was enough to flip `isAuthenticated` to false and bounce the user to `/login`. Replaced with the same retry policy `TrpcProvider` uses for default queries: `UNAUTHORIZED`/`FORBIDDEN` skip retries (those are real auth states), everything else retries up to 3× with exponential backoff (max 5s). The query now waits out the backend's restart window instead of flipping to unauthenticated on first failure.
+- **Layout persistence is gated on hydration so backend transients can't overwrite saved tabs/layouts (#289)** — regression exposed by #288. With the renderer staying mounted across a backend restart, `trpc.preferences.getAll` (which has `retry: 1`) could fail before the layout hydrate completed; once `hydrateDomainStores({})` fired with empty data, any subsequent state change in `useLayoutStore` triggered the persist subscriber to write the *default* in-memory state to `user_layouts`, overwriting the user's saved tabs and layout presets. Added an `isHydrated` guard: `persistLayout` early-returns until `hydrateLayoutStore` confirms a successful query (whether saved data was returned or not). On query failure, persistence stays locked — user changes that session don't persist (lost on reload), but the saved layout is protected. Strictly safer than the prior behavior. Postgres is on `wal_level=replica` with `archive_mode=off`, so any data already lost cannot be recovered, but going forward this regression cannot recur.
+
 ## [1.3.0] - 2026-04-30
 
 **v1.3 release** — Performance + cross-surface UI continuation. Three threads land here: (1) bundle audit + lazy-loading reduces the main bundle 2,124 KB → 850 KB raw (587 → 237 KB gz, −60%) via Settings tabs / locale JSONs / `pinets` engine / `recharts` consumers; (2) v1.4 + v1.5 UI sweeps continue the v1.2 semantic-token migration with structural cleanup across AutoTrading, chart tooltips, sidebars, leverage popover, settings; (3) audit-script grows from 1 → 7 forbidden-pattern rules with all of them at 0 violations. WCAG AA contrast bump on `fg.muted`. Three browser test suites lock in the chart-renderer right-axis price tag regressions (overlay-line, overlay-bands, FVG). Visual-diff CI gallery is now self-contained for artifact uploads. Docs: 5 audit rules now have Don't / Do examples in `UI_STYLE_GUIDE.md`. 60 commits since v1.2.0.
