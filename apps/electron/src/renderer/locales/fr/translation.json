@@ -2332,9 +2332,23 @@
       "emailRequired": "L'email est obligatoire",
       "emailInvalid": "Veuillez entrer un email valide",
       "passwordRequired": "Le mot de passe est obligatoire",
-      "passwordMin": "Le mot de passe doit contenir au moins 8 caractères",
+      "passwordMin": "Le mot de passe doit contenir au moins 10 caractères",
       "codeRequired": "Le code est obligatoire",
       "codeLength": "Le code doit contenir 6 chiffres"
+    },
+    "passwordPolicy": {
+      "title": "Exigences du mot de passe",
+      "tooShort": "Au moins 10 caractères",
+      "noUppercase": "Une lettre majuscule (A-Z)",
+      "noLowercase": "Une lettre minuscule (a-z)",
+      "noDigit": "Un chiffre (0-9)",
+      "noSymbol": "Un symbole (!@#$ etc.)",
+      "common": "Pas un mot de passe courant",
+      "weak": "Faible",
+      "fair": "Acceptable",
+      "good": "Bon",
+      "strong": "Fort",
+      "excellent": "Excellent"
     }
   },
   "account": {

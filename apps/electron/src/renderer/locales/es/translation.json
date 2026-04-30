@@ -2343,9 +2343,23 @@
       "emailRequired": "El correo es obligatorio",
       "emailInvalid": "Ingresa un correo válido",
       "passwordRequired": "La contraseña es obligatoria",
-      "passwordMin": "La contraseña debe tener al menos 8 caracteres",
+      "passwordMin": "La contraseña debe tener al menos 10 caracteres",
       "codeRequired": "El código es obligatorio",
       "codeLength": "El código debe tener 6 dígitos"
+    },
+    "passwordPolicy": {
+      "title": "Requisitos de la contraseña",
+      "tooShort": "Al menos 10 caracteres",
+      "noUppercase": "Una letra mayúscula (A-Z)",
+      "noLowercase": "Una letra minúscula (a-z)",
+      "noDigit": "Un dígito (0-9)",
+      "noSymbol": "Un símbolo (!@#$ etc.)",
+      "common": "No puede ser una contraseña común",
+      "weak": "Débil",
+      "fair": "Aceptable",
+      "good": "Buena",
+      "strong": "Fuerte",
+      "excellent": "Excelente"
     }
   },
   "account": {

@@ -1,15 +1,14 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import {
-  Badge, Button, Field, FormRow, FormSection, MetaText, PasswordInput, Switch,
+  Badge, Button, Field, FormRow, FormSection, MetaText, PasswordInput, PasswordStrengthMeter, Switch,
 } from '@renderer/components/ui';
+import { validatePassword } from '@marketmind/utils';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuLogOut, LuShieldCheck, LuShieldX } from 'react-icons/lu';
-
-const MIN_PASSWORD_LENGTH = 8;
 
 const formatRelative = (iso: string, locale: string): string =>
   new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -39,10 +38,12 @@ export const SecurityTab = () => {
   });
 
   const passwordsMatch = newPassword === confirmPassword;
-  const passwordTooShort = newPassword.length > 0 && newPassword.length < MIN_PASSWORD_LENGTH;
+  const policyValid = newPassword.length === 0 || validatePassword(newPassword).valid;
+  const policyInvalid = newPassword.length > 0 && !policyValid;
   const canSubmit =
     currentPassword.length > 0 &&
-    newPassword.length >= MIN_PASSWORD_LENGTH &&
+    policyValid &&
+    newPassword.length > 0 &&
     passwordsMatch &&
     !isChangingPassword;
 
@@ -107,9 +108,7 @@ export const SecurityTab = () => {
             </Field>
             <Field
               label={t('settings.security.password.new')}
-              helperText={t('settings.security.password.minLength', { count: MIN_PASSWORD_LENGTH })}
-              invalid={passwordTooShort}
-              errorText={passwordTooShort ? t('settings.security.password.tooShort', { count: MIN_PASSWORD_LENGTH }) : undefined}
+              invalid={policyInvalid}
             >
               <PasswordInput
                 value={newPassword}
@@ -118,6 +117,7 @@ export const SecurityTab = () => {
                 size="sm"
                 data-testid="security-new-password"
               />
+              <PasswordStrengthMeter password={newPassword} />
             </Field>
             <Field
               label={t('settings.security.password.confirm')}

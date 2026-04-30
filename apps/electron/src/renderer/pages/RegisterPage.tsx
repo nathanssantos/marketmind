@@ -3,7 +3,7 @@ import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { AuthLayout } from '../components/Auth/AuthLayout';
-import { Alert, Button, Field, Input, Link, PasswordInput } from '../components/ui';
+import { Alert, Button, Field, Input, Link, PasswordInput, PasswordStrengthMeter } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { AUTH_UI, isConflict } from '../utils/auth';
 
@@ -62,16 +62,14 @@ export const RegisterPage = () => {
             />
           </Field>
 
-          <Field
-            label={t('auth.register.password')}
-            helperText={t('auth.validation.passwordMin')}
-          >
+          <Field label={t('auth.register.password')}>
             <PasswordInput
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={10}
             />
+            <PasswordStrengthMeter password={password} />
           </Field>
 
           <Field label={t('auth.register.confirmPassword')}>
@@ -79,7 +77,7 @@ export const RegisterPage = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={10}
             />
           </Field>
 

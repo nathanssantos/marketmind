@@ -46,6 +46,7 @@ export type { NumberInputProps } from './number-input';
 export { PanelHeader } from './panel-header';
 export { PasswordInput } from './password-input';
 export type { PasswordInputProps } from './password-input';
+export { PasswordStrengthMeter } from './PasswordStrengthMeter';
 export { PnLDisplay } from './PnLDisplay';
 export { Popover } from './popover';
 export { ProgressBar, ProgressRoot } from './progress';
