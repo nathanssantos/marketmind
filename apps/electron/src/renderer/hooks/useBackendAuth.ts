@@ -19,7 +19,16 @@ export const useBackendAuth = () => {
   const deleteAvatarMutation = trpc.auth.deleteAvatar.useMutation();
 
   const { data: realUser, isLoading: realIsLoading, refetch } = trpc.auth.me.useQuery(undefined, {
-    retry: false,
+    retry: (failureCount, error) => {
+      const msg = error instanceof Error
+        ? error.message
+        : (typeof error === 'object' && error !== null && 'message' in error)
+          ? String((error as { message: unknown }).message)
+          : String(error);
+      if (msg.includes('UNAUTHORIZED') || msg.includes('FORBIDDEN')) return false;
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     staleTime: QUERY_CONFIG.STALE_TIME.LONG,
     enabled: !IS_E2E_BYPASS_AUTH,
   });
