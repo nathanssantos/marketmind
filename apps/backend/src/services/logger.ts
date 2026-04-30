@@ -22,7 +22,7 @@ export const serializeError = (error: unknown): string => {
         : cause !== null && cause !== undefined
           ? JSON.stringify(cause)
           : '';
-    const msg = causeStr ? `${error.message} (cause: ${causeStr})` : error.message;
+    const msg = causeStr ? `${causeStr} | ${error.message}` : error.message;
     return truncate(msg);
   }
   if (error && typeof error === 'object') {
