@@ -145,45 +145,40 @@ The axe spec also disables `aria-valid-attr-value` because Chakra/Ark UI generat
 
 ---
 
-## E — Backtest UI modal (rescued from deleted BACKTEST_UI_PLAN)
+## E — Backtest UI modal
 
-The 6-wave plan from #148/#149 was deleted in #200. Wave 0 (shared zod schema, #150) shipped. Waves 1–6 are unimplemented. Backtest CLI exists; the UI modal does not.
+The 6-wave plan from #148/#149 was deleted in #200, but the work shipped quietly in unrelated PRs. Living state of the UI as of develop:
 
-### E.1 — Wave 1: shape the backend mutation for fire-and-forget + progress events
-- `backtest.run.useMutation` returns `{ runId }` immediately; results stream via socket `backtest:progress` + `backtest:complete` events.
-- Server-side: backend keeps a `Map<runId, BacktestState>` in memory. On `complete`, persist the result row and emit final.
-- Tests: contract test for the new return shape; integration test that progress events fire for a 100-bar backtest.
-- **Effort**: ~half-day.
+- ✅ **E.0/Wave 0**: shared zod schema (#150)
+- ✅ **E.2/Wave 2**: BacktestModal + 4-tab form (Basic / Strategies / Filters / Risk) at `apps/electron/src/renderer/components/Backtest/`
+- ✅ **E.3/Wave 3**: BacktestProgress.tsx with percent + ETA + cancel
+- ✅ **E.4/Wave 4**: BacktestResults.tsx with equity curve + trade list + summary stats
+- ✅ **E.5/Wave 5**: RecentRunsPanel.tsx pulling from backtestResults cache
+- ✅ **E.6/Wave 6**: `Cmd+Shift+B` keyboard shortcut, useDialogMount perf tag, e2e specs (`backtest-modal-open.spec.ts`, `backtest-modal-flow.spec.ts`)
+- ✅ **E.1/Wave 1**: getActiveRuns query + failed-path coverage (#310)
 
-### E.2 — Wave 2: modal shell + 4-tab form
-- New `<BacktestModal>` rendering on the toolbar (next to the existing screener button — `Toolbar.tsx:233-242`).
-- 4 tabs: **Strategy** (which JSON/Pine), **Period** (start/end + interval), **Filters** (FilterManager preset), **Risk** (SL/TP/trailing).
-- All inputs use the shared `@marketmind/types` zod schema from Wave 0.
-- Reuses `<FormSection>` / `<FormRow>` / `<Field>` primitives. `Select inside Dialog` carries `usePortal={false}`.
-- **Effort**: ~1 day.
+### E.7 — Wire `getActiveRuns` into the frontend for reload-recovery
+The backend exposes `backtest.getActiveRuns` (#310) but `useBacktestRun` doesn't consume it. If a user starts a backtest and reloads the page, the in-memory state is lost — the run is still going on the server, but the UI shows nothing.
 
-### E.3 — Wave 3: progress UI + ETA smoothing
-- After Run, modal switches to a progress view: percent bar + bars-processed counter + smoothed ETA. Cancel button.
-- ETA uses a 5-window moving average of bars/sec to avoid bouncing.
-- **Effort**: ~half-day.
+**What ships**:
+- New `useBacktestActiveRuns` hook calling `trpc.backtest.getActiveRuns.useQuery` with a 30s polling interval (or socket-driven invalidate when a `backtest:progress` event fires for an unknown id).
+- `useBacktestRun` checks active runs on mount; if any exist, surface them in the UI. Decision per active run: prompt the user to either re-attach the modal to that run or dismiss it.
+- Toolbar "Backtest" button shows a spinner / dot indicator when an active run exists, even if the modal is closed.
+- Playwright spec: start a run with a pending engine mock, reload the page, assert the toolbar shows the running indicator and clicking it reopens the progress view for the same run.
 
-### E.4 — Wave 4: results view
-- On `backtest:complete`, modal switches to results: equity curve (lazy-loaded recharts), trade list, summary stats (win rate, profit factor, max DD).
-- Reuses `<EquityCurveChart>` from `apps/electron/src/renderer/components/Trading/AnalyticsModal/`.
-- **Effort**: ~1 day.
+**Effort**: ~half-day. **Risk**: low. **Visible**: yes — fixes the "reload kills my running backtest progress" UX hole.
 
-### E.5 — Wave 5: recent runs + persistence
-- New tab "Recent Runs" lists past 50 runs; click loads results without re-running.
-- Backend: `backtest_runs` table (already exists per Wave 0 zod schema layout) — wire CRUD.
-- **Effort**: ~half-day.
+### E.8 — Persist completed runs to a `backtest_runs` table
+Currently `backtestResults` is an in-memory Map with eviction at 100 entries. After a server restart, all run history is gone. RecentRunsPanel only sees what's still in memory.
 
-### E.6 — Wave 6: polish
-- Keyboard shortcut to open (`Ctrl/Cmd+Shift+B`).
-- Modal-mount perf tag via `useDialogMount('BacktestModal', isOpen)` (already wired pattern from v1.3.0).
-- Visual regression baseline for the modal (open + form state + progress + results).
-- **Effort**: ~half-day.
+**What ships**:
+- New `backtest_runs` schema (id, user_id, config json, metrics json, equity_curve json, trades_count, created_at, completed_at, status, error). Already partially designed per Wave 0's zod.
+- `setCacheEntry` on `COMPLETED` / `FAILED` mirrors to the DB row.
+- `list` / `getResult` fall back to DB lookup when the in-memory cache misses.
+- Retention: 90 days, pruned on insert.
+- 4 router tests covering the persistence path.
 
-**Total**: ~4 person-days across 6 PRs. **Risk**: medium — new modal touches toolbar + backend mutation contract, but Wave 0's zod schema removed the CLI/router drift risk.
+**Effort**: ~half-day. **Risk**: low.
 
 ---
 
@@ -274,7 +269,9 @@ Proposed:
 10. **D.2.b** manual VoiceOver pass — needs human-in-the-loop, deferred
 11. ✅ **D.2.c** Analytics color-contrast fix — DataCard outline + trading.* token sweep (#308)
 12. **G.2** backend custom-symbol tests — coverage closure
-13. **E.1–E.6** Backtest UI modal — biggest single-feature push, sequenced as 6 separate PRs
+13. ✅ **E.1–E.6** Backtest UI modal — already shipped (E.1 capped by #310)
+13a. **E.7** wire getActiveRuns into frontend for reload-recovery
+13b. **E.8** persist completed runs to backtest_runs table (DB-backed history)
 14. **C.1** mcp-trading — biggest blast radius; ship in stages: foundation (toggle + audit + read tools) → paper-write → live-write
 15. **F.2** ui extraction plan — audit doc, gates the actual extraction
 16. **G.1** visual review automation — speculative, do only if regressions warrant
