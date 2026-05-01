@@ -447,8 +447,8 @@ Each row gets its own PR. Status is set as the work progresses.
 | 3 | `SaveScreenerDialog` | ✅ #387 — already followed the single-field-input pattern (DialogShell size="sm" + Field + autoFocus). Single fix: `<Input size="sm">` → `size="xs"` per the bible's component picker (uniform xs density). +1 vitest test (3 cases) |
 | 4 | `IndicatorConfigDialog` | ✅ #388 (batch) — `<Input size="sm">` → `xs` per the bible's component picker (uniform xs density). |
 | 5 | `ImportProfileDialog` | ✅ #388 (batch) — `<Input size="sm">` → `xs`; body wrapped in `<Stack gap={3}>` (was bare children of DialogShell); description added; namePlaceholder moved from hardcoded English to i18n key; preview-Callout Badges sm→xs for visual coherence. |
-| 6 | `AddWatcherDialog` | Start a new auto-trading watcher | Multi-field form. Currently mixes chart-style symbol picker with form. |
-| 7 | `CreateWalletDialog` | Connect a Binance / IB wallet | Multi-field form with conditional fields per exchange. Validation messaging needs work. |
+| 6 | `AddWatcherDialog` | ✅ #389 — already bible-compliant: `<FormDialog size="md">`, conditional form (bulk vs single mode), Callout for warnings, submitColorPalette="green" for "start". Existing tests cover all branches. |
+| 7 | `CreateWalletDialog` | ✅ #389 — already bible-compliant: type-select-first + conditional fields below + Callouts before fields per branch + isValid derivation + reset on close + submitColorPalette flips to red for live wallet. 11-case test already exists. |
 | 8 | `ProfileEditorDialog` | Edit a trading profile | Tabs (general, signals, filters, trailing stop, risk). Currently the tab labels and order are inconsistent with the actual form contents. |
 | 9 | `OrdersDialog` | ✅ #388 (batch) — search Input/filter Select sm→xs; loading state used `<EmptyState size="sm" title="loading">` (anti-pattern explicitly forbidden by the bible) replaced with the standard `<Spinner>` panel combo. |
 | 10 | `StartWatchersDialog` | ✅ #388 (batch) — uniform xs density (5 buttons + NumberInput sm→xs). Selection-then-confirm flow logic preserved. |
@@ -459,7 +459,7 @@ Each row gets its own PR. Status is set as the work progresses.
 | 15 | `SettingsDialog` | App preferences | Workflow dialog with 9 tabs. Tab content already audited (see Track G follow-up below); SettingsDialog itself just hosts them. |
 | 16 | `WalletsDialog` | ✅ #388 (batch) — added `description` (was missing). Otherwise compliant (size=xl + hideFooter). |
 | 17 | `CustomSymbolsDialog` | ✅ #388 (batch) — added `description` (was missing). Otherwise compliant. |
-| 18 | `ConfirmationDialog` (callsite sweep) | Generic destructive confirm | Already a primitive; sweep callsites for consistent copy ("Cancel" / primary destructive verb / never plain "OK"). |
+| 18 | `ConfirmationDialog` (callsite sweep) | ✅ #389 — sweep of all `<ConfirmationDialog>` callsites for bible compliance. Fixed: QuickTradeToolbar's "cancel orders" used `colorPalette="orange"` (forbidden) → `isDestructive`. Title-case titles in `futures.*` confirmation keys (4 langs) → sentence case ("Reverse Position?" → "Reverse position?"). Descriptions rewritten from interrogative ("Close X and cancel Y?") to declarative ("Closes X and cancels Y."). |
 
 Plus the **9 Settings tabs** as the post-Track-G follow-up:
 
