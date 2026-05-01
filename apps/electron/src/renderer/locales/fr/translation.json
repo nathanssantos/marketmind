@@ -45,6 +45,8 @@
     "save": "Enregistrer",
     "saveChanges": "Enregistrer les modifications",
     "close": "Fermer",
+    "moreActions": "Plus d'actions",
+    "hideActions": "Masquer les actions",
     "delete": "Supprimer",
     "edit": "Modifier",
     "loading": "Chargement...",
@@ -892,7 +894,15 @@
       "noPriceError": "Aucun prix actuel disponible",
       "invalidQuantityError": "Quantité invalide",
       "moveToSidebar": "Déplacer vers la Sidebar",
-      "moveToChart": "Déplacer vers le Graphique"
+      "moveToChart": "Déplacer vers le Graphique",
+      "gridOrders": "Ordres en Grille",
+      "trailingStop": "Trailing Stop",
+      "confirmOrder": "Confirmer l'Ordre",
+      "confirmBuy": "Confirmer l'Achat",
+      "confirmSell": "Confirmer la Vente",
+      "totalValue": "Valeur Totale",
+      "margin": "Marge Requise",
+      "liquidation": "Prix de Liq."
     },
     "gridOrders": {
       "title": "Ordres en Grille",
@@ -2586,6 +2596,18 @@
     "minLeverage": "Min : 1x",
     "maxLeverage": "Max : {{max}}x",
     "extremeRiskWarning": "Risque extrême ! La liquidation peut se produire rapidement avec de petites variations de prix.",
-    "highRiskWarning": "Un levier élevé augmente à la fois les profits et les pertes potentiels."
+    "highRiskWarning": "Un levier élevé augmente à la fois les profits et les pertes potentiels.",
+    "reversePosition": "Inverser la Position",
+    "reverseFailed": "Échec de l'inversion de la position",
+    "reverseConfirmTitle": "Inverser la Position ?",
+    "reverseConfirmDescription": "Fermer {{side}} {{quantity}} {{symbol}} et ouvrir {{newSide}} {{quantity}} {{symbol}} au prix du marché ?",
+    "closePosition": "Fermer la Position",
+    "closePositionFailed": "Échec de la fermeture de la position",
+    "closePositionConfirmTitle": "Fermer la Position ?",
+    "closePositionConfirmDescription": "Fermer {{side}} {{quantity}} {{symbol}} au prix du marché et annuler tous les ordres (SL, TP, entrées) ?",
+    "cancelOrders": "Annuler les Ordres",
+    "cancelOrdersFailed": "Échec de l'annulation des ordres",
+    "cancelOrdersConfirmTitle": "Annuler Tous les Ordres ?",
+    "cancelOrdersConfirmDescription": "Annuler tous les ordres d'entrée en attente pour {{symbol}} ? Les ordres SL et TP ne seront pas affectés."
   }
 }

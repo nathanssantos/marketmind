@@ -45,6 +45,8 @@
     "save": "Save",
     "saveChanges": "Save Changes",
     "close": "Close",
+    "moreActions": "More actions",
+    "hideActions": "Hide actions",
     "delete": "Delete",
     "edit": "Edit",
     "loading": "Loading...",
@@ -847,7 +849,15 @@
       "noPriceError": "No current price available",
       "invalidQuantityError": "Invalid quantity",
       "moveToSidebar": "Move to Sidebar",
-      "moveToChart": "Move to Chart"
+      "moveToChart": "Move to Chart",
+      "gridOrders": "Grid Orders",
+      "trailingStop": "Trailing Stop",
+      "confirmOrder": "Confirm Order",
+      "confirmBuy": "Confirm Buy",
+      "confirmSell": "Confirm Sell",
+      "totalValue": "Total Value",
+      "margin": "Margin Required",
+      "liquidation": "Liq. Price"
     },
     "gridOrders": {
       "title": "Grid Orders",
@@ -2561,6 +2571,18 @@
     "minLeverage": "Min: 1x",
     "maxLeverage": "Max: {{max}}x",
     "extremeRiskWarning": "Extreme risk! Liquidation can happen quickly with small price movements.",
-    "highRiskWarning": "High leverage increases both potential profits and losses."
+    "highRiskWarning": "High leverage increases both potential profits and losses.",
+    "reversePosition": "Reverse Position",
+    "reverseFailed": "Failed to reverse position",
+    "reverseConfirmTitle": "Reverse Position?",
+    "reverseConfirmDescription": "Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?",
+    "closePosition": "Close Position",
+    "closePositionFailed": "Failed to close position",
+    "closePositionConfirmTitle": "Close Position?",
+    "closePositionConfirmDescription": "Close {{side}} {{quantity}} {{symbol}} at market price and cancel all orders (SL, TP, entries)?",
+    "cancelOrders": "Cancel Orders",
+    "cancelOrdersFailed": "Failed to cancel orders",
+    "cancelOrdersConfirmTitle": "Cancel All Orders?",
+    "cancelOrdersConfirmDescription": "Cancel all pending entry orders for {{symbol}}? SL and TP orders will not be affected."
   }
 }

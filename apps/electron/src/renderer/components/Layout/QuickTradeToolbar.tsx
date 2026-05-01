@@ -198,11 +198,11 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       });
       if (result && 'success' in result && !result.success) {
         const errorMsg = 'error' in result && typeof result.error === 'string' ? result.error : undefined;
-        toastError(t('futures.reverseFailed', 'Failed to reverse position'), errorMsg);
+        toastError(t('futures.reverseFailed'), errorMsg);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toastError(t('futures.reverseFailed', 'Failed to reverse position'), msg);
+      toastError(t('futures.reverseFailed'), msg);
     } finally {
       setShowReverseConfirm(false);
     }
@@ -223,7 +223,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toastError(t('futures.closePositionFailed', 'Failed to close position'), msg);
+      toastError(t('futures.closePositionFailed'), msg);
     } finally {
       setShowCloseConfirm(false);
     }
@@ -239,7 +239,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
       await cancelAllOrders({ walletId: activeWallet.id, symbol });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toastError(t('futures.cancelOrdersFailed', 'Failed to cancel orders'), msg);
+      toastError(t('futures.cancelOrdersFailed'), msg);
     } finally {
       setShowCancelOrdersConfirm(false);
     }
@@ -351,7 +351,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
                   )}
                   {onClose && (
                     <Menu.Item value="close" onClick={onClose}>
-                      {t('common.close', 'Close')}
+                      {t('common.close')}
                     </Menu.Item>
                   )}
                 </Menu.Content>
@@ -400,7 +400,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
             sellLabel={t('chart.quickTrade.sell')}
             showAdvanced={showAdvanced}
             onToggleAdvanced={() => setShowAdvanced((prev) => !prev)}
-            toggleAdvancedLabel={showAdvanced ? t('common.hideActions', 'Hide actions') : t('common.moreActions', 'More actions')}
+            toggleAdvancedLabel={showAdvanced ? t('common.hideActions') : t('common.moreActions')}
           />
         </HStack>
 
@@ -408,16 +408,16 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           <VStack gap={0.5} align="stretch" pt={0.5} borderTop="1px solid" borderColor="border">
             {marketType === 'FUTURES' && (
               <>
-                <ActionRow icon={<LuArrowUpDown />} label={t('futures.reversePosition', 'Reverse Position')} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition} />
-                <ActionRow icon={<LuX />} label={t('futures.closePosition', 'Close Position')} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition} />
-                <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders', 'Cancel Orders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
+                <ActionRow icon={<LuArrowUpDown />} label={t('futures.reversePosition')} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition} />
+                <ActionRow icon={<LuX />} label={t('futures.closePosition')} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition} />
+                <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
               </>
             )}
             <GridOrderPopover triggerElement={
-              <ActionRow icon={<LuGrid3X3 />} label={t('chart.quickTrade.gridOrders', 'Grid Orders')} />
+              <ActionRow icon={<LuGrid3X3 />} label={t('chart.quickTrade.gridOrders')} />
             } />
             <TrailingStopPopover symbol={symbol} triggerElement={
-              <ActionRow icon={<LuShield />} label={t('chart.quickTrade.trailingStop', 'Trailing Stop')} />
+              <ActionRow icon={<LuShield />} label={t('chart.quickTrade.trailingStop')} />
             } />
           </VStack>
         )}
@@ -429,14 +429,14 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
         isOpen={showReverseConfirm}
         onClose={() => setShowReverseConfirm(false)}
         onConfirm={() => { void handleReverseConfirm(); }}
-        title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
-        description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
+        title={t('futures.reverseConfirmTitle')}
+        description={t('futures.reverseConfirmDescription', {
           side: positionSide,
           quantity: positionQty,
           symbol,
           newSide: positionSide === 'LONG' ? 'SHORT' : 'LONG',
         })}
-        confirmLabel={t('futures.reversePosition', 'Reverse Position')}
+        confirmLabel={t('futures.reversePosition')}
         colorPalette="blue"
         isLoading={isReversingPosition}
       />
@@ -445,13 +445,13 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
         isOpen={showCloseConfirm}
         onClose={() => setShowCloseConfirm(false)}
         onConfirm={() => { void handleClosePositionConfirm(); }}
-        title={t('futures.closePositionConfirmTitle', 'Close Position?')}
-        description={t('futures.closePositionConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} at market price and cancel all orders (SL, TP, entries)?', {
+        title={t('futures.closePositionConfirmTitle')}
+        description={t('futures.closePositionConfirmDescription', {
           side: positionSide,
           quantity: positionQty,
           symbol,
         })}
-        confirmLabel={t('futures.closePosition', 'Close Position')}
+        confirmLabel={t('futures.closePosition')}
         colorPalette="red"
         isLoading={isClosingPositionAndCancellingOrders}
       />
@@ -460,9 +460,9 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
         isOpen={showCancelOrdersConfirm}
         onClose={() => setShowCancelOrdersConfirm(false)}
         onConfirm={() => { void handleCancelOrdersConfirm(); }}
-        title={t('futures.cancelOrdersConfirmTitle', 'Cancel All Orders?')}
-        description={t('futures.cancelOrdersConfirmDescription', 'Cancel all pending entry orders for {{symbol}}? SL and TP orders will not be affected.', { symbol })}
-        confirmLabel={t('futures.cancelOrders', 'Cancel Orders')}
+        title={t('futures.cancelOrdersConfirmTitle')}
+        description={t('futures.cancelOrdersConfirmDescription', { symbol })}
+        confirmLabel={t('futures.cancelOrders')}
         colorPalette="orange"
         isLoading={isCancellingAllOrders}
       />
@@ -479,43 +479,43 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
             isOpen
             onClose={() => setPendingOrder(null)}
             onConfirm={() => { void handleConfirmOrder(); }}
-            title={t('chart.quickTrade.confirmOrder', 'Confirm Order')}
-            confirmLabel={isBuy ? t('chart.quickTrade.confirmBuy', 'Confirm Buy') : t('chart.quickTrade.confirmSell', 'Confirm Sell')}
+            title={t('chart.quickTrade.confirmOrder')}
+            confirmLabel={isBuy ? t('chart.quickTrade.confirmBuy') : t('chart.quickTrade.confirmSell')}
             colorPalette={isBuy ? 'green' : 'red'}
             isLoading={isCreatingOrder}
             description={
               <VStack align="stretch" gap={2} fontSize="sm" w="100%">
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('common.symbol', 'Symbol')}</Text>
+                  <Text color="fg.muted">{t('common.symbol')}</Text>
                   <Text fontWeight="bold">{symbol}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('common.side', 'Side')}</Text>
+                  <Text color="fg.muted">{t('common.side')}</Text>
                   <Text fontWeight="bold" color={isBuy ? 'trading.long' : 'trading.short'}>{isBuy ? 'LONG' : 'SHORT'}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('common.price', 'Price')}</Text>
+                  <Text color="fg.muted">{t('common.price')}</Text>
                   <Text>{formatChartPrice(pendingOrder.price)}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('common.quantity', 'Quantity')}</Text>
+                  <Text color="fg.muted">{t('common.quantity')}</Text>
                   <Text>{pendingOrder.quantity}</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('futures.leverage', 'Leverage')}</Text>
+                  <Text color="fg.muted">{t('futures.leverage')}</Text>
                   <Text color="orange.fg" fontWeight="bold">{leverage}x</Text>
                 </Flex>
                 <Box h="1px" bg="border" />
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('chart.quickTrade.totalValue', 'Total Value')}</Text>
+                  <Text color="fg.muted">{t('chart.quickTrade.totalValue')}</Text>
                   <Text fontWeight="bold">{formatChartPrice(totalValue)} USDT</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('chart.quickTrade.margin', 'Margin Required')}</Text>
+                  <Text color="fg.muted">{t('chart.quickTrade.margin')}</Text>
                   <Text>{formatChartPrice(margin)} USDT</Text>
                 </Flex>
                 <Flex justify="space-between">
-                  <Text color="fg.muted">{t('chart.quickTrade.liquidation', 'Liq. Price')}</Text>
+                  <Text color="fg.muted">{t('chart.quickTrade.liquidation')}</Text>
                   <Text color="trading.loss">{formatChartPrice(liqPrice)} ({liqPct.toFixed(1)}%)</Text>
                 </Flex>
               </VStack>
