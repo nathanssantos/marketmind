@@ -1,5 +1,5 @@
 import { Flex, Spinner, Stack } from '@chakra-ui/react';
-import { Callout, DialogShell } from '@renderer/components/ui';
+import { DialogShell, EmptyState } from '@renderer/components/ui';
 import { Suspense, lazy, memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -45,6 +45,7 @@ export const AnalyticsDialog = memo(() => {
       onClose={handleClose}
       size="xl"
       title={`${t('trading.tabs.analytics')}${activeWallet ? ` — ${activeWallet.name}` : ''}`}
+      description={t('analytics.dialogDescription')}
       hideFooter
     >
       {activeWalletId ? (
@@ -65,9 +66,10 @@ export const AnalyticsDialog = memo(() => {
           </Suspense>
         </Stack>
       ) : (
-        <Callout tone="info" compact>
-          {t('trading.noWalletSelected')}
-        </Callout>
+        <EmptyState
+          title={t('analytics.noWalletTitle')}
+          description={t('trading.noWalletSelected')}
+        />
       )}
     </DialogShell>
   );

@@ -56,7 +56,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 <Stack gap={4}>
                   <Field label={t('tradingProfiles.fields.name')} required={form.isEditing}>
                     <Input
-                      size="sm"
+                      size="xs"
                       value={form.name}
                       onChange={(e) => form.setName(e.target.value)}
                       placeholder={t('tradingProfiles.placeholders.name')}
@@ -66,7 +66,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                   </Field>
                   <Field label={t('tradingProfiles.fields.description')}>
                     <Textarea
-                      size="sm"
+                      size="xs"
                       value={form.description}
                       onChange={(e) => form.setDescription(e.target.value)}
                       placeholder={t('tradingProfiles.placeholders.description')}
@@ -107,7 +107,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       value={ovStr(overrideActions.co, 'tradingMode', 'auto')}
                       options={TRADING_MODE_OPTIONS}
                       onChange={(v) => overrideActions.setOv('tradingMode', v)}
-                      size="sm"
+                      size="xs"
                       usePortal={false}
                     />
                   </OverrideRow>
@@ -121,7 +121,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       value={ovStr(overrideActions.co, 'directionMode', 'auto')}
                       options={DIRECTION_MODE_OPTIONS}
                       onChange={(v) => overrideActions.setOv('directionMode', v)}
-                      size="sm"
+                      size="xs"
                       usePortal={false}
                     />
                   </OverrideRow>
