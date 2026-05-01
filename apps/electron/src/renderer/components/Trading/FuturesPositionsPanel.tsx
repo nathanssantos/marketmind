@@ -133,14 +133,14 @@ const FuturesPositionCard = memo(({
             </Badge>
           </Flex>
           <Flex gap={1}>
-            <TooltipWrapper label={t('futures.reversePosition', 'Reverse Position')}>
+            <TooltipWrapper label={t('futures.reversePosition')}>
               <IconButton
                 size="2xs"
                 variant="ghost"
                 colorPalette="orange"
                 onClick={() => setShowReverseConfirm(true)}
                 loading={isReversing}
-                aria-label={t('futures.reversePosition', 'Reverse Position')}
+                aria-label={t('futures.reversePosition')}
               >
                 <LuArrowLeftRight size={12} />
               </IconButton>
@@ -159,25 +159,25 @@ const FuturesPositionCard = memo(({
 
         <Stack gap={1} fontSize="xs">
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('futures.entryPrice', 'Entry Price')}</Text>
+            <Text color="fg.muted">{t('futures.entryPrice')}</Text>
             <Stack gap={0} align="flex-end">
               <Text>${formatPrice(entryPrice)}</Text>
               <BrlValue usdtValue={entryPrice} />
             </Stack>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('futures.markPrice', 'Mark Price')}</Text>
+            <Text color="fg.muted">{t('futures.markPrice')}</Text>
             <Stack gap={0} align="flex-end">
               <Text fontWeight="medium">${formatPrice(markPrice)}</Text>
               <BrlValue usdtValue={markPrice} />
             </Stack>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('futures.size', 'Size')}</Text>
+            <Text color="fg.muted">{t('futures.size')}</Text>
             <Text>{quantity.toFixed(4)}</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('futures.unrealizedPnl', 'Unrealized PnL')}</Text>
+            <Text color="fg.muted">{t('futures.unrealizedPnl')}</Text>
             <Stack gap={0} align="flex-end">
               <Text fontWeight="medium" color={unrealizedPnl >= 0 ? 'trading.profit' : 'trading.loss'}>
                 {unrealizedPnl >= 0 ? '+' : ''}${Math.abs(unrealizedPnl).toFixed(2)} ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
@@ -187,7 +187,7 @@ const FuturesPositionCard = memo(({
           </Flex>
           {accumulatedFunding !== 0 && (
             <Flex justify="space-between">
-              <Text color="fg.muted">{t('futures.accumulatedFunding', 'Accumulated Funding')}</Text>
+              <Text color="fg.muted">{t('futures.accumulatedFunding')}</Text>
               <Stack gap={0} align="flex-end">
                 <Text color={accumulatedFunding >= 0 ? 'trading.profit' : 'trading.loss'}>
                   {accumulatedFunding >= 0 ? '+' : ''}${accumulatedFunding.toFixed(4)}
@@ -202,7 +202,7 @@ const FuturesPositionCard = memo(({
           <Box>
             <Flex justify="space-between" align="center" mb={1}>
               <Flex align="center" gap={1}>
-                <Text fontSize="2xs" color="fg.muted">{t('futures.liquidationPrice', 'Liquidation Price')}</Text>
+                <Text fontSize="2xs" color="fg.muted">{t('futures.liquidationPrice')}</Text>
                 {(isWarning || wouldBeLiquidated) && (
                   <Box color={isInDanger || wouldBeLiquidated ? 'trading.loss' : 'trading.warning'}>
                     <LuTriangleAlert size={10} />
@@ -224,7 +224,7 @@ const FuturesPositionCard = memo(({
             </ProgressRoot>
 
             <Flex justify="space-between" mt={0.5}>
-              <Text fontSize="2xs" color="fg.muted">{t('futures.distanceToLiq', 'Distance to liquidation')}</Text>
+              <Text fontSize="2xs" color="fg.muted">{t('futures.distanceToLiq')}</Text>
               <Text fontSize="2xs" fontWeight="medium" color={getLiquidationTextColor()}>
                 {liquidationDistance.toFixed(1)}%
               </Text>
@@ -235,8 +235,8 @@ const FuturesPositionCard = memo(({
         {(isInDanger || wouldBeLiquidated) && (
           <Callout tone="danger" compact>
             {wouldBeLiquidated
-              ? t('futures.liquidated', 'Position would be liquidated at current price!')
-              : t('futures.liquidationWarning', 'Warning: Position is close to liquidation.')}
+              ? t('futures.liquidated')
+              : t('futures.liquidationWarning')}
           </Callout>
         )}
       </VStack>
@@ -248,14 +248,14 @@ const FuturesPositionCard = memo(({
           setShowReverseConfirm(false);
           onReverse();
         }}
-        title={t('futures.reverseConfirmTitle', 'Reverse Position?')}
-        description={t('futures.reverseConfirmDescription', 'Close {{side}} {{quantity}} {{symbol}} and open {{newSide}} {{quantity}} {{symbol}} at market price?', {
+        title={t('futures.reverseConfirmTitle')}
+        description={t('futures.reverseConfirmDescription', {
           side,
           quantity: quantity.toFixed(4),
           symbol: position.symbol,
           newSide: side === 'LONG' ? 'SHORT' : 'LONG',
         })}
-        confirmLabel={t('futures.reversePosition', 'Reverse Position')}
+        confirmLabel={t('futures.reversePosition')}
         colorPalette="orange"
         isLoading={isReversing}
       />
@@ -314,7 +314,7 @@ const FuturesPositionsPanelComponent = () => {
       <Flex justify="space-between" align="center">
         <Flex align="center" gap={2}>
           <Text fontSize="sm" fontWeight="bold">
-            {t('futures.positions', 'Futures Positions')}
+            {t('futures.positions')}
           </Text>
           <Badge colorPalette="purple" size="sm">{openPositions.length}</Badge>
         </Flex>

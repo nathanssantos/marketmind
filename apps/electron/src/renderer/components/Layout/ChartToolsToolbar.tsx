@@ -82,38 +82,38 @@ export const ChartToolsToolbar = memo(() => {
       overflowY="auto"
     >
       <VStack gap={0.5}>
-        <DrawingToolButton tool="pencil" label={t('chart.tools.pencil', 'Pencil')} icon={<PencilIcon />} />
-        <DrawingToolButton tool="highlighter" label={t('chart.tools.highlighter', 'Highlighter')} icon={<HighlighterIcon />} />
+        <DrawingToolButton tool="pencil" label={t('chart.tools.pencil')} icon={<PencilIcon />} />
+        <DrawingToolButton tool="highlighter" label={t('chart.tools.highlighter')} icon={<HighlighterIcon />} />
         <Separator orientation="horizontal" width="100%" />
-        <DrawingToolButton tool="line" label={t('chart.tools.line', 'Line')} icon={<LineIcon />} />
-        <DrawingToolButton tool="horizontalLine" label={t('chart.tools.horizontalLine', 'Horizontal Line')} icon={<HorizontalLineIcon />} />
-        <DrawingToolButton tool="verticalLine" label={t('chart.tools.verticalLine', 'Vertical Line')} icon={<VerticalLineIcon />} />
-        <DrawingToolButton tool="trendLine" label={t('chart.tools.trendLine', 'Trend Line')} icon={<TrendLineIcon />} />
-        <DrawingToolButton tool="arrow" label={t('chart.tools.arrow', 'Arrow')} icon={<ArrowIcon />} />
-        <DrawingToolButton tool="ray" label={t('chart.tools.ray', 'Ray')} icon={<RayIcon />} />
+        <DrawingToolButton tool="line" label={t('chart.tools.line')} icon={<LineIcon />} />
+        <DrawingToolButton tool="horizontalLine" label={t('chart.tools.horizontalLine')} icon={<HorizontalLineIcon />} />
+        <DrawingToolButton tool="verticalLine" label={t('chart.tools.verticalLine')} icon={<VerticalLineIcon />} />
+        <DrawingToolButton tool="trendLine" label={t('chart.tools.trendLine')} icon={<TrendLineIcon />} />
+        <DrawingToolButton tool="arrow" label={t('chart.tools.arrow')} icon={<ArrowIcon />} />
+        <DrawingToolButton tool="ray" label={t('chart.tools.ray')} icon={<RayIcon />} />
         <Separator orientation="horizontal" width="100%" />
-        <DrawingToolButton tool="channel" label={t('chart.tools.channel', 'Channel')} icon={<ChannelIcon />} />
-        <DrawingToolButton tool="rectangle" label={t('chart.tools.rectangle', 'Rectangle')} icon={<RectangleIcon />} />
-        <DrawingToolButton tool="ellipse" label={t('chart.tools.ellipse', 'Ellipse')} icon={<EllipseIcon />} />
-        <DrawingToolButton tool="area" label={t('chart.tools.area', 'Area')} icon={<AreaIcon />} />
+        <DrawingToolButton tool="channel" label={t('chart.tools.channel')} icon={<ChannelIcon />} />
+        <DrawingToolButton tool="rectangle" label={t('chart.tools.rectangle')} icon={<RectangleIcon />} />
+        <DrawingToolButton tool="ellipse" label={t('chart.tools.ellipse')} icon={<EllipseIcon />} />
+        <DrawingToolButton tool="area" label={t('chart.tools.area')} icon={<AreaIcon />} />
         <Separator orientation="horizontal" width="100%" />
-        <DrawingToolButton tool="fibonacci" label={t('chart.tools.fibonacci', 'Fibonacci')} icon={<FibonacciIcon />} />
-        <DrawingToolButton tool="priceRange" label={t('chart.tools.priceRange', 'Price Range')} icon={<PriceRangeIcon />} />
-        <DrawingToolButton tool="ruler" label={t('chart.tools.ruler', 'Ruler')} icon={<RulerIcon />} />
-        <DrawingToolButton tool="pitchfork" label={t('chart.tools.pitchfork', 'Pitchfork')} icon={<PitchforkIcon />} />
-        <DrawingToolButton tool="gannFan" label={t('chart.tools.gannFan', 'Gann Fan')} icon={<GannFanIcon />} />
+        <DrawingToolButton tool="fibonacci" label={t('chart.tools.fibonacci')} icon={<FibonacciIcon />} />
+        <DrawingToolButton tool="priceRange" label={t('chart.tools.priceRange')} icon={<PriceRangeIcon />} />
+        <DrawingToolButton tool="ruler" label={t('chart.tools.ruler')} icon={<RulerIcon />} />
+        <DrawingToolButton tool="pitchfork" label={t('chart.tools.pitchfork')} icon={<PitchforkIcon />} />
+        <DrawingToolButton tool="gannFan" label={t('chart.tools.gannFan')} icon={<GannFanIcon />} />
         <Separator orientation="horizontal" width="100%" />
-        <DrawingToolButton tool="longPosition" label={t('chart.tools.longPosition', 'Long Position')} icon={<LongPositionIcon />} />
-        <DrawingToolButton tool="shortPosition" label={t('chart.tools.shortPosition', 'Short Position')} icon={<ShortPositionIcon />} />
+        <DrawingToolButton tool="longPosition" label={t('chart.tools.longPosition')} icon={<LongPositionIcon />} />
+        <DrawingToolButton tool="shortPosition" label={t('chart.tools.shortPosition')} icon={<ShortPositionIcon />} />
         <Separator orientation="horizontal" width="100%" />
-        <DrawingToolButton tool="text" label={t('chart.tools.text', 'Text')} icon={<TextIcon />} />
-        <DrawingToolButton tool="anchoredVwap" label={t('chart.tools.anchoredVwap', 'Anchored VWAP')} icon={<AnchoredVwapIcon />} />
+        <DrawingToolButton tool="text" label={t('chart.tools.text')} icon={<TextIcon />} />
+        <DrawingToolButton tool="anchoredVwap" label={t('chart.tools.anchoredVwap')} icon={<AnchoredVwapIcon />} />
         <Separator orientation="horizontal" width="100%" />
-        <TooltipWrapper label={t('chart.tools.magnet', 'OHLC Magnet')} showArrow placement="right">
+        <TooltipWrapper label={t('chart.tools.magnet')} showArrow placement="right">
           <ToggleIconButton
             active={magnetEnabled}
             size="2xs"
-            aria-label={t('chart.tools.magnet', 'OHLC Magnet')}
+            aria-label={t('chart.tools.magnet')}
             onClick={handleMagnetToggle}
           >
             <LuMagnet />
