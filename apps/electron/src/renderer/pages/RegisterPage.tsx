@@ -1,9 +1,9 @@
-import { Text, VStack } from '@chakra-ui/react';
+import { VStack } from '@chakra-ui/react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { AuthLayout } from '../components/Auth/AuthLayout';
-import { Alert, Button, Field, Input, Link, PasswordInput, PasswordStrengthMeter } from '../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { AuthFooterLink, AuthLayout } from '../components/Auth/AuthLayout';
+import { Alert, Button, Field, Input, PasswordInput, PasswordStrengthMeter } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { AUTH_UI, isConflict } from '../utils/auth';
 
@@ -41,7 +41,17 @@ export const RegisterPage = () => {
       : registerError?.message ?? null;
 
   return (
-    <AuthLayout title={t('auth.register.title')} subtitle={t('auth.register.subtitle')}>
+    <AuthLayout
+      title={t('auth.register.title')}
+      subtitle={t('auth.register.subtitle')}
+      footer={
+        <AuthFooterLink
+          prefix={t('auth.register.hasAccount')}
+          label={t('auth.register.signIn')}
+          to="/login"
+        />
+      }
+    >
       <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
@@ -90,12 +100,6 @@ export const RegisterPage = () => {
             {t('auth.register.submit')}
           </Button>
 
-          <Text fontSize="sm" textAlign="center" color="fg.muted">
-            {t('auth.register.hasAccount')}{' '}
-            <Link asChild colorPalette="blue">
-              <RouterLink to="/login">{t('auth.register.signIn')}</RouterLink>
-            </Link>
-          </Text>
         </VStack>
       </form>
     </AuthLayout>

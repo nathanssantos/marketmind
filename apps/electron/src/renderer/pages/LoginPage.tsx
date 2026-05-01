@@ -2,7 +2,7 @@ import { HStack, Text, VStack } from '@chakra-ui/react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { AuthLayout } from '../components/Auth/AuthLayout';
+import { AuthFooterLink, AuthLayout } from '../components/Auth/AuthLayout';
 import { Alert, Button, Checkbox, Field, Input, Link, PasswordInput } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { useToast } from '../hooks/useToast';
@@ -45,7 +45,17 @@ export const LoginPage = () => {
       : null;
 
   return (
-    <AuthLayout title={t('auth.login.title')} subtitle={t('auth.login.subtitle')}>
+    <AuthLayout
+      title={t('auth.login.title')}
+      subtitle={t('auth.login.subtitle')}
+      footer={
+        <AuthFooterLink
+          prefix={t('auth.login.noAccount')}
+          label={t('auth.login.createAccount')}
+          to="/register"
+        />
+      }
+    >
       <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
@@ -91,13 +101,6 @@ export const LoginPage = () => {
           >
             {t('auth.login.submit')}
           </Button>
-
-          <Text fontSize="sm" textAlign="center" color="fg.muted">
-            {t('auth.login.noAccount')}{' '}
-            <Link asChild colorPalette="blue">
-              <RouterLink to="/register">{t('auth.login.createAccount')}</RouterLink>
-            </Link>
-          </Text>
         </VStack>
       </form>
     </AuthLayout>
