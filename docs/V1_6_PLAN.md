@@ -382,7 +382,7 @@ After the modal sweep, v1.7+ extends the same pass to:
 
 ---
 
-## Status (2026-05-02)
+## Status (2026-05-02 — v1.6 substantially complete)
 
 **Track E (shared infrastructure) — complete.** PRs #329-#336.
 
@@ -393,25 +393,36 @@ After the modal sweep, v1.7+ extends the same pass to:
 - A.5 Settings reorg — deferred; needs UX decision on `<WalletsDialog>`/`<CustomSymbolsDialog>` trigger placement
 - ✅ A.6 i18n text audit — all 192 `t('foo', 'fallback')` calls cleaned (#347-#351)
 
-**Audit baseline:** all 5 structural audit rules clean. `scripts/audit-dialog-rules.mjs --strict` passes; CI can flip the gate to strict in a follow-up workflow.
+**Track B (`@marketmind/ui-core` extraction) — substantially complete.**
+- ✅ B.1 Tier-1 extraction — 32 pure Chakra wrappers moved (#353)
+- ✅ B.2 Tier-2 extraction — 10+ token-aware composed primitives + Sidebar (#354)
+- B.3 Tier-3 graduation (`PasswordStrengthMeter`) — deferred; needs i18n `t` prop decoupling
+- B.4 rename `ui-core` → `ui` — deferred; let the API bake first
 
-| Rule | Status |
-|---|---|
-| `modal-file-suffix` | 0 ✓ |
-| `raw-dialog-root` | 0 ✓ |
-| `raw-maxw-on-dialog` | 0 ✓ |
-| `t-with-fallback` | 0 ✓ |
-| `props-not-extending-base` | 0 ✓ |
-
-**Track B (extraction) — not started yet.**
-
-**Track C (documentation) — partial:**
+**Track C (documentation) — complete.**
 - ✅ `docs/I18N_DIALOG_KEYS.md` (E.5)
-- ✅ `docs/UI_CREATION_FLOWS.md` (creation pattern)
-- 🚧 `packages/ui-core/README.md` — gated on Track B extraction
-- 🚧 `docs/UI_DESIGN_SYSTEM.md` — design language reference
+- ✅ `docs/UI_CREATION_FLOWS.md` (creation-dialog trigger pattern, A.4)
+- ✅ `packages/ui-core/README.md` — component catalog (C.1, #355)
+- ✅ `docs/UI_DESIGN_SYSTEM.md` — design language reference (C.2, #355)
 
-**Pending follow-up:** a few i18n keys that previously resolved only via the fallback may not yet exist in the canonical JSON (e.g. `orderFlow.tabs.*`). Tests pass because they mock i18n; at runtime, users see the raw key. Worth a runtime spot-check.
+**Audit baseline:** all 5 dialog rules clean, shade-literal audit clean, dialog-i18n-keys audit clean. CI can flip `audit-dialog-rules.mjs` to `--strict` in a follow-up workflow.
+
+| Audit | Status |
+|---|---|
+| `audit-dialog-rules.mjs --strict` | ✓ clean |
+| `audit-shade-literals.mjs` | ✓ 218 files / 0 forbidden patterns |
+| `audit-dialog-i18n-keys.mjs` | ✓ clean (4 dialogs / 4 locales) |
+| `pnpm --filter @marketmind/electron type-check` | ✓ |
+| `pnpm --filter @marketmind/electron lint` | ✓ 0 errors (1969 warnings, baseline) |
+| `pnpm --filter @marketmind/electron test:unit` | ✓ 2327 / 2327 |
+
+**Deferred items (real work that didn't fit this cycle):**
+- **A.5 Settings reorg** — promote Wallets / TradingProfiles / CustomSymbols out of Settings tabs into dedicated `<XDialog>` modals. Needs UX decision on trigger placement (header dropdown vs sidebar entry vs both). Scaffolding (creation-dialog pattern + audit) is in place.
+- **B.3 Tier-3 graduation** — `PasswordStrengthMeter` decouples by accepting a `t` prop; small follow-up.
+- **B.4 rename** — `ui-core` → `ui` once consumers external to the renderer materialize.
+- **Runtime i18n spot-check** — a few keys that previously resolved only via the en fallback may not yet exist in the canonical JSON. Tests pass (they mock i18n); at runtime, users see the raw key. Worth a one-pass walk-through.
+
+**v1.6 ships when:** A.5 + the runtime i18n spot-check land. The rest is decided by external triggers (B.3 needs no urgency; B.4 needs a consumer).
 
 ---
 
