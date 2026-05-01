@@ -1,11 +1,11 @@
 import type { MarketType } from '@marketmind/types';
-import { Box, Flex, Text } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { type TradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
-import { IconButton, SidebarContainer, Tabs } from '../ui';
+import { IconButton, SidebarContainer, SidebarTabsHeader, Tabs } from '../ui';
 import { QuickTradeActions, type QuickTradeMode } from '../Layout/QuickTradeToolbar';
 import { OrdersList } from './OrdersList';
 import { OrdersDialog } from './OrdersDialog';
@@ -48,21 +48,20 @@ const TradingSidebarComponent = ({ width, onClose, symbol, marketType, quickTrad
     <SidebarContainer width={width}>
       <OrdersDialog />
       <Tabs.Root value={tradingSidebarTab} onValueChange={handleTabChange} fitted h="full" display="flex" flexDirection="column">
-        <Flex>
-          {onClose && (
-            <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Close" onClick={onClose} ml={1} mt={0.5}>
-              <LuX />
-            </IconButton>
-          )}
+        <SidebarTabsHeader
+          closeAction={
+            onClose && (
+              <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label={t('common.close')} onClick={onClose}>
+                <LuX />
+              </IconButton>
+            )
+          }
+        >
           <Tabs.List flex={1}>
-          <Tabs.Trigger value="orders">
-            <Text fontSize="xs">{t('trading.tabs.orders')}</Text>
-          </Tabs.Trigger>
-          <Tabs.Trigger value="portfolio">
-            <Text fontSize="xs">{t('trading.tabs.portfolio')}</Text>
-          </Tabs.Trigger>
+            <Tabs.Trigger value="orders">{t('trading.tabs.orders')}</Tabs.Trigger>
+            <Tabs.Trigger value="portfolio">{t('trading.tabs.portfolio')}</Tabs.Trigger>
           </Tabs.List>
-        </Flex>
+        </SidebarTabsHeader>
 
         <Box flex={1} overflowY="auto">
           <Tabs.Content value="orders">

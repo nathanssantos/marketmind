@@ -1,9 +1,8 @@
-import { Text, VStack } from '@chakra-ui/react';
+import { VStack } from '@chakra-ui/react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link as RouterLink } from 'react-router-dom';
-import { AuthLayout } from '../components/Auth/AuthLayout';
-import { Alert, Button, Field, Input, Link } from '../components/ui';
+import { AuthFooterLink, AuthLayout } from '../components/Auth/AuthLayout';
+import { Alert, Button, Field, Input } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { AUTH_UI } from '../utils/auth';
 
@@ -24,27 +23,27 @@ export const ForgotPasswordPage = () => {
     }
   };
 
+  const backToLogin = (
+    <AuthFooterLink label={t('auth.forgotPassword.backToLogin')} to="/login" />
+  );
+
   if (submitted) {
     return (
-      <AuthLayout title={t('auth.forgotPassword.successTitle')}>
-        <VStack gap={4} align="stretch">
-          <Alert.Root status="success" size="sm">
-            <Alert.Indicator />
-            <Alert.Description>{t('auth.forgotPassword.successMessage')}</Alert.Description>
-          </Alert.Root>
-
-          <Text fontSize="sm" textAlign="center" color="fg.muted">
-            <Link asChild colorPalette="blue">
-              <RouterLink to="/login">{t('auth.forgotPassword.backToLogin')}</RouterLink>
-            </Link>
-          </Text>
-        </VStack>
+      <AuthLayout title={t('auth.forgotPassword.successTitle')} footer={backToLogin}>
+        <Alert.Root status="success" size="sm">
+          <Alert.Indicator />
+          <Alert.Description>{t('auth.forgotPassword.successMessage')}</Alert.Description>
+        </Alert.Root>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout title={t('auth.forgotPassword.title')} subtitle={t('auth.forgotPassword.subtitle')}>
+    <AuthLayout
+      title={t('auth.forgotPassword.title')}
+      subtitle={t('auth.forgotPassword.subtitle')}
+      footer={backToLogin}
+    >
       <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           <Field label={t('auth.forgotPassword.email')}>
@@ -66,12 +65,6 @@ export const ForgotPasswordPage = () => {
           >
             {t('auth.forgotPassword.submit')}
           </Button>
-
-          <Text fontSize="sm" textAlign="center" color="fg.muted">
-            <Link asChild colorPalette="blue">
-              <RouterLink to="/login">{t('auth.forgotPassword.backToLogin')}</RouterLink>
-            </Link>
-          </Text>
         </VStack>
       </form>
     </AuthLayout>

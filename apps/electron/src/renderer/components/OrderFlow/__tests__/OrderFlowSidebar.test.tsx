@@ -61,7 +61,7 @@ describe('OrderFlowSidebar', () => {
 
   it('renders close button', () => {
     renderWithChakra(<OrderFlowSidebar width={300} symbol="BTCUSDT" />);
-    expect(screen.getByLabelText('Close')).toBeDefined();
+    expect(screen.getByLabelText('common.close')).toBeDefined();
   });
 
   it('renders DOM tab content by default', () => {

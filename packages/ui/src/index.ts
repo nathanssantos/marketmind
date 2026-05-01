@@ -23,6 +23,7 @@ export { Card } from './card';
 export { Checkbox, type CheckboxProps } from './checkbox';
 export { CloseButton, type CloseButtonProps } from './close-button';
 export { DataCard } from './data-card';
+export { RecordRow } from './record-row';
 export {
   Dialog,
   DialogActionTrigger,
@@ -66,7 +67,7 @@ export { CreateActionButton, type CreateActionButtonProps } from './create-actio
 export { DialogSection, type DialogSectionProps } from './dialog-section';
 export { FormRow, FormSection } from './form-section';
 export { PanelHeader } from './panel-header';
-export { SidebarContainer, SidebarHeader } from './Sidebar';
+export { SidebarContainer, SidebarHeader, SidebarTabsHeader } from './Sidebar';
 export {
   FieldHint,
   MetaText,

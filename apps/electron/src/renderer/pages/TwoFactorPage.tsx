@@ -1,9 +1,9 @@
-import { Text, VStack } from '@chakra-ui/react';
+import { VStack } from '@chakra-ui/react';
 import { type FormEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-import { AuthLayout } from '../components/Auth/AuthLayout';
-import { Alert, Button, Field, Input, Link } from '../components/ui';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AuthFooterLink, AuthLayout } from '../components/Auth/AuthLayout';
+import { Alert, Button, Field, Input } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { AUTH_UI, isRateLimited } from '../utils/auth';
 
@@ -26,16 +26,14 @@ export const TwoFactorPage = () => {
 
   if (!userId) {
     return (
-      <AuthLayout title={t('auth.twoFactor.title')}>
-        <VStack gap={4} align="stretch">
-          <Alert.Root status="error" size="sm">
-            <Alert.Indicator />
-            <Alert.Description>{t('auth.login.invalidCredentials')}</Alert.Description>
-          </Alert.Root>
-          <Link asChild colorPalette="blue" fontSize="sm" textAlign="center">
-            <RouterLink to="/login">{t('auth.twoFactor.backToLogin')}</RouterLink>
-          </Link>
-        </VStack>
+      <AuthLayout
+        title={t('auth.twoFactor.title')}
+        footer={<AuthFooterLink label={t('auth.twoFactor.backToLogin')} to="/login" />}
+      >
+        <Alert.Root status="error" size="sm">
+          <Alert.Indicator />
+          <Alert.Description>{t('auth.login.invalidCredentials')}</Alert.Description>
+        </Alert.Root>
       </AuthLayout>
     );
   }
@@ -67,7 +65,11 @@ export const TwoFactorPage = () => {
       : null;
 
   return (
-    <AuthLayout title={t('auth.twoFactor.title')} subtitle={t('auth.twoFactor.subtitle')}>
+    <AuthLayout
+      title={t('auth.twoFactor.title')}
+      subtitle={t('auth.twoFactor.subtitle')}
+      footer={<AuthFooterLink label={t('auth.twoFactor.backToLogin')} to="/login" />}
+    >
       <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
@@ -118,11 +120,6 @@ export const TwoFactorPage = () => {
             {t('auth.twoFactor.resend')}
           </Button>
 
-          <Text fontSize="sm" textAlign="center" color="fg.muted">
-            <Link asChild colorPalette="blue">
-              <RouterLink to="/login">{t('auth.twoFactor.backToLogin')}</RouterLink>
-            </Link>
-          </Text>
         </VStack>
       </form>
     </AuthLayout>

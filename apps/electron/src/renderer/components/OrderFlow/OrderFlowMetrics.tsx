@@ -1,4 +1,5 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { FormSection } from '@renderer/components/ui';
 import { useScalpingMetrics } from '@renderer/hooks/useScalpingMetrics';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,10 +14,8 @@ const OrderFlowMetricsComponent = ({ symbol }: OrderFlowMetricsProps) => {
 
   return (
     <Box p={3}>
-      <Stack gap={2.5} fontSize="xs">
-        <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.orderFlow')}</Text>
-
-        <Stack gap={1}>
+      <FormSection title={t('scalping.metric.orderFlow')}>
+        <Stack gap={1} fontSize="xs">
           <Flex justify="space-between">
             <Text color="fg.muted">CVD</Text>
             <Text fontWeight="medium" fontFamily="mono">{metrics.cvd.toFixed(2)}</Text>
@@ -42,7 +41,7 @@ const OrderFlowMetricsComponent = ({ symbol }: OrderFlowMetricsProps) => {
             <Text fontWeight="medium" fontFamily="mono">{metrics.exhaustionScore.toFixed(2)}</Text>
           </Flex>
         </Stack>
-      </Stack>
+      </FormSection>
     </Box>
   );
 };
