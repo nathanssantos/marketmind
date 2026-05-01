@@ -1,14 +1,15 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { Badge, Button, EmptyState, FormSection, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
+import { useDisclosure } from '@renderer/hooks';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChartBar, LuInfo, LuPlus, LuRefreshCw, LuTrash2 } from 'react-icons/lu';
+import { LuChartBar, LuInfo, LuRefreshCw, LuTrash2 } from 'react-icons/lu';
 import { useUIStore } from '../../store/uiStore';
 import { CreateWalletDialog } from './CreateWalletDialog';
 
@@ -110,7 +111,7 @@ export const WalletManager = () => {
     }
   };
 
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const createDialog = useDisclosure();
 
   return (
     <Stack gap={4} w="100%">
@@ -124,16 +125,12 @@ export const WalletManager = () => {
           </Flex>
         }
         action={
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowCreateDialog(true)}
-            loading={isCreatingPaper || isCreating}
-            data-testid="trigger-create-wallet"
-          >
-            <LuPlus />
-            {t('trading.wallets.create')}
-          </Button>
+          <CreateActionButton
+            label={t('trading.wallets.create')}
+            onClick={createDialog.open}
+            disabled={isCreatingPaper || isCreating}
+            data-testid="wallet-create-trigger"
+          />
         }
       />
 
@@ -159,8 +156,8 @@ export const WalletManager = () => {
       )}
 
       <CreateWalletDialog
-        isOpen={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
+        isOpen={createDialog.isOpen}
+        onClose={createDialog.close}
         onCreate={(params) => { void handleAddPaperWallet(params); }}
         onCreateReal={handleAddRealWallet}
         isCreating={isCreatingPaper || isCreating}

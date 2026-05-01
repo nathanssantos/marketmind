@@ -13,6 +13,7 @@ export { Checkbox } from './checkbox';
 export type { CheckboxProps } from './checkbox';
 export { CloseButton } from './close-button';
 export type { CloseButtonProps } from './close-button';
+export { CreateActionButton, type CreateActionButtonProps } from './create-action-button';
 export { CollapsibleSection } from './CollapsibleSection';
 export { ColorModeProvider, useColorMode } from './color-mode';
 export { ColorPicker, DEFAULT_COLOR_PRESETS } from './color-picker';
