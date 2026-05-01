@@ -36,21 +36,46 @@ import {
 } from 'react-icons/lu';
 
 
+interface ChartToolButtonProps {
+  active: boolean;
+  label: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+}
+
+/**
+ * Canonical button for the vertical chart-tools toolbar. Tooltip placed
+ * right-side (vertical-toolbar convention) + ToggleIconButton at size=2xs.
+ * Used by `DrawingToolButton` (drawing tool selection) and the bottom-rail
+ * toggles (magnet, tooltip, market events, flip) so all 26 buttons share
+ * the same shape.
+ */
+const ChartToolButton = memo(({ active, label, icon, onClick }: ChartToolButtonProps) => (
+  <TooltipWrapper label={label} showArrow placement="right">
+    <ToggleIconButton
+      active={active}
+      size="2xs"
+      aria-label={label}
+      onClick={onClick}
+    >
+      {icon}
+    </ToggleIconButton>
+  </TooltipWrapper>
+));
+
+ChartToolButton.displayName = 'ChartToolButton';
+
 const DrawingToolButton = memo(({ tool, label, icon }: { tool: DrawingType; label: string; icon: React.ReactNode }) => {
   const activeTool = useDrawingStore(s => s.activeTool);
   const setActiveTool = useDrawingStore(s => s.setActiveTool);
 
   return (
-    <TooltipWrapper label={label} showArrow placement="right">
-      <ToggleIconButton
-        active={activeTool === tool}
-        size="2xs"
-        aria-label={label}
-        onClick={() => setActiveTool(tool)}
-      >
-        {icon}
-      </ToggleIconButton>
-    </TooltipWrapper>
+    <ChartToolButton
+      active={activeTool === tool}
+      label={label}
+      icon={icon}
+      onClick={() => setActiveTool(tool)}
+    />
   );
 });
 
@@ -109,47 +134,31 @@ export const ChartToolsToolbar = memo(() => {
         <DrawingToolButton tool="text" label={t('chart.tools.text')} icon={<TextIcon />} />
         <DrawingToolButton tool="anchoredVwap" label={t('chart.tools.anchoredVwap')} icon={<AnchoredVwapIcon />} />
         <Separator orientation="horizontal" width="100%" />
-        <TooltipWrapper label={t('chart.tools.magnet')} showArrow placement="right">
-          <ToggleIconButton
-            active={magnetEnabled}
-            size="2xs"
-            aria-label={t('chart.tools.magnet')}
-            onClick={handleMagnetToggle}
-          >
-            <LuMagnet />
-          </ToggleIconButton>
-        </TooltipWrapper>
+        <ChartToolButton
+          active={magnetEnabled}
+          label={t('chart.tools.magnet')}
+          icon={<LuMagnet />}
+          onClick={handleMagnetToggle}
+        />
         <Separator orientation="horizontal" width="100%" />
-        <TooltipWrapper label={t('chart.controls.tooltip')} showArrow placement="right">
-          <ToggleIconButton
-            active={showTooltip}
-            size="2xs"
-            aria-label={t('chart.controls.tooltip')}
-            onClick={handleTooltipToggle}
-          >
-            <LuMessageSquare />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.marketEvents')} showArrow placement="right">
-          <ToggleIconButton
-            active={showEventRow}
-            size="2xs"
-            aria-label={t('chart.controls.marketEvents')}
-            onClick={handleEventRowToggle}
-          >
-            <LuCalendarDays />
-          </ToggleIconButton>
-        </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.flip')} showArrow placement="right">
-          <ToggleIconButton
-            active={chartFlipped}
-            size="2xs"
-            aria-label={t('chart.controls.flip')}
-            onClick={handleFlipToggle}
-          >
-            <LuFlipVertical2 />
-          </ToggleIconButton>
-        </TooltipWrapper>
+        <ChartToolButton
+          active={showTooltip}
+          label={t('chart.controls.tooltip')}
+          icon={<LuMessageSquare />}
+          onClick={handleTooltipToggle}
+        />
+        <ChartToolButton
+          active={showEventRow}
+          label={t('chart.controls.marketEvents')}
+          icon={<LuCalendarDays />}
+          onClick={handleEventRowToggle}
+        />
+        <ChartToolButton
+          active={chartFlipped}
+          label={t('chart.controls.flip')}
+          icon={<LuFlipVertical2 />}
+          onClick={handleFlipToggle}
+        />
       </VStack>
     </Box>
   );
