@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-05-02
+
+**v1.7 release** — Phase-2 design-language sweep: every non-dialog surface (sidebars, chart panels, auth pages, chart toolbar, list rows) brought up to the v1.6 design language. v1.6 made the dialogs uniform; v1.7 extends that to the rest of the app so the whole experience reads as one design system, not a patchwork.
+
+5 implementation PRs (#398–#402). Tests stay at 2332/2332 throughout.
+
+### Added — Sidebar primitives (Track S, #398)
+- **`<SidebarHeader>`** updated to match the actually-used style (`fontSize="xs"` `fontWeight="semibold"`, `px=3` `py=2`, `borderBottom`). The previous `lg/medium` style was aspirational with no consumer.
+- **`<SidebarTabsHeader>`** — new primitive bundling `Tabs.List` + an optional right-aligned close action. The 3 tabbed sidebars all reinvented this composition; the primitive locks it down (close X always on the right per UX convention).
+- **All 4 sidebars migrated** — MarketSidebar, TradingSidebar, AutoTradingSidebar, OrderFlowSidebar. Bare `<Text fontSize="xs">` wrapping `<Tabs.Trigger>` removed (Trigger renders its own label correctly). `aria-label="Close"` literals → `aria-label={t('common.close')}` for i18n hygiene.
+
+### Added — Chart panels (Track P, #399)
+- **`OrderFlowMetrics`** — bespoke `<Box p=3><Stack><Text>Order Flow</Text>...` → `<FormSection title>` wrapping the metric rows.
+- **`MarginInfoPanel`** — two bespoke `<Flex align="center" gap=2><Icon/><Text fontSize=xs fontWeight=semibold>` headers replaced with `<FormSection title action>` (HStack composition for the leading Shield / TrendingUp icons). Outer panel `<Box borderWidth=1>` framing kept.
+- `PerformancePanel` and `AgentActivityPanel` already followed the bible from earlier work.
+
+### Added — Auth pages (Track G, #400)
+- **`<AuthFooterLink>`** primitive — the centered "muted Text + Link" pattern repeated ~7 times across the 6 auth pages now lives in one place.
+- **`<AuthLayout footer>`** slot — pages pass their footer link via a prop instead of rendering it inside their body.
+- **All 6 auth pages migrated** — Login, Register, ForgotPassword, ResetPassword, TwoFactor, VerifyEmail.
+- `VerifyEmailPage` token-validation loading state migrated from bare `<Text>{loading}</Text>` to the standard `<Spinner>` panel combo (bible's loading rule applies to pages too).
+
+### Added — Chart toolbar (Track T, #401)
+- **`ChartToolButton`** extracted as the canonical primitive for the vertical chart-tools toolbar (TooltipWrapper placement=right + ToggleIconButton size=2xs). Used by both `DrawingToolButton` (drawing-tool selection) and the bottom-rail toggles (magnet, tooltip, market events, flip) — all 26 buttons now share the same shape.
+- 4 inline `<TooltipWrapper>` + `<ToggleIconButton>` blocks deduped.
+
+### Added — RecordRow primitive (Track R, #402)
+- **`<RecordRow density="compact|card">`** in `@marketmind/ui`. Replaces the `<Box borderWidth="1px" borderColor="border" borderRadius="md" p={2|3}>` shape repeated across object-management surfaces (Wallets, Profiles, Custom Symbols, Snapshots, Sessions, Indicators, etc.).
+- `compact` (default) for tight list rows: `px=2.5 py=2`. `card` for stand-alone cards: `p=3`.
+- `CustomSymbolsTab` migrated as canonical card-density consumer. Other compact-density callers kept as-is — they aren't visually inconsistent with what RecordRow renders, so the primitive is just available for new code.
+
+### Notes
+- **Track A** (`audit-panel-rules.mjs` CI gate) deferred to v1.8 — running it strictly today would block PRs on unrelated drift in older code (e.g. MarketIndicatorCharts/Sections still has 10+ ad-hoc bordered cards). Plan: build the audit + the cleanup together in v1.8.
+- **All v1.6 audits clean at release**: `audit-dialog-rules.mjs --strict` ✓, `audit-shade-literals.mjs` (218 files / 0 forbidden patterns) ✓, `audit-dialog-i18n-keys.mjs` (4 dialogs / 4 locales) ✓, type-check ✓.
+- **Test counts**: backend 5483 / 5483, electron unit 2332 / 2332, browser 108 / 108, trading-core 143 / 143.
+
 ## [1.6.0] - 2026-05-02
 
 **v1.6 release** — Design-system unification + chart reactivity overhaul. Two themes:
