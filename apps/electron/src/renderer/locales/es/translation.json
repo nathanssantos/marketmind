@@ -132,6 +132,7 @@
   },
   "customSymbols": {
     "title": "Símbolos Personalizados",
+    "manage": "Gestionar",
     "description": "Crea índices personalizados a partir de múltiples componentes con agregación ponderada.",
     "myIndices": "Mis Índices",
     "createNew": "Crear Nuevo",
@@ -219,8 +220,7 @@
       "tradingSimulator": "Simulador de Trading",
       "data": "Datos",
       "about": "Acerca de",
-      "indicators": "Indicadores",
-      "customSymbols": "Símbolos Personalizados"
+      "indicators": "Indicadores"
     },
     "section": {
       "account": "Cuenta",
@@ -2155,26 +2155,102 @@
         "confluence": "Confluencia"
       },
       "groupSummary": "{{enabled}} de {{total}} activos",
-      "trend": { "label": "Tendencia (EMA)", "description": "Bloquea trades contra la EMA", "enable": "Activar filtro de tendencia", "period": "Periodo EMA" },
-      "mtf": { "label": "Multi-timeframe", "enable": "Activar filtro MTF" },
-      "marketRegime": { "label": "Régimen de mercado", "enable": "Activar filtro de régimen" },
-      "supertrend": { "label": "SuperTrend", "enable": "Activar SuperTrend", "period": "Periodo", "multiplier": "Multiplicador" },
-      "btcCorrelation": { "label": "Correlación BTC", "enable": "Activar correlación BTC" },
-      "direction": { "label": "Dirección (EMA200)", "enable": "Activar filtro de dirección", "longInBear": "Permitir LONG en bear", "shortInBull": "Permitir SHORT en bull" },
-      "stochastic": { "label": "Stochastic", "enable": "Activar stochastic" },
-      "stochasticRecovery": { "label": "Stochastic recovery", "enable": "Activar recovery" },
-      "stochasticHtf": { "label": "Stochastic HTF", "enable": "Activar HTF" },
-      "stochasticRecoveryHtf": { "label": "Recovery HTF", "enable": "Activar recovery HTF" },
-      "momentum": { "label": "Momentum (RSI/MFI)", "enable": "Activar momentum" },
-      "adx": { "label": "ADX", "enable": "Activar ADX" },
-      "volume": { "label": "Volumen", "enable": "Activar volumen" },
-      "funding": { "label": "Funding rate", "enable": "Activar funding" },
-      "vwap": { "label": "VWAP", "enable": "Activar VWAP" },
-      "fvg": { "label": "FVG", "enable": "Activar FVG", "proximityPercent": "Proximidad %" },
-      "bollingerSqueeze": { "label": "Bollinger squeeze", "enable": "Activar BB squeeze", "threshold": "Threshold", "period": "Periodo", "stdDev": "Desv. estándar" },
-      "choppiness": { "label": "Choppiness", "enable": "Activar choppiness", "thresholdHigh": "Threshold alto", "thresholdLow": "Threshold bajo", "period": "Periodo" },
-      "session": { "label": "Sesión", "enable": "Activar sesión", "startUtc": "Inicio (UTC)", "endUtc": "Fin (UTC)" },
-      "confluence": { "label": "Confluencia", "enable": "Activar confluencia", "minScore": "Score mínimo" }
+      "trend": {
+        "label": "Tendencia (EMA)",
+        "description": "Bloquea trades contra la EMA",
+        "enable": "Activar filtro de tendencia",
+        "period": "Periodo EMA"
+      },
+      "mtf": {
+        "label": "Multi-timeframe",
+        "enable": "Activar filtro MTF"
+      },
+      "marketRegime": {
+        "label": "Régimen de mercado",
+        "enable": "Activar filtro de régimen"
+      },
+      "supertrend": {
+        "label": "SuperTrend",
+        "enable": "Activar SuperTrend",
+        "period": "Periodo",
+        "multiplier": "Multiplicador"
+      },
+      "btcCorrelation": {
+        "label": "Correlación BTC",
+        "enable": "Activar correlación BTC"
+      },
+      "direction": {
+        "label": "Dirección (EMA200)",
+        "enable": "Activar filtro de dirección",
+        "longInBear": "Permitir LONG en bear",
+        "shortInBull": "Permitir SHORT en bull"
+      },
+      "stochastic": {
+        "label": "Stochastic",
+        "enable": "Activar stochastic"
+      },
+      "stochasticRecovery": {
+        "label": "Stochastic recovery",
+        "enable": "Activar recovery"
+      },
+      "stochasticHtf": {
+        "label": "Stochastic HTF",
+        "enable": "Activar HTF"
+      },
+      "stochasticRecoveryHtf": {
+        "label": "Recovery HTF",
+        "enable": "Activar recovery HTF"
+      },
+      "momentum": {
+        "label": "Momentum (RSI/MFI)",
+        "enable": "Activar momentum"
+      },
+      "adx": {
+        "label": "ADX",
+        "enable": "Activar ADX"
+      },
+      "volume": {
+        "label": "Volumen",
+        "enable": "Activar volumen"
+      },
+      "funding": {
+        "label": "Funding rate",
+        "enable": "Activar funding"
+      },
+      "vwap": {
+        "label": "VWAP",
+        "enable": "Activar VWAP"
+      },
+      "fvg": {
+        "label": "FVG",
+        "enable": "Activar FVG",
+        "proximityPercent": "Proximidad %"
+      },
+      "bollingerSqueeze": {
+        "label": "Bollinger squeeze",
+        "enable": "Activar BB squeeze",
+        "threshold": "Threshold",
+        "period": "Periodo",
+        "stdDev": "Desv. estándar"
+      },
+      "choppiness": {
+        "label": "Choppiness",
+        "enable": "Activar choppiness",
+        "thresholdHigh": "Threshold alto",
+        "thresholdLow": "Threshold bajo",
+        "period": "Periodo"
+      },
+      "session": {
+        "label": "Sesión",
+        "enable": "Activar sesión",
+        "startUtc": "Inicio (UTC)",
+        "endUtc": "Fin (UTC)"
+      },
+      "confluence": {
+        "label": "Confluencia",
+        "enable": "Activar confluencia",
+        "minScore": "Score mínimo"
+      }
     },
     "risk": {
       "sizing": "Tamaño de posición",
@@ -2298,7 +2374,10 @@
         "description": "Guarda la configuración de filtros actual para acceso rápido.",
         "submit": "Guardar",
         "field": {
-          "name": { "label": "Nombre", "placeholder": "p. ej. mayor volumen" }
+          "name": {
+            "label": "Nombre",
+            "placeholder": "p. ej. mayor volumen"
+          }
         }
       }
     },

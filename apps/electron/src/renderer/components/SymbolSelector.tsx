@@ -3,12 +3,14 @@ import { Box, Flex, Spinner, Text, VStack } from '@chakra-ui/react';
 import type { AssetClass, MarketType } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuBuilding2, LuCoins } from 'react-icons/lu';
+import { LuBuilding2, LuCoins, LuSettings } from 'react-icons/lu';
 import { useActiveChartSymbols } from '../hooks/useActiveChartSymbols';
 import { useActiveWallet } from '../hooks/useActiveWallet';
 import { useBackendCustomSymbols } from '../hooks/useBackendCustomSymbols';
 import { useBackendKlines } from '../hooks/useBackendKlines';
+import { useDisclosure } from '../hooks/useDisclosure';
 import { trpc } from '../utils/trpc';
+import { CustomSymbolsDialog } from './CustomSymbols/CustomSymbolsDialog';
 
 interface SymbolSelectorProps {
   value: string;
@@ -111,6 +113,7 @@ export function SymbolSelector({
 }: SymbolSelectorProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+  const customSymbolsManage = useDisclosure();
   const [searchQuery, setSearchQuery] = useState('');
   const [internalMarketType, setInternalMarketType] = useState<MarketType>('FUTURES');
   const [internalAssetClass, setInternalAssetClass] = useState<AssetClass>('CRYPTO');
@@ -304,6 +307,7 @@ export function SymbolSelector({
     : openPositionItems.length + activeChartItems.length + filteredPopularSymbols.length;
 
   return (
+    <>
     <Popover
       open={isOpen}
       onOpenChange={(e) => setIsOpen(e.open)}
@@ -420,10 +424,28 @@ export function SymbolSelector({
                   )}
                   {renderSectionHeader(t('symbolSelector.popularSymbols'))}
                   {filteredPopularSymbols.slice(0, 20).map((symbol) => renderSymbolRow(symbol, false))}
-                  {customSymbolsQuery.data && customSymbolsQuery.data.length > 0 && (
+                  {(customSymbolsQuery.data && customSymbolsQuery.data.length > 0) || true ? (
                     <>
-                      {renderSectionHeader(t('symbolSelector.customSymbols'))}
-                      {customSymbolsQuery.data.map((cs) => (
+                      <Box px={3} py={1.5} bg="bg.subtle">
+                        <Flex align="center" justify="space-between">
+                          <Text fontSize="2xs" fontWeight="semibold" color="fg.muted" letterSpacing="wide">
+                            {t('symbolSelector.customSymbols')}
+                          </Text>
+                          <Button
+                            size="2xs"
+                            variant="ghost"
+                            onClick={() => {
+                              setIsOpen(false);
+                              customSymbolsManage.open();
+                            }}
+                            data-testid="symbol-selector-manage-custom"
+                          >
+                            <LuSettings size={11} />
+                            {t('customSymbols.manage')}
+                          </Button>
+                        </Flex>
+                      </Box>
+                      {(customSymbolsQuery.data ?? []).map((cs) => (
                         <Box
                           key={cs.symbol}
                           px={3}
@@ -451,7 +473,7 @@ export function SymbolSelector({
                         </Box>
                       ))}
                     </>
-                  )}
+                  ) : null}
                 </>
               )}
             </VStack>
@@ -459,5 +481,7 @@ export function SymbolSelector({
         </Box>
       </Flex>
     </Popover>
+    <CustomSymbolsDialog isOpen={customSymbolsManage.isOpen} onClose={customSymbolsManage.close} />
+    </>
   );
 }

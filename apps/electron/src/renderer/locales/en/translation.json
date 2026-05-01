@@ -128,6 +128,7 @@
   },
   "customSymbols": {
     "title": "Custom Symbols",
+    "manage": "Manage",
     "description": "Build custom indices from multiple components with weighted aggregation.",
     "myIndices": "My Indices",
     "createNew": "Create New",
@@ -213,8 +214,7 @@
       "tradingSimulator": "Trading Simulator",
       "data": "Data",
       "about": "About",
-      "indicators": "Indicators",
-      "customSymbols": "Custom Symbols"
+      "indicators": "Indicators"
     },
     "section": {
       "account": "Account",
@@ -790,28 +790,15 @@
       "degradedDescription": "No updates received from the exchange — reconnecting automatically."
     },
     "tools": {
-      "magnet": "OHLC Magnet",
       "pencil": "Pencil",
-      "highlighter": "Highlighter",
-      "ruler": "Ruler",
-      "horizontalLine": "Horizontal Line",
-      "verticalLine": "Vertical Line",
-      "trendLine": "Trend Line",
-      "ray": "Ray",
       "line": "Line",
-      "arrow": "Arrow",
-      "channel": "Channel",
       "rectangle": "Rectangle",
-      "ellipse": "Ellipse",
-      "area": "Area",
       "fibonacci": "Fibonacci",
-      "gannFan": "Gann Fan",
-      "pitchfork": "Pitchfork",
-      "priceRange": "Price Range",
-      "anchoredVwap": "Anchored VWAP",
-      "longPosition": "Long Position",
-      "shortPosition": "Short Position",
-      "text": "Text"
+      "ruler": "Ruler",
+      "area": "Area",
+      "arrow": "Arrow",
+      "text": "Text",
+      "magnet": "OHLC Magnet"
     },
     "controls": {
       "title": "Chart Controls",
@@ -850,17 +837,6 @@
     "type": {
       "candle": "Candle",
       "line": "Line"
-    },
-    "tools": {
-      "pencil": "Pencil",
-      "line": "Line",
-      "rectangle": "Rectangle",
-      "fibonacci": "Fibonacci",
-      "ruler": "Ruler",
-      "area": "Area",
-      "arrow": "Arrow",
-      "text": "Text",
-      "magnet": "OHLC Magnet"
     },
     "quickTrade": {
       "buy": "Buy",
@@ -2106,26 +2082,102 @@
         "confluence": "Confluence"
       },
       "groupSummary": "{{enabled}} of {{total}} enabled",
-      "trend": { "label": "Trend (EMA)", "description": "Block trades against EMA bias", "enable": "Enable trend filter", "period": "EMA period" },
-      "mtf": { "label": "Multi-timeframe", "enable": "Enable MTF filter" },
-      "marketRegime": { "label": "Market regime", "enable": "Enable regime filter" },
-      "supertrend": { "label": "SuperTrend", "enable": "Enable SuperTrend", "period": "Period", "multiplier": "Multiplier" },
-      "btcCorrelation": { "label": "BTC correlation", "enable": "Enable BTC correlation filter" },
-      "direction": { "label": "Direction (EMA200)", "enable": "Enable direction filter", "longInBear": "Allow LONG in bear", "shortInBull": "Allow SHORT in bull" },
-      "stochastic": { "label": "Stochastic", "enable": "Enable stochastic filter" },
-      "stochasticRecovery": { "label": "Stochastic recovery", "enable": "Enable stochastic recovery filter" },
-      "stochasticHtf": { "label": "HTF stochastic", "enable": "Enable HTF stochastic filter" },
-      "stochasticRecoveryHtf": { "label": "HTF stochastic recovery", "enable": "Enable HTF stochastic recovery filter" },
-      "momentum": { "label": "Momentum (RSI/MFI)", "enable": "Enable momentum filter" },
-      "adx": { "label": "ADX", "enable": "Enable ADX filter" },
-      "volume": { "label": "Volume", "enable": "Enable volume filter" },
-      "funding": { "label": "Funding rate", "enable": "Enable funding filter" },
-      "vwap": { "label": "VWAP", "enable": "Enable VWAP filter" },
-      "fvg": { "label": "FVG", "enable": "Enable FVG filter", "proximityPercent": "Proximity %" },
-      "bollingerSqueeze": { "label": "Bollinger squeeze", "enable": "Enable BB squeeze filter", "threshold": "Threshold", "period": "Period", "stdDev": "Std dev" },
-      "choppiness": { "label": "Choppiness", "enable": "Enable choppiness filter", "thresholdHigh": "High threshold", "thresholdLow": "Low threshold", "period": "Period" },
-      "session": { "label": "Trading session", "enable": "Enable session filter", "startUtc": "Start (UTC)", "endUtc": "End (UTC)" },
-      "confluence": { "label": "Confluence scoring", "enable": "Enable confluence scoring", "minScore": "Minimum score" }
+      "trend": {
+        "label": "Trend (EMA)",
+        "description": "Block trades against EMA bias",
+        "enable": "Enable trend filter",
+        "period": "EMA period"
+      },
+      "mtf": {
+        "label": "Multi-timeframe",
+        "enable": "Enable MTF filter"
+      },
+      "marketRegime": {
+        "label": "Market regime",
+        "enable": "Enable regime filter"
+      },
+      "supertrend": {
+        "label": "SuperTrend",
+        "enable": "Enable SuperTrend",
+        "period": "Period",
+        "multiplier": "Multiplier"
+      },
+      "btcCorrelation": {
+        "label": "BTC correlation",
+        "enable": "Enable BTC correlation filter"
+      },
+      "direction": {
+        "label": "Direction (EMA200)",
+        "enable": "Enable direction filter",
+        "longInBear": "Allow LONG in bear",
+        "shortInBull": "Allow SHORT in bull"
+      },
+      "stochastic": {
+        "label": "Stochastic",
+        "enable": "Enable stochastic filter"
+      },
+      "stochasticRecovery": {
+        "label": "Stochastic recovery",
+        "enable": "Enable stochastic recovery filter"
+      },
+      "stochasticHtf": {
+        "label": "HTF stochastic",
+        "enable": "Enable HTF stochastic filter"
+      },
+      "stochasticRecoveryHtf": {
+        "label": "HTF stochastic recovery",
+        "enable": "Enable HTF stochastic recovery filter"
+      },
+      "momentum": {
+        "label": "Momentum (RSI/MFI)",
+        "enable": "Enable momentum filter"
+      },
+      "adx": {
+        "label": "ADX",
+        "enable": "Enable ADX filter"
+      },
+      "volume": {
+        "label": "Volume",
+        "enable": "Enable volume filter"
+      },
+      "funding": {
+        "label": "Funding rate",
+        "enable": "Enable funding filter"
+      },
+      "vwap": {
+        "label": "VWAP",
+        "enable": "Enable VWAP filter"
+      },
+      "fvg": {
+        "label": "FVG",
+        "enable": "Enable FVG filter",
+        "proximityPercent": "Proximity %"
+      },
+      "bollingerSqueeze": {
+        "label": "Bollinger squeeze",
+        "enable": "Enable BB squeeze filter",
+        "threshold": "Threshold",
+        "period": "Period",
+        "stdDev": "Std dev"
+      },
+      "choppiness": {
+        "label": "Choppiness",
+        "enable": "Enable choppiness filter",
+        "thresholdHigh": "High threshold",
+        "thresholdLow": "Low threshold",
+        "period": "Period"
+      },
+      "session": {
+        "label": "Trading session",
+        "enable": "Enable session filter",
+        "startUtc": "Start (UTC)",
+        "endUtc": "End (UTC)"
+      },
+      "confluence": {
+        "label": "Confluence scoring",
+        "enable": "Enable confluence scoring",
+        "minScore": "Minimum score"
+      }
     },
     "risk": {
       "sizing": "Position sizing",
@@ -2249,7 +2301,10 @@
         "description": "Save the current filter configuration for quick access.",
         "submit": "Save",
         "field": {
-          "name": { "label": "Name", "placeholder": "e.g. high-volume gainers" }
+          "name": {
+            "label": "Name",
+            "placeholder": "e.g. high-volume gainers"
+          }
         }
       }
     },
