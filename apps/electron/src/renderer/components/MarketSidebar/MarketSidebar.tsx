@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../store/uiStore';
-import { MM } from '../../theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { IconButton, SidebarContainer } from '../ui';
 
 // V1_3 bundle follow-up — MarketIndicatorsTab pulls recharts (~296 KB raw /

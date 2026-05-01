@@ -62,9 +62,9 @@ export const DialogFooter = ({ px = 6, py = 4, ...props }: DialogFooterProps) =>
   return <ChakraDialogFooter px={px} py={py} {...props} />;
 };
 
-export const DialogCloseTrigger = (props: DialogCloseTriggerProps) => {
+export const DialogCloseTrigger = ({ 'aria-label': ariaLabel, ...props }: DialogCloseTriggerProps) => {
   // @ts-expect-error
-  return <ChakraDialogCloseTrigger {...props} />;
+  return <ChakraDialogCloseTrigger aria-label={ariaLabel ?? 'Close'} {...props} />;
 };
 
 export const DialogActionTrigger = (props: DialogActionTriggerProps) => {

@@ -1,7 +1,7 @@
 import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
 import { CloseButton, Dialog, Tabs } from '@renderer/components/ui';
 import { useDialogMount } from '@renderer/hooks/useDialogMount';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';

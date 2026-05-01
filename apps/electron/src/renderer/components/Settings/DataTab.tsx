@@ -1,7 +1,9 @@
 import {
-  Badge, Button, Callout, ConfirmationDialog, FormSection, Input, Slider,
+  Badge, Button, Callout, ConfirmationDialog, EmptyState, FormSection, Input, Slider,
 } from '@renderer/components/ui';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
+import { useToast } from '@/renderer/hooks/useToast';
+import { hydrateLayoutStore } from '@/renderer/store/layoutStore';
 import { trpc } from '@/renderer/utils/trpc';
 import {
   TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn,
@@ -9,7 +11,7 @@ import {
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuPlus, LuRefreshCw, LuTrash2, LuWrench, LuX } from 'react-icons/lu';
+import { LuHistory, LuPlus, LuRefreshCw, LuTrash2, LuWrench, LuX } from 'react-icons/lu';
 
 const MS_PER_HOUR = 3_600_000;
 const DEFAULT_COOLDOWN_HOURS = 2;
@@ -38,6 +40,88 @@ const statusColumns = (t: (key: string) => string): TradingTableColumn[] => [
   { key: 'gaps', header: t('settings.data.status.gapsFound'), textAlign: 'right', minW: '70px' },
   { key: 'corrupted', header: t('settings.data.status.corruptedFixed'), textAlign: 'right', minW: '90px' },
 ];
+
+const formatSnapshotAt = (date: Date | string, locale: string): string => {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+};
+
+const LayoutSnapshotsSection = () => {
+  const { t, i18n } = useTranslation();
+  const { success: toastSuccess, error: toastError } = useToast();
+  const utils = trpc.useUtils();
+
+  const { data: snapshots = [], isLoading } = trpc.layout.listSnapshots.useQuery();
+  const [pendingId, setPendingId] = useState<number | null>(null);
+
+  const restoreMutation = trpc.layout.restoreSnapshot.useMutation({
+    onSuccess: async () => {
+      await hydrateLayoutStore();
+      void utils.layout.listSnapshots.invalidate();
+      setPendingId(null);
+      toastSuccess(t('settings.data.layouts.restored'));
+    },
+    onError: (err) => {
+      setPendingId(null);
+      toastError(t('settings.data.layouts.restoreFailed'), err.message);
+    },
+  });
+
+  return (
+    <FormSection
+      title={t('settings.data.layouts.title')}
+      description={t('settings.data.layouts.description')}
+    >
+      {isLoading ? (
+        <Text fontSize="xs" color="fg.muted">{t('common.loading')}</Text>
+      ) : snapshots.length === 0 ? (
+        <EmptyState
+          icon={LuHistory}
+          title={t('settings.data.layouts.empty')}
+          size="sm"
+        />
+      ) : (
+        <Stack gap={1.5}>
+          {snapshots.map((snap) => (
+            <HStack
+              key={snap.id}
+              justify="space-between"
+              p={2}
+              borderWidth="1px"
+              borderColor="border"
+              borderRadius="md"
+              bg="bg.muted"
+            >
+              <HStack gap={2}>
+                <Box color="fg.muted"><LuHistory size={14} /></Box>
+                <Text fontSize="xs">{formatSnapshotAt(snap.snapshotAt, i18n.language)}</Text>
+              </HStack>
+              <Button
+                size="2xs"
+                variant="outline"
+                onClick={() => setPendingId(snap.id)}
+                loading={restoreMutation.isPending && restoreMutation.variables?.snapshotId === snap.id}
+                data-testid={`layout-snapshot-restore-${snap.id}`}
+              >
+                {t('settings.data.layouts.restore')}
+              </Button>
+            </HStack>
+          ))}
+        </Stack>
+      )}
+
+      <ConfirmationDialog
+        isOpen={pendingId !== null}
+        onClose={() => setPendingId(null)}
+        onConfirm={() => { if (pendingId !== null) restoreMutation.mutate({ snapshotId: pendingId }); }}
+        title={t('settings.data.layouts.restoreConfirmTitle')}
+        description={t('settings.data.layouts.restoreConfirmBody')}
+        confirmLabel={t('settings.data.layouts.restore')}
+        isLoading={restoreMutation.isPending}
+      />
+    </FormSection>
+  );
+};
 
 const HeatmapAlwaysCollectSection = () => {
   const { t } = useTranslation();
@@ -267,6 +351,8 @@ export const DataTab = () => {
         isDestructive
         isLoading={clearKlinesMutation.isPending}
       />
+
+      <LayoutSnapshotsSection />
 
       <HeatmapAlwaysCollectSection />
     </Stack>

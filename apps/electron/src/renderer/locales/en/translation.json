@@ -1,4 +1,42 @@
 {
+  "shortcuts": {
+    "help": {
+      "title": "Keyboard Shortcuts",
+      "empty": "No shortcuts registered yet."
+    },
+    "group": {
+      "chart": "Chart",
+      "drawing": "Drawing",
+      "trading": "Trading",
+      "global": "Global"
+    },
+    "global": {
+      "help": "Open this shortcuts help"
+    },
+    "chart": {
+      "panLeft": "Pan left",
+      "panRight": "Pan right",
+      "panLeftFast": "Pan left (fast)",
+      "panRightFast": "Pan right (fast)",
+      "panUp": "Pan up",
+      "panDown": "Pan down",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "resetZoom": "Reset vertical zoom",
+      "goToStart": "Go to start of data",
+      "goToEnd": "Go to latest candle"
+    },
+    "drawing": {
+      "delete": "Delete selected drawing",
+      "copy": "Copy selected drawing",
+      "paste": "Paste drawing"
+    },
+    "trading": {
+      "cancelSlTpPlacement": "Cancel SL/TP placement",
+      "cancelTrailingStopPlacement": "Cancel trailing stop placement",
+      "cancelOrderDrag": "Cancel order drag"
+    }
+  },
   "common": {
     "cancel": "Cancel",
     "save": "Save",
@@ -253,6 +291,41 @@
         "unknownAgent": "Unknown device",
         "unknownIp": "Unknown location",
         "createdAt": "Started {{date}}"
+      },
+      "agentTrading": {
+        "title": "AI Agent Trading",
+        "description": "Allow MCP-connected agents (Claude Code, ChatGPT desktop, custom agents) to drive trade execution on a per-wallet basis. Read-only inspection always works; this toggle gates write operations only.",
+        "warning": "Enabling this lets connected agents place real orders on your behalf. Every action is logged in the audit trail. Disable any time.",
+        "noWallets": "No wallets configured yet. Add a wallet to control per-wallet agent trading.",
+        "perWalletHelper": "Allow agents to place / cancel / modify orders on this wallet",
+        "enabled": "Agent trading enabled for {{name}}",
+        "disabled": "Agent trading disabled for {{name}}",
+        "toggleFailed": "Could not update agent trading",
+        "confirmTitle": "Enable agent trading on this wallet?",
+        "confirmBody": "MCP-connected agents will be able to place real orders on this wallet. Every action will be recorded in the audit log. You can revoke this any time.",
+        "confirmCta": "Enable agent trading"
+      },
+      "agentActivity": {
+        "title": "AI Agent Activity",
+        "description": "Audit trail of every action taken by MCP-connected agents. Records succeed, fail, and denied (gate off) calls with timing.",
+        "empty": "No agent activity yet.",
+        "loading": "Loading activity…",
+        "columns": {
+          "ts": "When",
+          "tool": "Tool",
+          "wallet": "Wallet",
+          "status": "Status",
+          "duration": "Duration",
+          "details": "Details"
+        },
+        "status": {
+          "success": "success",
+          "failure": "failure",
+          "denied": "denied",
+          "rate_limited": "rate limited"
+        },
+        "noWallet": "—",
+        "durationMs": "{{ms}}ms"
       }
     },
     "notifications": {
@@ -355,6 +428,16 @@
         "placeholder": "ETHUSDT",
         "add": "Add",
         "empty": "BTCUSDT is always collecting."
+      },
+      "layouts": {
+        "title": "Layout History",
+        "description": "Daily snapshots of your tabs and layout presets, retained for 30 days. Restore any prior snapshot if your current state was lost or you want to go back.",
+        "empty": "No snapshots yet — the first one is created the next day after you change your layout.",
+        "restore": "Restore",
+        "restoreConfirmTitle": "Restore this layout snapshot?",
+        "restoreConfirmBody": "Your current layout will be archived to history before this snapshot becomes active. You can always restore back to it.",
+        "restored": "Layout restored",
+        "restoreFailed": "Could not restore snapshot"
       }
     },
     "chart": {
@@ -1891,6 +1974,8 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Open backtest",
+    "runningTooltip": "{{count}} backtest running",
+    "runningTooltip_other": "{{count}} backtests running",
     "comingSoon": "Backtest configuration coming soon.",
     "tabs": {
       "basic": "Basic",
@@ -2327,7 +2412,11 @@
       "fair": "Fair",
       "good": "Good",
       "strong": "Strong",
-      "excellent": "Excellent"
+      "excellent": "Excellent",
+      "softNudge": {
+        "title": "Your password is below the new policy",
+        "body": "Update it in Settings → Security to keep your account secure."
+      }
     }
   },
   "account": {

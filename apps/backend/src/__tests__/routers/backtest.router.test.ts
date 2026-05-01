@@ -3,47 +3,37 @@ import { setupTestDatabase, teardownTestDatabase, cleanupTables } from '../helpe
 import { createAuthenticatedUser } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
 
+const DEFAULT_BACKTEST_RESULT = {
+  trades: [
+    {
+      id: 'trade-1', symbol: 'BTCUSDT', side: 'LONG' as const,
+      entryPrice: 50000, exitPrice: 51000, quantity: 0.1,
+      pnl: 100, pnlPercent: 2,
+      entryTime: Date.now() - 3600000, exitTime: Date.now(),
+      setupType: 'test-setup', exitReason: 'TAKE_PROFIT' as const,
+    },
+  ],
+  metrics: {
+    totalTrades: 10, winningTrades: 7, losingTrades: 3, winRate: 70,
+    totalPnl: 500, totalPnlPercent: 5,
+    avgWin: 100, avgLoss: -50, avgRiskReward: 2,
+    maxDrawdown: 100, maxDrawdownPercent: 1,
+    profitFactor: 3.5, sharpeRatio: 1.5,
+    maxConsecutiveLosses: 2, avgHoldTime: 3600000,
+  },
+  equityCurve: [
+    { time: Date.now() - 86400000, equity: 10000 },
+    { time: Date.now(), equity: 10500 },
+  ],
+};
+
+const engineRunMock = vi.fn().mockResolvedValue(DEFAULT_BACKTEST_RESULT);
+
 vi.mock('../../services/backtesting/BacktestEngine', () => ({
   BacktestEngine: class {
-    run = vi.fn().mockResolvedValue({
-      trades: [
-        {
-          id: 'trade-1',
-          symbol: 'BTCUSDT',
-          side: 'LONG',
-          entryPrice: 50000,
-          exitPrice: 51000,
-          quantity: 0.1,
-          pnl: 100,
-          pnlPercent: 2,
-          entryTime: Date.now() - 3600000,
-          exitTime: Date.now(),
-          setupType: 'test-setup',
-          exitReason: 'TAKE_PROFIT',
-        },
-      ],
-      metrics: {
-        totalTrades: 10,
-        winningTrades: 7,
-        losingTrades: 3,
-        winRate: 70,
-        totalPnl: 500,
-        totalPnlPercent: 5,
-        avgWin: 100,
-        avgLoss: -50,
-        avgRiskReward: 2,
-        maxDrawdown: 100,
-        maxDrawdownPercent: 1,
-        profitFactor: 3.5,
-        sharpeRatio: 1.5,
-        maxConsecutiveLosses: 2,
-        avgHoldTime: 3600000,
-      },
-      equityCurve: [
-        { time: Date.now() - 86400000, equity: 10000 },
-        { time: Date.now(), equity: 10500 },
-      ],
-    });
+    run(config: unknown, klines: unknown, reporter: unknown) {
+      return engineRunMock(config, klines, reporter);
+    }
   },
 }));
 
@@ -57,7 +47,14 @@ vi.mock('../../services/logger', () => ({
 }));
 
 const flushBackground = async (): Promise<void> => {
-  await new Promise<void>((resolve) => setImmediate(resolve));
+  // Wait for every tracked in-flight run + the persistTerminalRun chain
+  // inside it to settle. Awaits the actual promises rather than guessing
+  // a tick count, which is much more reliable under load.
+  const { inFlightRuns } = await import('../../routers/backtest/shared');
+  const tracked = Array.from(inFlightRuns.values());
+  await Promise.allSettled(tracked);
+  // Microtask flush so any synchronous follow-on (cache writes inside
+  // catch handlers, etc.) lands before the test continues.
   await new Promise<void>((resolve) => setImmediate(resolve));
 };
 
@@ -72,6 +69,7 @@ describe('Backtest Router', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    engineRunMock.mockResolvedValue(DEFAULT_BACKTEST_RESULT);
   });
 
   afterEach(async () => {
@@ -331,6 +329,87 @@ describe('Backtest Router', () => {
     });
   });
 
+  describe('getActiveRuns', () => {
+    it('should reject unauthenticated access', async () => {
+      const caller = createUnauthenticatedCaller();
+      await expect(caller.backtest.getActiveRuns()).rejects.toThrow('UNAUTHORIZED');
+    });
+
+    it('returns runs with status RUNNING and skips COMPLETED ones', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      // Run one to completion (mock resolves immediately).
+      const completed = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      // Sanity: completed row exists and is COMPLETED
+      const fetched = await caller.backtest.getResult({ id: completed.backtestId }) as { status: string };
+      expect(fetched.status).toBe('COMPLETED');
+
+      const active = await caller.backtest.getActiveRuns();
+      expect(active.find((r) => r.id === completed.backtestId)).toBeUndefined();
+    });
+
+    it('shape: each entry has id/symbol/interval/startTime', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      // Make the engine pend so the run stays in RUNNING state.
+      let resolveEngineRef: ((v: typeof DEFAULT_BACKTEST_RESULT) => void) | undefined;
+      engineRunMock.mockImplementationOnce(
+        () => new Promise<typeof DEFAULT_BACKTEST_RESULT>((resolve) => {
+          resolveEngineRef = resolve;
+        })
+      );
+
+      const run = await caller.backtest.run({
+        symbol: 'ETHUSDT', interval: '15m',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+
+      const active = await caller.backtest.getActiveRuns();
+      const found = active.find((r) => r.id === run.backtestId);
+      expect(found).toBeDefined();
+      expect(found?.symbol).toBe('ETHUSDT');
+      expect(found?.interval).toBe('15m');
+      expect(found?.startTime).toEqual(expect.any(String));
+
+      // Let the engine finish so cleanup can proceed.
+      if (resolveEngineRef) resolveEngineRef(DEFAULT_BACKTEST_RESULT);
+      await flushBackground();
+    });
+  });
+
+  describe('failed path', () => {
+    it('caches FAILED status when the engine throws', async () => {
+      engineRunMock.mockRejectedValueOnce(new Error('synthetic engine failure'));
+
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+
+      const runResult = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+
+      await flushBackground();
+
+      const cached = await caller.backtest.getResult({ id: runResult.backtestId }) as {
+        status: string; error?: string; duration?: number;
+      };
+      expect(cached.status).toBe('FAILED');
+      expect(cached.error).toContain('synthetic engine failure');
+      expect(cached.duration).toEqual(expect.any(Number));
+    });
+  });
+
   describe('delete', () => {
     it('should delete backtest result', async () => {
       const { user, session } = await createAuthenticatedUser();
@@ -361,6 +440,138 @@ describe('Backtest Router', () => {
       await expect(
         caller.backtest.delete({ id: 'non-existent-id' })
       ).rejects.toThrow('Backtest result not found');
+    });
+  });
+
+  describe('DB persistence (V1_5 E.8)', () => {
+    it('mirrors a completed run into backtest_runs after the void IIFE settles', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const { backtestRuns } = await import('../../db/schema');
+      const { getTestDatabase } = await import('../helpers/test-db');
+      const { eq } = await import('drizzle-orm');
+
+      const run = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      const db = getTestDatabase();
+      const rows = await db.select().from(backtestRuns).where(eq(backtestRuns.id, run.backtestId));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe('COMPLETED');
+      expect(rows[0]?.userId).toBe(user.id);
+      expect(rows[0]?.metrics).not.toBeNull();
+    });
+
+    it('mirrors a failed run with the error message stored', async () => {
+      engineRunMock.mockRejectedValueOnce(new Error('persisted failure'));
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const { backtestRuns } = await import('../../db/schema');
+      const { getTestDatabase } = await import('../helpers/test-db');
+      const { eq } = await import('drizzle-orm');
+
+      const run = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      const db = getTestDatabase();
+      const rows = await db.select().from(backtestRuns).where(eq(backtestRuns.id, run.backtestId));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.status).toBe('FAILED');
+      expect(rows[0]?.error).toContain('persisted failure');
+    });
+
+    it('getResult falls back to DB when the in-memory cache is evicted', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const { backtestResults } = await import('../../routers/backtest/shared');
+
+      const run = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      backtestResults.delete(run.backtestId);
+
+      const result = await caller.backtest.getResult({ id: run.backtestId }) as {
+        id: string; status: string;
+      };
+      expect(result.id).toBe(run.backtestId);
+      expect(result.status).toBe('COMPLETED');
+    });
+
+    it('list returns DB rows for the calling user even after cache eviction', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const { backtestResults } = await import('../../routers/backtest/shared');
+
+      const run = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      backtestResults.delete(run.backtestId);
+
+      const list = await caller.backtest.list();
+      const found = list.find((r) => r.id === run.backtestId);
+      expect(found).toBeDefined();
+      expect(found?.status).toBe('COMPLETED');
+    });
+
+    it('list scopes to the calling user — does not surface other users runs', async () => {
+      const { user: u1, session: s1 } = await createAuthenticatedUser({ email: 'a@test.com' });
+      const { user: u2, session: s2 } = await createAuthenticatedUser({ email: 'b@test.com' });
+      const c1 = createAuthenticatedCaller(u1, s1);
+      const c2 = createAuthenticatedCaller(u2, s2);
+      const { backtestResults } = await import('../../routers/backtest/shared');
+
+      const r1 = await c1.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      backtestResults.delete(r1.backtestId);
+
+      const u2List = await c2.backtest.list();
+      expect(u2List.find((r) => r.id === r1.backtestId)).toBeUndefined();
+
+      // u2 also can't getResult u1's run.
+      await expect(c2.backtest.getResult({ id: r1.backtestId }))
+        .rejects.toThrow('Backtest result not found');
+    });
+
+    it('delete removes both cache + DB row', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const { backtestRuns } = await import('../../db/schema');
+      const { getTestDatabase } = await import('../helpers/test-db');
+      const { eq } = await import('drizzle-orm');
+
+      const run = await caller.backtest.run({
+        symbol: 'BTCUSDT', interval: '1h',
+        startDate: '2024-01-01', endDate: '2024-01-31',
+        initialCapital: 10000,
+      });
+      await flushBackground();
+
+      await caller.backtest.delete({ id: run.backtestId });
+
+      const db = getTestDatabase();
+      const rows = await db.select().from(backtestRuns).where(eq(backtestRuns.id, run.backtestId));
+      expect(rows).toHaveLength(0);
     });
   });
 

@@ -11,8 +11,24 @@ services:
       POSTGRES_USER: ${DATABASE_USER:-marketmind}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-marketmind_dev_password}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+    # WAL archiving for point-in-time recovery (PITR). Allows recovery of any
+    # row state within the retention window — see docs/INFRA_RECOVERY.md.
+    # Disable by removing this `command:` block; PG will fall back to
+    # archive_mode=off (the v1.3.x default that left us unable to recover the
+    # 2026-04-30 user_layouts incident).
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      - -c
+      - archive_command=test ! -f /var/lib/postgresql/wal_archive/%f && cp %p /var/lib/postgresql/wal_archive/%f
+      - -c
+      - max_wal_senders=2
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - postgres_wal_archive:/var/lib/postgresql/wal_archive
       - ./apps/backend/src/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "${DATABASE_PORT:-5432}:5432"
@@ -108,6 +124,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  postgres_wal_archive:
     driver: local
   redis_data:
     driver: local

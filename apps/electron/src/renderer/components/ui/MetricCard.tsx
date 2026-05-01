@@ -1,5 +1,5 @@
 import { Box, Flex, Icon, Text } from '@chakra-ui/react';
-import { getPnLColor } from '@/renderer/theme';
+import { getPnLColor } from '@marketmind/tokens';
 import type { ReactNode } from 'react';
 import { LuTrendingDown, LuTrendingUp } from 'react-icons/lu';
 import { useColorMode } from './color-mode';

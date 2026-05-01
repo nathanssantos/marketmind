@@ -29,6 +29,7 @@ export interface CreateWalletOptions {
   currency?: string;
   apiKey?: string;
   apiSecret?: string;
+  agentTradingEnabled?: boolean;
 }
 
 export interface CreateTradingProfileOptions {
@@ -247,6 +248,7 @@ export const createTestWallet = async (options: CreateWalletOptions): Promise<Wa
     currency = 'USDT',
     apiKey = 'paper-trading',
     apiSecret = 'paper-trading',
+    agentTradingEnabled = false,
   } = options;
 
   const walletId = generateEntityId();
@@ -262,6 +264,7 @@ export const createTestWallet = async (options: CreateWalletOptions): Promise<Wa
     currentBalance: initialBalance,
     currency,
     isActive: true,
+    agentTradingEnabled,
   }).returning();
 
   if (!wallet) throw new Error('Failed to create test wallet');

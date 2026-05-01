@@ -15,7 +15,7 @@ import { PreferencesHydrator } from '../components/PreferencesHydrator';
 import { ChartProvider } from '../context/ChartContext';
 import { useLayoutSync } from '../hooks/useLayoutSync';
 import { useCurrencyAutoRefresh } from '../store/currencyStore';
-import { system } from '../theme';
+import { system } from '@marketmind/tokens';
 import { toaster } from '../utils/toaster';
 
 function ChartWindowContent(): ReactElement {

@@ -1,7 +1,7 @@
 import type { MarketType } from '@marketmind/types';
 import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, EmptyState, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';

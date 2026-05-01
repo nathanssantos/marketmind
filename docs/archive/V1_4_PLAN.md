@@ -1,5 +1,15 @@
-# v1.4 — Backlog
+# v1.4 — Backlog (archived)
 
+> **Status:** All three core items shipped in v1.4.0 (PR #293).
+>
+> **Shipped**: A.1 password complexity (#293), A.2 layout snapshot/history + server guard (#293), B.1 logger leads with cause (#293).
+>
+> **Deferred to v1.5**: A.1 login soft-nudge → V1_5_PLAN A.1.b. A.2 audit log → V1_5_PLAN B.2. A.2 Postgres `archive_mode=on` → V1_5_PLAN B.3. A.2 frontend snapshot UI (was implicit, surfaced post-merge) → V1_5_PLAN B.1.
+>
+> See `docs/V1_5_PLAN.md` for the live plan.
+>
+> ---
+>
 > Captured during v1.3.1 work. Pulls together user-asked follow-ups + hardening items surfaced while diagnosing the v1.3.0 → v1.3.1 layout-loss regression.
 
 ## A — Auth hardening

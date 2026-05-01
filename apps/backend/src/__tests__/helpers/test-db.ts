@@ -32,9 +32,12 @@ DROP TABLE IF EXISTS trade_cooldowns CASCADE;
 DROP TABLE IF EXISTS klines CASCADE;
 DROP TABLE IF EXISTS price_cache CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
+DROP TABLE IF EXISTS mcp_trading_audit CASCADE;
 DROP TABLE IF EXISTS user_indicators CASCADE;
+DROP TABLE IF EXISTS user_layouts_audit CASCADE;
 DROP TABLE IF EXISTS user_layouts_history CASCADE;
 DROP TABLE IF EXISTS user_layouts CASCADE;
+DROP TABLE IF EXISTS backtest_runs CASCADE;
 DROP TABLE IF EXISTS user_preferences CASCADE;
 DROP TABLE IF EXISTS trading_profiles CASCADE;
 DROP TABLE IF EXISTS two_factor_codes CASCADE;
@@ -111,9 +114,26 @@ CREATE TABLE IF NOT EXISTS wallets (
   currency VARCHAR(10) DEFAULT 'USDT',
   exchange VARCHAR(20) DEFAULT 'BINANCE',
   is_active BOOLEAN DEFAULT true,
+  agent_trading_enabled BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMP DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMP DEFAULT NOW() NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS mcp_trading_audit (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  wallet_id VARCHAR(255) REFERENCES wallets(id) ON DELETE SET NULL,
+  tool VARCHAR(64) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  input_json TEXT,
+  result_json TEXT,
+  error_message TEXT,
+  idempotency_key VARCHAR(255),
+  duration_ms INTEGER,
+  ts TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX mcp_trading_audit_user_ts_idx ON mcp_trading_audit (user_id, ts);
+CREATE INDEX mcp_trading_audit_idempotency_idx ON mcp_trading_audit (user_id, idempotency_key);
 
 CREATE TABLE IF NOT EXISTS trading_profiles (
   id VARCHAR(255) PRIMARY KEY,
@@ -683,6 +703,33 @@ CREATE TABLE IF NOT EXISTS user_layouts_history (
 );
 CREATE INDEX user_layouts_history_user_snapshot_idx ON user_layouts_history(user_id, snapshot_at);
 
+CREATE TABLE IF NOT EXISTS user_layouts_audit (
+  id SERIAL PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  prev_data_hash VARCHAR(64),
+  new_data_hash VARCHAR(64) NOT NULL,
+  source VARCHAR(64) DEFAULT 'renderer' NOT NULL,
+  client_version VARCHAR(20),
+  ts TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX user_layouts_audit_user_ts_idx ON user_layouts_audit(user_id, ts);
+
+CREATE TABLE IF NOT EXISTS backtest_runs (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status VARCHAR(20) NOT NULL,
+  config TEXT NOT NULL,
+  metrics TEXT,
+  equity_curve TEXT,
+  trades_json TEXT,
+  error TEXT,
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP NOT NULL,
+  duration_ms INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX backtest_runs_user_created_idx ON backtest_runs(user_id, created_at);
+
 CREATE TABLE IF NOT EXISTS income_events (
   id SERIAL PRIMARY KEY,
   wallet_id VARCHAR(255) NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
@@ -782,9 +829,12 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.autoTradingConfig);
   await db.delete(schema.activeWatchers);
   await db.delete(schema.apiKeys);
+  await db.delete(schema.mcpTradingAudit);
   await db.delete(schema.userIndicators);
+  await db.delete(schema.userLayoutsAudit);
   await db.delete(schema.userLayoutsHistory);
   await db.delete(schema.userLayouts);
+  await db.delete(schema.backtestRuns);
   await db.delete(schema.userPreferences);
   await db.delete(schema.tradingProfiles);
   await db.delete(schema.twoFactorCodes);

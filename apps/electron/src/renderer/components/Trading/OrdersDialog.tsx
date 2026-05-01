@@ -1,7 +1,7 @@
 import { Button, Dialog, EmptyState, IconButton, Input, Select } from '@renderer/components/ui';
 import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
-import { MM } from '@renderer/theme/tokens';
+import { MM } from '@marketmind/tokens';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';

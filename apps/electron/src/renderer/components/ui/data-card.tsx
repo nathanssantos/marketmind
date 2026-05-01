@@ -43,7 +43,14 @@ export const DataCard = ({
   ) : value;
 
   return (
-    <Box px={3} py={2} bg="bg.muted" borderRadius="md" h="100%">
+    <Box
+      px={3}
+      py={2}
+      borderRadius="md"
+      borderWidth="1px"
+      borderColor="border"
+      h="100%"
+    >
       <Text fontSize="2xs" color="fg.muted" textTransform="uppercase">
         {label}
       </Text>

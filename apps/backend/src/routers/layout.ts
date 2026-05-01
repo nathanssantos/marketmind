@@ -1,11 +1,15 @@
+import { createHash } from 'node:crypto';
 import { TRPCError } from '@trpc/server';
 import { and, desc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
-import { userLayouts, userLayoutsHistory } from '../db/schema';
+import { userLayouts, userLayoutsAudit, userLayoutsHistory } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
 
 const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const HISTORY_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+const AUDIT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+
+const sha256 = (input: string): string => createHash('sha256').update(input).digest('hex');
 
 const isDefaultLayoutData = (raw: string): boolean => {
   try {
@@ -43,6 +47,8 @@ export const layoutRouter = router({
   save: protectedProcedure
     .input(z.object({
       data: z.string(),
+      source: z.string().max(64).optional(),
+      clientVersion: z.string().max(20).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const existing = await ctx.db.query.userLayouts.findFirst({
@@ -81,6 +87,19 @@ export const layoutRouter = router({
           set: { data: input.data, updatedAt: new Date() },
         })
         .returning();
+
+      await ctx.db.insert(userLayoutsAudit).values({
+        userId: ctx.user.id,
+        prevDataHash: existing ? sha256(existing.data) : null,
+        newDataHash: sha256(input.data),
+        source: input.source ?? 'renderer',
+        clientVersion: input.clientVersion ?? null,
+      });
+
+      const auditCutoff = new Date(Date.now() - AUDIT_RETENTION_MS);
+      await ctx.db
+        .delete(userLayoutsAudit)
+        .where(and(eq(userLayoutsAudit.userId, ctx.user.id), lt(userLayoutsAudit.ts, auditCutoff)));
 
       return { success: true, id: result!.id };
     }),
@@ -129,6 +148,13 @@ export const layoutRouter = router({
           target: [userLayouts.userId],
           set: { data: snapshot.data, updatedAt: new Date() },
         });
+
+      await ctx.db.insert(userLayoutsAudit).values({
+        userId: ctx.user.id,
+        prevDataHash: existing ? sha256(existing.data) : null,
+        newDataHash: sha256(snapshot.data),
+        source: 'restore',
+      });
 
       return { success: true };
     }),

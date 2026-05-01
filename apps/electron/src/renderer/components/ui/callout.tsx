@@ -1,7 +1,7 @@
 import { Box, Flex, Text } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { LuCircleAlert, LuCircleCheck, LuInfo, LuTriangleAlert } from 'react-icons/lu';
-import { MM } from '../../theme/tokens';
+import { MM } from '@marketmind/tokens';
 
 export type CalloutTone = 'info' | 'success' | 'warning' | 'danger' | 'neutral';
 

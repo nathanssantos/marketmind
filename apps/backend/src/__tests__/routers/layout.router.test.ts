@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { userLayouts, userLayoutsHistory } from '../../db/schema';
+import { userLayouts, userLayoutsAudit, userLayoutsHistory } from '../../db/schema';
 import { setupTestDatabase, teardownTestDatabase, cleanupTables, getTestDatabase } from '../helpers/test-db';
 import { createAuthenticatedUser } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
@@ -223,6 +224,100 @@ describe('Layout Router', () => {
       await expect(c2.layout.restoreSnapshot({ snapshotId: snap!.id })).rejects.toThrow(
         expect.objectContaining({ code: 'NOT_FOUND' }),
       );
+    });
+  });
+
+  describe('audit log', () => {
+    it('writes one audit row per save with prev=null on first write', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      await caller.layout.save({ data: NON_DEFAULT_LAYOUT });
+
+      const rows = await db.select().from(userLayoutsAudit).where(eq(userLayoutsAudit.userId, user.id));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.prevDataHash).toBeNull();
+      expect(rows[0]!.newDataHash).toBe(createHash('sha256').update(NON_DEFAULT_LAYOUT).digest('hex'));
+      expect(rows[0]!.source).toBe('renderer');
+    });
+
+    it('records prev hash on subsequent saves and respects custom source/clientVersion', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      await caller.layout.save({ data: NON_DEFAULT_LAYOUT });
+      const newer = JSON.stringify({ ...JSON.parse(NON_DEFAULT_LAYOUT), activeSymbolTabId: 'tab-2' });
+      await caller.layout.save({ data: newer, source: 'mcp', clientVersion: '1.4.0' });
+
+      const rows = await db
+        .select()
+        .from(userLayoutsAudit)
+        .where(eq(userLayoutsAudit.userId, user.id))
+        .orderBy(userLayoutsAudit.id);
+      expect(rows).toHaveLength(2);
+      expect(rows[1]!.prevDataHash).toBe(createHash('sha256').update(NON_DEFAULT_LAYOUT).digest('hex'));
+      expect(rows[1]!.newDataHash).toBe(createHash('sha256').update(newer).digest('hex'));
+      expect(rows[1]!.source).toBe('mcp');
+      expect(rows[1]!.clientVersion).toBe('1.4.0');
+    });
+
+    it('prunes audit rows older than 90 days on write', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const ancient = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000);
+      const recent = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+      await db.insert(userLayoutsAudit).values([
+        { userId: user.id, newDataHash: 'a'.repeat(64), ts: ancient },
+        { userId: user.id, newDataHash: 'b'.repeat(64), ts: recent },
+      ]);
+
+      await caller.layout.save({ data: NON_DEFAULT_LAYOUT });
+
+      const remaining = await db.select().from(userLayoutsAudit).where(eq(userLayoutsAudit.userId, user.id));
+      const ancientLeft = remaining.filter((r) => r.ts.getTime() <= ancient.getTime() + 1000);
+      expect(ancientLeft).toHaveLength(0);
+      expect(remaining.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("records a 'restore' source audit row when restoreSnapshot runs", async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      await caller.layout.save({ data: NON_DEFAULT_LAYOUT });
+      const [snap] = await db
+        .insert(userLayoutsHistory)
+        .values({ userId: user.id, data: '{"older":"state"}' })
+        .returning();
+
+      await caller.layout.restoreSnapshot({ snapshotId: snap!.id });
+
+      const rows = await db
+        .select()
+        .from(userLayoutsAudit)
+        .where(eq(userLayoutsAudit.userId, user.id))
+        .orderBy(userLayoutsAudit.id);
+      expect(rows.some((r) => r.source === 'restore')).toBe(true);
+    });
+
+    it('does not surface audit rows from other users when filtering', async () => {
+      const { user: u1, session: s1 } = await createAuthenticatedUser({ email: 'a@test.com' });
+      const { user: u2, session: s2 } = await createAuthenticatedUser({ email: 'b@test.com' });
+      const db = getTestDatabase();
+
+      const c1 = createAuthenticatedCaller(u1, s1);
+      const c2 = createAuthenticatedCaller(u2, s2);
+      await c1.layout.save({ data: NON_DEFAULT_LAYOUT });
+      await c2.layout.save({ data: NON_DEFAULT_LAYOUT });
+
+      const u1Rows = await db.select().from(userLayoutsAudit).where(eq(userLayoutsAudit.userId, u1.id));
+      const u2Rows = await db.select().from(userLayoutsAudit).where(eq(userLayoutsAudit.userId, u2.id));
+      expect(u1Rows).toHaveLength(1);
+      expect(u2Rows).toHaveLength(1);
     });
   });
 });

@@ -17,6 +17,7 @@ import {
 } from 'react-icons/lu';
 import { useLayoutStore } from '../../store/layoutStore';
 import { useShallow } from 'zustand/react/shallow';
+import { useBacktestActiveRuns } from '../../hooks/useBacktestActiveRuns';
 import { useBacktestModalStore } from '../../store/backtestModalStore';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
@@ -131,6 +132,7 @@ export const Toolbar = memo(({
     }))
   );
 
+  const { activeRuns: activeBacktests, hasActiveRuns: hasActiveBacktest } = useBacktestActiveRuns();
   const { isBacktestOpen, toggleBacktest } = useBacktestModalStore(
     useShallow((state) => ({
       isBacktestOpen: state.isBacktestOpen,
@@ -242,15 +244,36 @@ export const Toolbar = memo(({
                 <LuScanLine />
               </ToggleIconButton>
             </TooltipWrapper>
-            <TooltipWrapper label={t('backtest.title')} showArrow>
-              <ToggleIconButton
-                active={isBacktestOpen}
-                size="2xs"
-                aria-label={t('backtest.title')}
-                onClick={toggleBacktest}
-              >
-                <LuFlaskConical />
-              </ToggleIconButton>
+            <TooltipWrapper
+              label={hasActiveBacktest ? t('backtest.runningTooltip', { count: activeBacktests.length }) : t('backtest.title')}
+              showArrow
+            >
+              <Box position="relative">
+                <ToggleIconButton
+                  active={isBacktestOpen}
+                  size="2xs"
+                  aria-label={t('backtest.title')}
+                  onClick={toggleBacktest}
+                  data-testid="toolbar-backtest-button"
+                >
+                  <LuFlaskConical />
+                </ToggleIconButton>
+                {hasActiveBacktest && (
+                  <Box
+                    position="absolute"
+                    top="-2px"
+                    right="-2px"
+                    w="8px"
+                    h="8px"
+                    borderRadius="full"
+                    bg="trading.profit"
+                    borderWidth="1px"
+                    borderColor="bg.panel"
+                    pointerEvents="none"
+                    data-testid="toolbar-backtest-running-indicator"
+                  />
+                )}
+              </Box>
             </TooltipWrapper>
             <TooltipWrapper label={t('trading.tabs.analytics')} showArrow>
               <ToggleIconButton

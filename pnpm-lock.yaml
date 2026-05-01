@@ -188,7 +188,7 @@ importers:
     dependencies:
       '@chakra-ui/react':
         specifier: ^3.35.0
-        version: 3.35.0(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+        version: 3.35.0(@emotion/react@11.14.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@emotion/react':
         specifier: ^11.14.0
         version: 11.14.0(@types/react@19.2.14)(react@19.2.5)
@@ -198,6 +198,9 @@ importers:
       '@marketmind/fibonacci':
         specifier: workspace:*
         version: link:../../packages/fibonacci
+      '@marketmind/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       '@marketmind/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -494,6 +497,22 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/mcp-trading:
+    dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.0.4
+        version: 1.29.0(zod@4.3.6)
+    devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.17
+      tsx:
+        specifier: ^4.19.2
+        version: 4.21.0
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   packages/risk:
     dependencies:
       '@marketmind/types':
@@ -518,6 +537,22 @@ importers:
       vitest:
         specifier: ^4.1.5
         version: 4.1.5(@opentelemetry/api@1.9.1)(@types/node@25.6.0)(@vitest/browser-playwright@4.1.5)(@vitest/coverage-v8@4.1.5)(@vitest/ui@4.1.5)(happy-dom@20.9.0)(jsdom@29.0.2(canvas@3.2.3))(vite@8.0.10(@types/node@25.6.0)(esbuild@0.27.7)(jiti@2.6.1)(terser@5.46.2)(tsx@4.21.0)(yaml@2.8.3))
+
+  packages/tokens:
+    dependencies:
+      '@chakra-ui/react':
+        specifier: ^3.35.0
+        version: 3.35.0(@emotion/react@11.14.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@marketmind/fibonacci':
+        specifier: workspace:*
+        version: link:../fibonacci
+      '@marketmind/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
   packages/trading-core:
     dependencies:
@@ -11558,7 +11593,7 @@ snapshots:
     dependencies:
       css-tree: 3.2.1
 
-  '@chakra-ui/react@3.35.0(@emotion/react@11.14.0(@types/react@19.2.14)(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@chakra-ui/react@3.35.0(@emotion/react@11.14.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@ark-ui/react': 5.36.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@emotion/is-prop-valid': 1.4.0

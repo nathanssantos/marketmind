@@ -114,6 +114,7 @@ interface TestWallet {
   totalWithdrawals: string;
   lastTransferSyncAt: Date | null;
   currency: string;
+  agentTradingEnabled: boolean;
 }
 
 interface TestExecution {
@@ -148,6 +149,7 @@ const createTestWallet = (overrides: Partial<TestWallet> = {}): TestWallet => ({
   totalWithdrawals: '0',
   lastTransferSyncAt: null,
   currency: 'USDT',
+  agentTradingEnabled: false,
   ...overrides,
 });
 

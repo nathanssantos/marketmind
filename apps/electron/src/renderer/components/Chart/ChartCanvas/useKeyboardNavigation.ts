@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import { useKeyboardShortcut } from '@renderer/hooks/useKeyboardShortcut';
+import { CHART_CANVAS_DATA_ATTR, type ShortcutDefinition } from '@renderer/services/keyboardShortcuts';
 
 export interface UseKeyboardNavigationProps {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
@@ -22,125 +24,103 @@ export const useKeyboardNavigation = ({
   onViewportChange,
 }: UseKeyboardNavigationProps): UseKeyboardNavigationResult => {
   const onViewportChangeRef = useRef(onViewportChange);
-  const isFocusedRef = useRef(false);
+  const managerRef = useRef(manager);
 
   useEffect(() => {
     onViewportChangeRef.current = onViewportChange;
-  }, [onViewportChange]);
+    managerRef.current = manager;
+  });
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (!enabled || !manager || !isFocusedRef.current) return;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !enabled) return;
+    canvas.setAttribute('tabindex', '0');
+    canvas.setAttribute(CHART_CANVAS_DATA_ATTR, '');
+    return () => {
+      canvas.removeAttribute(CHART_CANVAS_DATA_ATTR);
+    };
+  }, [canvasRef, enabled]);
 
-    const isModifierPressed = event.ctrlKey || event.metaKey || event.altKey;
+  const fireViewportChange = useCallback(() => onViewportChangeRef.current?.(), []);
 
-    switch (event.key) {
-      case 'ArrowLeft':
-        event.preventDefault();
-        manager.pan(isModifierPressed ? PAN_STEP * 3 : PAN_STEP);
-        onViewportChangeRef.current?.();
-        break;
+  const baseDefs = useMemo<Omit<ShortcutDefinition, 'action'>[]>(() => [
+    { id: 'chart.panLeft', keys: 'ArrowLeft', scope: 'chart-focus', group: 'chart', description: 'Pan left', descriptionKey: 'shortcuts.chart.panLeft' },
+    { id: 'chart.panRight', keys: 'ArrowRight', scope: 'chart-focus', group: 'chart', description: 'Pan right', descriptionKey: 'shortcuts.chart.panRight' },
+    { id: 'chart.panLeftFast', keys: 'Mod+ArrowLeft', scope: 'chart-focus', group: 'chart', description: 'Pan left (fast)', descriptionKey: 'shortcuts.chart.panLeftFast' },
+    { id: 'chart.panRightFast', keys: 'Mod+ArrowRight', scope: 'chart-focus', group: 'chart', description: 'Pan right (fast)', descriptionKey: 'shortcuts.chart.panRightFast' },
+    { id: 'chart.panUp', keys: 'Mod+ArrowUp', scope: 'chart-focus', group: 'chart', description: 'Pan up', descriptionKey: 'shortcuts.chart.panUp' },
+    { id: 'chart.panDown', keys: 'Mod+ArrowDown', scope: 'chart-focus', group: 'chart', description: 'Pan down', descriptionKey: 'shortcuts.chart.panDown' },
+    { id: 'chart.zoomIn', keys: '+', scope: 'chart-focus', group: 'chart', description: 'Zoom in', descriptionKey: 'shortcuts.chart.zoomIn' },
+    { id: 'chart.zoomOut', keys: '-', scope: 'chart-focus', group: 'chart', description: 'Zoom out', descriptionKey: 'shortcuts.chart.zoomOut' },
+    { id: 'chart.resetZoom', keys: 'Mod+0', scope: 'chart-focus', group: 'chart', description: 'Reset vertical zoom', descriptionKey: 'shortcuts.chart.resetZoom' },
+    { id: 'chart.goToStart', keys: 'Home', scope: 'chart-focus', group: 'chart', description: 'Go to start', descriptionKey: 'shortcuts.chart.goToStart' },
+    { id: 'chart.goToEnd', keys: 'End', scope: 'chart-focus', group: 'chart', description: 'Go to latest', descriptionKey: 'shortcuts.chart.goToEnd' },
+  ], []);
 
-      case 'ArrowRight':
-        event.preventDefault();
-        manager.pan(isModifierPressed ? -PAN_STEP * 3 : -PAN_STEP);
-        onViewportChangeRef.current?.();
-        break;
-
-      case 'ArrowUp':
-        if (isModifierPressed) {
-          event.preventDefault();
-          manager.panVertical(PAN_STEP);
-        }
-        break;
-
-      case 'ArrowDown':
-        if (isModifierPressed) {
-          event.preventDefault();
-          manager.panVertical(-PAN_STEP);
-        }
-        break;
-
-      case '+':
-      case '=':
-        event.preventDefault();
-        manager.zoom(ZOOM_STEP);
-        onViewportChangeRef.current?.();
-        break;
-
-      case '-':
-      case '_':
-        event.preventDefault();
-        manager.zoom(-ZOOM_STEP);
-        onViewportChangeRef.current?.();
-        break;
-
-      case '0':
-        if (isModifierPressed) {
-          event.preventDefault();
-          manager.resetVerticalZoom();
-          onViewportChangeRef.current?.();
-        }
-        break;
-
-      case 'Home':
-        event.preventDefault();
-        manager.setViewport({ ...manager.getViewport(), start: 0 });
-        onViewportChangeRef.current?.();
-        break;
-
-      case 'End': {
-        event.preventDefault();
-        const endViewport = manager.getViewport();
-        const endVisibleRange = endViewport.end - endViewport.start;
-        const klineCount = manager.getKlineCount();
-        if (klineCount > 0) {
-          manager.setViewport({
-            ...endViewport,
-            start: Math.max(0, klineCount - endVisibleRange),
-            end: klineCount,
-          });
-          onViewportChangeRef.current?.();
-        }
-        break;
-      }
-
-      default:
-        break;
-    }
-  }, [enabled, manager]);
-
-  const handleFocus = useCallback(() => {
-    isFocusedRef.current = true;
-  }, []);
-
-  const handleBlur = useCallback(() => {
-    isFocusedRef.current = false;
-  }, []);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[0]!,
+    action: () => { managerRef.current?.pan(PAN_STEP); fireViewportChange(); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[1]!,
+    action: () => { managerRef.current?.pan(-PAN_STEP); fireViewportChange(); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[2]!,
+    action: () => { managerRef.current?.pan(PAN_STEP * 3); fireViewportChange(); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[3]!,
+    action: () => { managerRef.current?.pan(-PAN_STEP * 3); fireViewportChange(); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[4]!,
+    action: () => { managerRef.current?.panVertical(PAN_STEP); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[5]!,
+    action: () => { managerRef.current?.panVertical(-PAN_STEP); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[6]!,
+    action: () => { managerRef.current?.zoom(ZOOM_STEP); fireViewportChange(); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[7]!,
+    action: () => { managerRef.current?.zoom(-ZOOM_STEP); fireViewportChange(); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[8]!,
+    action: () => { managerRef.current?.resetVerticalZoom(); fireViewportChange(); },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[9]!,
+    action: () => {
+      const m = managerRef.current;
+      if (!m) return;
+      m.setViewport({ ...m.getViewport(), start: 0 });
+      fireViewportChange();
+    },
+  } : null);
+  useKeyboardShortcut(enabled ? {
+    ...baseDefs[10]!,
+    action: () => {
+      const m = managerRef.current;
+      if (!m) return;
+      const vp = m.getViewport();
+      const range = vp.end - vp.start;
+      const count = m.getKlineCount();
+      if (count <= 0) return;
+      m.setViewport({ ...vp, start: Math.max(0, count - range), end: count });
+      fireViewportChange();
+    },
+  } : null);
 
   const focusCanvas = useCallback(() => {
     canvasRef.current?.focus();
   }, [canvasRef]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !enabled) return;
-
-    canvas.setAttribute('tabindex', '0');
-
-    canvas.addEventListener('keydown', handleKeyDown);
-    canvas.addEventListener('focus', handleFocus);
-    canvas.addEventListener('blur', handleBlur);
-
-    return () => {
-      canvas.removeEventListener('keydown', handleKeyDown);
-      canvas.removeEventListener('focus', handleFocus);
-      canvas.removeEventListener('blur', handleBlur);
-    };
-  }, [enabled, handleKeyDown, handleFocus, handleBlur, canvasRef]);
-
-  return {
-    focusCanvas,
-  };
+  return { focusCanvas };
 };
 
 export const KEYBOARD_SHORTCUTS = {

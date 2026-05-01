@@ -1,4 +1,42 @@
 {
+  "shortcuts": {
+    "help": {
+      "title": "Atalhos do Teclado",
+      "empty": "Nenhum atalho registrado ainda."
+    },
+    "group": {
+      "chart": "Gráfico",
+      "drawing": "Desenho",
+      "trading": "Trading",
+      "global": "Global"
+    },
+    "global": {
+      "help": "Abrir esta ajuda de atalhos"
+    },
+    "chart": {
+      "panLeft": "Mover para esquerda",
+      "panRight": "Mover para direita",
+      "panLeftFast": "Mover para esquerda (rápido)",
+      "panRightFast": "Mover para direita (rápido)",
+      "panUp": "Mover para cima",
+      "panDown": "Mover para baixo",
+      "zoomIn": "Aumentar zoom",
+      "zoomOut": "Diminuir zoom",
+      "resetZoom": "Resetar zoom vertical",
+      "goToStart": "Ir para o início dos dados",
+      "goToEnd": "Ir para o candle mais recente"
+    },
+    "drawing": {
+      "delete": "Excluir desenho selecionado",
+      "copy": "Copiar desenho selecionado",
+      "paste": "Colar desenho"
+    },
+    "trading": {
+      "cancelSlTpPlacement": "Cancelar colocação de SL/TP",
+      "cancelTrailingStopPlacement": "Cancelar colocação de trailing stop",
+      "cancelOrderDrag": "Cancelar arraste de ordem"
+    }
+  },
   "common": {
     "cancel": "Cancelar",
     "save": "Salvar",
@@ -259,6 +297,41 @@
         "unknownAgent": "Dispositivo desconhecido",
         "unknownIp": "Localização desconhecida",
         "createdAt": "Iniciada em {{date}}"
+      },
+      "agentTrading": {
+        "title": "Trading por Agente IA",
+        "description": "Permitir que agentes conectados via MCP (Claude Code, ChatGPT desktop, agentes customizados) executem trades por carteira. Inspeção read-only funciona sempre; esse toggle controla apenas as operações de escrita.",
+        "warning": "Habilitar permite que agentes coloquem ordens reais em seu nome. Toda ação é registrada na trilha de auditoria. Desabilite a qualquer momento.",
+        "noWallets": "Nenhuma carteira configurada ainda. Adicione uma carteira para controlar o trading por agente.",
+        "perWalletHelper": "Permitir que agentes coloquem / cancelem / modifiquem ordens nesta carteira",
+        "enabled": "Trading por agente habilitado para {{name}}",
+        "disabled": "Trading por agente desabilitado para {{name}}",
+        "toggleFailed": "Não foi possível atualizar o trading por agente",
+        "confirmTitle": "Habilitar trading por agente nesta carteira?",
+        "confirmBody": "Agentes conectados via MCP poderão colocar ordens reais nesta carteira. Toda ação será registrada no log de auditoria. Você pode revogar a qualquer momento.",
+        "confirmCta": "Habilitar trading por agente"
+      },
+      "agentActivity": {
+        "title": "Atividade do Agente IA",
+        "description": "Trilha de auditoria de toda ação tomada por agentes conectados via MCP. Registra chamadas com sucesso, falha e negadas (gate desligado), com tempo.",
+        "empty": "Nenhuma atividade de agente ainda.",
+        "loading": "Carregando atividade…",
+        "columns": {
+          "ts": "Quando",
+          "tool": "Ferramenta",
+          "wallet": "Carteira",
+          "status": "Status",
+          "duration": "Duração",
+          "details": "Detalhes"
+        },
+        "status": {
+          "success": "sucesso",
+          "failure": "falha",
+          "denied": "negado",
+          "rate_limited": "rate limit"
+        },
+        "noWallet": "—",
+        "durationMs": "{{ms}}ms"
       }
     },
     "notifications": {
@@ -381,6 +454,16 @@
         "placeholder": "ETHUSDT",
         "add": "Adicionar",
         "empty": "BTCUSDT está sempre coletando."
+      },
+      "layouts": {
+        "title": "Histórico de Layouts",
+        "description": "Snapshots diários das suas abas e presets de layout, mantidos por 30 dias. Restaure qualquer snapshot anterior se seu estado atual foi perdido ou se você quer voltar.",
+        "empty": "Nenhum snapshot ainda — o primeiro é criado no dia seguinte ao primeiro ajuste no layout.",
+        "restore": "Restaurar",
+        "restoreConfirmTitle": "Restaurar este snapshot de layout?",
+        "restoreConfirmBody": "Seu layout atual será arquivado no histórico antes deste snapshot ficar ativo. Você sempre pode voltar pra ele.",
+        "restored": "Layout restaurado",
+        "restoreFailed": "Não foi possível restaurar o snapshot"
       }
     },
     "chart": {
@@ -1925,6 +2008,8 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Abrir backtest",
+    "runningTooltip": "{{count}} backtest rodando",
+    "runningTooltip_other": "{{count}} backtests rodando",
     "comingSoon": "Configuração de backtest em breve.",
     "tabs": {
       "basic": "Básico",
@@ -2361,7 +2446,11 @@
       "fair": "Razoável",
       "good": "Boa",
       "strong": "Forte",
-      "excellent": "Excelente"
+      "excellent": "Excelente",
+      "softNudge": {
+        "title": "Sua senha está abaixo da nova política",
+        "body": "Atualize em Configurações → Segurança para manter sua conta segura."
+      }
     }
   },
   "account": {

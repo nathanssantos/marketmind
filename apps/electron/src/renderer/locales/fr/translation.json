@@ -1,4 +1,42 @@
 {
+  "shortcuts": {
+    "help": {
+      "title": "Raccourcis Clavier",
+      "empty": "Aucun raccourci enregistré pour l'instant."
+    },
+    "group": {
+      "chart": "Graphique",
+      "drawing": "Dessin",
+      "trading": "Trading",
+      "global": "Global"
+    },
+    "global": {
+      "help": "Ouvrir cette aide des raccourcis"
+    },
+    "chart": {
+      "panLeft": "Déplacer à gauche",
+      "panRight": "Déplacer à droite",
+      "panLeftFast": "Déplacer à gauche (rapide)",
+      "panRightFast": "Déplacer à droite (rapide)",
+      "panUp": "Déplacer vers le haut",
+      "panDown": "Déplacer vers le bas",
+      "zoomIn": "Zoomer",
+      "zoomOut": "Dézoomer",
+      "resetZoom": "Réinitialiser le zoom vertical",
+      "goToStart": "Aller au début des données",
+      "goToEnd": "Aller à la dernière bougie"
+    },
+    "drawing": {
+      "delete": "Supprimer le dessin sélectionné",
+      "copy": "Copier le dessin sélectionné",
+      "paste": "Coller le dessin"
+    },
+    "trading": {
+      "cancelSlTpPlacement": "Annuler le placement de SL/TP",
+      "cancelTrailingStopPlacement": "Annuler le placement de trailing stop",
+      "cancelOrderDrag": "Annuler le glissement d'ordre"
+    }
+  },
   "common": {
     "cancel": "Annuler",
     "save": "Enregistrer",
@@ -259,6 +297,41 @@
         "unknownAgent": "Appareil inconnu",
         "unknownIp": "Emplacement inconnu",
         "createdAt": "Démarrée le {{date}}"
+      },
+      "agentTrading": {
+        "title": "Trading par Agent IA",
+        "description": "Autoriser les agents connectés via MCP (Claude Code, ChatGPT desktop, agents personnalisés) à exécuter des trades par portefeuille. L'inspection en lecture seule fonctionne toujours ; ce toggle ne contrôle que les opérations d'écriture.",
+        "warning": "L'activer permet aux agents de placer de vrais ordres en votre nom. Chaque action est enregistrée dans le journal d'audit. Désactivez quand vous voulez.",
+        "noWallets": "Aucun portefeuille configuré pour l'instant. Ajoutez-en un pour contrôler le trading par agent.",
+        "perWalletHelper": "Permettre aux agents de placer / annuler / modifier les ordres sur ce portefeuille",
+        "enabled": "Trading par agent activé pour {{name}}",
+        "disabled": "Trading par agent désactivé pour {{name}}",
+        "toggleFailed": "Impossible de mettre à jour le trading par agent",
+        "confirmTitle": "Activer le trading par agent sur ce portefeuille ?",
+        "confirmBody": "Les agents connectés via MCP pourront placer de vrais ordres sur ce portefeuille. Chaque action sera enregistrée dans le journal d'audit. Vous pouvez révoquer à tout moment.",
+        "confirmCta": "Activer le trading par agent"
+      },
+      "agentActivity": {
+        "title": "Activité de l'Agent IA",
+        "description": "Journal d'audit de toutes les actions menées par les agents connectés via MCP. Enregistre les appels réussis, échoués et refusés (gate désactivé), avec la durée.",
+        "empty": "Aucune activité d'agent pour l'instant.",
+        "loading": "Chargement de l'activité…",
+        "columns": {
+          "ts": "Quand",
+          "tool": "Outil",
+          "wallet": "Portefeuille",
+          "status": "Statut",
+          "duration": "Durée",
+          "details": "Détails"
+        },
+        "status": {
+          "success": "succès",
+          "failure": "échec",
+          "denied": "refusé",
+          "rate_limited": "rate limit"
+        },
+        "noWallet": "—",
+        "durationMs": "{{ms}}ms"
       }
     },
     "notifications": {
@@ -381,6 +454,16 @@
         "placeholder": "ETHUSDT",
         "add": "Ajouter",
         "empty": "BTCUSDT collecte en permanence."
+      },
+      "layouts": {
+        "title": "Historique des Layouts",
+        "description": "Snapshots quotidiens de vos onglets et presets de layout, conservés pendant 30 jours. Restaurez n'importe quel snapshot antérieur si votre état actuel a été perdu ou si vous voulez revenir en arrière.",
+        "empty": "Aucun snapshot pour l'instant — le premier est créé le lendemain du premier changement de votre layout.",
+        "restore": "Restaurer",
+        "restoreConfirmTitle": "Restaurer ce snapshot de layout ?",
+        "restoreConfirmBody": "Votre layout actuel sera archivé dans l'historique avant que ce snapshot ne devienne actif. Vous pouvez toujours y revenir.",
+        "restored": "Layout restauré",
+        "restoreFailed": "Impossible de restaurer le snapshot"
       }
     },
     "chart": {
@@ -1930,6 +2013,8 @@
   "backtest": {
     "title": "Backtest",
     "openTooltip": "Ouvrir le backtest",
+    "runningTooltip": "{{count}} backtest en cours",
+    "runningTooltip_other": "{{count}} backtests en cours",
     "comingSoon": "Configuration du backtest bientôt disponible.",
     "tabs": {
       "basic": "Général",
@@ -2348,7 +2433,11 @@
       "fair": "Acceptable",
       "good": "Bon",
       "strong": "Fort",
-      "excellent": "Excellent"
+      "excellent": "Excellent",
+      "softNudge": {
+        "title": "Votre mot de passe ne respecte pas la nouvelle politique",
+        "body": "Mettez-le à jour dans Paramètres → Sécurité pour garder votre compte sécurisé."
+      }
     }
   },
   "account": {

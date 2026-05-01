@@ -56,7 +56,17 @@ vi.mock('@renderer/utils/trpc', () => ({
       revokeSession: { useMutation: () => ({ mutateAsync: mockRevokeSession, isPending: false }) },
       revokeAllOtherSessions: { useMutation: () => ({ mutateAsync: mockRevokeAllOthers, isPending: false }) },
     },
-    useUtils: () => ({ auth: { listSessions: { invalidate: vi.fn() } } }),
+    wallet: {
+      list: { useQuery: () => ({ data: [], isLoading: false }) },
+      update: { useMutation: () => ({ mutateAsync: vi.fn().mockResolvedValue({ success: true }), isPending: false }) },
+    },
+    mcp: {
+      listAudit: { useQuery: () => ({ data: [], isLoading: false }) },
+    },
+    useUtils: () => ({
+      auth: { listSessions: { invalidate: vi.fn() } },
+      wallet: { list: { invalidate: vi.fn() } },
+    }),
   },
 }));
 
