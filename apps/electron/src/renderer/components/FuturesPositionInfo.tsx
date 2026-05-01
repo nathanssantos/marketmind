@@ -101,7 +101,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
         <Flex gap={4} flexWrap="wrap">
           <VStack gap={0} align="start">
             <Text fontSize="2xs" color="fg.muted">
-              {t('futures.entryPrice', 'Entry Price')}
+              {t('futures.entryPrice')}
             </Text>
             <Text fontSize="sm" fontWeight="medium" color="fg">
               ${formatPrice(entryPrice)}
@@ -109,7 +109,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
           </VStack>
           <VStack gap={0} align="start">
             <Text fontSize="2xs" color="fg.muted">
-              {t('futures.markPrice', 'Mark Price')}
+              {t('futures.markPrice')}
             </Text>
             <Text fontSize="sm" fontWeight="medium" color="fg">
               ${formatPrice(markPrice)}
@@ -117,7 +117,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
           </VStack>
           <VStack gap={0} align="start">
             <Text fontSize="2xs" color="fg.muted">
-              {t('futures.size', 'Size')}
+              {t('futures.size')}
             </Text>
             <Text fontSize="sm" fontWeight="medium" color="fg">
               {positionAmt.toFixed(4)}
@@ -125,7 +125,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
           </VStack>
           <VStack gap={0} align="start">
             <Text fontSize="2xs" color="fg.muted">
-              {t('futures.unrealizedPnl', 'Unrealized PnL')}
+              {t('futures.unrealizedPnl')}
             </Text>
             <Text
               fontSize="sm"
@@ -141,7 +141,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
           <Flex justify="space-between" align="center" mb={1}>
             <Flex align="center" gap={1}>
               <Text fontSize="2xs" color="fg.muted">
-                {t('futures.liquidationPrice', 'Liquidation Price')}
+                {t('futures.liquidationPrice')}
               </Text>
               {isWarning && (
                 <Box color={isInDanger ? 'trading.loss' : 'trading.warning'}>
@@ -169,7 +169,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
 
           <Flex justify="space-between" mt={1}>
             <Text fontSize="2xs" color="fg.muted">
-              {t('futures.distanceToLiq', 'Distance to liquidation')}
+              {t('futures.distanceToLiq')}
             </Text>
             <Text
               fontSize="2xs"
@@ -183,7 +183,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
 
         {isInDanger && (
           <Callout tone="danger" compact>
-            {t('futures.liquidationWarning', 'Warning: Position is close to liquidation. Consider reducing position size or adding margin.')}
+            {t('futures.liquidationWarning')}
           </Callout>
         )}
       </VStack>

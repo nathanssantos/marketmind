@@ -40,7 +40,7 @@ export const ChartContextMenuManager = ({
                             _hover={{ bg: 'bg.muted' }}
                         >
                             <LuTrash2 />
-                            {t('chart.contextMenu.clearAllDrawings', 'Clear All Drawings')}
+                            {t('chart.contextMenu.clearAllDrawings')}
                         </Menu.Item>
                     </Menu.Content>
                 </Menu.Positioner>

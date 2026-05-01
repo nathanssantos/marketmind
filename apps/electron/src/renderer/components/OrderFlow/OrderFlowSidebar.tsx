@@ -51,10 +51,10 @@ const OrderFlowSidebarComponent = ({ width, symbol }: OrderFlowSidebarProps) => 
         <Flex>
           <Tabs.List flex={1}>
             <Tabs.Trigger value="dom">
-              <Text fontSize="xs">{t('orderFlow.tabs.dom', 'DOM')}</Text>
+              <Text fontSize="xs">{t('orderFlow.tabs.dom')}</Text>
             </Tabs.Trigger>
             <Tabs.Trigger value="metrics">
-              <Text fontSize="xs">{t('orderFlow.tabs.metrics', 'Metrics')}</Text>
+              <Text fontSize="xs">{t('orderFlow.tabs.metrics')}</Text>
             </Tabs.Trigger>
           </Tabs.List>
           <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Close" onClick={() => useUIStore.getState().toggleOrderFlowSidebar()} mr={1} mt={0.5}>

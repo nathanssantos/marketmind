@@ -46,11 +46,11 @@ export const StockPresetsSection = ({ onStartPreset, isStarting, disabled = fals
       <Flex align="center" gap={2}>
         <LuBuilding2 size={16} />
         <Text fontSize="sm" fontWeight="medium">
-          {t('watcherManager.stockPresets.title', 'Stock Presets (IB)')}
+          {t('watcherManager.stockPresets.title')}
         </Text>
       </Flex>
       <Text fontSize="xs" color="fg.muted">
-        {t('watcherManager.stockPresets.description', 'Quick start watchers for popular US stocks via Interactive Brokers')}
+        {t('watcherManager.stockPresets.description')}
       </Text>
       <Wrap gap={2}>
         {STOCK_PRESETS.map((preset) => (
@@ -71,7 +71,7 @@ export const StockPresetsSection = ({ onStartPreset, isStarting, disabled = fals
         ))}
       </Wrap>
       <Text fontSize="2xs" color="fg.muted">
-        {t('watcherManager.stockPresets.note', 'Requires IB Gateway or TWS running locally on port 4001 (live) or 4002 (paper)')}
+        {t('watcherManager.stockPresets.note')}
       </Text>
     </Stack>
   );

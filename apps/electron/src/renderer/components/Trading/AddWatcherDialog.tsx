@@ -92,7 +92,7 @@ export const AddWatcherDialog = ({
   ];
 
   const submitLabel = isBulkMode
-    ? t('tradingProfiles.watchers.startBulk', 'Start {{count}} Watchers', { count: selectedSymbols.length })
+    ? t('tradingProfiles.watchers.startBulk', { count: selectedSymbols.length })
     : t('tradingProfiles.watchers.start');
 
   return (
@@ -115,7 +115,7 @@ export const AddWatcherDialog = ({
             onClick={() => setIsBulkMode(false)}
             flex={1}
           >
-            {t('tradingProfiles.watchers.singleMode', 'Single')}
+            {t('tradingProfiles.watchers.singleMode')}
           </Button>
           <Button
             size="xs"
@@ -123,7 +123,7 @@ export const AddWatcherDialog = ({
             onClick={() => setIsBulkMode(true)}
             flex={1}
           >
-            {t('tradingProfiles.watchers.bulkMode', 'Bulk')}
+            {t('tradingProfiles.watchers.bulkMode')}
           </Button>
         </Group>
 
@@ -169,7 +169,7 @@ export const AddWatcherDialog = ({
 
         {marketType === 'FUTURES' && (
           <Callout tone="warning" compact>
-            {t('tradingProfiles.watchers.futuresWarning', 'Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.')}
+            {t('tradingProfiles.watchers.futuresWarning')}
           </Callout>
         )}
 

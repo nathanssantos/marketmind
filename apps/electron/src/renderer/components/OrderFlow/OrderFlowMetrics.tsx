@@ -14,7 +14,7 @@ const OrderFlowMetricsComponent = ({ symbol }: OrderFlowMetricsProps) => {
   return (
     <Box p={3}>
       <Stack gap={2.5} fontSize="xs">
-        <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.orderFlow', 'Order Flow')}</Text>
+        <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.orderFlow')}</Text>
 
         <Stack gap={1}>
           <Flex justify="space-between">
@@ -22,23 +22,23 @@ const OrderFlowMetricsComponent = ({ symbol }: OrderFlowMetricsProps) => {
             <Text fontWeight="medium" fontFamily="mono">{metrics.cvd.toFixed(2)}</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('scalping.metric.imbalance', 'Imbalance')}</Text>
+            <Text color="fg.muted">{t('scalping.metric.imbalance')}</Text>
             <Text fontWeight="medium" fontFamily="mono">{metrics.imbalanceRatio.toFixed(3)}</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('scalping.metric.spread', 'Spread')}</Text>
+            <Text color="fg.muted">{t('scalping.metric.spread')}</Text>
             <Text fontWeight="medium" fontFamily="mono">{metrics.spreadPercent.toFixed(4)}%</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('scalping.metric.absorption', 'Absorption')}</Text>
+            <Text color="fg.muted">{t('scalping.metric.absorption')}</Text>
             <Text fontWeight="medium" fontFamily="mono">{metrics.absorptionScore.toFixed(2)}</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('scalping.metric.microprice', 'Microprice')}</Text>
+            <Text color="fg.muted">{t('scalping.metric.microprice')}</Text>
             <Text fontWeight="medium" fontFamily="mono">{metrics.microprice.toFixed(2)}</Text>
           </Flex>
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('scalping.metric.exhaustion', 'Exhaustion')}</Text>
+            <Text color="fg.muted">{t('scalping.metric.exhaustion')}</Text>
             <Text fontWeight="medium" fontFamily="mono">{metrics.exhaustionScore.toFixed(2)}</Text>
           </Flex>
         </Stack>
