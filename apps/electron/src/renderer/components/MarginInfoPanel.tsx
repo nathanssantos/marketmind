@@ -1,6 +1,6 @@
-import { Box, Flex, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text, VStack } from '@chakra-ui/react';
 import { REG_T_INITIAL_MARGIN, REG_T_MAINTENANCE_MARGIN } from '@marketmind/types';
-import { Badge, Callout, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Callout, FormSection, TooltipWrapper } from '@renderer/components/ui';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuPercent, LuShield, LuTrendingUp } from 'react-icons/lu';
@@ -66,18 +66,20 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
 
   return (
     <Box borderWidth="1px" borderRadius="md" borderColor="border" p={3}>
-      <Flex align="center" justify="space-between" mb={3}>
-        <Flex align="center" gap={2}>
-          <LuShield size={14} />
-          <Text fontSize="xs" fontWeight="semibold">
-            {t('marginInfo.title')}
-          </Text>
-        </Flex>
-        <Badge size="xs" colorPalette={marginHealth} variant="subtle">
-          {formatPercent(marginUtilization)} {t('marginInfo.used')}
-        </Badge>
-      </Flex>
-
+      <Stack gap={4}>
+      <FormSection
+        title={
+          <HStack gap={2}>
+            <LuShield size={14} />
+            <span>{t('marginInfo.title')}</span>
+          </HStack>
+        }
+        action={
+          <Badge size="xs" colorPalette={marginHealth} variant="subtle">
+            {formatPercent(marginUtilization)} {t('marginInfo.used')}
+          </Badge>
+        }
+      >
       <VStack gap={2} align="stretch">
         <Flex justify="space-between" fontSize="2xs">
           <Text color="fg.muted">{t('marginInfo.buyingPower')}</Text>
@@ -123,18 +125,17 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
           <Text>{formatPercent(REG_T_MAINTENANCE_MARGIN)}</Text>
         </Flex>
       </VStack>
+      </FormSection>
 
       {impact && (
-        <>
-          <Box h="1px" bg="border" my={3} />
-
-          <Flex align="center" gap={2} mb={2}>
-            <LuTrendingUp size={12} />
-            <Text fontSize="xs" fontWeight="semibold">
-              {t('marginInfo.orderImpact')}
-            </Text>
-          </Flex>
-
+        <FormSection
+          title={
+            <HStack gap={2}>
+              <LuTrendingUp size={12} />
+              <span>{t('marginInfo.orderImpact')}</span>
+            </HStack>
+          }
+        >
           <VStack gap={2} align="stretch">
             <Flex justify="space-between" fontSize="2xs">
               <Text color="fg.muted">{t('marginInfo.requiredInitial')}</Text>
@@ -156,8 +157,9 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
               </Callout>
             )}
           </VStack>
-        </>
+        </FormSection>
       )}
+      </Stack>
     </Box>
   );
 }
