@@ -9,6 +9,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
+import { emitPositionClosedToast } from './emit-position-close-toast';
 
 export async function handleUntrackedReduceFill(
   ctx: UserStreamContext,
@@ -165,6 +166,17 @@ export async function handleUntrackedReduceFill(
         exitReason: 'REDUCE_ORDER',
         pnl: totalPnl,
         pnlPercent: 0,
+      });
+
+      emitPositionClosedToast(wsService, walletId, {
+        executionId: oppositeExec.id,
+        symbol,
+        side: oppositeExec.side,
+        exitPrice,
+        pnl: totalPnl,
+        pnlPercent: 0,
+        exitReason: 'REDUCE_ORDER',
+        source: 'UNTRACKED_FILL',
       });
     }
 

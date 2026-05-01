@@ -10,6 +10,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
+import { emitPositionClosedToast } from './emit-position-close-toast';
 
 export async function verifyAlgoFillProcessed(
   ctx: UserStreamContext,
@@ -155,6 +156,17 @@ export async function verifyAlgoFillProcessed(
         exitReason: exitReason ?? 'STOP_LOSS',
         pnl,
         pnlPercent,
+      });
+
+      emitPositionClosedToast(wsService, walletId, {
+        executionId: execution.id,
+        symbol,
+        side: execution.side,
+        exitPrice,
+        pnl,
+        pnlPercent,
+        exitReason: exitReason ?? 'STOP_LOSS',
+        source: 'ALGO_VERIFY',
       });
     }
 
@@ -309,6 +321,17 @@ export async function closeResidualPosition(
               exitReason: 'STOP_LOSS',
               pnl,
               pnlPercent: pnlResult.pnlPercent,
+            });
+
+            emitPositionClosedToast(wsService, walletId, {
+              executionId: orphan.id,
+              symbol,
+              side: orphan.side,
+              exitPrice,
+              pnl,
+              pnlPercent: pnlResult.pnlPercent,
+              exitReason: 'STOP_LOSS',
+              source: 'ORPHAN_CLEANUP',
             });
           }
 

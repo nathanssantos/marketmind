@@ -8,6 +8,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
+import { emitPositionClosedToast } from './emit-position-close-toast';
 
 export async function handleExitFill(
   ctx: UserStreamContext,
@@ -303,23 +304,15 @@ export async function handleExitFill(
     // exchange (only the chart line disappears). The renderer's
     // RealtimeTradingSyncContext already handles `trade:notification`
     // events and renders the toast + native notification.
-    const reason = determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT');
-    const isProfit = pnl >= 0;
-    const reasonLabel = reason === 'STOP_LOSS' ? 'Stop Loss' : reason === 'TAKE_PROFIT' ? 'Take Profit' : reason;
-    wsService.emitTradeNotification(walletId, {
-      type: 'POSITION_CLOSED',
-      title: `${reasonLabel} hit · ${symbol}`,
-      body: `${execution.side} closed at ${exitPrice.toFixed(2)} · ${isProfit ? '+' : ''}${pnl.toFixed(2)} (${isProfit ? '+' : ''}${pnlPercent.toFixed(2)}%)`,
-      urgency: 'normal',
-      data: {
-        executionId: execution.id,
-        symbol,
-        side: execution.side,
-        exitPrice: exitPrice.toString(),
-        pnl: pnl.toString(),
-        pnlPercent: pnlPercent.toString(),
-        exitReason: reason,
-      },
+    emitPositionClosedToast(wsService, walletId, {
+      executionId: execution.id,
+      symbol,
+      side: execution.side,
+      exitPrice,
+      pnl,
+      pnlPercent,
+      exitReason: determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT'),
+      source: 'EXIT_FILL',
     });
   }
 
