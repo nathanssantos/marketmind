@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Panel audit gate (v1.8 Track A)
+- **`scripts/audit-panel-rules.mjs`** — companion to the existing dialog audit. Two rules:
+  - `bespoke-record-row` — catches `<Box>` with the `borderWidth=1 borderColor=border borderRadius=md` shape outside the `<RecordRow>` primitive
+  - `bespoke-loading-text` — catches `<Text>{t('common.loading')}</Text>` next to a `<Spinner>` (bible says spinners stand alone)
+- `pnpm lint:panels` (warn) / `pnpm lint:panels:strict` (gate). Wired into CI alongside `lint:dialogs:strict` and `lint:shades`.
+- **`<RecordRow>` extended** — added `tone='default' | 'muted' | 'panel'` and `onClick` (interactive variant with `cursor=pointer` + `_hover={{ bg: 'bg.subtle' }}` + `data-testid` passthrough), so the primitive can absorb the highlighted-card and clickable-list-row shapes too.
+
+### Changed — Sweep of older drift the new audit caught
+- **MarketIndicatorCharts** — 6 stat cards (FearGreed, BtcDominance, MVRV, ETF Flows, Funding Rate, Open Interest) migrated to `<RecordRow density="card" tone="muted">`.
+- **MarketIndicatorSections** — 4 sections migrated to the same shape.
+- **FuturesPositionInfo, MarginInfoPanel, FiltersTab** — outer bordered framing migrated to `<RecordRow density="card">`.
+- **EquityCurveChart** — recharts tooltip migrated to `<RecordRow tone="panel">`.
+- **RecentRunsPanel** — clickable list rows migrated to `<RecordRow onClick>`.
+- **AuthGuard** — bare `<Text>{t('common.loading')}</Text>` next to the full-page `<Spinner>` removed (bible: spinners stand alone).
+
+13 callsites total. Audit strict-clean and gating CI.
+
 ## [1.7.0] - 2026-05-02
 
 **v1.7 release** — Phase-2 design-language sweep: every non-dialog surface (sidebars, chart panels, auth pages, chart toolbar, list rows) brought up to the v1.6 design language. v1.6 made the dialogs uniform; v1.7 extends that to the rest of the app so the whole experience reads as one design system, not a patchwork.

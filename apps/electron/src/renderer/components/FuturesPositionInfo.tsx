@@ -1,4 +1,4 @@
-import { Badge, Callout, CryptoIcon, ProgressBar, ProgressRoot } from '@renderer/components/ui';
+import { Badge, Callout, CryptoIcon, ProgressBar, ProgressRoot, RecordRow } from '@renderer/components/ui';
 import { Box, Flex, Text, VStack } from '@chakra-ui/react';
 import { DEFAULT_CURRENCY, type FuturesPosition } from '@marketmind/types';
 import { useMemo } from 'react';
@@ -62,7 +62,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
   const formatPnl = (pnl: number): string => formatWalletCurrencyWithSign(pnl, currency);
 
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <VStack gap={3} align="stretch">
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
@@ -187,6 +187,6 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
           </Callout>
         )}
       </VStack>
-    </Box>
+    </RecordRow>
   );
 }

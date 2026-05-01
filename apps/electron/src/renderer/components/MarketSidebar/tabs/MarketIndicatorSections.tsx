@@ -1,5 +1,5 @@
-import { Badge, CryptoIcon, Skeleton } from '@renderer/components/ui';
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Badge, CryptoIcon, RecordRow, Skeleton } from '@renderer/components/ui';
+import { Flex, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowDown, LuArrowUp, LuMinus } from 'react-icons/lu';
 import { MarketNoData } from './MarketNoData';
@@ -30,7 +30,7 @@ interface AltcoinSeasonSectionProps {
 
 export const AltcoinSeasonSection = ({ altcoinSeason, isLoading, hasWidth }: AltcoinSeasonSectionProps) => {
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>Altcoin Season Index</SectionTitle>
       {altcoinSeason && (
         <Flex align="center" gap={2} mb={2} flexWrap="wrap">
@@ -76,7 +76,7 @@ export const AltcoinSeasonSection = ({ altcoinSeason, isLoading, hasWidth }: Alt
       ) : (
         <MarketNoData />
       )}
-    </Box>
+    </RecordRow>
   );
 };
 
@@ -98,7 +98,7 @@ interface AdxSectionProps {
 
 export const AdxSection = ({ adxTrendStrength, isLoading, hasWidth }: AdxSectionProps) => {
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>ADX Trend Strength (BTC)</SectionTitle>
       {adxTrendStrength && (
         <Flex align="center" gap={2} mb={2} flexWrap="wrap">
@@ -141,7 +141,7 @@ export const AdxSection = ({ adxTrendStrength, isLoading, hasWidth }: AdxSection
       ) : (
         <MarketNoData />
       )}
-    </Box>
+    </RecordRow>
   );
 };
 
@@ -160,7 +160,7 @@ interface OrderBookSectionProps {
 
 export const OrderBookSection = ({ orderBook, isLoading }: OrderBookSectionProps) => {
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>Order Book (BTC)</SectionTitle>
       {isLoading ? (
         <Skeleton height="60px" />
@@ -189,7 +189,7 @@ export const OrderBookSection = ({ orderBook, isLoading }: OrderBookSectionProps
       ) : (
         <MarketNoData />
       )}
-    </Box>
+    </RecordRow>
   );
 };
 
@@ -201,7 +201,7 @@ interface FundingRatesSectionProps {
 export const FundingRatesSection = ({ fundingRates, isLoading }: FundingRatesSectionProps) => {
   const { t } = useTranslation();
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>{t('marketSidebar.indicators.fundingRates')}</SectionTitle>
       {isLoading ? (
         <Stack gap={2}>
@@ -248,6 +248,6 @@ export const FundingRatesSection = ({ fundingRates, isLoading }: FundingRatesSec
       <Text fontSize="2xs" color="fg.muted" mt={2}>
         Positive = longs pay shorts | Negative = shorts pay longs
       </Text>
-    </Box>
+    </RecordRow>
   );
 };
