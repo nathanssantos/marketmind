@@ -55,6 +55,7 @@ const mockEmitPositionUpdate = vi.fn();
 vi.mock('../../websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
+    emitTradeNotification: vi.fn(),
   })),
 }));
 
