@@ -64,6 +64,7 @@ export const SettingsDialog = ({
       onClose={onClose}
       size="xl"
       title={t('settings.title')}
+      description={t('settings.dialogDescription')}
       bodyPadding={0}
       hideFooter
     >

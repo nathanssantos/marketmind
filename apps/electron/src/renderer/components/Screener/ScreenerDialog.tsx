@@ -203,6 +203,7 @@ export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol
             <BetaBadge />
           </HStack>
         }
+        description={t('screener.dialogDescription')}
         headerAction={headerAction}
         footer={footer}
       >

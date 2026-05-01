@@ -218,6 +218,7 @@
   },
   "settings": {
     "title": "Paramètres",
+    "dialogDescription": "Compte, sécurité, notifications et valeurs par défaut par fonctionnalité.",
     "resetToDefaults": "Réinitialiser aux Valeurs par Défaut",
     "tabs": {
       "account": "Compte",
@@ -2183,8 +2184,13 @@
     "stocks": "Actions",
     "manage": "Gérer les portefeuilles"
   },
+  "analytics": {
+    "dialogDescription": "Performance par portefeuille, calendrier quotidien de P&L et courbe d'équité.",
+    "noWalletTitle": "Aucun portefeuille sélectionné"
+  },
   "backtest": {
     "title": "Backtest",
+    "dialogDescription": "Testez des stratégies sur des données historiques avec une configuration complète.",
     "openTooltip": "Ouvrir le backtest",
     "runningTooltip": "{{count}} backtest en cours",
     "runningTooltip_other": "{{count}} backtests en cours",
@@ -2396,6 +2402,7 @@
   },
   "screener": {
     "title": "Screener de Marché",
+    "dialogDescription": "Scanne tous les symboles à la recherche de setups actifs. Enregistrez des filtres comme presets.",
     "error": "Échec du chargement des résultats du screener. Veuillez réessayer.",
     "assetClass": {
       "CRYPTO": "Crypto",

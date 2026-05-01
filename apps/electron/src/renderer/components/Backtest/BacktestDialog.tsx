@@ -41,6 +41,7 @@ export const BacktestDialog = () => {
       isOpen={isBacktestOpen}
       onClose={handleClose}
       title={t('backtest.title')}
+      description={t('backtest.dialogDescription')}
       size="xl"
       contentMaxH="85vh"
       hideFooter
