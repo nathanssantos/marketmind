@@ -16,7 +16,6 @@ vi.mock('./NotificationsTab', () => ({ NotificationsTab: () => <div>Notification
 vi.mock('./GeneralTab', () => ({ GeneralTab: () => <div>GeneralTab Content</div> }));
 vi.mock('./ChartSettingsTab', () => ({ ChartSettingsTab: () => <div>ChartSettingsTab Content</div> }));
 vi.mock('./AboutTab', () => ({ AboutTab: () => <div>AboutTab Content</div> }));
-vi.mock('./TradingProfilesTab', () => ({ TradingProfilesTab: () => <div>TradingProfilesTab Content</div> }));
 vi.mock('./DataTab', () => ({ DataTab: () => <div>DataTab Content</div> }));
 vi.mock('./IndicatorsTab', () => ({ IndicatorsTab: () => <div>IndicatorsTab Content</div> }));
 vi.mock('./AutoTradingTab', () => ({ AutoTradingTab: () => <div>AutoTradingTab Content</div> }));
@@ -150,7 +149,7 @@ describe('SettingsDialog', () => {
     const tabsToCheck = [
       'account', 'security', 'notifications',
       'general', 'chart',
-      'wallets', 'tradingProfiles', 'autoTrading', 'indicators', 'customSymbols',
+      'wallets', 'autoTrading', 'indicators', 'customSymbols',
       'data', 'about',
     ];
     for (const t of tabsToCheck) {
