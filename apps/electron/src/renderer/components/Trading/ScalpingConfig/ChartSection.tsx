@@ -19,9 +19,9 @@ export function ChartSection({
 
   return (
     <VStack gap={4} align="stretch">
-      <Text fontWeight="semibold">{t('scalping.config.chart', 'Chart Settings')}</Text>
+      <Text fontWeight="semibold">{t('scalping.config.chart')}</Text>
 
-      <Field label={t('scalping.config.ticksPerBar', 'Ticks per Bar')}>
+      <Field label={t('scalping.config.ticksPerBar')}>
         <Slider
           min={50}
           max={2000}
@@ -32,7 +32,7 @@ export function ChartSection({
         <Text fontSize="xs" color="fg.muted">{ticksPerBar}</Text>
       </Field>
 
-      <Field label={t('scalping.config.volumePerBar', 'Volume per Bar')}>
+      <Field label={t('scalping.config.volumePerBar')}>
         <Slider
           min={100}
           max={50000}
@@ -43,7 +43,7 @@ export function ChartSection({
         <Text fontSize="xs" color="fg.muted">{volumePerBar.toLocaleString()}</Text>
       </Field>
 
-      <Field label={t('scalping.config.depthLevels', 'Depth Levels')}>
+      <Field label={t('scalping.config.depthLevels')}>
         <Slider
           min={5}
           max={50}

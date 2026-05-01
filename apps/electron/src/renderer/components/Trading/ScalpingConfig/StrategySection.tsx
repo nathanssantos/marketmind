@@ -27,7 +27,7 @@ export function StrategySection({
 
   return (
     <VStack gap={4} align="stretch">
-      <Text fontWeight="semibold">{t('scalping.config.strategies', 'Strategies')}</Text>
+      <Text fontWeight="semibold">{t('scalping.config.strategies')}</Text>
 
       {SCALPING_STRATEGIES.map((strategy) => (
         <Switch
@@ -39,7 +39,7 @@ export function StrategySection({
         </Switch>
       ))}
 
-      <Field label={t('scalping.config.imbalanceThreshold', 'Imbalance Threshold')}>
+      <Field label={t('scalping.config.imbalanceThreshold')}>
         <Slider
           min={0.1}
           max={1.0}
@@ -50,7 +50,7 @@ export function StrategySection({
         <Text fontSize="xs" color="fg.muted">{imbalanceThreshold.toFixed(2)}</Text>
       </Field>
 
-      <Field label={t('scalping.config.cvdDivergenceBars', 'CVD Divergence Bars')}>
+      <Field label={t('scalping.config.cvdDivergenceBars')}>
         <Slider
           min={3}
           max={50}
@@ -61,7 +61,7 @@ export function StrategySection({
         <Text fontSize="xs" color="fg.muted">{cvdDivergenceBars}</Text>
       </Field>
 
-      <Field label={t('scalping.config.vwapDeviationSigma', 'VWAP Deviation Sigma')}>
+      <Field label={t('scalping.config.vwapDeviationSigma')}>
         <Slider
           min={0.5}
           max={5.0}
@@ -72,7 +72,7 @@ export function StrategySection({
         <Text fontSize="xs" color="fg.muted">{vwapDeviationSigma.toFixed(1)}</Text>
       </Field>
 
-      <Field label={t('scalping.config.absorptionThreshold', 'Absorption Threshold')}>
+      <Field label={t('scalping.config.absorptionThreshold')}>
         <Slider
           min={1}
           max={10}

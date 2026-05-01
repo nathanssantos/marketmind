@@ -37,9 +37,9 @@ export function ExecutionSection({
 
   return (
     <VStack gap={4} align="stretch">
-      <Text fontWeight="semibold">{t('scalping.config.execution', 'Execution')}</Text>
+      <Text fontWeight="semibold">{t('scalping.config.execution')}</Text>
 
-      <Field label={t('scalping.config.executionMode', 'Execution Mode')}>
+      <Field label={t('scalping.config.executionMode')}>
         <Select
           value={executionMode}
           options={EXECUTION_MODE_OPTIONS}
@@ -47,7 +47,7 @@ export function ExecutionSection({
         />
       </Field>
 
-      <Field label={t('scalping.config.microTrailingTicks', 'Micro Trailing Ticks')}>
+      <Field label={t('scalping.config.microTrailingTicks')}>
         <Slider
           min={1}
           max={20}
@@ -58,7 +58,7 @@ export function ExecutionSection({
         <Text fontSize="xs" color="fg.muted">{microTrailingTicks}</Text>
       </Field>
 
-      <Field label={t('scalping.config.maxSpreadPercent', 'Max Spread %')}>
+      <Field label={t('scalping.config.maxSpreadPercent')}>
         <Slider
           min={0.001}
           max={0.5}
@@ -69,7 +69,7 @@ export function ExecutionSection({
         <Text fontSize="xs" color="fg.muted">{(maxSpreadPercent * 100).toFixed(2)}%</Text>
       </Field>
 
-      <Field label={t('scalping.config.signalInterval', 'Signal Interval')}>
+      <Field label={t('scalping.config.signalInterval')}>
         <Select
           value={signalInterval}
           options={SIGNAL_INTERVAL_OPTIONS}

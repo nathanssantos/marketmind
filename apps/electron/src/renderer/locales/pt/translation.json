@@ -2405,6 +2405,9 @@
     "circuitBreaker": {
       "tripped": "CB Ativado",
       "reset": "Resetar"
+    },
+    "cooldown": {
+      "active": "Cooldown"
     }
   },
   "orderFlow": {
