@@ -1,19 +1,9 @@
 import { Box, Flex, HStack, SimpleGrid, Spinner, Stack, Text } from '@chakra-ui/react';
 import {
   Badge,
-  Button,
   Checkbox,
-  CloseButton,
   CollapsibleSection,
-  DialogBackdrop,
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
+  DialogShell,
   Field,
   Input,
   Select,
@@ -43,21 +33,19 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
   const { indicators: availableIndicators } = useUserIndicators();
 
   return (
-    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
-      <DialogBackdrop />
-      <DialogPositioner>
-        <DialogContent>
-          <DialogHeader px={4} pt={4}>
-            <DialogTitle>
-              {form.isEditing ? t('tradingProfiles.editProfile') : t('tradingProfiles.createProfile')}
-            </DialogTitle>
-          </DialogHeader>
-          <DialogCloseTrigger asChild>
-            <CloseButton size="sm" />
-          </DialogCloseTrigger>
-
-          <DialogBody p={4} maxH="70vh" overflowY="auto">
-            <Stack gap={2}>
+    <DialogShell
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      title={form.isEditing ? t('tradingProfiles.editProfile') : t('tradingProfiles.createProfile')}
+      onSubmit={() => void form.handleSubmit()}
+      submitLabel={form.isEditing ? t('common.save') : t('tradingProfiles.create')}
+      submitDisabled={!form.canSubmit}
+      isLoading={form.isSubmitting}
+      bodyPadding={0}
+    >
+      <Box p={4}>
+        <Stack gap={2}>
               <CollapsibleSection
                 title={t('tradingProfiles.sections.basicInfo')}
                 description={t('tradingProfiles.sections.basicInfoDescription')}
@@ -244,26 +232,8 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 maxConcurrentPositions={form.maxConcurrentPositions}
                 setMaxConcurrentPositions={form.setMaxConcurrentPositions}
               />
-            </Stack>
-          </DialogBody>
-
-          <DialogFooter px={4} pb={4}>
-            <Button size="2xs" variant="ghost" onClick={onClose} disabled={form.isSubmitting} px={3}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              size="2xs"
-              variant="outline"
-              onClick={() => void form.handleSubmit()}
-              loading={form.isSubmitting}
-              disabled={!form.canSubmit}
-              px={3}
-            >
-              {form.isEditing ? t('common.save') : t('tradingProfiles.create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogPositioner>
-    </DialogRoot>
+        </Stack>
+      </Box>
+    </DialogShell>
   );
 };
