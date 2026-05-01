@@ -20,7 +20,7 @@ import {
   Switch,
   Textarea,
 } from '@renderer/components/ui';
-import type { TradingProfile } from '@marketmind/types';
+import type { DialogControlProps, TradingProfile } from '@marketmind/types';
 import { useUserIndicators } from '@renderer/hooks';
 import { useTranslation } from 'react-i18next';
 import { ChecklistEditor } from './ChecklistEditor';
@@ -32,9 +32,7 @@ import { ProfileRiskSection } from './ProfileRiskSection';
 import { ProfileTrailingStopSection } from './ProfileTrailingStopSection';
 import { useProfileEditorForm } from './useProfileEditorForm';
 
-interface ProfileEditorDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface ProfileEditorDialogProps extends DialogControlProps {
   profile: TradingProfile | null;
 }
 

@@ -1,11 +1,10 @@
 import { Stack, Text } from '@chakra-ui/react';
 import { FormDialog, Input } from '@renderer/components/ui';
+import type { DialogControlProps } from '@marketmind/types';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface SaveScreenerDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface SaveScreenerDialogProps extends DialogControlProps {
   onSave: (name: string) => Promise<void>;
   isLoading: boolean;
 }

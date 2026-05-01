@@ -2,13 +2,11 @@ import { Stack } from '@chakra-ui/react';
 import { CloseButton, Dialog, Separator } from '@renderer/components/ui';
 import { SetupToggleSection } from '@renderer/components/Trading/SetupToggleSection';
 import { WatcherManager } from '@renderer/components/Trading/WatcherManager';
+import type { DialogControlProps } from '@marketmind/types';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface TradingProfilesDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+type TradingProfilesDialogProps = DialogControlProps;
 
 export const TradingProfilesDialog = memo(({ isOpen, onClose }: TradingProfilesDialogProps) => {
   const { t } = useTranslation();

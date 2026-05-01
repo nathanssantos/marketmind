@@ -29,3 +29,4 @@ export * from './liquidityHeatmap';
 export * from './indicators';
 export * from './socket-events';
 export * from './test-fixtures';
+export * from './ui';

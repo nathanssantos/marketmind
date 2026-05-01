@@ -1,4 +1,4 @@
-import type { PositionSide } from '@marketmind/types';
+import type { DialogControlProps, PositionSide } from '@marketmind/types';
 import { VStack } from '@chakra-ui/react';
 import type {
   ChecklistCondition,
@@ -59,9 +59,7 @@ export type IndicatorConfigResult =
 
 const EMPTY_INDICATORS: UserIndicator[] = [];
 
-export interface IndicatorConfigDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+export interface IndicatorConfigDialogProps extends DialogControlProps {
   mode: IndicatorConfigMode;
   instance?: UserIndicator;
   availableIndicators?: UserIndicator[];

@@ -1,6 +1,6 @@
 import { Flex, Stack, Text } from '@chakra-ui/react';
 import { Callout, Field, FormDialog, Input, Link, NumberInput, Select } from '@renderer/components/ui';
-import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type WalletCurrency, type ExchangeId } from '@marketmind/types';
+import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type DialogControlProps, type WalletCurrency, type ExchangeId } from '@marketmind/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink } from 'react-icons/lu';
@@ -15,9 +15,7 @@ const CURRENCY_SELECT_OPTIONS = SELECTABLE_CURRENCIES.map((c) => ({
 type WalletType = 'paper' | 'testnet' | 'live';
 type IBConnectionType = 'gateway' | 'tws';
 
-interface CreateWalletDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface CreateWalletDialogProps extends DialogControlProps {
   onCreate: (params: {
     name: string;
     initialBalance: number;

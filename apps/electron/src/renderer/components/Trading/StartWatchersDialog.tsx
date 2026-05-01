@@ -1,6 +1,6 @@
 import { Box, Flex, Group, HStack, Stack, Text } from '@chakra-ui/react';
 import { Button, Callout, CloseButton, Dialog, NumberInput } from '@renderer/components/ui';
-import type { MarketType, TimeInterval } from '@marketmind/types';
+import type { DialogControlProps, MarketType, TimeInterval } from '@marketmind/types';
 import { DEFAULT_TIMEFRAME } from '@renderer/constants/defaults';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import { TimeframeSelector } from '@renderer/components/Chart/TimeframeSelector';
@@ -15,10 +15,7 @@ import { LuArrowUpDown, LuPlay, LuSettings, LuTrendingDown, LuTrendingUp } from 
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { DirectionBadge } from './DirectionBadge';
 
-interface StartWatchersDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+type StartWatchersDialogProps = DialogControlProps;
 
 export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialogProps) => {
   const { t } = useTranslation();
