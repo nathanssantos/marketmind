@@ -17,7 +17,6 @@ const GeneralTab = lazy(() => import('./GeneralTab').then((m) => ({ default: m.G
 const ChartSettingsTab = lazy(() => import('./ChartSettingsTab').then((m) => ({ default: m.ChartSettingsTab })));
 const AutoTradingTab = lazy(() => import('./AutoTradingTab').then((m) => ({ default: m.AutoTradingTab })));
 const IndicatorsTab = lazy(() => import('./IndicatorsTab').then((m) => ({ default: m.IndicatorsTab })));
-const CustomSymbolsTab = lazy(() => import('../CustomSymbols').then((m) => ({ default: m.CustomSymbolsTab })));
 const DataTab = lazy(() => import('./DataTab').then((m) => ({ default: m.DataTab })));
 const AboutTab = lazy(() => import('./AboutTab').then((m) => ({ default: m.AboutTab })));
 import {
@@ -164,9 +163,6 @@ export const SettingsDialog = ({
                     </Tabs.Content>
                     <Tabs.Content value="indicators" pt={0} w="100%">
                       {activeTab === 'indicators' && <IndicatorsTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="customSymbols" pt={0} w="100%">
-                      {activeTab === 'customSymbols' && <CustomSymbolsTab />}
                     </Tabs.Content>
                     <Tabs.Content value="data" pt={0} w="100%">
                       {activeTab === 'data' && <DataTab />}

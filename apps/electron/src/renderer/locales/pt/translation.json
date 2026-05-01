@@ -132,6 +132,7 @@
   },
   "customSymbols": {
     "title": "Símbolos Personalizados",
+    "manage": "Gerenciar",
     "description": "Crie índices customizados a partir de múltiplos componentes com agregação ponderada.",
     "myIndices": "Meus Índices",
     "createNew": "Criar Novo",
@@ -219,8 +220,7 @@
       "tradingSimulator": "Simulador de Trading",
       "data": "Dados",
       "about": "Sobre",
-      "indicators": "Indicadores",
-      "customSymbols": "Símbolos Customizados"
+      "indicators": "Indicadores"
     },
     "section": {
       "account": "Conta",
@@ -2139,26 +2139,102 @@
         "confluence": "Confluência"
       },
       "groupSummary": "{{enabled}} de {{total}} ativos",
-      "trend": { "label": "Tendência (EMA)", "description": "Bloqueia trades contra a EMA", "enable": "Ativar filtro de tendência", "period": "Período EMA" },
-      "mtf": { "label": "Multi-timeframe", "enable": "Ativar filtro MTF" },
-      "marketRegime": { "label": "Regime de mercado", "enable": "Ativar filtro de regime" },
-      "supertrend": { "label": "SuperTrend", "enable": "Ativar SuperTrend", "period": "Período", "multiplier": "Multiplicador" },
-      "btcCorrelation": { "label": "Correlação BTC", "enable": "Ativar filtro de correlação com BTC" },
-      "direction": { "label": "Direção (EMA200)", "enable": "Ativar filtro de direção", "longInBear": "Permitir LONG em bear", "shortInBull": "Permitir SHORT em bull" },
-      "stochastic": { "label": "Stochastic", "enable": "Ativar filtro stochastic" },
-      "stochasticRecovery": { "label": "Stochastic recovery", "enable": "Ativar filtro de recuperação" },
-      "stochasticHtf": { "label": "Stochastic HTF", "enable": "Ativar HTF stochastic" },
-      "stochasticRecoveryHtf": { "label": "Stochastic recovery HTF", "enable": "Ativar recovery HTF" },
-      "momentum": { "label": "Momentum (RSI/MFI)", "enable": "Ativar filtro de momentum" },
-      "adx": { "label": "ADX", "enable": "Ativar filtro ADX" },
-      "volume": { "label": "Volume", "enable": "Ativar filtro de volume" },
-      "funding": { "label": "Funding rate", "enable": "Ativar filtro de funding" },
-      "vwap": { "label": "VWAP", "enable": "Ativar filtro VWAP" },
-      "fvg": { "label": "FVG", "enable": "Ativar filtro FVG", "proximityPercent": "Proximidade %" },
-      "bollingerSqueeze": { "label": "Bollinger squeeze", "enable": "Ativar BB squeeze", "threshold": "Threshold", "period": "Período", "stdDev": "Desvio" },
-      "choppiness": { "label": "Choppiness", "enable": "Ativar choppiness", "thresholdHigh": "Threshold alto", "thresholdLow": "Threshold baixo", "period": "Período" },
-      "session": { "label": "Sessão de trading", "enable": "Ativar filtro de sessão", "startUtc": "Início (UTC)", "endUtc": "Fim (UTC)" },
-      "confluence": { "label": "Confluência", "enable": "Ativar confluência", "minScore": "Score mínimo" }
+      "trend": {
+        "label": "Tendência (EMA)",
+        "description": "Bloqueia trades contra a EMA",
+        "enable": "Ativar filtro de tendência",
+        "period": "Período EMA"
+      },
+      "mtf": {
+        "label": "Multi-timeframe",
+        "enable": "Ativar filtro MTF"
+      },
+      "marketRegime": {
+        "label": "Regime de mercado",
+        "enable": "Ativar filtro de regime"
+      },
+      "supertrend": {
+        "label": "SuperTrend",
+        "enable": "Ativar SuperTrend",
+        "period": "Período",
+        "multiplier": "Multiplicador"
+      },
+      "btcCorrelation": {
+        "label": "Correlação BTC",
+        "enable": "Ativar filtro de correlação com BTC"
+      },
+      "direction": {
+        "label": "Direção (EMA200)",
+        "enable": "Ativar filtro de direção",
+        "longInBear": "Permitir LONG em bear",
+        "shortInBull": "Permitir SHORT em bull"
+      },
+      "stochastic": {
+        "label": "Stochastic",
+        "enable": "Ativar filtro stochastic"
+      },
+      "stochasticRecovery": {
+        "label": "Stochastic recovery",
+        "enable": "Ativar filtro de recuperação"
+      },
+      "stochasticHtf": {
+        "label": "Stochastic HTF",
+        "enable": "Ativar HTF stochastic"
+      },
+      "stochasticRecoveryHtf": {
+        "label": "Stochastic recovery HTF",
+        "enable": "Ativar recovery HTF"
+      },
+      "momentum": {
+        "label": "Momentum (RSI/MFI)",
+        "enable": "Ativar filtro de momentum"
+      },
+      "adx": {
+        "label": "ADX",
+        "enable": "Ativar filtro ADX"
+      },
+      "volume": {
+        "label": "Volume",
+        "enable": "Ativar filtro de volume"
+      },
+      "funding": {
+        "label": "Funding rate",
+        "enable": "Ativar filtro de funding"
+      },
+      "vwap": {
+        "label": "VWAP",
+        "enable": "Ativar filtro VWAP"
+      },
+      "fvg": {
+        "label": "FVG",
+        "enable": "Ativar filtro FVG",
+        "proximityPercent": "Proximidade %"
+      },
+      "bollingerSqueeze": {
+        "label": "Bollinger squeeze",
+        "enable": "Ativar BB squeeze",
+        "threshold": "Threshold",
+        "period": "Período",
+        "stdDev": "Desvio"
+      },
+      "choppiness": {
+        "label": "Choppiness",
+        "enable": "Ativar choppiness",
+        "thresholdHigh": "Threshold alto",
+        "thresholdLow": "Threshold baixo",
+        "period": "Período"
+      },
+      "session": {
+        "label": "Sessão de trading",
+        "enable": "Ativar filtro de sessão",
+        "startUtc": "Início (UTC)",
+        "endUtc": "Fim (UTC)"
+      },
+      "confluence": {
+        "label": "Confluência",
+        "enable": "Ativar confluência",
+        "minScore": "Score mínimo"
+      }
     },
     "risk": {
       "sizing": "Sizing",
@@ -2282,7 +2358,10 @@
         "description": "Salve a configuração de filtros atual para acesso rápido.",
         "submit": "Salvar",
         "field": {
-          "name": { "label": "Nome", "placeholder": "ex.: maiores volumes" }
+          "name": {
+            "label": "Nome",
+            "placeholder": "ex.: maiores volumes"
+          }
         }
       }
     },
