@@ -1,9 +1,10 @@
-import { Text, VStack } from '@chakra-ui/react';
+import { Flex, Spinner, Text, VStack } from '@chakra-ui/react';
+import { MM } from '@marketmind/tokens';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
-import { AuthLayout } from '../components/Auth/AuthLayout';
-import { Alert, Button, Link } from '../components/ui';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AuthFooterLink, AuthLayout } from '../components/Auth/AuthLayout';
+import { Alert, Button } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { AUTH_UI } from '../utils/auth';
 
@@ -36,12 +37,16 @@ export const VerifyEmailPage = () => {
     return () => clearTimeout(timer);
   }, [verified, navigate]);
 
+  const backToLogin = (
+    <AuthFooterLink label={t('auth.resetPassword.backToLogin')} to="/login" />
+  );
+
   if (token && isVerifyingEmail) {
     return (
       <AuthLayout title={t('auth.verifyEmail.title')}>
-        <VStack gap={4} align="stretch">
-          <Text textAlign="center" color="fg.muted">{t('common.loading')}</Text>
-        </VStack>
+        <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+          <Spinner size={MM.spinner.panel.size} />
+        </Flex>
       </AuthLayout>
     );
   }
@@ -59,18 +64,11 @@ export const VerifyEmailPage = () => {
 
   if (token && verifyEmailError) {
     return (
-      <AuthLayout title={t('auth.verifyEmail.title')}>
-        <VStack gap={4} align="stretch">
-          <Alert.Root status="error" size="sm">
-            <Alert.Indicator />
-            <Alert.Description>{t('auth.verifyEmail.invalidToken')}</Alert.Description>
-          </Alert.Root>
-          <Text fontSize="sm" textAlign="center" color="fg.muted">
-            <Link asChild colorPalette="blue">
-              <RouterLink to="/login">{t('auth.resetPassword.backToLogin')}</RouterLink>
-            </Link>
-          </Text>
-        </VStack>
+      <AuthLayout title={t('auth.verifyEmail.title')} footer={backToLogin}>
+        <Alert.Root status="error" size="sm">
+          <Alert.Indicator />
+          <Alert.Description>{t('auth.verifyEmail.invalidToken')}</Alert.Description>
+        </Alert.Root>
       </AuthLayout>
     );
   }

@@ -1,9 +1,9 @@
 import { Spinner, VStack } from '@chakra-ui/react';
 import { type FormEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
-import { AuthLayout } from '../components/Auth/AuthLayout';
-import { Alert, Button, Field, Link, PasswordInput, PasswordStrengthMeter } from '../components/ui';
+import { useNavigate, useParams } from 'react-router-dom';
+import { AuthFooterLink, AuthLayout } from '../components/Auth/AuthLayout';
+import { Alert, Button, Field, PasswordInput, PasswordStrengthMeter } from '../components/ui';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { AUTH_UI } from '../utils/auth';
 import { trpc } from '../utils/trpc';
@@ -57,21 +57,19 @@ export const ResetPasswordPage = () => {
 
   if (!tokenStatus?.valid) {
     return (
-      <AuthLayout title={t('auth.resetPassword.title')}>
-        <VStack gap={4} align="stretch">
-          <Alert.Root status="error" size="sm">
-            <Alert.Indicator />
-            <Alert.Description>{t('auth.resetPassword.invalidToken')}</Alert.Description>
-          </Alert.Root>
+      <AuthLayout
+        title={t('auth.resetPassword.title')}
+        footer={
           <VStack gap={2}>
-            <Link asChild colorPalette="blue" fontSize="sm">
-              <RouterLink to="/forgot-password">{t('auth.resetPassword.requestNew')}</RouterLink>
-            </Link>
-            <Link asChild colorPalette="blue" fontSize="sm">
-              <RouterLink to="/login">{t('auth.resetPassword.backToLogin')}</RouterLink>
-            </Link>
+            <AuthFooterLink label={t('auth.resetPassword.requestNew')} to="/forgot-password" />
+            <AuthFooterLink label={t('auth.resetPassword.backToLogin')} to="/login" />
           </VStack>
-        </VStack>
+        }
+      >
+        <Alert.Root status="error" size="sm">
+          <Alert.Indicator />
+          <Alert.Description>{t('auth.resetPassword.invalidToken')}</Alert.Description>
+        </Alert.Root>
       </AuthLayout>
     );
   }
@@ -92,7 +90,11 @@ export const ResetPasswordPage = () => {
     : resetError?.message ?? null;
 
   return (
-    <AuthLayout title={t('auth.resetPassword.title')} subtitle={t('auth.resetPassword.subtitle')}>
+    <AuthLayout
+      title={t('auth.resetPassword.title')}
+      subtitle={t('auth.resetPassword.subtitle')}
+      footer={<AuthFooterLink label={t('auth.resetPassword.backToLogin')} to="/login" />}
+    >
       <form onSubmit={(e) => { void handleSubmit(e); }}>
         <VStack gap={4} align="stretch">
           {errorMessage && (
