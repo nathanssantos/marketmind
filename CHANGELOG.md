@@ -15,13 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 2. **Chart reactivity overhaul (Track F, added 2026-05-02).** User reported a Stop Loss close taking ~1 minute to reflect on the chart, then a follow-up cancel-flicker on pending limit orders. 11 PRs ship the audit + fixes: backend tightens position-sync watchdog (5min → 30s), renderer drops backup polling 30s → 5s, chart subscribes directly to `position:closed` for an immediate snapshot+flash, optimistic-override TTL extends to 30s with smart deletion when server catches up, every position-close path emits a `trade:notification` toast (SL / TP / liquidation / pyramid / partial / manual / reconciled / orphan-cleanup), `stream:reconnected` event force-refreshes after backend restart, chart live-patches on `position:update` + `order:update` for trailing-stop / SL-modify / cross-client edits.
 
-56 commits since v1.5.0.
+3. **Track G — per-dialog UX rewrite + Settings tabs identity sweep (added late, closes 2026-05-02).** After the dialog shells were uniform, a deeper audit found the *interior* of each dialog was still drifty: copy, interactions, and component choices for similar situations. Track G rewrote every dialog (G.1–G.18) and every Settings tab (S1–S9) per the new component bible (`docs/UI_DIALOG_PATTERNS.md`). WatcherManager (13 sub-section components) and IndicatorLibrary internally refactored from `<CollapsibleSection variant="static">` + `<Separator />` to `<FormSection>`. Result: 18 dialogs + 9 tabs reading back-to-back as a single design language.
 
-### Added — Modal sweep + design system (Tracks E + A)
+83 commits since v1.5.0.
+
+### Added — Modal sweep + design system (Tracks E + A + G)
 - **`<DialogShell>` + `<DialogSection>` + `MM.dialog.*` tokens** (#337) — single primitive set every dialog uses. Width tokens (`sm`/`md`/`lg`/`xl`/`full`), fixed title typography, optional one-line description in the header, optional inline action on the right, fixed footer with `borderTop` + right-aligned buttons + Cancel/primary/destructive ladder.
-- **Per-dialog rewrites** (#338-#343) — 17 surfaces migrated: ChartCloseDialog, KeyboardShortcutHelpDialog, SaveScreenerDialog, IndicatorConfigDialog, ImportProfileDialog, ProfileEditorDialog, AddWatcherDialog, CreateWalletDialog, OrdersDialog, StartWatchersDialog, TradingProfilesDialog, ScreenerDialog, AnalyticsDialog, BacktestDialog, SettingsDialog, plus DynamicSymbolRankings inner dialogs and the ConfirmationDialog callsites.
+- **18 dialog rewrites — every dialog conforming to the bible** (#338-#343, #385-#390) — ChartCloseDialog, KeyboardShortcutHelpDialog, SaveScreenerDialog, IndicatorConfigDialog, ImportProfileDialog, AddWatcherDialog, CreateWalletDialog, OrdersDialog, ProfileEditorDialog, StartWatchersDialog, TradingProfilesDialog, ScreenerDialog, AnalyticsDialog, BacktestDialog, SettingsDialog, WalletsDialog, CustomSymbolsDialog, ConfirmationDialog (callsite sweep). Each one passes the bible: shell, copy, CTA verb, error/loading/empty primitives.
+- **Component pattern bible** (#384) — `docs/UI_DIALOG_PATTERNS.md`. 8 dialog jobs × canonical pattern + code snippet. Cross-cutting rules (title verb tense, CTA verb table, field layout stack-vs-grid, error/success/loading/empty channels, footer button colors, keyboard). Component picker (input → primitive). Authoritative reference future contributors read first.
 - **Creation-dialog trigger pattern** (#345, #346) — `useDisclosure` + `<CreateActionButton>` standardized for every "+ Create X" flow. `docs/UI_CREATION_FLOWS.md` is the reference.
-- **Settings reorganization** (#357, #358, #359, #360) — 13 tabs → 9. `Updates` folded into `About`; `Wallets`, `TradingProfiles`, `CustomSymbols` removed and replaced with dedicated dialogs opened from the place-of-use (WalletSelector, WatchersTab header, SymbolSelector). Settings now stays as: Account, Security, Notifications, General, Chart, Indicators, Auto-Trading, Data, About.
+- **Settings reorganization** (#357-#360) — 13 tabs → 9. `Updates` folded into `About`; `Wallets`, `TradingProfiles`, `CustomSymbols` removed and replaced with dedicated dialogs opened from the place-of-use (WalletSelector, WatchersTab header, SymbolSelector). Settings now stays as: Account, Security, Notifications, General, Chart, Indicators, Auto-Trading, Data, About.
+- **Settings tabs visual identity sweep (S1–S9)** (#391) — every tab uniform now. WatcherManager (13 sub-section components) + IndicatorLibrary migrated from `<CollapsibleSection variant="static">` + `<Separator />` to `<FormSection>`. CSS Grid for fields → `<HStack>` pairs (bible forbids CSS grid for field layouts). Loading states `<MetaText>` / bare `<Text>` → `<Spinner>` panel combo. Empty states bare Text → `<EmptyState>`. Reset-to-defaults buttons consolidated to FormSection's `action` slot. Dead `expandedSections` / `toggleSection` plumbing removed across ~15 files (variant=static is always-expanded — the toggle was a no-op for years). Duplicate `memberSince` removed from SecurityTab.
 - **Shared infra (Track E, #329-#336)** — `*Modal.tsx` → `*Dialog.tsx` rename sweep, `DialogControlProps` base type, `useFormState<T>` hook, `useMutationWithToast` hook, i18n key shape convention (`<feature>.dialogs.<dialog>.<key>`), trading-domain constants centralized in `@marketmind/types`, reusable zod schemas, `audit-dialog-rules.mjs` catch-all CI script.
 
 ### Added — `@marketmind/ui` package (Track B)
@@ -30,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — Documentation (Track C)
 - **`packages/ui/README.md` + `docs/UI_DESIGN_SYSTEM.md`** (#355) — component catalog with examples + design-language reference covering the 13 UX rules.
-- **`docs/I18N_DIALOG_KEYS.md`** + **`docs/UI_CREATION_FLOWS.md`** — i18n key shape convention + creation-dialog trigger pattern.
+- **`docs/I18N_DIALOG_KEYS.md`** + **`docs/UI_CREATION_FLOWS.md`** + **`docs/UI_DIALOG_PATTERNS.md`** — i18n key shape convention + creation-dialog trigger pattern + the dialog patterns bible (Track G's authoritative reference).
 
 ### Added — Track F: chart reactivity (#363-#377)
 - **POSITION_CLOSED toast on SL / TP fills** (#366) + extended to algo/orphan/untracked close paths (#368) via shared `emitPositionClosedToast` helper. Title format: `"Stop Loss hit · BTCUSDT"`, body with side / exit price / PnL, color-coded by PnL sign.
@@ -57,8 +61,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Trading-domain constants** (#334) — 5 hardcoded sets centralized in `@marketmind/types`.
 
 ### Notes
-- **All 5 dialog audit rules clean** at release: `audit-dialog-rules.mjs --strict`, `audit-shade-literals.mjs` (218 files / 0 forbidden patterns), `audit-dialog-i18n-keys.mjs` (4 dialogs / 4 locales), type-check, lint (0 errors / 1969 baseline warnings).
-- **Test counts at release:** backend 5483 / 5483, electron unit 2323 / 2323, browser 108 / 108, trading-core 143 / 143.
+- **All audits clean at release**: `audit-dialog-rules.mjs --strict` ✓, `audit-shade-literals.mjs` (218 files / 0 forbidden patterns) ✓, `audit-dialog-i18n-keys.mjs` (4 dialogs / 4 locales — extended to allow `emptyTitle`/`emptyDescription`/`typeStopLoss`/`typeTakeProfit` per #393) ✓, type-check ✓.
+- **Test counts at release:** backend 5483 / 5483, electron unit 2332 / 2332, browser 108 / 108, trading-core 143 / 143.
+- **Track G result**: 18/18 dialogs + 9/9 Settings tabs + WatcherManager (13 subsections) + IndicatorLibrary all conforming to a single design language. Reading them back-to-back, you can't point to "this one feels different" — the patterns are visibly the same for the same job.
 - **Remaining Track F polish items** (per-event flash colors, order-line move animation + cancel fade, instrumentation overlay, fast-recheck after submit, auto-cancel toast for system-cancelled orders) pushed to v1.7 backlog or marked decided-not-to-ship — none release-blocking. See `docs/V1_6_PLAN.md` Status section.
 
 ## [1.5.0] - 2026-04-30
