@@ -19,7 +19,6 @@ export const DEFAULT_USER_INDICATOR_SEEDS: IndicatorSeed[] = [
   { catalogType: 'atr', label: 'ATR 14', params: { period: 14, color: '#ff9800', lineWidth: 1 } },
   { catalogType: 'adx', label: 'ADX 14', params: { period: 14, color: '#7c4dff', lineWidth: 1 } },
   { catalogType: 'choppinessIndex', label: 'CHOP 14', params: { period: 14, color: '#9e9e9e', lineWidth: 1 } },
-  { catalogType: 'stoch', label: 'Stoch 2', params: { period: 2, smoothK: 3, smoothD: 3, color: '#ef5350', lineWidth: 1 } },
   { catalogType: 'stoch', label: 'Stoch 14', params: { period: 14, smoothK: 3, smoothD: 3, color: '#2196f3', lineWidth: 1 } },
   { catalogType: 'volume', label: 'Volume', params: { color: '#607d8b' } },
   { catalogType: 'vwap', label: 'VWAP', params: { color: '#ffc107', lineWidth: 1 } },
