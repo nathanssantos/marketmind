@@ -1,10 +1,11 @@
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, PositionClosedPayload } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useOrphanOrders } from '@renderer/hooks/useOrphanOrders';
 import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useIndicatorVisibility } from '@renderer/hooks/useIndicatorVisibility';
+import { useSocketEvent } from '@renderer/hooks/socket';
 import { trpc } from '@renderer/utils/trpc';
 import { QUERY_CONFIG } from '@shared/constants/queryConfig';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -236,6 +237,31 @@ export const useChartTradingData = ({
     }
     if (changed) setOverrideVersion(v => v + 1);
   }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions]);
+
+  // Snapshot closing positions when a `position:closed` event arrives so
+  // the chart shows the order line for ~800ms while the query
+  // invalidation refetches. Without this the line just freezes until the
+  // next render. v1.6 Track F.3.
+  const utils = trpc.useUtils();
+  useSocketEvent('position:closed', (data: PositionClosedPayload) => {
+    if (!backendWalletId) return;
+    const exec = filteredBackendExecutions.find((e) => e.id === data.positionId);
+    if (exec) {
+      closingSnapshotsRef.current.set(exec.id, exec);
+      orderFlashMapRef.current.set(exec.id, performance.now());
+      setClosingVersion((v) => v + 1);
+      // Clear the snapshot after the flash + a small data-refresh buffer
+      // so the close animation always plays even if the server refetch is
+      // faster than the animation.
+      setTimeout(() => {
+        closingSnapshotsRef.current.delete(exec.id);
+        setClosingVersion((v) => v + 1);
+      }, 800);
+    }
+    // Force-refetch the active executions immediately as a belt-and-
+    // suspenders against missed websocket invalidation upstream.
+    void utils.autoTrading.getActiveExecutions.invalidate({ walletId: backendWalletId });
+  }, !!backendWalletId);
 
   useEffect(() => {
     if (optimisticExecutions.length === 0) return;
