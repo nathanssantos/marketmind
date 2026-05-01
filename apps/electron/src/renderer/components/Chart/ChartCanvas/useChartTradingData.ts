@@ -290,6 +290,55 @@ export const useChartTradingData = ({
     void utils.autoTrading.getActiveExecutions.invalidate({ walletId: backendWalletId });
   }, !!backendWalletId);
 
+  // v1.6 Track F.3 #14 — live-patch the chart on position:update so
+  // trailing-stop activation, server-pushed SL/TP changes, and qty
+  // updates show immediately, without waiting for the next query
+  // refetch (~250ms via the RealtimeTradingSyncContext debounce). The
+  // existing optimistic-override system tracks the patch until the
+  // server cache catches up, then auto-cleans. Idempotent with user-
+  // initiated optimistic patches — the override merges patches.
+  useSocketEvent('position:update', (raw) => {
+    if (!backendWalletId) return;
+    const data = raw as Partial<BackendExecution> & { id?: string };
+    if (!data?.id) return;
+    const exec = filteredBackendExecutions.find((e) => e.id === data.id);
+    if (!exec) return;
+    const patches: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice'>> = {};
+    const previous: typeof patches = {};
+    if (data.stopLoss !== undefined && data.stopLoss !== exec.stopLoss) {
+      patches.stopLoss = data.stopLoss;
+      previous.stopLoss = exec.stopLoss;
+    }
+    if (data.takeProfit !== undefined && data.takeProfit !== exec.takeProfit) {
+      patches.takeProfit = data.takeProfit;
+      previous.takeProfit = exec.takeProfit;
+    }
+    if (data.entryPrice !== undefined && data.entryPrice !== exec.entryPrice) {
+      patches.entryPrice = data.entryPrice;
+      previous.entryPrice = exec.entryPrice;
+    }
+    if (Object.keys(patches).length > 0) {
+      applyOptimistic(exec.id, patches, previous);
+      orderFlashMapRef.current.set(exec.id, performance.now());
+    }
+  }, !!backendWalletId);
+
+  // v1.6 Track F.3 #14 — live-patch limit-order line position when the
+  // server pushes a price change (e.g. user dragged it on another
+  // device, or the system modified it). Mirrors the position:update
+  // path above for entry orders.
+  useSocketEvent('order:update', (raw) => {
+    if (!backendWalletId) return;
+    const data = raw as Partial<BackendExecution> & { id?: string };
+    if (!data?.id) return;
+    const exec = filteredBackendExecutions.find((e) => e.id === data.id);
+    if (!exec || exec.status !== 'pending') return;
+    if (data.entryPrice !== undefined && data.entryPrice !== exec.entryPrice) {
+      applyOptimistic(exec.id, { entryPrice: data.entryPrice }, { entryPrice: exec.entryPrice });
+      orderFlashMapRef.current.set(exec.id, performance.now());
+    }
+  }, !!backendWalletId);
+
   useEffect(() => {
     if (optimisticExecutions.length === 0) return;
     const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions, ...trackedOrderExecutions];
