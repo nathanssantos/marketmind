@@ -37,6 +37,8 @@ const ALLOWED_LEAF_KEYS = new Set([
   'cancel',
   'success',
   'failure',
+  'empty',
+  'loading',
   'confirm.title',
   'confirm.body',
   'confirm.cta',
