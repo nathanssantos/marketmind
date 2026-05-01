@@ -1,6 +1,7 @@
 import type { MarketType, SavedScreener, ScreenerFilterCondition, ScreenerSortField } from '@marketmind/types';
 import { Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo } from 'react';
+import { useDisclosure } from '@renderer/hooks';
 import { useTranslation } from 'react-i18next';
 import { LuRefreshCw, LuSave } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
@@ -35,7 +36,7 @@ const MARKET_TYPE_OPTIONS: SelectOption[] = [
 
 export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol: string, marketType?: MarketType) => void }) => {
   const { t } = useTranslation();
-  const [isSaveOpen, setIsSaveOpen] = useState(false);
+  const saveDialog = useDisclosure();
 
   const {
     isScreenerOpen,
@@ -180,7 +181,7 @@ export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol
         <Button
           size="2xs"
           variant="outline"
-          onClick={() => setIsSaveOpen(true)}
+          onClick={() => saveDialog.open()}
           disabled={customFilters.length === 0 && activePresetId === null}
         >
           <LuSave />
@@ -259,8 +260,8 @@ export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol
       </DialogShell>
 
       <SaveScreenerDialog
-        isOpen={isSaveOpen}
-        onClose={() => setIsSaveOpen(false)}
+        isOpen={saveDialog.isOpen}
+        onClose={saveDialog.close}
         onSave={handleSave}
         isLoading={isSaving}
       />

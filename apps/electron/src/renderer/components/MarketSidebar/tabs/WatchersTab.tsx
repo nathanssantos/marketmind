@@ -6,6 +6,7 @@ import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useDisclosure } from '@renderer/hooks';
 import { useSignalSuggestions } from '@renderer/hooks/useSignalSuggestions';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { trpc } from '@renderer/utils/trpc';
@@ -30,7 +31,7 @@ interface ActiveWatcher {
 const WatchersTabComponent = () => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const startWatchers = useDisclosure();
 
   const { currentUser } = useBackendAuth();
   const { activeWallet } = useActiveWallet();
@@ -77,7 +78,7 @@ const WatchersTabComponent = () => {
             <IconButton
               size="2xs"
               aria-label={t('marketSidebar.watchers.startWatchers')}
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => startWatchers.open()}
               colorPalette="green"
               variant="solid"
               data-testid="trigger-start-watchers"
@@ -122,7 +123,7 @@ const WatchersTabComponent = () => {
           title={t('marketSidebar.watchers.empty')}
           action={{
             label: t('marketSidebar.watchers.startWatchers'),
-            onClick: () => setIsModalOpen(true),
+            onClick: () => startWatchers.open(),
             icon: <LuPlay />,
           }}
         />
@@ -151,7 +152,7 @@ const WatchersTabComponent = () => {
 
       {activeWalletId && <SuggestionsSection walletId={activeWalletId} userId={currentUser?.id?.toString()} />}
 
-      <StartWatchersDialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <StartWatchersDialog isOpen={startWatchers.isOpen} onClose={startWatchers.close} />
     </Stack>
   );
 };
