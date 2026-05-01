@@ -178,9 +178,13 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
           ? parseFloat(notification.data.pnl ?? '0') >= 0
             ? 'success'
             : 'error'
-          : notification.type === 'POSITION_OPENED'
-            ? 'info'
-            : 'success';
+          : notification.type === 'POSITION_PARTIAL_CLOSE'
+            ? parseFloat(notification.data.pnl ?? '0') >= 0
+              ? 'success'
+              : 'error'
+            : notification.type === 'POSITION_OPENED' || notification.type === 'POSITION_PYRAMIDED'
+              ? 'info'
+              : 'success';
       toaster.create({
         title: notification.title,
         description: notification.body,

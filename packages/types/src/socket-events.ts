@@ -120,6 +120,8 @@ export interface RiskAlertPayload {
 export type TradeNotificationType =
   | 'POSITION_OPENED'
   | 'POSITION_CLOSED'
+  | 'POSITION_PYRAMIDED'
+  | 'POSITION_PARTIAL_CLOSE'
   | 'TRAILING_STOP_UPDATED'
   | 'LIMIT_FILLED';
 
