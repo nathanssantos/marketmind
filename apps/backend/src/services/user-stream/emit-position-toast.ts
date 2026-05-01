@@ -65,3 +65,43 @@ export function emitPositionClosedToast(
 ): void {
   wsService.emitTradeNotification(walletId, buildPositionClosedToast(input));
 }
+
+export interface PositionOpenedToastInput {
+  executionId: string;
+  symbol: string;
+  side: PositionSide;
+  entryPrice: number;
+  quantity: number;
+  source?: 'LIMIT_FILL' | 'MANUAL_FILL';
+}
+
+const OPEN_SOURCE_SUFFIX: Record<NonNullable<PositionOpenedToastInput['source']>, string> = {
+  LIMIT_FILL: '',
+  MANUAL_FILL: ' (manual)',
+};
+
+export function buildPositionOpenedToast(input: PositionOpenedToastInput): TradeNotificationPayload {
+  const { executionId, symbol, side, entryPrice, quantity, source = 'LIMIT_FILL' } = input;
+  const suffix = OPEN_SOURCE_SUFFIX[source];
+
+  return {
+    type: 'POSITION_OPENED',
+    title: `Position opened · ${symbol}${suffix}`,
+    body: `${side} · qty ${quantity} @ ${entryPrice.toFixed(2)}`,
+    urgency: 'normal',
+    data: {
+      executionId,
+      symbol,
+      side,
+      entryPrice: entryPrice.toString(),
+    },
+  };
+}
+
+export function emitPositionOpenedToast(
+  wsService: ToastEmitter,
+  walletId: string,
+  input: PositionOpenedToastInput,
+): void {
+  wsService.emitTradeNotification(walletId, buildPositionOpenedToast(input));
+}

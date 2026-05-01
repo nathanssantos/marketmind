@@ -154,12 +154,14 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   useSocketEvent('trade:notification', (notification: TradeNotificationPayload) => {
     void (async () => {
     if (notification.type !== 'TRAILING_STOP_UPDATED') {
-      const toastType =
+      const toastType: 'success' | 'error' | 'info' =
         notification.type === 'POSITION_CLOSED'
           ? parseFloat(notification.data.pnl ?? '0') >= 0
             ? 'success'
             : 'error'
-          : 'success';
+          : notification.type === 'POSITION_OPENED'
+            ? 'info'
+            : 'success';
       toaster.create({
         title: notification.title,
         description: notification.body,

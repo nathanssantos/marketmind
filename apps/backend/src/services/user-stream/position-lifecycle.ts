@@ -10,7 +10,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
-import { emitPositionClosedToast } from './emit-position-close-toast';
+import { emitPositionClosedToast } from './emit-position-toast';
 
 export async function verifyAlgoFillProcessed(
   ctx: UserStreamContext,
