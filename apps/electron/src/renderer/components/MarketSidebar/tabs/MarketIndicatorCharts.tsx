@@ -1,4 +1,4 @@
-import { Badge, Skeleton } from '@renderer/components/ui';
+import { Badge, RecordRow, Skeleton } from '@renderer/components/ui';
 import { Box, Flex, Text } from '@chakra-ui/react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -67,7 +67,7 @@ interface FearGreedSectionProps {
 export const FearGreedSection = ({ fearGreed, isLoading, hasWidth }: FearGreedSectionProps) => {
   const { t } = useTranslation();
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>{t('marketSidebar.indicators.fearGreed')}</SectionTitle>
       {fearGreed?.current && (
         <Flex gap={2} mb={2}>
@@ -116,7 +116,7 @@ export const FearGreedSection = ({ fearGreed, isLoading, hasWidth }: FearGreedSe
       ) : (
         <MarketNoData />
       )}
-    </Box>
+    </RecordRow>
   );
 };
 
@@ -129,7 +129,7 @@ interface BtcDominanceSectionProps {
 export const BtcDominanceSection = ({ btcDominance, isLoading, hasWidth }: BtcDominanceSectionProps) => {
   const { t } = useTranslation();
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>{t('marketSidebar.indicators.btcDominance')}</SectionTitle>
       {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined, narrowing fails inside JSX block */}
       {btcDominance && btcDominance.current !== null && (
@@ -157,7 +157,7 @@ export const BtcDominanceSection = ({ btcDominance, isLoading, hasWidth }: BtcDo
       ) : !btcDominance || btcDominance.current === null ? (
         <Text fontSize="xs" color="fg.muted">-</Text>
       ) : null}
-    </Box>
+    </RecordRow>
   );
 };
 
@@ -170,7 +170,7 @@ interface MvrvSectionProps {
 export const MvrvSection = ({ mvrv, isLoading, hasWidth }: MvrvSectionProps) => {
   const { t } = useTranslation();
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>{t('marketSidebar.indicators.mvrv')}</SectionTitle>
       {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
       {mvrv && mvrv.current !== null && (
@@ -198,7 +198,7 @@ export const MvrvSection = ({ mvrv, isLoading, hasWidth }: MvrvSectionProps) => 
       ) : (
         <MarketNoData />
       )}
-    </Box>
+    </RecordRow>
   );
 };
 
@@ -211,7 +211,7 @@ interface ProductionCostSectionProps {
 export const ProductionCostSection = ({ btcProductionCost, isLoading, hasWidth }: ProductionCostSectionProps) => {
   const { t } = useTranslation();
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>{t('marketSidebar.indicators.btcProductionCost')}</SectionTitle>
       {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
       {btcProductionCost && btcProductionCost.currentCost !== null && btcProductionCost.currentPrice !== null && (
@@ -246,7 +246,7 @@ export const ProductionCostSection = ({ btcProductionCost, isLoading, hasWidth }
       ) : (
         <MarketNoData />
       )}
-    </Box>
+    </RecordRow>
   );
 };
 
@@ -257,7 +257,7 @@ interface OpenInterestSectionProps {
 }
 
 export const OpenInterestSection = ({ openInterest, isLoading, hasWidth }: OpenInterestSectionProps) => (
-  <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+  <RecordRow density="card" tone="muted">
     <SectionTitle>Open Interest (BTC)</SectionTitle>
     {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
     {openInterest && openInterest.current !== null && (
@@ -284,7 +284,7 @@ export const OpenInterestSection = ({ openInterest, isLoading, hasWidth }: OpenI
     ) : (
       <Text fontSize="xs" color="fg.muted">-</Text>
     )}
-  </Box>
+  </RecordRow>
 );
 
 interface LongShortSectionProps {
@@ -296,7 +296,7 @@ interface LongShortSectionProps {
 export const LongShortSection = ({ longShortRatio, isLoading, hasWidth }: LongShortSectionProps) => {
   const { t } = useTranslation();
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md" borderWidth="1px" borderColor="border">
+    <RecordRow density="card" tone="muted">
       <SectionTitle>{t('marketSidebar.indicators.longShortRatio')} (BTC)</SectionTitle>
       {longShortRatio?.global && (
         <Flex align="center" gap={2} mb={2}>
@@ -325,6 +325,6 @@ export const LongShortSection = ({ longShortRatio, isLoading, hasWidth }: LongSh
           {t('marketSidebar.indicators.topTraders')}: {(longShortRatio.topTraders.longAccount * 100).toFixed(1)}% / {(longShortRatio.topTraders.shortAccount * 100).toFixed(1)}%
         </Text>
       )}
-    </Box>
+    </RecordRow>
   );
 };

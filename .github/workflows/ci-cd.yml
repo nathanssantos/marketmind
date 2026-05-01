@@ -43,6 +43,12 @@ jobs:
       - name: Audit forbidden shade literals
         run: pnpm run lint:shades
 
+      - name: Audit dialog rules (DialogShell, FormSection, etc.)
+        run: pnpm run lint:dialogs:strict
+
+      - name: Audit panel rules (RecordRow, no bare loading text)
+        run: pnpm run lint:panels:strict
+
       - name: Type check (Frontend)
         run: pnpm --filter @marketmind/electron type-check
 
