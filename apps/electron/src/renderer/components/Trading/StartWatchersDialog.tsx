@@ -1,5 +1,5 @@
 import { Box, Flex, Group, HStack, Stack, Text } from '@chakra-ui/react';
-import { Button, Callout, CloseButton, Dialog, NumberInput } from '@renderer/components/ui';
+import { Button, Callout, DialogShell, NumberInput } from '@renderer/components/ui';
 import type { DialogControlProps, MarketType, TimeInterval } from '@marketmind/types';
 import { DEFAULT_TIMEFRAME } from '@renderer/constants/defaults';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
@@ -103,37 +103,50 @@ export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialo
 
   if (!walletId) {
     return (
-      <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="md">
-        <Dialog.Backdrop />
-        <Dialog.Positioner>
-          <Dialog.Content>
-            <CloseButton position="absolute" top={4} right={4} onClick={onClose} size="sm" />
-            <Dialog.Header borderBottom="1px solid" borderColor="border">
-              <Dialog.Title>{t('marketSidebar.watchers.startWatchers')}</Dialog.Title>
-            </Dialog.Header>
-            <Dialog.Body>
-              <Callout tone="warning" compact>
-                {t('trading.portfolio.noWallet')}
-              </Callout>
-            </Dialog.Body>
-          </Dialog.Content>
-        </Dialog.Positioner>
-      </Dialog.Root>
+      <DialogShell
+        isOpen={isOpen}
+        onClose={onClose}
+        size="md"
+        title={t('marketSidebar.watchers.startWatchers')}
+        hideFooter
+      >
+        <Callout tone="warning" compact>
+          {t('trading.portfolio.noWallet')}
+        </Callout>
+      </DialogShell>
     );
   }
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="lg">
-      <Dialog.Backdrop />
-      <Dialog.Positioner>
-        <Dialog.Content>
-          <CloseButton position="absolute" top={4} right={4} onClick={onClose} size="sm" />
-          <Dialog.Header borderBottom="1px solid" borderColor="border">
-            <Dialog.Title>{t('marketSidebar.watchers.startWatchers')}</Dialog.Title>
-          </Dialog.Header>
-
-          <Dialog.Body py={4}>
-            <Stack gap={3}>
+    <DialogShell
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      title={t('marketSidebar.watchers.startWatchers')}
+      footer={
+        <>
+          <Button variant="ghost" onClick={handleOpenSettings} size="sm">
+            <LuSettings />
+            {t('header.settings')}
+          </Button>
+          <Box flex={1} />
+          <Button variant="outline" onClick={onClose} size="sm">
+            {t('common.cancel')}
+          </Button>
+          <Button
+            colorPalette="green"
+            onClick={() => void handleQuickStart()}
+            loading={isStartingWatchersBulk}
+            disabled={isLoadingFiltered || finalFilteredSymbols.length === 0 || effectiveMax === 0}
+            size="sm"
+          >
+            <LuPlay />
+            {t('tradingProfiles.dynamicSelection.quickStartButton', { count: Math.min(count, effectiveMax) })}
+          </Button>
+        </>
+      }
+    >
+      <Stack gap={3}>
               <Flex justify="space-between" align="center">
                 <Text fontSize="sm" fontWeight="semibold">
                   {t('tradingProfiles.dynamicSelection.quickStartTitle')}
@@ -235,32 +248,8 @@ export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialo
               <Callout tone="info" compact>
                 {t('tradingProfiles.dynamicSelection.infoText')}
               </Callout>
-            </Stack>
-          </Dialog.Body>
-
-          <Dialog.Footer borderTop="1px solid" borderColor="border" gap={2}>
-            <Button variant="ghost" onClick={handleOpenSettings} size="sm">
-              <LuSettings />
-              {t('header.settings')}
-            </Button>
-            <Box flex={1} />
-            <Button variant="outline" onClick={onClose} size="sm">
-              {t('common.cancel')}
-            </Button>
-            <Button
-              colorPalette="green"
-              onClick={() => void handleQuickStart()}
-              loading={isStartingWatchersBulk}
-              disabled={isLoadingFiltered || finalFilteredSymbols.length === 0 || effectiveMax === 0}
-              size="sm"
-            >
-              <LuPlay />
-              {t('tradingProfiles.dynamicSelection.quickStartButton', { count: Math.min(count, effectiveMax) })}
-            </Button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog.Positioner>
-    </Dialog.Root>
+      </Stack>
+    </DialogShell>
   );
 });
 

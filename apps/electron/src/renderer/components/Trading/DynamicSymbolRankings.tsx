@@ -4,18 +4,8 @@ import type { MarketType } from '@marketmind/types';
 import {
   Badge,
   Button,
-  CloseButton,
   CryptoIcon,
-  DialogActionTrigger,
-  DialogBackdrop,
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
+  DialogShell,
   EmptyState,
 } from '@renderer/components/ui';
 import {
@@ -26,7 +16,7 @@ import {
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuChartBar, LuHistory, LuTrendingUp } from 'react-icons/lu';
+import { LuHistory, LuTrendingUp } from 'react-icons/lu';
 
 interface DynamicSymbolRankingsProps {
   isOpen: boolean;
@@ -54,70 +44,49 @@ export const DynamicSymbolRankings = ({
   const activeSymbols = new Set(watcherStatus?.activeWatchers?.map((w) => w.symbol) ?? []);
 
   return (
-    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
-      <DialogBackdrop />
-      <DialogPositioner>
-        <DialogContent maxW="800px" maxH="80vh">
-          <DialogHeader>
-            <DialogTitle>
-              <Flex align="center" gap={2}>
-                <LuChartBar />
-                {t('tradingProfiles.dynamicSelection.rankingsTitle')}
-              </Flex>
-            </DialogTitle>
-          </DialogHeader>
+    <DialogShell
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      title={t('tradingProfiles.dynamicSelection.rankingsTitle')}
+      hideFooter
+    >
+      <HStack>
+        <Button
+          size="sm"
+          variant={activeTab === 'rankings' ? 'solid' : 'outline'}
+          onClick={() => setActiveTab('rankings')}
+        >
+          <LuTrendingUp size={14} />
+          {t('tradingProfiles.dynamicSelection.tabRankings')}
+        </Button>
+        <Button
+          size="sm"
+          variant={activeTab === 'history' ? 'solid' : 'outline'}
+          onClick={() => setActiveTab('history')}
+        >
+          <LuHistory size={14} />
+          {t('tradingProfiles.dynamicSelection.tabHistory')}
+        </Button>
+      </HStack>
 
-          <DialogBody overflowY="auto">
-            <Stack gap={4}>
-              <HStack>
-                <Button
-                  size="sm"
-                  variant={activeTab === 'rankings' ? 'solid' : 'outline'}
-                  onClick={() => setActiveTab('rankings')}
-                >
-                  <LuTrendingUp size={14} />
-                  {t('tradingProfiles.dynamicSelection.tabRankings')}
-                </Button>
-                <Button
-                  size="sm"
-                  variant={activeTab === 'history' ? 'solid' : 'outline'}
-                  onClick={() => setActiveTab('history')}
-                >
-                  <LuHistory size={14} />
-                  {t('tradingProfiles.dynamicSelection.tabHistory')}
-                </Button>
-              </HStack>
+      {activeTab === 'rankings' && (
+        <RankingsTab
+          symbolScores={symbolScores}
+          isLoading={isLoadingScores}
+          activeSymbols={activeSymbols}
+          t={t}
+        />
+      )}
 
-              {activeTab === 'rankings' && (
-                <RankingsTab
-                  symbolScores={symbolScores}
-                  isLoading={isLoadingScores}
-                  activeSymbols={activeSymbols}
-                  t={t}
-                />
-              )}
-
-              {activeTab === 'history' && (
-                <HistoryTab
-                  rotationHistory={rotationHistory}
-                  isLoading={isLoadingRotationHistory}
-                  t={t}
-                />
-              )}
-            </Stack>
-          </DialogBody>
-
-          <DialogFooter>
-            <DialogActionTrigger asChild>
-              <Button variant="outline">{t('common.close')}</Button>
-            </DialogActionTrigger>
-          </DialogFooter>
-          <DialogCloseTrigger asChild>
-            <CloseButton size="sm" />
-          </DialogCloseTrigger>
-        </DialogContent>
-      </DialogPositioner>
-    </DialogRoot>
+      {activeTab === 'history' && (
+        <HistoryTab
+          rotationHistory={rotationHistory}
+          isLoading={isLoadingRotationHistory}
+          t={t}
+        />
+      )}
+    </DialogShell>
   );
 };
 
