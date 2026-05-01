@@ -1,12 +1,13 @@
-import { Badge, Button, EmptyState, FormSection, IconButton } from '@renderer/components/ui';
+import { Badge, CreateActionButton, EmptyState, FormSection, IconButton } from '@renderer/components/ui';
 import { Box, Flex, Grid, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { TradingProfile } from '@marketmind/types';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
+import { useDisclosure } from '@renderer/hooks';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuCopy, LuPencil, LuPlus, LuStar, LuTrash2, LuUpload } from 'react-icons/lu';
+import { LuCopy, LuPencil, LuStar, LuTrash2, LuUpload } from 'react-icons/lu';
 import { ImportProfileDialog } from './ImportProfileDialog';
 import { ProfileEditorDialog } from './ProfileEditorDialog';
 
@@ -20,8 +21,8 @@ export const TradingProfilesManager = () => {
     isDeletingProfile,
   } = useTradingProfiles();
 
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
+  const createDialog = useDisclosure();
+  const importDialog = useDisclosure();
   const [editingProfile, setEditingProfile] = useState<TradingProfile | null>(null);
 
   const handleDuplicate = async (profile: TradingProfile) => {
@@ -45,24 +46,17 @@ export const TradingProfilesManager = () => {
         description={t('tradingProfiles.description')}
         action={
           <Flex gap={2}>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowImportDialog(true)}
-              data-testid="trigger-import-profile"
-            >
-              <LuUpload />
-              {t('tradingProfiles.import.openImport')}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowCreateDialog(true)}
-              data-testid="trigger-create-profile"
-            >
-              <LuPlus />
-              {t('tradingProfiles.create')}
-            </Button>
+            <CreateActionButton
+              icon={<LuUpload />}
+              label={t('tradingProfiles.import.openImport')}
+              onClick={importDialog.open}
+              data-testid="profile-import-trigger"
+            />
+            <CreateActionButton
+              label={t('tradingProfiles.create')}
+              onClick={createDialog.open}
+              data-testid="profile-create-trigger"
+            />
           </Flex>
         }
       />
@@ -73,7 +67,7 @@ export const TradingProfilesManager = () => {
         <EmptyState
           dashed
           title={t('tradingProfiles.empty')}
-          action={{ label: t('tradingProfiles.createFirst'), onClick: () => setShowCreateDialog(true) }}
+          action={{ label: t('tradingProfiles.createFirst'), onClick: createDialog.open }}
         />
       ) : (
         <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={4}>
@@ -91,8 +85,8 @@ export const TradingProfilesManager = () => {
       )}
 
       <ProfileEditorDialog
-        isOpen={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
+        isOpen={createDialog.isOpen}
+        onClose={createDialog.close}
         profile={null}
       />
 
@@ -103,8 +97,8 @@ export const TradingProfilesManager = () => {
       />
 
       <ImportProfileDialog
-        isOpen={showImportDialog}
-        onClose={() => setShowImportDialog(false)}
+        isOpen={importDialog.isOpen}
+        onClose={importDialog.close}
       />
     </Stack>
   );
