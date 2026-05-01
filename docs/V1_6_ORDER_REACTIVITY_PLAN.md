@@ -159,6 +159,182 @@ Add the new audit to `pnpm test`'s perf-spec equivalent: an e2e that triggers a 
 
 ## Out of scope
 
-- Open-order entry latency (separate flow, separate handler chain).
-- Trailing stop reactivity (different update mechanism, separate audit).
 - Backtest mode (uses synthetic events; not user-stream-driven).
+
+---
+
+# Track F (broader scope) — ALL order/position events, not just SL
+
+> **2026-04-30 update.** User: *"veja que a revisao das ordens no grafico nao deve ser só pra SL, revise tudo. TP. ordens limit etc etc"*. The original audit focused on SL because that was the trigger. This section expands the scope to every order/position event that should reflect on the chart — TP fills, limit entry fills, order cancels, order modifies, partial closes, liquidations, pyramiding, trailing-stop activation. The fixes from F.1–F.4 above are reused; what changes is the breadth of paths we audit and the toast/flash matrix we wire up.
+
+## Event matrix — what should happen on the chart for each event
+
+For each row, the columns are:
+- **Backend emit** — what the backend currently fires
+- **Chart needs** — what the chart should reflect
+- **Toast?** — does the user need a toast notification (success/info/error)
+- **Status (2026-04-30)**
+
+| Event | Backend emit | Chart needs | Toast? | Status |
+|---|---|---|---|---|
+| **Limit entry placed** (NEW order) | `order:created` | New limit-order line drawn | no (user just clicked submit) | ✅ wired |
+| **Limit entry filled → position opens** | `order:update` (status filled) + `position:update` (new exec) | Limit line removed, position line + SL/TP lines drawn | ✅ "Position opened · {symbol} · {side} @ {price}" | ❌ **no toast emitted** — gap |
+| **Pyramid entry filled** (additional fill on existing position) | `position:update` (avg entry updated) | Position line moved to new avg entry, qty label updated | ✅ "Pyramid filled · {symbol} · qty {n} @ {price}" | ❌ **no toast emitted** — gap |
+| **Partial close filled** (reduce-only partial fill) | `position:update` (qty reduced) | Position line stays, qty label decreases | ✅ "Partial close · {symbol} · qty {n} @ {price} · PnL {±x}" | ❌ **no toast emitted** — gap |
+| **SL fill → full close** | `position:closed` + `order:update` + `position:update` | Position line removed, opposite SL/TP cancelled, flash + toast | ✅ "Stop Loss hit · {symbol} · ...PnL" | ✅ wired (F.4 ships toast) |
+| **TP fill → full close** | `position:closed` + `order:update` + `position:update` | Same as SL fill, green toast | ✅ "Take Profit hit · {symbol} · ...PnL" | ✅ wired (F.4 ships toast) |
+| **Trailing-stop activation** | `position:update` + `trade:notification` (TRAILING_STOP_UPDATED) | SL line moves up, badge "trailing active" | ✅ "Trailing stop active · {symbol} · SL@{newPrice}" | ✅ wired |
+| **Trailing-stop tightening** | `position:update` (slPrice changed) | SL line moves to new tighter price | ⚠️ silent (avoid spam — only first activation toasts) | ✅ wired |
+| **Manual close (user click)** | `position:closed` + `order:update` | Same as SL/TP but with reason='MANUAL' | ✅ "Position closed · {symbol} · ...PnL" | ❌ **no toast emitted** — gap |
+| **Liquidation** | `position:closed` (reason=LIQUIDATION) + risk:alert | Position line removed, red flash, critical toast | ✅ critical "🚨 Liquidated · {symbol} · -{loss}" | ⚠️ partial — risk:alert toasts but no position:closed-side toast |
+| **Order cancel (limit)** | `order:cancelled` + `order:update` | Limit line removed | ⚠️ user-initiated → silent; auto-cancel → toast | ❌ **no toast on auto-cancel** — gap |
+| **Order modify (price/qty drag)** | `order:update` (new price) | Order line moves to new price | no (user dragged it) | ✅ wired |
+| **OCO opposite-side cancel** (when SL fills, the TP gets cancelled — and vice versa) | `order:cancelled` + `order:update` | The opposite-side line disappears | no (implicit from the close) | ✅ wired (chain reaction) |
+| **STOP_MARKET algo trigger fill** (Binance algo path) | `position:closed` via `handle-algo-update.ts` | Same as SL fill | ✅ same as SL/TP toast | ⚠️ **needs audit** — handle-algo-update emits position:update but not the trade:notification |
+| **Untracked fill caught by reconciliation** (e.g. user-stream missed event, position-sync caught it) | `position:closed` via `handle-untracked-fill.ts` | Same as the original event would have looked | ✅ "Position closed · ..." (with reason='RECONCILED' marker) | ⚠️ **needs audit** — emits position:closed but no toast |
+| **stream:reconnected** (user-stream just came back online after a gap) | new event `stream:reconnected` | Force-refetch all trading queries | ⚠️ optional info toast only if gap >30s | ❌ **doesn't exist yet** — F.2 work |
+
+## Renderer subscription audit (current vs needed)
+
+`apps/electron/.../context/RealtimeTradingSyncContext.tsx`:
+
+| Event | Subscribed? | Action | Gap |
+|---|---|---|---|
+| `position:update` | ✅ | invalidate positions+wallet | — |
+| `position:closed` | ✅ | invalidate positions+wallet+setupStats+equityCurve | — (chart now also subscribes directly) |
+| `order:update` | ✅ | invalidate orders | — |
+| `order:created` | ✅ | invalidate orders+wallet | — |
+| `order:cancelled` | ✅ | invalidate orders+wallet | — |
+| `wallet:update` | ✅ | invalidate wallet | — |
+| `risk:alert` | ✅ | toast on critical liquidation risk | — |
+| `trade:notification` | ✅ | toast (color by PnL sign) + native notification | TRAILING_STOP_UPDATED skips toast (intentional) |
+| `stream:reconnected` | ❌ | should force-refetch all trading queries | **F.2 deliverable** |
+
+`apps/electron/.../components/Chart/ChartCanvas/useChartTradingData.ts`:
+
+| Event | Subscribed? | Action | Gap |
+|---|---|---|---|
+| `position:closed` | ✅ | snapshot exec to closingSnapshotsRef + flash + invalidate | — (added in F.3) |
+| `position:update` | ❌ | should optimistically patch the visible position line | **F.4 deliverable** |
+| `order:update` | ❌ | should optimistically patch the visible order line (price changed) | **F.4 deliverable** |
+
+## Backend emit gaps to fix
+
+After auditing all 8 user-stream handlers + 4 cross-cutting services, the gaps are:
+
+### Toast notifications (`emitTradeNotification`)
+
+Currently emitted from:
+- ✅ `trailing-stop-apply.ts` — TRAILING_STOP_UPDATED
+- ✅ `handle-exit-fill.ts` — POSITION_CLOSED (SL/TP) — added in F.4 (PR #366)
+
+Missing — should be added:
+- ❌ **Limit entry filled → position opens.** Add to `handle-pending-fill.ts` after the position is created. Title: `"Position opened · {symbol}"`, body with side/qty/entryPrice. Type: `POSITION_OPENED` (new variant).
+- ❌ **Pyramid entry filled.** Add to `binance-futures-user-stream.ts` line ~170 after `emitPositionUpdate` for merge events. Type: `POSITION_PYRAMIDED` (new variant).
+- ❌ **Partial close filled.** Add wherever partial fills update qty (likely `handle-exit-fill.ts` early branch when `remaining > 0`). Type: `POSITION_PARTIAL_CLOSE` (new variant).
+- ❌ **Manual close.** When `handle-exit-fill.ts` runs with `reason='MANUAL'`, currently emits POSITION_CLOSED toast. Verify reason classification — already covered by F.4 (PR #366) as long as `determinedExitReason` includes MANUAL.
+- ❌ **Liquidation.** When `handle-account-events.ts` emits `risk:alert` with type=LIQUIDATION, also emit a `trade:notification` (POSITION_CLOSED with reason=LIQUIDATION) so the user gets both the alert AND a position-close toast. Critical urgency.
+- ❌ **Algo fill.** `handle-algo-update.ts` line ~270 currently emits `position:update` only. Add `emitPositionClosed` + `emitTradeNotification` when the algo fill closes a position. Reuse handle-exit-fill's emit logic (extract to a shared helper).
+- ❌ **Untracked-fill close.** `handle-untracked-fill.ts` line 161 emits `position:closed` but no `trade:notification`. Add one with reason=RECONCILED.
+- ❌ **Auto-cancel of orders.** When an order is cancelled by the system (not the user — e.g. wallet-disabled or expired-conditional), emit a `trade:notification` with type=ORDER_CANCELLED. User-initiated cancels stay silent.
+
+### `position:closed` emit gaps
+
+- ✅ `handle-exit-fill.ts` — emits
+- ✅ `handle-untracked-fill.ts` — emits
+- ✅ `position-lifecycle.ts` — emits
+- ❌ `handle-algo-update.ts` — emits `position:update` with `status='closed'` but NOT a dedicated `position:closed`. Renderer's chart-side close-flash subscribes specifically to `position:closed`, so algo-path closes won't flash. **Fix: emit `position:closed` from algo path too.**
+
+### `stream:reconnected` event (new)
+
+After the user-stream reconnects after a >5s gap, emit `stream:reconnected` to all wallet rooms so the renderer force-refetches trading state. Wired in `binance-futures-user-stream.ts` reconnect handler (the watchdog already exists at 15s health check / 60s stale threshold per memory).
+
+## Updated F.2 / F.3 / F.4 deliverables (broader scope)
+
+### F.2 — Backend resilience (broadened)
+
+In addition to the original F.2 items:
+
+- **Algo path emits `position:closed` + `trade:notification`** (mirror the regular SL/TP path). Extract `emitClosePayload(execution, ws)` helper to avoid drift.
+- **Untracked-fill path emits `trade:notification`** with reason=RECONCILED so user knows a missed event was caught.
+- **Liquidation path emits both `risk:alert` AND `trade:notification`** so the user gets the critical alert and the close confirmation.
+- **`stream:reconnected` event** added to the WS service, fired from user-stream watchdog after a successful reconnect. Renderer force-refetches.
+- **Auto-cancel toast** for orders cancelled by the system (wallet disabled, expired, etc).
+
+### F.3 — Renderer reactivity hardening (broadened)
+
+In addition to the original F.3 items:
+
+- **Subscribe to `stream:reconnected`** in RealtimeTradingSyncContext → force-refresh all trading queries.
+- **Order-side fast-recheck** for limit order modifies and cancels (1s + 3s after submit, regardless of websocket).
+- **`position:update` chart subscription**: in `useChartTradingData.ts`, subscribe to `position:update` so live qty/avgEntry/SL/TP changes patch the chart immediately without waiting for query refetch.
+- **`order:update` chart subscription**: in `useChartTradingData.ts`, subscribe to `order:update` so price-changed orders patch the chart line position immediately.
+
+### F.4 — Visual feedback (broadened)
+
+In addition to the original F.4 items:
+
+- **Position-opened flash + toast** — green flash on the new position line for 800ms when first drawn, plus toast (covered above).
+- **Pyramid flash** — orange/blue flash on the position line when the avg-entry shifts (qty grew).
+- **Partial-close flash** — yellow flash on position line when qty shrinks but stays >0.
+- **Liquidation flash** — red full-line flash + critical toast.
+- **Order-line move animation** — when `order:update` arrives with new price, animate the line smoothly to the new y-coordinate instead of teleporting (200ms transition).
+- **Order-line cancel fade** — when `order:cancelled` arrives, fade the line out over 300ms before removing.
+
+## New / updated trade-notification types
+
+In `@marketmind/types`, extend `TradeNotificationPayload['type']`:
+
+```ts
+type TradeNotificationType =
+  | 'POSITION_OPENED'        // new — limit entry fill
+  | 'POSITION_CLOSED'        // existing — SL/TP/manual/liquidation/algo
+  | 'POSITION_PYRAMIDED'     // new — additional fill on existing
+  | 'POSITION_PARTIAL_CLOSE' // new — reduce qty but not full close
+  | 'TRAILING_STOP_UPDATED'  // existing — silent
+  | 'ORDER_CANCELLED'        // new — auto-cancel only
+;
+```
+
+Renderer `RealtimeTradingSyncContext.tsx` updates the toast color logic:
+- POSITION_OPENED → info (blue)
+- POSITION_CLOSED → green if pnl≥0 else red (existing)
+- POSITION_PYRAMIDED → info
+- POSITION_PARTIAL_CLOSE → green/red by partial-pnl sign
+- TRAILING_STOP_UPDATED → silent (existing)
+- ORDER_CANCELLED → warning (orange)
+
+## Updated sequencing
+
+| # | Stage | What | Effort |
+|---|---|---|---|
+| 1 | F.1 | Instrumentation — backend + renderer timing logs, dev overlay | 3-4h |
+| 2 | F.1 | Reproduce user's case + measure | 1-2h |
+| 3 | F.2 | Position reconciliation watchdog @ 30s (replaces 5min) | ✅ shipped (PR #365) |
+| 4 | F.2 | listenKey health watchdog → `stream:reconnected` event | 4-5h |
+| 5 | F.2 | Algo-path emits position:closed + trade:notification | 2-3h |
+| 6 | F.2 | Untracked-fill path emits trade:notification | 1h |
+| 7 | F.2 | Liquidation path emits trade:notification (in addition to risk:alert) | 2h |
+| 8 | F.2 | Auto-cancel toast for system-cancelled orders | 1-2h |
+| 9 | F.2 | New trade-notification types (POSITION_OPENED/PYRAMIDED/PARTIAL/ORDER_CANCELLED) in @marketmind/types | 2h |
+| 10 | F.2 | Pending-fill emits POSITION_OPENED toast | 1-2h |
+| 11 | F.2 | Pyramid + partial-close emits | 2-3h |
+| 12 | F.3 | BACKUP_POLLING_INTERVAL: 30s → 5s | ✅ shipped (PR #364) |
+| 13 | F.3 | Chart subscribes to position:closed for snapshot+flash | ✅ shipped (PR #364) |
+| 14 | F.3 | Chart subscribes to position:update + order:update (live patch) | 4-5h |
+| 15 | F.3 | RealtimeTradingSyncContext subscribes to stream:reconnected | 1-2h |
+| 16 | F.3 | Fast-recheck (1s + 3s) after user-action submits | 2-3h |
+| 17 | F.4 | SL/TP toast (POSITION_CLOSED) | ✅ shipped (PR #366) |
+| 18 | F.4 | Position-opened / pyramid / partial-close / liquidation toasts | 3-4h |
+| 19 | F.4 | Order-line flash variants (open / close / pyramid / partial / liquidation) | 4-5h |
+| 20 | F.4 | Order-line move animation (price changed) + cancel fade | 3-4h |
+
+**Shipped so far:** F.3 backup polling, F.3 chart position:closed subscription, F.2 position-sync 30s, F.4 SL/TP toast.
+**Remaining estimate:** ~35-45h.
+
+## Acceptance (broadened)
+
+- Every event in the matrix above produces visible feedback (flash + toast where applicable) within 1.5s p95.
+- Worst-case (websocket missed): the 30s position-sync + 5s backup-polling catches it within 5-30s and emits the same flash/toast as the realtime path would have.
+- E2E coverage: a paper-mode test fixture that simulates each event type and asserts the chart reflects within 2s and the toast surfaces.
+- Out of band: trailing stop already covered, no behavior change there.
