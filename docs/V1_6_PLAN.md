@@ -423,9 +423,20 @@ After the modal sweep, v1.7+ extends the same pass to:
 **Deferred items (real work that didn't fit this cycle):**
 - **B.3 Tier-3 graduation** — `PasswordStrengthMeter` decouples by accepting a `t` prop; small follow-up.
 - **B.4 rename** — `ui-core` → `ui` once consumers external to the renderer materialize.
-- **Runtime i18n spot-check** — a few keys that previously resolved only via the en fallback may not yet exist in the canonical JSON. Tests pass (they mock i18n); at runtime, users see the raw key. Worth a one-pass walk-through.
 
-**v1.6 is feature-complete on develop.** The runtime i18n spot-check is the only remaining quality-of-release task before cutting v1.6.0.
+**🔴 Track F — Order/position chart reactivity (added 2026-05-02)**
+
+User reported that closing a position via Stop Loss took ~1 minute for the chart to reflect the close, even though Binance had already filled. **The chart UX was tragic; needs careful review of the entire reactivity chain.** Detailed plan at `docs/V1_6_ORDER_REACTIVITY_PLAN.md`.
+
+Four stages:
+- F.1 — instrumentation (first; measure before fixing)
+- F.2 — backend resilience (position reconciliation watchdog + listenKey health watchdog)
+- F.3 — renderer reactivity hardening (drop polling 30s → 5s, fast-recheck after submit, closingSnapshots on position:closed)
+- F.4 — visual feedback on close (flash animation, toast audit, optimistic line update)
+
+Total estimated: ~25-30h. Acceptance target: SL fills → chart updates in <1.5s p95; user-perceived latency <200ms via flash+toast.
+
+**Track F blocks v1.6.0 release.** v1.6 was structurally feature-complete on develop, but this trading-experience bug is high-severity enough that we're not cutting until F.2+F.3 land.
 
 ---
 
