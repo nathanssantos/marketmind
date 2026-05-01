@@ -445,20 +445,20 @@ Each row gets its own PR. Status is set as the work progresses.
 | 1 | `ChartCloseDialog` | ✅ #385 — switched from raw `<DialogShell>` to `<ConfirmationDialog isDestructive>`; copy rewritten ("Close position?" + descriptive body, not interrogative); confirm verb matches title ("Close position"); PnL moved into description ReactNode; sltp variant uses interpolated type label; +1 vitest snapshot test |
 | 2 | `KeyboardShortcutHelpDialog` | ✅ #386 — only violation was bespoke `<Text>` empty state; replaced with `<EmptyState>` per the bible's data-viewer pattern. Empty-state copy split into `emptyTitle` + `emptyDescription` keys (was a single sentence). +1 vitest test (3 cases) |
 | 3 | `SaveScreenerDialog` | ✅ #387 — already followed the single-field-input pattern (DialogShell size="sm" + Field + autoFocus). Single fix: `<Input size="sm">` → `size="xs"` per the bible's component picker (uniform xs density). +1 vitest test (3 cases) |
-| 4 | `IndicatorConfigDialog` | Configure one indicator's params | Form per indicator; param shape varies. Consistency target: every numeric input uses `<NumberInput>`, every color picker uses `<ColorPicker>`. |
-| 5 | `ImportProfileDialog` | Paste a JSON profile blob to import | Textarea + parse + preview. Validation surface needs work. |
+| 4 | `IndicatorConfigDialog` | ✅ #388 (batch) — `<Input size="sm">` → `xs` per the bible's component picker (uniform xs density). |
+| 5 | `ImportProfileDialog` | ✅ #388 (batch) — `<Input size="sm">` → `xs`; body wrapped in `<Stack gap={3}>` (was bare children of DialogShell); description added; namePlaceholder moved from hardcoded English to i18n key; preview-Callout Badges sm→xs for visual coherence. |
 | 6 | `AddWatcherDialog` | Start a new auto-trading watcher | Multi-field form. Currently mixes chart-style symbol picker with form. |
 | 7 | `CreateWalletDialog` | Connect a Binance / IB wallet | Multi-field form with conditional fields per exchange. Validation messaging needs work. |
 | 8 | `ProfileEditorDialog` | Edit a trading profile | Tabs (general, signals, filters, trailing stop, risk). Currently the tab labels and order are inconsistent with the actual form contents. |
-| 9 | `OrdersDialog` | View open + recent orders | Read-only data table. Empty state + loading state + error state need primitives. |
-| 10 | `StartWatchersDialog` | Bulk-start watchers from rankings | Selection-then-confirm flow. Currently has inline confirmation step. |
-| 11 | `TradingProfilesDialog` | Manage profiles (list + create + edit) | Object management. List is OK but the inline edit/delete actions need standardization. |
+| 9 | `OrdersDialog` | ✅ #388 (batch) — search Input/filter Select sm→xs; loading state used `<EmptyState size="sm" title="loading">` (anti-pattern explicitly forbidden by the bible) replaced with the standard `<Spinner>` panel combo. |
+| 10 | `StartWatchersDialog` | ✅ #388 (batch) — uniform xs density (5 buttons + NumberInput sm→xs). Selection-then-confirm flow logic preserved. |
+| 11 | `TradingProfilesDialog` | ✅ #388 (batch) — added `description` (was missing). Notes: still composes `<WatcherManager />` + `<Separator />` + `<SetupToggleSection />` (multi-job) — splitting into single-job dialogs deferred since the inner components were rewritten under Track A.5. |
 | 12 | `ScreenerDialog` | Run market scans | Workflow dialog with results panel. Filter persistence + reset behavior need clarification. |
 | 13 | `AnalyticsDialog` | View performance + setup stats + equity curve | Workflow dialog with multi-panel content. Loading + empty states inconsistent across panels. |
 | 14 | `BacktestDialog` | Run a backtest | Multi-step flow (config → run → results). Currently three flat sections; should be staged. |
 | 15 | `SettingsDialog` | App preferences | Workflow dialog with 9 tabs. Tab content already audited (see Track G follow-up below); SettingsDialog itself just hosts them. |
-| 16 | `WalletsDialog` | Manage wallets (list + create) | Object management. Same shape as TradingProfilesDialog — they should look identical. |
-| 17 | `CustomSymbolsDialog` | Manage custom synthetic symbols | Object management. Same shape as Wallets/Profiles. |
+| 16 | `WalletsDialog` | ✅ #388 (batch) — added `description` (was missing). Otherwise compliant (size=xl + hideFooter). |
+| 17 | `CustomSymbolsDialog` | ✅ #388 (batch) — added `description` (was missing). Otherwise compliant. |
 | 18 | `ConfirmationDialog` (callsite sweep) | Generic destructive confirm | Already a primitive; sweep callsites for consistent copy ("Cancel" / primary destructive verb / never plain "OK"). |
 
 Plus the **9 Settings tabs** as the post-Track-G follow-up:

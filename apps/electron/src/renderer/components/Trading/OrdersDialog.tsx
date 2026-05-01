@@ -1,5 +1,5 @@
 import { DialogShell, EmptyState, IconButton, Input, Select } from '@renderer/components/ui';
-import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Group, Spinner, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MM } from '@marketmind/tokens';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
@@ -177,7 +177,7 @@ const OrdersDialogComponent = () => {
 
             <Flex gap={MM.spacing.inline.gap} align="center" flexWrap="wrap">
               <Input
-                size="sm"
+                size="xs"
                 placeholder={t('trading.orders.search')}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -185,7 +185,7 @@ const OrdersDialogComponent = () => {
               />
               <ChakraField.Root minW="140px">
                 <Select
-                  size="sm"
+                  size="xs"
                   value={filterStatus}
                   onChange={(value) => setFilterStatus(value as OrdersFilterOption)}
                   options={[
@@ -221,7 +221,9 @@ const OrdersDialogComponent = () => {
             </Flex>
 
             {isLoading ? (
-              <EmptyState size="sm" title={t('common.loading')} />
+              <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+                <Spinner size={MM.spinner.panel.size} />
+              </Flex>
             ) : filteredOrders.length === 0 ? (
               <EmptyState size="sm" title={t('trading.orders.noResults')} />
             ) : activeWallet ? (

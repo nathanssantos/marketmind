@@ -20,6 +20,7 @@ export const WalletsDialog = memo(({ isOpen, onClose }: WalletsDialogProps) => {
       onClose={onClose}
       size="xl"
       title={t('trading.wallets.title')}
+      description={t('trading.wallets.dialogDescription')}
       hideFooter
     >
       <WalletManager />

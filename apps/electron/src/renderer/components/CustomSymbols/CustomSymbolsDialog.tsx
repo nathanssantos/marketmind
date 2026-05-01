@@ -23,6 +23,7 @@ export const CustomSymbolsDialog = memo(({ isOpen, onClose }: CustomSymbolsDialo
       onClose={onClose}
       size="xl"
       title={t('customSymbols.title')}
+      description={t('customSymbols.dialogDescription')}
       hideFooter
     >
       <CustomSymbolsTab />

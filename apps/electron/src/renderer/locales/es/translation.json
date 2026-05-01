@@ -146,6 +146,7 @@
     "title": "Símbolos Personalizados",
     "manage": "Gestionar",
     "description": "Crea índices personalizados a partir de múltiples componentes con agregación ponderada.",
+    "dialogDescription": "Compón índices sintéticos a partir de múltiples símbolos (peso igual, market-cap, capped, sqrt o manual).",
     "myIndices": "Mis Índices",
     "createNew": "Crear Nuevo",
     "name": "Nombre",
@@ -1205,6 +1206,7 @@
     },
     "wallets": {
       "title": "Carteras",
+      "dialogDescription": "Conecta carteras de Binance o Interactive Brokers, además de sandboxes paper-trading para probar sin riesgo.",
       "create": "Crear Cartera",
       "createTitle": "Crear Nueva Cartera",
       "empty": "Aún no hay carteras. Cree una para comenzar a operar.",
@@ -1673,6 +1675,7 @@
     "title": "Perfiles de Trading",
     "modalTitle": "Trading Automático",
     "description": "Cree perfiles con diferentes configuraciones de setups para trading multi-activos",
+    "dialogDescription": "Gestiona watchers activos, modo de trading y rotación de símbolos. Los perfiles están bajo la lista de watchers.",
     "defaultMarker": "Perfil por defecto",
     "create": "Nuevo Perfil",
     "createFirst": "Cree Su Primer Perfil",
@@ -1842,14 +1845,16 @@
       "insufficientCapital": "Capital insuficiente para el tamaño mínimo de operación"
     },
     "import": {
-      "title": "Importar Perfil desde Backtest",
-      "pasteJson": "Pegue el JSON de salida de la optimización de backtest",
-      "preview": "Vista Previa",
+      "title": "Importar perfil desde backtest",
+      "description": "Pega un perfil JSON de la optimización de backtest para añadirlo a tus perfiles guardados.",
+      "pasteJson": "JSON del perfil",
+      "namePlaceholder": "ej: Estrategia BTC optimizada",
+      "preview": "Vista previa",
       "invalidJson": "Formato JSON inválido",
       "importing": "Importando...",
       "importSuccess": "Perfil importado exitosamente",
       "importButton": "Importar",
-      "nameLabel": "Nombre del Perfil",
+      "nameLabel": "Nombre del perfil",
       "strategiesCount": "{{count}} estrategias",
       "openImport": "Importar"
     }

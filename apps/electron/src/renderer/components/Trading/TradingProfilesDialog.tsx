@@ -16,6 +16,7 @@ export const TradingProfilesDialog = memo(({ isOpen, onClose }: TradingProfilesD
       onClose={onClose}
       size="xl"
       title={t('tradingProfiles.modalTitle')}
+      description={t('tradingProfiles.dialogDescription')}
       hideFooter
     >
       <WatcherManager />
