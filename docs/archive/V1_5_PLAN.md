@@ -1,136 +1,280 @@
-# v1.5 — Outstanding work (archived)
+# v1.5 — Backlog (archived)
 
-> **Status:** All autonomous-scope items shipped on develop. Archived for
-> the historical record. v1.3.0 release (D.1) remains gated on user
-> signal and is the only item still pending.
+> **Status:** v1.5.0 shipped on 2026-05-01 (tag `v1.5.0`, GitHub Release with macOS arm64 + Windows x64 desktop builds). 28 commits since v1.4.0.
 >
-> **Shipped**: A.1 (#270), A.2 (#271), B.1 (#279), B.2 (#280), B.3 (#283),
-> C.1 (#274). Plus follow-up sweeps that emerged during execution:
-> Settings dialog widths fix (#275), mcp-screenshot timing fix (#276),
-> WatcherManager Select migration (#277), SetupToggle + WatcherCard rows
-> + OpportunityCost Select (#278), template-string shade leak audit rule
-> + cosmetic stripe sweep (#282).
+> **Shipped this cycle:**
+> - **Auth (A)**: A.1.b login soft-nudge (#299)
+> - **Layout durability (B)**: B.2 audit log (#298), B.1 snapshot UI (#300, e2e #309), B.3 Postgres archive_mode (#305)
+> - **MCP Trading (C.1) — paper-complete**: foundation (#314), read tools (#315), hard-gate (#316), paper writes (#317), audit log UI (#318), rate limit (#319), set_sl_tp (#321)
+> - **Accessibility (D)**: D.1 keyboard registry (#302), D.1.b handler migration (#304), D.2.a axe spec (#306), D.2.c color-contrast (#308)
+> - **Backtest UI (E)**: E.1 getActiveRuns (#310), E.7 reload-recovery (#312), E.8 backtest_runs persistence (#313)
+> - **Tokens / UI (F)**: F.1 `@marketmind/tokens` extraction (#301), F.2 ui extraction audit doc (#320)
+> - **Tests (G)**: G.2 custom-symbol service coverage (#307)
+> - **Housekeeping (H)**: H.1 MEMORY.md trimmed
 >
-> **Skipped**: C.2 (visual review automation) — explicitly skipped per
-> the original plan's decision.
+> **Deferred indefinitely / out of scope:**
+> - C.1.h MCP live unlock — paper toolkit needs real-workflow validation; user explicitly opts in when ready (real-money territory)
+> - D.2.b VoiceOver pass + D.2.d useId() ARIA strictness — out of scope (#322); product not pursuing screen-reader-grade a11y
+> - G.1 visual review automation — speculative; revisit only if a token-style regression wave hits
+> - H.3 trade_executions error post-mortem — only if it reappears in logs
 >
-> **Deferred**: D.1 (v1.3.0 release) — gated on user.
+> Live during execution at `docs/V1_5_PLAN.md`; archived here when v1.5.0 cut.
 
-Snapshot of what remained after the v1.4 sweep (20 PRs, #246–#268) when
-the plan was written. v1.4 shipped the structural + semantic-token
-cleanup; v1.5 picked up the deferred items from V1_3_PLAN that were
-autonomous-friendly, plus a few new ones surfaced during the sweep.
+---
 
-The v1.3.0 release is gated on this plan reaching a natural pause point.
+## A — Auth follow-throughs
 
-## A — Primitives + form polish
+### A.1.b — Login soft-nudge for users with policy-violating passwords ✅ shipped (#299)
+The v1.4 password policy is enforced on register / changePassword / resetPassword but **not** on login. Plan A.1 originally specified a soft warning post-login when `validatePassword` flags the existing password — deferred from #293 to keep the PR focused.
 
-### A.1 — `<DataCard>` primitive (deferred from V1_3 / V1_2)
-- Several surfaces render the same "label + value + optional subtext"
-  stat-card pattern with ad-hoc `<Box p={3} bg="bg.muted" borderRadius>`
-  wrappers. Examples:
-  - `RiskDisplay` (4 cards: Open Positions, Total Exposure, Daily PnL,
-    Size per Watcher)
-  - `PerformancePanel`'s internal `MetricCard`
-  - `OrdersDialog` stats bar (totals row)
-  - `PortfolioSummary` (per-position aggregates)
-- Goal: a single `<DataCard label value subtext valueColor>` primitive in
-  `ui/`, replace the inlined patterns, drop ~50 LOC across surfaces.
-- **Effort**: ~3h. **Risk**: low (visual-token-equivalent).
+**What ships**:
+- `auth.login` validates `input.password` against the policy after a successful `verify()`. Adds `passwordPolicyViolated: boolean` to the response.
+- 2FA flow: skip the nudge (plaintext doesn't carry across the verify step; piping it would expand the threat surface). Document the choice.
+- `useBackendAuth.login` returns the flag. `LoginPage` shows a one-shot toast with a "Trocar agora" CTA navigating to Settings → Security. Don't repeat per-session.
+- i18n: `auth.passwordPolicy.softNudge.{title,body,changeNow,laterCta}` in en/pt/es/fr.
+- Tests: `auth.router` returns flag for weak / not for strong; `LoginPage` toast renders when flag is true.
 
-### A.2 — Custom Symbols "Create New" form rows (deferred from V1_3)
-- `CustomSymbolsTab.tsx`'s create-new section uses raw `<Box>`/`<HStack>`
-  for label/control rows; should align to `<Field>` / `<FormRow>`
-  primitives like every other settings tab.
-- **Effort**: ~2h. **Risk**: low.
+**Effort**: ~2-3h. **Risk**: low.
 
-## B — Test + CI infra
+---
 
-### B.1 — Browser tests for `renderOverlayBands` + `renderPivotPoints`
-- #264 added browser tests for `renderOverlayLine` to lock in the
-  #256/#262 regression. The companion renderers also benefit from
-  pixel-sampling tests on the right-axis tag (bands) or pivot markers.
-- Pivot points: no tags currently — separate decision (do we want them?).
-  Bands: tags shipped in #262, no test.
-- **Effort**: ~2h for bands. **Risk**: low.
+## B — Layout durability follow-throughs
 
-### B.2 — pixelmatch HTML gallery for CI artifacts (V1_3 E.3)
-- `scripts/visual-diff.mjs` writes red-overlay PNGs to `<session>/diffs/`.
-  CI uploads them as artifacts but the user has to download + view.
-  Extending `renderGalleryHtml` to read `diffs/` and add a third image
-  column ("diff") would beat that.
-- **Effort**: ~2h. **Value**: medium — only relevant when visual
-  regression is failing, but speeds the diff-investigation loop.
+### B.1 — Snapshot list + restore UI in Settings ✅ shipped (#300, e2e #309)
+Backend has `layout.listSnapshots` + `layout.restoreSnapshot` from #293 but no frontend yet. Without UI the recovery is dev-only.
 
-### B.3 — Empty-state + EmptyState test coverage holes
-- C.3 in V1_3 said `Portfolio` and `OrdersList` empty-state tests were
-  skipped (too many hooks/global state to mock cleanly). Worth
-  revisiting now that the renderer is more stable; the visual-regression
-  baseline catches them but a focused unit test would document intent.
-- **Effort**: ~half-day. **Risk**: low.
+**What ships**:
+- New "Layouts" section under Settings → Data tab. Lists snapshots: `<SnapshotAt> · <Tab count> tabs · <Layout count> presets`. Click → preview side panel. "Restore" CTA → confirmation dialog → calls `layout.restoreSnapshot.mutate({ snapshotId })`.
+- After restore, `useLayoutStore.getState().hydrate(...)` re-runs from the new authoritative state in the DB so the in-memory store stays in sync without a reload.
+- Empty state: `<EmptyState>` ("No snapshots yet — they're created automatically once a day when the layout changes").
+- i18n: `settings.data.layouts.{title,description,empty,restore,restoreConfirmTitle,restoreConfirmBody,restored,restoreFailed,tabsCount,presetsCount,snapshotAt}` in en/pt/es/fr.
+- Tests: component test that lists, opens preview, calls restoreMutation on confirm.
 
-## C — Style guide + tooling
+**Effort**: ~3-4h. **Risk**: low.
 
-### C.1 — Document the v1.4 sweep rules in `UI_STYLE_GUIDE.md`
-- `docs/UI_STYLE_GUIDE.md` documents primitives but doesn't yet capture
-  the V1_4 anti-patterns the audit script enforces:
-  - Static shade literals (rule #1)
-  - `_dark={{}}` JSX prop overrides (rule #2)
-  - Nested `_dark: {}` overrides in object literals (rule #3)
-  - Tinted-card `<Box bg="X.subtle" borderColor="X.muted">` (rule #4)
-  - Dynamic shade pair `color={cond ? 'green.NNN' : 'red.NNN'}` (rule #5)
-- Each rule needs a "Don't / Do" pair pointing at the right semantic
-  token (`trading.long/short`, `trading.profit/loss`, `trading.warning`,
-  `trading.info`, `accent.solid`, `bg.muted` etc.).
-- **Effort**: ~3h. **Risk**: zero (docs only).
+### B.2 — Audit log of layout writes ✅ shipped (#298)
+Tracks every `user_layouts.save` so any future overwrite can be correlated with the release that caused it.
 
-### C.2 — Visual review automation (V1_3 G.2)
-- A `pnpm visual:review` script that walks the renderer + flags
-  candidate issues:
-  - Headings >`fontSize="md"` outside known section headers
-  - Spacing values not in `MM.spacing.*` tokens
-  - Components not consuming any semantic token
-- The audit script already handles the worst patterns; this is a tier
-  below — speculative value, may be too noisy.
-- **Effort**: ~1d. **Risk**: low (script-only, no source changes).
-- **Decision**: skip unless we hit a wave of token-style regressions.
+**What ships**:
+- New `user_layouts_audit` table: `(id serial, user_id, prev_data_hash varchar(64), new_data_hash varchar(64), source varchar(64), client_version varchar(20), ts timestamp)`. SHA256 hash over data strings.
+- `layout.save` writes a row on every successful save; `source` defaults to `'renderer'`.
+- 90-day retention pruned on write.
+- 3 router tests: audit row created, hash differs from prior, retention prune.
 
-## D — Release prep (gated on user)
+**Effort**: ~1h. **Risk**: zero.
 
-### D.1 — v1.3.0 release
-- The user said the release should land at the end of the plan. Once
-  A.1 + A.2 + B.1 + C.1 are done (or sooner if the user calls it),
-  follow `docs/RELEASE_PROCESS.md`:
-  1. Bump version in 3 `package.json`s (root, electron, backend)
-  2. Update README badge
-  3. CHANGELOG: `[Unreleased]` → `[1.3.0] - YYYY-MM-DD`
-  4. Update CLAUDE.md `Project Version`
-  5. Update landing site repo (separate)
-  6. Tag + release
+### B.3 — Postgres `archive_mode=on` + WAL archiving ✅ shipped (#305)
+PITR-recoverable Postgres so future incidents (like the 2026-04-30 layout loss) can be recovered.
 
-## E — Out of autonomous scope (need user signal)
+**What ships**:
+- `docker-compose.yml` postgres service: `command: postgres -c archive_mode=on -c archive_command='cp %p /var/lib/postgresql/wal_archive/%f' -c wal_level=replica`. Mount `wal_archive` as a separate named volume.
+- New `docs/INFRA_RECOVERY.md`: "How to PITR recover a row" walk-through for a `user_layouts` style data-loss case.
+- Disk usage note: WAL archive ~10-50MB/day for this workload. Cron snippet for weekly prune of >30-day archives.
 
-- **F.2 keyboard nav in chart** (~1d) — UX hands-on
-- **F.3 screen-reader pass on dialogs** (~half-day) — needs screen reader
-- **E.1 mcp-app flow tools** (~4h) — design decision
-- **E.2 mcp-trading** (~1 week) — product decision
+**Effort**: ~1h infra + ~30min docs. **Risk**: low.
 
-## Sequencing (proposed)
+---
 
-1. A.1 DataCard primitive — biggest visible payoff
-2. A.2 Custom Symbols form rows — small finishing touch
-3. B.1 Browser tests for bands — defends the #262 fix
-4. C.1 UI_STYLE_GUIDE update — documents what just shipped
-5. B.2 pixelmatch HTML gallery — devx
-6. B.3 Empty-state holes — coverage closure
-7. **D.1 v1.3.0 release** — gated on user
+## C — MCP capability extensions
 
-C.2 (visual review automation) skipped unless needed.
+### C.1 — `mcp-trading` server (deferred from V1_POST_RELEASE 5.6 / V1_3 E.2) ✅ paper-complete (#314-#321)
+Concept doc lives at `docs/MCP_TRADING_CONCEPT.md`. Highest-impact MCP capability — moves real money — and the user explicitly asked for a deliberate enablement gesture.
+
+**What ships**:
+- New `packages/mcp-trading/` package mirroring the structure of `mcp-app` / `mcp-backend`.
+- Tools (mirroring `apps/backend/src/routers/trading/`): `trading.place_order`, `trading.cancel_order`, `trading.close_position`, `trading.set_sl_tp`, `trading.list_orders`, `trading.list_positions`. All read-tools always available; write-tools gated.
+- **🔴 Hard gate (mandatory for every write tool)**: server-side check `wallet.agentTradingEnabled === true` runs *before* any exchange call. Off → return `FORBIDDEN` with `"agent trading is disabled for this wallet"` and write a `denied` audit row. Read tools and `wallet.update` are exempt. The flag is per-wallet so paper can be enabled while live stays off; default `false` on every new wallet (including newly-imported live ones). User explicitly asked for this gate to prevent accidents — *not* a UI nicety, the backend trading routers themselves must enforce it.
+- **Enablement toggle**: `agentTradingEnabled: boolean` column on `wallets` (shipped in #314, default `false`). Settings → Security → "AI Agent Trading" subsection with explicit confirm dialog (`"Allow MCP-connected agents to place real orders on your behalf? This affects real money."`). Toggle is per-wallet so it can be enabled for paper but not live.
+- **Audit log**: new `mcp_trading_audit` table — `(id, user_id, wallet_id, tool, input_json, result_json, status, ts)`. Every write tool writes a row; user can review in Settings → Security → "AI Agent Activity".
+- **Rate limit**: 30 writes/hour per wallet (enforced server-side via `@fastify/rate-limit`). 429 with retry-after.
+- **Idempotency keys**: every write tool accepts an `idempotency_key` (UUID); duplicate keys return the prior result without re-executing.
+- **Dry-run mode**: `dry_run: true` flag returns the projected order/position state without hitting the exchange.
+- Per-package `README.md` covering threat model + tool schema. Update `docs/MCP_SERVERS.md` + `docs/MCP_AGENT_GUIDE.md` + `docs/MCP_SECURITY.md`.
+- Tests: contract tests for each tool (mirror existing `mcp-strategy` pattern), idempotency-key dedup test, audit-row written test, rate-limit-429 test.
+
+**Effort**: ~1 week. **Risk**: high blast radius — gated by toggle + paper-first default. Ship in stages: read tools → toggle UI + audit log → write tools (paper only) → write tools (live, gated by per-wallet toggle).
+
+**Sequencing within C.1**: split across multiple PRs — read tools + audit table + toggle UI as one foundation PR, write tools (paper) as a second, live unlock as a third.
+
+**Status (as of 2026-04-30)**:
+- ✅ C.1.a foundation — toggle column + audit table + Settings UI (#314)
+- ✅ C.1.b read tools package + recordAudit/listAudit (#315)
+- ✅ C.1.c hard-gate `mcp.assertWriteAllowed` (#316) — denied → FORBIDDEN + denied audit row
+- ✅ C.1.d paper-mode write tools — place/cancel/close (#317)
+- ✅ C.1.e "AI Agent Activity" audit log panel (#318)
+- ✅ C.1.f rate limit (30 writes/hour per wallet) (#319)
+- ✅ C.1.g `set_sl_tp` write tool — paper-mode (#321)
+- C.1.h live unlock — deferred indefinitely; revisit only after the paper toolkit has been used in a real workflow and the user explicitly opts into real-money MCP writes
+
+---
+
+## D — Accessibility (deferred from V1_3 F.2/F.3)
+
+### D.1 — Keyboard navigation in chart ✅ shipped (#302)
+Centralized registry + dispatcher + `?` help modal. 11 chart shortcuts (pan / zoom / home / end / reset zoom) registered via the new system.
+
+### D.1.b — Migrate remaining keyboard handlers to the registry ✅ shipped (#304)
+After #302 the chart-pan shortcuts go through `useKeyboardShortcut`, but the other handlers in `apps/electron/src/renderer/components/Chart/ChartCanvas/useChartKeyboardShortcuts.ts` still attach their own `window.addEventListener('keydown', ...)`:
+
+- `Esc` → cancel `slTpPlacement` mode
+- `Esc` → cancel `tsPlacement` mode
+- `Esc` → cancel order drag
+- `Delete` / `Backspace` → delete selected drawing
+- `Mod+C` → copy selected drawing
+- `Mod+V` → paste drawing
+
+Each one duplicates the typing-target check + the input-detection logic the dispatcher already does. Easy to drift.
+
+**What ships**:
+- Convert each handler to a `useKeyboardShortcut({ scope: 'when-condition', when: () => predicate, action })` registration. Drop the bare `useEffect` + `addEventListener` blocks.
+- Drawings shortcuts gain a `group: 'drawing'` so they show up in the help modal next to chart navigation.
+- Trading shortcuts (placement-mode escapes, order-drag escape) gain `group: 'trading'`.
+- Existing behavior preserved exactly — only the dispatch path changes.
+- Tests: drop the per-effect listener tests in favor of registration assertions on the registry (mirrors what `useKeyboardNavigation.test.ts` does post-#302).
+
+**Effort**: ~half-day. **Risk**: low (mechanical refactor). **Visible**: yes — adds drawing/trading entries to the `?` help modal so users discover them.
+
+### D.2.a — axe-core dialog a11y spec ✅ shipped (#306)
+- `apps/electron/e2e/a11y-dialogs.spec.ts` opens Settings / Backtest / Analytics / KeyboardShortcutHelpModal and asserts no critical/serious axe violations.
+- DialogCloseTrigger wrapper now defaults `aria-label="Close"` so any consumer auto-passes the `button-name` rule.
+- 2 rules currently disabled with documented justification — see D.2.b/D.2.c below.
+
+### D.2.b — Manual VoiceOver pass on dialogs ❌ out of scope
+**Decision (2026-04-30):** product is not pursuing screen-reader-grade a11y. The axe automated rules (D.2.a) and color-contrast fixes (D.2.c) stay — they catch obvious regressions cheaply — but full WCAG 2.1 AA conformance is not a goal. Skip this task indefinitely.
+
+### D.2.c — Color-contrast violations in Analytics ✅ shipped (#308)
+Root cause was `bg.muted` (`#4a5568` _dark) being too light — `trading.loss/profit` over it gave ~2.3:1 contrast, well below 4.5:1 AA. Fixed by switching `<DataCard>` from a `bg.muted` fill to a `border` outline, which moves the text onto `bg.panel` (`#1a202c` _dark) where contrast clears comfortably. Also migrated `PerformanceCalendar`'s `getSignColor` from `red.500/green.500` literals to `trading.loss/profit` semantic tokens. `color-contrast` rule re-enabled in `e2e/a11y-dialogs.spec.ts`.
+
+### D.2.d — Chakra/Ark useId() ARIA strictness ❌ out of scope
+Same call as D.2.b — pure-conformance work, not pursuing it. The axe spec keeps the rule disabled with the documented justification; that's the end state.
+
+---
+
+## E — Backtest UI modal
+
+The 6-wave plan from #148/#149 was deleted in #200, but the work shipped quietly in unrelated PRs. Living state of the UI as of develop:
+
+- ✅ **E.0/Wave 0**: shared zod schema (#150)
+- ✅ **E.2/Wave 2**: BacktestModal + 4-tab form (Basic / Strategies / Filters / Risk) at `apps/electron/src/renderer/components/Backtest/`
+- ✅ **E.3/Wave 3**: BacktestProgress.tsx with percent + ETA + cancel
+- ✅ **E.4/Wave 4**: BacktestResults.tsx with equity curve + trade list + summary stats
+- ✅ **E.5/Wave 5**: RecentRunsPanel.tsx pulling from backtestResults cache
+- ✅ **E.6/Wave 6**: `Cmd+Shift+B` keyboard shortcut, useDialogMount perf tag, e2e specs (`backtest-modal-open.spec.ts`, `backtest-modal-flow.spec.ts`)
+- ✅ **E.1/Wave 1**: getActiveRuns query + failed-path coverage (#310)
+
+### E.7 — Wire `getActiveRuns` into the frontend for reload-recovery ✅ shipped (#312)
+The backend exposes `backtest.getActiveRuns` (#310) but `useBacktestRun` doesn't consume it. If a user starts a backtest and reloads the page, the in-memory state is lost — the run is still going on the server, but the UI shows nothing.
+
+**What ships**:
+- New `useBacktestActiveRuns` hook calling `trpc.backtest.getActiveRuns.useQuery` with a 30s polling interval (or socket-driven invalidate when a `backtest:progress` event fires for an unknown id).
+- `useBacktestRun` checks active runs on mount; if any exist, surface them in the UI. Decision per active run: prompt the user to either re-attach the modal to that run or dismiss it.
+- Toolbar "Backtest" button shows a spinner / dot indicator when an active run exists, even if the modal is closed.
+- Playwright spec: start a run with a pending engine mock, reload the page, assert the toolbar shows the running indicator and clicking it reopens the progress view for the same run.
+
+**Effort**: ~half-day. **Risk**: low. **Visible**: yes — fixes the "reload kills my running backtest progress" UX hole.
+
+### E.8 — Persist completed runs to a `backtest_runs` table ✅ shipped (#313)
+Currently `backtestResults` is an in-memory Map with eviction at 100 entries. After a server restart, all run history is gone. RecentRunsPanel only sees what's still in memory.
+
+**What ships**:
+- New `backtest_runs` schema (id, user_id, config json, metrics json, equity_curve json, trades_count, created_at, completed_at, status, error). Already partially designed per Wave 0's zod.
+- `setCacheEntry` on `COMPLETED` / `FAILED` mirrors to the DB row.
+- `list` / `getResult` fall back to DB lookup when the in-memory cache misses.
+- Retention: 90 days, pruned on insert.
+- 4 router tests covering the persistence path.
+
+**Effort**: ~half-day. **Risk**: low.
+
+---
+
+## F — Package + token system (deferred from V1_POST_RELEASE 2.1/2.2)
+
+### F.1 — Design tokens phase ✅ shipped (#301)
+The v1.4 sweep finished migrating to semantic tokens (`X.fg / .subtle / .muted / .solid`, `trading.*`, `accent.*`). The tokens themselves still live inside `apps/electron/src/renderer/theme/` — not a shared package.
+
+**What ships**:
+- Extract `apps/electron/src/renderer/theme/` into `packages/tokens/`.
+- Re-export from `@marketmind/types` so backend (e.g. for chart screenshots, future tooling) can reference token names.
+- `@marketmind/tokens/system` re-exports `defaultSystem` for any Chakra v3 consumer.
+- Document the token taxonomy in `docs/UI_STYLE_GUIDE.md`.
+
+**Effort**: ~half-day. **Risk**: low (pure refactor).
+
+### F.2 — `@marketmind/ui` extraction (audit + plan only) ✅ shipped
+Audit doc lives at `docs/UI_EXTRACTION_PLAN.md`. Inventories all 73 named bindings, groups by tier, defines peer-dep boundaries, and proposes a 4-PR extraction sequence behind a temporary `@marketmind/ui-core` alias. Tier-1 is the next concrete action when extraction begins.
+
+---
+
+## G — Test + CI infra
+
+### G.1 — Visual review automation script (deferred from V1_3 G.2 / V1_5 archive C.2) ⏸ skip per plan
+Speculative tier below the audit script. Walks renderer + flags surfaces missing tokens, oversized headings, or non-MM spacing.
+
+**What ships**:
+- `scripts/visual-review.mjs` reads `.tsx` files under `renderer/components/`, looks for: `fontSize` outside `MM.fontSize.*`, padding/margin outside `MM.spacing.*`, components that don't reference any semantic token.
+- Reports findings as a markdown table (no auto-fix).
+- Optional CI gate behind `RUN_VISUAL_REVIEW=1` (off by default).
+- **Skip unless** we hit a wave of token-style regressions after v1.4.
+
+**Effort**: ~1 day. **Risk**: zero.
+
+### G.2 — Backend custom-symbol-service deeper testing (deferred from V1_3 C.1) ✅ already shipped
+On audit (2026-04-30), `apps/backend/src/__tests__/services/custom-symbol-service.test.ts` + `custom-symbol-helpers.test.ts` already total 31 tests with explicit coverage of marketType fallback, FUTURES→SPOT smartBackfill cascade, error-swallowing, weight renormalization, no-usable-components edge case, and synthetic-index produce. The plan was stale.
+
+---
+
+## H — Maintenance / housekeeping
+
+### H.1 — `MEMORY.md` consolidation (currently 219 lines, cap 200) ✅ done — index now 44 lines
+Auto-memory index has grown past the 200-line cap that gets loaded into context at conversation start. Lines 200+ were truncated during this session. Each entry should be one line under ~150 chars per the auto-memory spec.
+
+**What ships**:
+- Audit each entry; merge or move detail into topic files.
+- Drop entries that violate the "What NOT to save" rule (architecture, file paths, debug recipes — derivable from code).
+- Target: under 150 lines.
+
+**Effort**: ~30min. **Risk**: zero.
+
+### H.2 — Archive `V1_4_PLAN` ✅ shipped (#296)
+
+### H.3 — Trade_executions error post-mortem (only if it reappears)
+The v1.4 logger fix should now expose the underlying postgres error code on the `Failed query: ... from trade_executions` log. Most likely a transient connection drop during backend restart — `binance-price-stream.ts:245 getOpenExecutionsForSymbol` runs on every price tick.
+
+**Trigger**: re-observe with v1.4.0+ logs to confirm the cause class. If `57P01 / 08006 / 08001` appears, add pool-level retry on those codes (1-2 retries with 100ms backoff). If it doesn't reappear, drop.
+
+---
+
+## Sequencing
+
+Proposed:
+
+1. ✅ **H.1** MEMORY.md trim (auto-memory)
+2. ✅ **B.2** layout audit log (#298)
+3. ✅ **A.1.b** login soft-nudge (#299)
+4. ✅ **B.1** snapshot UI (#300)
+5. ✅ **F.1** design tokens extraction (#301)
+6. ✅ **D.1** keyboard nav in chart — registry + dispatcher + help modal (#302)
+7. ✅ **D.1.b** migrate remaining `useChartKeyboardShortcuts` handlers (#304)
+8. ✅ **B.3** Postgres archive_mode (#305)
+9. ✅ **D.2.a** axe-core dialog spec (#306)
+10. ❌ **D.2.b** manual VoiceOver pass — out of scope (#322)
+11. ✅ **D.2.c** Analytics color-contrast fix — DataCard outline + trading.* token sweep (#308)
+12. ✅ **G.2** backend custom-symbol tests (#307)
+13. ✅ **E.1–E.6** Backtest UI modal — already shipped (E.1 capped by #310)
+13a. ✅ **E.7** wire getActiveRuns into frontend for reload-recovery (#312)
+13b. ✅ **E.8** persist completed runs to backtest_runs table (#313)
+14. ✅ **C.1** mcp-trading paper-complete (#314, #315, #316, #317, #318, #319, #321) — live unlock deferred indefinitely
+15. ✅ **F.2** ui extraction plan (#320)
+16. ⏸ **G.1** visual review automation — skipped; revisit only if a regression wave hits
+
+Skip H.3 unless logs show the error.
+
+**v1.5 is feature-complete on develop.** Next concrete step is the release cut per `docs/RELEASE_PROCESS.md`.
 
 ## Acceptance
 
 A v1.5 phase is "done" when:
 - The deliverable lands on develop with green CI
-- The audit script still reports 0 forbidden patterns
-- No visual-regression baseline drift (or baseline refreshed
-  intentionally)
+- `pnpm test` passes (currently 5,449 backend + 2,279 unit + 108 browser + 11 utils + ~722 indicators ≈ 8,569 total)
+- Type-check + lint clean across all workspaces
+- Audit script (`scripts/audit-shade-literals.mjs`) reports 0 forbidden patterns

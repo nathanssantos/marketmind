@@ -587,10 +587,10 @@ describe('Wallet Router', () => {
 
 ## 📊 Current Development Phase
 
-**Version:** v1.4.0
-**Current Focus:** v1.4 ships three V1_4_PLAN items together: (A.1) password complexity policy enforced on register/changePassword/resetPassword via a shared `validatePassword` in `@marketmind/utils`, plus an inline `<PasswordStrengthMeter>` UI; (A.2) `user_layouts_history` snapshot table + server-side guard that refuses to overwrite a non-default layout with the default state — defense in depth on top of v1.3.1's renderer-side `isHydrated` gate; (B.1) `serializeError` leads with the Drizzle/PG cause so the actual error survives the 500-char log truncation. v1.5 + earlier plans archived in `docs/archive/`.
+**Version:** v1.5.0
+**Current Focus:** v1.5 is the largest feature drop since v1.0 — 28 commits and headlined by a new `@marketmind/mcp-trading` server that lets MCP-connected agents drive paper trades end-to-end behind a per-wallet `agentTradingEnabled` toggle, a hard-gate (`mcp.assertWriteAllowed` → FORBIDDEN + `denied` audit row when off), 30 writes/hour rate limit, and an "AI Agent Activity" audit log panel in Settings → Security. Also: layout durability story closes (snapshot list/restore UI + WAL archiving for PITR), `@marketmind/tokens` extracted into its own package, centralized keyboard registry + `?` help modal, backtest runs persist across backend restart, axe-core dialog regression spec catches a11y regressions in CI. v1.4 + earlier plans archived in `docs/archive/`.
 
-### System Status (v1.4.0)
+### System Status (v1.5.0)
 - **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
 - **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
 - **✅ Authentication**: Argon2 + session management
@@ -1203,6 +1203,6 @@ When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: ver
 
 ---
 
-**Last Updated:** April 2026
-**Version:** 1.10
-**Project Version:** 1.4.0
+**Last Updated:** May 2026
+**Version:** 1.11
+**Project Version:** 1.5.0
