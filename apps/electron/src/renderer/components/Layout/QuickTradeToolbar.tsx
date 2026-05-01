@@ -463,7 +463,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
         title={t('futures.cancelOrdersConfirmTitle')}
         description={t('futures.cancelOrdersConfirmDescription', { symbol })}
         confirmLabel={t('futures.cancelOrders')}
-        colorPalette="orange"
+        isDestructive
         isLoading={isCancellingAllOrders}
       />
 
