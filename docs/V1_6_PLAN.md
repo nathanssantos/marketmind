@@ -444,7 +444,7 @@ Each row gets its own PR. Status is set as the work progresses.
 |---|---|---|---|
 | 1 | `ChartCloseDialog` | ✅ #385 — switched from raw `<DialogShell>` to `<ConfirmationDialog isDestructive>`; copy rewritten ("Close position?" + descriptive body, not interrogative); confirm verb matches title ("Close position"); PnL moved into description ReactNode; sltp variant uses interpolated type label; +1 vitest snapshot test |
 | 2 | `KeyboardShortcutHelpDialog` | ✅ #386 — only violation was bespoke `<Text>` empty state; replaced with `<EmptyState>` per the bible's data-viewer pattern. Empty-state copy split into `emptyTitle` + `emptyDescription` keys (was a single sentence). +1 vitest test (3 cases) |
-| 3 | `SaveScreenerDialog` | Save current screener filters as a named preset | Single-field input (name). |
+| 3 | `SaveScreenerDialog` | ✅ #387 — already followed the single-field-input pattern (DialogShell size="sm" + Field + autoFocus). Single fix: `<Input size="sm">` → `size="xs"` per the bible's component picker (uniform xs density). +1 vitest test (3 cases) |
 | 4 | `IndicatorConfigDialog` | Configure one indicator's params | Form per indicator; param shape varies. Consistency target: every numeric input uses `<NumberInput>`, every color picker uses `<ColorPicker>`. |
 | 5 | `ImportProfileDialog` | Paste a JSON profile blob to import | Textarea + parse + preview. Validation surface needs work. |
 | 6 | `AddWatcherDialog` | Start a new auto-trading watcher | Multi-field form. Currently mixes chart-style symbol picker with form. |
