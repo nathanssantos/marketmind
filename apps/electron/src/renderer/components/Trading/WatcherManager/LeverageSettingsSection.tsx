@@ -1,18 +1,14 @@
 import { Stack } from '@chakra-ui/react';
-import { Callout, CollapsibleSection, Field, NumberInput } from '@renderer/components/ui';
+import { Callout, FormSection, Field, NumberInput } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface LeverageSettingsSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   leverage: number;
   onLeverageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   isPending: boolean;
 }
 
 export const LeverageSettingsSection = ({
-  isExpanded,
-  onToggle,
   leverage,
   onLeverageChange,
   isPending,
@@ -20,13 +16,9 @@ export const LeverageSettingsSection = ({
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('settings.algorithmicAutoTrading.leverage.title')}
       description={t('settings.algorithmicAutoTrading.leverage.autoTradingDescription')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
       <Stack gap={3}>
         <Field label={t('settings.algorithmicAutoTrading.leverage.label')}>
@@ -43,6 +35,6 @@ export const LeverageSettingsSection = ({
           {t('settings.algorithmicAutoTrading.leverage.warning')}
         </Callout>
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

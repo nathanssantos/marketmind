@@ -792,6 +792,8 @@
       "reset": "Reset",
       "new": "New",
       "empty": "No indicators yet. Click \"New\" to add one.",
+      "emptyTitle": "No indicators",
+      "emptyDescription": "Click \"New\" to add your first indicator. Defaults are seeded automatically on first login.",
       "custom": "Custom",
       "duplicate": "Duplicate",
       "deleteTitle": "Delete indicator?",

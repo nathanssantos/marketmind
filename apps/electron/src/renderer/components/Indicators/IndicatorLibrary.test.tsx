@@ -38,6 +38,7 @@ describe('IndicatorLibrary', () => {
     });
 
     renderLibrary();
-    expect(screen.getByText('settings.indicators.empty')).toBeDefined();
+    expect(screen.getByText('settings.indicators.emptyTitle')).toBeDefined();
+    expect(screen.getByText('settings.indicators.emptyDescription')).toBeDefined();
   });
 });

@@ -1,12 +1,10 @@
 import { Box, Grid, HStack, Stack, Text } from '@chakra-ui/react';
-import { CollapsibleSection, Separator, Slider } from '@renderer/components/ui';
+import { FormSection, Separator, Slider } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { FilterToggle } from './FilterToggle';
 import type { WatcherConfig } from './types';
 
 export interface FiltersSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   config: WatcherConfig | undefined;
   onFilterToggle: (filterKey: string, value: boolean) => void;
   isPending: boolean;
@@ -16,8 +14,6 @@ export interface FiltersSectionProps {
 }
 
 export const FiltersSection = ({
-  isExpanded,
-  onToggle,
   config,
   onFilterToggle,
   isPending,
@@ -28,13 +24,9 @@ export const FiltersSection = ({
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('settings.algorithmicAutoTrading.filters.title')}
       description={t('settings.algorithmicAutoTrading.filters.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
           <Stack gap={4}>
             <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -261,6 +253,6 @@ export const FiltersSection = ({
               />
             </Grid>
           </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

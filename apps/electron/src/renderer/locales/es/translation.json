@@ -894,6 +894,8 @@
       "reset": "Restablecer",
       "new": "Nuevo",
       "empty": "Aún no hay indicadores. Haz clic en \"Nuevo\" para añadir uno.",
+      "emptyTitle": "Sin indicadores",
+      "emptyDescription": "Haz clic en \"Nuevo\" para añadir tu primer indicador. Los predeterminados se generan automáticamente al iniciar sesión por primera vez.",
       "custom": "Personalizado",
       "duplicate": "Duplicar",
       "deleteTitle": "¿Eliminar indicador?",

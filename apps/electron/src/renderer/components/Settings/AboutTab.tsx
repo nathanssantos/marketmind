@@ -69,11 +69,16 @@ export const AboutTab = () => {
         title={t('settings.autoUpdate.title')}
         description={t('settings.autoUpdate.description')}
         action={
-          status === 'available' ? <Badge colorPalette="blue" size="sm">{t('about.update.available', { version: updateInfo?.version })}</Badge>
-            : status === 'not-available' ? <Badge colorPalette="green" size="sm">{t('about.update.upToDate')}</Badge>
-            : status === 'downloaded' ? <Badge colorPalette="orange" size="sm">{t('about.update.readyToInstall')}</Badge>
-            : status === 'checking' ? <Badge colorPalette="gray" size="sm">{t('settings.autoUpdate.checking')}</Badge>
-            : null
+          <HStack gap={2}>
+            {status === 'available' && <Badge colorPalette="blue" size="xs">{t('about.update.available', { version: updateInfo?.version })}</Badge>}
+            {status === 'not-available' && <Badge colorPalette="green" size="xs">{t('about.update.upToDate')}</Badge>}
+            {status === 'downloaded' && <Badge colorPalette="orange" size="xs">{t('about.update.readyToInstall')}</Badge>}
+            {status === 'checking' && <Badge colorPalette="gray" size="xs">{t('settings.autoUpdate.checking')}</Badge>}
+            <Button size="2xs" variant="outline" onClick={handleResetAutoUpdate}>
+              <LuRefreshCw />
+              {t('settings.resetToDefaults')}
+            </Button>
+          </HStack>
         }
       >
         <FormRow
@@ -114,24 +119,17 @@ export const AboutTab = () => {
           />
         </FormRow>
 
-        <HStack gap={2}>
-          <Button
-            flex={1}
-            size="sm"
-            variant="outline"
-            onClick={() => void checkForUpdates()}
-            disabled={status === 'checking'}
-            loading={status === 'checking'}
-            data-testid="updates-check-now"
-          >
-            <LuRefreshCw />
-            {t('settings.autoUpdate.checkNow')}
-          </Button>
-          <Button flex={1} size="sm" variant="outline" onClick={handleResetAutoUpdate}>
-            <LuRefreshCw />
-            {t('settings.resetToDefaults')}
-          </Button>
-        </HStack>
+        <Button
+          size="xs"
+          variant="outline"
+          onClick={() => void checkForUpdates()}
+          disabled={status === 'checking'}
+          loading={status === 'checking'}
+          data-testid="updates-check-now"
+        >
+          <LuRefreshCw />
+          {t('settings.autoUpdate.checkNow')}
+        </Button>
       </FormSection>
 
       <FormSection title={t('about.resources')}>

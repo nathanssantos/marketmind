@@ -465,15 +465,15 @@ Plus the **9 Settings tabs** as the post-Track-G follow-up:
 
 | # | Tab | Notes |
 |---|---|---|
-| S1 | AccountTab | ✓ already follows pattern; copy review only |
-| S2 | SecurityTab | ✓ structure OK; the 2FA + agent-trading subsections need review |
-| S3 | NotificationsTab | ✓ structure OK |
-| S4 | GeneralTab | ✓ structure OK |
-| S5 | ChartSettingsTab | ✓ structure OK |
-| S6 | IndicatorsTab | ❌ delegates to `<IndicatorLibrary>` which uses `Stack gap={4}` + bare list. Internal restructure to `<FormSection>` per indicator group. |
-| S7 | AutoTradingTab | ❌ delegates to `<WatcherManager>` (~600 LOC, 6 bespoke section components: EmergencyStopSection, WatchersList, DynamicSelectionSection, SetupToggleSection, LeverageSettingsSection, EntrySettingsSection). Migrate each subsection to `<FormSection>` + remove `<Separator />` separators (FormSection's own header is the separator). |
-| S8 | DataTab | ✓ structure OK; WAL archive controls + snapshot list need copy review |
-| S9 | AboutTab | ✓ structure OK |
+| S1 | AccountTab | ✅ #391 — input sm→xs sweep |
+| S2 | SecurityTab | ✅ #391 — input/password sm→xs; loading/empty `<MetaText>` + bare `<Text>` → `<Spinner>` panel + `<EmptyState>`; agent-trading confirm dropped `colorPalette="orange"` (relied on `isDestructive`); duplicate `memberSince` removed (was duplicated from AccountTab) |
+| S3 | NotificationsTab | ✅ already compliant — no changes needed |
+| S4 | GeneralTab | ✅ already compliant — no changes needed |
+| S5 | ChartSettingsTab | ✅ #391 — `<Grid templateColumns="repeat(N,1fr)">` for fields → `<HStack>` pairs (bible forbids CSS grid for field layouts); Select sm→xs; bottom "Reset to defaults" button → first FormSection's `action` slot |
+| S6 | IndicatorsTab | ✅ #391 — IndicatorLibrary internals refactored: each indicator category now wraps in its own `<FormSection title>` (was a bare `<Text>` heading per group). Empty state copy split into `emptyTitle` + `emptyDescription` for `<EmptyState>` API. Stack gap=4 → 5. |
+| S7 | AutoTradingTab | ✅ #391 — WatcherManager + 13 sub-section components migrated from `<CollapsibleSection variant="static">` to `<FormSection>`. All `<Separator />` between sections removed (FormSection's title acts as the separator). Stack gap=4 → 5. Dead `expandedSections` / `toggleSection` state plumbing removed (was always-expanded — variant=static is no-op). 3 sections with `badge=` prop migrated to FormSection title with HStack composition. CSS Grid in OpportunityCostSection → HStack pair. Updated TrailingStopPopover (also uses TrailingStopSection) to drop dead `isExpanded`/`onToggle` props. |
+| S8 | DataTab | ✅ #391 — bare `<Text>{t('common.loading')}</Text>` → `<Spinner>` panel combo; bare empty-state Text → `<EmptyState>`; cooldowns "Reset to defaults" button moved into FormSection's `action` slot; Input sm→xs |
+| S9 | AboutTab | ✅ #391 — auto-update Reset button moved into FormSection's `action` slot (alongside status badge); Buttons restructured for cleaner action layout |
 
 ### G.3 — Audit + linting
 

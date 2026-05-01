@@ -883,6 +883,8 @@
       "reset": "Réinitialiser",
       "new": "Nouveau",
       "empty": "Aucun indicateur pour l'instant. Cliquez sur « Nouveau » pour en ajouter.",
+      "emptyTitle": "Aucun indicateur",
+      "emptyDescription": "Cliquez sur « Nouveau » pour ajouter votre premier indicateur. Les valeurs par défaut sont créées automatiquement lors de la première connexion.",
       "custom": "Personnalisé",
       "duplicate": "Dupliquer",
       "deleteTitle": "Supprimer l'indicateur ?",

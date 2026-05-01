@@ -1,10 +1,8 @@
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
-import { Callout, CollapsibleSection, Slider, Switch } from '@renderer/components/ui';
+import { Callout, FormSection, Slider, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface EntrySettingsSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   maxFibonacciEntryProgressPercentLong: number;
   onEntryProgressLongChange: (value: number) => void;
   maxFibonacciEntryProgressPercentShort: number;
@@ -23,8 +21,6 @@ export interface EntrySettingsSectionProps {
 }
 
 export const EntrySettingsSection = ({
-  isExpanded,
-  onToggle,
   maxFibonacciEntryProgressPercentLong,
   onEntryProgressLongChange,
   maxFibonacciEntryProgressPercentShort,
@@ -52,13 +48,9 @@ export const EntrySettingsSection = ({
   };
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('settings.algorithmicAutoTrading.entrySettings.title')}
       description={t('settings.algorithmicAutoTrading.entrySettings.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
       <Stack gap={6}>
         <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -198,6 +190,6 @@ export const EntrySettingsSection = ({
           {t('settings.algorithmicAutoTrading.entrySettings.optimizedNote')}
         </Callout>
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

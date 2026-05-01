@@ -883,6 +883,8 @@
       "reset": "Redefinir",
       "new": "Novo",
       "empty": "Nenhum indicador ainda. Clique em \"Novo\" para adicionar.",
+      "emptyTitle": "Sem indicadores",
+      "emptyDescription": "Clique em \"Novo\" para adicionar seu primeiro indicador. Os padrões são populados automaticamente no primeiro login.",
       "custom": "Personalizado",
       "duplicate": "Duplicar",
       "deleteTitle": "Excluir indicador?",

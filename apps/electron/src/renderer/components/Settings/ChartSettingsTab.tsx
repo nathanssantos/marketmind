@@ -55,6 +55,12 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
       <FormSection
         title={t('settings.chart.chartType')}
         description={t('settings.chart.defaultChartTypeHelper')}
+        action={
+          <Button variant="outline" size="2xs" onClick={handleReset}>
+            <LuRefreshCw />
+            {t('settings.resetToDefaults')}
+          </Button>
+        }
       >
         <Field label={t('settings.chart.defaultChartType')}>
           <Select
@@ -141,30 +147,36 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
       </FormSection>
 
       <FormSection title={t('settings.chart.chartDimensions')}>
-        <Grid templateColumns="repeat(2, 1fr)" gap={3}>
-          <Field label={t('settings.chart.rightMargin')} helperText={t('settings.chart.rightMarginHelper')}>
-            <NumberInput value={config.rightMargin} onChange={(e) => handleChange('rightMargin', e.target.value)} min={0} max={500} size="sm" />
-          </Field>
-          <Field label={t('settings.chart.volumeHeightRatio')} helperText={t('settings.chart.volumeHeightRatioHelper')}>
-            <NumberInput value={config.volumeHeightRatio} onChange={(e) => handleChange('volumeHeightRatio', e.target.value)} min={0} max={1} step={0.05} size="sm" />
-          </Field>
-          <Field label={t('settings.chart.klineSpacing')} helperText={t('settings.chart.klineSpacingHelper')}>
-            <NumberInput value={config.klineSpacing} onChange={(e) => handleChange('klineSpacing', e.target.value)} min={2} max={30} size="sm" />
-          </Field>
-          <Field label={t('settings.chart.wickWidth')} helperText={t('settings.chart.wickWidthHelper')}>
-            <NumberInput value={config.klineWickWidth} onChange={(e) => handleChange('klineWickWidth', e.target.value)} min={1} max={10} size="sm" />
-          </Field>
-        </Grid>
+        <Stack gap={3}>
+          <HStack gap={3} align="flex-start">
+            <Field label={t('settings.chart.rightMargin')} helperText={t('settings.chart.rightMarginHelper')}>
+              <NumberInput value={config.rightMargin} onChange={(e) => handleChange('rightMargin', e.target.value)} min={0} max={500} size="xs" />
+            </Field>
+            <Field label={t('settings.chart.volumeHeightRatio')} helperText={t('settings.chart.volumeHeightRatioHelper')}>
+              <NumberInput value={config.volumeHeightRatio} onChange={(e) => handleChange('volumeHeightRatio', e.target.value)} min={0} max={1} step={0.05} size="xs" />
+            </Field>
+          </HStack>
+          <HStack gap={3} align="flex-start">
+            <Field label={t('settings.chart.klineSpacing')} helperText={t('settings.chart.klineSpacingHelper')}>
+              <NumberInput value={config.klineSpacing} onChange={(e) => handleChange('klineSpacing', e.target.value)} min={2} max={30} size="xs" />
+            </Field>
+            <Field label={t('settings.chart.wickWidth')} helperText={t('settings.chart.wickWidthHelper')}>
+              <NumberInput value={config.klineWickWidth} onChange={(e) => handleChange('klineWickWidth', e.target.value)} min={1} max={10} size="xs" />
+            </Field>
+          </HStack>
+        </Stack>
       </FormSection>
 
       <FormSection title={t('settings.chart.gridSettings')}>
-        <Grid templateColumns="repeat(2, 1fr)" gap={3}>
-          <Field label={t('settings.chart.gridLineWidth')} helperText={t('settings.chart.gridLineWidthHelper')}>
-            <NumberInput value={config.gridLineWidth} onChange={(e) => handleChange('gridLineWidth', e.target.value)} min={1} max={5} size="sm" />
-          </Field>
-          <Field label={t('settings.chart.lineWidth')} helperText={t('settings.chart.lineWidthHelper')}>
-            <NumberInput value={config.currentPriceLineWidth} onChange={(e) => handleChange('currentPriceLineWidth', e.target.value)} min={1} max={5} size="sm" />
-          </Field>
+        <Stack gap={3}>
+          <HStack gap={3} align="flex-start">
+            <Field label={t('settings.chart.gridLineWidth')} helperText={t('settings.chart.gridLineWidthHelper')}>
+              <NumberInput value={config.gridLineWidth} onChange={(e) => handleChange('gridLineWidth', e.target.value)} min={1} max={5} size="xs" />
+            </Field>
+            <Field label={t('settings.chart.lineWidth')} helperText={t('settings.chart.lineWidthHelper')}>
+              <NumberInput value={config.currentPriceLineWidth} onChange={(e) => handleChange('currentPriceLineWidth', e.target.value)} min={1} max={5} size="xs" />
+            </Field>
+          </HStack>
           <Field label={t('settings.chart.lineStyle')} helperText={t('settings.chart.lineStyleHelper')}>
             <Select
               value={config.currentPriceLineStyle}
@@ -174,28 +186,32 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
                 { value: 'dashed', label: t('settings.chart.dashed') },
                 { value: 'dotted', label: t('settings.chart.dotted') },
               ]}
-              size="sm"
+              size="xs"
               usePortal={false}
             />
           </Field>
-        </Grid>
+        </Stack>
       </FormSection>
 
       <FormSection title={t('settings.chart.chartPadding')}>
-        <Grid templateColumns="repeat(4, 1fr)" gap={3}>
-          <Field label={t('settings.chart.topPadding')}>
-            <NumberInput value={config.paddingTop} onChange={(e) => handleChange('paddingTop', e.target.value)} min={0} max={100} size="sm" />
-          </Field>
-          <Field label={t('settings.chart.bottomPadding')}>
-            <NumberInput value={config.paddingBottom} onChange={(e) => handleChange('paddingBottom', e.target.value)} min={0} max={100} size="sm" />
-          </Field>
-          <Field label={t('settings.chart.leftPadding')}>
-            <NumberInput value={config.paddingLeft} onChange={(e) => handleChange('paddingLeft', e.target.value)} min={0} max={100} size="sm" />
-          </Field>
-          <Field label={t('settings.chart.rightPadding')}>
-            <NumberInput value={config.paddingRight} onChange={(e) => handleChange('paddingRight', e.target.value)} min={0} max={100} size="sm" />
-          </Field>
-        </Grid>
+        <Stack gap={3}>
+          <HStack gap={3} align="flex-start">
+            <Field label={t('settings.chart.topPadding')}>
+              <NumberInput value={config.paddingTop} onChange={(e) => handleChange('paddingTop', e.target.value)} min={0} max={100} size="xs" />
+            </Field>
+            <Field label={t('settings.chart.bottomPadding')}>
+              <NumberInput value={config.paddingBottom} onChange={(e) => handleChange('paddingBottom', e.target.value)} min={0} max={100} size="xs" />
+            </Field>
+          </HStack>
+          <HStack gap={3} align="flex-start">
+            <Field label={t('settings.chart.leftPadding')}>
+              <NumberInput value={config.paddingLeft} onChange={(e) => handleChange('paddingLeft', e.target.value)} min={0} max={100} size="xs" />
+            </Field>
+            <Field label={t('settings.chart.rightPadding')}>
+              <NumberInput value={config.paddingRight} onChange={(e) => handleChange('paddingRight', e.target.value)} min={0} max={100} size="xs" />
+            </Field>
+          </HStack>
+        </Stack>
       </FormSection>
 
       <FormSection title={t('settings.chart.trading')}>
@@ -209,12 +225,6 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
         </Box>
       </FormSection>
 
-      <Box>
-        <Button variant="outline" size="sm" onClick={handleReset}>
-          <LuRefreshCw />
-          {t('settings.resetToDefaults')}
-        </Button>
-      </Box>
     </Stack>
   );
 };

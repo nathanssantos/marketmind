@@ -259,7 +259,7 @@ export const AccountTab = () => {
       >
         <Field label={t('settings.account.email.label')}>
           <HStack>
-            <Input value={currentUser?.email ?? ''} disabled flex={1} size="sm" />
+            <Input value={currentUser?.email ?? ''} disabled flex={1} size="xs" />
             <Badge
               colorPalette={currentUser?.emailVerified ? 'green' : 'orange'}
               size="sm"

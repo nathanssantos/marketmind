@@ -1,12 +1,10 @@
-import { Flex, Grid, Stack, Text } from '@chakra-ui/react';
-import { Badge, CollapsibleSection, Field, FormRow, NumberInput, Select, Switch } from '@renderer/components/ui';
+import { Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Badge, Field, FormRow, FormSection, NumberInput, Select, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { FilterToggle } from './FilterToggle';
 import type { WatcherConfig } from './types';
 
 export interface OpportunityCostSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   config: WatcherConfig | undefined;
   walletId: string;
   onConfigUpdate: (updates: Partial<WatcherConfig>) => void;
@@ -15,8 +13,6 @@ export interface OpportunityCostSectionProps {
 }
 
 export const OpportunityCostSection = ({
-  isExpanded,
-  onToggle,
   config,
   walletId,
   onConfigUpdate,
@@ -26,18 +22,18 @@ export const OpportunityCostSection = ({
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
-      title={t('settings.algorithmicAutoTrading.opportunityCost.title')}
+    <FormSection
+      title={
+        <HStack gap={2}>
+          <span>{t('settings.algorithmicAutoTrading.opportunityCost.title')}</span>
+          {config?.opportunityCostEnabled && (
+            <Badge colorPalette="purple" variant="subtle" size="xs">
+              {t('common.active')}
+            </Badge>
+          )}
+        </HStack>
+      }
       description={t('settings.algorithmicAutoTrading.opportunityCost.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
-      badge={config?.opportunityCostEnabled ? (
-        <Badge colorPalette="purple" variant="subtle" size="sm">
-          {t('common.active')}
-        </Badge>
-      ) : undefined}
     >
       <Stack gap={4}>
         <FormRow
@@ -69,7 +65,7 @@ export const OpportunityCostSection = ({
                       onConfigUpdate({ maxHoldingPeriodBars: value });
                     }
                   }}
-                  size="sm"
+                  size="xs"
                   w="100px"
                 />
                 <Text fontSize="sm" color="fg.muted">
@@ -92,7 +88,7 @@ export const OpportunityCostSection = ({
                       onConfigUpdate({ stalePriceThresholdPercent: value.toString() });
                     }
                   }}
-                  size="sm"
+                  size="xs"
                   w="100px"
                 />
                 <Text fontSize="sm" color="fg.muted">%</Text>
@@ -113,7 +109,7 @@ export const OpportunityCostSection = ({
                     staleTradeAction: v as 'ALERT_ONLY' | 'TIGHTEN_STOP' | 'AUTO_CLOSE',
                   });
                 }}
-                size="sm"
+                size="xs"
                 usePortal={false}
               />
             </Field>
@@ -127,7 +123,7 @@ export const OpportunityCostSection = ({
             />
 
             {config?.timeBasedStopTighteningEnabled && (
-              <Grid templateColumns="1fr 1fr" gap={4}>
+              <HStack gap={3} align="flex-start">
                 <Field label={t('settings.algorithmicAutoTrading.opportunityCost.tightenAfterBars')}>
                   <NumberInput
                     min={1}
@@ -140,7 +136,7 @@ export const OpportunityCostSection = ({
                         onConfigUpdate({ timeTightenAfterBars: value });
                       }
                     }}
-                    size="sm"
+                    size="xs"
                   />
                 </Field>
                 <Field label={t('settings.algorithmicAutoTrading.opportunityCost.tightenPercentPerBar')}>
@@ -156,16 +152,16 @@ export const OpportunityCostSection = ({
                           onConfigUpdate({ timeTightenPercentPerBar: value.toString() });
                         }
                       }}
-                      size="sm"
+                      size="xs"
                     />
                     <Text fontSize="sm">%</Text>
                   </Flex>
                 </Field>
-              </Grid>
+              </HStack>
             )}
           </Stack>
         )}
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

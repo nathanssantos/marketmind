@@ -1,6 +1,6 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
-import { Badge, Button, CollapsibleSection, DirectionModeSelector, EmptyState } from '@renderer/components/ui';
+import { Badge, Button, DirectionModeSelector, EmptyState, FormSection } from '@renderer/components/ui';
 import type { DirectionMode } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuPause, LuPlus } from 'react-icons/lu';
@@ -13,8 +13,6 @@ export interface WatchersListProps {
   activeWatchers: ActiveWatcher[];
   persistedWatchers: number;
   isLoading: boolean;
-  isExpanded: boolean;
-  onToggle: () => void;
   onAddWatcher: () => void;
   onStopWatcher: (symbol: string, interval: string, marketType?: MarketType) => void;
   onStopAll: () => void;
@@ -30,8 +28,6 @@ export const WatchersList = ({
   activeWatchers,
   persistedWatchers,
   isLoading,
-  isExpanded,
-  onToggle,
   onAddWatcher,
   onStopWatcher,
   onStopAll,
@@ -45,18 +41,18 @@ export const WatchersList = ({
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
-      title={t('tradingProfiles.watchers.title')}
+    <FormSection
+      title={
+        <HStack gap={2}>
+          <span>{t('tradingProfiles.watchers.title')}</span>
+          {activeWatchers.length > 0 && (
+            <Badge colorPalette="green" size="xs">
+              {activeWatchers.length}
+            </Badge>
+          )}
+        </HStack>
+      }
       description={t('tradingProfiles.watchers.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
-      badge={activeWatchers.length > 0 ? (
-        <Badge colorPalette="green" size="sm">
-          {activeWatchers.length}
-        </Badge>
-      ) : undefined}
     >
       <Stack gap={4}>
         <DirectionModeSelector value={directionMode} onChange={onDirectionModeChange} disabled={isPendingConfig} />
@@ -117,6 +113,6 @@ export const WatchersList = ({
           </Stack>
         )}
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };
