@@ -19,8 +19,15 @@ After v1.5 the app has ~17 modal surfaces and they don't agree on anything load-
 | i18n hygiene | dozens of `t('foo.bar', 'Fallback text')` calls — the fallback exists because the JSON entry doesn't, or the entry diverged from the fallback over time |
 | Tab vs dedicated modal | `TradingProfilesTab.tsx` is a 6-line wrapper that just renders `<TradingProfilesManager />` — the same content as `TradingProfilesModal`. Wallets/CustomSymbols similarly mix "list of objects you create" inside `Settings`, instead of being their own dedicated surfaces. |
 | Description slot | `<DialogHeader>` only has a title — there is nowhere standard to put a one-line subtitle/context (e.g. "Backtest a strategy on 3 years of klines.") |
+| File naming | 8 files end in `*Dialog.tsx`, 5 in `*Modal.tsx` — arbitrary split. `KeyboardShortcutHelpModal.tsx` lives at the components root while every other modal sits inside a feature folder. |
+| Repeated Props shape | Every modal hand-writes `interface XxxDialogProps { isOpen: boolean; onClose: () => void; ... }`. No shared base. |
+| Repeated mutation/toast plumbing | `try { await mutate(); toast.success; } catch (err) { toast.error(title, err instanceof Error ? err.message : undefined); }` — confirmed 19 occurrences of `err instanceof Error ? err.message` across the renderer. |
+| Form state boilerplate | Each form has its own `useState` per field, manual reset on close, manual `isValid` derivation. |
+| i18n key conventions | Mixed: `trading.wallets.createTitle` vs `marketSidebar.watchers.startWatchers` vs `screener.title` vs `settings.security.agentTrading.title`. No predictable shape. |
+| Domain constants | Some live in `@marketmind/types` (`CURRENCY_SYMBOLS`, `DEFAULT_CURRENCY`), some inline in components (`SELECTABLE_CURRENCIES.map(...)` defined at the top of `CreateWalletDialog`), some hardcoded in handlers. |
+| Validation | Backend has zod schemas (`createWalletSchema`, `passwordPolicySchema`, etc.); renderer re-derives validation rules ad-hoc instead of reusing them. |
 
-This is the cycle to fix it. Not iteratively. **Each modal gets rewritten** against a fixed primitive set so the result is uniform by construction, not by hope.
+This is the cycle to fix it. Not iteratively. **Each modal gets rewritten** against a fixed primitive set so the result is uniform by construction, not by hope. The rewrite is also the moment we standardize **file names, shared types, common hooks, and i18n key shapes** — touching these once during the rewrite is cheap; touching them later means re-touching every file.
 
 The work also feeds two follow-on threads:
 1. **`@marketmind/ui` extraction** — the primitives the modal sweep produces are the same ones planned in `docs/UI_EXTRACTION_PLAN.md` (#320). Doing modal sweep first locks the API; extraction becomes mechanical.
@@ -33,14 +40,14 @@ The work also feeds two follow-on threads:
 These are the rules the rewrite enforces. They become part of `@marketmind/ui`'s package documentation so any future contributor reading the README sees them before writing a new modal.
 
 1. **Creation lives in dedicated dialogs, never in tabs.** A "+ Create X" button in a list view opens a dedicated `<FormDialog>` for that one action. No "Create" tab inside `<Settings>`. No giant nested forms.
-2. **Settings is for *preferences and account state*, not *records you create*.** Wallets, trading profiles, custom symbols, watchers, screener saved sets — those are *user records*. They get dedicated management modals (`<WalletsModal>`, `<TradingProfilesModal>`, etc.) opened from where they're used (header, sidebar, chart toolbar). Settings stays as: account, security, notifications, general, chart, indicators (defaults), auto-trading, data, about.
+2. **Settings is for *preferences and account state*, not *records you create*.** Wallets, trading profiles, custom symbols, watchers, screener saved sets — those are *user records*. They get dedicated management modals (`<WalletsDialog>`, `<TradingProfilesDialog>`, etc.) opened from where they're used (header, sidebar, chart toolbar). Settings stays as: account, security, notifications, general, chart, indicators (defaults), auto-trading, data, about.
 3. **One responsibility per modal.** A modal either: (a) takes one focused input (form), (b) shows data with optional filters/actions (viewer), (c) configures a single subject across multiple panels (workflow with tabs). It does not do all three.
-4. **Width is a token, not a number.** `sm` (~400px) for confirmation/single-field, `md` (~560px) for standard form, `lg` (~840px) for data viewer or 2-column form, `xl` (~1100px / 90vw) for workflow modal, `full` for fullscreen. Set via `<ModalShell size={...}>`. No raw `maxW` on modals.
+4. **Width is a token, not a number.** `sm` (~400px) for confirmation/single-field, `md` (~560px) for standard form, `lg` (~840px) for data viewer or 2-column form, `xl` (~1100px / 90vw) for workflow modal, `full` for fullscreen. Set via `<DialogShell size={...}>`. No raw `maxW` on modals.
 5. **Title typography is fixed.** One size, one weight. The header may also carry an optional one-line description below the title and an optional inline action (e.g. "Reset to defaults") on the right.
 6. **Footer convention is fixed.** Always `borderTop`. Buttons right-aligned. Cancel is ghost / secondary, primary action is the rightmost `colorPalette={primary}`. Loading state on the primary disables both. Destructive primary uses `colorPalette="red"`.
 7. **Empty / loading / error states are primitives, never bespoke text.** `<EmptyState>`, the standard panel spinner (`MM.spinner.panel`), and `<Callout tone="danger">` at the top of the body. No "Carregando..." inline text, no "Nada por aqui" hand-typed strings.
 8. **Destructive confirms always go through `<ConfirmationDialog>`.** No inline are-you-sure. The dedicated dialog also enforces consistent destructive-action copy via i18n.
-9. **Esc + click-outside close, except mid-mutation.** When `isLoading` is true, both are blocked so an in-flight `mutateAsync` never gets orphaned. Already supported in `<FormDialog>`; gets formalized in `<ModalShell>`.
+9. **Esc + click-outside close, except mid-mutation.** When `isLoading` is true, both are blocked so an in-flight `mutateAsync` never gets orphaned. Already supported in `<FormDialog>`; gets formalized in `<DialogShell>`.
 10. **No nested modals more than 1 level deep.** Settings → CreateWallet is fine. ProfileEditor → SubEditor → Confirm is not — flatten.
 11. **All user-visible strings come from i18n.** Zero `t('foo', 'Fallback')` calls left after the sweep. Every modal title, description, label, placeholder, helper, and CTA is in `en/pt/es/fr` JSON. The sweep includes this audit.
 12. **Progressive disclosure for secondary fields.** Advanced options use `<CollapsibleSection variant="static">` (already a primitive) so the default form fits a viewport-1 height.
@@ -48,22 +55,136 @@ These are the rules the rewrite enforces. They become part of `@marketmind/ui`'s
 
 ---
 
+## Track E — Shared infrastructure (lands BEFORE Track A's sweep)
+
+Track A's per-modal rewrite PRs stay small only if the shared scaffolding is already in place. This track ships that scaffolding first.
+
+### E.1 — File naming convention
+**Rule:** every dialog file is `<Feature>Dialog.tsx`, lives inside its feature folder. Matches the Chakra primitive name (`Dialog`), the ARIA role, and the existing `<FormDialog>` / `<ConfirmationDialog>` wrappers — single vocabulary across the whole stack. Prose uses "modal" and "dialog" interchangeably; **code, file names, primitives, and i18n keys always say "Dialog"**.
+
+Renames in one PR (no behavior changes):
+- `AnalyticsModal.tsx` → `AnalyticsDialog.tsx`
+- `BacktestModal.tsx` → `BacktestDialog.tsx`
+- `ScreenerModal.tsx` → `ScreenerDialog.tsx`
+- `StartWatchersModal.tsx` → `StartWatchersDialog.tsx`
+- `TradingProfilesModal.tsx` → `TradingProfilesDialog.tsx`
+- `KeyboardShortcutHelpModal.tsx` → `KeyboardShortcutHelpDialog.tsx` (also moves from the components root into `Help/` so it follows the feature-folder rule)
+
+Files already named `*Dialog.tsx` stay as-is (`ChartCloseDialog`, `IndicatorConfigDialog`, `SaveScreenerDialog`, `AddWatcherDialog`, `CreateWalletDialog`, `ImportProfileDialog`, `OrdersDialog`, `ProfileEditorDialog`, `SettingsDialog`). The audit script (E.9) forbids reintroducing `*Modal.tsx`.
+
+### E.2 — Shared `<DialogShell>` props base
+```ts
+// packages/types/src/ui.ts (or in @marketmind/ui-core when extracted)
+export interface DialogControlProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+// Per-modal:
+interface CreateWalletDialogProps extends DialogControlProps {
+  defaultExchange?: ExchangeId;
+}
+```
+
+Drops 17 hand-rolled `interface XxxDialogProps { isOpen; onClose; }` definitions.
+
+### E.3 — `useFormState<T>` hook
+```ts
+const { values, set, reset, isDirty } = useFormState<CreateWalletInput>({
+  initial: { name: '', exchange: 'BINANCE', walletType: 'paper', /* ... */ },
+  resetOn: isOpen,        // auto-reset when the modal closes/reopens
+});
+// values.name, set('name', value), reset(), isDirty
+```
+
+Single hook replaces the 4–10 `useState` calls + the `resetForm()` boilerplate that every form modal duplicates today. Ships in `@renderer/hooks/`.
+
+### E.4 — `useMutationWithToast` hook
+```ts
+const create = useMutationWithToast(trpc.wallet.createPaper.useMutation, {
+  successKey: 'trading.wallets.created',
+  failureKey: 'trading.wallets.createFailed',
+  onSuccess: () => { reset(); onClose(); },
+});
+
+// Inside submit:
+await create.mutateAsync({ name, exchange, walletType, ... });
+```
+
+Encapsulates the 19 `try/catch + err instanceof Error ? err.message` instances. Surfaces a consistent `failureKey` toast title with the underlying error message as body. Ships in `@renderer/hooks/`.
+
+### E.5 — i18n key shape convention
+**Rule:** every dialog-scoped key follows `<feature>.dialogs.<dialogName>.<key>`. `<key>` is one of a fixed enum:
+- `title` — dialog title
+- `description` — optional one-line description
+- `submit` — primary CTA verb
+- `cancel` — secondary CTA verb (rarely overridden; defaults to `common.cancel`)
+- `field.<fieldName>.label` / `field.<fieldName>.helper` / `field.<fieldName>.placeholder`
+- `section.<sectionName>.title` / `section.<sectionName>.description`
+- `success` / `failure` — toast keys (success body / failure title)
+- `confirm.title` / `confirm.body` / `confirm.cta` — destructive confirms
+
+Migration sweep PR rewrites every dialog-related key to fit. `en/pt/es/fr` JSONs end up structurally identical (same keys, different values).
+
+### E.6 — Domain constants centralization audit
+- Catalog every `const SELECTABLE_X`, `const MIN_Y`, `const MAX_Z`, `DEFAULT_*` defined inside a component file.
+- Move trading-domain constants (currencies, exchanges, intervals, market types) into `@marketmind/types`.
+- Move UI/UX constants (modal sizes, paddings, common z-indexes) into `@marketmind/tokens`.
+- Renderer-only / app-only constants (e.g. polling intervals for a specific component) stay co-located in a feature `constants.ts`.
+
+### E.7 — Validation schema reuse
+Backend tRPC procedures already declare zod schemas (`createWalletSchema`, `passwordPolicySchema`, etc.). For the modal sweep:
+- Re-export shareable schemas from `@marketmind/types` so the renderer imports the same source of truth.
+- Each modal's `isValid` becomes `schema.safeParse(values).success` — eliminates ad-hoc rules like `name.trim() && parseFloat(initialBalance) > 0`.
+- Per-field error messages flow from the same zod issues, displayed under each `<Field>`.
+
+### E.8 — Folder layout convention
+Each dialog that's bigger than ~200 LOC graduates from a single file to a folder:
+```
+Trading/
+  CreateWalletDialog/
+    index.ts                  // re-exports CreateWalletDialog
+    CreateWalletDialog.tsx    // the shell + composition
+    CreateWalletDialog.test.tsx
+    sections/                 // one file per <DialogSection>
+      ExchangeSection.tsx
+      CredentialsSection.tsx
+      WalletTypeSection.tsx
+    constants.ts              // local-only constants
+    types.ts                  // local-only types (public Props live in the file root)
+```
+
+Smaller dialogs (< 200 LOC) stay flat. The decision goes by complexity, not arbitrary cutoff — but the *target* is that no single `*.tsx` file in the dialog layer exceeds ~200-250 LOC after the sweep.
+
+### E.9 — Audit script for the new conventions
+`scripts/audit-dialog-rules.mjs` — single script enforcing every Track E + Track A rule that's mechanically checkable. Forbids in `apps/electron/src/renderer/`:
+- New files matching `*Modal.tsx` (only `*Dialog.tsx` is allowed; existing `*Modal.tsx` files are tracked in a known-rename list during the sweep, removed once renames land)
+- Hand-rolled `<Dialog.Root>` outside `ui/` (must use `<DialogShell>` or `<FormDialog>`)
+- Raw `maxW=` on a `Dialog.Content`/`DialogContent`
+- `t('...', '<non-empty-fallback>')` calls
+- `interface .*DialogProps` that doesn't extend `DialogControlProps`
+- i18n keys not following `<feature>.dialogs.<dialog>.<key>` (best-effort — flags suspicious shapes)
+
+CI gate behind `RUN_DIALOG_AUDIT=1` initially, default-on once the sweep finishes.
+
+---
+
 ## Track A — Design system primitives + modal sweep
 
-### A.1 — `<ModalShell>` primitive
+### A.1 — `<DialogShell>` primitive
 
-The replacement for both the hand-rolled `Dialog.Root → Dialog.Backdrop → Dialog.Positioner → Dialog.Content` chains and the existing `<FormDialog>`. Lives in `apps/electron/src/renderer/components/ui/modal-shell.tsx` initially, becomes part of `@marketmind/ui` Tier-2 in Track B.
+The replacement for both the hand-rolled `Dialog.Root → Dialog.Backdrop → Dialog.Positioner → Dialog.Content` chains and the existing `<FormDialog>`. Lives in `apps/electron/src/renderer/components/ui/dialog-shell.tsx` initially, becomes part of `@marketmind/ui` Tier-2 in Track B.
 
 **API (proposed):**
 ```tsx
-<ModalShell
+<DialogShell
   isOpen={open}
   onClose={close}
   size="md"                              // sm | md | lg | xl | full
   title="Create wallet"                  // required
   description="Add a paper, testnet, or live trading wallet."  // optional, one line
   headerAction={<Button size="2xs">Reset</Button>}             // optional, right-aligned
-  footer={<ModalFooter ... />}           // optional override
+  footer={<DialogFooter ... />}          // optional override
   isLoading={creating}                   // disables esc/click-outside
   onSubmit={handleSubmit}                // when set, default footer renders Cancel + primary
   submitLabel="Create"
@@ -72,72 +193,61 @@ The replacement for both the hand-rolled `Dialog.Root → Dialog.Backdrop → Di
   bodyPadding={4}                        // numeric token; default 4
   contentMaxH="90vh"                     // for data viewers; default unset
 >
-  <ModalSection>...</ModalSection>
-</ModalShell>
+  <DialogSection>...</DialogSection>
+</DialogShell>
 ```
 
 Renders the standard structure:
 - Backdrop + positioner
 - Content with size-token-driven `maxW`/`w` (no manual overrides)
-- Header with title at `MM.typography.modalTitle`, optional description below, optional inline action right
+- Header with title at `MM.typography.dialogTitle`, optional description below, optional inline action right
 - CloseButton in the corner (always)
 - Body with token-driven padding
 - Footer with `borderTop` + right-aligned button group
 
-`<FormDialog>` becomes a thin alias for `<ModalShell>` during the migration window so the 7 callsites that already use it don't have to change in the same PR.
+`<FormDialog>` becomes a thin alias for `<DialogShell>` during the migration window so the 7 callsites that already use it don't have to change in the same PR.
 
-### A.2 — `<ModalSection>` + `<ModalSectionGroup>` primitives
+### A.2 — `<DialogSection>` + `<DialogSectionGroup>` primitives
 
 Inside the body, sections give visual rhythm. We already have `<FormSection>` and `<PanelHeader>` — they get audited and unified.
 
 ```tsx
-<ModalSection
+<DialogSection
   title="API credentials"
   description="Read-only. Never stored on our servers."
   action={<Link>Where do I find these?</Link>}
 >
   <Field label="API key">...</Field>
   <Field label="Secret">...</Field>
-</ModalSection>
+</DialogSection>
 ```
 
-Section title size and weight is **smaller** than the modal title — clear hierarchy. Description is `MetaText`-styled. Sections stack with consistent gap. Group of sections inside a tabbed modal sit in a single `<ModalSectionGroup gap={4}>`.
+Section title size and weight is **smaller** than the modal title — clear hierarchy. Description is `MetaText`-styled. Sections stack with consistent gap. Group of sections inside a tabbed modal sit in a single `<DialogSectionGroup gap={4}>`.
 
 ### A.3 — Width / typography / spacing tokens
 
 New entries in `@marketmind/tokens`:
 
 ```ts
-MM.modal = {
+MM.dialog = {
   size: { sm: 400, md: 560, lg: 840, xl: 1100, full: '100vw' },
   vw:   { md: '90vw', lg: '90vw', xl: '90vw' },                // mobile fallback
   bodyPadding: 4,
   headerPadding: { x: 4, top: 4, bottom: 3 },
   footerPadding: { x: 4, y: 3 },
 }
-MM.typography.modalTitle      = { fontSize: 'md',  fontWeight: 'semibold', lineHeight: 'short' };
-MM.typography.modalDescription = { fontSize: 'xs', color: 'fg.muted', lineHeight: 'tall' };
+MM.typography.dialogTitle      = { fontSize: 'md',  fontWeight: 'semibold', lineHeight: 'short' };
+MM.typography.dialogDescription = { fontSize: 'xs', color: 'fg.muted', lineHeight: 'tall' };
 MM.typography.sectionTitle    = { fontSize: 'sm',  fontWeight: 'semibold' };  // already exists, audit
 MM.typography.sectionDescription = { fontSize: 'xs', color: 'fg.muted' };     // already exists, audit
 ```
 
-`<ModalShell>` reads from `MM.modal.*`. Direct consumers that need to size something modal-adjacent (popovers that look like mini-modals, drawers later) read from the same tokens.
+`<DialogShell>` reads from `MM.dialog.*`. Direct consumers that need to size something modal-adjacent (popovers that look like mini-modals, drawers later) read from the same tokens.
 
-### A.4 — UX rule lint (cheap automated guard)
-
-A `scripts/audit-modal-rules.mjs` similar to the existing `scripts/audit-shade-literals.mjs`. Forbids in `apps/electron/src/renderer/`:
-
-- Direct `<Dialog.Root>` / `<DialogRoot>` outside `ui/`
-- Raw `maxW=` on a `Dialog.Content`/`DialogContent`
-- `t('...', '<fallback>')` with a non-empty fallback (encourages keeping i18n JSON authoritative)
-- `<Dialog.Title>` without a `fontSize` token (the rule auto-passes once everyone is on `<ModalShell>` since the title rendering is centralized)
-
-CI gate behind `RUN_MODAL_AUDIT=1` initially, default-on at the end of the sweep.
-
-### A.5 — Modal-by-modal rewrite
+### A.4 — Dialog-by-dialog rewrite
 
 One PR per modal (or per closely-related pair). Each PR:
-1. Rewrites the modal against `<ModalShell>` + `<ModalSection>`.
+1. Rewrites the modal against `<DialogShell>` + `<DialogSection>`.
 2. Reviews every visible string. Moves any `t('...', 'fallback')` text into `en/pt/es/fr` JSON. Drops strings that are no longer reachable.
 3. Reviews title, description, CTAs for clarity in en (canonical). Translations follow the en wording.
 4. Updates Playwright e2e selectors if test ids changed.
@@ -161,11 +271,11 @@ The 16 surfaces (rough order, simplest → highest blast radius):
 | 12 | `ScreenerModal` | 284 | xl | workflow w/ filters + results |
 | 13 | `AnalyticsModal` | 106 | xl | workflow w/ panels |
 | 14 | `BacktestModal` | 79 | xl | workflow w/ wizard |
-| 15 | `SettingsDialog` | 208 | xl | workflow w/ tabs (sees A.6 reorg) |
+| 15 | `SettingsDialog` | 208 | xl | workflow w/ tabs (sees A.5 reorg) |
 | 16 | `DynamicSymbolRankings` (3 inner) | — | sm | confirmation/info |
 | 17 | inline `<ConfirmationDialog>` callsites | — | sm | already a primitive; sweep just confirms callsite consistency |
 
-### A.6 — Settings reorganization + `Tab → Modal` migrations
+### A.5 — Settings reorganization + `Tab → Modal` migrations
 
 The "creation lives in dedicated dialogs" rule applied to Settings:
 
@@ -176,18 +286,18 @@ The "creation lives in dedicated dialogs" rule applied to Settings:
 | `notifications` | Keep | Preferences |
 | `general` | Keep | App-level prefs |
 | `chart` | Keep | Chart prefs |
-| `wallets` | **Move out** | Becomes `<WalletsModal>` opened from header/sidebar. Tab removed. Settings stays for prefs only. |
-| `tradingProfiles` | **Remove tab** | `TradingProfilesTab.tsx` is a 6-line wrapper; the dedicated `<TradingProfilesModal>` already exists. Drop the tab, open the modal directly. |
+| `wallets` | **Move out** | Becomes `<WalletsDialog>` opened from header/sidebar. Tab removed. Settings stays for prefs only. |
+| `tradingProfiles` | **Remove tab** | `TradingProfilesTab.tsx` is a 6-line wrapper; the dedicated `<TradingProfilesDialog>` already exists. Drop the tab, open the modal directly. |
 | `autoTrading` | Keep | Per-wallet config; not a list of records |
 | `indicators` | Keep | Default indicator preferences |
-| `customSymbols` | **Move out** | Becomes `<CustomSymbolsModal>` opened from chart toolbar / market sidebar. Tab removed. |
+| `customSymbols` | **Move out** | Becomes `<CustomSymbolsDialog>` opened from chart toolbar / market sidebar. Tab removed. |
 | `data` | Keep | App data ops (import/export/cleanup) |
 | `updates` | **Fold into `about`** | One "About & updates" tab |
 | `about` | Keep (renamed to "About") | absorbs Updates |
 
 After: **9 tabs** in 4 groups (was 13/4). Settings becomes a true "preferences" surface; "things you create" go into their own modals.
 
-### A.7 — i18n text audit (one sweep across all modals)
+### A.6 — i18n text audit (one sweep across all modals)
 
 Single dedicated PR after the rewrites land:
 - Grep every `t('...', '...')` with a non-empty fallback. For each: ensure the JSON has a matching entry that says exactly what the fallback says (or improve both). Then drop the fallback from the call.
@@ -200,7 +310,7 @@ Single dedicated PR after the rewrites land:
 
 ## Track B — `@marketmind/ui` extraction
 
-This executes the F.2 audit doc (`docs/UI_EXTRACTION_PLAN.md` from #320). Lands **after** Track A so the new primitives (`<ModalShell>`, `<ModalSection>`) extract along with the rest in their final shape.
+This executes the F.2 audit doc (`docs/UI_EXTRACTION_PLAN.md` from #320). Lands **after** Track A so the new primitives (`<DialogShell>`, `<DialogSection>`) extract along with the rest in their final shape.
 
 ### B.1 — `packages/ui-core/` skeleton + Tier 1
 - New workspace `@marketmind/ui-core`. `-core` suffix during migration so the in-app `ui/` barrel can keep its name.
@@ -209,7 +319,7 @@ This executes the F.2 audit doc (`docs/UI_EXTRACTION_PLAN.md` from #320). Lands 
 - Test infra: vitest config in the new package mirrors backend/electron. Existing `*.test.tsx` files move alongside their components.
 
 ### B.2 — Tier 2 (token-aware composed)
-- Move `Callout`, `FormSection`/`FormRow`, `MetricCard`, `PnLDisplay`, `PanelHeader`, typography family, `ColorPicker`, `Sidebar` family, **plus the new v1.6 primitives** (`ModalShell`, `ModalSection`, `ModalSectionGroup`, `FormDialog` alias).
+- Move `Callout`, `FormSection`/`FormRow`, `MetricCard`, `PnLDisplay`, `PanelHeader`, typography family, `ColorPicker`, `Sidebar` family, **plus the new v1.6 primitives** (`DialogShell`, `DialogSection`, `DialogSectionGroup`, `FormDialog` alias).
 - Declare `@marketmind/tokens` as `peerDependency`.
 
 ### B.3 — Tier 3 graduation
@@ -247,14 +357,14 @@ The "design language" reference:
 - Typography tokens (`MM.typography.*`, including the new modal tokens)
 - Color tokens (semantic only — no shade literals)
 - Width/size tokens for modals + drawers
-- Section composition (when to use `<ModalSection>` vs `<FormSection>` vs `<PanelHeader>`)
+- Section composition (when to use `<DialogSection>` vs `<FormSection>` vs `<PanelHeader>`)
 - Anti-patterns gallery: things the audit script forbids, with the reason.
 
 ### C.3 — Migration notes in CHANGELOG
 Each PR's CHANGELOG entry lists "what changed in `@marketmind/ui`" so a future external consumer can track API drift.
 
 ### C.4 — Inline JSDoc on every public export in the package
-`/** ... */` blocks over `<ModalShell>` etc. so IDE hover shows the rules + accepted prop values without leaving the editor. This is the single highest-ROI piece of documentation: it travels with the code.
+`/** ... */` blocks over `<DialogShell>` etc. so IDE hover shows the rules + accepted prop values without leaving the editor. This is the single highest-ROI piece of documentation: it travels with the code.
 
 ---
 
@@ -268,52 +378,66 @@ After the modal sweep, v1.7+ extends the same pass to:
 - **Pages** — `LoginPage`, `RegisterPage`, `ResetPasswordPage`. Card-based forms, but currently bespoke.
 - **Tables / data displays** — `OrdersDialog`'s body, watcher cards, kline metadata. Once `Table` is consistent across them.
 
-**v1.6 design constraint**: every primitive added (`<ModalShell>`, `<ModalSection>`, the modal width tokens) must work outside modals. `<ModalShell>` is modal-shaped, but `<ModalSection>` should compose just as well inside a sidebar panel. The width tokens should match the side-drawer widths v1.7 will use. Names that say "modal-only" (e.g. don't name it `<ModalSectionTitle>`) should stay generic so v1.7 can reuse them without renaming.
+**v1.6 design constraint**: every primitive added (`<DialogShell>`, `<DialogSection>`, the dialog width tokens) must work outside dialogs. `<DialogShell>` is dialog-shaped, but `<DialogSection>` should compose just as well inside a sidebar panel. The width tokens should match the side-drawer widths v1.7 will use. Names should stay generic (`<DialogSection>` not `<DialogSectionTitle>` — same component reused outside dialogs without renaming). The hooks from Track E (`useFormState`, `useMutationWithToast`) likewise apply to any form, anywhere.
 
 ---
 
 ## Sequencing
 
-The plan ships as ~20 PRs. Each PR is small (typically 1 modal + tests + i18n delta), green CI required.
+The plan ships as ~22 PRs. Each PR is small (typically 1 dialog + tests + i18n delta), green CI required.
 
 | # | Phase | Track | What | Effort |
 |---|---|---|---|---|
-| 1 | Foundation | A.1, A.2, A.3 | `<ModalShell>` + `<ModalSection>` primitives + tokens + `<FormDialog>` aliasing | ~4-6h |
-| 2 | Foundation | A.4 | `audit-modal-rules.mjs` script + initial pass (passes immediately since nothing migrated yet — gate disabled) | ~2h |
-| 3 | Foundation | C.1 + C.2 stub | `packages/ui-core/README.md` skeleton + `docs/UI_DESIGN_SYSTEM.md` skeleton with the 13 rules | ~2h |
-| 4 | Sweep | A.5 #1-3 | `ChartCloseDialog`, `KeyboardShortcutHelpModal`, `SaveScreenerDialog` | ~2h |
-| 5 | Sweep | A.5 #4-7 | `IndicatorConfigDialog`, `ImportProfileDialog`, `AddWatcherDialog`, `CreateWalletDialog` | ~4h |
-| 6 | Sweep | A.5 #8-10 | `ProfileEditorDialog`, `OrdersDialog`, `StartWatchersModal` | ~3h |
-| 7 | Sweep | A.6 | Settings reorg — drop `wallets`/`customSymbols`/`tradingProfiles` tabs, fold `updates` into `about`, ship `<WalletsModal>` + `<CustomSymbolsModal>` | ~6-8h |
-| 8 | Sweep | A.5 #11-15 | `TradingProfilesModal`, `ScreenerModal`, `AnalyticsModal`, `BacktestModal`, `SettingsDialog` (post-reorg) | ~6h |
-| 9 | Sweep | A.5 #16-17 | `DynamicSymbolRankings` inner dialogs + `<ConfirmationDialog>` callsite sweep | ~2h |
-| 10 | Sweep | A.7 | i18n text audit — strip every `t('...', 'fallback')`, pass through every title/description/CTA in en, propagate to pt/es/fr | ~3-4h |
-| 11 | Sweep | A.4 | Enable `audit-modal-rules.mjs` in CI default-on | ~1h |
-| 12 | Extraction | B.1 | Tier-1 extraction into `packages/ui-core/` | ~3-4h |
-| 13 | Extraction | B.2 | Tier-2 extraction (token-aware + new modal primitives) | ~2h |
-| 14 | Extraction | B.3 | Tier-3 graduation: `PasswordStrengthMeter` | ~1-2h |
-| 15 | Extraction | B.4 | Rename `ui-core` → `ui` | ~30min |
-| 16 | Documentation | C.1 expansion | Fill out the component catalog with snippets per export | ~3-4h |
-| 17 | Documentation | C.2 expansion | Fill out `UI_DESIGN_SYSTEM.md` anti-patterns gallery + composition rules | ~2-3h |
-| 18 | Documentation | C.4 | JSDoc sweep on every public export | ~2h |
+| 1 | Shared infra | E.1 | File rename sweep — every `*Modal.tsx` → `*Dialog.tsx`. No behavior changes. | ~1-2h |
+| 2 | Shared infra | E.2 | `DialogControlProps` base type in `@marketmind/types`; sweep the 17 hand-rolled `interface XxxDialogProps` to extend it. | ~1h |
+| 3 | Shared infra | E.3 | `useFormState<T>` hook + first migration (CreateWalletDialog as a guinea pig). | ~2-3h |
+| 4 | Shared infra | E.4 | `useMutationWithToast` hook + first migration (CreateWalletDialog again). | ~2h |
+| 5 | Shared infra | E.5 | i18n key shape convention + tooling — JSON-schema-validate `<feature>.dialogs.<dialog>.<key>` shape in CI. | ~2h |
+| 6 | Shared infra | E.6 | Domain constants centralization — sweep `SELECTABLE_*` / `MIN_*` / `MAX_*` / `DEFAULT_*` into `@marketmind/types` (domain) or `@marketmind/tokens` (UX). | ~2h |
+| 7 | Shared infra | E.7 | Validation schema reuse — re-export shareable backend zod schemas via `@marketmind/types`; first migration (CreateWalletDialog → schema-driven `isValid`). | ~2-3h |
+| 8 | Shared infra | E.9 | `audit-dialog-rules.mjs` script (initial pass; gate disabled) | ~2h |
+| 9 | Foundation | A.1, A.2, A.3 | `<DialogShell>` + `<DialogSection>` primitives + `MM.dialog.*` tokens + `<FormDialog>` aliasing | ~4-6h |
+| 10 | Foundation | C.1 + C.2 stub | `packages/ui-core/README.md` skeleton + `docs/UI_DESIGN_SYSTEM.md` skeleton with the 13 rules | ~2h |
+| 11 | Sweep | A.4 #1-3 | `ChartCloseDialog`, `KeyboardShortcutHelpDialog` (renamed), `SaveScreenerDialog` | ~2h |
+| 12 | Sweep | A.4 #4-7 | `IndicatorConfigDialog`, `ImportProfileDialog`, `AddWatcherDialog`, `CreateWalletDialog` | ~4h |
+| 13 | Sweep | A.4 #8-10 | `ProfileEditorDialog`, `OrdersDialog`, `StartWatchersDialog` (renamed) | ~3h |
+| 14 | Sweep | A.5 | Settings reorg — drop `wallets`/`customSymbols`/`tradingProfiles` tabs, fold `updates` into `about`, ship `<WalletsDialog>` + `<CustomSymbolsDialog>` | ~6-8h |
+| 15 | Sweep | A.4 #11-15 | `TradingProfilesDialog`, `ScreenerDialog`, `AnalyticsDialog`, `BacktestDialog`, `SettingsDialog` (post-reorg) | ~6h |
+| 16 | Sweep | A.4 #16-17 | `DynamicSymbolRankings` inner dialogs + `<ConfirmationDialog>` callsite sweep | ~2h |
+| 17 | Sweep | A.6 | i18n text audit — strip every `t('...', 'fallback')`, pass through every title/description/CTA in en, propagate to pt/es/fr | ~3-4h |
+| 18 | Sweep | E.9 | Enable `audit-dialog-rules.mjs` in CI default-on | ~1h |
+| 19 | Extraction | B.1 | Tier-1 extraction into `packages/ui-core/` | ~3-4h |
+| 20 | Extraction | B.2 | Tier-2 extraction (token-aware + new dialog primitives) | ~2h |
+| 21 | Extraction | B.3 | Tier-3 graduation: `PasswordStrengthMeter` | ~1-2h |
+| 22 | Extraction | B.4 | Rename `ui-core` → `ui` | ~30min |
+| 23 | Documentation | C.1 expansion | Fill out the component catalog with snippets per export | ~3-4h |
+| 24 | Documentation | C.2 expansion | Fill out `UI_DESIGN_SYSTEM.md` anti-patterns gallery + composition rules | ~2-3h |
+| 25 | Documentation | C.4 | JSDoc sweep on every public export | ~2h |
 
-**Total estimated effort:** ~40-50h of focused work spread across 18 PRs.
+**Total estimated effort:** ~55-70h of focused work spread across ~25 PRs.
 
-Track A (foundation + sweep) ships before Track B (extraction) so the API stabilizes before the workspace move. Track C runs alongside both — each foundational/sweep PR ships its own piece of documentation.
+Track ordering rationale:
+- **Track E (shared infra)** ships first — file renames + base types + hooks + i18n convention + validation schema reuse + audit script. Each per-dialog PR after E lands stays small because the scaffolding is in place.
+- **Track A (foundation primitives + sweep)** ships next, on top of E.
+- **Track B (`@marketmind/ui` extraction)** ships after A so the API stabilizes before the workspace move.
+- **Track C (documentation)** runs alongside A and B — each foundational/sweep PR ships its own piece of documentation.
 
 ---
 
 ## Acceptance
 
 A v1.6 phase is "done" when:
-- All 17 modal surfaces use `<ModalShell>` + `<ModalSection>`.
-- `audit-modal-rules.mjs` reports 0 violations and runs in CI default-on.
-- `apps/electron/src/renderer/components/ui/index.ts` re-exports from `@marketmind/ui-core` (or `@marketmind/ui` post-rename).
-- `packages/ui-core/README.md` documents every export with a runnable snippet.
-- `docs/UI_DESIGN_SYSTEM.md` is the canonical reference (the older `UI_STYLE_GUIDE.md` either folds in or is archived).
+- Every dialog file ends in `*Dialog.tsx`. Zero `*Modal.tsx` files left.
+- All 17 dialog surfaces use `<DialogShell>` + `<DialogSection>`.
+- Every `interface XxxDialogProps` extends `DialogControlProps`.
+- `useFormState` + `useMutationWithToast` are the only paths used in dialogs that submit a mutation.
+- Every dialog-related i18n key follows `<feature>.dialogs.<dialog>.<key>`. en/pt/es/fr JSONs are 1:1 in those keys.
 - Zero `t('...', 'fallback')` calls remain in `apps/electron/src/renderer/`.
-- en/pt/es/fr JSONs are 1:1 in keys for every modal-related namespace.
-- Visual regression baseline updated with the new modal styling; no unintended regressions in non-modal surfaces.
+- `audit-dialog-rules.mjs` reports 0 violations and runs in CI default-on.
+- `apps/electron/src/renderer/components/ui/index.ts` re-exports from `@marketmind/ui-core` (or `@marketmind/ui` post-rename).
+- `packages/ui-core/README.md` documents every export with a runnable snippet; JSDoc on every public export so IDE hover surfaces the rules.
+- `docs/UI_DESIGN_SYSTEM.md` is the canonical reference (the older `UI_STYLE_GUIDE.md` either folds in or is archived).
+- Visual regression baseline updated with the new dialog styling; no unintended regressions in non-dialog surfaces.
 - Lint + type-check + all tests green.
 - `pnpm test` test count holds or grows (the rewrites carry their existing tests; new primitives add their own).
 
