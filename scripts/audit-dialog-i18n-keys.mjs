@@ -38,10 +38,15 @@ const ALLOWED_LEAF_KEYS = new Set([
   'success',
   'failure',
   'empty',
+  'emptyTitle',
+  'emptyDescription',
   'loading',
   'confirm.title',
   'confirm.body',
   'confirm.cta',
+  // Dynamic-variant labels (e.g. {{type}} interpolation)
+  'typeStopLoss',
+  'typeTakeProfit',
 ]);
 
 /**
