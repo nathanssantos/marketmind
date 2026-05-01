@@ -58,7 +58,7 @@ export function LeverageSelector({
     <VStack gap={3} align="stretch" w="100%">
       <Flex justify="space-between" align="center">
         <Text fontSize="sm" fontWeight="medium" color="fg">
-          {t('futures.leverage', 'Leverage')}
+          {t('futures.leverage')}
         </Text>
         <Flex align="center" gap={2}>
           <Text fontSize="lg" fontWeight="bold" color={getLeverageColor()}>
@@ -112,8 +112,8 @@ export function LeverageSelector({
             </Box>
             <Text fontSize="2xs" color={isExtremeRisk ? 'red.fg' : 'orange.fg'}>
               {isExtremeRisk
-                ? t('futures.extremeRiskWarning', 'Extreme risk! Liquidation can happen quickly with small price movements.')
-                : t('futures.highRiskWarning', 'High leverage increases both potential profits and losses.')}
+                ? t('futures.extremeRiskWarning')
+                : t('futures.highRiskWarning')}
             </Text>
           </HStack>
         </Box>
@@ -121,10 +121,10 @@ export function LeverageSelector({
 
       <Flex justify="space-between" px={1}>
         <Text fontSize="2xs" color="fg.muted">
-          {t('futures.minLeverage', 'Min: 1x')}
+          {t('futures.minLeverage')}
         </Text>
         <Text fontSize="2xs" color="fg.muted">
-          {t('futures.maxLeverage', 'Max: {{max}}x', { max: maxLeverage })}
+          {t('futures.maxLeverage', { max: maxLeverage })}
         </Text>
       </Flex>
     </VStack>

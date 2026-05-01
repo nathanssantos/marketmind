@@ -1058,7 +1058,15 @@
       "connectionType": "Connection Type",
       "ibGateway": "IB Gateway (Recommended)",
       "ibTws": "Trader Workstation (TWS)",
-      "port": "Port"
+      "port": "Port",
+      "walletType": "Wallet Type",
+      "paper": "Paper Trading",
+      "testnet": "Binance Testnet",
+      "live": "Live Trading",
+      "testnetInfo": "Binance Testnet",
+      "testnetDescription": "Use testnet to practice with fake funds.",
+      "liveWarning": "Warning: Real Money",
+      "liveDescription": "Live trading uses real funds. Make sure you understand the risks."
     },
     "ticket": {
       "title": "Ticket",
@@ -2548,6 +2556,11 @@
     "size": "Size",
     "accumulatedFunding": "Accumulated Funding",
     "liquidationPrice": "Liquidation Price",
-    "distanceToLiq": "Distance to liquidation"
+    "distanceToLiq": "Distance to liquidation",
+    "leverage": "Leverage",
+    "minLeverage": "Min: 1x",
+    "maxLeverage": "Max: {{max}}x",
+    "extremeRiskWarning": "Extreme risk! Liquidation can happen quickly with small price movements.",
+    "highRiskWarning": "High leverage increases both potential profits and losses."
   }
 }

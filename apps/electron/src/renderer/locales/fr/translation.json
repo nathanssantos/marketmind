@@ -1110,7 +1110,25 @@
       "pnl": "P&L",
       "netPnL": "P&L Net",
       "afterFees": "après frais",
-      "noTradesYet": "Pas encore de transactions. Commencez à trader pour voir votre courbe de capital."
+      "noTradesYet": "Pas encore de transactions. Commencez à trader pour voir votre courbe de capital.",
+      "exchange": "Exchange",
+      "walletType": "Type de Portefeuille",
+      "paper": "Paper Trading",
+      "testnet": "Binance Testnet",
+      "live": "Trading Réel",
+      "ibPaper": "IB Paper Trading (Port 4002)",
+      "ibLive": "IB Trading Réel (Port 4001)",
+      "ibInfo": "Interactive Brokers",
+      "ibDescription": "Nécessite IB Gateway ou TWS en cours d'exécution localement.",
+      "downloadGateway": "Télécharger IB Gateway",
+      "connectionType": "Type de Connexion",
+      "ibGateway": "IB Gateway (Recommandé)",
+      "ibTws": "Trader Workstation (TWS)",
+      "port": "Port",
+      "testnetInfo": "Binance Testnet",
+      "testnetDescription": "Utilisez testnet pour pratiquer avec des fonds fictifs.",
+      "liveWarning": "Avertissement : Argent Réel",
+      "liveDescription": "Le trading réel utilise des fonds réels. Assurez-vous de comprendre les risques."
     },
     "ticket": {
       "title": "Ordre",
@@ -2562,5 +2580,12 @@
     },
     "weight": "Poids (× multiplicateur)",
     "weightHint": "Les timeframes plus élevés pèsent plus. Les conditions requises valent 2× ; préférées 1×."
+  },
+  "futures": {
+    "leverage": "Levier",
+    "minLeverage": "Min : 1x",
+    "maxLeverage": "Max : {{max}}x",
+    "extremeRiskWarning": "Risque extrême ! La liquidation peut se produire rapidement avec de petites variations de prix.",
+    "highRiskWarning": "Un levier élevé augmente à la fois les profits et les pertes potentiels."
   }
 }
