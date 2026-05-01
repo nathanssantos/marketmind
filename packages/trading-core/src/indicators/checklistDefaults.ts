@@ -13,18 +13,21 @@ export interface ChecklistTemplateEntry {
 }
 
 // Weight matrix — drives both per-indicator importance and per-timeframe importance.
-//   TF multipliers (higher TF = more confirmation weight, lower TF = noisier so smaller deltas):
-//     1m=-0.75, 5m=-0.5, 15m=0, 1h=+0.5, 4h=+1.0, 1d=+1.5
+//   TF multipliers: strict monotonic increase, +0.5 per step, starting from
+//   1m as the floor. Lower TFs are useful signals (especially for fast
+//   oscillators) but a same-direction confirmation on a higher TF is always
+//   worth more — so the ladder still leans toward higher-TF confirmation.
+//     1m=0, 5m=+0.5, 15m=+1.0, 1h=+1.5, 4h=+2.0, 1d=+2.5
 //   Indicator base (RSI 2 is faster + premium-weighted in this strategy):
-//     RSI 14 / Stoch 14 = base 1.0 → 0.25 / 0.5 / 1.0 / 1.5 / 2.0 / 2.5
-//     RSI 2             = base 2.0 → 1.25 / 1.5 / 2.0 / 2.5 / 3.0 / 3.5
+//     RSI 14 / Stoch 14 = base 1.0 → 1.0 / 1.5 / 2.0 / 2.5 / 3.0 / 3.5
+//     RSI 2             = base 2.0 → 2.0 / 2.5 / 3.0 / 3.5 / 4.0 / 4.5
 const TF_WEIGHTS = {
-  '1m': -0.75,
-  '5m': -0.5,
-  '15m': 0,
-  '1h': 0.5,
-  '4h': 1.0,
-  '1d': 1.5,
+  '1m': 0,
+  '5m': 0.5,
+  '15m': 1.0,
+  '1h': 1.5,
+  '4h': 2.0,
+  '1d': 2.5,
 } as const;
 const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h', '1d'] as const;
 
