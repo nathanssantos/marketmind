@@ -34,7 +34,7 @@ export const SaveScreenerDialog = memo(({ isOpen, onClose, onSave, isLoading }: 
     >
       <Field label={t('screener.dialogs.saveScreener.field.name.label')}>
         <Input
-          size="sm"
+          size="xs"
           placeholder={t('screener.dialogs.saveScreener.field.name.placeholder')}
           value={name}
           onChange={(e) => setName(e.target.value)}
