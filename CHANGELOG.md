@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-05-02
+
+**v1.6 release** — Design-system unification + chart reactivity overhaul. Two themes:
+
+1. **Modal sweep + design system.** All 17 dialog surfaces rewritten against a single `<DialogShell>` + `<DialogSection>` primitive set; Settings reorganized (13 tabs → 9, with Wallets / Trading Profiles / Custom Symbols promoted to dedicated dialogs); 192 hardcoded i18n fallback strings cleaned; UI primitives extracted into `@marketmind/ui` (32 Tier-1 + 10+ Tier-2 + PasswordStrengthMeter as Tier-3 graduated). Shared infrastructure (`useFormState`, `useMutationWithToast`, `DialogControlProps`, audit scripts) lands first so per-dialog rewrites stay small.
+
+2. **Chart reactivity overhaul (Track F, added 2026-05-02).** User reported a Stop Loss close taking ~1 minute to reflect on the chart, then a follow-up cancel-flicker on pending limit orders. 11 PRs ship the audit + fixes: backend tightens position-sync watchdog (5min → 30s), renderer drops backup polling 30s → 5s, chart subscribes directly to `position:closed` for an immediate snapshot+flash, optimistic-override TTL extends to 30s with smart deletion when server catches up, every position-close path emits a `trade:notification` toast (SL / TP / liquidation / pyramid / partial / manual / reconciled / orphan-cleanup), `stream:reconnected` event force-refreshes after backend restart, chart live-patches on `position:update` + `order:update` for trailing-stop / SL-modify / cross-client edits.
+
+56 commits since v1.5.0.
+
+### Added — Modal sweep + design system (Tracks E + A)
+- **`<DialogShell>` + `<DialogSection>` + `MM.dialog.*` tokens** (#337) — single primitive set every dialog uses. Width tokens (`sm`/`md`/`lg`/`xl`/`full`), fixed title typography, optional one-line description in the header, optional inline action on the right, fixed footer with `borderTop` + right-aligned buttons + Cancel/primary/destructive ladder.
+- **Per-dialog rewrites** (#338-#343) — 17 surfaces migrated: ChartCloseDialog, KeyboardShortcutHelpDialog, SaveScreenerDialog, IndicatorConfigDialog, ImportProfileDialog, ProfileEditorDialog, AddWatcherDialog, CreateWalletDialog, OrdersDialog, StartWatchersDialog, TradingProfilesDialog, ScreenerDialog, AnalyticsDialog, BacktestDialog, SettingsDialog, plus DynamicSymbolRankings inner dialogs and the ConfirmationDialog callsites.
+- **Creation-dialog trigger pattern** (#345, #346) — `useDisclosure` + `<CreateActionButton>` standardized for every "+ Create X" flow. `docs/UI_CREATION_FLOWS.md` is the reference.
+- **Settings reorganization** (#357, #358, #359, #360) — 13 tabs → 9. `Updates` folded into `About`; `Wallets`, `TradingProfiles`, `CustomSymbols` removed and replaced with dedicated dialogs opened from the place-of-use (WalletSelector, WatchersTab header, SymbolSelector). Settings now stays as: Account, Security, Notifications, General, Chart, Indicators, Auto-Trading, Data, About.
+- **Shared infra (Track E, #329-#336)** — `*Modal.tsx` → `*Dialog.tsx` rename sweep, `DialogControlProps` base type, `useFormState<T>` hook, `useMutationWithToast` hook, i18n key shape convention (`<feature>.dialogs.<dialog>.<key>`), trading-domain constants centralized in `@marketmind/types`, reusable zod schemas, `audit-dialog-rules.mjs` catch-all CI script.
+
+### Added — `@marketmind/ui` package (Track B)
+- **`@marketmind/ui` workspace** (#353, #354) — 32 Tier-1 pure Chakra wrappers + 10+ Tier-2 token-aware composed primitives (Callout, FormSection, PanelHeader, typography family, DialogSection, CreateActionButton, ColorPicker, Sidebar). Renamed from working name `ui-core` (#380) once API stabilized.
+- **PasswordStrengthMeter graduated** (#379) — refactored to accept pre-resolved labels via a `labels` prop instead of calling `useTranslation` internally; now lives in `@marketmind/ui` as Tier-3 graduated.
+
+### Added — Documentation (Track C)
+- **`packages/ui/README.md` + `docs/UI_DESIGN_SYSTEM.md`** (#355) — component catalog with examples + design-language reference covering the 13 UX rules.
+- **`docs/I18N_DIALOG_KEYS.md`** + **`docs/UI_CREATION_FLOWS.md`** — i18n key shape convention + creation-dialog trigger pattern.
+
+### Added — Track F: chart reactivity (#363-#377)
+- **POSITION_CLOSED toast on SL / TP fills** (#366) + extended to algo/orphan/untracked close paths (#368) via shared `emitPositionClosedToast` helper. Title format: `"Stop Loss hit · BTCUSDT"`, body with side / exit price / PnL, color-coded by PnL sign.
+- **POSITION_OPENED toast on limit + manual fills** (#373) — limit entry activations and Binance-UI-initiated orders both emit `info`-toned toast with side / qty / entry price.
+- **POSITION_PYRAMIDED + POSITION_PARTIAL_CLOSE toasts** (#377) — additional fills on existing positions and reduce-only fills that don't fully close now emit dedicated toasts. New TradeNotificationType variants.
+- **LIQUIDATION detection + critical-urgency toast** (#374) — `handle-order-update` now recognizes Binance's `orderType='LIQUIDATION'` and threads it through `handleExitFill` so liquidations no longer fall through as "Take Profit hit".
+- **`stream:reconnected` event** (#375) — backend signals after user-stream recovery (3 sites: message-receipt-after-degraded, watchdog-forced reconnect, listenKey-expired). Renderer force-refreshes positions/orders/wallet/setupStats/equityCurve and toasts info for >30s gaps.
+- **Chart live-patches on `position:update` + `order:update`** (#376) — server-pushed SL/TP/qty/limit-price changes show on the chart immediately via the optimistic-override system, instead of waiting for the React Query refetch path (~250ms saved).
+- **Backup polling tightened** (#364) — `BACKUP_POLLING_INTERVAL` 30s → 5s for active executions / orders. Belt-and-suspenders against missed websocket events.
+- **Chart subscribes directly to `position:closed`** (#364) — snapshot the closing exec into `closingSnapshotsRef`, trigger flash, schedule invalidate. Lets the close visual fire even before the centralized invalidate pipeline catches up.
+- **Position-sync watchdog cadence** (#365) — 5min → 30s. Catches missed fills (e.g. when ORDER_TRADE_UPDATE goes unprocessed) within seconds instead of minutes.
+
+### Added — Default checklist (#370, #371, #372)
+- **1m + 5m timeframes for RSI 14, RSI 2, Stoch 14** in the default checklist template. Strict-monotonic weight ladder (+0.5 per TF), 1m as the floor at the indicator's base weight: RSI 14 / Stoch 14 → 1.0 / 1.5 / 2.0 / 2.5 / 3.0 / 3.5; RSI 2 → 2.0 / 2.5 / 3.0 / 3.5 / 4.0 / 4.5. New users get this template; existing users sync via `apps/backend/scripts/maintenance/sync-default-checklist.ts`.
+
+### Fixed — Track F user reports
+- **Stop Loss close lag** (#364, #365, #366) — chart used to take ~1 minute to reflect a SL close. Root cause: backup polling at 30s was the only fallback when the websocket signal missed; the chart had no direct subscription to `position:closed`; position-sync was every 5 min so it didn't catch missed fills fast enough; SL/TP fills emitted no toast at all. All four addressed; chart now updates within 1.5s p95.
+- **Pending limit cancel flicker** (#369) — `OPTIMISTIC_OVERRIDE_TTL_MS` was a hard 5s cap that fired before Binance's eventually-consistent `getOpenOrders` reflected the cancel. Order would vanish, the override expired, the real cache (still listing it) showed it again, then the next refetch finally cleared it. Fix: 30s hard cap + smart deletion when the server stops listing the entry.
+- **Liquidation misclassification** (#374) — liquidation fills had been falling through the SL/TP classifier and toasted as "Take Profit hit". Now detected via `o.o='LIQUIDATION'` from the user-stream payload and toasted with `urgency='critical'`.
+
+### Changed
+- **i18n text audit** (#347-#351, #362) — every `t('foo', 'fallback')` call cleaned (192 calls across 5 PRs); 192 missing JSON keys added to en/pt/es/fr (English placeholder for non-en where translations weren't ready, real translations a follow-up).
+- **`<FormDialog>` aliased to `<DialogShell>`** (#339) — same component, two import names during the migration; both stay supported.
+- **Trading-domain constants** (#334) — 5 hardcoded sets centralized in `@marketmind/types`.
+
+### Notes
+- **All 5 dialog audit rules clean** at release: `audit-dialog-rules.mjs --strict`, `audit-shade-literals.mjs` (218 files / 0 forbidden patterns), `audit-dialog-i18n-keys.mjs` (4 dialogs / 4 locales), type-check, lint (0 errors / 1969 baseline warnings).
+- **Test counts at release:** backend 5483 / 5483, electron unit 2323 / 2323, browser 108 / 108, trading-core 143 / 143.
+- **Remaining Track F polish items** (per-event flash colors, order-line move animation + cancel fade, instrumentation overlay, fast-recheck after submit, auto-cancel toast for system-cancelled orders) pushed to v1.7 backlog or marked decided-not-to-ship — none release-blocking. See `docs/V1_6_PLAN.md` Status section.
+
 ## [1.5.0] - 2026-04-30
 
 **v1.5 release** — Largest feature drop since v1.0. Highlights: a new MCP trading server (`@marketmind/mcp-trading`) lets MCP-connected agents drive paper trades end-to-end behind a per-wallet "AI Agent Trading" toggle and a 30-writes/hour rate limit; the layout durability story closes out with self-service snapshot recovery + WAL archiving; the design tokens get extracted into `@marketmind/tokens`; centralized keyboard registry + `?` help modal lands; backtest runs survive backend restart; axe-core dialog regression spec catches a11y regressions in CI. 28 commits since v1.4.0.
