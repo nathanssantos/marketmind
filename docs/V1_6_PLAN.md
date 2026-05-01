@@ -390,7 +390,11 @@ After the modal sweep, v1.7+ extends the same pass to:
 - ✅ A.1+A.2+A.3 `<DialogShell>` + `<DialogSection>` + `MM.dialog.*` tokens (#337)
 - ✅ A.4 dialog rewrites — all 17 surfaces migrated to `<DialogShell>` (#338-#343)
 - ✅ A.4 creation-dialog trigger pattern — `useDisclosure` + `<CreateActionButton>` + `docs/UI_CREATION_FLOWS.md` (#345-#346)
-- A.5 Settings reorg — deferred; needs UX decision on `<WalletsDialog>`/`<CustomSymbolsDialog>` trigger placement
+- ✅ A.5 Settings reorg — 13 tabs → 9 (#357-#360)
+  - Stage 1: fold Updates → About (#357)
+  - Stage 2: drop Trading Profiles tab; trigger in WatchersTab header (#358)
+  - Stage 3: drop Wallets tab; new `<WalletsDialog>` opens from WalletSelector (#359)
+  - Stage 4: drop Custom Symbols tab; new `<CustomSymbolsDialog>` opens from SymbolSelector (#360)
 - ✅ A.6 i18n text audit — all 192 `t('foo', 'fallback')` calls cleaned (#347-#351)
 
 **Track B (`@marketmind/ui-core` extraction) — substantially complete.**
@@ -417,12 +421,11 @@ After the modal sweep, v1.7+ extends the same pass to:
 | `pnpm --filter @marketmind/electron test:unit` | ✓ 2327 / 2327 |
 
 **Deferred items (real work that didn't fit this cycle):**
-- **A.5 Settings reorg** — promote Wallets / TradingProfiles / CustomSymbols out of Settings tabs into dedicated `<XDialog>` modals. Needs UX decision on trigger placement (header dropdown vs sidebar entry vs both). Scaffolding (creation-dialog pattern + audit) is in place.
 - **B.3 Tier-3 graduation** — `PasswordStrengthMeter` decouples by accepting a `t` prop; small follow-up.
 - **B.4 rename** — `ui-core` → `ui` once consumers external to the renderer materialize.
 - **Runtime i18n spot-check** — a few keys that previously resolved only via the en fallback may not yet exist in the canonical JSON. Tests pass (they mock i18n); at runtime, users see the raw key. Worth a one-pass walk-through.
 
-**v1.6 ships when:** A.5 + the runtime i18n spot-check land. The rest is decided by external triggers (B.3 needs no urgency; B.4 needs a consumer).
+**v1.6 is feature-complete on develop.** The runtime i18n spot-check is the only remaining quality-of-release task before cutting v1.6.0.
 
 ---
 
