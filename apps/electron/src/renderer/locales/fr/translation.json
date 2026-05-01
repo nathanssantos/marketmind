@@ -1,8 +1,11 @@
 {
   "shortcuts": {
-    "help": {
-      "title": "Raccourcis Clavier",
-      "empty": "Aucun raccourci enregistré pour l'instant."
+    "dialogs": {
+      "help": {
+        "title": "Raccourcis clavier",
+        "description": "Tous les raccourcis enregistrés dans l'app, groupés par section.",
+        "empty": "Aucun raccourci enregistré pour l'instant."
+      }
     },
     "group": {
       "chart": "Graphique",
@@ -1303,10 +1306,18 @@
       "slTpCreateFailed": "Échec de la création du SL/TP",
       "entryUpdateFailed": "Échec du déplacement de l'ordre en attente"
     },
-    "closeOrder": "Fermer l'Ordre",
-    "closeOrderConfirm": "Fermer l'ordre {{type}} avec entrée à {{entry}} ? Prix actuel : {{current}}",
-    "removeSLTPConfirm": "Supprimer {{type}} de tous les ordres dans cette position ?",
-    "confirmClose": "Confirmer la Fermeture",
+    "dialogs": {
+      "chartClose": {
+        "title": "Fermer l'ordre",
+        "description": "Fermer l'ordre {{type}} avec entrée à {{entry}} ? Prix actuel : {{current}}",
+        "submit": "Fermer"
+      },
+      "chartRemoveSlTp": {
+        "title": "Retirer la protection",
+        "description": "Supprimer {{type}} de tous les ordres dans cette position ?",
+        "submit": "Supprimer"
+      }
+    },
     "active": "ACTIF",
     "pending": "EN ATTENTE",
     "analytics": {
@@ -2231,10 +2242,15 @@
       "title": "Screeners Sauvegardés",
       "load": "Charger"
     },
-    "save": {
-      "title": "Sauvegarder le Screener",
-      "description": "Sauvegardez votre configuration de filtres actuelle pour un accès rapide.",
-      "placeholder": "Nom du screener..."
+    "dialogs": {
+      "saveScreener": {
+        "title": "Sauvegarder le screener",
+        "description": "Sauvegardez la configuration de filtres actuelle pour un accès rapide.",
+        "submit": "Sauvegarder",
+        "field": {
+          "name": { "label": "Nom", "placeholder": "p. ex. plus gros volumes" }
+        }
+      }
     },
     "actions": {
       "refresh": "Rafraîchir",

@@ -1,14 +1,5 @@
-import { Box, HStack, SimpleGrid, Text, VStack } from '@chakra-ui/react';
-import {
-  DialogBackdrop,
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
-} from '@renderer/components/ui';
+import { Box, HStack, SimpleGrid, Text } from '@chakra-ui/react';
+import { DialogSection, DialogShell } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import {
   formatShortcutKeys,
@@ -60,41 +51,32 @@ export const KeyboardShortcutHelpDialog = () => {
   }, [shortcuts]);
 
   return (
-    <DialogRoot open={helpOpen} onOpenChange={(d) => setHelpOpen(d.open)} size="lg">
-      <DialogBackdrop />
-      <DialogPositioner>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('shortcuts.help.title')}</DialogTitle>
-            <DialogCloseTrigger />
-          </DialogHeader>
-          <DialogBody>
-            <VStack gap={5} align="stretch">
-              {grouped.length === 0 ? (
-                <Text fontSize="sm" color="fg.muted">{t('shortcuts.help.empty')}</Text>
-              ) : (
-                grouped.map(({ id, shortcuts: list }) => (
-                  <Box key={id}>
-                    <Text fontSize="xs" fontWeight="semibold" color="fg.muted" textTransform="uppercase" letterSpacing="0.05em" mb={2}>
-                      {t(`shortcuts.group.${id}`)}
-                    </Text>
-                    <SimpleGrid columns={{ base: 1, md: 2 }} gap={1.5}>
-                      {list.map((sc) => (
-                        <HStack key={sc.id} justify="space-between" gap={3} py={0.5}>
-                          <Text fontSize="xs" color="fg" lineClamp={1}>
-                            {sc.descriptionKey ? t(sc.descriptionKey) : sc.description}
-                          </Text>
-                          <KeyBadge keys={sc.keys} />
-                        </HStack>
-                      ))}
-                    </SimpleGrid>
-                  </Box>
-                ))
-              )}
-            </VStack>
-          </DialogBody>
-        </DialogContent>
-      </DialogPositioner>
-    </DialogRoot>
+    <DialogShell
+      isOpen={helpOpen}
+      onClose={() => setHelpOpen(false)}
+      size="lg"
+      title={t('shortcuts.dialogs.help.title')}
+      description={t('shortcuts.dialogs.help.description')}
+      hideFooter
+    >
+      {grouped.length === 0 ? (
+        <Text fontSize="sm" color="fg.muted">{t('shortcuts.dialogs.help.empty')}</Text>
+      ) : (
+        grouped.map(({ id, shortcuts: list }) => (
+          <DialogSection key={id} title={t(`shortcuts.group.${id}`)}>
+            <SimpleGrid columns={{ base: 1, md: 2 }} gap={1.5}>
+              {list.map((sc) => (
+                <HStack key={sc.id} justify="space-between" gap={3} py={0.5}>
+                  <Text fontSize="xs" color="fg" lineClamp={1}>
+                    {sc.descriptionKey ? t(sc.descriptionKey) : sc.description}
+                  </Text>
+                  <KeyBadge keys={sc.keys} />
+                </HStack>
+              ))}
+            </SimpleGrid>
+          </DialogSection>
+        ))
+      )}
+    </DialogShell>
   );
 };

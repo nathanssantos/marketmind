@@ -1,8 +1,11 @@
 {
   "shortcuts": {
-    "help": {
-      "title": "Keyboard Shortcuts",
-      "empty": "No shortcuts registered yet."
+    "dialogs": {
+      "help": {
+        "title": "Keyboard shortcuts",
+        "description": "Every shortcut registered in the app, grouped by section.",
+        "empty": "No shortcuts registered yet."
+      }
     },
     "group": {
       "chart": "Chart",
@@ -1258,10 +1261,18 @@
       "slTpCreateFailed": "Failed to create SL/TP",
       "entryUpdateFailed": "Failed to move pending order"
     },
-    "closeOrder": "Close Order",
-    "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
-    "removeSLTPConfirm": "Remove {{type}} from all orders in this position?",
-    "confirmClose": "Confirm Close",
+    "dialogs": {
+      "chartClose": {
+        "title": "Close order",
+        "description": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
+        "submit": "Close"
+      },
+      "chartRemoveSlTp": {
+        "title": "Remove order protection",
+        "description": "Remove {{type}} from all orders in this position?",
+        "submit": "Remove"
+      }
+    },
     "active": "ACTIVE",
     "pending": "PENDING",
     "analytics": {
@@ -2192,10 +2203,15 @@
       "title": "Saved Screeners",
       "load": "Load"
     },
-    "save": {
-      "title": "Save Screener",
-      "description": "Save your current filter configuration for quick access later.",
-      "placeholder": "Screener name..."
+    "dialogs": {
+      "saveScreener": {
+        "title": "Save screener",
+        "description": "Save the current filter configuration for quick access.",
+        "submit": "Save",
+        "field": {
+          "name": { "label": "Name", "placeholder": "e.g. high-volume gainers" }
+        }
+      }
     },
     "actions": {
       "refresh": "Refresh",

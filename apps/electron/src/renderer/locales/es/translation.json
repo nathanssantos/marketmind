@@ -1,8 +1,11 @@
 {
   "shortcuts": {
-    "help": {
-      "title": "Atajos de Teclado",
-      "empty": "No hay atajos registrados todavía."
+    "dialogs": {
+      "help": {
+        "title": "Atajos de teclado",
+        "description": "Todos los atajos registrados en la app, agrupados por sección.",
+        "empty": "No hay atajos registrados todavía."
+      }
     },
     "group": {
       "chart": "Gráfico",
@@ -1314,10 +1317,18 @@
       "slTpCreateFailed": "Error al crear SL/TP",
       "entryUpdateFailed": "Error al mover orden pendiente"
     },
-    "closeOrder": "Cerrar Orden",
-    "closeOrderConfirm": "¿Cerrar orden {{type}} con entrada en {{entry}}? Precio actual: {{current}}",
-    "removeSLTPConfirm": "¿Eliminar {{type}} de todas las órdenes en esta posición?",
-    "confirmClose": "Confirmar Cierre",
+    "dialogs": {
+      "chartClose": {
+        "title": "Cerrar orden",
+        "description": "¿Cerrar orden {{type}} con entrada en {{entry}}? Precio actual: {{current}}",
+        "submit": "Cerrar"
+      },
+      "chartRemoveSlTp": {
+        "title": "Eliminar protección",
+        "description": "¿Eliminar {{type}} de todas las órdenes en esta posición?",
+        "submit": "Eliminar"
+      }
+    },
     "active": "ACTIVO",
     "pending": "PENDIENTE",
     "analytics": {
@@ -2242,10 +2253,15 @@
       "title": "Screeners Guardados",
       "load": "Cargar"
     },
-    "save": {
-      "title": "Guardar Screener",
-      "description": "Guarda tu configuración de filtros actual para acceso rápido.",
-      "placeholder": "Nombre del screener..."
+    "dialogs": {
+      "saveScreener": {
+        "title": "Guardar screener",
+        "description": "Guarda la configuración de filtros actual para acceso rápido.",
+        "submit": "Guardar",
+        "field": {
+          "name": { "label": "Nombre", "placeholder": "p. ej. mayor volumen" }
+        }
+      }
     },
     "actions": {
       "refresh": "Actualizar",
