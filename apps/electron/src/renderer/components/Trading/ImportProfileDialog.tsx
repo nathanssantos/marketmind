@@ -1,18 +1,8 @@
 import { Box, Flex, Stack } from '@chakra-ui/react';
 import {
   Badge,
-  Button,
   Callout,
-  CloseButton,
-  DialogBackdrop,
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
+  DialogShell,
   Field,
   Input,
   Textarea,
@@ -85,89 +75,66 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
   };
 
   return (
-    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && handleClose()} size="lg">
-      <DialogBackdrop />
-      <DialogPositioner>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('tradingProfiles.import.title')}</DialogTitle>
-            <DialogCloseTrigger asChild>
-              <CloseButton size="sm" />
-            </DialogCloseTrigger>
-          </DialogHeader>
+    <DialogShell
+      isOpen={isOpen}
+      onClose={handleClose}
+      size="lg"
+      title={t('tradingProfiles.import.title')}
+      onSubmit={handleImport}
+      submitLabel={t('tradingProfiles.import.importButton')}
+      submitDisabled={!parsedData || !profileName.trim()}
+      isLoading={importMutation.isPending}
+    >
+      <Field label={t('tradingProfiles.import.nameLabel')}>
+        <Input
+          size="sm"
+          value={profileName}
+          onChange={(e) => setProfileName(e.target.value)}
+          placeholder="e.g., Optimized BTC Strategy"
+        />
+      </Field>
 
-          <DialogBody>
-            <Stack gap={3}>
-              <Field label={t('tradingProfiles.import.nameLabel')}>
-                <Input
-                  size="sm"
-                  value={profileName}
-                  onChange={(e) => setProfileName(e.target.value)}
-                  placeholder="e.g., Optimized BTC Strategy"
-                />
-              </Field>
+      <Field
+        label={t('tradingProfiles.import.pasteJson')}
+        invalid={!!parseError}
+        errorText={parseError}
+      >
+        <Textarea
+          value={jsonInput}
+          onChange={(e) => handleJsonChange(e.target.value)}
+          rows={8}
+          fontFamily="mono"
+          fontSize="xs"
+          px={3}
+          py={2}
+        />
+      </Field>
 
-              <Field
-                label={t('tradingProfiles.import.pasteJson')}
-                invalid={!!parseError}
-                errorText={parseError}
-              >
-                <Textarea
-                  value={jsonInput}
-                  onChange={(e) => handleJsonChange(e.target.value)}
-                  rows={8}
-                  fontFamily="mono"
-                  fontSize="xs"
-                  px={3}
-                  py={2}
-                />
-              </Field>
-
-              {parsedData && (
-                <Callout tone="success" title={t('tradingProfiles.import.preview')} compact>
-                  <Stack gap={1.5} mt={1}>
-                    <Box fontSize="2xs">
-                      {t('tradingProfiles.import.strategiesCount', {
-                        count: parsedData.enabledSetupTypes?.length ?? 0,
-                      })}
-                    </Box>
-                    {parsedData.enabledSetupTypes && (
-                      <Flex flexWrap="wrap" gap={1}>
-                        {parsedData.enabledSetupTypes.slice(0, 6).map((setup) => (
-                          <Badge key={setup} size="sm" colorPalette="blue" variant="subtle">
-                            {setup}
-                          </Badge>
-                        ))}
-                        {parsedData.enabledSetupTypes.length > 6 && (
-                          <Badge size="sm" colorPalette="gray" variant="subtle">
-                            +{parsedData.enabledSetupTypes.length - 6}
-                          </Badge>
-                        )}
-                      </Flex>
-                    )}
-                  </Stack>
-                </Callout>
-              )}
-            </Stack>
-          </DialogBody>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleImport}
-              disabled={!parsedData || !profileName.trim()}
-              loading={importMutation.isPending}
-            >
-              {importMutation.isPending
-                ? t('tradingProfiles.import.importing')
-                : t('tradingProfiles.import.importButton')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogPositioner>
-    </DialogRoot>
+      {parsedData && (
+        <Callout tone="success" title={t('tradingProfiles.import.preview')} compact>
+          <Stack gap={1.5} mt={1}>
+            <Box fontSize="2xs">
+              {t('tradingProfiles.import.strategiesCount', {
+                count: parsedData.enabledSetupTypes?.length ?? 0,
+              })}
+            </Box>
+            {parsedData.enabledSetupTypes && (
+              <Flex flexWrap="wrap" gap={1}>
+                {parsedData.enabledSetupTypes.slice(0, 6).map((setup) => (
+                  <Badge key={setup} size="sm" colorPalette="blue" variant="subtle">
+                    {setup}
+                  </Badge>
+                ))}
+                {parsedData.enabledSetupTypes.length > 6 && (
+                  <Badge size="sm" colorPalette="gray" variant="subtle">
+                    +{parsedData.enabledSetupTypes.length - 6}
+                  </Badge>
+                )}
+              </Flex>
+            )}
+          </Stack>
+        </Callout>
+      )}
+    </DialogShell>
   );
 };
