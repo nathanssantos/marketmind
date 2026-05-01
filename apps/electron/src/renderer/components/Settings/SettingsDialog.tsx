@@ -1,5 +1,5 @@
 import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
-import { CloseButton, Dialog, Tabs } from '@renderer/components/ui';
+import { DialogShell, Tabs } from '@renderer/components/ui';
 import { useDialogMount } from '@renderer/hooks/useDialogMount';
 import { MM } from '@marketmind/tokens';
 import type { DialogControlProps } from '@marketmind/types';
@@ -63,24 +63,15 @@ export const SettingsDialog = ({
   }, []);
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
-      <Dialog.Backdrop />
-      <Dialog.Positioner>
-        <Dialog.Content maxH="90vh" maxW="1100px" overflow="hidden">
-          <CloseButton
-            position="absolute"
-            top={4}
-            right={4}
-            onClick={onClose}
-            size="sm"
-            zIndex={2}
-          />
-          <Dialog.Header borderBottom="1px solid" borderColor="border" pr={12}>
-            <Dialog.Title>{t('settings.title')}</Dialog.Title>
-          </Dialog.Header>
-
-          <Dialog.Body p={0} overflow="hidden">
-            <Tabs.Root
+    <DialogShell
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      title={t('settings.title')}
+      bodyPadding={0}
+      hideFooter
+    >
+      <Tabs.Root
               value={activeTab}
               onValueChange={(e) => isSettingsTab(e.value) && setActiveTab(e.value)}
               orientation="vertical"
@@ -196,12 +187,9 @@ export const SettingsDialog = ({
                       {activeTab === 'about' && <AboutTab />}
                     </Tabs.Content>
                   </Suspense>
-                </Box>
-              </Flex>
-            </Tabs.Root>
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog.Positioner>
-    </Dialog.Root>
+              </Box>
+            </Flex>
+      </Tabs.Root>
+    </DialogShell>
   );
 };
