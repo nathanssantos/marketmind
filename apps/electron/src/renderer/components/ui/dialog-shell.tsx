@@ -21,8 +21,8 @@ export type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 export interface DialogShellProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Required title rendered with `MM.typography.dialogTitle`. */
-  title: string;
+  /** Required title rendered with `MM.typography.dialogTitle`. Accepts a string or a ReactNode for inline embellishments (badge, icon). */
+  title: ReactNode;
   /** Optional one-line description below the title (`MM.typography.dialogDescription`). */
   description?: ReactNode;
   /** Optional inline action rendered on the right of the header (e.g. "Reset"). */

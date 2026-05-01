@@ -4,7 +4,7 @@ import { DialogShell, type DialogSize } from './dialog-shell';
 interface FormDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  title: string;
+  title: ReactNode;
   description?: ReactNode;
   size?: DialogSize;
   children: ReactNode;

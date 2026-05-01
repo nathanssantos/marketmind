@@ -1,17 +1,6 @@
 import { Flex, Spinner, Stack } from '@chakra-ui/react';
-import {
-  Callout,
-  DialogBackdrop,
-  DialogBody,
-  DialogContent,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
-  IconButton,
-} from '@renderer/components/ui';
+import { Callout, DialogShell } from '@renderer/components/ui';
 import { Suspense, lazy, memo, useCallback, useMemo } from 'react';
-import { LuX } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 import { useActiveWallet } from '../../hooks/useActiveWallet';
@@ -50,56 +39,37 @@ export const AnalyticsDialog = memo(() => {
 
   const handleClose = useCallback(() => setAnalyticsOpen(false), [setAnalyticsOpen]);
 
-  const handleOpenChange = (e: { open: boolean }) => {
-    if (!e.open) handleClose();
-  };
-
   return (
-    <DialogRoot open={isAnalyticsOpen} onOpenChange={handleOpenChange} size="xl">
-      <DialogBackdrop />
-      <DialogPositioner>
-        <DialogContent maxH="90vh" maxW="1100px" w="90vw">
-          <DialogHeader px={4} pt={4} pb={3}>
-            <Flex justify="space-between" align="center" w="100%">
-              <DialogTitle fontSize="md">{t('trading.tabs.analytics')}{activeWallet ? ` — ${activeWallet.name}` : ''}</DialogTitle>
-              <IconButton
-                size="2xs"
-                variant="ghost"
-                aria-label={t('common.close')}
-                onClick={handleClose}
-              >
-                <LuX />
-              </IconButton>
-            </Flex>
-          </DialogHeader>
-
-          <DialogBody px={4} py={3} overflowY="auto">
-            {activeWalletId ? (
-              <Stack gap={4}>
-                <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
-                <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
-                {marginRequirements && (
-                  <MarginInfoPanel requirements={marginRequirements} />
-                )}
-                <Suspense
-                  fallback={
-                    <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-                      <Spinner size={MM.spinner.panel.size} />
-                    </Flex>
-                  }
-                >
-                  <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
-                </Suspense>
-              </Stack>
-            ) : (
-              <Callout tone="info" compact>
-                {t('trading.noWalletSelected')}
-              </Callout>
-            )}
-          </DialogBody>
-        </DialogContent>
-      </DialogPositioner>
-    </DialogRoot>
+    <DialogShell
+      isOpen={isAnalyticsOpen}
+      onClose={handleClose}
+      size="xl"
+      title={`${t('trading.tabs.analytics')}${activeWallet ? ` — ${activeWallet.name}` : ''}`}
+      hideFooter
+    >
+      {activeWalletId ? (
+        <Stack gap={4}>
+          <PerformancePanel walletId={activeWalletId} currency={activeWalletCurrency} />
+          <PerformanceCalendar walletId={activeWalletId} currency={activeWalletCurrency} />
+          {marginRequirements && (
+            <MarginInfoPanel requirements={marginRequirements} />
+          )}
+          <Suspense
+            fallback={
+              <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+                <Spinner size={MM.spinner.panel.size} />
+              </Flex>
+            }
+          >
+            <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />
+          </Suspense>
+        </Stack>
+      ) : (
+        <Callout tone="info" compact>
+          {t('trading.noWalletSelected')}
+        </Callout>
+      )}
+    </DialogShell>
   );
 });
 

@@ -11,16 +11,7 @@ import {
   BetaBadge,
   Button,
   Callout,
-  CloseButton,
-  DialogBackdrop,
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
+  DialogShell,
   Select,
   type SelectOption,
 } from '@renderer/components/ui';
@@ -134,52 +125,87 @@ export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol
     [savedScreeners],
   );
 
+  const headerAction = (
+    <HStack gap={2}>
+      <Select
+        size="xs"
+        value={assetClass}
+        options={ASSET_CLASS_OPTIONS}
+        onChange={(v) => setAssetClass(v as typeof assetClass)}
+        minWidth="90px"
+        usePortal={false}
+      />
+      <Select
+        size="xs"
+        value={marketType}
+        options={MARKET_TYPE_OPTIONS}
+        onChange={(v) => setMarketType(v as typeof marketType)}
+        minWidth="90px"
+        usePortal={false}
+      />
+      <Select
+        size="xs"
+        value={interval}
+        options={SCREENER_INTERVAL_OPTIONS}
+        onChange={(v) => setInterval(v as typeof interval)}
+        minWidth="70px"
+        usePortal={false}
+      />
+    </HStack>
+  );
+
+  const footer = (
+    <Flex justify="space-between" align="center" w="100%">
+      <HStack gap={2}>
+        {results && (
+          <Text fontSize="2xs" color="fg.muted">
+            {t('screener.footer.results', {
+              matched: results.totalMatched,
+              scanned: results.totalSymbolsScanned,
+              time: results.executionTimeMs,
+            })}
+          </Text>
+        )}
+      </HStack>
+      <HStack gap={2}>
+        <Button
+          size="2xs"
+          variant="ghost"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          <LuRefreshCw />
+          {t('screener.actions.refresh')}
+        </Button>
+        <Button
+          size="2xs"
+          variant="outline"
+          onClick={() => setIsSaveOpen(true)}
+          disabled={customFilters.length === 0 && activePresetId === null}
+        >
+          <LuSave />
+          {t('screener.actions.save')}
+        </Button>
+      </HStack>
+    </Flex>
+  );
+
   return (
     <>
-      <DialogRoot open={isScreenerOpen} onOpenChange={handleOpenChange} size="xl">
-        <DialogBackdrop />
-        <DialogPositioner>
-          <DialogContent maxH="90vh" maxW="1200px" w="95vw">
-            <DialogHeader px={4} pt={4}>
-              <Flex justify="space-between" align="center" w="100%">
-                <HStack gap={2}>
-                  <DialogTitle fontSize="md">{t('screener.title')}</DialogTitle>
-                  <BetaBadge />
-                </HStack>
-                <HStack gap={2}>
-                  <Select
-                    size="xs"
-                    value={assetClass}
-                    options={ASSET_CLASS_OPTIONS}
-                    onChange={(v) => setAssetClass(v as typeof assetClass)}
-                    minWidth="90px"
-                    usePortal={false}
-                  />
-                  <Select
-                    size="xs"
-                    value={marketType}
-                    options={MARKET_TYPE_OPTIONS}
-                    onChange={(v) => setMarketType(v as typeof marketType)}
-                    minWidth="90px"
-                    usePortal={false}
-                  />
-                  <Select
-                    size="xs"
-                    value={interval}
-                    options={SCREENER_INTERVAL_OPTIONS}
-                    onChange={(v) => setInterval(v as typeof interval)}
-                    minWidth="70px"
-                    usePortal={false}
-                  />
-                  <DialogCloseTrigger asChild position="static">
-                    <CloseButton size="sm" />
-                  </DialogCloseTrigger>
-                </HStack>
-              </Flex>
-            </DialogHeader>
-
-            <DialogBody px={MM.spacing.section.gap} py={MM.spacing.dialogPadding} overflowY="auto">
-              <Stack gap={MM.spacing.row.gap}>
+      <DialogShell
+        isOpen={isScreenerOpen}
+        onClose={() => handleOpenChange({ open: false })}
+        size="xl"
+        title={
+          <HStack gap={2} as="span">
+            <Text as="span">{t('screener.title')}</Text>
+            <BetaBadge />
+          </HStack>
+        }
+        headerAction={headerAction}
+        footer={footer}
+      >
+        <Stack gap={MM.spacing.row.gap}>
                 <PresetBar
                   presets={presets}
                   activePresetId={activePresetId}
@@ -229,47 +255,8 @@ export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol
                     onSymbolClick={onSymbolClick ? (sym) => onSymbolClick(sym) : undefined}
                   />
                 ) : null}
-              </Stack>
-            </DialogBody>
-
-            <DialogFooter px={4} pb={3}>
-              <Flex justify="space-between" align="center" w="100%">
-                <HStack gap={2}>
-                  {results && (
-                    <Text fontSize="2xs" color="fg.muted">
-                      {t('screener.footer.results', {
-                        matched: results.totalMatched,
-                        scanned: results.totalSymbolsScanned,
-                        time: results.executionTimeMs,
-                      })}
-                    </Text>
-                  )}
-                </HStack>
-                <HStack gap={2}>
-                  <Button
-                    size="2xs"
-                    variant="ghost"
-                    onClick={() => refetch()}
-                    disabled={isFetching}
-                  >
-                    <LuRefreshCw />
-                    {t('screener.actions.refresh')}
-                  </Button>
-                  <Button
-                    size="2xs"
-                    variant="outline"
-                    onClick={() => setIsSaveOpen(true)}
-                    disabled={customFilters.length === 0 && activePresetId === null}
-                  >
-                    <LuSave />
-                    {t('screener.actions.save')}
-                  </Button>
-                </HStack>
-              </Flex>
-            </DialogFooter>
-          </DialogContent>
-        </DialogPositioner>
-      </DialogRoot>
+        </Stack>
+      </DialogShell>
 
       <SaveScreenerDialog
         isOpen={isSaveOpen}
