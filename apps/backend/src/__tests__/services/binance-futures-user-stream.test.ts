@@ -119,6 +119,7 @@ vi.mock('../../services/websocket', () => ({
     emitPositionUpdate: mockEmitPositionUpdate,
     emitOrderUpdate: mockEmitOrderUpdate,
     emitPositionClosed: mockEmitPositionClosed,
+    emitTradeNotification: vi.fn(),
   })),
 }));
 

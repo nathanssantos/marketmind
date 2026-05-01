@@ -297,6 +297,30 @@ export async function handleExitFill(
       pnl,
       pnlPercent,
     });
+
+    // v1.6 Track F.4 — toast feedback for SL/TP fills. Without this,
+    // the user gets zero notification when a position closes via the
+    // exchange (only the chart line disappears). The renderer's
+    // RealtimeTradingSyncContext already handles `trade:notification`
+    // events and renders the toast + native notification.
+    const reason = determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT');
+    const isProfit = pnl >= 0;
+    const reasonLabel = reason === 'STOP_LOSS' ? 'Stop Loss' : reason === 'TAKE_PROFIT' ? 'Take Profit' : reason;
+    wsService.emitTradeNotification(walletId, {
+      type: 'POSITION_CLOSED',
+      title: `${reasonLabel} hit · ${symbol}`,
+      body: `${execution.side} closed at ${exitPrice.toFixed(2)} · ${isProfit ? '+' : ''}${pnl.toFixed(2)} (${isProfit ? '+' : ''}${pnlPercent.toFixed(2)}%)`,
+      urgency: 'normal',
+      data: {
+        executionId: execution.id,
+        symbol,
+        side: execution.side,
+        exitPrice: exitPrice.toString(),
+        pnl: pnl.toString(),
+        pnlPercent: pnlPercent.toString(),
+        exitReason: reason,
+      },
+    });
   }
 
   getPositionEventBus().emitPositionClosed({
