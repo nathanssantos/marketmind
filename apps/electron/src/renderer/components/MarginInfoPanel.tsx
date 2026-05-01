@@ -1,4 +1,5 @@
 import { Box, Flex, Text, VStack } from '@chakra-ui/react';
+import { REG_T_INITIAL_MARGIN, REG_T_MAINTENANCE_MARGIN } from '@marketmind/types';
 import { Badge, Callout, TooltipWrapper } from '@renderer/components/ui';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,9 +28,6 @@ interface MarginInfoPanelProps {
   impact?: MarginImpact;
   show?: boolean;
 }
-
-const REG_T_INITIAL_MARGIN = 0.5;
-const REG_T_MAINTENANCE_MARGIN = 0.25;
 
 const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {

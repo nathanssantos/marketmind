@@ -1,11 +1,9 @@
 import { Flex, Stack, Text } from '@chakra-ui/react';
 import { Callout, Field, FormDialog, Input, Link, NumberInput, Select } from '@renderer/components/ui';
-import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, type DialogControlProps, type WalletCurrency, type ExchangeId } from '@marketmind/types';
+import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, SELECTABLE_CURRENCIES, type DialogControlProps, type WalletCurrency, type ExchangeId } from '@marketmind/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink } from 'react-icons/lu';
-
-const SELECTABLE_CURRENCIES: WalletCurrency[] = ['USDT', 'USD', 'BRL', 'EUR'];
 
 const CURRENCY_SELECT_OPTIONS = SELECTABLE_CURRENCIES.map((c) => ({
   value: c,

@@ -1,4 +1,5 @@
 import { Flex, Text } from '@chakra-ui/react';
+import { NYSE_HOURS, NYSE_TIMEZONE } from '@marketmind/types';
 import { Badge, TooltipWrapper } from '@renderer/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,14 +13,6 @@ interface MarketStatus {
   nextEvent: { type: 'open' | 'close'; time: Date } | null;
   currentTime: Date;
 }
-
-const NYSE_TIMEZONE = 'America/New_York';
-
-const NYSE_HOURS = {
-  PRE_MARKET: { start: 4, end: 9.5 },
-  REGULAR: { start: 9.5, end: 16 },
-  AFTER_HOURS: { start: 16, end: 20 },
-};
 
 const isWeekend = (date: Date): boolean => {
   const day = date.getDay();
