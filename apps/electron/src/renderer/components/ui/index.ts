@@ -1,15 +1,19 @@
-// Tier-1 primitives extracted into @marketmind/ui-core (v1.6 Track B.1).
-// Re-exported here so existing app-site imports (`@renderer/components/ui`)
-// keep working without per-callsite churn.
+// Tier-1 + Tier-2 primitives extracted into @marketmind/ui-core
+// (v1.6 Track B.1 + B.2). Re-exported here so existing app-site imports
+// (`@renderer/components/ui`) keep working without per-callsite churn.
 export {
   Alert,
   Badge,
   BetaBadge,
   Button,
+  Callout,
   Card,
   Checkbox,
   CloseButton,
+  ColorPicker,
+  CreateActionButton,
   DataCard,
+  DEFAULT_COLOR_PRESETS,
   Dialog,
   DialogActionTrigger,
   DialogBackdrop,
@@ -20,27 +24,39 @@ export {
   DialogHeader,
   DialogPositioner,
   DialogRoot,
+  DialogSection,
   DialogTitle,
   Field,
+  FieldHint,
+  FormRow,
+  FormSection,
   IconButton,
   Image,
   Input,
   Link,
   Logo,
   Menu,
+  MetaText,
   NumberInput,
+  PageTitle,
+  PanelHeader,
   PasswordInput,
   Popover,
   ProgressBar,
   ProgressRoot,
   Radio,
   RadioGroup,
+  SectionDescription,
+  SectionTitle,
   Select,
   Separator,
+  SidebarContainer,
+  SidebarHeader,
   Skeleton,
   Slider,
   Stat,
   StatRow,
+  SubsectionTitle,
   Switch,
   Table,
   Tabs,
@@ -50,8 +66,12 @@ export {
   type BadgeProps,
   type BetaBadgeProps,
   type ButtonProps,
+  type CalloutTone,
   type CheckboxProps,
   type CloseButtonProps,
+  type ColorPickerProps,
+  type CreateActionButtonProps,
+  type DialogSectionProps,
   type IconButtonProps,
   type ImageProps,
   type LinkProps,
@@ -67,27 +87,12 @@ export {
   type ToggleIconButtonProps,
 } from '@marketmind/ui-core';
 
-// Tier-2 (token-aware composed primitives) — stay app-side for now.
-export { Callout } from './callout';
-export type { CalloutTone } from './callout';
-export { CreateActionButton, type CreateActionButtonProps } from './create-action-button';
+// Stays app-side — i18n / runtime-coupled (Tier 3).
 export { ColorModeProvider, useColorMode } from './color-mode';
-export { ColorPicker, DEFAULT_COLOR_PRESETS } from './color-picker';
-export type { ColorPickerProps } from './color-picker';
-export { DialogShell, type DialogShellProps, type DialogSize } from './dialog-shell';
-export { DialogSection, type DialogSectionProps } from './dialog-section';
-export { FormRow, FormSection } from './form-section';
-export { MetricCard } from './MetricCard';
-export { PanelHeader } from './panel-header';
-export { PnLDisplay } from './PnLDisplay';
-export { SidebarContainer, SidebarHeader } from './Sidebar';
-export { TooltipWrapper } from './Tooltip';
-export { FieldHint, MetaText, PageTitle, SectionDescription, SectionTitle, SubsectionTitle } from './typography';
-
-// Tier-3 (i18n / runtime-coupled) — stay app-side indefinitely.
 export { CollapsibleSection } from './CollapsibleSection';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { CryptoIcon } from './CryptoIcon';
+export { DialogShell, type DialogShellProps, type DialogSize } from './dialog-shell';
 export { DirectionModeSelector } from './DirectionModeSelector';
 export type { DirectionMode } from './DirectionModeSelector';
 export { EmptyState } from './EmptyState';
@@ -96,4 +101,7 @@ export { FormDialog } from './FormDialog';
 export { GridWindow } from './GridWindow';
 export type { GridWindowState } from './GridWindow';
 export { LoadingSpinner } from './LoadingSpinner';
+export { MetricCard } from './MetricCard';
 export { PasswordStrengthMeter } from './PasswordStrengthMeter';
+export { PnLDisplay } from './PnLDisplay';
+export { TooltipWrapper } from './Tooltip';
