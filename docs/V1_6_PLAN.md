@@ -382,6 +382,42 @@ After the modal sweep, v1.7+ extends the same pass to:
 
 ---
 
+## Status (2026-05-01)
+
+**Track E (shared infrastructure) — complete.**
+- ✅ E.1 file rename sweep (#329) — every `*Modal.tsx` → `*Dialog.tsx`
+- ✅ E.2 `DialogControlProps` base type (#330) — 10 callsites extend it
+- ✅ E.3 `useFormState<T>` hook (#331)
+- ✅ E.4 `useMutationWithToast` hook (#332)
+- ✅ E.5 i18n key shape `<feature>.dialogs.<dialog>.<key>` + audit script (#333)
+- ✅ E.6 trading-domain constants centralized in `@marketmind/types` (#334)
+- ✅ E.7 reusable zod dialog schemas in `@marketmind/types` (#335)
+- E.8 folder layout for >200 LOC dialogs — applies organically as future per-dialog work; no PR.
+- ✅ E.9 `audit-dialog-rules.mjs` CI gate (#336)
+
+**Track A (sweep) — structural complete; text audit pending.**
+- ✅ A.1+A.2+A.3 `<DialogShell>` + `<DialogSection>` + `MM.dialog.*` tokens (#337)
+- ✅ A.4 dialog rewrites — all 17 surfaces migrated:
+  - #338: ChartCloseDialog, KeyboardShortcutHelpDialog, SaveScreenerDialog
+  - #339: `<FormDialog>` aliased to `<DialogShell>` — 7 callsites auto-upgrade
+  - #340: ImportProfileDialog, ProfileEditorDialog
+  - #341: TradingProfilesDialog, StartWatchersDialog, OrdersDialog, DynamicSymbolRankings
+  - #342: AnalyticsDialog, ScreenerDialog
+  - #343: SettingsDialog (last hand-rolled `Dialog.Root`)
+- A.5 Settings reorg — TODO; needs UX decision on where the new
+  `<WalletsDialog>` / `<CustomSymbolsDialog>` triggers live (header
+  button vs sidebar entry vs both).
+- A.6 i18n text audit — TODO; 192 `t('foo', 'fallback')` calls remain.
+  Tedious string-by-string sweep; tackle by feature area.
+
+**Track B (extraction) — not started yet.**
+
+**Track C (documentation) — not started yet.**
+
+**Audit baseline:** 4 of 5 structural audit rules clean. Only `t-with-fallback` non-zero (192). Once A.6 finishes, `audit-dialog-rules.mjs` flips to `--strict` in CI.
+
+---
+
 ## Sequencing
 
 The plan ships as ~22 PRs. Each PR is small (typically 1 dialog + tests + i18n delta), green CI required.
