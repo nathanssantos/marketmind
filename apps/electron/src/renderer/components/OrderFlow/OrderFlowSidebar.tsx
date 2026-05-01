@@ -1,4 +1,4 @@
-import { Box, Flex, Text } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { useDepth } from '@renderer/hooks/useDepth';
 import { useFastPriceForSymbol } from '@renderer/store/priceStore';
 import { type OrderFlowSidebarTab, useUIStore } from '@renderer/store/uiStore';
@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { DomLadder } from '../Chart/DomLadder';
-import { IconButton, SidebarContainer, Tabs } from '../ui';
+import { IconButton, SidebarContainer, SidebarTabsHeader, Tabs } from '../ui';
 import { OrderFlowMetrics } from './OrderFlowMetrics';
 
 interface OrderFlowSidebarProps {
@@ -48,19 +48,18 @@ const OrderFlowSidebarComponent = ({ width, symbol }: OrderFlowSidebarProps) => 
         display="flex"
         flexDirection="column"
       >
-        <Flex>
+        <SidebarTabsHeader
+          closeAction={
+            <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label={t('common.close')} onClick={() => useUIStore.getState().toggleOrderFlowSidebar()}>
+              <LuX />
+            </IconButton>
+          }
+        >
           <Tabs.List flex={1}>
-            <Tabs.Trigger value="dom">
-              <Text fontSize="xs">{t('orderFlow.tabs.dom')}</Text>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="metrics">
-              <Text fontSize="xs">{t('orderFlow.tabs.metrics')}</Text>
-            </Tabs.Trigger>
+            <Tabs.Trigger value="dom">{t('orderFlow.tabs.dom')}</Tabs.Trigger>
+            <Tabs.Trigger value="metrics">{t('orderFlow.tabs.metrics')}</Tabs.Trigger>
           </Tabs.List>
-          <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Close" onClick={() => useUIStore.getState().toggleOrderFlowSidebar()} mr={1} mt={0.5}>
-            <LuX />
-          </IconButton>
-        </Flex>
+        </SidebarTabsHeader>
 
         <Box flex={1} minH={0} display="flex" flexDirection="column">
           <Tabs.Content value="dom" flex={1} minH={0} display="flex" flexDirection="column">

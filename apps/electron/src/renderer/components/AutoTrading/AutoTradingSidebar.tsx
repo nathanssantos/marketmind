@@ -1,11 +1,11 @@
-import { Box, Flex, Text } from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { type AutoTradingSidebarTab, useUIStore } from '../../store/uiStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useChartContext } from '../../context/ChartContext';
-import { Callout, IconButton, SidebarContainer, Tabs } from '../ui';
+import { Callout, IconButton, SidebarContainer, SidebarTabsHeader, Tabs } from '../ui';
 import { WatchersTab } from '../MarketSidebar/tabs/WatchersTab';
 import { LogsTab } from '../MarketSidebar/tabs/LogsTab';
 import { ScalpingDashboard } from '../Trading/ScalpingDashboard';
@@ -35,24 +35,21 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
   return (
     <SidebarContainer width={width}>
       <Tabs.Root value={autoTradingSidebarTab} onValueChange={handleTabChange} fitted h="full" display="flex" flexDirection="column">
-        <Flex>
-          {onClose && (
-            <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label="Close" onClick={onClose} ml={1} mt={0.5}>
-              <LuX />
-            </IconButton>
-          )}
+        <SidebarTabsHeader
+          closeAction={
+            onClose && (
+              <IconButton size="2xs" variant="ghost" color="fg.muted" aria-label={t('common.close')} onClick={onClose}>
+                <LuX />
+              </IconButton>
+            )
+          }
+        >
           <Tabs.List flex={1}>
-            <Tabs.Trigger value="watchers">
-              <Text fontSize="xs">{t('marketSidebar.tabs.watchers')}</Text>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="scalping">
-              <Text fontSize="xs">{t('scalping.dashboard.title')}</Text>
-            </Tabs.Trigger>
-            <Tabs.Trigger value="logs">
-              <Text fontSize="xs">{t('marketSidebar.tabs.logs')}</Text>
-            </Tabs.Trigger>
+            <Tabs.Trigger value="watchers">{t('marketSidebar.tabs.watchers')}</Tabs.Trigger>
+            <Tabs.Trigger value="scalping">{t('scalping.dashboard.title')}</Tabs.Trigger>
+            <Tabs.Trigger value="logs">{t('marketSidebar.tabs.logs')}</Tabs.Trigger>
           </Tabs.List>
-        </Flex>
+        </SidebarTabsHeader>
 
         <Box flex={1} minH={0} display="flex" flexDirection="column" overflow="hidden">
           <Tabs.Content value="watchers" overflowY="auto">
