@@ -96,7 +96,16 @@
     "remove": "Remove",
     "economicEvent": "Economic Event",
     "actual": "Actual",
-    "estimate": "Estimate"
+    "estimate": "Estimate",
+    "symbol": "Symbol",
+    "side": "Side",
+    "price": "Price",
+    "quantity": "Quantity",
+    "stop": "Stop",
+    "start": "Start",
+    "settings": "Settings",
+    "confirm": "Confirm",
+    "endTime": "End time"
   },
   "app": {
     "title": "MarketMind",
@@ -552,7 +561,8 @@
           "extendedDescription": "Uses the most extreme swing high/low in the lookback — wider targets for bigger moves",
           "nearest": "Nearest",
           "nearestDescription": "Uses the most recent swing high/low — tighter targets for shorter trades"
-        }
+        },
+        "calculationLabel": "Calculation method"
       },
       "stopMode": {
         "title": "Initial Stop Placement",
@@ -560,7 +570,8 @@
         "fiboTarget": "Fibonacci Target",
         "fiboTargetDescription": "Places stop at the Fibonacci swing low/high — wider stops for the full move",
         "nearestSwing": "Nearest Swing",
-        "nearestSwingDescription": "Places stop at the most recent local swing — tighter stops for shorter risk"
+        "nearestSwingDescription": "Places stop at the most recent local swing — tighter stops for shorter risk",
+        "label": "Initial stop placement"
       },
       "entrySettings": {
         "title": "Entry Settings",
@@ -607,7 +618,8 @@
         "positionMode": "Position Mode",
         "positionModeDescription": "One-Way: single direction per symbol. Hedge: simultaneous long and short.",
         "oneWay": "One-Way",
-        "hedge": "Hedge"
+        "hedge": "Hedge",
+        "autoTradingDescription": "Default leverage for auto-trading entries on new symbols"
       },
       "marginType": {
         "label": "Margin Type"
@@ -767,7 +779,8 @@
         "fiboModerate": "Moderate (1.272, 1.618, 2.0)",
         "fiboModerateDesc": "Three entries at standard extensions.",
         "fiboAll": "All Levels (1.0 - 2.618)",
-        "fiboAllDesc": "Maximum entries at all Fibonacci extensions."
+        "fiboAllDesc": "Maximum entries at all Fibonacci extensions.",
+        "modeLabel": "Mode"
       }
     },
     "indicators": {
@@ -791,6 +804,7 @@
     },
     "tools": {
       "pencil": "Pencil",
+      "highlighter": "Highlighter",
       "line": "Line",
       "rectangle": "Rectangle",
       "fibonacci": "Fibonacci",
@@ -798,7 +812,19 @@
       "area": "Area",
       "arrow": "Arrow",
       "text": "Text",
-      "magnet": "OHLC Magnet"
+      "magnet": "OHLC Magnet",
+      "horizontalLine": "Horizontal Line",
+      "verticalLine": "Vertical Line",
+      "trendLine": "Trend Line",
+      "ray": "Ray",
+      "channel": "Channel",
+      "ellipse": "Ellipse",
+      "gannFan": "Gann Fan",
+      "pitchfork": "Pitchfork",
+      "priceRange": "Price Range",
+      "anchoredVwap": "Anchored VWAP",
+      "longPosition": "Long Position",
+      "shortPosition": "Short Position"
     },
     "controls": {
       "title": "Chart Controls",
@@ -832,7 +858,9 @@
       "openingRange": "Opening Range",
       "setupDetection": "Algorithmic Setup Detection",
       "indicators": "Indicators",
-      "quickSettings": "Quick Settings"
+      "quickSettings": "Quick Settings",
+      "addChart": "Add chart",
+      "flip": "Flip chart (invert Y axis)"
     },
     "type": {
       "candle": "Candle",
@@ -1073,7 +1101,9 @@
       "testnetInfo": "Binance Testnet",
       "testnetDescription": "Use testnet to practice with fake funds.",
       "liveWarning": "Warning: Real Money",
-      "liveDescription": "Live trading uses real funds. Make sure you understand the risks."
+      "liveDescription": "Live trading uses real funds. Make sure you understand the risks.",
+      "selectWallet": "Select a wallet first",
+      "syncBalance": "Sync balance from Binance"
     },
     "ticket": {
       "title": "Ticket",
@@ -1263,6 +1293,10 @@
         "stopLoss": "Stop Loss",
         "takeProfit": "Take Profit",
         "manual": "Manual"
+      },
+      "setupDetected": {
+        "title": "New setup detected",
+        "body": "{{symbol}} {{setupType}}{{direction}}"
       }
     },
     "order": {
@@ -1353,7 +1387,8 @@
         "week": "Week",
         "noData": "No trades this month",
         "trades_one": "{{count}} trade",
-        "trades_other": "{{count}} trades"
+        "trades_other": "{{count}} trades",
+        "trades": "Trades: {{count}}"
       }
     },
     "mode": {
@@ -1535,7 +1570,9 @@
       "trailingStopDescription": "Override trailing stop behavior for this profile",
       "riskManagement": "Risk Management",
       "riskManagementDescription": "Override position sizing and risk limits",
-      "riskDescription": "Override wallet risk settings for this profile"
+      "riskDescription": "Override wallet risk settings for this profile",
+      "checklist": "Pre-trade checklist",
+      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
     },
     "overrides": {
       "usingGlobalDefault": "Using global default",
@@ -1608,7 +1645,9 @@
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
       "selectedCount": "{{count}} symbols selected",
-      "startBulk": "Start {{count}} Watchers"
+      "startBulk": "Start {{count}} Watchers",
+      "futuresWarning": "Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.",
+      "options": "Options"
     },
     "emergencyStop": {
       "button": "Emergency Stop",
@@ -1943,6 +1982,9 @@
       "increaseFont": "Increase font size",
       "decreaseFont": "Decrease font size",
       "waiting": "Waiting for logs..."
+    },
+    "sidebar": {
+      "title": "Auto Trading"
     }
   },
   "marketSidebar": {
@@ -2614,17 +2656,37 @@
     "sessionBoundaries": "Session Boundaries",
     "footprint": "Footprint",
     "liquidityHeatmap": "Liquidity Heatmap",
-    "liquidationMarkers": "Liquidation Markers"
+    "liquidationMarkers": "Liquidation Markers",
+    "dialog": {
+      "createTitle": "Create indicator",
+      "editTitle": "Edit indicator",
+      "conditionTitle": "Configure condition",
+      "type": "Type",
+      "indicator": "Indicator",
+      "label": "Label",
+      "labelPlaceholder": "EMA 20"
+    }
   },
   "checklist": {
     "section": {
       "long": "Long",
       "short": "Short",
-      "both": "Both"
+      "both": "Both",
+      "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
+      "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
+      "error": "Checklist error",
+      "dedupExcluded": "Not counted — same as another condition for this timeframe",
+      "title": "Checklist",
+      "empty": "No conditions evaluated."
     },
     "editor": {
       "moveUp": "Move up",
-      "moveDown": "Move down"
+      "moveDown": "Move down",
+      "add": "Add condition",
+      "emptyTitle": "No conditions",
+      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "missing": "Missing indicator",
+      "unknownCatalog": "(unknown indicator type)"
     },
     "ops": {
       "rising": "rising (current bar > previous)",
@@ -2632,13 +2694,25 @@
     },
     "tier": {
       "requiredShort": "req",
-      "preferredShort": "pref"
+      "preferredShort": "pref",
+      "required": "Required",
+      "preferred": "Preferred"
     },
     "timeframes": {
       "current": "curr"
     },
     "weight": "Weight (× multiplier)",
-    "weightHint": "Higher timeframes weigh more. Required conditions count 2×; preferred 1×."
+    "weightHint": "Higher timeframes weigh more. Required conditions count 2×; preferred 1×.",
+    "threshold": "Threshold",
+    "thresholdLow": "Low",
+    "thresholdHigh": "High",
+    "timeframe": "Timeframe",
+    "operator": "Operator",
+    "side": {
+      "long": "Long",
+      "short": "Short",
+      "both": "Both"
+    }
   },
   "futures": {
     "entryPrice": "Entry Price",
@@ -2667,6 +2741,17 @@
     "positions": "Futures Positions",
     "unrealizedPnl": "Unrealized PnL",
     "liquidated": "Position would be liquidated at current price!",
-    "liquidationWarning": "Warning: Position is close to liquidation."
+    "liquidationWarning": "Warning: Position is close to liquidation.",
+    "leverageLockedPosition": "Close position to change leverage",
+    "marginType": "Margin Type",
+    "marginTypeInfo": "Isolated: Each position has its own margin. Crossed: All positions share margin.",
+    "isolated": "Isolated",
+    "crossed": "Cross",
+    "isolatedDesc": "Recommended: Risk is limited to the margin assigned to this position.",
+    "crossedDesc": "All available balance is used as margin. Higher liquidation risk."
+  },
+  "aiTrading": {
+    "confidence": "Confidence",
+    "urgency": "Urgency"
   }
 }

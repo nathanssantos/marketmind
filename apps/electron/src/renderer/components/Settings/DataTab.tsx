@@ -144,13 +144,13 @@ const HeatmapAlwaysCollectSection = () => {
 
   return (
     <FormSection
-      title={t('settings.data.heatmap.title', { defaultValue: 'Liquidity Heatmap' })}
-      description={t('settings.data.heatmap.description', { defaultValue: 'Symbols that always collect order book depth for the heatmap, even without a chart open. Requires backend restart to take effect.' })}
+      title={t('settings.data.heatmap.title')}
+      description={t('settings.data.heatmap.description')}
     >
       <HStack gap={2}>
         <Input
           size="sm"
-          placeholder={t('settings.data.heatmap.placeholder', { defaultValue: 'ETHUSDT' })}
+          placeholder={t('settings.data.heatmap.placeholder')}
           value={newSymbol}
           onChange={(e) => setNewSymbol(e.target.value.toUpperCase())}
           onKeyDown={(e) => { if (e.key === 'Enter') handleAdd(); }}
@@ -158,7 +158,7 @@ const HeatmapAlwaysCollectSection = () => {
         />
         <Button size="sm" variant="outline" onClick={handleAdd} loading={addMutation.isPending}>
           <LuPlus />
-          {t('settings.data.heatmap.add', { defaultValue: 'Add' })}
+          {t('settings.data.heatmap.add')}
         </Button>
       </HStack>
 
@@ -175,7 +175,7 @@ const HeatmapAlwaysCollectSection = () => {
         </Flex>
       ) : (
         <Text fontSize="2xs" color="fg.muted">
-          {t('settings.data.heatmap.empty', { defaultValue: 'No symbols configured. BTCUSDT is used as default.' })}
+          {t('settings.data.heatmap.empty')}
         </Text>
       )}
     </FormSection>

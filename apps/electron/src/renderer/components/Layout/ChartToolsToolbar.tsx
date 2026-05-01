@@ -140,11 +140,11 @@ export const ChartToolsToolbar = memo(() => {
             <LuCalendarDays />
           </ToggleIconButton>
         </TooltipWrapper>
-        <TooltipWrapper label={t('chart.controls.flip', { defaultValue: 'Flip chart (invert Y axis)' })} showArrow placement="right">
+        <TooltipWrapper label={t('chart.controls.flip')} showArrow placement="right">
           <ToggleIconButton
             active={chartFlipped}
             size="2xs"
-            aria-label={t('chart.controls.flip', { defaultValue: 'Flip chart' })}
+            aria-label={t('chart.controls.flip')}
             onClick={handleFlipToggle}
           >
             <LuFlipVertical2 />
