@@ -8,7 +8,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
-import { emitPositionClosedToast } from './emit-position-toast';
+import { emitPositionClosedToast, emitPositionPartialCloseToast } from './emit-position-toast';
 
 export async function handleExitFill(
   ctx: UserStreamContext,
@@ -158,6 +158,20 @@ export async function handleExitFill(
               ...execution,
               quantity: remainingQty.toString(),
               entryPrice: exchangeEntryPrice.toString(),
+            });
+
+            // v1.6 Track F.4 — partial-close toast. Without this, a
+            // reduce-only fill that didn't fully close looked
+            // identical (chart-wise) to a position-update — user
+            // had no audible/visual confirmation.
+            emitPositionPartialCloseToast(wsService, walletId, {
+              executionId: execution.id,
+              symbol,
+              side: execution.side,
+              closedQuantity: closedQty,
+              remainingQuantity: remainingQty,
+              exitPrice,
+              partialPnl,
             });
           }
 

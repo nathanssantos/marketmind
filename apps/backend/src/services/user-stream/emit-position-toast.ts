@@ -105,3 +105,73 @@ export function emitPositionOpenedToast(
 ): void {
   wsService.emitTradeNotification(walletId, buildPositionOpenedToast(input));
 }
+
+export interface PositionPyramidedToastInput {
+  executionId: string;
+  symbol: string;
+  side: PositionSide;
+  addedQuantity: number;
+  addedPrice: number;
+  newAvgEntryPrice: number;
+  newQuantity: number;
+}
+
+export function buildPositionPyramidedToast(input: PositionPyramidedToastInput): TradeNotificationPayload {
+  const { executionId, symbol, side, addedQuantity, addedPrice, newAvgEntryPrice, newQuantity } = input;
+  return {
+    type: 'POSITION_PYRAMIDED',
+    title: `Pyramided · ${symbol}`,
+    body: `${side} +${addedQuantity} @ ${addedPrice.toFixed(2)} · total ${newQuantity} @ avg ${newAvgEntryPrice.toFixed(2)}`,
+    urgency: 'normal',
+    data: {
+      executionId,
+      symbol,
+      side,
+      entryPrice: newAvgEntryPrice.toString(),
+    },
+  };
+}
+
+export function emitPositionPyramidedToast(
+  wsService: ToastEmitter,
+  walletId: string,
+  input: PositionPyramidedToastInput,
+): void {
+  wsService.emitTradeNotification(walletId, buildPositionPyramidedToast(input));
+}
+
+export interface PositionPartialCloseToastInput {
+  executionId: string;
+  symbol: string;
+  side: PositionSide;
+  closedQuantity: number;
+  remainingQuantity: number;
+  exitPrice: number;
+  partialPnl: number;
+}
+
+export function buildPositionPartialCloseToast(input: PositionPartialCloseToastInput): TradeNotificationPayload {
+  const { executionId, symbol, side, closedQuantity, remainingQuantity, exitPrice, partialPnl } = input;
+  const isProfit = partialPnl >= 0;
+  return {
+    type: 'POSITION_PARTIAL_CLOSE',
+    title: `Partial close · ${symbol}`,
+    body: `${side} -${closedQuantity} @ ${exitPrice.toFixed(2)} · ${isProfit ? '+' : ''}${partialPnl.toFixed(2)} · ${remainingQuantity} remaining`,
+    urgency: 'normal',
+    data: {
+      executionId,
+      symbol,
+      side,
+      exitPrice: exitPrice.toString(),
+      pnl: partialPnl.toString(),
+    },
+  };
+}
+
+export function emitPositionPartialCloseToast(
+  wsService: ToastEmitter,
+  walletId: string,
+  input: PositionPartialCloseToastInput,
+): void {
+  wsService.emitTradeNotification(walletId, buildPositionPartialCloseToast(input));
+}

@@ -25,6 +25,7 @@ import { handleAlgoOrderUpdate as handleAlgoOrderUpdateFn } from './user-stream/
 import { verifyAlgoFillProcessed as verifyAlgoFillProcessedFn, closeResidualPosition as closeResidualPositionFn } from './user-stream/position-lifecycle';
 import { handleAccountUpdate as handleAccountUpdateFn, handleMarginCall as handleMarginCallFn, handleConfigUpdate as handleConfigUpdateFn, handleConditionalOrderReject as handleConditionalOrderRejectFn, cancelPendingEntryOrders as cancelPendingEntryOrdersFn } from './user-stream/handle-account-events';
 import { executeDebouncedSlTpUpdate } from './user-stream/debounced-sltp-update';
+import { emitPositionPyramidedToast } from './user-stream/emit-position-toast';
 
 interface WalletHealthState {
   lastMessageAt: number;
@@ -176,6 +177,19 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       if (deleteExecId) {
         wsService.emitPositionUpdate(walletId, { id: deleteExecId, status: 'merged' });
       }
+
+      // v1.6 Track F.4 — pyramid toast. User just added to an existing
+      // position; explicit feedback so they don't mistake it for a
+      // separate fill.
+      emitPositionPyramidedToast(wsService, walletId, {
+        executionId: freshExec.id,
+        symbol,
+        side: freshExec.side,
+        addedQuantity: addedQty,
+        addedPrice,
+        newAvgEntryPrice: newAvgPrice,
+        newQuantity: newQty,
+      });
     }
 
     logger.info({ executionId: freshExec.id, symbol, newAvgPrice, newQty, deleteExecId }, `[FuturesUserStream] ${logContext ?? 'Pyramided into existing position'} + emitted WS`);
