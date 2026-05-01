@@ -140,6 +140,7 @@
     "title": "Custom Symbols",
     "manage": "Manage",
     "description": "Build custom indices from multiple components with weighted aggregation.",
+    "dialogDescription": "Compose synthetic indices from multiple symbols (equal-weight, market-cap, capped, sqrt or manual weighting).",
     "myIndices": "My Indices",
     "createNew": "Create New",
     "name": "Name",
@@ -1061,6 +1062,7 @@
     },
     "wallets": {
       "title": "Wallets",
+      "dialogDescription": "Connect Binance or Interactive Brokers wallets, plus paper-trading sandboxes for risk-free testing.",
       "create": "Create Wallet",
       "createTitle": "Create New Wallet",
       "empty": "No wallets yet. Create one to start trading.",
@@ -1527,6 +1529,7 @@
     "title": "Trading Profiles",
     "modalTitle": "Auto Trading",
     "description": "Create profiles with different setup configurations for multi-asset trading",
+    "dialogDescription": "Manage active watchers, trading mode and symbol rotation. Profiles are configured below the watcher list.",
     "defaultMarker": "Default profile",
     "create": "New Profile",
     "createFirst": "Create Your First Profile",
@@ -1696,14 +1699,16 @@
       "insufficientCapital": "Insufficient capital for minimum trade size"
     },
     "import": {
-      "title": "Import Profile from Backtest",
-      "pasteJson": "Paste the JSON output from backtest optimization",
+      "title": "Import profile from backtest",
+      "description": "Paste a JSON profile from backtest optimization to add it to your saved profiles.",
+      "pasteJson": "Profile JSON",
+      "namePlaceholder": "e.g., Optimized BTC Strategy",
       "preview": "Preview",
       "invalidJson": "Invalid JSON format",
       "importing": "Importing...",
       "importSuccess": "Profile imported successfully",
       "importButton": "Import",
-      "nameLabel": "Profile Name",
+      "nameLabel": "Profile name",
       "strategiesCount": "{{count}} strategies",
       "openImport": "Import"
     }

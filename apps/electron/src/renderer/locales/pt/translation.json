@@ -146,6 +146,7 @@
     "title": "Símbolos Personalizados",
     "manage": "Gerenciar",
     "description": "Crie índices customizados a partir de múltiplos componentes com agregação ponderada.",
+    "dialogDescription": "Componha índices sintéticos a partir de múltiplos símbolos (peso igual, market-cap, capped, sqrt ou manual).",
     "myIndices": "Meus Índices",
     "createNew": "Criar Novo",
     "name": "Nome",
@@ -1177,6 +1178,7 @@
     },
     "wallets": {
       "title": "Carteiras",
+      "dialogDescription": "Conecte carteiras Binance ou Interactive Brokers, mais sandboxes paper-trading pra testar sem risco.",
       "create": "Criar Carteira",
       "createTitle": "Criar Nova Carteira",
       "empty": "Nenhuma carteira ainda. Crie uma para começar a negociar.",
@@ -1643,6 +1645,7 @@
     "title": "Perfis de Trading",
     "modalTitle": "Trade Automático",
     "description": "Crie perfis com configurações de setups diferentes para trading multi-ativos",
+    "dialogDescription": "Gerencie watchers ativos, modo de trade e rotação de símbolos. Os perfis ficam abaixo da lista de watchers.",
     "defaultMarker": "Perfil padrão",
     "create": "Novo Perfil",
     "createFirst": "Crie Seu Primeiro Perfil",
@@ -1812,14 +1815,16 @@
       "insufficientCapital": "Capital insuficiente para o tamanho mínimo de operação"
     },
     "import": {
-      "title": "Importar Perfil do Backtest",
-      "pasteJson": "Cole o JSON de saída da otimização de backtest",
+      "title": "Importar perfil do backtest",
+      "description": "Cole um perfil JSON da otimização de backtest pra adicionar aos seus perfis salvos.",
+      "pasteJson": "JSON do perfil",
+      "namePlaceholder": "ex: Estratégia BTC otimizada",
       "preview": "Visualização",
       "invalidJson": "Formato JSON inválido",
       "importing": "Importando...",
       "importSuccess": "Perfil importado com sucesso",
       "importButton": "Importar",
-      "nameLabel": "Nome do Perfil",
+      "nameLabel": "Nome do perfil",
       "strategiesCount": "{{count}} estratégias",
       "openImport": "Importar"
     }

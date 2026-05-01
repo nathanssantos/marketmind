@@ -80,61 +80,64 @@ export const ImportProfileDialog = ({ isOpen, onClose }: ImportProfileDialogProp
       onClose={handleClose}
       size="lg"
       title={t('tradingProfiles.import.title')}
+      description={t('tradingProfiles.import.description')}
       onSubmit={handleImport}
       submitLabel={t('tradingProfiles.import.importButton')}
       submitDisabled={!parsedData || !profileName.trim()}
       isLoading={importMutation.isPending}
     >
-      <Field label={t('tradingProfiles.import.nameLabel')}>
-        <Input
-          size="sm"
-          value={profileName}
-          onChange={(e) => setProfileName(e.target.value)}
-          placeholder="e.g., Optimized BTC Strategy"
-        />
-      </Field>
+      <Stack gap={3}>
+        <Field label={t('tradingProfiles.import.nameLabel')}>
+          <Input
+            size="xs"
+            value={profileName}
+            onChange={(e) => setProfileName(e.target.value)}
+            placeholder={t('tradingProfiles.import.namePlaceholder')}
+          />
+        </Field>
 
-      <Field
-        label={t('tradingProfiles.import.pasteJson')}
-        invalid={!!parseError}
-        errorText={parseError}
-      >
-        <Textarea
-          value={jsonInput}
-          onChange={(e) => handleJsonChange(e.target.value)}
-          rows={8}
-          fontFamily="mono"
-          fontSize="xs"
-          px={3}
-          py={2}
-        />
-      </Field>
+        <Field
+          label={t('tradingProfiles.import.pasteJson')}
+          invalid={!!parseError}
+          errorText={parseError}
+        >
+          <Textarea
+            value={jsonInput}
+            onChange={(e) => handleJsonChange(e.target.value)}
+            rows={8}
+            fontFamily="mono"
+            fontSize="xs"
+            px={3}
+            py={2}
+          />
+        </Field>
 
-      {parsedData && (
-        <Callout tone="success" title={t('tradingProfiles.import.preview')} compact>
-          <Stack gap={1.5} mt={1}>
-            <Box fontSize="2xs">
-              {t('tradingProfiles.import.strategiesCount', {
-                count: parsedData.enabledSetupTypes?.length ?? 0,
-              })}
-            </Box>
-            {parsedData.enabledSetupTypes && (
-              <Flex flexWrap="wrap" gap={1}>
-                {parsedData.enabledSetupTypes.slice(0, 6).map((setup) => (
-                  <Badge key={setup} size="sm" colorPalette="blue" variant="subtle">
-                    {setup}
-                  </Badge>
-                ))}
-                {parsedData.enabledSetupTypes.length > 6 && (
-                  <Badge size="sm" colorPalette="gray" variant="subtle">
-                    +{parsedData.enabledSetupTypes.length - 6}
-                  </Badge>
-                )}
-              </Flex>
-            )}
-          </Stack>
-        </Callout>
-      )}
+        {parsedData && (
+          <Callout tone="success" title={t('tradingProfiles.import.preview')} compact>
+            <Stack gap={1.5} mt={1}>
+              <Box fontSize="2xs">
+                {t('tradingProfiles.import.strategiesCount', {
+                  count: parsedData.enabledSetupTypes?.length ?? 0,
+                })}
+              </Box>
+              {parsedData.enabledSetupTypes && (
+                <Flex flexWrap="wrap" gap={1}>
+                  {parsedData.enabledSetupTypes.slice(0, 6).map((setup) => (
+                    <Badge key={setup} size="xs" colorPalette="blue" variant="subtle">
+                      {setup}
+                    </Badge>
+                  ))}
+                  {parsedData.enabledSetupTypes.length > 6 && (
+                    <Badge size="xs" colorPalette="gray" variant="subtle">
+                      +{parsedData.enabledSetupTypes.length - 6}
+                    </Badge>
+                  )}
+                </Flex>
+              )}
+            </Stack>
+          </Callout>
+        )}
+      </Stack>
     </DialogShell>
   );
 };

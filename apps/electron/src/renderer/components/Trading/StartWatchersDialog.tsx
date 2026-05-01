@@ -125,12 +125,12 @@ export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialo
       title={t('marketSidebar.watchers.startWatchers')}
       footer={
         <>
-          <Button variant="ghost" onClick={handleOpenSettings} size="sm">
+          <Button variant="ghost" onClick={handleOpenSettings} size="xs">
             <LuSettings />
             {t('header.settings')}
           </Button>
           <Box flex={1} />
-          <Button variant="outline" onClick={onClose} size="sm">
+          <Button variant="outline" onClick={onClose} size="xs">
             {t('common.cancel')}
           </Button>
           <Button
@@ -138,7 +138,7 @@ export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialo
             onClick={() => void handleQuickStart()}
             loading={isStartingWatchersBulk}
             disabled={isLoadingFiltered || finalFilteredSymbols.length === 0 || effectiveMax === 0}
-            size="sm"
+            size="xs"
           >
             <LuPlay />
             {t('tradingProfiles.dynamicSelection.quickStartButton', { count: Math.min(count, effectiveMax) })}
@@ -163,7 +163,7 @@ export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialo
                   <Flex gap={3} align="center" wrap="wrap">
                     <Group attached flex="0 0 180px">
                       <Button
-                        size="sm"
+                        size="xs"
                         variant={marketType === 'SPOT' ? 'solid' : 'outline'}
                         onClick={() => setMarketType('SPOT')}
                         flex={1}
@@ -171,7 +171,7 @@ export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialo
                         Spot
                       </Button>
                       <Button
-                        size="sm"
+                        size="xs"
                         variant={marketType === 'FUTURES' ? 'solid' : 'outline'}
                         onClick={() => setMarketType('FUTURES')}
                         flex={1}
@@ -192,7 +192,7 @@ export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialo
                           max={effectiveMax}
                           value={count}
                           onChange={(e) => setCount(parseInt(e.target.value, 10) || 1)}
-                          size="sm"
+                          size="xs"
                           px={3}
                         />
                       </Box>

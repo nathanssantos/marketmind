@@ -276,7 +276,7 @@ export const IndicatorConfigDialog = ({
               value={label}
               onChange={(e) => handleLabelChange(e.target.value)}
               placeholder={t('indicators.dialog.labelPlaceholder')}
-              size="sm"
+              size="xs"
             />
           </Field>
         )}
