@@ -1,5 +1,5 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
-import { useBacktestModalStore } from '@/renderer/store/backtestModalStore';
+import { useBacktestDialogStore } from '@/renderer/store/backtestDialogStore';
 import { usePreferencesStore, useUIPref } from '@/renderer/store/preferencesStore';
 import { useScreenerStore } from '@/renderer/store/screenerStore';
 import { useUIStore } from '@/renderer/store/uiStore';
@@ -12,9 +12,9 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { ChartType, MarketType } from '@marketmind/types';
 import { MarketSidebar } from '../MarketSidebar';
-import { AnalyticsModal } from '../Analytics';
-import { BacktestModal } from '../Backtest';
-import { ScreenerModal } from '../Screener';
+import { AnalyticsDialog } from '../Analytics';
+import { BacktestDialog } from '../Backtest';
+import { ScreenerDialog } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { DEFAULT_SETTINGS_TAB, type SettingsTab } from '../Settings/constants';
 import { TradingSidebar } from '../Trading/TradingSidebar';
@@ -96,7 +96,7 @@ const MainLayoutComponent = ({
     ui.setAnalyticsOpen(false);
     ui.setMarketSidebarOpen(false);
     ui.setOrderFlowSidebarOpen(false);
-    useBacktestModalStore.getState().closeBacktest();
+    useBacktestDialogStore.getState().closeBacktest();
     useScreenerStore.getState().setScreenerOpen(false);
     const prefs = usePreferencesStore.getState();
     prefs.set('ui', 'tradingSidebarOpen', false);
@@ -300,9 +300,9 @@ const MainLayoutComponent = ({
           advancedConfig={advancedConfig}
           onAdvancedConfigChange={onAdvancedConfigChange}
         />
-        <ScreenerModal onSymbolClick={onNavigateToSymbol} />
-        <BacktestModal />
-        <AnalyticsModal />
+        <ScreenerDialog onSymbolClick={onNavigateToSymbol} />
+        <BacktestDialog />
+        <AnalyticsDialog />
       </Box>
     </GlobalActionsProvider>
   );

@@ -79,14 +79,14 @@ const seedActiveWallet = async (page: Page) => {
   }, 'w1');
 };
 
-const openStartWatchersModal = async (page: Page) => {
+const openStartWatchersDialog = async (page: Page) => {
   await page.getByRole('button', { name: 'Auto Trading', exact: true }).click();
   await expect(page.getByRole('tab', { name: 'Scalping' })).toBeVisible();
   await page.getByRole('button', { name: 'Start Watchers' }).first().click();
   await expect(page.getByRole('dialog', { name: 'Start Watchers' })).toBeVisible();
 };
 
-test.describe('StartWatchersModal — full flow', () => {
+test.describe('StartWatchersDialog — full flow', () => {
   test.beforeEach(async ({ page }) => {
     await installAutoTradingMock(page);
     await page.goto('/');
@@ -95,13 +95,13 @@ test.describe('StartWatchersModal — full flow', () => {
   });
 
   test('Escape closes the modal', async ({ page }) => {
-    await openStartWatchersModal(page);
+    await openStartWatchersDialog(page);
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: 'Start Watchers' })).toHaveCount(0);
   });
 
   test('default header shows Quick Start title + market/timeframe/count controls', async ({ page }) => {
-    await openStartWatchersModal(page);
+    await openStartWatchersDialog(page);
     const dialog = page.getByRole('dialog', { name: 'Start Watchers' });
     await expect(dialog.getByText('Quick Start from Rankings', { exact: true })).toBeVisible();
     // Spot/Futures buttons
@@ -110,7 +110,7 @@ test.describe('StartWatchersModal — full flow', () => {
   });
 
   test('switching market type SPOT triggers a new getFilteredSymbolsForQuickStart fetch', async ({ page }) => {
-    await openStartWatchersModal(page);
+    await openStartWatchersDialog(page);
     const dialog = page.getByRole('dialog', { name: 'Start Watchers' });
 
     await expect.poll(
@@ -128,7 +128,7 @@ test.describe('StartWatchersModal — full flow', () => {
   });
 
   test('changing direction mode fires updateConfig', async ({ page }) => {
-    await openStartWatchersModal(page);
+    await openStartWatchersDialog(page);
     const dialog = page.getByRole('dialog', { name: 'Start Watchers' });
 
     const before = await getTrpcHitCount(page, 'autoTrading.updateConfig');
@@ -140,7 +140,7 @@ test.describe('StartWatchersModal — full flow', () => {
   });
 
   test('clicking Start Top N fires startWatchersBulk; modal closes', async ({ page }) => {
-    await openStartWatchersModal(page);
+    await openStartWatchersDialog(page);
     const dialog = page.getByRole('dialog', { name: 'Start Watchers' });
 
     // The button label includes "Start Top {count}" with count clamped to effectiveMax.
@@ -159,14 +159,14 @@ test.describe('StartWatchersModal — full flow', () => {
 
 });
 
-test.describe('StartWatchersModal — empty filtered symbols', () => {
+test.describe('StartWatchersDialog — empty filtered symbols', () => {
   test('Start Top button is disabled', async ({ page }) => {
     await installAutoTradingMock(page, { filteredSymbols: [] });
     await page.goto('/');
     await waitForChartReady(page);
     await seedActiveWallet(page);
 
-    await openStartWatchersModal(page);
+    await openStartWatchersDialog(page);
     const dialog = page.getByRole('dialog', { name: 'Start Watchers' });
     const startBtn = dialog.getByRole('button', { name: /^Start Top \d+/ });
     await expect(startBtn).toBeDisabled();

@@ -29,7 +29,7 @@ const EquityCurveChart = lazy(() =>
   import('./EquityCurveChart').then((m) => ({ default: m.EquityCurveChart })),
 );
 
-export const AnalyticsModal = memo(() => {
+export const AnalyticsDialog = memo(() => {
   const { t } = useTranslation();
   const { activeWallet, isIB: isIBWallet } = useActiveWallet();
   const activeWalletId = activeWallet?.id;
@@ -41,7 +41,7 @@ export const AnalyticsModal = memo(() => {
       setAnalyticsOpen: s.setAnalyticsOpen,
     }))
   );
-  useDialogMount('AnalyticsModal', isAnalyticsOpen);
+  useDialogMount('AnalyticsDialog', isAnalyticsOpen);
 
   const marginRequirements = useMemo(() => {
     if (!isIBWallet) return null;
@@ -103,4 +103,4 @@ export const AnalyticsModal = memo(() => {
   );
 });
 
-AnalyticsModal.displayName = 'AnalyticsModal';
+AnalyticsDialog.displayName = 'AnalyticsDialog';

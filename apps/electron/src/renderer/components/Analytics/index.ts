@@ -1,1 +1,1 @@
-export { AnalyticsModal } from './AnalyticsModal';
+export { AnalyticsDialog } from './AnalyticsDialog';

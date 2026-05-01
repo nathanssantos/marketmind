@@ -3,8 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom/vitest';
 import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BacktestModal } from './BacktestModal';
-import { useBacktestModalStore } from '../../store/backtestModalStore';
+import { BacktestDialog } from './BacktestDialog';
+import { useBacktestDialogStore } from '../../store/backtestDialogStore';
 
 vi.mock('../../utils/trpc', () => ({
   trpc: {
@@ -40,32 +40,32 @@ vi.mock('../../services/socketBus', () => ({
 
 const queryClient = new QueryClient();
 
-const renderModal = () =>
+const renderDialog = () =>
   render(
     <ChakraProvider value={defaultSystem}>
       <QueryClientProvider client={queryClient}>
-        <BacktestModal />
+        <BacktestDialog />
       </QueryClientProvider>
     </ChakraProvider>,
   );
 
 afterEach(() => {
   act(() => {
-    useBacktestModalStore.getState().closeBacktest();
+    useBacktestDialogStore.getState().closeBacktest();
   });
 });
 
-describe('BacktestModal', () => {
+describe('BacktestDialog', () => {
   it('does not render the dialog when store flag is false', () => {
-    renderModal();
+    renderDialog();
     expect(screen.queryByText('backtest.title')).not.toBeInTheDocument();
   });
 
   it('renders title and tab triggers when openBacktest() is called before render', () => {
     act(() => {
-      useBacktestModalStore.getState().openBacktest();
+      useBacktestDialogStore.getState().openBacktest();
     });
-    renderModal();
+    renderDialog();
     expect(screen.getByText('backtest.title')).toBeInTheDocument();
     expect(screen.getByText('backtest.tabs.basic')).toBeInTheDocument();
     expect(screen.getByText('backtest.tabs.strategies')).toBeInTheDocument();
@@ -74,14 +74,14 @@ describe('BacktestModal', () => {
   });
 
   it('exposes toggle behaviour through the store', () => {
-    expect(useBacktestModalStore.getState().isBacktestOpen).toBe(false);
+    expect(useBacktestDialogStore.getState().isBacktestOpen).toBe(false);
     act(() => {
-      useBacktestModalStore.getState().toggleBacktest();
+      useBacktestDialogStore.getState().toggleBacktest();
     });
-    expect(useBacktestModalStore.getState().isBacktestOpen).toBe(true);
+    expect(useBacktestDialogStore.getState().isBacktestOpen).toBe(true);
     act(() => {
-      useBacktestModalStore.getState().toggleBacktest();
+      useBacktestDialogStore.getState().toggleBacktest();
     });
-    expect(useBacktestModalStore.getState().isBacktestOpen).toBe(false);
+    expect(useBacktestDialogStore.getState().isBacktestOpen).toBe(false);
   });
 });

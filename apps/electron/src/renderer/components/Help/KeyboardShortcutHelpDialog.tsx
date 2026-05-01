@@ -39,7 +39,7 @@ const KeyBadge = ({ keys }: { keys: string }) => (
   </Box>
 );
 
-export const KeyboardShortcutHelpModal = () => {
+export const KeyboardShortcutHelpDialog = () => {
   const { t } = useTranslation();
   const helpOpen = useKeyboardShortcutStore((s) => s.helpOpen);
   const setHelpOpen = useKeyboardShortcutStore((s) => s.setHelpOpen);

@@ -5,12 +5,12 @@ import { WatcherManager } from '@renderer/components/Trading/WatcherManager';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface TradingProfilesModalProps {
+interface TradingProfilesDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const TradingProfilesModal = memo(({ isOpen, onClose }: TradingProfilesModalProps) => {
+export const TradingProfilesDialog = memo(({ isOpen, onClose }: TradingProfilesDialogProps) => {
   const { t } = useTranslation();
 
   return (
@@ -42,4 +42,4 @@ export const TradingProfilesModal = memo(({ isOpen, onClose }: TradingProfilesMo
   );
 });
 
-TradingProfilesModal.displayName = 'TradingProfilesModal';
+TradingProfilesDialog.displayName = 'TradingProfilesDialog';

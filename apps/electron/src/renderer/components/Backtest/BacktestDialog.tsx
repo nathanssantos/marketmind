@@ -3,7 +3,7 @@ import { Callout, FormDialog, LoadingSpinner } from '@renderer/components/ui';
 import { useEffect } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useTranslation } from 'react-i18next';
-import { useBacktestModalStore } from '../../store/backtestModalStore';
+import { useBacktestDialogStore } from '../../store/backtestDialogStore';
 import { useBacktestRun } from '../../hooks/useBacktestRun';
 import { useBacktestShortcut } from '../../hooks/useBacktestShortcut';
 import { useDialogMount } from '../../hooks/useDialogMount';
@@ -14,9 +14,9 @@ import { BacktestResults } from './BacktestResults';
 import { RecentRunsPanel } from './RecentRunsPanel';
 import type { BacktestResult } from '@marketmind/types';
 
-export const BacktestModal = () => {
+export const BacktestDialog = () => {
   const { t } = useTranslation();
-  const { isBacktestOpen, closeBacktest } = useBacktestModalStore(
+  const { isBacktestOpen, closeBacktest } = useBacktestDialogStore(
     useShallow((state) => ({
       isBacktestOpen: state.isBacktestOpen,
       closeBacktest: state.closeBacktest,
@@ -25,10 +25,10 @@ export const BacktestModal = () => {
 
   const run = useBacktestRun();
   useBacktestShortcut();
-  useDialogMount('BacktestModal', isBacktestOpen);
+  useDialogMount('BacktestDialog', isBacktestOpen);
 
   useEffect(() => {
-    if (isBacktestOpen) perfMonitor.recordComponentRender('BacktestModal');
+    if (isBacktestOpen) perfMonitor.recordComponentRender('BacktestDialog');
   }, [isBacktestOpen]);
 
   const handleClose = () => {

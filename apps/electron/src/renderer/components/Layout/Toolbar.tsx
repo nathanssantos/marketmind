@@ -18,7 +18,7 @@ import {
 import { useLayoutStore } from '../../store/layoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useBacktestActiveRuns } from '../../hooks/useBacktestActiveRuns';
-import { useBacktestModalStore } from '../../store/backtestModalStore';
+import { useBacktestDialogStore } from '../../store/backtestDialogStore';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
@@ -133,7 +133,7 @@ export const Toolbar = memo(({
   );
 
   const { activeRuns: activeBacktests, hasActiveRuns: hasActiveBacktest } = useBacktestActiveRuns();
-  const { isBacktestOpen, toggleBacktest } = useBacktestModalStore(
+  const { isBacktestOpen, toggleBacktest } = useBacktestDialogStore(
     useShallow((state) => ({
       isBacktestOpen: state.isBacktestOpen,
       toggleBacktest: state.toggleBacktest,
