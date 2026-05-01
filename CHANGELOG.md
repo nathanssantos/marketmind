@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-04-30
+
+**v1.5 release** — Largest feature drop since v1.0. Highlights: a new MCP trading server (`@marketmind/mcp-trading`) lets MCP-connected agents drive paper trades end-to-end behind a per-wallet "AI Agent Trading" toggle and a 30-writes/hour rate limit; the layout durability story closes out with self-service snapshot recovery + WAL archiving; the design tokens get extracted into `@marketmind/tokens`; centralized keyboard registry + `?` help modal lands; backtest runs survive backend restart; axe-core dialog regression spec catches a11y regressions in CI. 28 commits since v1.4.0.
+
+### Added — MCP Trading server (V1_5 C.1, paper-complete)
+- **`@marketmind/mcp-trading` package** (#314, #315, #317, #321) — new workspace exposing 7 tools to any MCP client (Claude Code, ChatGPT desktop, custom agents): 4 read tools (`trading.list_orders`, `trading.list_positions`, `trading.list_executions`, `trading.get_wallet_status`) and 4 paper-mode write tools (`trading.place_order`, `trading.cancel_order`, `trading.close_position`, `trading.set_sl_tp`). Pure tRPC over HTTP with a real session cookie (`MM_MCP_SESSION_COOKIE`) — unlike the renderer-driving MCP servers, no `VITE_E2E_BYPASS_AUTH` needed.
+- **Per-wallet `agentTradingEnabled` toggle** (#314) — new column on `wallets`, default `false`. Settings → Security → "AI Agent Trading" subsection with per-wallet switches and a confirm dialog before enabling. Toggle is per-wallet so paper can be on while live stays off.
+- **🔴 Hard gate `mcp.assertWriteAllowed`** (#316) — every write tool calls this before touching the exchange. When `agentTradingEnabled === false`: throws `FORBIDDEN`, writes a `denied` audit row, never reaches the exchange. Accident-prevention by design — an MCP client cannot place an order on a wallet whose toggle is off.
+- **Audit log + viewer** (#314, #315, #318) — new `mcp_trading_audit` table records every MCP call (success/failure/denied/rate_limited) with input/result JSON, duration, and idempotency key. `mcp.recordAudit` deduplicates per-(user, idempotency-key) so retries don't double-execute. New "AI Agent Activity" panel under Settings → Security shows the last 100 rows with status badges and resolved wallet names.
+- **30 writes/hour rate limit** (#319) — extends `mcp.assertWriteAllowed` with a per-(user, wallet) cap counted from successful audit rows in the last 60 minutes. Cap exceeded → `TOO_MANY_REQUESTS` + `rate_limited` audit row. Counts only `'success'` rows so failures and denied attempts don't lock the wallet out.
+- **Tests** — 15 router tests covering auth/dedup/scoping/gate/rate-limit + 5 panel tests + the existing trading router tests cover the underlying writes.
+
+### Added — Layout durability follow-throughs (V1_5 B)
+- **Snapshot list + restore UI in Settings → Data** (#300) — backend already had `layout.listSnapshots` / `restoreSnapshot` from v1.4; v1.5 wires the frontend. Lists snapshot timestamps with tab/preset counts; "Restore" CTA opens a confirmation dialog; after restore, the in-memory layout store rehydrates from the new authoritative state without a reload. Empty state copy: "No snapshots yet — they're created automatically once a day when the layout changes". e2e Playwright spec retro-added in #309.
+- **Audit log of layout writes** (#298) — new `user_layouts_audit` table tracks every `layout.save` with prev/new SHA-256 hashes, source (`'renderer'` default), client version, and timestamp. 90-day retention pruned on each write. Lets future overwrite incidents be correlated with the release that caused them.
+- **Postgres `archive_mode=on` + WAL archiving** (#305) — `docker-compose.yml` postgres service now runs with `archive_mode=on` + `archive_command=cp %p /var/lib/postgresql/wal_archive/%f` + `wal_level=replica` and a separate `wal_archive` named volume. New `docs/INFRA_RECOVERY.md` walks through PITR-recovering a `user_layouts` style data-loss case. Closes the "no PITR available" gap that made the 2026-04-30 layout incident unrecoverable.
+
+### Added — Auth follow-through (V1_5 A.1.b)
+- **Login soft-nudge for users with policy-violating passwords** (#299) — `auth.login` validates the password against the v1.4 policy after a successful `verify()` and adds `passwordPolicyViolated: boolean` to the response. `LoginPage` shows a one-shot toast with "Trocar agora" navigating to Settings → Security. 2FA flow intentionally skips the nudge (plaintext doesn't carry across the verify step). i18n in en/pt/es/fr.
+
+### Added — Backtest UI follow-through (V1_5 E)
+- **`getActiveRuns` query + reload-recovery** (#310, #312) — toolbar "running" indicator wired to `analytics.getActiveRuns` so an in-progress backtest survives a UI reload and resumes its progress UI. Failed-path coverage added.
+- **`backtest_runs` persistence** (#313) — completed runs persist to a new `backtest_runs` table so history survives backend restart.
+
+### Added — Accessibility + UX (V1_5 D)
+- **Centralized keyboard shortcut registry + `?` help modal** (#302) — new `useKeyboardShortcut` hook + central registry + dispatcher. `?` opens the help modal listing all registered shortcuts grouped by section. 11 chart-pan/zoom shortcuts migrated as the first wave.
+- **Migrate remaining chart handlers to the registry** (#304) — drawing (`Delete`, `Backspace`, `Mod+C`, `Mod+V`) and trading (`Esc` cancel for SL/TP placement, trailing-stop placement, order drag) handlers go through the same registry now. They show up in the help modal under their respective groups.
+- **axe-core dialog regression spec** (#306) — `apps/electron/e2e/a11y-dialogs.spec.ts` opens Settings / Backtest / Analytics / KeyboardShortcutHelpModal and asserts no critical/serious axe violations. `DialogCloseTrigger` wrapper now defaults `aria-label="Close"` so any consumer auto-passes the `button-name` rule.
+- **Color-contrast violations in Analytics fixed** (#308) — `<DataCard>` switched from a `bg.muted` fill to a `border` outline so `trading.loss/profit` text moves onto `bg.panel` where contrast clears 4.5:1. `PerformanceCalendar`'s `getSignColor` migrated from `red.500/green.500` literals to `trading.loss/profit` semantic tokens. `color-contrast` axe rule re-enabled.
+
+### Added — Package + token system (V1_5 F)
+- **`@marketmind/tokens` package extraction** (#301) — design tokens (`MM.*`, `getPnLColor`, recipes, semantic tokens, chart indicator tokens) moved from `apps/electron/src/renderer/theme/` into `packages/tokens/`. Sweeps 22 consumers across the app to import from `@marketmind/tokens`. Now consumable by future external surfaces (landing site, docs).
+- **`docs/UI_EXTRACTION_PLAN.md`** (#320) — audit-only PR. Inventories all 73 named bindings from `apps/electron/src/renderer/components/ui/index.ts`, classifies them by extraction tier (1: pure Chakra wrappers — ~33 components; 2: token-aware — ~8; 3: i18n / runtime-coupled — ~10), documents peer-dep boundaries, and proposes a 4-PR extraction sequence behind a temporary `@marketmind/ui-core` alias.
+
+### Added — Test + CI infra (V1_5 G)
+- **Backend custom-symbol-service deeper testing** (#307) — `custom-symbol-service.test.ts` + `custom-symbol-helpers.test.ts` reach 31 tests covering the marketType fallback, FUTURES→SPOT smartBackfill cascade, error-swallowing, weight renormalization, no-usable-components edge case, and synthetic-index produce.
+
+### Changed
+- **`MEMORY.md` index trimmed** to 44 lines (was 219, exceeding the 200 truncation cap).
+- **MCP servers documentation** — `mcp-trading` flagged as the exception that needs no `VITE_E2E_BYPASS_AUTH` since it talks pure tRPC over HTTP with a real session cookie.
+
+### Notes
+- **C.1.h live unlock deferred indefinitely** — paper-mode toolkit ships in v1.5; live MCP writes need real-workflow validation before unlock. The hard-gate, audit log, and rate limit are already in place; live unlock is one client-side check away when the user opts in.
+- **D.2.b VoiceOver pass + D.2.d useId() ARIA strictness — out of scope** (#322) — product is not pursuing screen-reader-grade a11y. The axe automated baseline (D.2.a) + color-contrast fixes (D.2.c) stay as cheap regression catches; full WCAG 2.1 AA is not a goal.
+- Test totals after v1.5: ~5,482 backend + 2,283 frontend unit + visual-regression baseline + e2e specs (Playwright). All workspaces type-check and lint cleanly (lint warning baseline ~1,996, 0 errors).
+
 ## [1.4.0] - 2026-04-30
 
 **v1.4 release** — Three V1_4_PLAN items shipped together. Two are post-incident hardening (layout durability + log readability) on top of the v1.3.1 fixes; one is the user-requested password complexity policy. Backend grows from 5,433 to 5,449 tests; frontend adds the `<PasswordStrengthMeter>` primitive plus 6 new component/policy tests; `@marketmind/utils` gains a `passwordPolicy` module with 11 unit tests.
