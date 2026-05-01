@@ -382,7 +382,7 @@ After the modal sweep, v1.7+ extends the same pass to:
 
 ---
 
-## Status (2026-05-02 — v1.6 substantially complete)
+## Status (2026-05-02 — v1.6 complete, ready to release)
 
 **Track E (shared infrastructure) — complete.** PRs #329-#336.
 
@@ -397,16 +397,16 @@ After the modal sweep, v1.7+ extends the same pass to:
   - Stage 4: drop Custom Symbols tab; new `<CustomSymbolsDialog>` opens from SymbolSelector (#360)
 - ✅ A.6 i18n text audit — all 192 `t('foo', 'fallback')` calls cleaned (#347-#351)
 
-**Track B (`@marketmind/ui` extraction) — substantially complete.**
+**Track B (`@marketmind/ui` extraction) — complete.**
 - ✅ B.1 Tier-1 extraction — 32 pure Chakra wrappers moved (#353)
 - ✅ B.2 Tier-2 extraction — 10+ token-aware composed primitives + Sidebar (#354)
-- B.3 Tier-3 graduation (`PasswordStrengthMeter`) — deferred; needs i18n `t` prop decoupling
-- B.4 rename `ui-core` → `ui` — deferred; let the API bake first
+- ✅ B.3 Tier-3 graduation — `PasswordStrengthMeter` decoupled via `labels` prop (#379)
+- ✅ B.4 rename `ui-core` → `ui` (#380)
 
 **Track C (documentation) — complete.**
 - ✅ `docs/I18N_DIALOG_KEYS.md` (E.5)
 - ✅ `docs/UI_CREATION_FLOWS.md` (creation-dialog trigger pattern, A.4)
-- ✅ `packages/ui-core/README.md` — component catalog (C.1, #355)
+- ✅ `packages/ui/README.md` — component catalog (C.1, #355)
 - ✅ `docs/UI_DESIGN_SYSTEM.md` — design language reference (C.2, #355)
 
 **Audit baseline:** all 5 dialog rules clean, shade-literal audit clean, dialog-i18n-keys audit clean. CI can flip `audit-dialog-rules.mjs` to `--strict` in a follow-up workflow.
@@ -420,9 +420,7 @@ After the modal sweep, v1.7+ extends the same pass to:
 | `pnpm --filter @marketmind/electron lint` | ✓ 0 errors (1969 warnings, baseline) |
 | `pnpm --filter @marketmind/electron test:unit` | ✓ 2327 / 2327 |
 
-**Deferred items (real work that didn't fit this cycle):**
-- **B.3 Tier-3 graduation** — `PasswordStrengthMeter` decouples by accepting a `t` prop; small follow-up.
-- **B.4 rename** — `ui-core` → `ui` once consumers external to the renderer materialize.
+**Deferred items: none for v1.6.** All originally-deferred items closed. The remaining Track F polish items below were judged not worth the effort/value for this cycle and pushed to the v1.7 backlog.
 
 **Track F — Order/position chart reactivity (2026-05-02 → 2026-05-02, substantially complete)**
 
@@ -448,14 +446,16 @@ Acceptance results:
 - Server-pushed updates (trailing-stop, modify) visible immediately via live-patch ✓.
 - Stream reconnect after gap → force-refresh + visible toast for >30s gaps ✓.
 
-Deferred items (polish, not blocking):
-- F.1 instrumentation overlay — was for diagnosing the original bug; kept on the backlog as observability work, not user-visible.
-- F.3 fast-recheck after user-submit (1s+3s belt-and-suspenders) — covered well enough by the existing onSuccess invalidate + 5s backup polling.
-- F.4 per-event flash color variants (different colors for open/pyramid/partial/close) — chart polish.
-- F.4 order-line move animation + cancel fade — chart polish.
-- F.2 auto-cancel toast for system-cancelled orders (wallet-disabled, expired) — low-frequency event.
+Pushed to v1.7 backlog (chart polish — visible improvements but not release-blocking, and require a chart-render pipeline refactor):
+- **F.4 per-event flash color variants** — different colors for open/pyramid/partial/close. Needs the flash map to carry an optional color per entry.
+- **F.4 order-line move animation + cancel fade** — smooth y-coordinate transition on price change; fade-out alpha animation on cancel instead of instant removal. Requires extending the rendering pipeline to support per-entry alpha overrides.
 
-**Track F no longer blocks v1.6.0 release.**
+Decided not to ship (cost > benefit):
+- **F.1 instrumentation overlay** — was for diagnosing the original SL-close bug. Bug fixed without it. Adding it now is observability work for future incidents — appropriate as a v1.7 task if/when needed.
+- **F.3 fast-recheck after user-submit (1s+3s belt-and-suspenders)** — the existing onSuccess invalidate immediately + 5s backup polling already cover the worst case. Adding extra refetches for every mutation is unnecessary network traffic.
+- **F.2 auto-cancel toast for system-cancelled orders** — niche event (wallet disabled, conditional expired); the existing risk:alert pipeline already covers the user-visible message.
+
+**Track F complete for v1.6.**
 
 ---
 
