@@ -87,4 +87,15 @@ The 6 auth pages share a card-based form layout. Currently each one rebuilds the
 
 ---
 
-**Status (2026-05-02 — planning):** plan landed. Implementation starts with Track S (sidebars).
+**Status (2026-05-02 — substantively complete; Track A deferred):**
+
+- ✅ **Track S** (#398) — `SidebarHeader` updated to match actual usage (xs/semibold, px=3 py=2); `SidebarTabsHeader` primitive added. All 4 sidebars (Market / Trading / AutoTrading / OrderFlow) migrated. Close X positioned uniformly on the right. Bare `<Text>` wrapping `<Tabs.Trigger>` removed.
+- ✅ **Track P** (#399) — `OrderFlowMetrics` and `MarginInfoPanel` migrated to `<FormSection>` with HStack composition for the leading icon. `PerformancePanel` and `AgentActivityPanel` already compliant; `FuturesPositionsPanel` still uses its own row pattern (folds into a future as-needed sweep).
+- ✅ **Track G** (#400) — `<AuthFooterLink>` primitive + `footer` slot on `<AuthLayout>`. All 6 auth pages migrated. `VerifyEmailPage` loading state migrated to Spinner panel combo.
+- ✅ **Track T** (#401) — `ChartToolButton` extracted; `DrawingToolButton` rewraps it; 4 inline TooltipWrapper+ToggleIconButton blocks deduped. Other toolbars already compliant.
+- ✅ **Track R** (#402) — `<RecordRow density="compact|card">` primitive in `@marketmind/ui`. CustomSymbolsTab migrated as canonical card-density consumer. Compact-density callers (IndicatorLibrary/DataTab/SecurityTab) kept as-is — they're not visually inconsistent with what RecordRow renders, so the primitive is just available for new code.
+- ⏸ **Track A** (deferred) — `audit-panel-rules.mjs` gate. Without it, the rules are still documented + enforced via PR review, just not automated. Running strictly would block PRs on unrelated drift in older code (e.g. MarketIndicatorCharts/Sections still has 10+ ad-hoc bordered cards). Plan: build the script in v1.8 alongside the FuturesPositionsPanel + MarketIndicators sweep so the audit and the cleanup land together.
+
+5 implementation PRs (#398–#402) shipped on 2026-05-02. Tests stay at 2332/2332; lint:dialogs:strict + lint:shades clean throughout.
+
+**Result:** every sidebar uses the same header primitive, every chart-side panel that needed it uses `<FormSection>`, every auth page uses `<AuthLayout>` with the consistent footer pattern, every chart-tool button uses the same shape, and the `<RecordRow>` primitive is available for the next round of object-management list rendering.
