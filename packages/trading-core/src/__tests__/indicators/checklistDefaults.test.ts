@@ -55,14 +55,18 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     expect(longEntries.length).toBe(shortEntries.length);
   });
 
-  it('weights scale with both indicator base and timeframe (1d > 4h > 1h > 15m > 5m > 1m)', () => {
+  it('weights scale strictly monotonically, +0.5 per TF step, with 1m as the floor', () => {
     for (const seedLabel of ['RSI 14', 'RSI 2', 'Stoch 14']) {
       const entries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === seedLabel && e.side === 'LONG');
       const tfOrder: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5 };
       const sorted = [...entries].sort((a, b) => tfOrder[a.timeframe]! - tfOrder[b.timeframe]!);
       for (let i = 1; i < sorted.length; i += 1) {
-        expect(sorted[i]!.weight).toBeGreaterThan(sorted[i - 1]!.weight);
+        expect(sorted[i]!.weight).toBeCloseTo(sorted[i - 1]!.weight + 0.5, 5);
       }
+      const w = (tf: string) => entries.find((e) => e.timeframe === tf)!.weight;
+      // 1m is the floor at the indicator's base weight.
+      const expectedBase = seedLabel === 'RSI 2' ? 2.0 : 1.0;
+      expect(w('1m')).toBe(expectedBase);
     }
     // RSI 2 premium-weighted over RSI 14 at every timeframe
     for (const tf of ['1m', '5m', '15m', '1h', '4h', '1d']) {
