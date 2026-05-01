@@ -1,7 +1,7 @@
-import { Box } from '@chakra-ui/react';
-import { DialogShell } from '@renderer/components/ui';
+import { Box, Stack, Text } from '@chakra-ui/react';
+import { ConfirmationDialog } from '@renderer/components/ui';
 import { getKlineClose } from '@shared/utils';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BackendExecution } from '../useOrderLinesRenderer';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
@@ -15,30 +15,32 @@ interface ChartCloseDialogProps {
 }
 
 interface ChartCloseVariant {
-  titleKey: string;
-  descriptionKey: string;
-  descriptionVars: Record<string, unknown>;
-  submitKey: string;
-  showPnL: boolean;
-  pnL?: { isProfit: boolean; percentChange: number };
+  title: string;
+  description: ReactNode;
+  confirmLabel: string;
 }
 
 const buildVariant = (
   orderToClose: string,
   allExecutions: BackendExecution[],
   manager: CanvasManager | null,
+  t: (key: string, vars?: Record<string, unknown>) => string,
 ): ChartCloseVariant | null => {
   if (orderToClose.startsWith('sltp:')) {
     const firstColon = orderToClose.indexOf(':');
     const secondColon = orderToClose.indexOf(':', firstColon + 1);
     const type = orderToClose.substring(firstColon + 1, secondColon);
-    const typeLabel = type === 'stopLoss' ? 'Stop Loss' : 'Take Profit';
+    const typeLabel = type === 'stopLoss'
+      ? t('trading.dialogs.chartRemoveSlTp.typeStopLoss')
+      : t('trading.dialogs.chartRemoveSlTp.typeTakeProfit');
     return {
-      titleKey: 'trading.dialogs.chartRemoveSlTp.title',
-      descriptionKey: 'trading.dialogs.chartRemoveSlTp.description',
-      descriptionVars: { type: typeLabel },
-      submitKey: 'trading.dialogs.chartRemoveSlTp.submit',
-      showPnL: false,
+      title: t('trading.dialogs.chartRemoveSlTp.title', { type: typeLabel }),
+      description: (
+        <Text fontSize="sm" color="fg.muted">
+          {t('trading.dialogs.chartRemoveSlTp.description', { type: typeLabel })}
+        </Text>
+      ),
+      confirmLabel: t('trading.dialogs.chartRemoveSlTp.submit', { type: typeLabel }),
     };
   }
 
@@ -58,16 +60,26 @@ const buildVariant = (
   const isProfit = percentChange >= 0;
 
   return {
-    titleKey: 'trading.dialogs.chartClose.title',
-    descriptionKey: 'trading.dialogs.chartClose.description',
-    descriptionVars: {
-      type: exec.side,
-      entry: entryPrice.toFixed(2),
-      current: currentPriceVal.toFixed(2),
-    },
-    submitKey: 'trading.dialogs.chartClose.submit',
-    showPnL: true,
-    pnL: { isProfit, percentChange },
+    title: t('trading.dialogs.chartClose.title'),
+    description: (
+      <Stack gap={2}>
+        <Text fontSize="sm" color="fg.muted">
+          {t('trading.dialogs.chartClose.description', {
+            side: exec.side,
+            entry: entryPrice.toFixed(2),
+            current: currentPriceVal.toFixed(2),
+          })}
+        </Text>
+        <Box
+          fontSize="lg"
+          fontWeight="bold"
+          color={isProfit ? 'trading.profit' : 'trading.loss'}
+        >
+          {percentChange >= 0 ? '+' : ''}{percentChange.toFixed(2)}%
+        </Box>
+      </Stack>
+    ),
+    confirmLabel: t('trading.dialogs.chartClose.submit'),
   };
 };
 
@@ -80,28 +92,17 @@ export const ChartCloseDialog = ({
 }: ChartCloseDialogProps): ReactElement => {
   const { t } = useTranslation();
 
-  const variant = orderToClose ? buildVariant(orderToClose, allExecutions, manager) : null;
+  const variant = orderToClose ? buildVariant(orderToClose, allExecutions, manager, t) : null;
 
   return (
-    <DialogShell
+    <ConfirmationDialog
       isOpen={!!orderToClose}
       onClose={() => onOpenChange(false)}
-      size="sm"
-      title={variant ? t(variant.titleKey) : ''}
-      description={variant ? t(variant.descriptionKey, variant.descriptionVars) : undefined}
-      onSubmit={onConfirmClose}
-      submitLabel={variant ? t(variant.submitKey) : t('common.confirm')}
-      submitColorPalette="red"
-    >
-      {variant?.showPnL && variant.pnL && (
-        <Box
-          fontSize="lg"
-          fontWeight="bold"
-          color={variant.pnL.isProfit ? 'trading.profit' : 'trading.loss'}
-        >
-          {variant.pnL.percentChange >= 0 ? '+' : ''}{variant.pnL.percentChange.toFixed(2)}%
-        </Box>
-      )}
-    </DialogShell>
+      onConfirm={onConfirmClose}
+      title={variant?.title ?? ''}
+      description={variant?.description}
+      confirmLabel={variant?.confirmLabel}
+      isDestructive
+    />
   );
 };

@@ -1456,14 +1456,16 @@
     },
     "dialogs": {
       "chartClose": {
-        "title": "Cerrar orden",
-        "description": "¿Cerrar orden {{type}} con entrada en {{entry}}? Precio actual: {{current}}",
-        "submit": "Cerrar"
+        "title": "¿Cerrar posición?",
+        "description": "{{side}} abierta en {{entry}} · precio actual {{current}}",
+        "submit": "Cerrar posición"
       },
       "chartRemoveSlTp": {
-        "title": "Eliminar protección",
-        "description": "¿Eliminar {{type}} de todas las órdenes en esta posición?",
-        "submit": "Eliminar"
+        "title": "¿Eliminar {{type}}?",
+        "description": "Elimina {{type}} de todas las órdenes en esta posición.",
+        "submit": "Eliminar {{type}}",
+        "typeStopLoss": "Stop Loss",
+        "typeTakeProfit": "Take Profit"
       }
     },
     "active": "ACTIVO",

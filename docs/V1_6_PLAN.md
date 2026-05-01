@@ -442,7 +442,7 @@ Each row gets its own PR. Status is set as the work progresses.
 
 | # | Dialog | Job | Notes |
 |---|---|---|---|
-| 1 | `ChartCloseDialog` | Confirm closing an open position from the chart | Single-field-ish (close-at-market vs close-at-limit). Currently has a free-form "exit price" field. |
+| 1 | `ChartCloseDialog` | ✅ #385 — switched from raw `<DialogShell>` to `<ConfirmationDialog isDestructive>`; copy rewritten ("Close position?" + descriptive body, not interrogative); confirm verb matches title ("Close position"); PnL moved into description ReactNode; sltp variant uses interpolated type label; +1 vitest snapshot test |
 | 2 | `KeyboardShortcutHelpDialog` | Browse keyboard shortcuts | Read-only viewer. Uses tabs for shortcut groups. Already in good shape but copy needs review. |
 | 3 | `SaveScreenerDialog` | Save current screener filters as a named preset | Single-field input (name). |
 | 4 | `IndicatorConfigDialog` | Configure one indicator's params | Form per indicator; param shape varies. Consistency target: every numeric input uses `<NumberInput>`, every color picker uses `<ColorPicker>`. |

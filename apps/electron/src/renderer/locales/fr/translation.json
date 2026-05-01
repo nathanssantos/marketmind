@@ -1445,14 +1445,16 @@
     },
     "dialogs": {
       "chartClose": {
-        "title": "Fermer l'ordre",
-        "description": "Fermer l'ordre {{type}} avec entrée à {{entry}} ? Prix actuel : {{current}}",
-        "submit": "Fermer"
+        "title": "Fermer la position ?",
+        "description": "{{side}} ouverte à {{entry}} · prix actuel {{current}}",
+        "submit": "Fermer la position"
       },
       "chartRemoveSlTp": {
-        "title": "Retirer la protection",
-        "description": "Supprimer {{type}} de tous les ordres dans cette position ?",
-        "submit": "Supprimer"
+        "title": "Retirer {{type}} ?",
+        "description": "Retire {{type}} de tous les ordres de cette position.",
+        "submit": "Retirer {{type}}",
+        "typeStopLoss": "Stop Loss",
+        "typeTakeProfit": "Take Profit"
       }
     },
     "active": "ACTIF",
