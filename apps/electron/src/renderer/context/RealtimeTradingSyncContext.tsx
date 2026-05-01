@@ -3,6 +3,7 @@ import type {
   AppNotificationPayload,
   PositionClosedPayload,
   RiskAlertPayload,
+  StreamReconnectedPayload,
   TradeNotificationPayload,
 } from '@marketmind/types';
 import { createPlatformAdapter } from '../adapters/factory';
@@ -128,6 +129,24 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   useSocketEvent('order:created', () => scheduleRef.current('orders', 'wallet'), !!walletId);
   useSocketEvent('order:cancelled', () => scheduleRef.current('orders', 'wallet'), !!walletId);
   useSocketEvent('wallet:update', () => scheduleRef.current('wallet'), !!walletId);
+
+  // v1.6 Track F.2 — backend signals after a user-stream reconnect (the
+  // listenKey expired, the watchdog forced a reconnect, or a message
+  // came through after a degraded period). We may have missed events
+  // while offline; force-refresh everything.
+  useSocketEvent('stream:reconnected', (data: StreamReconnectedPayload) => {
+    scheduleRef.current('positions', 'orders', 'wallet', 'setupStats', 'equityCurve');
+    if ((data.silenceMs ?? 0) > 30_000 || data.reason === 'listenkey_expired') {
+      toaster.create({
+        type: 'info',
+        title: 'Trading data refreshed',
+        description: data.reason === 'listenkey_expired'
+          ? 'Reconnected to Binance after a session timeout.'
+          : `Reconnected after ${Math.floor((data.silenceMs ?? 0) / 1000)}s gap.`,
+        duration: 5000,
+      });
+    }
+  }, !!walletId);
 
   useSocketEvent('risk:alert', (alert: RiskAlertPayload) => {
     if (alert.type !== 'LIQUIDATION_RISK' || alert.level !== 'critical') return;
