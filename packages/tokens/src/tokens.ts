@@ -86,6 +86,46 @@ export const MM = {
     sm: 48,
     md: 64,
   },
+
+  /**
+   * Dialog (a.k.a. modal) primitive sizing + structural spacing.
+   * Read by <DialogShell> and <DialogSection>; consumed directly by
+   * any dialog-adjacent surface (drawers, full-screen panels) so they
+   * agree on width and inner padding without one-off literals.
+   *
+   * Sizes:
+   * - sm: confirmation / single-field (~400px)
+   * - md: standard form (~560px)
+   * - lg: data viewer or 2-column form (~840px)
+   * - xl: workflow modal with tabs (~1100px)
+   * - full: fullscreen (100vw)
+   *
+   * v1.6 Track A.3.
+   */
+  dialog: {
+    size: {
+      sm: { maxW: '400px' },
+      md: { maxW: '560px' },
+      lg: { maxW: '840px' },
+      xl: { maxW: '1100px', w: '90vw' },
+      full: { maxW: '100vw', w: '100vw' },
+    },
+    bodyPadding: 4, // 16px
+    headerPadding: { x: 4, top: 4, bottom: 3 }, // 16/16/12px
+    footerPadding: { x: 4, y: 3 }, // 16/12px
+    sectionGap: 4, // gap between <DialogSection>s inside the body
+  },
+
+  typography: {
+    /** Modal/dialog title. One size, one weight. */
+    dialogTitle: { fontSize: 'md' as const, fontWeight: 'semibold' as const, lineHeight: 'short' as const },
+    /** Optional one-line description below the title. */
+    dialogDescription: { fontSize: 'xs' as const, color: 'fg.muted', lineHeight: 'tall' as const },
+    /** Section heading inside a dialog body. */
+    sectionTitle: { fontSize: 'sm' as const, fontWeight: 'semibold' as const },
+    /** Section helper text. */
+    sectionDescription: { fontSize: '2xs' as const, color: 'fg.muted', lineHeight: 'tall' as const },
+  },
 } as const;
 
 export type MMTokens = typeof MM;

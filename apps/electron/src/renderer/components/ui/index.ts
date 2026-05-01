@@ -23,6 +23,8 @@ export { DataCard } from './data-card';
 export { DirectionModeSelector } from './DirectionModeSelector';
 export type { DirectionMode } from './DirectionModeSelector';
 export { Dialog, DialogActionTrigger, DialogBackdrop, DialogBody, DialogCloseTrigger, DialogContent, DialogFooter, DialogHeader, DialogPositioner, DialogRoot, DialogTitle } from './dialog';
+export { DialogShell, type DialogShellProps, type DialogSize } from './dialog-shell';
+export { DialogSection, type DialogSectionProps } from './dialog-section';
 export { EmptyState } from './EmptyState';
 export { ErrorMessage } from './ErrorMessage';
 export { Field } from './field';
