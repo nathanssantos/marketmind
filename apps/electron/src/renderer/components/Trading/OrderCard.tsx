@@ -1,6 +1,6 @@
-import { Badge, CryptoIcon, IconButton } from '@renderer/components/ui';
+import { Badge, CryptoIcon, IconButton, TradingSideCard } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
-import { Box, Flex, Portal, Stack, Text } from '@chakra-ui/react';
+import { Flex, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { MarketType, Order, WalletCurrency } from '@marketmind/types';
 import { getOrderId, getOrderPrice, getOrderQuantity, isOrderActive, isOrderLong, isOrderPending } from '@shared/utils';
@@ -28,13 +28,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
   const hasActions = canClose || canCancel;
 
   return (
-    <Box
-      p={3}
-      bg="bg.muted"
-      borderRadius="md"
-      borderLeft="4px solid"
-      borderColor={isOrderLong(order) ? 'trading.long' : 'trading.short'}
-    >
+    <TradingSideCard side={isOrderLong(order) ? 'LONG' : 'SHORT'}>
       <Flex justify="space-between" align="flex-start" mb={2}>
         <Stack gap={1.5}>
           <Flex align="center" gap={1.5}>
@@ -232,7 +226,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           </Flex>
         )}
       </Stack>
-    </Box>
+    </TradingSideCard>
   );
 });
 
