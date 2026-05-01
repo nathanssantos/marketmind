@@ -52,6 +52,7 @@ export {
   Separator,
   SidebarContainer,
   SidebarHeader,
+  SidebarTabsHeader,
   Skeleton,
   Slider,
   Stat,

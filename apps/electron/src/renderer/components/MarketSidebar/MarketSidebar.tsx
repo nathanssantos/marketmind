@@ -1,11 +1,11 @@
-import { Box, Flex, Spinner, Text } from '@chakra-ui/react';
+import { Box, Flex, Spinner } from '@chakra-ui/react';
 import { Suspense, lazy, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../../store/uiStore';
 import { MM } from '@marketmind/tokens';
-import { IconButton, SidebarContainer } from '../ui';
+import { IconButton, SidebarContainer, SidebarHeader } from '../ui';
 
 // V1_3 bundle follow-up — MarketIndicatorsTab pulls recharts (~296 KB raw /
 // 83 KB gz). Lazy-load so the chunk only ships when the user first opens the
@@ -32,18 +32,20 @@ const MarketSidebarComponent = ({ width }: MarketSidebarProps) => {
   return (
     <SidebarContainer width={width} position="left">
       <Flex direction="column" h="full">
-        <Flex align="center" justify="space-between" px={3} py={2} borderBottomWidth="1px" borderColor="border">
-          <Text fontSize="xs" fontWeight="semibold">{t('marketSidebar.title')}</Text>
-          <IconButton
-            size="2xs"
-            variant="ghost"
-            color="fg.muted"
-            aria-label={t('marketSidebar.close')}
-            onClick={() => useUIStore.getState().toggleMarketSidebar()}
-          >
-            <LuX />
-          </IconButton>
-        </Flex>
+        <SidebarHeader
+          title={t('marketSidebar.title')}
+          actions={
+            <IconButton
+              size="2xs"
+              variant="ghost"
+              color="fg.muted"
+              aria-label={t('marketSidebar.close')}
+              onClick={() => useUIStore.getState().toggleMarketSidebar()}
+            >
+              <LuX />
+            </IconButton>
+          }
+        />
         <Box flex={1} overflowY="auto">
           <Suspense
             fallback={
