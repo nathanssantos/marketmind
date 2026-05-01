@@ -1,14 +1,17 @@
 /**
- * @marketmind/ui-core — Tier-1 + Tier-2 UI primitives.
+ * @marketmind/ui-core — Tier-1 + Tier-2 + select Tier-3 UI primitives.
  *
  * Tier 1: pure Chakra wrappers (Alert, Badge, Button, ...).
  * Tier 2: token-aware composed primitives (Callout, FormSection,
  *   PanelHeader, typography family, DialogSection, CreateActionButton,
  *   ColorPicker, Sidebar). They depend on @marketmind/tokens.
+ * Tier 3 (graduated): components originally i18n-coupled that have
+ *   been refactored to accept `labels` props for locale-agnostic use
+ *   (PasswordStrengthMeter as of v1.6).
  *
- * Tier 3 (i18n / runtime-coupled — DialogShell with `useTranslation`,
+ * Tier 3 still app-side: DialogShell with `useTranslation`,
  * MetricCard/PnLDisplay/TooltipWrapper with `useColorMode`,
- * ConfirmationDialog/EmptyState/etc with i18n) stays app-side.
+ * ConfirmationDialog/EmptyState/etc with i18n.
  */
 
 // Tier 1
@@ -72,3 +75,11 @@ export {
   SectionTitle,
   SubsectionTitle,
 } from './typography';
+
+// Tier 3 (graduated)
+export {
+  PasswordStrengthMeter,
+  type PasswordStrengthMeterProps,
+  type PasswordStrengthMeterLabels,
+  type PasswordStrengthLabelKey,
+} from './password-strength-meter';

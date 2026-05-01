@@ -594,6 +594,9 @@ importers:
       '@marketmind/tokens':
         specifier: workspace:*
         version: link:../tokens
+      '@marketmind/utils':
+        specifier: workspace:*
+        version: link:../utils
       next-themes:
         specifier: ^0.4.4
         version: 0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
