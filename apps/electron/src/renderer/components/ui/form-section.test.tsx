@@ -1,7 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { FormSection, FormRow } from './form-section';
+import { FormSection, FormRow } from '@marketmind/ui';
 
 const renderWithChakra = (ui: React.ReactElement) =>
   render(<ChakraProvider value={defaultSystem}>{ui}</ChakraProvider>);

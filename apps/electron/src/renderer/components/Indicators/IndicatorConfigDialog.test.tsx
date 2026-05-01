@@ -47,7 +47,7 @@ describe('IndicatorConfigDialog', () => {
         <IndicatorConfigDialog isOpen mode="create" onClose={vi.fn()} onSubmit={onSubmit} />,
       );
 
-      const labelInput = screen.getByPlaceholderText('EMA 20') as HTMLInputElement;
+      const labelInput = screen.getByPlaceholderText('indicators.dialog.labelPlaceholder') as HTMLInputElement;
       expect(labelInput.value.length).toBeGreaterThan(0);
     });
 
@@ -58,7 +58,7 @@ describe('IndicatorConfigDialog', () => {
         <IndicatorConfigDialog isOpen mode="create" onClose={vi.fn()} onSubmit={onSubmit} />,
       );
 
-      const labelInput = screen.getByPlaceholderText('EMA 20') as HTMLInputElement;
+      const labelInput = screen.getByPlaceholderText('indicators.dialog.labelPlaceholder') as HTMLInputElement;
       await user.clear(labelInput);
       await user.type(labelInput, 'My Indicator');
 

@@ -1,33 +1,25 @@
-import { CollapsibleSection, Field, Select } from '@renderer/components/ui';
+import { FormSection, Field, Select } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface StopModeSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   initialStopMode: 'fibo_target' | 'nearest_swing';
   onInitialStopModeChange: (details: { value: string }) => void;
   isPending: boolean;
 }
 
 export const StopModeSection = ({
-  isExpanded,
-  onToggle,
   initialStopMode,
   onInitialStopModeChange,
 }: StopModeSectionProps) => {
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('settings.algorithmicAutoTrading.stopMode.title')}
       description={t('settings.algorithmicAutoTrading.stopMode.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
       <Field
-        label={t('settings.algorithmicAutoTrading.stopMode.label', 'Initial stop placement')}
+        label={t('settings.algorithmicAutoTrading.stopMode.label')}
         helperText={
           initialStopMode === 'fibo_target'
             ? t('settings.algorithmicAutoTrading.stopMode.fiboTargetDescription')
@@ -45,6 +37,6 @@ export const StopModeSection = ({
           usePortal={false}
         />
       </Field>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

@@ -47,7 +47,7 @@ describe('ImportProfileDialog', () => {
 
   it('renders name input + JSON textarea', () => {
     renderDialog();
-    expect(screen.getByPlaceholderText('e.g., Optimized BTC Strategy')).toBeDefined();
+    expect(screen.getByPlaceholderText('tradingProfiles.import.namePlaceholder')).toBeDefined();
     // Textarea — find by its label key
     expect(screen.getByText('tradingProfiles.import.pasteJson')).toBeDefined();
   });
@@ -87,7 +87,7 @@ describe('ImportProfileDialog', () => {
     fireEvent.change(textarea, {
       target: { value: JSON.stringify({ name: 'Auto-named', enabledSetupTypes: [] }) },
     });
-    const nameInput = screen.getByPlaceholderText('e.g., Optimized BTC Strategy') as HTMLInputElement;
+    const nameInput = screen.getByPlaceholderText('tradingProfiles.import.namePlaceholder') as HTMLInputElement;
     expect(nameInput.value).toBe('Auto-named');
   });
 

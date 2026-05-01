@@ -100,7 +100,7 @@ test.describe('WatchersTab — empty state', () => {
     await expect(page.getByRole('button', { name: 'Start Watchers' })).toHaveCount(2);
   });
 
-  test('clicking Start Watchers opens the StartWatchersModal', async ({ page }) => {
+  test('clicking Start Watchers opens the StartWatchersDialog', async ({ page }) => {
     await openWatchersTab(page);
     await page.getByRole('button', { name: 'Start Watchers' }).first().click();
     await expect(page.getByRole('dialog', { name: 'Start Watchers' })).toBeVisible();

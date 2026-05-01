@@ -412,7 +412,7 @@ test.describe('Screener modal — full flow coverage', () => {
     // Filter UI hidden under preset mode
     await expect(dialog.getByRole('button', { name: /^Filters \(/ })).toHaveCount(0);
 
-    // Returning to Custom — actual behavior per ScreenerModal:108-111: filters
+    // Returning to Custom — actual behavior per ScreenerDialog:108-111: filters
     // were wiped when the preset got selected, so the count is back at 0.
     await dialog.getByRole('button', { name: 'Custom', exact: true }).click();
     await expect(dialog.getByRole('button', { name: 'Filters (0)', exact: true })).toBeVisible();

@@ -255,8 +255,6 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
           <Box opacity={useIndividualConfig ? 1 : 0.5} pointerEvents={useIndividualConfig ? 'auto' : 'none'}>
             <TrailingStopSection
               compact
-              isExpanded={true}
-              onToggle={() => {}}
               trailingStopEnabled={effectiveValues.trailingStopEnabled}
               onTrailingStopEnabledChange={(enabled) => debouncedUpdate({ trailingStopEnabled: enabled })}
               trailingActivationPercentLong={effectiveValues.trailingActivationPercentLong}

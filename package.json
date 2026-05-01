@@ -1,6 +1,6 @@
 {
   "name": "marketmind-monorepo",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "MarketMind Monorepo - trading platform",
   "keywords": [
     "trading",
@@ -35,6 +35,11 @@
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
     "lint:shades": "node scripts/audit-shade-literals.mjs",
+    "lint:dialogs": "node scripts/audit-dialog-rules.mjs",
+    "lint:dialogs:strict": "node scripts/audit-dialog-rules.mjs --strict",
+    "lint:i18n:dialogs": "node scripts/audit-dialog-i18n-keys.mjs",
+    "lint:i18n:coverage": "node scripts/audit-i18n-key-coverage.mjs",
+    "lint:i18n:coverage:all": "node scripts/audit-i18n-key-coverage.mjs --all",
     "type-check": "pnpm -r type-check",
     "test": "pnpm -r test",
     "test:run": "pnpm -r test:run",

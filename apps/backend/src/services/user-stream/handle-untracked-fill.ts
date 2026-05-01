@@ -9,6 +9,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
+import { emitPositionClosedToast, emitPositionOpenedToast } from './emit-position-toast';
 
 export async function handleUntrackedReduceFill(
   ctx: UserStreamContext,
@@ -166,6 +167,17 @@ export async function handleUntrackedReduceFill(
         pnl: totalPnl,
         pnlPercent: 0,
       });
+
+      emitPositionClosedToast(wsService, walletId, {
+        executionId: oppositeExec.id,
+        symbol,
+        side: oppositeExec.side,
+        exitPrice,
+        pnl: totalPnl,
+        pnlPercent: 0,
+        exitReason: 'REDUCE_ORDER',
+        source: 'UNTRACKED_FILL',
+      });
     }
 
     getPositionEventBus().emitPositionClosed({
@@ -285,6 +297,17 @@ export async function handleManualOrderFill(
       status: 'open',
       entryPrice: fillPrice.toString(),
       quantity: fillQty.toString(),
+    });
+
+    // v1.6 Track F.4 — POSITION_OPENED toast for manual fills (orders
+    // placed directly on Binance UI, not initiated from MarketMind).
+    emitPositionOpenedToast(wsService, walletId, {
+      executionId: insertedExec.id,
+      symbol,
+      side: direction,
+      entryPrice: fillPrice,
+      quantity: fillQty,
+      source: 'MANUAL_FILL',
     });
   }
 

@@ -27,9 +27,9 @@ export function RiskSection({
 
   return (
     <VStack gap={4} align="stretch">
-      <Text fontWeight="semibold">{t('scalping.config.risk', 'Risk Management')}</Text>
+      <Text fontWeight="semibold">{t('scalping.config.risk')}</Text>
 
-      <Field label={t('scalping.config.positionSize', 'Position Size %')}>
+      <Field label={t('scalping.config.positionSize')}>
         <Slider
           min={0.1}
           max={25}
@@ -40,7 +40,7 @@ export function RiskSection({
         <Text fontSize="xs" color="fg.muted">{positionSizePercent.toFixed(1)}%</Text>
       </Field>
 
-      <Field label={t('scalping.config.maxConcurrent', 'Max Concurrent Positions')}>
+      <Field label={t('scalping.config.maxConcurrent')}>
         <Slider
           min={1}
           max={10}
@@ -51,7 +51,7 @@ export function RiskSection({
         <Text fontSize="xs" color="fg.muted">{maxConcurrentPositions}</Text>
       </Field>
 
-      <Field label={t('scalping.config.maxDailyTrades', 'Max Daily Trades')}>
+      <Field label={t('scalping.config.maxDailyTrades')}>
         <Slider
           min={5}
           max={500}
@@ -62,7 +62,7 @@ export function RiskSection({
         <Text fontSize="xs" color="fg.muted">{maxDailyTrades}</Text>
       </Field>
 
-      <Field label={t('scalping.config.maxDailyLoss', 'Max Daily Loss %')}>
+      <Field label={t('scalping.config.maxDailyLoss')}>
         <Slider
           min={0.5}
           max={20}
@@ -77,12 +77,12 @@ export function RiskSection({
         checked={circuitBreakerEnabled}
         onCheckedChange={(checked) => onParamChange('circuitBreakerEnabled', checked)}
       >
-        {t('scalping.config.circuitBreaker', 'Circuit Breaker')}
+        {t('scalping.config.circuitBreaker')}
       </Switch>
 
       {circuitBreakerEnabled && (
         <>
-          <Field label={t('scalping.config.cbLossPercent', 'CB Loss %')}>
+          <Field label={t('scalping.config.cbLossPercent')}>
             <Slider
               min={0.5}
               max={10}
@@ -93,7 +93,7 @@ export function RiskSection({
             <Text fontSize="xs" color="fg.muted">{circuitBreakerLossPercent.toFixed(1)}%</Text>
           </Field>
 
-          <Field label={t('scalping.config.cbMaxTrades', 'CB Max Trades')}>
+          <Field label={t('scalping.config.cbMaxTrades')}>
             <Slider
               min={10}
               max={200}

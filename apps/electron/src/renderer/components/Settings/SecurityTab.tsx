@@ -1,7 +1,8 @@
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import {
-  Badge, Button, Callout, ConfirmationDialog, Field, FormRow, FormSection, MetaText, PasswordInput, PasswordStrengthMeter, Switch,
+  Badge, Button, Callout, ConfirmationDialog, EmptyState, Field, FormRow, FormSection, PasswordInput, PasswordStrengthMeter, Switch,
 } from '@renderer/components/ui';
+import { MM } from '@marketmind/tokens';
 import { validatePassword } from '@marketmind/utils';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useToast } from '@renderer/hooks/useToast';
@@ -202,9 +203,11 @@ export const SecurityTab = () => {
         }
       >
         {sessionsQuery.isLoading ? (
-          <MetaText>{t('common.loading')}</MetaText>
+          <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+            <Spinner size={MM.spinner.panel.size} />
+          </Flex>
         ) : (sessionsQuery.data?.length ?? 0) === 0 ? (
-          <MetaText>{t('settings.security.sessions.empty')}</MetaText>
+          <EmptyState title={t('settings.security.sessions.empty')} />
         ) : (
           <Stack gap={1.5}>
             {sessionsQuery.data!.map((s) => (
@@ -261,9 +264,11 @@ export const SecurityTab = () => {
           {t('settings.security.agentTrading.warning')}
         </Callout>
         {walletsQuery.isLoading ? (
-          <Text fontSize="xs" color="fg.muted">{t('common.loading')}</Text>
+          <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+            <Spinner size={MM.spinner.panel.size} />
+          </Flex>
         ) : (walletsQuery.data ?? []).length === 0 ? (
-          <Text fontSize="xs" color="fg.muted">{t('settings.security.agentTrading.noWallets')}</Text>
+          <EmptyState title={t('settings.security.agentTrading.noWallets')} />
         ) : (
           <Stack gap={1.5}>
             {(walletsQuery.data ?? []).map((wallet) => (
@@ -325,17 +330,10 @@ export const SecurityTab = () => {
         title={t('settings.security.agentTrading.confirmTitle')}
         description={t('settings.security.agentTrading.confirmBody')}
         confirmLabel={t('settings.security.agentTrading.confirmCta')}
-        colorPalette="orange"
         isDestructive
         isLoading={updateWalletMutation.isPending}
       />
 
-      {currentUser?.createdAt && (
-        <MetaText>
-          {t('settings.account.memberSince')}:{' '}
-          {new Date(currentUser.createdAt).toLocaleDateString(i18n.language, { year: 'numeric', month: 'long', day: 'numeric' })}
-        </MetaText>
-      )}
     </Stack>
   );
 };

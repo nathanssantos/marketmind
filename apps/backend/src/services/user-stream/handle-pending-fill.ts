@@ -6,6 +6,7 @@ import { createStopLossOrder, createTakeProfitOrder } from '../protection-orders
 import { logger, serializeError } from '../logger';
 import { getWebSocketService } from '../websocket';
 import type { UserStreamContext } from './types';
+import { emitPositionOpenedToast } from './emit-position-toast';
 
 export async function handlePendingFill(
   ctx: UserStreamContext,
@@ -147,6 +148,18 @@ export async function handlePendingFill(
       ...pendingExecution,
       status: 'open',
       entryPrice: fillPrice.toString(),
+    });
+
+    // v1.6 Track F.4 — POSITION_OPENED toast for limit-entry fills.
+    // Mirror of the close toast (PR #366) so the user gets explicit
+    // feedback when a pending limit order activates a position.
+    emitPositionOpenedToast(wsService, walletId, {
+      executionId: pendingExecution.id,
+      symbol,
+      side: pendingExecution.side,
+      entryPrice: fillPrice,
+      quantity: fillQty,
+      source: 'LIMIT_FILL',
     });
   }
 }

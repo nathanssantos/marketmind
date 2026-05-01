@@ -1,7 +1,7 @@
 import { Box, Icon, Text, VStack } from '@chakra-ui/react';
 import type { ComponentType, ReactNode } from 'react';
 import { LuInbox } from 'react-icons/lu';
-import { Button } from './button';
+import { Button } from '@marketmind/ui';
 
 interface EmptyStateProps {
   icon?: ComponentType;

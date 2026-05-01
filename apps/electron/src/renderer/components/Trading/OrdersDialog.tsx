@@ -1,5 +1,5 @@
-import { Button, Dialog, EmptyState, IconButton, Input, Select } from '@renderer/components/ui';
-import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
+import { DialogShell, EmptyState, IconButton, Input, Select } from '@renderer/components/ui';
+import { Box, Flex, Group, Spinner, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MM } from '@marketmind/tokens';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
@@ -151,24 +151,13 @@ const OrdersDialogComponent = () => {
   const isLoading = isLoadingOrders || isLoadingExecutions;
 
   return (
-    <Dialog.Root
-      open={isOrdersDialogOpen}
-      onOpenChange={(details) => setOrdersDialogOpen(details.open)}
+    <DialogShell
+      isOpen={isOrdersDialogOpen}
+      onClose={handleClose}
       size="xl"
+      title={t('trading.orders.dialogTitle')}
+      hideFooter
     >
-      <Dialog.Backdrop />
-      <Dialog.Positioner>
-        <Dialog.Content maxW="1200px" maxH="90vh" display="flex" flexDirection="column">
-          <Dialog.Header>
-            <Dialog.Title>{t('trading.orders.dialogTitle')}</Dialog.Title>
-            <Dialog.CloseTrigger asChild>
-              <Button size="xs" variant="ghost" onClick={handleClose} position="absolute" top={3} right={3}>
-                ✕
-              </Button>
-            </Dialog.CloseTrigger>
-          </Dialog.Header>
-
-          <Dialog.Body flex={1} overflowY="auto" display="flex" flexDirection="column" gap={MM.spacing.row.gap}>
             <Box p={MM.spacing.sectionPadding} bg="bg.muted" borderRadius={MM.borderRadius.card}>
               <Flex gap={4} fontSize={MM.font.body.size} flexWrap="wrap">
                 <Flex gap={MM.spacing.inline.gap}>
@@ -188,7 +177,7 @@ const OrdersDialogComponent = () => {
 
             <Flex gap={MM.spacing.inline.gap} align="center" flexWrap="wrap">
               <Input
-                size="sm"
+                size="xs"
                 placeholder={t('trading.orders.search')}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -196,7 +185,7 @@ const OrdersDialogComponent = () => {
               />
               <ChakraField.Root minW="140px">
                 <Select
-                  size="sm"
+                  size="xs"
                   value={filterStatus}
                   onChange={(value) => setFilterStatus(value as OrdersFilterOption)}
                   options={[
@@ -232,7 +221,9 @@ const OrdersDialogComponent = () => {
             </Flex>
 
             {isLoading ? (
-              <EmptyState size="sm" title={t('common.loading')} />
+              <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+                <Spinner size={MM.spinner.panel.size} />
+              </Flex>
             ) : filteredOrders.length === 0 ? (
               <EmptyState size="sm" title={t('trading.orders.noResults')} />
             ) : activeWallet ? (
@@ -285,10 +276,7 @@ const OrdersDialogComponent = () => {
                 </IconButton>
               </Flex>
             )}
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog.Positioner>
-    </Dialog.Root>
+    </DialogShell>
   );
 };
 

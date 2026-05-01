@@ -1,26 +1,16 @@
 import { Box, Flex, HStack, SimpleGrid, Spinner, Stack, Text } from '@chakra-ui/react';
 import {
   Badge,
-  Button,
   Checkbox,
-  CloseButton,
   CollapsibleSection,
-  DialogBackdrop,
-  DialogBody,
-  DialogCloseTrigger,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogPositioner,
-  DialogRoot,
-  DialogTitle,
+  DialogShell,
   Field,
   Input,
   Select,
   Switch,
   Textarea,
 } from '@renderer/components/ui';
-import type { TradingProfile } from '@marketmind/types';
+import type { DialogControlProps, TradingProfile } from '@marketmind/types';
 import { useUserIndicators } from '@renderer/hooks';
 import { useTranslation } from 'react-i18next';
 import { ChecklistEditor } from './ChecklistEditor';
@@ -32,9 +22,7 @@ import { ProfileRiskSection } from './ProfileRiskSection';
 import { ProfileTrailingStopSection } from './ProfileTrailingStopSection';
 import { useProfileEditorForm } from './useProfileEditorForm';
 
-interface ProfileEditorDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface ProfileEditorDialogProps extends DialogControlProps {
   profile: TradingProfile | null;
 }
 
@@ -45,21 +33,19 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
   const { indicators: availableIndicators } = useUserIndicators();
 
   return (
-    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
-      <DialogBackdrop />
-      <DialogPositioner>
-        <DialogContent>
-          <DialogHeader px={4} pt={4}>
-            <DialogTitle>
-              {form.isEditing ? t('tradingProfiles.editProfile') : t('tradingProfiles.createProfile')}
-            </DialogTitle>
-          </DialogHeader>
-          <DialogCloseTrigger asChild>
-            <CloseButton size="sm" />
-          </DialogCloseTrigger>
-
-          <DialogBody p={4} maxH="70vh" overflowY="auto">
-            <Stack gap={2}>
+    <DialogShell
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      title={form.isEditing ? t('tradingProfiles.editProfile') : t('tradingProfiles.createProfile')}
+      onSubmit={() => void form.handleSubmit()}
+      submitLabel={form.isEditing ? t('common.save') : t('tradingProfiles.create')}
+      submitDisabled={!form.canSubmit}
+      isLoading={form.isSubmitting}
+      bodyPadding={0}
+    >
+      <Box p={4}>
+        <Stack gap={2}>
               <CollapsibleSection
                 title={t('tradingProfiles.sections.basicInfo')}
                 description={t('tradingProfiles.sections.basicInfoDescription')}
@@ -70,7 +56,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 <Stack gap={4}>
                   <Field label={t('tradingProfiles.fields.name')} required={form.isEditing}>
                     <Input
-                      size="sm"
+                      size="xs"
                       value={form.name}
                       onChange={(e) => form.setName(e.target.value)}
                       placeholder={t('tradingProfiles.placeholders.name')}
@@ -80,7 +66,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                   </Field>
                   <Field label={t('tradingProfiles.fields.description')}>
                     <Textarea
-                      size="sm"
+                      size="xs"
                       value={form.description}
                       onChange={(e) => form.setDescription(e.target.value)}
                       placeholder={t('tradingProfiles.placeholders.description')}
@@ -121,7 +107,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       value={ovStr(overrideActions.co, 'tradingMode', 'auto')}
                       options={TRADING_MODE_OPTIONS}
                       onChange={(v) => overrideActions.setOv('tradingMode', v)}
-                      size="sm"
+                      size="xs"
                       usePortal={false}
                     />
                   </OverrideRow>
@@ -135,7 +121,7 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                       value={ovStr(overrideActions.co, 'directionMode', 'auto')}
                       options={DIRECTION_MODE_OPTIONS}
                       onChange={(v) => overrideActions.setOv('directionMode', v)}
-                      size="sm"
+                      size="xs"
                       usePortal={false}
                     />
                   </OverrideRow>
@@ -211,11 +197,8 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
               </CollapsibleSection>
 
               <CollapsibleSection
-                title={t('tradingProfiles.sections.checklist', { defaultValue: 'Pre-trade checklist' })}
-                description={t('tradingProfiles.sections.checklistDescription', {
-                  defaultValue:
-                    'Conditions evaluated before each trade. Required = must pass. Preferred = adds to confidence score.',
-                })}
+                title={t('tradingProfiles.sections.checklist')}
+                description={t('tradingProfiles.sections.checklistDescription')}
                 badge={
                   <Badge size="sm" colorPalette={form.checklistConditions.length > 0 ? 'blue' : 'gray'}>
                     {form.checklistConditions.length}
@@ -246,26 +229,8 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
                 maxConcurrentPositions={form.maxConcurrentPositions}
                 setMaxConcurrentPositions={form.setMaxConcurrentPositions}
               />
-            </Stack>
-          </DialogBody>
-
-          <DialogFooter px={4} pb={4}>
-            <Button size="2xs" variant="ghost" onClick={onClose} disabled={form.isSubmitting} px={3}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              size="2xs"
-              variant="outline"
-              onClick={() => void form.handleSubmit()}
-              loading={form.isSubmitting}
-              disabled={!form.canSubmit}
-              px={3}
-            >
-              {form.isEditing ? t('common.save') : t('tradingProfiles.create')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </DialogPositioner>
-    </DialogRoot>
+        </Stack>
+      </Box>
+    </DialogShell>
   );
 };

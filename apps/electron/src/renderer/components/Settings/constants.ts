@@ -4,15 +4,11 @@ import {
   LuBell,
   LuBot,
   LuDatabase,
-  LuDownload,
   LuInfo,
   LuChartCandlestick,
   LuPalette,
   LuShield,
-  LuSlidersHorizontal,
-  LuStar,
   LuUser,
-  LuWallet,
 } from 'react-icons/lu';
 
 export const SETTINGS_TABS = [
@@ -21,13 +17,9 @@ export const SETTINGS_TABS = [
   'notifications',
   'general',
   'chart',
-  'wallets',
-  'tradingProfiles',
   'autoTrading',
   'indicators',
-  'customSymbols',
   'data',
-  'updates',
   'about',
 ] as const;
 
@@ -51,14 +43,10 @@ export const SETTINGS_TAB_DEFS: readonly SettingsTabDef[] = [
   { id: 'general', group: 'appearance', icon: LuPalette, labelKey: 'settings.tabs.general' },
   { id: 'chart', group: 'appearance', icon: LuChartCandlestick, labelKey: 'settings.tabs.chart' },
 
-  { id: 'wallets', group: 'trading', icon: LuWallet, labelKey: 'settings.tabs.wallets' },
-  { id: 'tradingProfiles', group: 'trading', icon: LuSlidersHorizontal, labelKey: 'settings.tabs.tradingProfiles' },
   { id: 'autoTrading', group: 'trading', icon: LuBot, labelKey: 'settings.tabs.autoTrading' },
   { id: 'indicators', group: 'trading', icon: LuActivity, labelKey: 'settings.tabs.indicators' },
-  { id: 'customSymbols', group: 'trading', icon: LuStar, labelKey: 'settings.tabs.customSymbols' },
 
   { id: 'data', group: 'system', icon: LuDatabase, labelKey: 'settings.tabs.data' },
-  { id: 'updates', group: 'system', icon: LuDownload, labelKey: 'settings.tabs.updates' },
   { id: 'about', group: 'system', icon: LuInfo, labelKey: 'settings.tabs.about' },
 ];
 

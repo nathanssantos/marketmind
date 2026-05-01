@@ -2,7 +2,7 @@ import { VStack } from '@chakra-ui/react';
 import { DirectionModeSelector, FormDialog, type DirectionMode } from '@renderer/components/ui';
 import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ScalpingStrategy, ScalpingExecutionMode } from '@marketmind/types';
+import type { DialogControlProps, ScalpingStrategy, ScalpingExecutionMode } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { useBackendScalping } from '@renderer/hooks/useBackendScalping';
 import { StrategySection } from './StrategySection';
@@ -11,10 +11,8 @@ import { RiskSection } from './RiskSection';
 import { SymbolSection } from './SymbolSection';
 import { ChartSection } from './ChartSection';
 
-interface ScalpingConfigDialogProps {
+interface ScalpingConfigDialogProps extends DialogControlProps {
   walletId: string;
-  isOpen: boolean;
-  onClose: () => void;
 }
 
 const get = (data: Record<string, unknown> | null | undefined, key: string, fallback: unknown) =>
@@ -101,10 +99,10 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
     <FormDialog
       isOpen={isOpen}
       onClose={onClose}
-      title={t('scalping.config.title', 'Scalping Configuration')}
+      title={t('scalping.config.title')}
       size="lg"
       onSubmit={handleSave}
-      submitLabel={t('common.save', 'Save')}
+      submitLabel={t('common.save')}
       isLoading={upsertConfig.isPending}
     >
       <VStack gap={4} align="stretch" maxH="70vh" overflowY="auto">

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Select } from './select';
+import { Select } from '@marketmind/ui';
 
 export type DirectionMode = 'auto' | 'long_only' | 'short_only';
 

@@ -82,17 +82,3 @@ export interface QuickStartState {
   marketType: MarketType;
 }
 
-export interface SectionExpandedState {
-  watchers: boolean;
-  dynamicSelection: boolean;
-  positionSize: boolean;
-  leverageSettings: boolean;
-  riskManagement: boolean;
-  trailingStop: boolean;
-  tpMode: boolean;
-  stopMode: boolean;
-  entrySettings: boolean;
-  filters: boolean;
-  opportunityCost: boolean;
-  pyramiding: boolean;
-}

@@ -1,4 +1,4 @@
-import type { PositionSide } from '@marketmind/types';
+import type { DialogControlProps, PositionSide } from '@marketmind/types';
 import { VStack } from '@chakra-ui/react';
 import type {
   ChecklistCondition,
@@ -59,9 +59,7 @@ export type IndicatorConfigResult =
 
 const EMPTY_INDICATORS: UserIndicator[] = [];
 
-export interface IndicatorConfigDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+export interface IndicatorConfigDialogProps extends DialogControlProps {
   mode: IndicatorConfigMode;
   instance?: UserIndicator;
   availableIndicators?: UserIndicator[];
@@ -204,9 +202,9 @@ export const IndicatorConfigDialog = ({
   };
 
   const title = useMemo(() => {
-    if (mode === 'create') return t('indicators.dialog.createTitle', { defaultValue: 'Create indicator' });
-    if (mode === 'edit') return t('indicators.dialog.editTitle', { defaultValue: 'Edit indicator' });
-    return t('indicators.dialog.conditionTitle', { defaultValue: 'Configure condition' });
+    if (mode === 'create') return t('indicators.dialog.createTitle');
+    if (mode === 'edit') return t('indicators.dialog.editTitle');
+    return t('indicators.dialog.conditionTitle');
   }, [mode, t]);
 
   const submitDisabled = useMemo(() => {
@@ -256,7 +254,7 @@ export const IndicatorConfigDialog = ({
       <VStack gap={4} align="stretch">
         {mode === 'create' && (
           <SelectField
-            label={t('indicators.dialog.type', { defaultValue: 'Type' })}
+            label={t('indicators.dialog.type')}
             value={catalogType}
             options={catalogOptions}
             onChange={handleCatalogChange}
@@ -265,7 +263,7 @@ export const IndicatorConfigDialog = ({
 
         {mode === 'checklist-condition' && (
           <SelectField
-            label={t('indicators.dialog.indicator', { defaultValue: 'Indicator' })}
+            label={t('indicators.dialog.indicator')}
             value={userIndicatorId}
             options={indicatorOptions}
             onChange={setUserIndicatorId}
@@ -273,12 +271,12 @@ export const IndicatorConfigDialog = ({
         )}
 
         {(mode === 'create' || mode === 'edit') && (
-          <Field label={t('indicators.dialog.label', { defaultValue: 'Label' })}>
+          <Field label={t('indicators.dialog.label')}>
             <Input
               value={label}
               onChange={(e) => handleLabelChange(e.target.value)}
-              placeholder={t('indicators.dialog.labelPlaceholder', { defaultValue: 'EMA 20' })}
-              size="sm"
+              placeholder={t('indicators.dialog.labelPlaceholder')}
+              size="xs"
             />
           </Field>
         )}

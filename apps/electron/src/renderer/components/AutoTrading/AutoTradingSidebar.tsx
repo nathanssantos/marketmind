@@ -46,7 +46,7 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
               <Text fontSize="xs">{t('marketSidebar.tabs.watchers')}</Text>
             </Tabs.Trigger>
             <Tabs.Trigger value="scalping">
-              <Text fontSize="xs">{t('scalping.dashboard.title', 'Scalping')}</Text>
+              <Text fontSize="xs">{t('scalping.dashboard.title')}</Text>
             </Tabs.Trigger>
             <Tabs.Trigger value="logs">
               <Text fontSize="xs">{t('marketSidebar.tabs.logs')}</Text>
@@ -69,7 +69,7 @@ const AutoTradingSidebarComponent = ({ width, onClose }: AutoTradingSidebarProps
             ) : (
               <Box p={3}>
                 <Callout tone="warning" compact>
-                  {t('trading.wallets.selectWallet', 'Select a wallet first')}
+                  {t('trading.wallets.selectWallet')}
                 </Callout>
               </Box>
             )}

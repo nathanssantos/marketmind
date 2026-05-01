@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Switch } from './switch';
+import { Switch } from '@marketmind/ui';
 
 const renderWithChakra = (ui: ReactElement) => render(
     <ChakraProvider value={defaultSystem}>

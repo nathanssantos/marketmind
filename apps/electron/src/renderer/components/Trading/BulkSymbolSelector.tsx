@@ -73,14 +73,14 @@ export const BulkSymbolSelector = ({
       <Box>
         <Flex justify="space-between" align="center" mb={2}>
           <Text fontSize="sm" fontWeight="medium">
-            {t('tradingProfiles.watchers.topSymbols', 'Top {{count}} Symbols by Market Cap', { count: limit })}
+            {t('tradingProfiles.watchers.topSymbols', { count: limit })}
           </Text>
           <HStack gap={2}>
             <Button size="xs" variant="ghost" onClick={handleSelectAll} disabled={isLoadingTopCoins}>
-              {t('tradingProfiles.watchers.selectAll', 'Select All')}
+              {t('tradingProfiles.watchers.selectAll')}
             </Button>
             <Button size="xs" variant="ghost" onClick={handleDeselectAll} disabled={isLoadingTopCoins}>
-              {t('tradingProfiles.watchers.deselectAll', 'Deselect All')}
+              {t('tradingProfiles.watchers.deselectAll')}
             </Button>
           </HStack>
         </Flex>
@@ -127,7 +127,7 @@ export const BulkSymbolSelector = ({
         )}
 
         <Text fontSize="xs" color="fg.muted" mt={2}>
-          {t('tradingProfiles.watchers.selectedCount', '{{count}} symbols selected', { count: selectedSymbols.length })}
+          {t('tradingProfiles.watchers.selectedCount', { count: selectedSymbols.length })}
         </Text>
       </Box>
     </Stack>

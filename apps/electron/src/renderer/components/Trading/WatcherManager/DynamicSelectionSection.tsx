@@ -1,6 +1,6 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TimeInterval } from '@marketmind/types';
-import { Button, Callout, CollapsibleSection, FormRow, Switch } from '@renderer/components/ui';
+import { Button, Callout, FormRow, FormSection, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuRefreshCw, LuZap } from 'react-icons/lu';
 import type { DirectionMode } from './WatchersList';
@@ -12,8 +12,6 @@ export interface RotationStatus {
 }
 
 export interface DynamicSelectionSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   isIB?: boolean;
   directionMode?: DirectionMode;
   isAutoRotationEnabled: boolean;
@@ -44,8 +42,6 @@ export interface DynamicSelectionSectionProps {
 }
 
 export const DynamicSelectionSection = ({
-  isExpanded,
-  onToggle,
   isIB,
   directionMode,
   isAutoRotationEnabled,
@@ -77,21 +73,21 @@ export const DynamicSelectionSection = ({
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
-      title={t('tradingProfiles.dynamicSelection.title')}
+    <FormSection
+      title={
+        <HStack gap={2}>
+          <span>{t('tradingProfiles.dynamicSelection.title')}</span>
+          {isAutoRotationEnabled && (
+            <Box px={2} py={0.5} bg="blue.subtle" color="blue.fg" borderRadius="full" fontSize="xs" fontWeight="medium">
+              <Flex align="center" gap={1}>
+                <LuZap size={10} />
+                {t('tradingProfiles.dynamicSelection.autoRotation')}
+              </Flex>
+            </Box>
+          )}
+        </HStack>
+      }
       description={t('tradingProfiles.dynamicSelection.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
-      badge={isAutoRotationEnabled ? (
-        <Box px={2} py={0.5} bg="blue.subtle" color="blue.fg" borderRadius="full" fontSize="xs" fontWeight="medium">
-          <Flex align="center" gap={1}>
-            <LuZap size={10} />
-            {t('tradingProfiles.dynamicSelection.autoRotation')}
-          </Flex>
-        </Box>
-      ) : undefined}
     >
       <Stack gap={4}>
         <QuickStartSection
@@ -181,6 +177,6 @@ export const DynamicSelectionSection = ({
           </Button>
         </Flex>
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

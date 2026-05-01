@@ -1,7 +1,8 @@
 import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
-import { CloseButton, Dialog, Tabs } from '@renderer/components/ui';
+import { DialogShell, Tabs } from '@renderer/components/ui';
 import { useDialogMount } from '@renderer/hooks/useDialogMount';
 import { MM } from '@marketmind/tokens';
+import type { DialogControlProps } from '@marketmind/types';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
@@ -14,13 +15,9 @@ const SecurityTab = lazy(() => import('./SecurityTab').then((m) => ({ default: m
 const NotificationsTab = lazy(() => import('./NotificationsTab').then((m) => ({ default: m.NotificationsTab })));
 const GeneralTab = lazy(() => import('./GeneralTab').then((m) => ({ default: m.GeneralTab })));
 const ChartSettingsTab = lazy(() => import('./ChartSettingsTab').then((m) => ({ default: m.ChartSettingsTab })));
-const WalletManager = lazy(() => import('../Trading/WalletManager').then((m) => ({ default: m.WalletManager })));
-const TradingProfilesTab = lazy(() => import('./TradingProfilesTab').then((m) => ({ default: m.TradingProfilesTab })));
 const AutoTradingTab = lazy(() => import('./AutoTradingTab').then((m) => ({ default: m.AutoTradingTab })));
 const IndicatorsTab = lazy(() => import('./IndicatorsTab').then((m) => ({ default: m.IndicatorsTab })));
-const CustomSymbolsTab = lazy(() => import('../CustomSymbols').then((m) => ({ default: m.CustomSymbolsTab })));
 const DataTab = lazy(() => import('./DataTab').then((m) => ({ default: m.DataTab })));
-const UpdatesTab = lazy(() => import('./UpdatesTab').then((m) => ({ default: m.UpdatesTab })));
 const AboutTab = lazy(() => import('./AboutTab').then((m) => ({ default: m.AboutTab })));
 import {
   DEFAULT_SETTINGS_TAB,
@@ -31,9 +28,7 @@ import {
   isSettingsTab,
 } from './constants';
 
-interface SettingsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface SettingsDialogProps extends DialogControlProps {
   initialTab?: SettingsTab;
   advancedConfig: AdvancedControlsConfig;
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;
@@ -64,24 +59,16 @@ export const SettingsDialog = ({
   }, []);
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(e) => !e.open && onClose()} size="xl">
-      <Dialog.Backdrop />
-      <Dialog.Positioner>
-        <Dialog.Content maxH="90vh" maxW="1100px" overflow="hidden">
-          <CloseButton
-            position="absolute"
-            top={4}
-            right={4}
-            onClick={onClose}
-            size="sm"
-            zIndex={2}
-          />
-          <Dialog.Header borderBottom="1px solid" borderColor="border" pr={12}>
-            <Dialog.Title>{t('settings.title')}</Dialog.Title>
-          </Dialog.Header>
-
-          <Dialog.Body p={0} overflow="hidden">
-            <Tabs.Root
+    <DialogShell
+      isOpen={isOpen}
+      onClose={onClose}
+      size="xl"
+      title={t('settings.title')}
+      description={t('settings.dialogDescription')}
+      bodyPadding={0}
+      hideFooter
+    >
+      <Tabs.Root
               value={activeTab}
               onValueChange={(e) => isSettingsTab(e.value) && setActiveTab(e.value)}
               orientation="vertical"
@@ -172,37 +159,22 @@ export const SettingsDialog = ({
                         />
                       )}
                     </Tabs.Content>
-                    <Tabs.Content value="wallets" pt={0} w="100%">
-                      {activeTab === 'wallets' && <WalletManager />}
-                    </Tabs.Content>
-                    <Tabs.Content value="tradingProfiles" pt={0} w="100%">
-                      {activeTab === 'tradingProfiles' && <TradingProfilesTab />}
-                    </Tabs.Content>
                     <Tabs.Content value="autoTrading" pt={0} w="100%">
                       {activeTab === 'autoTrading' && <AutoTradingTab />}
                     </Tabs.Content>
                     <Tabs.Content value="indicators" pt={0} w="100%">
                       {activeTab === 'indicators' && <IndicatorsTab />}
                     </Tabs.Content>
-                    <Tabs.Content value="customSymbols" pt={0} w="100%">
-                      {activeTab === 'customSymbols' && <CustomSymbolsTab />}
-                    </Tabs.Content>
                     <Tabs.Content value="data" pt={0} w="100%">
                       {activeTab === 'data' && <DataTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="updates" pt={0} w="100%">
-                      {activeTab === 'updates' && <UpdatesTab />}
                     </Tabs.Content>
                     <Tabs.Content value="about" pt={0} w="100%">
                       {activeTab === 'about' && <AboutTab />}
                     </Tabs.Content>
                   </Suspense>
-                </Box>
-              </Flex>
-            </Tabs.Root>
-          </Dialog.Body>
-        </Dialog.Content>
-      </Dialog.Positioner>
-    </Dialog.Root>
+              </Box>
+            </Flex>
+      </Tabs.Root>
+    </DialogShell>
   );
 };

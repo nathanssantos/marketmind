@@ -173,7 +173,21 @@ export const STARTUP_CONFIG = {
   INCOME_SYNC_DELAY_MS: 120 * TIME_MS.SECOND,
   AUDIT_DELAY_MS: 90 * TIME_MS.SECOND,
   FUNDING_RATE_INTERVAL_MS: 5 * TIME_MS.MINUTE,
-  POSITION_SYNC_INTERVAL_MS: 5 * TIME_MS.MINUTE,
+  /**
+   * How often the PositionSyncService reconciles each live wallet's
+   * open positions against Binance. This is the ONLY mechanism that
+   * catches positions that closed on the exchange but whose
+   * `position:closed` user-stream event was missed (Binance does not
+   * replay missed events on reconnect).
+   *
+   * v1.6 Track F.2 — was 5 minutes. User reported ~1 min UI lag on
+   * SL closes; the global 5-min reconciliation amplified any
+   * upstream miss into multi-minute UI staleness. 30s caps that
+   * backstop at sub-minute, with acceptable Binance REST cost
+   * (getPositions = weight 5; per-wallet rate limit easily handles
+   * 2 calls/min).
+   */
+  POSITION_SYNC_INTERVAL_MS: 30 * TIME_MS.SECOND,
 } as const;
 
 export type StartupConfigConstants = typeof STARTUP_CONFIG;

@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { KeyboardShortcutDispatcher } from './components/KeyboardShortcutDispatcher';
-import { KeyboardShortcutHelpModal } from './components/KeyboardShortcutHelpModal';
+import { KeyboardShortcutHelpDialog } from './components/Help/KeyboardShortcutHelpDialog';
 import { PreferencesHydrator } from './components/PreferencesHydrator';
 import { useGlobalKeyboardShortcuts } from './hooks/useGlobalKeyboardShortcuts';
 import type { AdvancedControlsConfig } from './components/Chart/AdvancedControls';
@@ -126,7 +126,7 @@ function App(): ReactElement {
           {(toast) => <ToastContent toast={toast as ToastLike} />}
         </Toaster>
         <KeyboardShortcutDispatcher />
-        <KeyboardShortcutHelpModal />
+        <KeyboardShortcutHelpDialog />
         <GlobalShortcuts />
         <ChartProvider>
           <PinnedControlsProvider>

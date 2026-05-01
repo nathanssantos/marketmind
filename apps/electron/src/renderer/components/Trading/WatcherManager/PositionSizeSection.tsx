@@ -1,10 +1,8 @@
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
-import { CollapsibleSection, Slider } from '@renderer/components/ui';
+import { FormSection, Slider } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 
 export interface PositionSizeSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   positionSizePercent: number;
   onPositionSizeChange: (value: number) => void;
   manualPositionSizePercent: number;
@@ -15,8 +13,6 @@ export interface PositionSizeSectionProps {
 }
 
 export const PositionSizeSection = ({
-  isExpanded,
-  onToggle,
   positionSizePercent,
   onPositionSizeChange,
   manualPositionSizePercent,
@@ -28,13 +24,9 @@ export const PositionSizeSection = ({
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('watcherManager.positionSize.title')}
       description={t('watcherManager.positionSize.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
       <Stack gap={4}>
         <Box>
@@ -115,6 +107,6 @@ export const PositionSizeSection = ({
           </HStack>
         </Box>
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

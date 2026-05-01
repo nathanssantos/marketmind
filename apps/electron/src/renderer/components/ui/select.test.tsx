@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Select, SelectOption } from './select';
+import { Select, SelectOption } from '@marketmind/ui';
 
 const mockOptions: SelectOption[] = [
   { value: '1', label: 'Option 1' },

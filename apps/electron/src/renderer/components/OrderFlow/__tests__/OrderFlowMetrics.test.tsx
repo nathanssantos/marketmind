@@ -37,11 +37,11 @@ describe('OrderFlowMetrics', () => {
   it('renders all metric labels', () => {
     renderWithChakra(<OrderFlowMetrics symbol="BTCUSDT" />);
     expect(screen.getByText('CVD')).toBeDefined();
-    expect(screen.getByText('Imbalance')).toBeDefined();
-    expect(screen.getByText('Spread')).toBeDefined();
-    expect(screen.getByText('Absorption')).toBeDefined();
-    expect(screen.getByText('Microprice')).toBeDefined();
-    expect(screen.getByText('Exhaustion')).toBeDefined();
+    expect(screen.getByText('scalping.metric.imbalance')).toBeDefined();
+    expect(screen.getByText('scalping.metric.spread')).toBeDefined();
+    expect(screen.getByText('scalping.metric.absorption')).toBeDefined();
+    expect(screen.getByText('scalping.metric.microprice')).toBeDefined();
+    expect(screen.getByText('scalping.metric.exhaustion')).toBeDefined();
   });
 
   it('renders metric values formatted correctly', () => {
@@ -56,6 +56,6 @@ describe('OrderFlowMetrics', () => {
 
   it('renders order flow title', () => {
     renderWithChakra(<OrderFlowMetrics symbol="BTCUSDT" />);
-    expect(screen.getByText('Order Flow')).toBeDefined();
+    expect(screen.getByText('scalping.metric.orderFlow')).toBeDefined();
   });
 });

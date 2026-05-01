@@ -15,7 +15,7 @@ export function SymbolSection({ symbols, onSymbolsChange }: SymbolSectionProps) 
 
   return (
     <VStack gap={3} align="stretch">
-      <Text fontWeight="semibold">{t('scalping.config.symbols', 'Symbols')}</Text>
+      <Text fontWeight="semibold">{t('scalping.config.symbols')}</Text>
 
       <BulkSymbolSelector
         selectedSymbols={symbols}

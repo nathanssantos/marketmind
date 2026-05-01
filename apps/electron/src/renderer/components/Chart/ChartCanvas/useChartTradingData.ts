@@ -1,10 +1,11 @@
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, PositionClosedPayload } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useOrphanOrders } from '@renderer/hooks/useOrphanOrders';
 import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
 import { useIndicatorVisibility } from '@renderer/hooks/useIndicatorVisibility';
+import { useSocketEvent } from '@renderer/hooks/socket';
 import { trpc } from '@renderer/utils/trpc';
 import { QUERY_CONFIG } from '@shared/constants/queryConfig';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,7 +17,19 @@ interface OptimisticOverride {
   timestamp: number;
 }
 
-const OPTIMISTIC_OVERRIDE_TTL_MS = 5_000;
+// Hard safety cap for optimistic overrides — after this, give up and let
+// the real cache speak. v1.6 Track F: was 5s, but Binance's open-orders
+// list is eventually consistent — a cancelled limit could still appear
+// in `getOpenOrders` for several seconds after the cancel ACKs. With
+// the old 5s cap, the override would expire before the cache caught up,
+// the cancelled order would reappear (real cache still had it), then
+// vanish again on the next poll. Bumped to 30s + smarter "delete when
+// server stops showing the entry" logic below.
+const OPTIMISTIC_OVERRIDE_HARD_CAP_MS = 30_000;
+// Pre-confirmation TTL for newly-created entries (shown before the
+// server returns the real exec). Different concern from the override
+// cap above — keeps the staleness short for create flows.
+const OPTIMISTIC_ENTRY_TTL_MS = 5_000;
 
 export interface UseChartTradingDataProps {
   symbol?: string;
@@ -213,15 +226,27 @@ export const useChartTradingData = ({
     if (overrides.size === 0) return;
     const now = Date.now();
     let changed = false;
+    const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions, ...trackedOrderExecutions];
     for (const [id, ov] of overrides) {
-      if (now - ov.timestamp > OPTIMISTIC_OVERRIDE_TTL_MS) {
+      // 1. Hard safety cap — give up after 30s regardless of state.
+      if (now - ov.timestamp > OPTIMISTIC_OVERRIDE_HARD_CAP_MS) {
         overrides.delete(id);
         changed = true;
         continue;
       }
-      const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions, ...trackedOrderExecutions];
       const serverExec = allReal.find(e => e.id === id);
-      if (!serverExec) continue;
+      // 2. Server no longer lists the entry — for status='cancelled' /
+      //    'closed' patches this means the cancel/close completed; the
+      //    override is now moot and would just take memory. Delete.
+      //    (For other patches like entryPrice/stopLoss/takeProfit, a
+      //    missing server entry is an edge case — also safe to delete.)
+      if (!serverExec) {
+        overrides.delete(id);
+        changed = true;
+        continue;
+      }
+      // 3. Server already reflects every patched field — override is
+      //    redundant.
       const patchKeys = Object.keys(ov.patches) as (keyof OptimisticOverride['patches'])[];
       const serverMatches = patchKeys.every(k => {
         const patchVal = ov.patches[k];
@@ -233,9 +258,86 @@ export const useChartTradingData = ({
         overrides.delete(id);
         changed = true;
       }
+      // 4. Otherwise: server still has the entry with the OLD state. Keep
+      //    the override so the user's optimistic intent stays on screen
+      //    until the server catches up (or the hard cap fires).
     }
     if (changed) setOverrideVersion(v => v + 1);
   }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions]);
+
+  // Snapshot closing positions when a `position:closed` event arrives so
+  // the chart shows the order line for ~800ms while the query
+  // invalidation refetches. Without this the line just freezes until the
+  // next render. v1.6 Track F.3.
+  const utils = trpc.useUtils();
+  useSocketEvent('position:closed', (data: PositionClosedPayload) => {
+    if (!backendWalletId) return;
+    const exec = filteredBackendExecutions.find((e) => e.id === data.positionId);
+    if (exec) {
+      closingSnapshotsRef.current.set(exec.id, exec);
+      orderFlashMapRef.current.set(exec.id, performance.now());
+      setClosingVersion((v) => v + 1);
+      // Clear the snapshot after the flash + a small data-refresh buffer
+      // so the close animation always plays even if the server refetch is
+      // faster than the animation.
+      setTimeout(() => {
+        closingSnapshotsRef.current.delete(exec.id);
+        setClosingVersion((v) => v + 1);
+      }, 800);
+    }
+    // Force-refetch the active executions immediately as a belt-and-
+    // suspenders against missed websocket invalidation upstream.
+    void utils.autoTrading.getActiveExecutions.invalidate({ walletId: backendWalletId });
+  }, !!backendWalletId);
+
+  // v1.6 Track F.3 #14 — live-patch the chart on position:update so
+  // trailing-stop activation, server-pushed SL/TP changes, and qty
+  // updates show immediately, without waiting for the next query
+  // refetch (~250ms via the RealtimeTradingSyncContext debounce). The
+  // existing optimistic-override system tracks the patch until the
+  // server cache catches up, then auto-cleans. Idempotent with user-
+  // initiated optimistic patches — the override merges patches.
+  useSocketEvent('position:update', (raw) => {
+    if (!backendWalletId) return;
+    const data = raw as Partial<BackendExecution> & { id?: string };
+    if (!data?.id) return;
+    const exec = filteredBackendExecutions.find((e) => e.id === data.id);
+    if (!exec) return;
+    const patches: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice'>> = {};
+    const previous: typeof patches = {};
+    if (data.stopLoss !== undefined && data.stopLoss !== exec.stopLoss) {
+      patches.stopLoss = data.stopLoss;
+      previous.stopLoss = exec.stopLoss;
+    }
+    if (data.takeProfit !== undefined && data.takeProfit !== exec.takeProfit) {
+      patches.takeProfit = data.takeProfit;
+      previous.takeProfit = exec.takeProfit;
+    }
+    if (data.entryPrice !== undefined && data.entryPrice !== exec.entryPrice) {
+      patches.entryPrice = data.entryPrice;
+      previous.entryPrice = exec.entryPrice;
+    }
+    if (Object.keys(patches).length > 0) {
+      applyOptimistic(exec.id, patches, previous);
+      orderFlashMapRef.current.set(exec.id, performance.now());
+    }
+  }, !!backendWalletId);
+
+  // v1.6 Track F.3 #14 — live-patch limit-order line position when the
+  // server pushes a price change (e.g. user dragged it on another
+  // device, or the system modified it). Mirrors the position:update
+  // path above for entry orders.
+  useSocketEvent('order:update', (raw) => {
+    if (!backendWalletId) return;
+    const data = raw as Partial<BackendExecution> & { id?: string };
+    if (!data?.id) return;
+    const exec = filteredBackendExecutions.find((e) => e.id === data.id);
+    if (!exec || exec.status !== 'pending') return;
+    if (data.entryPrice !== undefined && data.entryPrice !== exec.entryPrice) {
+      applyOptimistic(exec.id, { entryPrice: data.entryPrice }, { entryPrice: exec.entryPrice });
+      orderFlashMapRef.current.set(exec.id, performance.now());
+    }
+  }, !!backendWalletId);
 
   useEffect(() => {
     if (optimisticExecutions.length === 0) return;
@@ -243,7 +345,7 @@ export const useChartTradingData = ({
     const now = Date.now();
     const remaining = optimisticExecutions.filter(opt => {
       const openedMs = opt.openedAt instanceof Date ? opt.openedAt.getTime() : opt.openedAt ? new Date(opt.openedAt).getTime() : now;
-      if (now - openedMs > OPTIMISTIC_OVERRIDE_TTL_MS) return false;
+      if (now - openedMs > OPTIMISTIC_ENTRY_TTL_MS) return false;
       const optPrice = parseFloat(opt.entryPrice);
       const matchingReal = allReal.find(real =>
         real.symbol === opt.symbol &&

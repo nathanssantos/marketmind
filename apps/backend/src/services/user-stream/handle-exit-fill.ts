@@ -8,6 +8,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
+import { emitPositionClosedToast, emitPositionPartialCloseToast } from './emit-position-toast';
 
 export async function handleExitFill(
   ctx: UserStreamContext,
@@ -22,6 +23,7 @@ export async function handleExitFill(
   isSLOrder: boolean,
   _isTPOrder: boolean,
   isAlgoTriggerFill: boolean,
+  isLiquidation = false,
 ): Promise<void> {
   if (isAlgoTriggerFill) {
     logger.info(
@@ -157,6 +159,20 @@ export async function handleExitFill(
               quantity: remainingQty.toString(),
               entryPrice: exchangeEntryPrice.toString(),
             });
+
+            // v1.6 Track F.4 — partial-close toast. Without this, a
+            // reduce-only fill that didn't fully close looked
+            // identical (chart-wise) to a position-update — user
+            // had no audible/visual confirmation.
+            emitPositionPartialCloseToast(wsService, walletId, {
+              executionId: execution.id,
+              symbol,
+              side: execution.side,
+              closedQuantity: closedQty,
+              remainingQuantity: remainingQty,
+              exitPrice,
+              partialPnl,
+            });
           }
 
           return;
@@ -218,11 +234,13 @@ export async function handleExitFill(
   const pnlPercent = pnlResult.pnlPercent;
   const totalFees = actualEntryFee + actualExitFee;
 
-  const determinedExitReason = isAlgoTriggerFill
-    ? execution.exitReason
-    : isSLOrder
-      ? 'STOP_LOSS'
-      : 'TAKE_PROFIT';
+  const determinedExitReason = isLiquidation
+    ? 'LIQUIDATION'
+    : isAlgoTriggerFill
+      ? execution.exitReason
+      : isSLOrder
+        ? 'STOP_LOSS'
+        : 'TAKE_PROFIT';
 
   const closeResult = await db
     .update(tradeExecutions)
@@ -296,6 +314,22 @@ export async function handleExitFill(
       exitReason: determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT'),
       pnl,
       pnlPercent,
+    });
+
+    // v1.6 Track F.4 — toast feedback for SL/TP fills. Without this,
+    // the user gets zero notification when a position closes via the
+    // exchange (only the chart line disappears). The renderer's
+    // RealtimeTradingSyncContext already handles `trade:notification`
+    // events and renders the toast + native notification.
+    emitPositionClosedToast(wsService, walletId, {
+      executionId: execution.id,
+      symbol,
+      side: execution.side,
+      exitPrice,
+      pnl,
+      pnlPercent,
+      exitReason: determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT'),
+      source: 'EXIT_FILL',
     });
   }
 

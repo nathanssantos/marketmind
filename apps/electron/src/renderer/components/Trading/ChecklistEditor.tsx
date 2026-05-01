@@ -165,23 +165,21 @@ export const ChecklistEditor = ({
           disabled={availableIndicators.length === 0}
         >
           <LuPlus />
-          {t('checklist.editor.add', { defaultValue: 'Add condition' })}
+          {t('checklist.editor.add')}
         </Button>
       </Flex>
 
       {sorted.length === 0 ? (
         <EmptyState
-          title={t('checklist.editor.emptyTitle', { defaultValue: 'No conditions' })}
-          description={t('checklist.editor.emptyDescription', {
-            defaultValue: 'Add indicators to build your pre-trade checklist.',
-          })}
+          title={t('checklist.editor.emptyTitle')}
+          description={t('checklist.editor.emptyDescription')}
         />
       ) : (
         <Stack gap={2}>
           {sorted.map((cond, idx) => {
             const indicator = indicatorMap.get(cond.userIndicatorId);
             const catalogDef = indicator ? INDICATOR_CATALOG[indicator.catalogType] : undefined;
-            const label = indicator?.label ?? t('checklist.editor.missing', { defaultValue: 'Missing indicator' });
+            const label = indicator?.label ?? t('checklist.editor.missing');
             const opLabel = t(`checklist.ops.${cond.op}`, { defaultValue: cond.op });
             const tfLabel = t(`checklist.timeframes.${cond.timeframe}`, { defaultValue: cond.timeframe });
 
@@ -220,9 +218,7 @@ export const ChecklistEditor = ({
                       {opLabel} {thresholdLabel(cond.threshold)}
                       {!catalogDef && indicator && (
                         <Text as="span" ml={2} color="red.fg">
-                          {t('checklist.editor.unknownCatalog', {
-                            defaultValue: '(unknown indicator type)',
-                          })}
+                          {t('checklist.editor.unknownCatalog')}
                         </Text>
                       )}
                     </Text>
@@ -235,13 +231,13 @@ export const ChecklistEditor = ({
                       size="sm"
                     />
                     <TooltipWrapper
-                      label={t('checklist.editor.moveUp', { defaultValue: 'Move up' })}
+                      label={t('checklist.editor.moveUp')}
                       showArrow
                     >
                       <IconButton
                         size="2xs"
                         variant="ghost"
-                        aria-label={t('checklist.editor.moveUp', { defaultValue: 'Move up' })}
+                        aria-label={t('checklist.editor.moveUp')}
                         onClick={() => handleMove(cond.id, -1)}
                         disabled={idx === 0 || isSaving}
                       >
@@ -249,13 +245,13 @@ export const ChecklistEditor = ({
                       </IconButton>
                     </TooltipWrapper>
                     <TooltipWrapper
-                      label={t('checklist.editor.moveDown', { defaultValue: 'Move down' })}
+                      label={t('checklist.editor.moveDown')}
                       showArrow
                     >
                       <IconButton
                         size="2xs"
                         variant="ghost"
-                        aria-label={t('checklist.editor.moveDown', { defaultValue: 'Move down' })}
+                        aria-label={t('checklist.editor.moveDown')}
                         onClick={() => handleMove(cond.id, 1)}
                         disabled={idx === sorted.length - 1 || isSaving}
                       >
@@ -265,7 +261,7 @@ export const ChecklistEditor = ({
                     <IconButton
                       size="2xs"
                       variant="ghost"
-                      aria-label={t('common.edit', { defaultValue: 'Edit' })}
+                      aria-label={t('common.edit')}
                       onClick={() => handleEdit(cond.id)}
                       disabled={isSaving}
                     >
@@ -275,7 +271,7 @@ export const ChecklistEditor = ({
                       size="2xs"
                       variant="ghost"
                       colorPalette="red"
-                      aria-label={t('common.delete', { defaultValue: 'Delete' })}
+                      aria-label={t('common.delete')}
                       onClick={() => handleDelete(cond.id)}
                       disabled={isSaving}
                     >

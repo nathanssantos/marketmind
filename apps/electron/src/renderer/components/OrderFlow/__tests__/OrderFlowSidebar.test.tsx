@@ -55,8 +55,8 @@ describe('OrderFlowSidebar', () => {
 
   it('renders 2 tab triggers when open', () => {
     renderWithChakra(<OrderFlowSidebar width={300} symbol="BTCUSDT" />);
-    expect(screen.getByText('DOM')).toBeDefined();
-    expect(screen.getByText('Metrics')).toBeDefined();
+    expect(screen.getByText('orderFlow.tabs.dom')).toBeDefined();
+    expect(screen.getByText('orderFlow.tabs.metrics')).toBeDefined();
   });
 
   it('renders close button', () => {

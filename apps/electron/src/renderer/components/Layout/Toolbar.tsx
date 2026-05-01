@@ -18,7 +18,7 @@ import {
 import { useLayoutStore } from '../../store/layoutStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useBacktestActiveRuns } from '../../hooks/useBacktestActiveRuns';
-import { useBacktestModalStore } from '../../store/backtestModalStore';
+import { useBacktestDialogStore } from '../../store/backtestDialogStore';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
@@ -47,8 +47,8 @@ const ToolbarLayoutActions = memo(({ showNewWindowButton, onOpenNewWindow }: { s
       <Menu.Root>
         <Menu.Trigger asChild>
           <Box>
-            <TooltipWrapper label={t('chart.controls.addChart', 'Add chart')} showArrow>
-              <IconButton size="2xs" aria-label={t('chart.controls.addChart', 'Add chart')} variant="ghost" color="fg.muted">
+            <TooltipWrapper label={t('chart.controls.addChart')} showArrow>
+              <IconButton size="2xs" aria-label={t('chart.controls.addChart')} variant="ghost" color="fg.muted">
                 <LuPlus />
               </IconButton>
             </TooltipWrapper>
@@ -133,7 +133,7 @@ export const Toolbar = memo(({
   );
 
   const { activeRuns: activeBacktests, hasActiveRuns: hasActiveBacktest } = useBacktestActiveRuns();
-  const { isBacktestOpen, toggleBacktest } = useBacktestModalStore(
+  const { isBacktestOpen, toggleBacktest } = useBacktestDialogStore(
     useShallow((state) => ({
       isBacktestOpen: state.isBacktestOpen,
       toggleBacktest: state.toggleBacktest,
@@ -224,11 +224,11 @@ export const Toolbar = memo(({
                 <LuActivity />
               </ToggleIconButton>
             </TooltipWrapper>
-            <TooltipWrapper label={t('orderFlow.title', 'Order Flow')} showArrow>
+            <TooltipWrapper label={t('orderFlow.title')} showArrow>
               <ToggleIconButton
                 active={orderFlowSidebarOpen}
                 size="2xs"
-                aria-label={t('orderFlow.title', 'Order Flow')}
+                aria-label={t('orderFlow.title')}
                 onClick={toggleOrderFlowSidebar}
               >
                 <LuBookOpen />
@@ -295,11 +295,11 @@ export const Toolbar = memo(({
                 <LuDollarSign />
               </ToggleIconButton>
             </TooltipWrapper>
-            <TooltipWrapper label={t('autoTrading.sidebar.title', 'Auto Trading')} showArrow>
+            <TooltipWrapper label={t('autoTrading.sidebar.title')} showArrow>
               <ToggleIconButton
                 active={isAutoTradingOpen}
                 size="2xs"
-                aria-label={t('autoTrading.sidebar.title', 'Auto Trading')}
+                aria-label={t('autoTrading.sidebar.title')}
                 onClick={onToggleAutoTrading}
               >
                 <LuBot />

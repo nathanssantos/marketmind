@@ -1,5 +1,6 @@
 import { GlobalActionsProvider } from '@/renderer/context/GlobalActionsContext';
-import { useBacktestModalStore } from '@/renderer/store/backtestModalStore';
+import { useDisclosure } from '@/renderer/hooks';
+import { useBacktestDialogStore } from '@/renderer/store/backtestDialogStore';
 import { usePreferencesStore, useUIPref } from '@/renderer/store/preferencesStore';
 import { useScreenerStore } from '@/renderer/store/screenerStore';
 import { useUIStore } from '@/renderer/store/uiStore';
@@ -12,9 +13,9 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 import type { Timeframe } from '../Chart/TimeframeSelector';
 import type { ChartType, MarketType } from '@marketmind/types';
 import { MarketSidebar } from '../MarketSidebar';
-import { AnalyticsModal } from '../Analytics';
-import { BacktestModal } from '../Backtest';
-import { ScreenerModal } from '../Screener';
+import { AnalyticsDialog } from '../Analytics';
+import { BacktestDialog } from '../Backtest';
+import { ScreenerDialog } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
 import { DEFAULT_SETTINGS_TAB, type SettingsTab } from '../Settings/constants';
 import { TradingSidebar } from '../Trading/TradingSidebar';
@@ -77,7 +78,7 @@ const MainLayoutComponent = ({
   const [autoTradingWidth, setAutoTradingWidth] = useUIPref('autoTradingSidebarWidth', DEFAULT_TRADING_WIDTH);
   const [marketWidth, setMarketWidth] = useUIPref('marketSidebarWidth', DEFAULT_MARKET_WIDTH);
   const [orderFlowWidth, setOrderFlowWidth] = useUIPref('orderFlowSidebarWidth', DEFAULT_MARKET_WIDTH);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const settingsDialog = useDisclosure();
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>(DEFAULT_SETTINGS_TAB);
   const resizingRef = useRef<'trading' | 'autoTrading' | 'market' | 'orderFlow' | null>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -90,13 +91,13 @@ const MainLayoutComponent = ({
   })));
 
   const closeAll = useCallback(() => {
-    setIsSettingsOpen(false);
+    settingsDialog.close();
     const ui = useUIStore.getState();
     ui.setOrdersDialogOpen(false);
     ui.setAnalyticsOpen(false);
     ui.setMarketSidebarOpen(false);
     ui.setOrderFlowSidebarOpen(false);
-    useBacktestModalStore.getState().closeBacktest();
+    useBacktestDialogStore.getState().closeBacktest();
     useScreenerStore.getState().setScreenerOpen(false);
     const prefs = usePreferencesStore.getState();
     prefs.set('ui', 'tradingSidebarOpen', false);
@@ -106,7 +107,7 @@ const MainLayoutComponent = ({
   const globalActions = useMemo(() => ({
     openSettings: (tab?: SettingsTab) => {
       setSettingsInitialTab(tab ?? DEFAULT_SETTINGS_TAB);
-      setIsSettingsOpen(true);
+      settingsDialog.open();
     },
     openSymbolSelector: () => onOpenSymbolSelector?.(),
     navigateToSymbol: (symbol: string, marketType?: MarketType) => onNavigateToSymbol?.(symbol, marketType),
@@ -294,15 +295,15 @@ const MainLayoutComponent = ({
         </Flex>
 
         <SettingsDialog
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
+          isOpen={settingsDialog.isOpen}
+          onClose={settingsDialog.close}
           initialTab={settingsInitialTab}
           advancedConfig={advancedConfig}
           onAdvancedConfigChange={onAdvancedConfigChange}
         />
-        <ScreenerModal onSymbolClick={onNavigateToSymbol} />
-        <BacktestModal />
-        <AnalyticsModal />
+        <ScreenerDialog onSymbolClick={onNavigateToSymbol} />
+        <BacktestDialog />
+        <AnalyticsDialog />
       </Box>
     </GlobalActionsProvider>
   );

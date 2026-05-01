@@ -1,1 +1,1 @@
-export { BacktestModal } from './BacktestModal';
+export { BacktestDialog } from './BacktestDialog';

@@ -51,9 +51,9 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
     label: t(`checklist.ops.${op}`, { defaultValue: op }),
   }));
 
-  const thresholdLabel = t('checklist.threshold', { defaultValue: 'Threshold' });
-  const lowLabel = t('checklist.thresholdLow', { defaultValue: 'Low' });
-  const highLabel = t('checklist.thresholdHigh', { defaultValue: 'High' });
+  const thresholdLabel = t('checklist.threshold');
+  const lowLabel = t('checklist.thresholdLow');
+  const highLabel = t('checklist.thresholdHigh');
 
   const thresholdPair: [number, number] = Array.isArray(value.threshold)
     ? value.threshold
@@ -64,7 +64,7 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
     <VStack gap={3} align="stretch" w="100%">
       <Grid templateColumns="1fr 1fr" gap={3}>
         <SelectField
-          label={t('checklist.timeframe', { defaultValue: 'Timeframe' })}
+          label={t('checklist.timeframe')}
           value={value.timeframe}
           options={timeframeOptions}
           onChange={(tf) =>
@@ -72,7 +72,7 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
           }
         />
         <SelectField
-          label={t('checklist.operator', { defaultValue: 'Operator' })}
+          label={t('checklist.operator')}
           value={value.op}
           options={opOptions}
           onChange={(op) => onChange({ ...value, op: op as ConditionOp })}
@@ -80,7 +80,7 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
       </Grid>
 
       <NumberField
-        label={t('checklist.weight', { defaultValue: 'Weight (× multiplier)' })}
+        label={t('checklist.weight')}
         value={value.weight}
         min={CHECKLIST_WEIGHT_MIN}
         max={CHECKLIST_WEIGHT_MAX}
@@ -119,8 +119,8 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
           }
         >
           <HStack gap={4}>
-            <Radio value="required">{t('checklist.tier.required', { defaultValue: 'Required' })}</Radio>
-            <Radio value="preferred">{t('checklist.tier.preferred', { defaultValue: 'Preferred' })}</Radio>
+            <Radio value="required">{t('checklist.tier.required')}</Radio>
+            <Radio value="preferred">{t('checklist.tier.preferred')}</Radio>
           </HStack>
         </RadioGroup>
       </HStack>
@@ -133,9 +133,9 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
           }
         >
           <HStack gap={4}>
-            <Radio value="LONG">{t('checklist.side.long', { defaultValue: 'Long' })}</Radio>
-            <Radio value="SHORT">{t('checklist.side.short', { defaultValue: 'Short' })}</Radio>
-            <Radio value="BOTH">{t('checklist.side.both', { defaultValue: 'Both' })}</Radio>
+            <Radio value="LONG">{t('checklist.side.long')}</Radio>
+            <Radio value="SHORT">{t('checklist.side.short')}</Radio>
+            <Radio value="BOTH">{t('checklist.side.both')}</Radio>
           </HStack>
         </RadioGroup>
       </HStack>

@@ -29,8 +29,14 @@ export async function handleOrderUpdate(
         ps: positionSide,
         n: commission,
         N: commissionAsset,
+        o: orderType,
       },
     } = event;
+
+    // Binance reports liquidation fills with orderType='LIQUIDATION'.
+    // Without this, the fill would be misclassified as TAKE_PROFIT
+    // (the SL/TP fallback in handleExitFill).
+    const isLiquidation = orderType === 'LIQUIDATION';
 
     logger.info(
       {
@@ -226,7 +232,7 @@ export async function handleOrderUpdate(
         }
       }
 
-      await handleExitFill(ctx, walletId, execution, symbol, orderId, avgPrice, lastFilledPrice, executedQty, commission, !!isSLOrder, !!isTPOrder, !!isAlgoTriggerFill);
+      await handleExitFill(ctx, walletId, execution, symbol, orderId, avgPrice, lastFilledPrice, executedQty, commission, !!isSLOrder, !!isTPOrder, !!isAlgoTriggerFill, isLiquidation);
     }
   } catch (error) {
     logger.error(

@@ -104,14 +104,14 @@ After F.1 shipped `@marketmind/tokens` as a real workspace package, the dependen
 ## Proposed extraction sequence
 
 ### PR 1 — `packages/ui-core/` skeleton + Tier 1 (low risk)
-- New workspace `@marketmind/ui-core` (use `-core` suffix during the migration so the in-app `ui/` barrel can keep its name unchanged).
-- Move all Tier-1 files. Keep `apps/electron/src/renderer/components/ui/index.ts` as a re-export aggregator: `export { Button, ... } from '@marketmind/ui-core'`.
+- New workspace `@marketmind/ui` (use `-core` suffix during the migration so the in-app `ui/` barrel can keep its name unchanged).
+- Move all Tier-1 files. Keep `apps/electron/src/renderer/components/ui/index.ts` as a re-export aggregator: `export { Button, ... } from '@marketmind/ui'`.
 - No app code touches imports — every site still imports from `@renderer/components/ui`. Verification: existing tests + visual regression suite must pass with zero diffs.
 - Test infra: `vitest` config in the new package mirrors backend's `vitest.config.ts`. Same testing-library setup. Existing `apps/electron/src/renderer/components/ui/*.test.tsx` files move alongside their components.
 
 ### PR 2 — Tier 2 (token-aware)
 - Move `callout.tsx`, `form-section.tsx`, `MetricCard.tsx`, `PnLDisplay.tsx`, `panel-header.tsx`, `typography.tsx`, `color-picker.tsx`, `Sidebar/`.
-- `@marketmind/ui-core` declares `@marketmind/tokens` as a peer dep; `package.json` lists it under `peerDependencies` (warns on mismatch) and `devDependencies` (so the package builds locally).
+- `@marketmind/ui` declares `@marketmind/tokens` as a peer dep; `package.json` lists it under `peerDependencies` (warns on mismatch) and `devDependencies` (so the package builds locally).
 - App-side `ui/index.ts` continues to re-export.
 
 ### PR 3 — Tier 3 graduation candidates

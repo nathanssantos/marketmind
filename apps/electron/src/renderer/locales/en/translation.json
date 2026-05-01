@@ -1,8 +1,12 @@
 {
   "shortcuts": {
-    "help": {
-      "title": "Keyboard Shortcuts",
-      "empty": "No shortcuts registered yet."
+    "dialogs": {
+      "help": {
+        "title": "Keyboard shortcuts",
+        "description": "Every shortcut registered in the app, grouped by section.",
+        "emptyTitle": "No shortcuts registered",
+        "emptyDescription": "Shortcuts get registered as features load. This dialog will fill in once you've used the app a bit."
+      }
     },
     "group": {
       "chart": "Chart",
@@ -42,6 +46,8 @@
     "save": "Save",
     "saveChanges": "Save Changes",
     "close": "Close",
+    "moreActions": "More actions",
+    "hideActions": "Hide actions",
     "delete": "Delete",
     "edit": "Edit",
     "loading": "Loading...",
@@ -91,7 +97,16 @@
     "remove": "Remove",
     "economicEvent": "Economic Event",
     "actual": "Actual",
-    "estimate": "Estimate"
+    "estimate": "Estimate",
+    "symbol": "Symbol",
+    "side": "Side",
+    "price": "Price",
+    "quantity": "Quantity",
+    "stop": "Stop",
+    "start": "Start",
+    "settings": "Settings",
+    "confirm": "Confirm",
+    "endTime": "End time"
   },
   "app": {
     "title": "MarketMind",
@@ -123,7 +138,9 @@
   },
   "customSymbols": {
     "title": "Custom Symbols",
+    "manage": "Manage",
     "description": "Build custom indices from multiple components with weighted aggregation.",
+    "dialogDescription": "Compose synthetic indices from multiple symbols (equal-weight, market-cap, capped, sqrt or manual weighting).",
     "myIndices": "My Indices",
     "createNew": "Create New",
     "name": "Name",
@@ -195,6 +212,7 @@
   },
   "settings": {
     "title": "Settings",
+    "dialogDescription": "Account, security, notifications, and per-feature defaults.",
     "resetToDefaults": "Reset to Defaults",
     "tabs": {
       "account": "Account",
@@ -203,16 +221,12 @@
       "general": "General",
       "chart": "Chart",
       "autoTrading": "Auto-Trading",
-      "wallets": "Wallets",
       "algorithmicAutoTrading": "Algorithmic Auto-Trading",
-      "tradingProfiles": "Trading Profiles",
       "setupDetection": "Setup Detection",
       "tradingSimulator": "Trading Simulator",
       "data": "Data",
-      "updates": "Updates",
       "about": "About",
-      "indicators": "Indicators",
-      "customSymbols": "Custom Symbols"
+      "indicators": "Indicators"
     },
     "section": {
       "account": "Account",
@@ -550,7 +564,8 @@
           "extendedDescription": "Uses the most extreme swing high/low in the lookback — wider targets for bigger moves",
           "nearest": "Nearest",
           "nearestDescription": "Uses the most recent swing high/low — tighter targets for shorter trades"
-        }
+        },
+        "calculationLabel": "Calculation method"
       },
       "stopMode": {
         "title": "Initial Stop Placement",
@@ -558,7 +573,8 @@
         "fiboTarget": "Fibonacci Target",
         "fiboTargetDescription": "Places stop at the Fibonacci swing low/high — wider stops for the full move",
         "nearestSwing": "Nearest Swing",
-        "nearestSwingDescription": "Places stop at the most recent local swing — tighter stops for shorter risk"
+        "nearestSwingDescription": "Places stop at the most recent local swing — tighter stops for shorter risk",
+        "label": "Initial stop placement"
       },
       "entrySettings": {
         "title": "Entry Settings",
@@ -605,7 +621,8 @@
         "positionMode": "Position Mode",
         "positionModeDescription": "One-Way: single direction per symbol. Hedge: simultaneous long and short.",
         "oneWay": "One-Way",
-        "hedge": "Hedge"
+        "hedge": "Hedge",
+        "autoTradingDescription": "Default leverage for auto-trading entries on new symbols"
       },
       "marginType": {
         "label": "Margin Type"
@@ -765,7 +782,8 @@
         "fiboModerate": "Moderate (1.272, 1.618, 2.0)",
         "fiboModerateDesc": "Three entries at standard extensions.",
         "fiboAll": "All Levels (1.0 - 2.618)",
-        "fiboAllDesc": "Maximum entries at all Fibonacci extensions."
+        "fiboAllDesc": "Maximum entries at all Fibonacci extensions.",
+        "modeLabel": "Mode"
       }
     },
     "indicators": {
@@ -774,6 +792,8 @@
       "reset": "Reset",
       "new": "New",
       "empty": "No indicators yet. Click \"New\" to add one.",
+      "emptyTitle": "No indicators",
+      "emptyDescription": "Click \"New\" to add your first indicator. Defaults are seeded automatically on first login.",
       "custom": "Custom",
       "duplicate": "Duplicate",
       "deleteTitle": "Delete indicator?",
@@ -786,6 +806,30 @@
     "streamHealth": {
       "degradedTitle": "Exchange stream degraded",
       "degradedDescription": "No updates received from the exchange — reconnecting automatically."
+    },
+    "tools": {
+      "pencil": "Pencil",
+      "highlighter": "Highlighter",
+      "line": "Line",
+      "rectangle": "Rectangle",
+      "fibonacci": "Fibonacci",
+      "ruler": "Ruler",
+      "area": "Area",
+      "arrow": "Arrow",
+      "text": "Text",
+      "magnet": "OHLC Magnet",
+      "horizontalLine": "Horizontal Line",
+      "verticalLine": "Vertical Line",
+      "trendLine": "Trend Line",
+      "ray": "Ray",
+      "channel": "Channel",
+      "ellipse": "Ellipse",
+      "gannFan": "Gann Fan",
+      "pitchfork": "Pitchfork",
+      "priceRange": "Price Range",
+      "anchoredVwap": "Anchored VWAP",
+      "longPosition": "Long Position",
+      "shortPosition": "Short Position"
     },
     "controls": {
       "title": "Chart Controls",
@@ -819,22 +863,13 @@
       "openingRange": "Opening Range",
       "setupDetection": "Algorithmic Setup Detection",
       "indicators": "Indicators",
-      "quickSettings": "Quick Settings"
+      "quickSettings": "Quick Settings",
+      "addChart": "Add chart",
+      "flip": "Flip chart (invert Y axis)"
     },
     "type": {
       "candle": "Candle",
       "line": "Line"
-    },
-    "tools": {
-      "pencil": "Pencil",
-      "line": "Line",
-      "rectangle": "Rectangle",
-      "fibonacci": "Fibonacci",
-      "ruler": "Ruler",
-      "area": "Area",
-      "arrow": "Arrow",
-      "text": "Text",
-      "magnet": "OHLC Magnet"
     },
     "quickTrade": {
       "buy": "Buy",
@@ -844,7 +879,15 @@
       "noPriceError": "No current price available",
       "invalidQuantityError": "Invalid quantity",
       "moveToSidebar": "Move to Sidebar",
-      "moveToChart": "Move to Chart"
+      "moveToChart": "Move to Chart",
+      "gridOrders": "Grid Orders",
+      "trailingStop": "Trailing Stop",
+      "confirmOrder": "Confirm Order",
+      "confirmBuy": "Confirm Buy",
+      "confirmSell": "Confirm Sell",
+      "totalValue": "Total Value",
+      "margin": "Margin Required",
+      "liquidation": "Liq. Price"
     },
     "gridOrders": {
       "title": "Grid Orders",
@@ -1022,6 +1065,7 @@
     },
     "wallets": {
       "title": "Wallets",
+      "dialogDescription": "Connect Binance or Interactive Brokers wallets, plus paper-trading sandboxes for risk-free testing.",
       "create": "Create Wallet",
       "createTitle": "Create New Wallet",
       "empty": "No wallets yet. Create one to start trading.",
@@ -1055,7 +1099,17 @@
       "connectionType": "Connection Type",
       "ibGateway": "IB Gateway (Recommended)",
       "ibTws": "Trader Workstation (TWS)",
-      "port": "Port"
+      "port": "Port",
+      "walletType": "Wallet Type",
+      "paper": "Paper Trading",
+      "testnet": "Binance Testnet",
+      "live": "Live Trading",
+      "testnetInfo": "Binance Testnet",
+      "testnetDescription": "Use testnet to practice with fake funds.",
+      "liveWarning": "Warning: Real Money",
+      "liveDescription": "Live trading uses real funds. Make sure you understand the risks.",
+      "selectWallet": "Select a wallet first",
+      "syncBalance": "Sync balance from Binance"
     },
     "ticket": {
       "title": "Ticket",
@@ -1245,6 +1299,10 @@
         "stopLoss": "Stop Loss",
         "takeProfit": "Take Profit",
         "manual": "Manual"
+      },
+      "setupDetected": {
+        "title": "New setup detected",
+        "body": "{{symbol}} {{setupType}}{{direction}}"
       }
     },
     "order": {
@@ -1258,10 +1316,20 @@
       "slTpCreateFailed": "Failed to create SL/TP",
       "entryUpdateFailed": "Failed to move pending order"
     },
-    "closeOrder": "Close Order",
-    "closeOrderConfirm": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
-    "removeSLTPConfirm": "Remove {{type}} from all orders in this position?",
-    "confirmClose": "Confirm Close",
+    "dialogs": {
+      "chartClose": {
+        "title": "Close position?",
+        "description": "{{side}} entered at {{entry}} · current price {{current}}",
+        "submit": "Close position"
+      },
+      "chartRemoveSlTp": {
+        "title": "Remove {{type}}?",
+        "description": "Removes {{type}} from every order in this position.",
+        "submit": "Remove {{type}}",
+        "typeStopLoss": "Stop Loss",
+        "typeTakeProfit": "Take Profit"
+      }
+    },
     "active": "ACTIVE",
     "pending": "PENDING",
     "analytics": {
@@ -1327,7 +1395,8 @@
         "week": "Week",
         "noData": "No trades this month",
         "trades_one": "{{count}} trade",
-        "trades_other": "{{count}} trades"
+        "trades_other": "{{count}} trades",
+        "trades": "Trades: {{count}}"
       }
     },
     "mode": {
@@ -1463,6 +1532,7 @@
     "title": "Trading Profiles",
     "modalTitle": "Auto Trading",
     "description": "Create profiles with different setup configurations for multi-asset trading",
+    "dialogDescription": "Manage active watchers, trading mode and symbol rotation. Profiles are configured below the watcher list.",
     "defaultMarker": "Default profile",
     "create": "New Profile",
     "createFirst": "Create Your First Profile",
@@ -1509,7 +1579,9 @@
       "trailingStopDescription": "Override trailing stop behavior for this profile",
       "riskManagement": "Risk Management",
       "riskManagementDescription": "Override position sizing and risk limits",
-      "riskDescription": "Override wallet risk settings for this profile"
+      "riskDescription": "Override wallet risk settings for this profile",
+      "checklist": "Pre-trade checklist",
+      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
     },
     "overrides": {
       "usingGlobalDefault": "Using global default",
@@ -1582,7 +1654,9 @@
       "selectAll": "Select All",
       "deselectAll": "Deselect All",
       "selectedCount": "{{count}} symbols selected",
-      "startBulk": "Start {{count}} Watchers"
+      "startBulk": "Start {{count}} Watchers",
+      "futuresWarning": "Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.",
+      "options": "Options"
     },
     "emergencyStop": {
       "button": "Emergency Stop",
@@ -1628,14 +1702,16 @@
       "insufficientCapital": "Insufficient capital for minimum trade size"
     },
     "import": {
-      "title": "Import Profile from Backtest",
-      "pasteJson": "Paste the JSON output from backtest optimization",
+      "title": "Import profile from backtest",
+      "description": "Paste a JSON profile from backtest optimization to add it to your saved profiles.",
+      "pasteJson": "Profile JSON",
+      "namePlaceholder": "e.g., Optimized BTC Strategy",
       "preview": "Preview",
       "invalidJson": "Invalid JSON format",
       "importing": "Importing...",
       "importSuccess": "Profile imported successfully",
       "importButton": "Import",
-      "nameLabel": "Profile Name",
+      "nameLabel": "Profile name",
       "strategiesCount": "{{count}} strategies",
       "openImport": "Import"
     }
@@ -1917,6 +1993,9 @@
       "increaseFont": "Increase font size",
       "decreaseFont": "Decrease font size",
       "waiting": "Waiting for logs..."
+    },
+    "sidebar": {
+      "title": "Auto Trading"
     }
   },
   "marketSidebar": {
@@ -1969,10 +2048,16 @@
     "title": "Active Wallet",
     "noWallets": "No wallets created",
     "crypto": "Crypto",
-    "stocks": "Stocks"
+    "stocks": "Stocks",
+    "manage": "Manage wallets"
+  },
+  "analytics": {
+    "dialogDescription": "Per-wallet performance, daily P&L calendar, and equity curve.",
+    "noWalletTitle": "No wallet selected"
   },
   "backtest": {
     "title": "Backtest",
+    "dialogDescription": "Test strategies on historical data with full configurability.",
     "openTooltip": "Open backtest",
     "runningTooltip": "{{count}} backtest running",
     "runningTooltip_other": "{{count}} backtests running",
@@ -2055,26 +2140,102 @@
         "confluence": "Confluence"
       },
       "groupSummary": "{{enabled}} of {{total}} enabled",
-      "trend": { "label": "Trend (EMA)", "description": "Block trades against EMA bias", "enable": "Enable trend filter", "period": "EMA period" },
-      "mtf": { "label": "Multi-timeframe", "enable": "Enable MTF filter" },
-      "marketRegime": { "label": "Market regime", "enable": "Enable regime filter" },
-      "supertrend": { "label": "SuperTrend", "enable": "Enable SuperTrend", "period": "Period", "multiplier": "Multiplier" },
-      "btcCorrelation": { "label": "BTC correlation", "enable": "Enable BTC correlation filter" },
-      "direction": { "label": "Direction (EMA200)", "enable": "Enable direction filter", "longInBear": "Allow LONG in bear", "shortInBull": "Allow SHORT in bull" },
-      "stochastic": { "label": "Stochastic", "enable": "Enable stochastic filter" },
-      "stochasticRecovery": { "label": "Stochastic recovery", "enable": "Enable stochastic recovery filter" },
-      "stochasticHtf": { "label": "HTF stochastic", "enable": "Enable HTF stochastic filter" },
-      "stochasticRecoveryHtf": { "label": "HTF stochastic recovery", "enable": "Enable HTF stochastic recovery filter" },
-      "momentum": { "label": "Momentum (RSI/MFI)", "enable": "Enable momentum filter" },
-      "adx": { "label": "ADX", "enable": "Enable ADX filter" },
-      "volume": { "label": "Volume", "enable": "Enable volume filter" },
-      "funding": { "label": "Funding rate", "enable": "Enable funding filter" },
-      "vwap": { "label": "VWAP", "enable": "Enable VWAP filter" },
-      "fvg": { "label": "FVG", "enable": "Enable FVG filter", "proximityPercent": "Proximity %" },
-      "bollingerSqueeze": { "label": "Bollinger squeeze", "enable": "Enable BB squeeze filter", "threshold": "Threshold", "period": "Period", "stdDev": "Std dev" },
-      "choppiness": { "label": "Choppiness", "enable": "Enable choppiness filter", "thresholdHigh": "High threshold", "thresholdLow": "Low threshold", "period": "Period" },
-      "session": { "label": "Trading session", "enable": "Enable session filter", "startUtc": "Start (UTC)", "endUtc": "End (UTC)" },
-      "confluence": { "label": "Confluence scoring", "enable": "Enable confluence scoring", "minScore": "Minimum score" }
+      "trend": {
+        "label": "Trend (EMA)",
+        "description": "Block trades against EMA bias",
+        "enable": "Enable trend filter",
+        "period": "EMA period"
+      },
+      "mtf": {
+        "label": "Multi-timeframe",
+        "enable": "Enable MTF filter"
+      },
+      "marketRegime": {
+        "label": "Market regime",
+        "enable": "Enable regime filter"
+      },
+      "supertrend": {
+        "label": "SuperTrend",
+        "enable": "Enable SuperTrend",
+        "period": "Period",
+        "multiplier": "Multiplier"
+      },
+      "btcCorrelation": {
+        "label": "BTC correlation",
+        "enable": "Enable BTC correlation filter"
+      },
+      "direction": {
+        "label": "Direction (EMA200)",
+        "enable": "Enable direction filter",
+        "longInBear": "Allow LONG in bear",
+        "shortInBull": "Allow SHORT in bull"
+      },
+      "stochastic": {
+        "label": "Stochastic",
+        "enable": "Enable stochastic filter"
+      },
+      "stochasticRecovery": {
+        "label": "Stochastic recovery",
+        "enable": "Enable stochastic recovery filter"
+      },
+      "stochasticHtf": {
+        "label": "HTF stochastic",
+        "enable": "Enable HTF stochastic filter"
+      },
+      "stochasticRecoveryHtf": {
+        "label": "HTF stochastic recovery",
+        "enable": "Enable HTF stochastic recovery filter"
+      },
+      "momentum": {
+        "label": "Momentum (RSI/MFI)",
+        "enable": "Enable momentum filter"
+      },
+      "adx": {
+        "label": "ADX",
+        "enable": "Enable ADX filter"
+      },
+      "volume": {
+        "label": "Volume",
+        "enable": "Enable volume filter"
+      },
+      "funding": {
+        "label": "Funding rate",
+        "enable": "Enable funding filter"
+      },
+      "vwap": {
+        "label": "VWAP",
+        "enable": "Enable VWAP filter"
+      },
+      "fvg": {
+        "label": "FVG",
+        "enable": "Enable FVG filter",
+        "proximityPercent": "Proximity %"
+      },
+      "bollingerSqueeze": {
+        "label": "Bollinger squeeze",
+        "enable": "Enable BB squeeze filter",
+        "threshold": "Threshold",
+        "period": "Period",
+        "stdDev": "Std dev"
+      },
+      "choppiness": {
+        "label": "Choppiness",
+        "enable": "Enable choppiness filter",
+        "thresholdHigh": "High threshold",
+        "thresholdLow": "Low threshold",
+        "period": "Period"
+      },
+      "session": {
+        "label": "Trading session",
+        "enable": "Enable session filter",
+        "startUtc": "Start (UTC)",
+        "endUtc": "End (UTC)"
+      },
+      "confluence": {
+        "label": "Confluence scoring",
+        "enable": "Enable confluence scoring",
+        "minScore": "Minimum score"
+      }
     },
     "risk": {
       "sizing": "Position sizing",
@@ -2108,6 +2269,7 @@
   },
   "screener": {
     "title": "Market Screener",
+    "dialogDescription": "Scan all symbols for active setups. Save filter presets for fast re-runs.",
     "error": "Failed to load screener results. Please try again.",
     "assetClass": {
       "CRYPTO": "Crypto",
@@ -2192,10 +2354,18 @@
       "title": "Saved Screeners",
       "load": "Load"
     },
-    "save": {
-      "title": "Save Screener",
-      "description": "Save your current filter configuration for quick access later.",
-      "placeholder": "Screener name..."
+    "dialogs": {
+      "saveScreener": {
+        "title": "Save screener",
+        "description": "Save the current filter configuration for quick access.",
+        "submit": "Save",
+        "field": {
+          "name": {
+            "label": "Name",
+            "placeholder": "e.g. high-volume gainers"
+          }
+        }
+      }
     },
     "actions": {
       "refresh": "Refresh",
@@ -2314,6 +2484,9 @@
     "circuitBreaker": {
       "tripped": "CB Tripped",
       "reset": "Reset"
+    },
+    "cooldown": {
+      "active": "Cooldown"
     }
   },
   "orderFlow": {
@@ -2500,17 +2673,37 @@
     "sessionBoundaries": "Session Boundaries",
     "footprint": "Footprint",
     "liquidityHeatmap": "Liquidity Heatmap",
-    "liquidationMarkers": "Liquidation Markers"
+    "liquidationMarkers": "Liquidation Markers",
+    "dialog": {
+      "createTitle": "Create indicator",
+      "editTitle": "Edit indicator",
+      "conditionTitle": "Configure condition",
+      "type": "Type",
+      "indicator": "Indicator",
+      "label": "Label",
+      "labelPlaceholder": "EMA 20"
+    }
   },
   "checklist": {
     "section": {
       "long": "Long",
       "short": "Short",
-      "both": "Both"
+      "both": "Both",
+      "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
+      "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
+      "error": "Checklist error",
+      "dedupExcluded": "Not counted — same as another condition for this timeframe",
+      "title": "Checklist",
+      "empty": "No conditions evaluated."
     },
     "editor": {
       "moveUp": "Move up",
-      "moveDown": "Move down"
+      "moveDown": "Move down",
+      "add": "Add condition",
+      "emptyTitle": "No conditions",
+      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "missing": "Missing indicator",
+      "unknownCatalog": "(unknown indicator type)"
     },
     "ops": {
       "rising": "rising (current bar > previous)",
@@ -2518,13 +2711,25 @@
     },
     "tier": {
       "requiredShort": "req",
-      "preferredShort": "pref"
+      "preferredShort": "pref",
+      "required": "Required",
+      "preferred": "Preferred"
     },
     "timeframes": {
       "current": "curr"
     },
     "weight": "Weight (× multiplier)",
-    "weightHint": "Higher timeframes weigh more. Required conditions count 2×; preferred 1×."
+    "weightHint": "Higher timeframes weigh more. Required conditions count 2×; preferred 1×.",
+    "threshold": "Threshold",
+    "thresholdLow": "Low",
+    "thresholdHigh": "High",
+    "timeframe": "Timeframe",
+    "operator": "Operator",
+    "side": {
+      "long": "Long",
+      "short": "Short",
+      "both": "Both"
+    }
   },
   "futures": {
     "entryPrice": "Entry Price",
@@ -2532,6 +2737,38 @@
     "size": "Size",
     "accumulatedFunding": "Accumulated Funding",
     "liquidationPrice": "Liquidation Price",
-    "distanceToLiq": "Distance to liquidation"
+    "distanceToLiq": "Distance to liquidation",
+    "leverage": "Leverage",
+    "minLeverage": "Min: 1x",
+    "maxLeverage": "Max: {{max}}x",
+    "extremeRiskWarning": "Extreme risk! Liquidation can happen quickly with small price movements.",
+    "highRiskWarning": "High leverage increases both potential profits and losses.",
+    "reversePosition": "Reverse Position",
+    "reverseFailed": "Failed to reverse position",
+    "reverseConfirmTitle": "Reverse position?",
+    "reverseConfirmDescription": "Closes {{side}} {{quantity}} {{symbol}} and opens {{newSide}} {{quantity}} {{symbol}} at market price.",
+    "closePosition": "Close Position",
+    "closePositionFailed": "Failed to close position",
+    "closePositionConfirmTitle": "Close position?",
+    "closePositionConfirmDescription": "Closes {{side}} {{quantity}} {{symbol}} at market price and cancels all related orders (SL, TP, pending entries).",
+    "cancelOrders": "Cancel Orders",
+    "cancelOrdersFailed": "Failed to cancel orders",
+    "cancelOrdersConfirmTitle": "Cancel all orders?",
+    "cancelOrdersConfirmDescription": "Cancels all pending entry orders for {{symbol}}. SL and TP orders are kept.",
+    "positions": "Futures Positions",
+    "unrealizedPnl": "Unrealized PnL",
+    "liquidated": "Position would be liquidated at current price!",
+    "liquidationWarning": "Warning: Position is close to liquidation.",
+    "leverageLockedPosition": "Close position to change leverage",
+    "marginType": "Margin Type",
+    "marginTypeInfo": "Isolated: Each position has its own margin. Crossed: All positions share margin.",
+    "isolated": "Isolated",
+    "crossed": "Cross",
+    "isolatedDesc": "Recommended: Risk is limited to the margin assigned to this position.",
+    "crossedDesc": "All available balance is used as margin. Higher liquidation risk."
+  },
+  "aiTrading": {
+    "confidence": "Confidence",
+    "urgency": "Urgency"
   }
 }

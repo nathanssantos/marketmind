@@ -1,1 +1,1 @@
-export { ScreenerModal } from './ScreenerModal';
+export { ScreenerDialog } from './ScreenerDialog';
