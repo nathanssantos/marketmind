@@ -1,11 +1,9 @@
 import { Stack } from '@chakra-ui/react';
-import { CollapsibleSection, Field, Select } from '@renderer/components/ui';
+import { FormSection, Field, Select } from '@renderer/components/ui';
 import type { FibonacciTargetLevel } from '@marketmind/fibonacci';
 import { useTranslation } from 'react-i18next';
 
 export interface TpModeSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   tpCalculationMode: 'default' | 'fibonacci';
   fibonacciTargetLevelLong: FibonacciTargetLevel;
   fibonacciTargetLevelShort: FibonacciTargetLevel;
@@ -18,8 +16,6 @@ export interface TpModeSectionProps {
 }
 
 export const TpModeSection = ({
-  isExpanded,
-  onToggle,
   tpCalculationMode,
   fibonacciTargetLevelLong,
   fibonacciTargetLevelShort,
@@ -45,13 +41,9 @@ export const TpModeSection = ({
   ];
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('settings.algorithmicAutoTrading.tpMode.title')}
       description={t('settings.algorithmicAutoTrading.tpMode.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
       <Stack gap={4}>
         <Field
@@ -118,6 +110,6 @@ export const TpModeSection = ({
           </Stack>
         )}
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

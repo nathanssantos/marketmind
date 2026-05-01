@@ -1,12 +1,10 @@
 import { Box, Flex, HStack, Text, VStack } from '@chakra-ui/react';
 import { TimeframeSelector } from '@renderer/components/Chart/TimeframeSelector';
-import { CollapsibleSection, Slider, Switch } from '@renderer/components/ui';
+import { FormSection, Slider, Switch } from '@renderer/components/ui';
 import type { TimeInterval } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
 
 export interface TrailingStopSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   trailingStopEnabled: boolean;
   onTrailingStopEnabledChange: (enabled: boolean) => void;
   indicatorInterval?: TimeInterval;
@@ -34,8 +32,6 @@ export interface TrailingStopSectionProps {
 }
 
 export const TrailingStopSection = ({
-  isExpanded,
-  onToggle,
   trailingStopEnabled,
   onTrailingStopEnabledChange,
   trailingActivationPercentLong,
@@ -71,7 +67,7 @@ export const TrailingStopSection = ({
   // In compact mode (TrailingStopPopover) each row keeps its own card-like
   // wrapper so the rows visually delineate inside the popover. In the
   // Settings/AutoTrading path the section already lives inside a
-  // CollapsibleSection — drop the panel-in-panel wrappers (V1_4 rule 4).
+  // FormSection — drop the panel-in-panel wrappers (V1_4 rule 4).
   const rowWrapperProps = compact
     ? ({ p: sectionPadding, bg: 'bg.subtle' as const, borderRadius: 'md' as const })
     : {};
@@ -406,15 +402,11 @@ export const TrailingStopSection = ({
   if (compact) return <Box>{content}</Box>;
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('watcherManager.trailingStop.title')}
       description={t('watcherManager.trailingStop.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
       {content}
-    </CollapsibleSection>
+    </FormSection>
   );
 };

@@ -1,11 +1,9 @@
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
-import { Badge, CollapsibleSection, Field, NumberInput, Select, Switch } from '@renderer/components/ui';
+import { Badge, FormSection, Field, NumberInput, Select, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import type { WatcherConfig } from './types';
 
 export interface PyramidingSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   config: WatcherConfig | undefined;
   walletId: string;
   onConfigUpdate: (updates: Partial<WatcherConfig>) => void;
@@ -15,8 +13,6 @@ export interface PyramidingSectionProps {
 }
 
 export const PyramidingSection = ({
-  isExpanded,
-  onToggle,
   config,
   walletId,
   onConfigUpdate,
@@ -74,13 +70,9 @@ export const PyramidingSection = ({
   };
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('settings.algorithmicAutoTrading.pyramiding.title')}
       description={t('settings.algorithmicAutoTrading.pyramiding.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
           <Field
             label={t('settings.algorithmicAutoTrading.pyramiding.modeLabel')}
@@ -267,6 +259,6 @@ export const PyramidingSection = ({
               )}
             </>
           )}
-    </CollapsibleSection>
+    </FormSection>
   );
 };

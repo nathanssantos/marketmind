@@ -1,7 +1,7 @@
 import { Stack } from '@chakra-ui/react';
 import { AUTO_TRADING_CONFIG } from '@marketmind/types';
 import type { MarketType, TimeInterval } from '@marketmind/types';
-import { CollapsibleSection, EmptyState, Select, Separator } from '@renderer/components/ui';
+import { EmptyState, Field, FormSection, Select } from '@renderer/components/ui';
 import { useBackendAutoTrading, useCapitalLimits, useFilteredSymbolsForQuickStart, useRotationStatus, useTriggerRotation } from '@renderer/hooks/useBackendAutoTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
@@ -75,8 +75,6 @@ export const WatcherManager = () => {
   } = useWatcherConfig(walletId);
 
   const {
-    expandedSections,
-    toggleSection,
     quickStartCount,
     setQuickStartCount,
     quickStartTimeframe,
@@ -178,7 +176,7 @@ export const WatcherManager = () => {
   }
 
   return (
-    <Stack gap={4}>
+    <Stack gap={5}>
       <EmergencyStopSection
         showConfirm={showEmergencyConfirm}
         onShowConfirm={() => setShowEmergencyConfirm(true)}
@@ -188,32 +186,28 @@ export const WatcherManager = () => {
         hasActiveWatchers={activeWatchers.length > 0 || persistedWatchers > 0}
       />
 
-      <CollapsibleSection
+      <FormSection
         title={t('trading.mode.title')}
         description={tradingMode === 'auto' ? t('trading.mode.autoDescription') : t('trading.mode.semiAssistedDescription')}
-        variant="static"
-        size="lg"
       >
-        <Select
-          value={tradingMode}
-          options={[
-            { value: 'auto', label: t('trading.mode.auto') },
-            { value: 'semi_assisted', label: t('trading.mode.semiAssisted') },
-          ]}
-          onChange={(v) => handleTradingModeChange(v as 'auto' | 'semi_assisted')}
-          size="sm"
-          usePortal={false}
-        />
-      </CollapsibleSection>
-
-      <Separator />
+        <Field label={t('trading.mode.label')}>
+          <Select
+            value={tradingMode}
+            options={[
+              { value: 'auto', label: t('trading.mode.auto') },
+              { value: 'semi_assisted', label: t('trading.mode.semiAssisted') },
+            ]}
+            onChange={(v) => handleTradingModeChange(v as 'auto' | 'semi_assisted')}
+            size="xs"
+            usePortal={false}
+          />
+        </Field>
+      </FormSection>
 
       <WatchersList
         activeWatchers={activeWatchers}
         persistedWatchers={persistedWatchers}
         isLoading={isLoadingWatcherStatus}
-        isExpanded={expandedSections.watchers}
-        onToggle={() => toggleSection('watchers')}
         onAddWatcher={() => setShowAddDialog(true)}
         onStopWatcher={(symbol, interval, marketType) => { void handleStopWatcher(symbol, interval, marketType); }}
         onStopAll={() => { void handleStopAll(); }}
@@ -225,11 +219,7 @@ export const WatcherManager = () => {
         isPendingConfig={updateConfig.isPending}
       />
 
-      <Separator />
-
       <DynamicSelectionSection
-        isExpanded={expandedSections.dynamicSelection}
-        onToggle={() => toggleSection('dynamicSelection')}
         isIB={isIB}
         directionMode={directionMode}
         isAutoRotationEnabled={config?.enableAutoRotation ?? true}
@@ -259,26 +249,17 @@ export const WatcherManager = () => {
         isPending={updateConfig.isPending}
       />
 
-      <Separator />
       <SetupToggleSection />
-      <Separator />
 
       {!isIB && (
-        <>
-          <LeverageSettingsSection
-            isExpanded={expandedSections.leverageSettings}
-            onToggle={() => toggleSection('leverageSettings')}
-            leverage={config?.leverage ?? 1}
-            onLeverageChange={handleLeverageChange}
-            isPending={updateConfig.isPending}
-          />
-          <Separator />
-        </>
+        <LeverageSettingsSection
+          leverage={config?.leverage ?? 1}
+          onLeverageChange={handleLeverageChange}
+          isPending={updateConfig.isPending}
+        />
       )}
 
       <PositionSizeSection
-        isExpanded={expandedSections.positionSize}
-        onToggle={() => toggleSection('positionSize')}
         positionSizePercent={Number(config?.positionSizePercent ?? 10)}
         onPositionSizeChange={(value) => handleConfigUpdate({ positionSizePercent: value.toString() })}
         manualPositionSizePercent={Number(config?.manualPositionSizePercent ?? 2.5)}
@@ -288,11 +269,7 @@ export const WatcherManager = () => {
         isPending={updateConfig.isPending}
       />
 
-      <Separator />
-
       <RiskManagementSection
-        isExpanded={expandedSections.riskManagement}
-        onToggle={() => toggleSection('riskManagement')}
         maxDrawdownEnabled={config?.maxDrawdownEnabled ?? false}
         onMaxDrawdownEnabledChange={handleMaxDrawdownEnabledChange}
         maxDrawdownPercent={Number(config?.maxDrawdownPercent ?? 15)}
@@ -315,11 +292,7 @@ export const WatcherManager = () => {
         isIB={isIB}
       />
 
-      <Separator />
-
       <TrailingStopSection
-        isExpanded={expandedSections.trailingStop}
-        onToggle={() => toggleSection('trailingStop')}
         trailingStopEnabled={config?.trailingStopEnabled ?? true}
         onTrailingStopEnabledChange={(enabled) => handleConfigUpdate({ trailingStopEnabled: enabled })}
         trailingActivationPercentLong={Number(config?.trailingActivationPercentLong ?? 0.9)}
@@ -345,11 +318,7 @@ export const WatcherManager = () => {
         onActivationModeShortChange={(mode) => handleConfigUpdate({ trailingActivationModeShort: mode })}
       />
 
-      <Separator />
-
       <TpModeSection
-        isExpanded={expandedSections.tpMode}
-        onToggle={() => toggleSection('tpMode')}
         tpCalculationMode={tpCalculationMode}
         fibonacciTargetLevelLong={fibonacciTargetLevelLong}
         fibonacciTargetLevelShort={fibonacciTargetLevelShort}
@@ -361,21 +330,13 @@ export const WatcherManager = () => {
         isPending={updateConfig.isPending}
       />
 
-      <Separator />
-
       <StopModeSection
-        isExpanded={expandedSections.stopMode}
-        onToggle={() => toggleSection('stopMode')}
         initialStopMode={initialStopMode}
         onInitialStopModeChange={handleInitialStopModeChange}
         isPending={updateConfig.isPending}
       />
 
-      <Separator />
-
       <EntrySettingsSection
-        isExpanded={expandedSections.entrySettings}
-        onToggle={() => toggleSection('entrySettings')}
         maxFibonacciEntryProgressPercentLong={Number(config?.maxFibonacciEntryProgressPercentLong ?? 127.2)}
         onEntryProgressLongChange={(value) => handleConfigUpdate({ maxFibonacciEntryProgressPercentLong: value })}
         maxFibonacciEntryProgressPercentShort={Number(config?.maxFibonacciEntryProgressPercentShort ?? 127.2)}
@@ -393,11 +354,7 @@ export const WatcherManager = () => {
         onSlTightenOnlyChange={setSlTightenOnly}
       />
 
-      <Separator />
-
       <FiltersSection
-        isExpanded={expandedSections.filters}
-        onToggle={() => toggleSection('filters')}
         config={config}
         onFilterToggle={handleFilterToggle}
         isPending={updateConfig.isPending}
@@ -406,11 +363,7 @@ export const WatcherManager = () => {
         onConfluenceMinScoreChange={handleConfluenceMinScoreChange}
       />
 
-      <Separator />
-
       <OpportunityCostSection
-        isExpanded={expandedSections.opportunityCost}
-        onToggle={() => toggleSection('opportunityCost')}
         config={config}
         walletId={walletId}
         onConfigUpdate={handleConfigUpdate}
@@ -418,11 +371,7 @@ export const WatcherManager = () => {
         isPending={updateConfig.isPending}
       />
 
-      <Separator />
-
       <PyramidingSection
-        isExpanded={expandedSections.pyramiding}
-        onToggle={() => toggleSection('pyramiding')}
         config={config}
         walletId={walletId}
         onConfigUpdate={handleConfigUpdate}

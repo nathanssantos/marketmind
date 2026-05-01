@@ -1,6 +1,7 @@
 import {
   Badge, Button, Callout, ConfirmationDialog, EmptyState, FormSection, Input, Slider,
 } from '@renderer/components/ui';
+import { MM } from '@marketmind/tokens';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useToast } from '@/renderer/hooks/useToast';
 import { hydrateLayoutStore } from '@/renderer/store/layoutStore';
@@ -8,7 +9,7 @@ import { trpc } from '@/renderer/utils/trpc';
 import {
   TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn,
 } from '@/renderer/components/Trading/TradingTable';
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuHistory, LuPlus, LuRefreshCw, LuTrash2, LuWrench, LuX } from 'react-icons/lu';
@@ -73,13 +74,11 @@ const LayoutSnapshotsSection = () => {
       description={t('settings.data.layouts.description')}
     >
       {isLoading ? (
-        <Text fontSize="xs" color="fg.muted">{t('common.loading')}</Text>
+        <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+          <Spinner size={MM.spinner.panel.size} />
+        </Flex>
       ) : snapshots.length === 0 ? (
-        <EmptyState
-          icon={LuHistory}
-          title={t('settings.data.layouts.empty')}
-          size="sm"
-        />
+        <EmptyState icon={LuHistory} title={t('settings.data.layouts.empty')} />
       ) : (
         <Stack gap={1.5}>
           {snapshots.map((snap) => (
@@ -174,9 +173,7 @@ const HeatmapAlwaysCollectSection = () => {
           ))}
         </Flex>
       ) : (
-        <Text fontSize="2xs" color="fg.muted">
-          {t('settings.data.heatmap.empty')}
-        </Text>
+        <EmptyState title={t('settings.data.heatmap.empty')} />
       )}
     </FormSection>
   );
@@ -308,6 +305,12 @@ export const DataTab = () => {
       <FormSection
         title={t('settings.data.cooldowns.title')}
         description={t('settings.data.cooldowns.description')}
+        action={
+          <Button variant="outline" size="2xs" onClick={handleResetCooldowns}>
+            <LuRefreshCw />
+            {t('settings.resetToDefaults')}
+          </Button>
+        }
       >
         <Box>
           <Text fontSize="xs" mb={1.5}>{t('settings.data.cooldowns.gapCheck', { hours: gapCheckHours })}</Text>
@@ -316,12 +319,6 @@ export const DataTab = () => {
         <Box>
           <Text fontSize="xs" mb={1.5}>{t('settings.data.cooldowns.corruptionCheck', { hours: corruptionCheckHours })}</Text>
           <Slider value={[corruptionCheckHours]} onValueChange={handleCorruptionCheckChange} min={0.5} max={24} step={0.5} />
-        </Box>
-        <Box>
-          <Button variant="outline" size="sm" onClick={handleResetCooldowns}>
-            <LuRefreshCw />
-            {t('settings.resetToDefaults')}
-          </Button>
         </Box>
       </FormSection>
 

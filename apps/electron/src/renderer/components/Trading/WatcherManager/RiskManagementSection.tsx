@@ -1,10 +1,8 @@
-import { CollapsibleSection, FormRow, NumberInput, Slider, Switch } from '@renderer/components/ui';
+import { FormSection, FormRow, NumberInput, Slider, Switch } from '@renderer/components/ui';
 import { Box, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
 
 export interface RiskManagementSectionProps {
-  isExpanded: boolean;
-  onToggle: () => void;
   maxDrawdownEnabled: boolean;
   onMaxDrawdownEnabledChange: (enabled: boolean) => void;
   maxDrawdownPercent: number;
@@ -28,8 +26,6 @@ export interface RiskManagementSectionProps {
 }
 
 export const RiskManagementSection = ({
-  isExpanded,
-  onToggle,
   maxDrawdownEnabled,
   onMaxDrawdownEnabledChange,
   maxDrawdownPercent,
@@ -54,13 +50,9 @@ export const RiskManagementSection = ({
   const { t } = useTranslation();
 
   return (
-    <CollapsibleSection
+    <FormSection
       title={t('watcherManager.riskManagement.title')}
       description={t('watcherManager.riskManagement.description')}
-      open={isExpanded}
-      onOpenChange={onToggle}
-      size="lg"
-      variant="static"
     >
       <Stack gap={4}>
         <FormRow
@@ -215,6 +207,6 @@ export const RiskManagementSection = ({
           />
         </FormRow>
       </Stack>
-    </CollapsibleSection>
+    </FormSection>
   );
 };

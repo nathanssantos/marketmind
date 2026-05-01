@@ -75,7 +75,7 @@ export const IndicatorLibrary = () => {
   }, [reset]);
 
   return (
-    <Stack gap={4}>
+    <Stack gap={5}>
       <FormSection
         title={t('settings.indicators.title')}
         description={t('settings.indicators.count', { count: indicators.length })}
@@ -103,95 +103,87 @@ export const IndicatorLibrary = () => {
         }
       />
 
-      <Stack gap={4}>
-        {groups.length === 0 && !isLoading && (
-          <EmptyState size="sm" title={t('settings.indicators.empty')} />
-        )}
+      {groups.length === 0 && !isLoading && (
+        <EmptyState
+          title={t('settings.indicators.emptyTitle')}
+          description={t('settings.indicators.emptyDescription')}
+        />
+      )}
 
-        {groups.map((group) => (
-          <Stack key={group.category} gap={2}>
-            <Text
-              fontSize="xs"
-              fontWeight="bold"
-              color="fg.muted"
-              textTransform="uppercase"
-              letterSpacing="wide"
-            >
-              {t(group.titleKey)}
-            </Text>
-            <Stack gap={1}>
-              {group.items.map((ui) => {
-                const summary = formatParamsSummary(ui);
-                return (
-                  <Flex
-                    key={ui.id}
-                    align="center"
-                    justify="space-between"
-                    px={3}
-                    py={2}
-                    borderWidth="1px"
-                    borderColor="border.subtle"
-                    rounded="md"
-                    gap={3}
-                  >
-                    <Stack gap={0.5} flex={1} minW={0}>
-                      <HStack gap={2}>
-                        <Text fontSize="sm" fontWeight="medium" truncate>
-                          {ui.label}
-                        </Text>
-                        {ui.isCustom && (
-                          <Badge size="xs" colorPalette="purple">
-                            {t('settings.indicators.custom')}
-                          </Badge>
-                        )}
-                      </HStack>
-                      {summary && (
-                        <Text fontSize="xs" color="fg.muted" truncate>
-                          {summary}
-                        </Text>
+      {groups.map((group) => (
+        <FormSection key={group.category} title={t(group.titleKey)}>
+          <Stack gap={1}>
+            {group.items.map((ui) => {
+              const summary = formatParamsSummary(ui);
+              return (
+                <Flex
+                  key={ui.id}
+                  align="center"
+                  justify="space-between"
+                  px={3}
+                  py={2}
+                  borderWidth="1px"
+                  borderColor="border.subtle"
+                  rounded="md"
+                  gap={3}
+                >
+                  <Stack gap={0.5} flex={1} minW={0}>
+                    <HStack gap={2}>
+                      <Text fontSize="sm" fontWeight="medium" truncate>
+                        {ui.label}
+                      </Text>
+                      {ui.isCustom && (
+                        <Badge size="xs" colorPalette="purple">
+                          {t('settings.indicators.custom')}
+                        </Badge>
                       )}
-                    </Stack>
-                    <HStack gap={1}>
-                      <TooltipWrapper label={t('common.edit')}>
-                        <IconButton
-                          aria-label={t('common.edit')}
-                          size="2xs"
-                          variant="ghost"
-                          onClick={() => setDialog({ kind: 'edit', indicator: ui })}
-                        >
-                          <LuPencil />
-                        </IconButton>
-                      </TooltipWrapper>
-                      <TooltipWrapper label={t('settings.indicators.duplicate')}>
-                        <IconButton
-                          aria-label={t('settings.indicators.duplicate')}
-                          size="2xs"
-                          variant="ghost"
-                          onClick={() => handleDuplicate(ui.id)}
-                          disabled={duplicate.isPending}
-                        >
-                          <LuCopy />
-                        </IconButton>
-                      </TooltipWrapper>
-                      <TooltipWrapper label={t('common.delete')}>
-                        <IconButton
-                          aria-label={t('common.delete')}
-                          size="2xs"
-                          variant="ghost"
-                          colorPalette="red"
-                          onClick={() => setConfirmDelete(ui)}
-                        >
-                          <LuTrash2 />
-                        </IconButton>
-                      </TooltipWrapper>
                     </HStack>
-                  </Flex>
-                );
-              })}
-            </Stack>
+                    {summary && (
+                      <Text fontSize="xs" color="fg.muted" truncate>
+                        {summary}
+                      </Text>
+                    )}
+                  </Stack>
+                  <HStack gap={1}>
+                    <TooltipWrapper label={t('common.edit')}>
+                      <IconButton
+                        aria-label={t('common.edit')}
+                        size="2xs"
+                        variant="ghost"
+                        onClick={() => setDialog({ kind: 'edit', indicator: ui })}
+                      >
+                        <LuPencil />
+                      </IconButton>
+                    </TooltipWrapper>
+                    <TooltipWrapper label={t('settings.indicators.duplicate')}>
+                      <IconButton
+                        aria-label={t('settings.indicators.duplicate')}
+                        size="2xs"
+                        variant="ghost"
+                        onClick={() => handleDuplicate(ui.id)}
+                        disabled={duplicate.isPending}
+                      >
+                        <LuCopy />
+                      </IconButton>
+                    </TooltipWrapper>
+                    <TooltipWrapper label={t('common.delete')}>
+                      <IconButton
+                        aria-label={t('common.delete')}
+                        size="2xs"
+                        variant="ghost"
+                        colorPalette="red"
+                        onClick={() => setConfirmDelete(ui)}
+                      >
+                        <LuTrash2 />
+                      </IconButton>
+                    </TooltipWrapper>
+                  </HStack>
+                </Flex>
+              );
+            })}
           </Stack>
-        ))}
-      </Stack>
+        </FormSection>
+      ))}
 
       <IndicatorConfigDialog
         isOpen={dialog.kind !== 'closed'}
