@@ -382,7 +382,137 @@ After the modal sweep, v1.7+ extends the same pass to:
 
 ---
 
-## Status (2026-05-02 — v1.6 complete, ready to release)
+## Track G — Per-dialog UX rewrite (added 2026-05-02)
+
+> **One sentence:** revisit every dialog one by one — copy, interactions, component choices for similar situations — and rewrite for a uniform, considered UX.
+
+### Why this is a separate Track
+
+Track A (the modal sweep) made every dialog use the same SHELL — same width tokens, same header typography, same footer convention. That fixes the *outer* drift. It does NOT fix the *interior* drift:
+
+- **Copy**: dialog titles use different verb tenses ("Create wallet" vs "New wallet" vs "Add wallet"); helper text varies in length and tone; CTA labels are inconsistent ("Save" vs "OK" vs "Apply" vs "Confirm").
+- **Field layout**: some forms stack vertically, some use 2-column grids, some mix both with no rule for when.
+- **Empty / loading states**: still bespoke text in places ("Carregando…", "Nada por aqui") instead of the standard primitives.
+- **Confirmation patterns**: destructive actions use `<ConfirmationDialog>` in some places, inline `if (confirm(...))` in others.
+- **Multi-step / wizard flows**: some use tabs, some use sequential steps, some use one giant scrolling form. No rule.
+- **Error display**: some dialogs surface mutation errors as toasts, some as inline `<Callout>`, some as both.
+- **Success feedback**: some toast on save, some silently close, some show inline success state.
+
+Track G fixes all of this by going dialog-by-dialog, deciding what the right pattern is for that dialog's job, and making sure every other dialog with the same job uses the same pattern.
+
+### G.0 — Component pattern bible (lands first)
+
+Before any per-dialog rewrite, write `docs/UI_DIALOG_PATTERNS.md` cataloguing canonical patterns:
+
+| Situation | Component / pattern |
+|---|---|
+| Single-field input dialog (rename, edit name) | `<DialogShell size="sm">` + single `<Field>` + footer "Cancel" + primary verb |
+| Two-step form (config → review) | `<DialogShell size="md">` with stepper at top OR with two `<DialogSection>`s — decide one and stick to it |
+| Workflow dialog (Settings, Backtest, Analytics) | `<DialogShell size="xl">` + `<Tabs>` left or top, content right |
+| Destructive confirmation | `<ConfirmationDialog tone="danger">` ALWAYS — never inline `if (confirm())` |
+| Object creation (wallet, profile, watcher, custom symbol) | `<DialogShell size="md">` opened from a `<CreateActionButton>` (already per #345) |
+| Object management (list of records) | dedicated `<DialogShell size="lg">` with `<EmptyState>` when empty, `<Callout tone="warning">` for inline warnings, no per-row dialog opening (use inline expansion) |
+| Inline error in mutation | `<Callout tone="danger">` at the top of the body (not in toast) |
+| Toast on success | only when the dialog stays open (e.g. modify-and-stay flow); silent-close-on-success otherwise |
+| Field grouping | `<DialogSection title>` for ≥3 related fields; flat for ≤2 fields |
+| Helper text | `<FieldHint>` below the input; `<MetaText>` for values; `<SectionDescription>` for section descriptions |
+| Loading body | `<Flex justify="center" align="center" py={MM.spinner.panel.py}><Spinner size={MM.spinner.panel.size} /></Flex>` — never bespoke "Loading…" text |
+| Empty body | `<EmptyState>` — never bespoke text |
+
+Document each pattern with a "do this" + "not this" code snippet.
+
+### G.1 — Per-dialog rewrite checklist
+
+For each of the 18 dialogs, the rewrite PR addresses:
+
+1. **Title**: rewrite to use a consistent verb form (imperative for actions, noun for views). i18n key migrated if needed.
+2. **Description (header subtitle)**: present iff the dialog's purpose isn't obvious from the title. One line, ≤80 chars.
+3. **Field layout**: pick stack-vs-grid based on field count + relatedness; document the choice.
+4. **Field labels + helper text**: every label clear in 2-4 words, every helper non-redundant with the label.
+5. **CTA**: primary verb matches the title's verb. "Save", "Create", "Cancel order", "Apply changes", "Confirm" — pick from a fixed list, document the rule.
+6. **Loading / empty / error states**: replaced with primitives if not already.
+7. **Mutation error display**: Callout at top of body for dialog-scoped errors; toast for cross-dialog errors.
+8. **Success feedback**: silent-close + toast OR inline-success-state + dialog stays open. One per dialog, document why.
+9. **Keyboard**: Esc closes, Enter submits the primary form (when appropriate), Tab order matches reading order.
+10. **Test coverage**: snapshot the open dialog DOM in a vitest browser test for regression.
+
+### G.2 — The 18 dialogs (one PR each)
+
+Each row gets its own PR. Status is set as the work progresses.
+
+| # | Dialog | Job | Notes |
+|---|---|---|---|
+| 1 | `ChartCloseDialog` | Confirm closing an open position from the chart | Single-field-ish (close-at-market vs close-at-limit). Currently has a free-form "exit price" field. |
+| 2 | `KeyboardShortcutHelpDialog` | Browse keyboard shortcuts | Read-only viewer. Uses tabs for shortcut groups. Already in good shape but copy needs review. |
+| 3 | `SaveScreenerDialog` | Save current screener filters as a named preset | Single-field input (name). |
+| 4 | `IndicatorConfigDialog` | Configure one indicator's params | Form per indicator; param shape varies. Consistency target: every numeric input uses `<NumberInput>`, every color picker uses `<ColorPicker>`. |
+| 5 | `ImportProfileDialog` | Paste a JSON profile blob to import | Textarea + parse + preview. Validation surface needs work. |
+| 6 | `AddWatcherDialog` | Start a new auto-trading watcher | Multi-field form. Currently mixes chart-style symbol picker with form. |
+| 7 | `CreateWalletDialog` | Connect a Binance / IB wallet | Multi-field form with conditional fields per exchange. Validation messaging needs work. |
+| 8 | `ProfileEditorDialog` | Edit a trading profile | Tabs (general, signals, filters, trailing stop, risk). Currently the tab labels and order are inconsistent with the actual form contents. |
+| 9 | `OrdersDialog` | View open + recent orders | Read-only data table. Empty state + loading state + error state need primitives. |
+| 10 | `StartWatchersDialog` | Bulk-start watchers from rankings | Selection-then-confirm flow. Currently has inline confirmation step. |
+| 11 | `TradingProfilesDialog` | Manage profiles (list + create + edit) | Object management. List is OK but the inline edit/delete actions need standardization. |
+| 12 | `ScreenerDialog` | Run market scans | Workflow dialog with results panel. Filter persistence + reset behavior need clarification. |
+| 13 | `AnalyticsDialog` | View performance + setup stats + equity curve | Workflow dialog with multi-panel content. Loading + empty states inconsistent across panels. |
+| 14 | `BacktestDialog` | Run a backtest | Multi-step flow (config → run → results). Currently three flat sections; should be staged. |
+| 15 | `SettingsDialog` | App preferences | Workflow dialog with 9 tabs. Tab content already audited (see Track G follow-up below); SettingsDialog itself just hosts them. |
+| 16 | `WalletsDialog` | Manage wallets (list + create) | Object management. Same shape as TradingProfilesDialog — they should look identical. |
+| 17 | `CustomSymbolsDialog` | Manage custom synthetic symbols | Object management. Same shape as Wallets/Profiles. |
+| 18 | `ConfirmationDialog` (callsite sweep) | Generic destructive confirm | Already a primitive; sweep callsites for consistent copy ("Cancel" / primary destructive verb / never plain "OK"). |
+
+Plus the **9 Settings tabs** as the post-Track-G follow-up:
+
+| # | Tab | Notes |
+|---|---|---|
+| S1 | AccountTab | ✓ already follows pattern; copy review only |
+| S2 | SecurityTab | ✓ structure OK; the 2FA + agent-trading subsections need review |
+| S3 | NotificationsTab | ✓ structure OK |
+| S4 | GeneralTab | ✓ structure OK |
+| S5 | ChartSettingsTab | ✓ structure OK |
+| S6 | IndicatorsTab | ❌ delegates to `<IndicatorLibrary>` which uses `Stack gap={4}` + bare list. Internal restructure to `<FormSection>` per indicator group. |
+| S7 | AutoTradingTab | ❌ delegates to `<WatcherManager>` (~600 LOC, 6 bespoke section components: EmergencyStopSection, WatchersList, DynamicSelectionSection, SetupToggleSection, LeverageSettingsSection, EntrySettingsSection). Migrate each subsection to `<FormSection>` + remove `<Separator />` separators (FormSection's own header is the separator). |
+| S8 | DataTab | ✓ structure OK; WAL archive controls + snapshot list need copy review |
+| S9 | AboutTab | ✓ structure OK |
+
+### G.3 — Audit + linting
+
+After every dialog ships:
+- `audit-dialog-rules.mjs --strict` already covers the shell-level rules.
+- New `audit-dialog-content.mjs` enforces:
+  - No bespoke "Loading…" / "Carregando…" / "Loading data…" strings in dialog bodies — must use the spinner primitive.
+  - No bespoke "Empty" / "Nothing here" strings — must use `<EmptyState>`.
+  - Every dialog has a description xor an explicit "no description needed" annotation.
+  - Footer button order: Cancel left of primary, primary rightmost, destructive primary uses `colorPalette="red"`.
+  - Modal-scoped error UI uses `<Callout tone="danger">` not `<Alert>` (Alert is Tier-1; Callout has the right framing).
+
+### Sequencing
+
+Track G ships after Track F and lands before the v1.6 release.
+
+| # | Stage | Effort |
+|---|---|---|
+| G.0 | Component pattern bible | 3-4h |
+| G.1 .. G.18 | One PR per dialog | 18 PRs × 1-3h each = ~30-40h |
+| S1 .. S9 | Settings tabs (post-dialog) | 9 PRs × ~1-2h each = ~12-15h |
+| G.3 | audit-dialog-content.mjs script + CI gate | 2-3h |
+
+**Total estimated: 47-62h.** Big chunk, but it's the difference between "the modals are uniform-shaped" and "the modals feel deliberate".
+
+### Acceptance
+
+- Every dialog passes `audit-dialog-rules.mjs --strict` AND `audit-dialog-content.mjs`.
+- Every dialog has a vitest browser test that snapshots its DOM at open.
+- Reading the 18 dialogs back-to-back, the user can't point to "this one feels different" — the patterns are visibly the same for the same job.
+- Component pattern bible (`docs/UI_DIALOG_PATTERNS.md`) is the reference any future dialog reads first.
+
+---
+
+## Status (2026-05-02 — Track G in progress, release held)
+
+**Release held.** Track G (per-dialog UX rewrite) added 2026-05-02 after the user surfaced that the v1.6 sweep got the SHELL right (shape, padding, footer convention) but the INTERIOR of each dialog (copy, interactions, component choices for similar situations) is still inconsistent. v1.6 ships with Track G complete.
+
+
 
 **Track E (shared infrastructure) — complete.** PRs #329-#336.
 
@@ -456,6 +586,14 @@ Decided not to ship (cost > benefit):
 - **F.2 auto-cancel toast for system-cancelled orders** — niche event (wallet disabled, conditional expired); the existing risk:alert pipeline already covers the user-visible message.
 
 **Track F complete for v1.6.**
+
+**Track G — Per-dialog UX rewrite (2026-05-02, in progress)**
+
+User: "voce ainda nao refez todas as modals certo?" / "tudo significa todas as modais do app, uma por uma, pensando os textos e interaçoes e quais componentes usar para os mesmo tipos de situaçao para manter um padrao." / "só as modal por enquanto, mas todas elas".
+
+The Track A sweep got the SHELL right but left the INTERIOR drift untouched. Track G goes dialog-by-dialog (18 surfaces) rewriting copy / interactions / component choices for similar situations — the "feels deliberate" difference, not just the "shape is uniform" one. Track G is detailed earlier in this document; the per-dialog status table updates as PRs land.
+
+**v1.6.0 release is held** until Track G is complete. Track G plus the 9 Settings tabs is estimated ~47-62h.
 
 ---
 
