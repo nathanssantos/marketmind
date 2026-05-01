@@ -16,7 +16,6 @@ vi.mock('./NotificationsTab', () => ({ NotificationsTab: () => <div>Notification
 vi.mock('./GeneralTab', () => ({ GeneralTab: () => <div>GeneralTab Content</div> }));
 vi.mock('./ChartSettingsTab', () => ({ ChartSettingsTab: () => <div>ChartSettingsTab Content</div> }));
 vi.mock('./AboutTab', () => ({ AboutTab: () => <div>AboutTab Content</div> }));
-vi.mock('./UpdatesTab', () => ({ UpdatesTab: () => <div>UpdatesTab Content</div> }));
 vi.mock('./TradingProfilesTab', () => ({ TradingProfilesTab: () => <div>TradingProfilesTab Content</div> }));
 vi.mock('./DataTab', () => ({ DataTab: () => <div>DataTab Content</div> }));
 vi.mock('./IndicatorsTab', () => ({ IndicatorsTab: () => <div>IndicatorsTab Content</div> }));
@@ -152,7 +151,7 @@ describe('SettingsDialog', () => {
       'account', 'security', 'notifications',
       'general', 'chart',
       'wallets', 'tradingProfiles', 'autoTrading', 'indicators', 'customSymbols',
-      'data', 'updates', 'about',
+      'data', 'about',
     ];
     for (const t of tabsToCheck) {
       expect(screen.getByTestId(`settings-tab-${t}`)).toBeDefined();

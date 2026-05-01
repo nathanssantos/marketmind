@@ -21,7 +21,6 @@ const AutoTradingTab = lazy(() => import('./AutoTradingTab').then((m) => ({ defa
 const IndicatorsTab = lazy(() => import('./IndicatorsTab').then((m) => ({ default: m.IndicatorsTab })));
 const CustomSymbolsTab = lazy(() => import('../CustomSymbols').then((m) => ({ default: m.CustomSymbolsTab })));
 const DataTab = lazy(() => import('./DataTab').then((m) => ({ default: m.DataTab })));
-const UpdatesTab = lazy(() => import('./UpdatesTab').then((m) => ({ default: m.UpdatesTab })));
 const AboutTab = lazy(() => import('./AboutTab').then((m) => ({ default: m.AboutTab })));
 import {
   DEFAULT_SETTINGS_TAB,
@@ -179,9 +178,6 @@ export const SettingsDialog = ({
                     </Tabs.Content>
                     <Tabs.Content value="data" pt={0} w="100%">
                       {activeTab === 'data' && <DataTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="updates" pt={0} w="100%">
-                      {activeTab === 'updates' && <UpdatesTab />}
                     </Tabs.Content>
                     <Tabs.Content value="about" pt={0} w="100%">
                       {activeTab === 'about' && <AboutTab />}

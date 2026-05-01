@@ -4,7 +4,6 @@ import {
   LuBell,
   LuBot,
   LuDatabase,
-  LuDownload,
   LuInfo,
   LuChartCandlestick,
   LuPalette,
@@ -27,7 +26,6 @@ export const SETTINGS_TABS = [
   'indicators',
   'customSymbols',
   'data',
-  'updates',
   'about',
 ] as const;
 
@@ -58,7 +56,6 @@ export const SETTINGS_TAB_DEFS: readonly SettingsTabDef[] = [
   { id: 'customSymbols', group: 'trading', icon: LuStar, labelKey: 'settings.tabs.customSymbols' },
 
   { id: 'data', group: 'system', icon: LuDatabase, labelKey: 'settings.tabs.data' },
-  { id: 'updates', group: 'system', icon: LuDownload, labelKey: 'settings.tabs.updates' },
   { id: 'about', group: 'system', icon: LuInfo, labelKey: 'settings.tabs.about' },
 ];
 
