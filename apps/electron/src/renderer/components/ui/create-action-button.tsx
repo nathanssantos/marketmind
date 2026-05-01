@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { LuPlus } from 'react-icons/lu';
-import { Button } from './button';
+import { Button } from '@marketmind/ui-core';
 
 export interface CreateActionButtonProps {
   /** Visible verb + entity, e.g. "Create wallet", "Add watcher", "Import profile". */

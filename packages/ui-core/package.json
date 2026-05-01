@@ -1,0 +1,35 @@
+{
+  "name": "@marketmind/ui-core",
+  "version": "0.1.0",
+  "description": "MarketMind UI Tier-1 — pure Chakra wrappers shared across the renderer and any future surface. Extracted from apps/electron/src/renderer/components/ui/ per docs/UI_EXTRACTION_PLAN.md.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^3.35.0",
+    "@emotion/react": "^11.14.0",
+    "next-themes": "^0.4.4",
+    "react-icons": "^5.5.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^6.0.3"
+  }
+}

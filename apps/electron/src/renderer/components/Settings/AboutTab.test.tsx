@@ -14,9 +14,13 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
-vi.mock('@/renderer/components/ui/logo', () => ({
-    Logo: ({ size }: { size: number }) => <div data-testid="logo" data-size={size}>Logo</div>,
-}));
+vi.mock('@marketmind/ui-core', async () => {
+    const actual = await vi.importActual<typeof import('@marketmind/ui-core')>('@marketmind/ui-core');
+    return {
+        ...actual,
+        Logo: ({ size }: { size: number }) => <div data-testid="logo" data-size={size}>Logo</div>,
+    };
+});
 
 vi.mock('@/renderer/store/preferencesStore', () => ({
     useUIPref: (_key: string, defaultValue: unknown) => [defaultValue, vi.fn()],

@@ -1,7 +1,7 @@
 import { Text, VStack } from '@chakra-ui/react';
 import { type ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from './button';
+import { Button } from '@marketmind/ui-core';
 import {
   DialogBackdrop,
   DialogBody,
@@ -11,7 +11,7 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from './dialog';
+} from '@marketmind/ui-core';
 
 interface ConfirmationDialogProps {
   isOpen: boolean;

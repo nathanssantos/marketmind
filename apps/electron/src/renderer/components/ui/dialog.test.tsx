@@ -6,7 +6,7 @@ import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Dialog } from './dialog';
+import { Dialog } from '@marketmind/ui-core';
 
 const renderWithChakra = (ui: ReactElement) => render(
     <ChakraProvider value={defaultSystem}>

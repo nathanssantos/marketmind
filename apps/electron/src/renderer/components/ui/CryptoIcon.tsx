@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import { Image } from './image';
+import { Image } from '@marketmind/ui-core';
 import { memo, useState } from 'react';
 
 interface CryptoIconProps {

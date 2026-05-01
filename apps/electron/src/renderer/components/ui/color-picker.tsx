@@ -2,7 +2,7 @@ import { Box, chakra, Grid, HStack, Input as ChakraInput, VStack } from '@chakra
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 
 const ChakraButton = chakra('button');
-import { Popover } from './popover';
+import { Popover } from '@marketmind/ui-core';
 
 export const DEFAULT_COLOR_PRESETS = [
   '#ffffff',
