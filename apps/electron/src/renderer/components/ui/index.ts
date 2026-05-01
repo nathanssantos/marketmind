@@ -46,6 +46,7 @@ export {
   ProgressRoot,
   Radio,
   RadioGroup,
+  RecordRow,
   SectionDescription,
   SectionTitle,
   Select,

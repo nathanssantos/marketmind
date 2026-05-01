@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LuPlus, LuRefreshCw, LuTrash2, LuX } from 'react-icons/lu';
 import { useBackendCustomSymbols } from '../../hooks/useBackendCustomSymbols';
 import { toaster } from '../../utils/toaster';
-import { Badge, BetaBadge, Button, EmptyState, Field, FormSection, IconButton, Input, Tabs } from '../ui';
+import { Badge, BetaBadge, Button, EmptyState, Field, FormSection, IconButton, Input, RecordRow, Tabs } from '../ui';
 
 const CATEGORIES = ['politics', 'defi', 'gaming', 'ai', 'other'] as const;
 const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL'] as const;
@@ -132,7 +132,7 @@ export const CustomSymbolsTab = memo(() => {
             <EmptyState size="sm" title={t('common.noResults')} />
           )}
           {customSymbols.data?.map((cs) => (
-            <Box key={cs.id} p={3} borderWidth="1px" borderColor="border" borderRadius="md">
+            <RecordRow key={cs.id} density="card">
               <Flex justify="space-between" align="start" mb={2}>
                 <HStack gap={2}>
                   <Text fontWeight="semibold" fontSize="sm">{cs.name}</Text>
@@ -175,7 +175,7 @@ export const CustomSymbolsTab = memo(() => {
                   {t('customSymbols.lastRebalanced')}: {new Date(cs.lastRebalancedAt).toLocaleDateString()}
                 </Text>
               )}
-            </Box>
+            </RecordRow>
           ))}
         </Stack>
       </Tabs.Content>

@@ -23,6 +23,7 @@ export { Card } from './card';
 export { Checkbox, type CheckboxProps } from './checkbox';
 export { CloseButton, type CloseButtonProps } from './close-button';
 export { DataCard } from './data-card';
+export { RecordRow } from './record-row';
 export {
   Dialog,
   DialogActionTrigger,
