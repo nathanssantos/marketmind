@@ -74,7 +74,7 @@ Files already named `*Dialog.tsx` stay as-is (`ChartCloseDialog`, `IndicatorConf
 
 ### E.2 — Shared `<DialogShell>` props base
 ```ts
-// packages/types/src/ui.ts (or in @marketmind/ui-core when extracted)
+// packages/types/src/ui.ts (or in @marketmind/ui when extracted)
 export interface DialogControlProps {
   isOpen: boolean;
   onClose: () => void;
@@ -313,9 +313,9 @@ Single dedicated PR after the rewrites land:
 This executes the F.2 audit doc (`docs/UI_EXTRACTION_PLAN.md` from #320). Lands **after** Track A so the new primitives (`<DialogShell>`, `<DialogSection>`) extract along with the rest in their final shape.
 
 ### B.1 — `packages/ui-core/` skeleton + Tier 1
-- New workspace `@marketmind/ui-core`. `-core` suffix during migration so the in-app `ui/` barrel can keep its name.
+- New workspace `@marketmind/ui`. `-core` suffix during migration so the in-app `ui/` barrel can keep its name.
 - Move all Tier-1 files (~33 pure Chakra wrappers): `Alert`, `Badge`, `Button`, `Card`, `Checkbox`, `CloseButton`, `ColorMode*`, `DataCard`, `Dialog`, `Field`, `IconButton`, `Image`, `Input`, `Link`, `Logo`, `Menu`, `NumberInput`, `PasswordInput`, `Popover`, `Progress*`, `Radio*`, `Select`, `Separator`, `Skeleton`, `Slider`, `Stat*`, `Switch`, `Table`, `Tabs`, `Textarea`, `ToggleIconButton`, `TooltipWrapper`.
-- Keep `apps/electron/src/renderer/components/ui/index.ts` as a re-export aggregator: `export { Button, ... } from '@marketmind/ui-core'`. **No app-site import changes** in this PR.
+- Keep `apps/electron/src/renderer/components/ui/index.ts` as a re-export aggregator: `export { Button, ... } from '@marketmind/ui'`. **No app-site import changes** in this PR.
 - Test infra: vitest config in the new package mirrors backend/electron. Existing `*.test.tsx` files move alongside their components.
 
 ### B.2 — Tier 2 (token-aware composed)
@@ -397,7 +397,7 @@ After the modal sweep, v1.7+ extends the same pass to:
   - Stage 4: drop Custom Symbols tab; new `<CustomSymbolsDialog>` opens from SymbolSelector (#360)
 - ✅ A.6 i18n text audit — all 192 `t('foo', 'fallback')` calls cleaned (#347-#351)
 
-**Track B (`@marketmind/ui-core` extraction) — substantially complete.**
+**Track B (`@marketmind/ui` extraction) — substantially complete.**
 - ✅ B.1 Tier-1 extraction — 32 pure Chakra wrappers moved (#353)
 - ✅ B.2 Tier-2 extraction — 10+ token-aware composed primitives + Sidebar (#354)
 - B.3 Tier-3 graduation (`PasswordStrengthMeter`) — deferred; needs i18n `t` prop decoupling
@@ -511,7 +511,7 @@ A v1.6 phase is "done" when:
 - Every dialog-related i18n key follows `<feature>.dialogs.<dialog>.<key>`. en/pt/es/fr JSONs are 1:1 in those keys.
 - Zero `t('...', 'fallback')` calls remain in `apps/electron/src/renderer/`.
 - `audit-dialog-rules.mjs` reports 0 violations and runs in CI default-on.
-- `apps/electron/src/renderer/components/ui/index.ts` re-exports from `@marketmind/ui-core` (or `@marketmind/ui` post-rename).
+- `apps/electron/src/renderer/components/ui/index.ts` re-exports from `@marketmind/ui` (or `@marketmind/ui` post-rename).
 - `packages/ui-core/README.md` documents every export with a runnable snippet; JSDoc on every public export so IDE hover surfaces the rules.
 - `docs/UI_DESIGN_SYSTEM.md` is the canonical reference (the older `UI_STYLE_GUIDE.md` either folds in or is archived).
 - Visual regression baseline updated with the new dialog styling; no unintended regressions in non-dialog surfaces.

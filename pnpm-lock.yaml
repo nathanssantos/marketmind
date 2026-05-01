@@ -204,9 +204,9 @@ importers:
       '@marketmind/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@marketmind/ui-core':
+      '@marketmind/ui':
         specifier: workspace:*
-        version: link:../../packages/ui-core
+        version: link:../../packages/ui
       '@marketmind/utils':
         specifier: workspace:*
         version: link:../../packages/utils
@@ -583,7 +583,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
-  packages/ui-core:
+  packages/ui:
     dependencies:
       '@chakra-ui/react':
         specifier: ^3.35.0

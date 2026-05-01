@@ -1,4 +1,4 @@
-import { PasswordStrengthMeter as PasswordStrengthMeterCore, type PasswordStrengthMeterLabels } from '@marketmind/ui-core';
+import { PasswordStrengthMeter as PasswordStrengthMeterCore, type PasswordStrengthMeterLabels } from '@marketmind/ui';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -8,7 +8,7 @@ interface PasswordStrengthMeterProps {
 }
 
 /**
- * Renderer-side wrapper around `@marketmind/ui-core`'s
+ * Renderer-side wrapper around `@marketmind/ui`'s
  * `PasswordStrengthMeter`. Resolves the locale-agnostic `labels` prop
  * via `react-i18next` so app callers don't have to. The core component
  * is locale-free for ui-core extraction (v1.6 B.3).

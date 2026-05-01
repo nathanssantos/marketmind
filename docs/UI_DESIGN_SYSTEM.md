@@ -3,7 +3,7 @@
 > **Authority:** v1.6 cycle. Audit script: `scripts/audit-dialog-rules.mjs` and `scripts/audit-shade-literals.mjs`.
 >
 > **Quick answers**
-> - **Where do primitives live?** `@marketmind/ui-core` (Tier 1 + Tier 2) or `apps/electron/src/renderer/components/ui/` (Tier 3 — i18n / runtime-coupled). Always import via `@renderer/components/ui` from app-site.
+> - **Where do primitives live?** `@marketmind/ui` (Tier 1 + Tier 2) or `apps/electron/src/renderer/components/ui/` (Tier 3 — i18n / runtime-coupled). Always import via `@renderer/components/ui` from app-site.
 > - **Where do tokens live?** `@marketmind/tokens` — `MM.*` constants for spacing/typography/dialog sizes, `semanticTokenColors` for color tokens, `getPnLColor` helper.
 > - **What's the design language reference?** This document.
 > - **What's the per-component catalog?** `packages/ui-core/README.md`.

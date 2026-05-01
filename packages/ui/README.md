@@ -1,4 +1,4 @@
-# `@marketmind/ui-core`
+# `@marketmind/ui`
 
 Tier-1 + Tier-2 UI primitives shared across the MarketMind renderer and any future surface (landing site, docs site, dev tools). Extracted from `apps/electron/src/renderer/components/ui/` per `docs/UI_EXTRACTION_PLAN.md` and the v1.6 cycle.
 
@@ -74,7 +74,7 @@ These import from `@marketmind/tokens` (`MM.*` constants, `getPnLColor`). They d
 - **`GridWindow`** — trading-specific layout primitive.
 - **`CollapsibleSection`** — could graduate (local state only); deferred for now.
 
-The barrel at `apps/electron/src/renderer/components/ui/index.ts` re-exports everything from `@marketmind/ui-core` plus the Tier-3 components, so app-site imports stay `@renderer/components/ui` and don't change.
+The barrel at `apps/electron/src/renderer/components/ui/index.ts` re-exports everything from `@marketmind/ui` plus the Tier-3 components, so app-site imports stay `@renderer/components/ui` and don't change.
 
 ## Usage
 
@@ -86,7 +86,7 @@ import {
   Field,
   FormSection,
   Input,
-} from '@marketmind/ui-core';
+} from '@marketmind/ui';
 
 <FormSection title="API credentials" description="Read-only.">
   <FormRow label="API key">
@@ -116,7 +116,7 @@ import {
 2. Drop the file into `packages/ui-core/src/<name>.tsx`.
 3. Export from `packages/ui-core/src/index.ts` — group with its tier.
 4. Re-export from `apps/electron/src/renderer/components/ui/index.ts` so app-site imports stay `@renderer/components/ui`.
-5. Tests go in `apps/electron/src/renderer/components/ui/<name>.test.tsx` (the renderer has the vitest infra; tests import the primitive from `@marketmind/ui-core`).
+5. Tests go in `apps/electron/src/renderer/components/ui/<name>.test.tsx` (the renderer has the vitest infra; tests import the primitive from `@marketmind/ui`).
 6. JSDoc the public exports — IDE hover should surface the rules + accepted prop values.
 
 ## Related

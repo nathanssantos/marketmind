@@ -14,8 +14,8 @@ vi.mock('react-i18next', () => ({
     }),
 }));
 
-vi.mock('@marketmind/ui-core', async () => {
-    const actual = await vi.importActual<typeof import('@marketmind/ui-core')>('@marketmind/ui-core');
+vi.mock('@marketmind/ui', async () => {
+    const actual = await vi.importActual<typeof import('@marketmind/ui')>('@marketmind/ui');
     return {
         ...actual,
         Logo: ({ size }: { size: number }) => <div data-testid="logo" data-size={size}>Logo</div>,

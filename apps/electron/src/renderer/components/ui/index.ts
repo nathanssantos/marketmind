@@ -1,4 +1,4 @@
-// Tier-1 + Tier-2 primitives extracted into @marketmind/ui-core
+// Tier-1 + Tier-2 primitives extracted into @marketmind/ui
 // (v1.6 Track B.1 + B.2). Re-exported here so existing app-site imports
 // (`@renderer/components/ui`) keep working without per-callsite churn.
 export {
@@ -85,7 +85,7 @@ export {
   type SkeletonProps,
   type TextareaProps,
   type ToggleIconButtonProps,
-} from '@marketmind/ui-core';
+} from '@marketmind/ui';
 
 // Stays app-side — i18n / runtime-coupled (Tier 3).
 export { ColorModeProvider, useColorMode } from './color-mode';

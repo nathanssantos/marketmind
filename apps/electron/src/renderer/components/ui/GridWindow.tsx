@@ -1,5 +1,5 @@
 import { Box, Flex, HStack } from '@chakra-ui/react';
-import { IconButton } from '@marketmind/ui-core';
+import { IconButton } from '@marketmind/ui';
 import { TooltipWrapper } from './Tooltip';
 import { memo, useCallback, type ReactNode } from 'react';
 import { LuMaximize2, LuMinimize2, LuMinus, LuX } from 'react-icons/lu';
