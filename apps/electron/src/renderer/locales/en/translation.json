@@ -4,7 +4,8 @@
       "help": {
         "title": "Keyboard shortcuts",
         "description": "Every shortcut registered in the app, grouped by section.",
-        "empty": "No shortcuts registered yet."
+        "emptyTitle": "No shortcuts registered",
+        "emptyDescription": "Shortcuts get registered as features load. This dialog will fill in once you've used the app a bit."
       }
     },
     "group": {

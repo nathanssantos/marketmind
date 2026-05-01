@@ -4,7 +4,8 @@
       "help": {
         "title": "Atalhos do teclado",
         "description": "Todos os atalhos registrados no app, agrupados por seção.",
-        "empty": "Nenhum atalho registrado ainda."
+        "emptyTitle": "Nenhum atalho registrado",
+        "emptyDescription": "Atalhos são registrados conforme os recursos carregam. Esta tela é preenchida depois que você usar o app um pouco."
       }
     },
     "group": {

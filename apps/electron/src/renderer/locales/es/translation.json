@@ -4,7 +4,8 @@
       "help": {
         "title": "Atajos de teclado",
         "description": "Todos los atajos registrados en la app, agrupados por sección.",
-        "empty": "No hay atajos registrados todavía."
+        "emptyTitle": "No hay atajos registrados",
+        "emptyDescription": "Los atajos se registran conforme cargan las funciones. Esta vista se llenará después de usar la app un rato."
       }
     },
     "group": {
