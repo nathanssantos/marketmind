@@ -877,6 +877,7 @@
     },
     "tools": {
       "pencil": "Crayon",
+      "highlighter": "Surligneur",
       "line": "Ligne",
       "rectangle": "Rectangle",
       "fibonacci": "Fibonacci",
@@ -884,7 +885,19 @@
       "area": "Zone",
       "arrow": "Flèche",
       "text": "Texte",
-      "magnet": "Aimant OHLC"
+      "magnet": "Aimant OHLC",
+      "horizontalLine": "Ligne Horizontale",
+      "verticalLine": "Ligne Verticale",
+      "trendLine": "Ligne de Tendance",
+      "ray": "Rayon",
+      "channel": "Canal",
+      "ellipse": "Ellipse",
+      "gannFan": "Éventail de Gann",
+      "pitchfork": "Fourche",
+      "priceRange": "Plage de Prix",
+      "anchoredVwap": "VWAP Ancré",
+      "longPosition": "Position Longue",
+      "shortPosition": "Position Courte"
     },
     "quickTrade": {
       "buy": "Acheter",
@@ -2608,6 +2621,10 @@
     "cancelOrders": "Annuler les Ordres",
     "cancelOrdersFailed": "Échec de l'annulation des ordres",
     "cancelOrdersConfirmTitle": "Annuler Tous les Ordres ?",
-    "cancelOrdersConfirmDescription": "Annuler tous les ordres d'entrée en attente pour {{symbol}} ? Les ordres SL et TP ne seront pas affectés."
+    "cancelOrdersConfirmDescription": "Annuler tous les ordres d'entrée en attente pour {{symbol}} ? Les ordres SL et TP ne seront pas affectés.",
+    "positions": "Positions de Futures",
+    "unrealizedPnl": "PnL Non Réalisé",
+    "liquidated": "La position serait liquidée au prix actuel !",
+    "liquidationWarning": "Avertissement : La position est proche de la liquidation."
   }
 }

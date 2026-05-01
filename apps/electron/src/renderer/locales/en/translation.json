@@ -792,6 +792,30 @@
       "degradedTitle": "Exchange stream degraded",
       "degradedDescription": "No updates received from the exchange — reconnecting automatically."
     },
+    "tools": {
+      "magnet": "OHLC Magnet",
+      "pencil": "Pencil",
+      "highlighter": "Highlighter",
+      "ruler": "Ruler",
+      "horizontalLine": "Horizontal Line",
+      "verticalLine": "Vertical Line",
+      "trendLine": "Trend Line",
+      "ray": "Ray",
+      "line": "Line",
+      "arrow": "Arrow",
+      "channel": "Channel",
+      "rectangle": "Rectangle",
+      "ellipse": "Ellipse",
+      "area": "Area",
+      "fibonacci": "Fibonacci",
+      "gannFan": "Gann Fan",
+      "pitchfork": "Pitchfork",
+      "priceRange": "Price Range",
+      "anchoredVwap": "Anchored VWAP",
+      "longPosition": "Long Position",
+      "shortPosition": "Short Position",
+      "text": "Text"
+    },
     "controls": {
       "title": "Chart Controls",
       "timeframe": "Timeframe",
@@ -2583,6 +2607,10 @@
     "cancelOrders": "Cancel Orders",
     "cancelOrdersFailed": "Failed to cancel orders",
     "cancelOrdersConfirmTitle": "Cancel All Orders?",
-    "cancelOrdersConfirmDescription": "Cancel all pending entry orders for {{symbol}}? SL and TP orders will not be affected."
+    "cancelOrdersConfirmDescription": "Cancel all pending entry orders for {{symbol}}? SL and TP orders will not be affected.",
+    "positions": "Futures Positions",
+    "unrealizedPnl": "Unrealized PnL",
+    "liquidated": "Position would be liquidated at current price!",
+    "liquidationWarning": "Warning: Position is close to liquidation."
   }
 }
