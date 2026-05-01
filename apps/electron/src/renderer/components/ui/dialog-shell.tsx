@@ -2,8 +2,8 @@ import { Box, Flex, Stack, Text } from '@chakra-ui/react';
 import { MM } from '@marketmind/tokens';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@marketmind/ui-core';
-import { CloseButton } from '@marketmind/ui-core';
+import { Button } from '@marketmind/ui';
+import { CloseButton } from '@marketmind/ui';
 import {
   DialogBackdrop,
   DialogBody,
@@ -14,7 +14,7 @@ import {
   DialogPositioner,
   DialogRoot,
   DialogTitle,
-} from '@marketmind/ui-core';
+} from '@marketmind/ui';
 
 export type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 

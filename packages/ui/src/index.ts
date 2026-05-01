@@ -1,5 +1,5 @@
 /**
- * @marketmind/ui-core — Tier-1 + Tier-2 + select Tier-3 UI primitives.
+ * @marketmind/ui — Tier-1 + Tier-2 + select Tier-3 UI primitives.
  *
  * Tier 1: pure Chakra wrappers (Alert, Badge, Button, ...).
  * Tier 2: token-aware composed primitives (Callout, FormSection,

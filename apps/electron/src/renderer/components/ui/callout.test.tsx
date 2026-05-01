@@ -1,7 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { Callout, type CalloutTone } from '@marketmind/ui-core';
+import { Callout, type CalloutTone } from '@marketmind/ui';
 
 const renderCallout = (props: Parameters<typeof Callout>[0]) =>
   render(

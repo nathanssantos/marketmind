@@ -39,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added — Package + token system (V1_5 F)
 - **`@marketmind/tokens` package extraction** (#301) — design tokens (`MM.*`, `getPnLColor`, recipes, semantic tokens, chart indicator tokens) moved from `apps/electron/src/renderer/theme/` into `packages/tokens/`. Sweeps 22 consumers across the app to import from `@marketmind/tokens`. Now consumable by future external surfaces (landing site, docs).
-- **`docs/UI_EXTRACTION_PLAN.md`** (#320) — audit-only PR. Inventories all 73 named bindings from `apps/electron/src/renderer/components/ui/index.ts`, classifies them by extraction tier (1: pure Chakra wrappers — ~33 components; 2: token-aware — ~8; 3: i18n / runtime-coupled — ~10), documents peer-dep boundaries, and proposes a 4-PR extraction sequence behind a temporary `@marketmind/ui-core` alias.
+- **`docs/UI_EXTRACTION_PLAN.md`** (#320) — audit-only PR. Inventories all 73 named bindings from `apps/electron/src/renderer/components/ui/index.ts`, classifies them by extraction tier (1: pure Chakra wrappers — ~33 components; 2: token-aware — ~8; 3: i18n / runtime-coupled — ~10), documents peer-dep boundaries, and proposes a 4-PR extraction sequence behind a temporary `@marketmind/ui` alias.
 
 ### Added — Test + CI infra (V1_5 G)
 - **Backend custom-symbol-service deeper testing** (#307) — `custom-symbol-service.test.ts` + `custom-symbol-helpers.test.ts` reach 31 tests covering the marketType fallback, FUTURES→SPOT smartBackfill cascade, error-swallowing, weight renormalization, no-usable-components edge case, and synthetic-index produce.

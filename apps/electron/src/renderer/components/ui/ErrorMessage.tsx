@@ -1,5 +1,5 @@
 import { Box, Stack, Text } from '@chakra-ui/react';
-import { Button } from '@marketmind/ui-core';
+import { Button } from '@marketmind/ui';
 import { useTranslation } from 'react-i18next';
 import { LuTriangleAlert } from 'react-icons/lu';
 

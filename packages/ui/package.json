@@ -1,7 +1,7 @@
 {
-  "name": "@marketmind/ui-core",
+  "name": "@marketmind/ui",
   "version": "0.1.0",
-  "description": "MarketMind UI Tier-1 — pure Chakra wrappers shared across the renderer and any future surface. Extracted from apps/electron/src/renderer/components/ui/ per docs/UI_EXTRACTION_PLAN.md.",
+  "description": "MarketMind UI primitives (Tier-1 + Tier-2 + select Tier-3) shared across the renderer and any future surface. Extracted in v1.6 per docs/UI_EXTRACTION_PLAN.md. Renamed from the working name 'ui-core' once the API stabilized.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "private": true,

@@ -201,7 +201,7 @@ The v1.4 sweep finished migrating to semantic tokens (`X.fg / .subtle / .muted /
 **Effort**: ~half-day. **Risk**: low (pure refactor).
 
 ### F.2 — `@marketmind/ui` extraction (audit + plan only) ✅ shipped
-Audit doc lives at `docs/UI_EXTRACTION_PLAN.md`. Inventories all 73 named bindings, groups by tier, defines peer-dep boundaries, and proposes a 4-PR extraction sequence behind a temporary `@marketmind/ui-core` alias. Tier-1 is the next concrete action when extraction begins.
+Audit doc lives at `docs/UI_EXTRACTION_PLAN.md`. Inventories all 73 named bindings, groups by tier, defines peer-dep boundaries, and proposes a 4-PR extraction sequence behind a temporary `@marketmind/ui` alias. Tier-1 is the next concrete action when extraction begins.
 
 ---
 

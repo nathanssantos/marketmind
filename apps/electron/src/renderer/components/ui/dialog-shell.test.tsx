@@ -11,7 +11,7 @@ vi.mock('react-i18next', () => ({
 }));
 
 import { DialogShell } from './dialog-shell';
-import { DialogSection } from '@marketmind/ui-core';
+import { DialogSection } from '@marketmind/ui';
 
 const renderShell = (props: Partial<React.ComponentProps<typeof DialogShell>> = {}) =>
   render(

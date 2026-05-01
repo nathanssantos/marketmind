@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { Slider } from '@marketmind/ui-core';
+import { Slider } from '@marketmind/ui';
 
 const renderWithChakra = (ui: ReactElement) => render(
     <ChakraProvider value={defaultSystem}>
