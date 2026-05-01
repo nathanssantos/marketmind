@@ -10,7 +10,6 @@ import {
   LuShield,
   LuStar,
   LuUser,
-  LuWallet,
 } from 'react-icons/lu';
 
 export const SETTINGS_TABS = [
@@ -19,7 +18,6 @@ export const SETTINGS_TABS = [
   'notifications',
   'general',
   'chart',
-  'wallets',
   'autoTrading',
   'indicators',
   'customSymbols',
@@ -47,7 +45,6 @@ export const SETTINGS_TAB_DEFS: readonly SettingsTabDef[] = [
   { id: 'general', group: 'appearance', icon: LuPalette, labelKey: 'settings.tabs.general' },
   { id: 'chart', group: 'appearance', icon: LuChartCandlestick, labelKey: 'settings.tabs.chart' },
 
-  { id: 'wallets', group: 'trading', icon: LuWallet, labelKey: 'settings.tabs.wallets' },
   { id: 'autoTrading', group: 'trading', icon: LuBot, labelKey: 'settings.tabs.autoTrading' },
   { id: 'indicators', group: 'trading', icon: LuActivity, labelKey: 'settings.tabs.indicators' },
   { id: 'customSymbols', group: 'trading', icon: LuStar, labelKey: 'settings.tabs.customSymbols' },

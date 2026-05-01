@@ -212,7 +212,6 @@
       "general": "Geral",
       "chart": "Gráfico",
       "autoTrading": "Auto-Trading",
-      "wallets": "Carteiras",
       "aiTrading": "Auto-Trading IA",
       "algorithmicAutoTrading": "Auto-Trading Algorítmico",
       "context": "Contexto",
@@ -2053,7 +2052,8 @@
     "title": "Carteira Ativa",
     "noWallets": "Nenhuma carteira criada",
     "crypto": "Crypto",
-    "stocks": "Ações"
+    "stocks": "Ações",
+    "manage": "Gerenciar carteiras"
   },
   "backtest": {
     "title": "Backtest",

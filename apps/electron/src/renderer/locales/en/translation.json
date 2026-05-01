@@ -208,7 +208,6 @@
       "general": "General",
       "chart": "Chart",
       "autoTrading": "Auto-Trading",
-      "wallets": "Wallets",
       "algorithmicAutoTrading": "Algorithmic Auto-Trading",
       "setupDetection": "Setup Detection",
       "tradingSimulator": "Trading Simulator",
@@ -2020,7 +2019,8 @@
     "title": "Active Wallet",
     "noWallets": "No wallets created",
     "crypto": "Crypto",
-    "stocks": "Stocks"
+    "stocks": "Stocks",
+    "manage": "Manage wallets"
   },
   "backtest": {
     "title": "Backtest",

@@ -19,7 +19,6 @@ vi.mock('./AboutTab', () => ({ AboutTab: () => <div>AboutTab Content</div> }));
 vi.mock('./DataTab', () => ({ DataTab: () => <div>DataTab Content</div> }));
 vi.mock('./IndicatorsTab', () => ({ IndicatorsTab: () => <div>IndicatorsTab Content</div> }));
 vi.mock('./AutoTradingTab', () => ({ AutoTradingTab: () => <div>AutoTradingTab Content</div> }));
-vi.mock('../Trading/WalletManager', () => ({ WalletManager: () => <div>WalletManager Content</div> }));
 vi.mock('../CustomSymbols', () => ({ CustomSymbolsTab: () => <div>CustomSymbolsTab Content</div> }));
 
 const renderWithChakra = (component: React.ReactElement) =>
@@ -149,7 +148,7 @@ describe('SettingsDialog', () => {
     const tabsToCheck = [
       'account', 'security', 'notifications',
       'general', 'chart',
-      'wallets', 'autoTrading', 'indicators', 'customSymbols',
+      'autoTrading', 'indicators', 'customSymbols',
       'data', 'about',
     ];
     for (const t of tabsToCheck) {
