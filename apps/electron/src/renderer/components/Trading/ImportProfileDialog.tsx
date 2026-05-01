@@ -17,14 +17,12 @@ import {
   Input,
   Textarea,
 } from '@renderer/components/ui';
+import type { DialogControlProps } from '@marketmind/types';
 import { trpc } from '@renderer/utils/trpc';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface ImportProfileDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+type ImportProfileDialogProps = DialogControlProps;
 
 interface ParsedProfile {
   name?: string;

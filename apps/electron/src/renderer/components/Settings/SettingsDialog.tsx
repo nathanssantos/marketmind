@@ -2,6 +2,7 @@ import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
 import { CloseButton, Dialog, Tabs } from '@renderer/components/ui';
 import { useDialogMount } from '@renderer/hooks/useDialogMount';
 import { MM } from '@marketmind/tokens';
+import type { DialogControlProps } from '@marketmind/types';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
@@ -31,9 +32,7 @@ import {
   isSettingsTab,
 } from './constants';
 
-interface SettingsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface SettingsDialogProps extends DialogControlProps {
   initialTab?: SettingsTab;
   advancedConfig: AdvancedControlsConfig;
   onAdvancedConfigChange: (config: AdvancedControlsConfig) => void;

@@ -1,5 +1,5 @@
 import { Box, Group, HStack, Stack, Text } from '@chakra-ui/react';
-import type { MarketType, TradingProfile } from '@marketmind/types';
+import type { DialogControlProps, MarketType, TradingProfile } from '@marketmind/types';
 import { Button, Callout, Checkbox, Field, FormDialog, Select } from '@renderer/components/ui';
 import { useBackendAutoTrading } from '@renderer/hooks/useBackendAutoTrading';
 import { useState } from 'react';
@@ -9,9 +9,7 @@ import { type Timeframe, TimeframeSelector } from '../Chart/TimeframeSelector';
 import { SymbolSelector } from '../SymbolSelector';
 import { BulkSymbolSelector } from './BulkSymbolSelector';
 
-interface AddWatcherDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface AddWatcherDialogProps extends DialogControlProps {
   walletId: string;
   profiles: TradingProfile[];
 }
