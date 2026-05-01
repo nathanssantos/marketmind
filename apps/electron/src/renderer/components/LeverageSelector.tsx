@@ -6,6 +6,7 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
+import { LEVERAGE_PRESETS } from '@marketmind/types';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuTriangleAlert } from 'react-icons/lu';
@@ -16,8 +17,6 @@ interface LeverageSelectorProps {
   maxLeverage?: number;
   disabled?: boolean;
 }
-
-const LEVERAGE_PRESETS = [1, 2, 3, 5, 10, 20, 50, 75, 100, 125];
 
 export function LeverageSelector({
   value,
