@@ -44,6 +44,7 @@ export const SERVER_TO_CLIENT_EVENTS = {
   priceUpdate: 'price:update',
   klineUpdate: 'kline:update',
   streamHealth: 'stream:health',
+  streamReconnected: 'stream:reconnected',
   setupDetected: 'setup-detected',
   signalSuggestion: 'signal-suggestion',
   sessionScanResult: 'session-scan-result',
@@ -96,6 +97,14 @@ export interface StreamHealthPayload {
   status: 'healthy' | 'degraded';
   reason?: string;
   lastMessageAt: number | null;
+}
+
+export interface StreamReconnectedPayload {
+  // 'user' = Binance Futures user-stream (orders/positions/balance);
+  // others can be added later (e.g. 'kline').
+  source: 'user';
+  reason: 'recovered_message' | 'forced_reconnect' | 'listenkey_expired';
+  silenceMs?: number;
 }
 
 export interface RiskAlertPayload {
@@ -296,6 +305,7 @@ export type ServerToClientEvents = {
   [SERVER_TO_CLIENT_EVENTS.priceUpdate]: (data: PriceUpdatePayload) => void;
   [SERVER_TO_CLIENT_EVENTS.klineUpdate]: (data: KlineUpdatePayload) => void;
   [SERVER_TO_CLIENT_EVENTS.streamHealth]: (data: StreamHealthPayload) => void;
+  [SERVER_TO_CLIENT_EVENTS.streamReconnected]: (data: StreamReconnectedPayload) => void;
   [SERVER_TO_CLIENT_EVENTS.setupDetected]: (data: SetupDetectedPayload) => void;
   [SERVER_TO_CLIENT_EVENTS.signalSuggestion]: (data: SignalSuggestionPayload) => void;
   [SERVER_TO_CLIENT_EVENTS.sessionScanResult]: (data: SessionScanResultPayload) => void;

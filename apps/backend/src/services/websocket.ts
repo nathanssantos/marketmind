@@ -22,6 +22,7 @@ import {
   type SetupDetectedPayload,
   type SignalSuggestionPayload,
   type StreamHealthPayload,
+  type StreamReconnectedPayload,
   type TradeNotificationPayload,
 } from '@marketmind/types';
 import { binancePriceStreamService } from './binance-price-stream';
@@ -260,6 +261,13 @@ export class WebSocketService {
 
   public emitStreamHealth(payload: StreamHealthPayload): void {
     this.io.to(ROOMS.klines(payload.symbol, payload.interval)).emit(SERVER_TO_CLIENT_EVENTS.streamHealth, payload);
+  }
+
+  public emitStreamReconnected(walletId: string, payload: StreamReconnectedPayload): void {
+    // Targets the wallet's positions room — matches the existing
+    // position:* event scoping. Renderer's RealtimeTradingSyncContext
+    // (which is per-wallet) picks it up to force-refresh state.
+    this.io.to(ROOMS.positions(walletId)).emit(SERVER_TO_CLIENT_EVENTS.streamReconnected, payload);
   }
 
   public emitSetupDetected(userId: string, data: SetupDetectedPayload): void {

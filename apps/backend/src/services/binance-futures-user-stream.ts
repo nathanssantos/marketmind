@@ -336,6 +336,16 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
       await this.subscribeWallet(wallet);
 
+      // v1.6 Track F.2 — emit before the REST sync below so the renderer
+      // gets the signal as early as possible. The sync may also produce
+      // its own emits (positionSync re-emits state for any drift it
+      // catches) — those debounce with this on the renderer side.
+      const wsService = getWebSocketService();
+      wsService?.emitStreamReconnected(walletId, {
+        source: 'user',
+        reason: 'forced_reconnect',
+      });
+
       try {
         const syncResult = await positionSyncService.syncWallet(wallet);
         logger.info(
@@ -362,10 +372,23 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
   private recordUserStreamActivity(walletId: string): void {
     const existing = this.walletHealth.get(walletId);
     if (!existing) return;
+    const wasDegraded = existing.healthStatus === 'degraded';
+    const silenceMs = Date.now() - existing.lastMessageAt;
     existing.lastMessageAt = Date.now();
-    if (existing.healthStatus === 'degraded') {
+    if (wasDegraded) {
       existing.healthStatus = 'healthy';
-      logger.info({ walletId }, '[FuturesUserStream] User stream recovered on message receipt');
+      logger.info({ walletId, silenceMs }, '[FuturesUserStream] User stream recovered on message receipt');
+      // v1.6 Track F.2 — signal renderer to force-refresh trading
+      // queries. Without this, after a stream gap the chart can stay
+      // stale until the next BACKUP_POLLING_INTERVAL tick (5s) —
+      // which is fine, but a deliberate refresh on reconnect cuts the
+      // worst case to "as fast as the server can answer".
+      const wsService = getWebSocketService();
+      wsService?.emitStreamReconnected(walletId, {
+        source: 'user',
+        reason: 'recovered_message',
+        silenceMs,
+      });
     }
   }
 
@@ -555,6 +578,13 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       if (wallet && wallet.isActive && !isPaperWallet(wallet) && wallet.marketType === 'FUTURES') {
         await this.subscribeWallet(wallet);
         logger.info({ walletId }, '[FuturesUserStream] Successfully resubscribed after listenKey expiry');
+        // v1.6 Track F.2 — listenKey expiry means missed events while
+        // we were offline. Force the renderer to re-fetch state.
+        const wsService = getWebSocketService();
+        wsService?.emitStreamReconnected(walletId, {
+          source: 'user',
+          reason: 'listenkey_expired',
+        });
       }
     } catch (error) {
       logger.error(
