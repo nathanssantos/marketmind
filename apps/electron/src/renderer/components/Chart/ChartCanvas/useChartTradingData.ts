@@ -17,7 +17,19 @@ interface OptimisticOverride {
   timestamp: number;
 }
 
-const OPTIMISTIC_OVERRIDE_TTL_MS = 5_000;
+// Hard safety cap for optimistic overrides — after this, give up and let
+// the real cache speak. v1.6 Track F: was 5s, but Binance's open-orders
+// list is eventually consistent — a cancelled limit could still appear
+// in `getOpenOrders` for several seconds after the cancel ACKs. With
+// the old 5s cap, the override would expire before the cache caught up,
+// the cancelled order would reappear (real cache still had it), then
+// vanish again on the next poll. Bumped to 30s + smarter "delete when
+// server stops showing the entry" logic below.
+const OPTIMISTIC_OVERRIDE_HARD_CAP_MS = 30_000;
+// Pre-confirmation TTL for newly-created entries (shown before the
+// server returns the real exec). Different concern from the override
+// cap above — keeps the staleness short for create flows.
+const OPTIMISTIC_ENTRY_TTL_MS = 5_000;
 
 export interface UseChartTradingDataProps {
   symbol?: string;
@@ -214,15 +226,27 @@ export const useChartTradingData = ({
     if (overrides.size === 0) return;
     const now = Date.now();
     let changed = false;
+    const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions, ...trackedOrderExecutions];
     for (const [id, ov] of overrides) {
-      if (now - ov.timestamp > OPTIMISTIC_OVERRIDE_TTL_MS) {
+      // 1. Hard safety cap — give up after 30s regardless of state.
+      if (now - ov.timestamp > OPTIMISTIC_OVERRIDE_HARD_CAP_MS) {
         overrides.delete(id);
         changed = true;
         continue;
       }
-      const allReal = [...filteredBackendExecutions, ...orphanOrderExecutions, ...trackedOrderExecutions];
       const serverExec = allReal.find(e => e.id === id);
-      if (!serverExec) continue;
+      // 2. Server no longer lists the entry — for status='cancelled' /
+      //    'closed' patches this means the cancel/close completed; the
+      //    override is now moot and would just take memory. Delete.
+      //    (For other patches like entryPrice/stopLoss/takeProfit, a
+      //    missing server entry is an edge case — also safe to delete.)
+      if (!serverExec) {
+        overrides.delete(id);
+        changed = true;
+        continue;
+      }
+      // 3. Server already reflects every patched field — override is
+      //    redundant.
       const patchKeys = Object.keys(ov.patches) as (keyof OptimisticOverride['patches'])[];
       const serverMatches = patchKeys.every(k => {
         const patchVal = ov.patches[k];
@@ -234,6 +258,9 @@ export const useChartTradingData = ({
         overrides.delete(id);
         changed = true;
       }
+      // 4. Otherwise: server still has the entry with the OLD state. Keep
+      //    the override so the user's optimistic intent stays on screen
+      //    until the server catches up (or the hard cap fires).
     }
     if (changed) setOverrideVersion(v => v + 1);
   }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions]);
@@ -269,7 +296,7 @@ export const useChartTradingData = ({
     const now = Date.now();
     const remaining = optimisticExecutions.filter(opt => {
       const openedMs = opt.openedAt instanceof Date ? opt.openedAt.getTime() : opt.openedAt ? new Date(opt.openedAt).getTime() : now;
-      if (now - openedMs > OPTIMISTIC_OVERRIDE_TTL_MS) return false;
+      if (now - openedMs > OPTIMISTIC_ENTRY_TTL_MS) return false;
       const optPrice = parseFloat(opt.entryPrice);
       const matchingReal = allReal.find(real =>
         real.symbol === opt.symbol &&
