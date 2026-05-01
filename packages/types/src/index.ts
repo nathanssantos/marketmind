@@ -31,3 +31,4 @@ export * from './socket-events';
 export * from './test-fixtures';
 export * from './ui';
 export * from './trading-constants';
+export * from './dialog-schemas';
