@@ -243,6 +243,20 @@ describe('handleExitFill', () => {
     expect(mockCancelFuturesAlgoOrder).not.toHaveBeenCalled();
   });
 
+  it('should classify fill as LIQUIDATION when isLiquidation flag is true', async () => {
+    mockGetPosition.mockResolvedValueOnce(null);
+
+    const ctx = createMockCtx();
+    const execution = createMockExecution();
+
+    await handleExitFill(
+      ctx, 'wallet-1', execution as never, 'BTCUSDT', 100, '49000', '49000', '0.1', '0.5', false, false, false, true
+    );
+
+    const closedCall = mockEmitPositionClosed.mock.calls[0]?.[1];
+    expect(closedCall?.exitReason).toBe('LIQUIDATION');
+  });
+
   it('should use REST API fees when available', async () => {
     mockGetPosition.mockResolvedValueOnce(null);
     mockGetAllTradeFeesForPosition.mockResolvedValueOnce({

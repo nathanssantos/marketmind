@@ -23,6 +23,7 @@ export async function handleExitFill(
   isSLOrder: boolean,
   _isTPOrder: boolean,
   isAlgoTriggerFill: boolean,
+  isLiquidation = false,
 ): Promise<void> {
   if (isAlgoTriggerFill) {
     logger.info(
@@ -219,11 +220,13 @@ export async function handleExitFill(
   const pnlPercent = pnlResult.pnlPercent;
   const totalFees = actualEntryFee + actualExitFee;
 
-  const determinedExitReason = isAlgoTriggerFill
-    ? execution.exitReason
-    : isSLOrder
-      ? 'STOP_LOSS'
-      : 'TAKE_PROFIT';
+  const determinedExitReason = isLiquidation
+    ? 'LIQUIDATION'
+    : isAlgoTriggerFill
+      ? execution.exitReason
+      : isSLOrder
+        ? 'STOP_LOSS'
+        : 'TAKE_PROFIT';
 
   const closeResult = await db
     .update(tradeExecutions)
