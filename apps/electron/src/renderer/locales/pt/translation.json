@@ -45,6 +45,8 @@
     "save": "Salvar",
     "saveChanges": "Salvar Alterações",
     "close": "Fechar",
+    "moreActions": "Mais ações",
+    "hideActions": "Ocultar ações",
     "delete": "Excluir",
     "edit": "Editar",
     "loading": "Carregando...",
@@ -877,7 +879,15 @@
       "noPriceError": "Preço atual não disponível",
       "invalidQuantityError": "Quantidade inválida",
       "moveToSidebar": "Mover para Sidebar",
-      "moveToChart": "Mover para Gráfico"
+      "moveToChart": "Mover para Gráfico",
+      "gridOrders": "Ordens em Grade",
+      "trailingStop": "Trailing Stop",
+      "confirmOrder": "Confirmar Ordem",
+      "confirmBuy": "Confirmar Compra",
+      "confirmSell": "Confirmar Venda",
+      "totalValue": "Valor Total",
+      "margin": "Margem Necessária",
+      "liquidation": "Preço de Liq."
     },
     "gridOrders": {
       "title": "Ordens em Grade",
@@ -2599,6 +2609,18 @@
     "minLeverage": "Mín: 1x",
     "maxLeverage": "Máx: {{max}}x",
     "extremeRiskWarning": "Risco extremo! Liquidação pode ocorrer rapidamente com pequenas variações de preço.",
-    "highRiskWarning": "Alta alavancagem aumenta tanto lucros quanto perdas potenciais."
+    "highRiskWarning": "Alta alavancagem aumenta tanto lucros quanto perdas potenciais.",
+    "reversePosition": "Reverter Posição",
+    "reverseFailed": "Falha ao reverter posição",
+    "reverseConfirmTitle": "Reverter Posição?",
+    "reverseConfirmDescription": "Fechar {{side}} {{quantity}} {{symbol}} e abrir {{newSide}} {{quantity}} {{symbol}} a preço de mercado?",
+    "closePosition": "Fechar Posição",
+    "closePositionFailed": "Falha ao fechar posição",
+    "closePositionConfirmTitle": "Fechar Posição?",
+    "closePositionConfirmDescription": "Fechar {{side}} {{quantity}} {{symbol}} a preço de mercado e cancelar todas as ordens (SL, TP, entradas)?",
+    "cancelOrders": "Cancelar Ordens",
+    "cancelOrdersFailed": "Falha ao cancelar ordens",
+    "cancelOrdersConfirmTitle": "Cancelar Todas as Ordens?",
+    "cancelOrdersConfirmDescription": "Cancelar todas as ordens de entrada pendentes para {{symbol}}? Ordens SL e TP não serão afetadas."
   }
 }

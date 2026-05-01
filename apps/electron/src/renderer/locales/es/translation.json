@@ -45,6 +45,8 @@
     "save": "Guardar",
     "saveChanges": "Guardar Cambios",
     "close": "Cerrar",
+    "moreActions": "Más acciones",
+    "hideActions": "Ocultar acciones",
     "delete": "Eliminar",
     "edit": "Editar",
     "loading": "Cargando...",
@@ -903,7 +905,15 @@
       "noPriceError": "No hay precio actual disponible",
       "invalidQuantityError": "Cantidad inválida",
       "moveToSidebar": "Mover a Sidebar",
-      "moveToChart": "Mover al Gráfico"
+      "moveToChart": "Mover al Gráfico",
+      "gridOrders": "Órdenes en Cuadrícula",
+      "trailingStop": "Trailing Stop",
+      "confirmOrder": "Confirmar Orden",
+      "confirmBuy": "Confirmar Compra",
+      "confirmSell": "Confirmar Venta",
+      "totalValue": "Valor Total",
+      "margin": "Margen Requerido",
+      "liquidation": "Precio de Liq."
     },
     "gridOrders": {
       "title": "Órdenes en Cuadrícula",
@@ -2597,6 +2607,18 @@
     "minLeverage": "Mín: 1x",
     "maxLeverage": "Máx: {{max}}x",
     "extremeRiskWarning": "¡Riesgo extremo! La liquidación puede ocurrir rápidamente con pequeñas variaciones de precio.",
-    "highRiskWarning": "Un apalancamiento alto aumenta tanto las ganancias como las pérdidas potenciales."
+    "highRiskWarning": "Un apalancamiento alto aumenta tanto las ganancias como las pérdidas potenciales.",
+    "reversePosition": "Revertir Posición",
+    "reverseFailed": "Error al revertir posición",
+    "reverseConfirmTitle": "¿Revertir Posición?",
+    "reverseConfirmDescription": "¿Cerrar {{side}} {{quantity}} {{symbol}} y abrir {{newSide}} {{quantity}} {{symbol}} a precio de mercado?",
+    "closePosition": "Cerrar Posición",
+    "closePositionFailed": "Error al cerrar posición",
+    "closePositionConfirmTitle": "¿Cerrar Posición?",
+    "closePositionConfirmDescription": "¿Cerrar {{side}} {{quantity}} {{symbol}} a precio de mercado y cancelar todas las órdenes (SL, TP, entradas)?",
+    "cancelOrders": "Cancelar Órdenes",
+    "cancelOrdersFailed": "Error al cancelar órdenes",
+    "cancelOrdersConfirmTitle": "¿Cancelar Todas las Órdenes?",
+    "cancelOrdersConfirmDescription": "¿Cancelar todas las órdenes de entrada pendientes para {{symbol}}? Las órdenes SL y TP no se verán afectadas."
   }
 }
