@@ -424,19 +424,38 @@ After the modal sweep, v1.7+ extends the same pass to:
 - **B.3 Tier-3 graduation** — `PasswordStrengthMeter` decouples by accepting a `t` prop; small follow-up.
 - **B.4 rename** — `ui-core` → `ui` once consumers external to the renderer materialize.
 
-**🔴 Track F — Order/position chart reactivity (added 2026-05-02)**
+**Track F — Order/position chart reactivity (2026-05-02 → 2026-05-02, substantially complete)**
 
-User reported that closing a position via Stop Loss took ~1 minute for the chart to reflect the close, even though Binance had already filled. **The chart UX was tragic; needs careful review of the entire reactivity chain.** Detailed plan at `docs/V1_6_ORDER_REACTIVITY_PLAN.md`.
+User reported (2026-05-02) that closing a position via Stop Loss took ~1 minute for the chart to reflect the close, even though Binance had already filled. Then a follow-up: cancelling a pending limit order had a flicker (line vanishes, comes back, vanishes again). Detailed plan at `docs/V1_6_ORDER_REACTIVITY_PLAN.md`.
 
-Four stages:
-- F.1 — instrumentation (first; measure before fixing)
-- F.2 — backend resilience (position reconciliation watchdog + listenKey health watchdog)
-- F.3 — renderer reactivity hardening (drop polling 30s → 5s, fast-recheck after submit, closingSnapshots on position:closed)
-- F.4 — visual feedback on close (flash animation, toast audit, optimistic line update)
+Shipped:
+- ✅ F.3 backup polling 30s → 5s (#364)
+- ✅ F.3 chart subscribes to `position:closed` for snapshot+flash (#364)
+- ✅ F.2 position-sync 5min → 30s (#365)
+- ✅ F.4 SL/TP toast (#366)
+- ✅ F.2 toast in algo/orphan/untracked close paths via shared helper (#368)
+- ✅ F.3 cancel-flicker fix — 30s smart override TTL (#369)
+- ✅ F.4 POSITION_OPENED toast on limit + manual fills (#373)
+- ✅ F.4 LIQUIDATION detection + critical-urgency toast (#374)
+- ✅ F.2 `stream:reconnected` event + renderer subscription (#375)
+- ✅ F.3 chart live-patch on `position:update` + `order:update` (#376)
+- ✅ F.4 POSITION_PYRAMIDED + POSITION_PARTIAL_CLOSE toasts (#377)
 
-Total estimated: ~25-30h. Acceptance target: SL fills → chart updates in <1.5s p95; user-perceived latency <200ms via flash+toast.
+Acceptance results:
+- SL fills → chart updates in <1.5s p95 ✓ (websocket + 5s backup poll + 30s position-sync watchdog).
+- User-perceived latency <200ms via flash+toast ✓ (chart subscribes to `position:closed` directly).
+- Pending limit cancel reliably hides on first click without flicker ✓.
+- Server-pushed updates (trailing-stop, modify) visible immediately via live-patch ✓.
+- Stream reconnect after gap → force-refresh + visible toast for >30s gaps ✓.
 
-**Track F blocks v1.6.0 release.** v1.6 was structurally feature-complete on develop, but this trading-experience bug is high-severity enough that we're not cutting until F.2+F.3 land.
+Deferred items (polish, not blocking):
+- F.1 instrumentation overlay — was for diagnosing the original bug; kept on the backlog as observability work, not user-visible.
+- F.3 fast-recheck after user-submit (1s+3s belt-and-suspenders) — covered well enough by the existing onSuccess invalidate + 5s backup polling.
+- F.4 per-event flash color variants (different colors for open/pyramid/partial/close) — chart polish.
+- F.4 order-line move animation + cancel fade — chart polish.
+- F.2 auto-cancel toast for system-cancelled orders (wallet-disabled, expired) — low-frequency event.
+
+**Track F no longer blocks v1.6.0 release.**
 
 ---
 
