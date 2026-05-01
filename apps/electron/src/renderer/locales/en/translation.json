@@ -1312,14 +1312,16 @@
     },
     "dialogs": {
       "chartClose": {
-        "title": "Close order",
-        "description": "Close {{type}} order at entry {{entry}}? Current price: {{current}}",
-        "submit": "Close"
+        "title": "Close position?",
+        "description": "{{side}} entered at {{entry}} · current price {{current}}",
+        "submit": "Close position"
       },
       "chartRemoveSlTp": {
-        "title": "Remove order protection",
-        "description": "Remove {{type}} from all orders in this position?",
-        "submit": "Remove"
+        "title": "Remove {{type}}?",
+        "description": "Removes {{type}} from every order in this position.",
+        "submit": "Remove {{type}}",
+        "typeStopLoss": "Stop Loss",
+        "typeTakeProfit": "Take Profit"
       }
     },
     "active": "ACTIVE",
