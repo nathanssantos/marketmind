@@ -1,14 +1,17 @@
 /**
- * @marketmind/ui-core — Tier-1 UI primitives.
+ * @marketmind/ui-core — Tier-1 + Tier-2 UI primitives.
  *
- * Pure Chakra wrappers shared across the renderer and any future surface.
- * Extracted from apps/electron/src/renderer/components/ui/ per
- * docs/UI_EXTRACTION_PLAN.md.
+ * Tier 1: pure Chakra wrappers (Alert, Badge, Button, ...).
+ * Tier 2: token-aware composed primitives (Callout, FormSection,
+ *   PanelHeader, typography family, DialogSection, CreateActionButton,
+ *   ColorPicker, Sidebar). They depend on @marketmind/tokens.
  *
- * Tier 2 (token-aware composed primitives) and Tier 3 (i18n /
- * runtime-coupled) stay app-side until they graduate.
+ * Tier 3 (i18n / runtime-coupled — DialogShell with `useTranslation`,
+ * MetricCard/PnLDisplay/TooltipWrapper with `useColorMode`,
+ * ConfirmationDialog/EmptyState/etc with i18n) stays app-side.
  */
 
+// Tier 1
 export { Alert, type AlertRootProps } from './alert';
 export { Badge, type BadgeProps } from './badge';
 export { BetaBadge, type BetaBadgeProps } from './beta-badge';
@@ -52,3 +55,20 @@ export { Table } from './table';
 export { Tabs } from './tabs';
 export { Textarea, type TextareaProps } from './textarea';
 export { ToggleIconButton, type ToggleIconButtonProps } from './toggle-icon-button';
+
+// Tier 2 — token-aware composed primitives
+export { Callout, type CalloutTone } from './callout';
+export { ColorPicker, DEFAULT_COLOR_PRESETS, type ColorPickerProps } from './color-picker';
+export { CreateActionButton, type CreateActionButtonProps } from './create-action-button';
+export { DialogSection, type DialogSectionProps } from './dialog-section';
+export { FormRow, FormSection } from './form-section';
+export { PanelHeader } from './panel-header';
+export { SidebarContainer, SidebarHeader } from './Sidebar';
+export {
+  FieldHint,
+  MetaText,
+  PageTitle,
+  SectionDescription,
+  SectionTitle,
+  SubsectionTitle,
+} from './typography';
