@@ -100,7 +100,18 @@
     "remove": "Remover",
     "economicEvent": "Evento Econômico",
     "actual": "Real",
-    "estimate": "Estimativa"
+    "estimate": "Estimativa",
+    "to": "to",
+    "hours": "h",
+    "symbol": "Symbol",
+    "side": "Side",
+    "price": "Price",
+    "quantity": "Quantity",
+    "stop": "Stop",
+    "start": "Start",
+    "settings": "Settings",
+    "confirm": "Confirm",
+    "endTime": "End time"
   },
   "app": {
     "title": "MarketMind",
@@ -578,7 +589,8 @@
           "extendedDescription": "Usa o topo/fundo mais extremo no período — alvos mais amplos para movimentos maiores",
           "nearest": "Próximo",
           "nearestDescription": "Usa o topo/fundo mais recente — alvos mais curtos para trades menores"
-        }
+        },
+        "calculationLabel": "Calculation method"
       },
       "stopMode": {
         "title": "Posicionamento do Stop Inicial",
@@ -586,7 +598,8 @@
         "fiboTarget": "Alvo Fibonacci",
         "fiboTargetDescription": "Coloca o stop no fundo/topo Fibonacci — stops mais largos para o movimento completo",
         "nearestSwing": "Swing Próximo",
-        "nearestSwingDescription": "Coloca o stop no swing local mais recente — stops mais curtos para menor risco"
+        "nearestSwingDescription": "Coloca o stop no swing local mais recente — stops mais curtos para menor risco",
+        "label": "Initial stop placement"
       },
       "entrySettings": {
         "title": "Configurações de Entrada",
@@ -633,7 +646,8 @@
         "positionMode": "Modo de Posição",
         "positionModeDescription": "One-Way: direção única por símbolo. Hedge: longo e curto simultâneos.",
         "oneWay": "One-Way",
-        "hedge": "Hedge"
+        "hedge": "Hedge",
+        "autoTradingDescription": "Default leverage for auto-trading entries on new symbols"
       },
       "marginType": {
         "label": "Tipo de Margem"
@@ -795,6 +809,69 @@
           "fiboAll": "Todos os Níveis (1.0 - 2.618)",
           "fiboAllDesc": "Máximo de entradas em todas extensões Fibonacci."
         }
+      },
+      "opportunityCost": {
+        "title": "Opportunity Cost Management",
+        "description": "Manage trades that tie up capital without progress.",
+        "enable": "Enable Opportunity Cost Management",
+        "enableDescription": "Monitor and act on trades taking too long.",
+        "maxHoldingPeriod": "Maximum Holding Period",
+        "bars": "bars",
+        "staleThreshold": "Stale Price Threshold",
+        "staleThresholdDescription": "Consider stale if price moves less than this.",
+        "actionWhenStale": "Action When Trade is Stale",
+        "alertOnly": "Alert Only",
+        "alertOnlyDescription": "Send notification but take no action.",
+        "tightenStop": "Tighten Stop",
+        "tightenStopDescription": "Progressively tighten stop loss.",
+        "autoClose": "Auto Close",
+        "autoCloseDescription": "Automatically close stale trades.",
+        "timeBasedTightening": {
+          "title": "Time-Based Stop Tightening",
+          "description": "Progressively tighten stops as trade ages (when in profit)."
+        },
+        "tightenAfterBars": "Start Tightening After",
+        "tightenPercentPerBar": "Tighten % Per Bar"
+      },
+      "pyramiding": {
+        "title": "Position Pyramiding",
+        "description": "Add to winning positions strategically.",
+        "enable": "Enable Pyramiding",
+        "enableDescription": "Allow adding to positions when in profit.",
+        "mode": "Pyramiding Mode",
+        "modeDisabled": "Disabled",
+        "modeDisabledDesc": "No position pyramiding.",
+        "modeStatic": "Static",
+        "modeStaticDesc": "Fixed profit threshold.",
+        "modeDynamic": "Dynamic",
+        "modeDynamicDesc": "Indicator-based conditions.",
+        "modeFibonacci": "Fibonacci",
+        "modeFibonacciDesc": "Fibo extension levels.",
+        "generalSettings": "General Settings",
+        "maxEntries": "Max Entries",
+        "scaleFactor": "Scale Factor",
+        "scaleFactorDesc": "of previous size",
+        "dynamicIndicators": "Dynamic Indicator Settings",
+        "useAdx": "ADX Trend Filter",
+        "useAdxDesc": "Only pyramid in strong trends (ADX above threshold).",
+        "adxThreshold": "Min ADX Threshold",
+        "useAtr": "ATR Distance Adjustment",
+        "useAtrDesc": "Use volatility to determine min distance for entries.",
+        "useRsi": "RSI Momentum Filter",
+        "useRsiDesc": "Avoid pyramiding when RSI is in neutral zones.",
+        "leverageAware": "Leverage-Aware Sizing",
+        "leverageAwareDesc": "Automatically reduce pyramid size with higher leverage.",
+        "fiboLevels": "Fibonacci Level Presets",
+        "fiboLevelsDesc": "Select which Fibo extension levels trigger new pyramid entries.",
+        "fiboGolden": "Golden Ratio Only (1.618)",
+        "fiboGoldenDesc": "Single entry at the golden ratio extension.",
+        "fiboConservative": "Conservative (1.0, 1.618)",
+        "fiboConservativeDesc": "Two entries at key Fibonacci levels.",
+        "fiboModerate": "Moderate (1.272, 1.618, 2.0)",
+        "fiboModerateDesc": "Three entries at standard extensions.",
+        "fiboAll": "All Levels (1.0 - 2.618)",
+        "fiboAllDesc": "Maximum entries at all Fibonacci extensions.",
+        "modeLabel": "Mode"
       }
     },
     "indicators": {
@@ -851,7 +928,9 @@
       "setupDetection": "Detecção Algorítmica de Setups",
       "patternExtensions": "Estender Padrões Além da Última Vela",
       "indicators": "Indicadores",
-      "quickSettings": "Configurações Rápidas"
+      "quickSettings": "Configurações Rápidas",
+      "addChart": "Add chart",
+      "flip": "Flip chart (invert Y axis)"
     },
     "type": {
       "candle": "Vela",
@@ -1092,7 +1171,8 @@
       "ticket": "Ordem",
       "portfolio": "Portfólio",
       "orders": "Ordens",
-      "analytics": "Análises"
+      "analytics": "Análises",
+      "scalping": "Scalping"
     },
     "wallets": {
       "title": "Carteiras",
@@ -1137,7 +1217,9 @@
       "testnetInfo": "Binance Testnet",
       "testnetDescription": "Use testnet para praticar com fundos fictícios.",
       "liveWarning": "Aviso: Dinheiro Real",
-      "liveDescription": "Trading real usa fundos reais. Garanta que você entende os riscos."
+      "liveDescription": "Trading real usa fundos reais. Garanta que você entende os riscos.",
+      "selectWallet": "Select a wallet first",
+      "syncBalance": "Sync balance from Binance"
     },
     "ticket": {
       "title": "Ordem",
@@ -1211,7 +1293,14 @@
       "orphanOrdersTitle": "Ordens Órfãs",
       "orphanOrdersCancel": "Cancelar",
       "orphanOrdersCancelSuccess": "Ordem cancelada",
-      "orphanOrdersCancelFailed": "Falha ao cancelar ordem"
+      "orphanOrdersCancelFailed": "Falha ao cancelar ordem",
+      "openPositions": "Open Positions",
+      "dailyPnLLabel": "Daily PnL",
+      "dailyLimit": "Limit: -{{percent}}%",
+      "sizePerWatcher": "Size per Watcher",
+      "watchersSuffix": "watchers",
+      "perWatcher": "100% / {{count}} watchers",
+      "watchersRatio": "/ {{count}} watchers"
     },
     "viewMode": {
       "cards": "Visualização em cards",
@@ -1320,6 +1409,10 @@
         "stopLoss": "Stop Loss",
         "takeProfit": "Take Profit",
         "manual": "Manual"
+      },
+      "setupDetected": {
+        "title": "New setup detected",
+        "body": "{{symbol}} {{setupType}}{{direction}}"
       }
     },
     "order": {
@@ -1410,7 +1503,8 @@
         "week": "Sem.",
         "noData": "Nenhum trade este mês",
         "trades_one": "{{count}} trade",
-        "trades_other": "{{count}} trades"
+        "trades_other": "{{count}} trades",
+        "trades": "Trades: {{count}}"
       }
     },
     "mode": {
@@ -1592,7 +1686,9 @@
       "trailingStopDescription": "Substituir comportamento do trailing stop para este perfil",
       "riskManagement": "Gerenciamento de Risco",
       "riskManagementDescription": "Substituir dimensionamento de posição e limites de risco",
-      "riskDescription": "Substituir configurações de risco da carteira para este perfil"
+      "riskDescription": "Substituir configurações de risco da carteira para este perfil",
+      "checklist": "Pre-trade checklist",
+      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
     },
     "overrides": {
       "usingGlobalDefault": "Usando padrão global",
@@ -1665,7 +1761,9 @@
       "selectAll": "Selecionar Todos",
       "deselectAll": "Desmarcar Todos",
       "selectedCount": "{{count}} símbolos selecionados",
-      "startBulk": "Iniciar {{count}} Watchers"
+      "startBulk": "Iniciar {{count}} Watchers",
+      "futuresWarning": "Futures trading involves higher risk due to leverage. Ensure your wallet has Futures API permissions enabled.",
+      "options": "Options"
     },
     "emergencyStop": {
       "button": "Parada de Emergência",
@@ -2000,6 +2098,9 @@
       "increaseFont": "Aumentar fonte",
       "decreaseFont": "Diminuir fonte",
       "waiting": "Aguardando logs..."
+    },
+    "sidebar": {
+      "title": "Auto Trading"
     }
   },
   "marketSidebar": {
@@ -2671,17 +2772,37 @@
     "sessionBoundaries": "Limites de Sessão",
     "footprint": "Footprint",
     "liquidityHeatmap": "Mapa de Calor de Liquidez",
-    "liquidationMarkers": "Marcadores de Liquidação"
+    "liquidationMarkers": "Marcadores de Liquidação",
+    "dialog": {
+      "createTitle": "Create indicator",
+      "editTitle": "Edit indicator",
+      "conditionTitle": "Configure condition",
+      "type": "Type",
+      "indicator": "Indicator",
+      "label": "Label",
+      "labelPlaceholder": "EMA 20"
+    }
   },
   "checklist": {
     "section": {
       "long": "Long",
       "short": "Short",
-      "both": "Ambos"
+      "both": "Ambos",
+      "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
+      "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
+      "error": "Checklist error",
+      "dedupExcluded": "Not counted — same as another condition for this timeframe",
+      "title": "Checklist",
+      "empty": "No conditions evaluated."
     },
     "editor": {
       "moveUp": "Mover para cima",
-      "moveDown": "Mover para baixo"
+      "moveDown": "Mover para baixo",
+      "add": "Add condition",
+      "emptyTitle": "No conditions",
+      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "missing": "Missing indicator",
+      "unknownCatalog": "(unknown indicator type)"
     },
     "ops": {
       "rising": "subindo (barra atual > anterior)",
@@ -2689,13 +2810,25 @@
     },
     "tier": {
       "requiredShort": "req",
-      "preferredShort": "pref"
+      "preferredShort": "pref",
+      "required": "Required",
+      "preferred": "Preferred"
     },
     "timeframes": {
       "current": "curr"
     },
     "weight": "Peso (× multiplicador)",
-    "weightHint": "Timeframes maiores pesam mais. Condições obrigatórias valem 2×; preferidas 1×."
+    "weightHint": "Timeframes maiores pesam mais. Condições obrigatórias valem 2×; preferidas 1×.",
+    "threshold": "Threshold",
+    "thresholdLow": "Low",
+    "thresholdHigh": "High",
+    "timeframe": "Timeframe",
+    "operator": "Operator",
+    "side": {
+      "long": "Long",
+      "short": "Short",
+      "both": "Both"
+    }
   },
   "futures": {
     "leverage": "Alavancagem",
@@ -2718,6 +2851,23 @@
     "positions": "Posições de Futuros",
     "unrealizedPnl": "L/P Não Realizado",
     "liquidated": "Posição seria liquidada ao preço atual!",
-    "liquidationWarning": "Aviso: Posição próxima da liquidação."
+    "liquidationWarning": "Aviso: Posição próxima da liquidação.",
+    "entryPrice": "Entry Price",
+    "markPrice": "Mark Price",
+    "size": "Size",
+    "accumulatedFunding": "Accumulated Funding",
+    "liquidationPrice": "Liquidation Price",
+    "distanceToLiq": "Distance to liquidation",
+    "leverageLockedPosition": "Close position to change leverage",
+    "marginType": "Margin Type",
+    "marginTypeInfo": "Isolated: Each position has its own margin. Crossed: All positions share margin.",
+    "isolated": "Isolated",
+    "crossed": "Cross",
+    "isolatedDesc": "Recommended: Risk is limited to the margin assigned to this position.",
+    "crossedDesc": "All available balance is used as margin. Higher liquidation risk."
+  },
+  "aiTrading": {
+    "confidence": "Confidence",
+    "urgency": "Urgency"
   }
 }

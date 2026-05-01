@@ -34,9 +34,8 @@ export const useSetupToasts = () => {
         ? ` ${setup.direction === 'LONG' ? '↑' : '↓'}`
         : '';
       info(
-        t('trading.notifications.setupDetected.title', { defaultValue: 'New setup detected' }),
+        t('trading.notifications.setupDetected.title'),
         t('trading.notifications.setupDetected.body', {
-          defaultValue: '{{symbol}} {{setupType}}{{direction}}',
           symbol: setup.symbol,
           setupType: setup.setupType,
           direction: directionLabel,

@@ -56,12 +56,10 @@ const ScoreBadgePair = ({
   if (!score) return null;
   const tooltip = score.requiredAllPassed
     ? t('checklist.section.requiredAllPassed', {
-        defaultValue: 'All required conditions passed ({{p}}/{{t}})',
         p: score.requiredPassed,
         t: score.requiredTotal,
       })
     : t('checklist.section.requiredFailed', {
-        defaultValue: 'Required conditions failing ({{p}}/{{t}})',
         p: score.requiredPassed,
         t: score.requiredTotal,
       });
@@ -220,7 +218,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
     return (
       <HStack gap={1} px={1} py={0.5} fontSize="2xs" color="red.fg">
         <LuTriangle size={10} />
-        <Text>{t('checklist.section.error', { defaultValue: 'Checklist error' })}</Text>
+        <Text>{t('checklist.section.error')}</Text>
       </HStack>
     );
   }
@@ -238,9 +236,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
     const isExcluded =
       r.countedLong === false && r.countedShort === false;
     const dedupTooltip = isExcluded
-      ? t('checklist.section.dedupExcluded', {
-          defaultValue: 'Not counted — same as another condition for this timeframe',
-        })
+      ? t('checklist.section.dedupExcluded')
       : undefined;
     return (
       <Flex
@@ -317,7 +313,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
           {expanded ? <LuChevronDown /> : <LuChevronRight />}
         </IconButton>
         <Text fontSize="xs" color="fg.muted" flex={1}>
-          {t('checklist.section.title', { defaultValue: 'Checklist' })}
+          {t('checklist.section.title')}
         </Text>
         {isLoading && !checklistQuery.data ? (
           <Text fontSize="2xs" color="fg.muted">
@@ -335,7 +331,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         <Stack gap={1.5} px={1} pb={1}>
           {!hasAnyResults ? (
             <Text fontSize="2xs" color="fg.muted" px={1}>
-              {t('checklist.section.empty', { defaultValue: 'No conditions evaluated.' })}
+              {t('checklist.section.empty')}
             </Text>
           ) : (
             <>

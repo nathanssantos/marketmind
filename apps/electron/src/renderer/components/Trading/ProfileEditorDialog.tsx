@@ -197,11 +197,8 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
               </CollapsibleSection>
 
               <CollapsibleSection
-                title={t('tradingProfiles.sections.checklist', { defaultValue: 'Pre-trade checklist' })}
-                description={t('tradingProfiles.sections.checklistDescription', {
-                  defaultValue:
-                    'Conditions evaluated before each trade. Required = must pass. Preferred = adds to confidence score.',
-                })}
+                title={t('tradingProfiles.sections.checklist')}
+                description={t('tradingProfiles.sections.checklistDescription')}
                 badge={
                   <Badge size="sm" colorPalette={form.checklistConditions.length > 0 ? 'blue' : 'gray'}>
                     {form.checklistConditions.length}

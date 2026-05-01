@@ -16,7 +16,7 @@ describe('ChecklistEditor', () => {
         <ChecklistEditor conditions={[]} availableIndicators={[]} onChange={vi.fn()} />
       </ChakraProvider>,
     );
-    expect(screen.getByText('No conditions')).toBeDefined();
-    expect(screen.getByText('Add indicators to build your pre-trade checklist.')).toBeDefined();
+    expect(screen.getByText('checklist.editor.emptyTitle')).toBeDefined();
+    expect(screen.getByText('checklist.editor.emptyDescription')).toBeDefined();
   });
 });
