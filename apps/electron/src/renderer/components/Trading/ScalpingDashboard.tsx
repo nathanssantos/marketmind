@@ -34,9 +34,9 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
     <Stack gap={3} align="stretch" p={4}>
       <Flex p={3} bg="bg.muted" borderRadius="md" justify="space-between" align="center" fontSize="xs">
         <Stack gap={0}>
-          <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.sessionPnl', 'Session P&L')}</Text>
+          <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.sessionPnl')}</Text>
           <Text color="fg.muted" fontSize="2xs">
-            {statusData?.tradeCount ?? 0} {t('trading.portfolio.trades', 'trades')} · {t('scalping.metric.winRate', 'Win Rate')} {((statusData?.winRate ?? 0) * 100).toFixed(1)}%
+            {statusData?.tradeCount ?? 0} {t('trading.portfolio.trades')} · {t('scalping.metric.winRate')} {((statusData?.winRate ?? 0) * 100).toFixed(1)}%
           </Text>
         </Stack>
         <Flex align="center" gap={2}>
@@ -44,7 +44,7 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
             {formatScalpingPnl(statusData?.sessionPnl ?? 0)}
           </Text>
           <Badge colorPalette={isRunning ? 'green' : 'gray'} px={2}>
-            {isRunning ? t('scalping.status.running', 'Running') : t('scalping.status.stopped', 'Stopped')}
+            {isRunning ? t('scalping.status.running') : t('scalping.status.stopped')}
           </Badge>
         </Flex>
       </Flex>
@@ -58,30 +58,30 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
 
       <HStack>
         <Button size="xs" colorPalette={isRunning ? 'red' : 'green'} onClick={handleToggle} flex={1}>
-          {isRunning ? t('common.stop', 'Stop') : t('common.start', 'Start')}
+          {isRunning ? t('common.stop') : t('common.start')}
         </Button>
-        <IconButton aria-label={t('common.settings', 'Settings')} size="xs" variant="outline" onClick={onConfigClick}>
+        <IconButton aria-label={t('common.settings')} size="xs" variant="outline" onClick={onConfigClick}>
           <LuSettings />
         </IconButton>
       </HStack>
 
       {statusData?.circuitBreakerTripped && (
         <HStack>
-          <Badge colorPalette="red">{t('scalping.circuitBreaker.tripped', 'CB Tripped')}</Badge>
+          <Badge colorPalette="red">{t('scalping.circuitBreaker.tripped')}</Badge>
           <Button size="xs" variant="ghost" onClick={() => resetCircuitBreaker.mutate({ walletId })}>
-            {t('scalping.circuitBreaker.reset', 'Reset')}
+            {t('scalping.circuitBreaker.reset')}
           </Button>
         </HStack>
       )}
 
       {!statusData?.circuitBreakerTripped && (statusData?.cooldownUntil ?? 0) > Date.now() && (
         <HStack>
-          <Badge colorPalette="orange">{t('scalping.cooldown.active', 'Cooldown')}</Badge>
+          <Badge colorPalette="orange">{t('scalping.cooldown.active')}</Badge>
           <Text fontSize="2xs" color="fg.muted">
             {Math.ceil(((statusData?.cooldownUntil ?? 0) - Date.now()) / 60_000)}m
           </Text>
           <Button size="xs" variant="ghost" onClick={() => resetCircuitBreaker.mutate({ walletId })}>
-            {t('scalping.circuitBreaker.reset', 'Reset')}
+            {t('scalping.circuitBreaker.reset')}
           </Button>
         </HStack>
       )}
@@ -96,7 +96,7 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
         <Box p={3} bg="bg.muted" borderRadius="md">
           <Stack gap={2.5} fontSize="xs">
             <Flex justify="space-between" align="center">
-              <Text color="fg.muted" fontWeight="medium">{t('scalping.signals.title', 'Signals')}</Text>
+              <Text color="fg.muted" fontWeight="medium">{t('scalping.signals.title')}</Text>
             </Flex>
 
             <Stack gap={1} maxH="120px" overflowY="auto">

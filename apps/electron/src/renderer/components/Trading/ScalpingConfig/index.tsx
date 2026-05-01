@@ -99,10 +99,10 @@ export function ScalpingConfigDialog({ walletId, isOpen, onClose }: ScalpingConf
     <FormDialog
       isOpen={isOpen}
       onClose={onClose}
-      title={t('scalping.config.title', 'Scalping Configuration')}
+      title={t('scalping.config.title')}
       size="lg"
       onSubmit={handleSave}
-      submitLabel={t('common.save', 'Save')}
+      submitLabel={t('common.save')}
       isLoading={upsertConfig.isPending}
     >
       <VStack gap={4} align="stretch" maxH="70vh" overflowY="auto">

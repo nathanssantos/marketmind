@@ -2392,6 +2392,9 @@
     "circuitBreaker": {
       "tripped": "CB Déclenché",
       "reset": "Réinitialiser"
+    },
+    "cooldown": {
+      "active": "Cooldown"
     }
   },
   "orderFlow": {
