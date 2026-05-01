@@ -1,5 +1,5 @@
 import { Box, HStack, SimpleGrid, Text } from '@chakra-ui/react';
-import { DialogSection, DialogShell } from '@renderer/components/ui';
+import { DialogSection, DialogShell, EmptyState } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import {
   formatShortcutKeys,
@@ -60,7 +60,10 @@ export const KeyboardShortcutHelpDialog = () => {
       hideFooter
     >
       {grouped.length === 0 ? (
-        <Text fontSize="sm" color="fg.muted">{t('shortcuts.dialogs.help.empty')}</Text>
+        <EmptyState
+          title={t('shortcuts.dialogs.help.emptyTitle')}
+          description={t('shortcuts.dialogs.help.emptyDescription')}
+        />
       ) : (
         grouped.map(({ id, shortcuts: list }) => (
           <DialogSection key={id} title={t(`shortcuts.group.${id}`)}>

@@ -4,7 +4,8 @@
       "help": {
         "title": "Raccourcis clavier",
         "description": "Tous les raccourcis enregistrés dans l'app, groupés par section.",
-        "empty": "Aucun raccourci enregistré pour l'instant."
+        "emptyTitle": "Aucun raccourci enregistré",
+        "emptyDescription": "Les raccourcis s'enregistrent au fur et à mesure que les fonctionnalités chargent. Cette vue se remplira une fois que vous aurez un peu utilisé l'app."
       }
     },
     "group": {
