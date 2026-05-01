@@ -16,7 +16,6 @@ const NotificationsTab = lazy(() => import('./NotificationsTab').then((m) => ({ 
 const GeneralTab = lazy(() => import('./GeneralTab').then((m) => ({ default: m.GeneralTab })));
 const ChartSettingsTab = lazy(() => import('./ChartSettingsTab').then((m) => ({ default: m.ChartSettingsTab })));
 const WalletManager = lazy(() => import('../Trading/WalletManager').then((m) => ({ default: m.WalletManager })));
-const TradingProfilesTab = lazy(() => import('./TradingProfilesTab').then((m) => ({ default: m.TradingProfilesTab })));
 const AutoTradingTab = lazy(() => import('./AutoTradingTab').then((m) => ({ default: m.AutoTradingTab })));
 const IndicatorsTab = lazy(() => import('./IndicatorsTab').then((m) => ({ default: m.IndicatorsTab })));
 const CustomSymbolsTab = lazy(() => import('../CustomSymbols').then((m) => ({ default: m.CustomSymbolsTab })));
@@ -163,9 +162,6 @@ export const SettingsDialog = ({
                     </Tabs.Content>
                     <Tabs.Content value="wallets" pt={0} w="100%">
                       {activeTab === 'wallets' && <WalletManager />}
-                    </Tabs.Content>
-                    <Tabs.Content value="tradingProfiles" pt={0} w="100%">
-                      {activeTab === 'tradingProfiles' && <TradingProfilesTab />}
                     </Tabs.Content>
                     <Tabs.Content value="autoTrading" pt={0} w="100%">
                       {activeTab === 'autoTrading' && <AutoTradingTab />}

@@ -14,9 +14,10 @@ import { TradingTable, TradingTableCell, TradingTableRow, type TradingTableColum
 import { useUIStore } from '@renderer/store/uiStore';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuCheck, LuOctagonX, LuPlay, LuX } from 'react-icons/lu';
+import { LuCheck, LuOctagonX, LuPlay, LuSlidersHorizontal, LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { StartWatchersDialog } from '@renderer/components/Trading/StartWatchersDialog';
+import { TradingProfilesDialog } from '@renderer/components/Trading/TradingProfilesDialog';
 import { formatSuggestionPrice, sortWatchers } from './watchersTabUtils';
 
 interface ActiveWatcher {
@@ -32,6 +33,7 @@ const WatchersTabComponent = () => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
   const startWatchers = useDisclosure();
+  const profiles = useDisclosure();
 
   const { currentUser } = useBackendAuth();
   const { activeWallet } = useActiveWallet();
@@ -74,6 +76,17 @@ const WatchersTabComponent = () => {
           </Badge>
         </Flex>
         <Flex gap={1}>
+          <TooltipWrapper label={t('tradingProfiles.modalTitle')} showArrow placement="top">
+            <IconButton
+              size="2xs"
+              variant="ghost"
+              aria-label={t('tradingProfiles.modalTitle')}
+              onClick={profiles.open}
+              data-testid="trigger-trading-profiles"
+            >
+              <LuSlidersHorizontal />
+            </IconButton>
+          </TooltipWrapper>
           <TooltipWrapper label={t('marketSidebar.watchers.startWatchers')} showArrow placement="top">
             <IconButton
               size="2xs"
@@ -153,6 +166,7 @@ const WatchersTabComponent = () => {
       {activeWalletId && <SuggestionsSection walletId={activeWalletId} userId={currentUser?.id?.toString()} />}
 
       <StartWatchersDialog isOpen={startWatchers.isOpen} onClose={startWatchers.close} />
+      <TradingProfilesDialog isOpen={profiles.isOpen} onClose={profiles.close} />
     </Stack>
   );
 };

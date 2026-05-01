@@ -8,7 +8,6 @@ import {
   LuChartCandlestick,
   LuPalette,
   LuShield,
-  LuSlidersHorizontal,
   LuStar,
   LuUser,
   LuWallet,
@@ -21,7 +20,6 @@ export const SETTINGS_TABS = [
   'general',
   'chart',
   'wallets',
-  'tradingProfiles',
   'autoTrading',
   'indicators',
   'customSymbols',
@@ -50,7 +48,6 @@ export const SETTINGS_TAB_DEFS: readonly SettingsTabDef[] = [
   { id: 'chart', group: 'appearance', icon: LuChartCandlestick, labelKey: 'settings.tabs.chart' },
 
   { id: 'wallets', group: 'trading', icon: LuWallet, labelKey: 'settings.tabs.wallets' },
-  { id: 'tradingProfiles', group: 'trading', icon: LuSlidersHorizontal, labelKey: 'settings.tabs.tradingProfiles' },
   { id: 'autoTrading', group: 'trading', icon: LuBot, labelKey: 'settings.tabs.autoTrading' },
   { id: 'indicators', group: 'trading', icon: LuActivity, labelKey: 'settings.tabs.indicators' },
   { id: 'customSymbols', group: 'trading', icon: LuStar, labelKey: 'settings.tabs.customSymbols' },
