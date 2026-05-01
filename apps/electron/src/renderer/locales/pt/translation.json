@@ -1099,7 +1099,25 @@
       "pnl": "L/P",
       "netPnL": "L/P Líquido",
       "afterFees": "após taxas",
-      "noTradesYet": "Nenhuma operação ainda. Comece a negociar para ver sua curva de patrimônio."
+      "noTradesYet": "Nenhuma operação ainda. Comece a negociar para ver sua curva de patrimônio.",
+      "exchange": "Exchange",
+      "walletType": "Tipo de Carteira",
+      "paper": "Paper Trading",
+      "testnet": "Binance Testnet",
+      "live": "Trading Real",
+      "ibPaper": "IB Paper Trading (Porta 4002)",
+      "ibLive": "IB Trading Real (Porta 4001)",
+      "ibInfo": "Interactive Brokers",
+      "ibDescription": "Requer IB Gateway ou TWS rodando localmente.",
+      "downloadGateway": "Baixar IB Gateway",
+      "connectionType": "Tipo de Conexão",
+      "ibGateway": "IB Gateway (Recomendado)",
+      "ibTws": "Trader Workstation (TWS)",
+      "port": "Porta",
+      "testnetInfo": "Binance Testnet",
+      "testnetDescription": "Use testnet para praticar com fundos fictícios.",
+      "liveWarning": "Aviso: Dinheiro Real",
+      "liveDescription": "Trading real usa fundos reais. Garanta que você entende os riscos."
     },
     "ticket": {
       "title": "Ordem",
@@ -2575,5 +2593,12 @@
     },
     "weight": "Peso (× multiplicador)",
     "weightHint": "Timeframes maiores pesam mais. Condições obrigatórias valem 2×; preferidas 1×."
+  },
+  "futures": {
+    "leverage": "Alavancagem",
+    "minLeverage": "Mín: 1x",
+    "maxLeverage": "Máx: {{max}}x",
+    "extremeRiskWarning": "Risco extremo! Liquidação pode ocorrer rapidamente com pequenas variações de preço.",
+    "highRiskWarning": "Alta alavancagem aumenta tanto lucros quanto perdas potenciais."
   }
 }

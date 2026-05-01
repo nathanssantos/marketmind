@@ -118,7 +118,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
       isLoading={isCreating}
     >
       <Stack gap={3}>
-        <Field label={t('trading.wallets.exchange', 'Exchange')}>
+        <Field label={t('trading.wallets.exchange')}>
           <Select
             size="xs"
             value={exchange}
@@ -137,26 +137,26 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
           />
         </Field>
 
-        <Field label={t('trading.wallets.walletType', 'Wallet Type')}>
+        <Field label={t('trading.wallets.walletType')}>
           <Select
             size="xs"
             value={walletType}
             onChange={(value) => setWalletType(value as WalletType)}
             options={isBinance ? [
-              { value: 'paper', label: `📝 ${t('trading.wallets.paper', 'Paper Trading')}` },
-              { value: 'testnet', label: `🧪 ${t('trading.wallets.testnet', 'Binance Testnet')}` },
-              { value: 'live', label: `🔴 ${t('trading.wallets.live', 'Live Trading')}` },
+              { value: 'paper', label: `📝 ${t('trading.wallets.paper')}` },
+              { value: 'testnet', label: `🧪 ${t('trading.wallets.testnet')}` },
+              { value: 'live', label: `🔴 ${t('trading.wallets.live')}` },
             ] : [
-              { value: 'paper', label: `📝 ${t('trading.wallets.ibPaper', 'IB Paper Trading (Port 4002)')}` },
-              { value: 'live', label: `🔴 ${t('trading.wallets.ibLive', 'IB Live Trading (Port 4001)')}` },
+              { value: 'paper', label: `📝 ${t('trading.wallets.ibPaper')}` },
+              { value: 'live', label: `🔴 ${t('trading.wallets.ibLive')}` },
             ]}
             usePortal={false}
           />
         </Field>
 
         {isBinance && walletType === 'testnet' && (
-          <Callout tone="info" title={t('trading.wallets.testnetInfo', 'Binance Testnet')} compact>
-            <Text mb={1}>{t('trading.wallets.testnetDescription', 'Use testnet to practice with fake funds.')}</Text>
+          <Callout tone="info" title={t('trading.wallets.testnetInfo')} compact>
+            <Text mb={1}>{t('trading.wallets.testnetDescription')}</Text>
             <Flex gap={3}>
               <Link href="https://testnet.binance.vision/" target="_blank" color="blue.fg" fontSize="2xs">
                 Spot Testnet <LuExternalLink style={{ display: 'inline' }} />
@@ -169,17 +169,17 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
         )}
 
         {isIB && (
-          <Callout tone="info" title={t('trading.wallets.ibInfo', 'Interactive Brokers')} compact>
-            <Text mb={1}>{t('trading.wallets.ibDescription', 'Requires IB Gateway or TWS running locally.')}</Text>
+          <Callout tone="info" title={t('trading.wallets.ibInfo')} compact>
+            <Text mb={1}>{t('trading.wallets.ibDescription')}</Text>
             <Link href="https://www.interactivebrokers.com/en/trading/ibgateway-stable.php" target="_blank" color="blue.fg" fontSize="2xs">
-              {t('trading.wallets.downloadGateway', 'Download IB Gateway')} <LuExternalLink style={{ display: 'inline' }} />
+              {t('trading.wallets.downloadGateway')} <LuExternalLink style={{ display: 'inline' }} />
             </Link>
           </Callout>
         )}
 
         {walletType === 'live' && (
-          <Callout tone="warning" title={t('trading.wallets.liveWarning', 'Warning: Real Money')} compact>
-            {t('trading.wallets.liveDescription', 'Live trading uses real funds. Make sure you understand the risks.')}
+          <Callout tone="warning" title={t('trading.wallets.liveWarning')} compact>
+            {t('trading.wallets.liveDescription')}
           </Callout>
         )}
 
@@ -194,20 +194,20 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
 
         {isIB && (
           <>
-            <Field label={t('trading.wallets.connectionType', 'Connection Type')}>
+            <Field label={t('trading.wallets.connectionType')}>
               <Select
                 size="xs"
                 value={ibConnectionType}
                 onChange={(value) => setIbConnectionType(value as IBConnectionType)}
                 options={[
-                  { value: 'gateway', label: t('trading.wallets.ibGateway', 'IB Gateway (Recommended)') },
-                  { value: 'tws', label: t('trading.wallets.ibTws', 'Trader Workstation (TWS)') },
+                  { value: 'gateway', label: t('trading.wallets.ibGateway') },
+                  { value: 'tws', label: t('trading.wallets.ibTws') },
                 ]}
                 usePortal={false}
               />
             </Field>
 
-            <Field label={t('trading.wallets.port', 'Port')}>
+            <Field label={t('trading.wallets.port')}>
               <Input
                 size="xs"
                 value={ibPort}
