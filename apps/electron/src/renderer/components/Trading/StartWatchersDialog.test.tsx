@@ -69,21 +69,21 @@ vi.mock('./DirectionBadge', () => ({
   DirectionBadge: () => <span data-testid="direction-badge" />,
 }));
 
-import { StartWatchersModal } from './StartWatchersModal';
+import { StartWatchersDialog } from './StartWatchersDialog';
 
 const renderModal = (overrides: { isOpen?: boolean } = {}) => {
   const onClose = vi.fn();
   return {
     ...render(
       <ChakraProvider value={defaultSystem}>
-        <StartWatchersModal isOpen={overrides.isOpen ?? true} onClose={onClose} />
+        <StartWatchersDialog isOpen={overrides.isOpen ?? true} onClose={onClose} />
       </ChakraProvider>
     ),
     onClose,
   };
 };
 
-describe('StartWatchersModal', () => {
+describe('StartWatchersDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     activeWalletMock = { id: 'w1' };

@@ -42,7 +42,7 @@ const MARKET_TYPE_OPTIONS: SelectOption[] = [
   { value: 'FUTURES', label: 'Futures' },
 ];
 
-export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol: string, marketType?: MarketType) => void }) => {
+export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol: string, marketType?: MarketType) => void }) => {
   const { t } = useTranslation();
   const [isSaveOpen, setIsSaveOpen] = useState(false);
 
@@ -281,4 +281,4 @@ export const ScreenerModal = memo(({ onSymbolClick }: { onSymbolClick?: (symbol:
   );
 });
 
-ScreenerModal.displayName = 'ScreenerModal';
+ScreenerDialog.displayName = 'ScreenerDialog';

@@ -1,6 +1,6 @@
 import { IS_E2E_BYPASS_AUTH } from '@shared/constants';
 import type { Socket } from 'socket.io-client';
-import { useBacktestModalStore } from '../store/backtestModalStore';
+import { useBacktestDialogStore } from '../store/backtestDialogStore';
 import { useConnectionStore } from '../store/connectionStore';
 import { useDrawingStore } from '../store/drawingStore';
 import { useIndicatorStore } from '../store/indicatorStore';
@@ -36,7 +36,7 @@ declare global {
     __priceStore?: typeof usePriceStore;
     __connectionStore?: typeof useConnectionStore;
     __uiStore?: typeof useUIStore;
-    __backtestModalStore?: typeof useBacktestModalStore;
+    __backtestDialogStore?: typeof useBacktestDialogStore;
     __screenerStore?: typeof useScreenerStore;
     __canvasManager?: CanvasManager | null;
     __isPanning?: boolean;
@@ -57,7 +57,7 @@ export const installE2EBridge = (): void => {
   window.__priceStore = usePriceStore;
   window.__connectionStore = useConnectionStore;
   window.__uiStore = useUIStore;
-  window.__backtestModalStore = useBacktestModalStore;
+  window.__backtestDialogStore = useBacktestDialogStore;
   window.__screenerStore = useScreenerStore;
 };
 

@@ -15,7 +15,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCheck, LuOctagonX, LuPlay, LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
-import { StartWatchersModal } from '@renderer/components/Trading/StartWatchersModal';
+import { StartWatchersDialog } from '@renderer/components/Trading/StartWatchersDialog';
 import { formatSuggestionPrice, sortWatchers } from './watchersTabUtils';
 
 interface ActiveWatcher {
@@ -151,7 +151,7 @@ const WatchersTabComponent = () => {
 
       {activeWalletId && <SuggestionsSection walletId={activeWalletId} userId={currentUser?.id?.toString()} />}
 
-      <StartWatchersModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      <StartWatchersDialog isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </Stack>
   );
 };

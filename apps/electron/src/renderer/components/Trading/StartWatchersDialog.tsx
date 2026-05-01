@@ -15,12 +15,12 @@ import { LuArrowUpDown, LuPlay, LuSettings, LuTrendingDown, LuTrendingUp } from 
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { DirectionBadge } from './DirectionBadge';
 
-interface StartWatchersModalProps {
+interface StartWatchersDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalProps) => {
+export const StartWatchersDialog = memo(({ isOpen, onClose }: StartWatchersDialogProps) => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
 
@@ -267,4 +267,4 @@ export const StartWatchersModal = memo(({ isOpen, onClose }: StartWatchersModalP
   );
 });
 
-StartWatchersModal.displayName = 'StartWatchersModal';
+StartWatchersDialog.displayName = 'StartWatchersDialog';

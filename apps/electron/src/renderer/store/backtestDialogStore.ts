@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-interface BacktestModalState {
+interface BacktestDialogState {
   isBacktestOpen: boolean;
   openBacktest: () => void;
   closeBacktest: () => void;
   toggleBacktest: () => void;
 }
 
-export const useBacktestModalStore = create<BacktestModalState>()(
+export const useBacktestDialogStore = create<BacktestDialogState>()(
   subscribeWithSelector((set) => ({
     isBacktestOpen: false,
     openBacktest: () => set({ isBacktestOpen: true }),

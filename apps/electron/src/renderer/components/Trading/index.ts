@@ -10,7 +10,7 @@ export { RiskDisplay } from './RiskDisplay';
 export { PerformancePanel } from './PerformancePanel';
 export { SetupStatsTable } from './SetupStatsTable';
 
-export { StartWatchersModal } from './StartWatchersModal';
+export { StartWatchersDialog } from './StartWatchersDialog';
 
 export { TradingProfilesManager } from './TradingProfilesManager';
 export { ProfileEditorDialog } from './ProfileEditorDialog';

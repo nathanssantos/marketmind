@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useBacktestModalStore } from '../store/backtestModalStore';
+import { useBacktestDialogStore } from '../store/backtestDialogStore';
 
 export const useBacktestShortcut = () => {
   useEffect(() => {
@@ -7,7 +7,7 @@ export const useBacktestShortcut = () => {
       const meta = e.metaKey || e.ctrlKey;
       if (meta && e.shiftKey && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        useBacktestModalStore.getState().toggleBacktest();
+        useBacktestDialogStore.getState().toggleBacktest();
       }
     };
     window.addEventListener('keydown', handler);
