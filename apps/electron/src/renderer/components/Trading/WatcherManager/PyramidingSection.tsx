@@ -83,7 +83,7 @@ export const PyramidingSection = ({
       variant="static"
     >
           <Field
-            label={t('settings.algorithmicAutoTrading.pyramiding.modeLabel', 'Mode')}
+            label={t('settings.algorithmicAutoTrading.pyramiding.modeLabel')}
             helperText={(() => {
               const v = config?.pyramidingEnabled ? (config?.pyramidingMode ?? 'static') : 'disabled';
               if (v === 'disabled') return t('settings.algorithmicAutoTrading.pyramiding.modeDisabledDesc');

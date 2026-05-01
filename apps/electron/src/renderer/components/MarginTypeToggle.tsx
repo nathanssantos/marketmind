@@ -18,10 +18,10 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
       <Flex justify="space-between" align="center">
         <Flex align="center" gap={1}>
           <Text fontSize="sm" fontWeight="medium" color="fg">
-            {t('futures.marginType', 'Margin Type')}
+            {t('futures.marginType')}
           </Text>
           <TooltipWrapper
-            label={t('futures.marginTypeInfo', 'Isolated: Each position has its own margin. Crossed: All positions share margin.')}
+            label={t('futures.marginTypeInfo')}
             showArrow
           >
             <Box color="fg.muted" cursor="help">
@@ -42,7 +42,7 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
         >
           <Flex align="center" gap={2}>
             <LuShield size={14} />
-            <Text fontSize="xs">{t('futures.isolated', 'Isolated')}</Text>
+            <Text fontSize="xs">{t('futures.isolated')}</Text>
           </Flex>
         </Button>
         <Button
@@ -55,7 +55,7 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
         >
           <Flex align="center" gap={2}>
             <LuWallet size={14} />
-            <Text fontSize="xs">{t('futures.crossed', 'Cross')}</Text>
+            <Text fontSize="xs">{t('futures.crossed')}</Text>
           </Flex>
         </Button>
       </Flex>
@@ -63,8 +63,8 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
       <Box p={2} bg="bg.muted" borderRadius="md">
         <Text fontSize="2xs" color="fg.muted">
           {value === 'ISOLATED'
-            ? t('futures.isolatedDesc', 'Recommended: Risk is limited to the margin assigned to this position.')
-            : t('futures.crossedDesc', 'All available balance is used as margin. Higher liquidation risk.')}
+            ? t('futures.isolatedDesc')
+            : t('futures.crossedDesc')}
         </Text>
       </Box>
     </VStack>

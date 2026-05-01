@@ -65,7 +65,7 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
         trigger={
           <Box>
             <TooltipWrapper
-              label={t('futures.leverage', 'Leverage')}
+              label={t('futures.leverage')}
               showArrow
               placement="bottom"
               isDisabled={isOpen}
@@ -74,7 +74,7 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
                 size="2xs"
                 variant="outline"
                 color={triggerColor}
-                aria-label={t('futures.leverage', 'Leverage')}
+                aria-label={t('futures.leverage')}
                 onClick={() => setIsOpen((prev) => !prev)}
                 h="20px"
                 minH="20px"
@@ -97,7 +97,7 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
           />
           {hasOpenPosition && (
             <Text fontSize="2xs" color="orange.fg" mt={2} textAlign="center">
-              {t('futures.leverageLockedPosition', 'Close position to change leverage')}
+              {t('futures.leverageLockedPosition')}
             </Text>
           )}
         </Box>

@@ -227,7 +227,7 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
         </Flex>
         <Flex align="center" gap={1}>
           {canSync && (
-            <TooltipWrapper label={t('trading.wallets.syncBalance', 'Sync balance from Binance')}>
+            <TooltipWrapper label={t('trading.wallets.syncBalance')}>
               <IconButton
                 size="2xs"
                 variant="ghost"
@@ -314,7 +314,7 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
         </Flex>
         {netDeposits !== 0 && (
           <Flex justify="space-between">
-            <Text color="fg.muted">{t('trading.wallets.netDeposits', 'Net Deposits')}</Text>
+            <Text color="fg.muted">{t('trading.wallets.netDeposits')}</Text>
             <Stack gap={0} align="flex-end">
               <Text color={netDeposits > 0 ? 'blue.fg' : 'orange.fg'}>
                 {netDeposits > 0 ? '+' : ''}{netDeposits.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

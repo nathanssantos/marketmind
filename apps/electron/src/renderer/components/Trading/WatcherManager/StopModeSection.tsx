@@ -27,7 +27,7 @@ export const StopModeSection = ({
       variant="static"
     >
       <Field
-        label={t('settings.algorithmicAutoTrading.stopMode.label', 'Initial stop placement')}
+        label={t('settings.algorithmicAutoTrading.stopMode.label')}
         helperText={
           initialStopMode === 'fibo_target'
             ? t('settings.algorithmicAutoTrading.stopMode.fiboTargetDescription')

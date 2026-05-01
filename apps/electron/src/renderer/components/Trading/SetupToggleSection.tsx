@@ -100,7 +100,7 @@ export const SetupToggleSection = memo(() => {
   return (
     <CollapsibleSection
       title={t('setupConfig.enabledSetups')}
-      description={t('setupConfig.enabledSetupsDescription', 'Select which trading setups the watchers will monitor')}
+      description={t('setupConfig.enabledSetupsDescription')}
       defaultOpen={false}
       size="lg"
       badge={countBadge}

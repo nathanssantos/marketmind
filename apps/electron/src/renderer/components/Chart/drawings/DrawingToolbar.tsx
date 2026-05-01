@@ -66,7 +66,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
     >
       <HStack gap={1}>
         {COLOR_PRESETS.map(color => (
-          <TooltipWrapper key={color} label={t('chart.drawingToolbar.color', 'Color')} showArrow placement="top">
+          <TooltipWrapper key={color} label={t('chart.drawingToolbar.color')} showArrow placement="top">
             <Box
               as="button"
               w="16px"
@@ -139,11 +139,11 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
               ))}
             </select>
 
-            <TooltipWrapper label={t('chart.drawingToolbar.bold', 'Bold')} showArrow placement="top">
+            <TooltipWrapper label={t('chart.drawingToolbar.bold')} showArrow placement="top">
               <IconButton
                 size="2xs"
                 variant={textDrawing.fontWeight === 'bold' ? 'solid' : 'ghost'}
-                aria-label={t('chart.drawingToolbar.bold', 'Bold')}
+                aria-label={t('chart.drawingToolbar.bold')}
                 onClick={() => !isLocked && updateDrawing({ fontWeight: textDrawing.fontWeight === 'bold' ? 'normal' : 'bold' })}
                 disabled={isLocked}
               >
@@ -151,11 +151,11 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
               </IconButton>
             </TooltipWrapper>
 
-            <TooltipWrapper label={t('chart.drawingToolbar.underline', 'Underline')} showArrow placement="top">
+            <TooltipWrapper label={t('chart.drawingToolbar.underline')} showArrow placement="top">
               <IconButton
                 size="2xs"
                 variant={textDrawing.textDecoration === 'underline' ? 'solid' : 'ghost'}
-                aria-label={t('chart.drawingToolbar.underline', 'Underline')}
+                aria-label={t('chart.drawingToolbar.underline')}
                 onClick={() => !isLocked && updateDrawing({ textDecoration: textDrawing.textDecoration === 'underline' ? 'none' : 'underline' })}
                 disabled={isLocked}
               >
@@ -178,12 +178,12 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
           </IconButton>
         </TooltipWrapper>
 
-        <TooltipWrapper label={t('chart.drawingToolbar.delete', 'Delete')} showArrow placement="top">
+        <TooltipWrapper label={t('chart.drawingToolbar.delete')} showArrow placement="top">
           <IconButton
             size="2xs"
             variant="ghost"
             colorPalette="red"
-            aria-label={t('chart.drawingToolbar.delete', 'Delete')}
+            aria-label={t('chart.drawingToolbar.delete')}
             onClick={handleDelete}
             disabled={isLocked}
           >

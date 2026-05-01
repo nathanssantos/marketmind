@@ -21,15 +21,15 @@ export const LeverageSettingsSection = ({
 
   return (
     <CollapsibleSection
-      title={t('settings.algorithmicAutoTrading.leverage.title', 'Auto-Trading Leverage')}
-      description={t('settings.algorithmicAutoTrading.leverage.autoTradingDescription', 'Default leverage for auto-trading entries on new symbols')}
+      title={t('settings.algorithmicAutoTrading.leverage.title')}
+      description={t('settings.algorithmicAutoTrading.leverage.autoTradingDescription')}
       open={isExpanded}
       onOpenChange={onToggle}
       size="lg"
       variant="static"
     >
       <Stack gap={3}>
-        <Field label={t('settings.algorithmicAutoTrading.leverage.label', 'Leverage')}>
+        <Field label={t('settings.algorithmicAutoTrading.leverage.label')}>
           <NumberInput
             min={1}
             max={125}
@@ -40,7 +40,7 @@ export const LeverageSettingsSection = ({
           />
         </Field>
         <Callout tone="warning" compact>
-          {t('settings.algorithmicAutoTrading.leverage.warning', 'Higher leverage increases both potential gains and losses. Use with caution.')}
+          {t('settings.algorithmicAutoTrading.leverage.warning')}
         </Callout>
       </Stack>
     </CollapsibleSection>

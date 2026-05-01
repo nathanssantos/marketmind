@@ -55,7 +55,7 @@ export const TpModeSection = ({
     >
       <Stack gap={4}>
         <Field
-          label={t('settings.algorithmicAutoTrading.tpMode.calculationLabel', 'Calculation method')}
+          label={t('settings.algorithmicAutoTrading.tpMode.calculationLabel')}
           helperText={
             tpCalculationMode === 'default'
               ? t('settings.algorithmicAutoTrading.tpMode.defaultDescription')
