@@ -100,6 +100,8 @@ export type { DirectionMode } from './DirectionModeSelector';
 export { EmptyState } from './EmptyState';
 export { ErrorMessage } from './ErrorMessage';
 export { FormDialog } from './FormDialog';
+export { GridPanel } from './GridPanel';
+export type { GridPanelMode, GridPanelProps, GridPanelWindowState } from './GridPanel';
 export { GridWindow } from './GridWindow';
 export type { GridWindowState } from './GridWindow';
 export { LoadingSpinner } from './LoadingSpinner';

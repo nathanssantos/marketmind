@@ -1,10 +1,14 @@
 import { Flex, HStack, Text } from '@chakra-ui/react';
 import { IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
+import { isChartPanel } from '@shared/types/layout';
+import { getPanelDef } from '@renderer/grid/panel-registry';
 import { memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { LuMaximize2 } from 'react-icons/lu';
 
 function MinimizedPanelBarComponent() {
+  const { t } = useTranslation();
   const activeLayout = useLayoutStore(s => s.getActiveLayout());
   const setPanelWindowState = useLayoutStore(s => s.setPanelWindowState);
 
@@ -34,7 +38,9 @@ function MinimizedPanelBarComponent() {
           _hover={{ bg: 'bg.muted' }}
           onClick={() => handleRestore(panel.id)}
         >
-          <Text fontSize="xs" color="fg.muted">{panel.timeframe} {panel.chartType}</Text>
+          <Text fontSize="xs" color="fg.muted">
+            {isChartPanel(panel) ? `${panel.timeframe} ${panel.chartType}` : t(getPanelDef(panel.kind).titleKey)}
+          </Text>
           <TooltipWrapper label="Restore" showArrow>
             <IconButton aria-label="Restore" size="2xs" variant="ghost" onClick={(e) => { e.stopPropagation(); handleRestore(panel.id); }}>
               <LuMaximize2 />

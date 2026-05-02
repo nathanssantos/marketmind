@@ -11,14 +11,56 @@ export interface GridPosition {
   h: number;
 }
 
-export interface GridPanelConfig {
+/**
+ * v1.10 Track 1 — every grid panel is now a discriminated union by `kind`.
+ * Charts (the only multi-instance kind) live alongside named single-instance
+ * panels (Ticket, Checklist, Orders, Portfolio, Positions, Exposure,
+ * Watchers, Indicators, etc.) — the migration from sidebars to grid panels.
+ *
+ * For backwards compat, persisted layouts saved before v1.10 lack the `kind`
+ * field; the store hydration migrator defaults missing `kind` to `'chart'`.
+ */
+export type PanelKind =
+  | 'chart'
+  // Trading group
+  | 'ticket'
+  | 'checklist'
+  | 'orders'
+  | 'portfolio'
+  | 'positions'
+  | 'exposure'
+  // Market group
+  | 'indicators'
+  | 'marketIndicators'
+  | 'marketSections'
+  // Auto-Trading group
+  | 'watchers'
+  | 'autoTradingSetup'
+  | 'autoTradingActivity'
+  // Order Flow group
+  | 'orderFlowMetrics';
+
+interface BaseGridPanel {
   id: string;
-  timeframe: string;
-  chartType: ChartType;
   gridPosition: GridPosition;
   windowState: PanelWindowState;
   savedGridPosition?: GridPosition;
 }
+
+export interface ChartPanelConfig extends BaseGridPanel {
+  kind: 'chart';
+  timeframe: string;
+  chartType: ChartType;
+}
+
+export interface NamedPanelConfig extends BaseGridPanel {
+  kind: Exclude<PanelKind, 'chart'>;
+}
+
+export type GridPanelConfig = ChartPanelConfig | NamedPanelConfig;
+
+export const isChartPanel = (panel: GridPanelConfig): panel is ChartPanelConfig =>
+  panel.kind === 'chart';
 
 export interface LayoutPreset {
   id: string;

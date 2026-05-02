@@ -5,13 +5,13 @@ import { GridWindow } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
 import { useStreamHealth } from '@renderer/hooks/useStreamHealth';
-import type { GridPanelConfig } from '@shared/types/layout';
+import type { ChartPanelConfig } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
 import { memo, useCallback, useMemo } from 'react';
 import { ChartPanelContent } from './ChartPanelContent';
 
 interface ChartGridPanelProps {
-  panelConfig: GridPanelConfig;
+  panelConfig: ChartPanelConfig;
   symbol: string;
   marketType: MarketType;
   layoutId: string;

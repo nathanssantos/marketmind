@@ -31,12 +31,11 @@ export const useLayoutSync = (): LayoutSyncResult => {
   const updateTabSymbol = useLayoutStore(s => s.updateTabSymbol);
   const clearDetectedSetups = useSetupStore(s => s.clearDetectedSetups);
 
+  const focusedChartPanel = focusedPanel?.kind === 'chart' ? focusedPanel : undefined;
   const effectiveSymbol = activeTab?.symbol ?? symbol;
   const effectiveMarketType = activeTab?.marketType ?? marketType;
-  const effectiveTimeframe = (focusedPanel?.timeframe ?? timeframe) as Timeframe;
-  // Coerce legacy persisted chart types (tick/volume/footprint, removed in v1.3)
-  // to 'kline'. Stored prefs from older builds may still contain those values.
-  const rawChartType = focusedPanel?.chartType ?? chartType;
+  const effectiveTimeframe = (focusedChartPanel?.timeframe ?? timeframe) as Timeframe;
+  const rawChartType = focusedChartPanel?.chartType ?? chartType;
   const effectiveChartType: ChartType = rawChartType === 'line' ? 'line' : 'kline';
 
   const handleSymbolChange = useCallback((newSymbol: string, newMarketType?: MarketType): void => {
