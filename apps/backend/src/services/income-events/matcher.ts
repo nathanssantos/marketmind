@@ -12,28 +12,66 @@ export interface LinkIncomeToExecutionInput {
 }
 
 /**
- * Recomputes `tradeExecutions.accumulatedFunding` from the sum of all
- * FUNDING_FEE income events linked to the execution. Called from
- * `linkIncomeToExecution` whenever a FUNDING_FEE row gets linked, so
- * an open position's accumulated funding stays in sync with what
- * Binance has actually charged. Without this, live wallets always
- * have `accumulatedFunding=0` on the execution row (paper wallets are
- * driven by `funding-rate-service.ts` against the `positions` table)
- * and the close-path P&L silently omits funding.
+ * Recomputes `tradeExecutions.accumulatedFunding` for a given execution
+ * from the sum of FUNDING_FEE income events that fall within the
+ * execution's open/close window (matched by wallet + symbol + time,
+ * NOT by `executionId` — the linker's executionId is a useful index
+ * but ambiguous when multiple executions on the same symbol overlap,
+ * because the linker picks "first execution by openedAt" greedily).
  *
- * Exported for audit scripts that backfill historical executions whose
- * funding was never accumulated (drift introduced before this fix).
+ * Time-window match is authoritative: Binance issues funding fees at
+ * known cadence (every 8h on futures), each event has a precise
+ * `incomeTime`, and an execution that was open across a funding tick
+ * was charged that tick. As long as one position per (wallet, symbol)
+ * is open at a time (one-way mode) this is exact; in hedge mode it
+ * still gives the correct sum but may apportion across overlapping
+ * positions sub-optimally.
+ *
+ * Refuses to overwrite a non-zero `accumulatedFunding` with zero —
+ * if the time-window query returns 0 income rows, the previously
+ * stored value is left intact. This protects against erasing funding
+ * that was set by an older / different path before the income-event
+ * sync caught up.
+ *
+ * Exported for audit scripts and the user-stream link path.
  */
 export const recomputeExecutionAccumulatedFunding = async (executionId: string): Promise<void> => {
+  const [exec] = await db
+    .select({
+      walletId: tradeExecutions.walletId,
+      symbol: tradeExecutions.symbol,
+      openedAt: tradeExecutions.openedAt,
+      closedAt: tradeExecutions.closedAt,
+      currentFunding: tradeExecutions.accumulatedFunding,
+    })
+    .from(tradeExecutions)
+    .where(eq(tradeExecutions.id, executionId))
+    .limit(1);
+
+  if (!exec) return;
+
+  const closedAt = exec.closedAt ?? new Date();
   const [row] = await db
-    .select({ total: sql<string>`COALESCE(SUM(${incomeEvents.amount}::numeric), 0)::text` })
+    .select({
+      total: sql<string>`COALESCE(SUM(${incomeEvents.amount}::numeric), 0)::text`,
+      cnt: sql<string>`COUNT(*)::text`,
+    })
     .from(incomeEvents)
     .where(
       and(
-        eq(incomeEvents.executionId, executionId),
+        eq(incomeEvents.walletId, exec.walletId),
+        eq(incomeEvents.symbol, exec.symbol),
         eq(incomeEvents.incomeType, 'FUNDING_FEE'),
+        sql`${incomeEvents.incomeTime} >= ${exec.openedAt}`,
+        sql`${incomeEvents.incomeTime} <= ${closedAt}`,
       ),
     );
+
+  const count = parseInt(row?.cnt ?? '0', 10);
+  // No linked / windowed events found — don't clobber any existing
+  // value. Either income hasn't synced yet, or the position closed
+  // outside any funding tick.
+  if (count === 0) return;
 
   await db
     .update(tradeExecutions)
