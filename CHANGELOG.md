@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Net: 12 fewer lines across the 3 migrated files, primitive scoped to `apps/electron/src/renderer/components/ui/` (uses trading.* tokens which are project-specific, so it stays out of `@marketmind/ui`).
 
+### Documentation — Style Guide updates (v1.8 Track D)
+- **`docs/UI_STYLE_GUIDE.md`** — added "RecordRow pattern (v1.7+)" and "TradingSideCard pattern (v1.8+)" sections covering API matrix (density / tone / onClick for RecordRow; side for TradingSideCard), usage examples, applied surfaces, and the why-not-extend-RecordRow rationale for TradingSideCard. Both primitives added to the Data Display catalog table.
+- **`apps/electron/src/renderer/components/ui/README.md`** — RecordRow + TradingSideCard rows added to the Data Display catalog with crisp one-line descriptions and CI-gate notes.
+
 ## [1.7.0] - 2026-05-02
 
 **v1.7 release** — Phase-2 design-language sweep: every non-dialog surface (sidebars, chart panels, auth pages, chart toolbar, list rows) brought up to the v1.6 design language. v1.6 made the dialogs uniform; v1.7 extends that to the rest of the app so the whole experience reads as one design system, not a patchwork.

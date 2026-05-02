@@ -54,6 +54,8 @@ See `docs/UI_STYLE_GUIDE.md` for the full import rules and style hierarchy.
 | `PnLDisplay` | Profit/loss colored display |
 | `MetricCard` | Metric card with label/value |
 | `CryptoIcon` | Cryptocurrency icon |
+| `RecordRow` | **List-row / record-card framing primitive** (v1.7+, from `@marketmind/ui`) — `density="compact"\|"card"`, `tone="default"\|"muted"\|"panel"`, `onClick` for interactive rows. Replaces ad-hoc `<Box borderWidth=1 borderColor=border borderRadius=md p=N>`. Gated by `pnpm lint:panels:strict`. |
+| `TradingSideCard` | **Position / order card with side-coded 4px left accent** (v1.8+) — `side="LONG"\|"SHORT"` selects the green / red border via `trading.long` / `trading.short` tokens. Used by `PositionCard`, `OrderCard`, `FuturesPositionCard`. Lives in renderer-local `ui/` (not `@marketmind/ui`) because the trading-domain tokens are project-specific. |
 
 ### Feedback
 
