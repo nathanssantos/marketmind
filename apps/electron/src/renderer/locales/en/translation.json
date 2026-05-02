@@ -50,6 +50,7 @@
     "hideActions": "Hide actions",
     "delete": "Delete",
     "edit": "Edit",
+    "beta": "Beta",
     "loading": "Loading...",
     "error": "Error",
     "success": "Success",
@@ -2810,13 +2811,13 @@
       "title": "Market Indicators"
     },
     "watchers": {
-      "title": "Watchers"
+      "title": "Auto-Trading"
     },
     "autoTradingSetup": {
-      "title": "Setup Detection"
+      "title": "Auto-Scalping"
     },
     "autoTradingActivity": {
-      "title": "Auto-Trading Activity"
+      "title": "Logs"
     },
     "orderBook": {
       "title": "Order Book"

@@ -432,14 +432,14 @@ const persistLayout = (): void => {
 
 useLayoutStore.subscribe(persistLayout);
 
-const scalePosition = (pos: GridPosition, fx: number, fy: number): GridPosition => ({
+export const scalePosition = (pos: GridPosition, fx: number, fy: number): GridPosition => ({
   x: Math.round(pos.x * fx),
   y: Math.round(pos.y * fy),
   w: Math.round(pos.w * fx),
   h: Math.round(pos.h * fy),
 });
 
-const migrateGridGranularity = (
+export const migrateGridGranularity = (
   presets: LayoutPreset[],
   fromVersion: number,
 ): LayoutPreset[] => {

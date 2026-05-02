@@ -232,10 +232,8 @@ describe('QuickTradeToolbar — Buy / Sell flow (regression: v0.107)', () => {
 });
 
 describe('QuickTradeToolbar — Reverse Position', () => {
-  it('the reverse row is disabled when there is no open position', async () => {
-    const user = userEvent.setup();
+  it('the reverse row is disabled when there is no open position', () => {
     renderActions();
-
 
     const row = screen.getByText('futures.reversePosition').parentElement!;
     expect(row).toHaveStyle({ opacity: '0.4' });
@@ -294,8 +292,7 @@ describe('QuickTradeToolbar — Reverse Position', () => {
 });
 
 describe('QuickTradeToolbar — Close Position', () => {
-  it('the close row is disabled when there is no open position', async () => {
-    const user = userEvent.setup();
+  it('the close row is disabled when there is no open position', () => {
     renderActions();
 
     const row = screen.getByText('futures.closePosition').parentElement!;
@@ -399,10 +396,8 @@ describe('QuickTradeToolbar — Grid Orders / Trailing Stop sub-components', () 
     expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
   });
 
-  it('hides Reverse / Close / Cancel rows for SPOT but still renders Grid + Trailing', async () => {
-    const user = userEvent.setup();
+  it('hides Reverse / Close / Cancel rows for SPOT but still renders Grid + Trailing', () => {
     renderActions({ marketType: 'SPOT' });
-
 
     expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
     expect(screen.queryByText('futures.closePosition')).not.toBeInTheDocument();

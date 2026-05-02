@@ -1,5 +1,5 @@
-import { Box } from '@chakra-ui/react';
-import { Callout } from '@renderer/components/ui';
+import { Box, Flex } from '@chakra-ui/react';
+import { Badge, Callout } from '@renderer/components/ui';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { ScalpingDashboard } from '@renderer/components/Trading/ScalpingDashboard';
@@ -25,6 +25,11 @@ export const AutoTradingSetupPanel = () => {
 
   return (
     <Box h="100%" overflowY="auto" p={1.5}>
+      <Flex justify="flex-end" px={2} pb={1}>
+        <Badge colorPalette="purple" variant="subtle" size="xs">
+          {t('common.beta')}
+        </Badge>
+      </Flex>
       <ScalpingDashboard
         walletId={activeWallet.id}
         symbol={symbol}
