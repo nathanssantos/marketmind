@@ -77,6 +77,10 @@ interface LayoutTemplate {
   buildGrid: () => GridPanelConfig[];
 }
 
+// Trading template uses the exact proportions from the user's hand-built
+// layout (2026-05). Auto-Trading and Scalping mirror its anatomy: big
+// chart top-left, narrow right rail with auxiliary panels, full-width
+// bottom row split between two list panels.
 export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
   {
     key: 'empty',
@@ -89,11 +93,12 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
     labelKey: 'layout.template.trading',
     defaultName: 'Trading',
     buildGrid: () => [
-      createDefaultPanel('1h', { x: 0, y: 0, w: 128, h: 64 }),
-      createNamedPanel('ticket', { x: 128, y: 0, w: 64, h: 32 }),
-      createNamedPanel('checklist', { x: 128, y: 32, w: 64, h: 32 }),
-      createNamedPanel('positions', { x: 0, y: 64, w: 96, h: 32 }),
-      createNamedPanel('orders', { x: 96, y: 64, w: 96, h: 32 }),
+      createDefaultPanel('1h', { x: 0, y: 0, w: 159, h: 78 }),
+      createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
+      createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 9 }),
+      createNamedPanel('checklist', { x: 159, y: 44, w: 33, h: 34 }),
+      createNamedPanel('positions', { x: 0, y: 78, w: 96, h: 32 }),
+      createNamedPanel('orders', { x: 96, y: 78, w: 96, h: 32 }),
     ],
   },
   {
@@ -101,11 +106,11 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
     labelKey: 'layout.template.autoTrading',
     defaultName: 'Auto-Trading',
     buildGrid: () => [
-      createDefaultPanel('1h', { x: 0, y: 0, w: 112, h: 48 }),
-      createNamedPanel('watchers', { x: 112, y: 0, w: 80, h: 48 }),
-      createNamedPanel('autoTradingSetup', { x: 0, y: 48, w: 80, h: 32 }),
-      createNamedPanel('autoTradingActivity', { x: 80, y: 48, w: 112, h: 32 }),
-      createNamedPanel('positions', { x: 0, y: 80, w: 192, h: 24 }),
+      createDefaultPanel('1h', { x: 0, y: 0, w: 159, h: 78 }),
+      createNamedPanel('watchers', { x: 159, y: 0, w: 33, h: 44 }),
+      createNamedPanel('autoTradingSetup', { x: 159, y: 44, w: 33, h: 34 }),
+      createNamedPanel('autoTradingActivity', { x: 0, y: 78, w: 96, h: 32 }),
+      createNamedPanel('positions', { x: 96, y: 78, w: 96, h: 32 }),
     ],
   },
   {
@@ -113,11 +118,11 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
     labelKey: 'layout.template.scalping',
     defaultName: 'Scalping',
     buildGrid: () => [
-      createDefaultPanel('5m', { x: 0, y: 0, w: 96, h: 48 }),
-      createDefaultPanel('1m', { x: 96, y: 0, w: 96, h: 48 }),
-      createNamedPanel('ticket', { x: 0, y: 48, w: 64, h: 32 }),
-      createNamedPanel('orderFlowMetrics', { x: 64, y: 48, w: 64, h: 32 }),
-      createNamedPanel('positions', { x: 128, y: 48, w: 64, h: 32 }),
+      createDefaultPanel('5m', { x: 0, y: 0, w: 80, h: 78 }),
+      createDefaultPanel('1m', { x: 80, y: 0, w: 79, h: 78 }),
+      createNamedPanel('ticket', { x: 159, y: 0, w: 33, h: 20 }),
+      createNamedPanel('orderFlowMetrics', { x: 159, y: 20, w: 33, h: 58 }),
+      createNamedPanel('positions', { x: 0, y: 78, w: 192, h: 32 }),
     ],
   },
 ];
