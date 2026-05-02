@@ -1,7 +1,8 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, EmptyState, IconButton, ProgressBar, ProgressRoot, TooltipWrapper } from '@renderer/components/ui';
+import { MM } from '@marketmind/tokens';
+import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper, TradingSideCard } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
-import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
@@ -92,13 +93,7 @@ const FuturesPositionCard = memo(({
   };
 
   return (
-    <Box
-      p={3}
-      bg="bg.muted"
-      borderRadius="md"
-      borderLeft="4px solid"
-      borderColor={side === 'LONG' ? 'trading.long' : 'trading.short'}
-    >
+    <TradingSideCard side={side}>
       <VStack gap={2} align="stretch">
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>
@@ -259,7 +254,7 @@ const FuturesPositionCard = memo(({
         colorPalette="orange"
         isLoading={isReversing}
       />
-    </Box>
+    </TradingSideCard>
   );
 });
 
@@ -304,7 +299,11 @@ const FuturesPositionsPanelComponent = () => {
   if (!activeWalletId) return null;
 
   if (isLoadingPositions) {
-    return <EmptyState size="sm" title={t('common.loading')} />;
+    return (
+      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+        <Spinner size={MM.spinner.panel.size} />
+      </Flex>
+    );
   }
 
   if (openPositions.length === 0) return null;

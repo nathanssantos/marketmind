@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 13 callsites total. Audit strict-clean and gating CI.
 
+### Added — Trading position card primitive (v1.8 Track P)
+- **`<TradingSideCard side="LONG" | "SHORT">`** — extracted the side-coded position-card shell (the `<Box p={3} bg="bg.muted" borderRadius="md" borderLeft="4px solid" borderColor={isLong ? 'trading.long' : 'trading.short'}>` shape that lived in 3 places). Wraps the body in a primitive that owns the trading-side color cue.
+- **3 callsites migrated** — `PositionCard`, `OrderCard`, and the inner `FuturesPositionCard` inside `FuturesPositionsPanel.tsx` all reduce to `<TradingSideCard side={...}>{body}</TradingSideCard>`.
+- **`FuturesPositionsPanel` loading state fixed** — was misusing `<EmptyState size="sm" title={t('common.loading')} />` (EmptyState is for "nothing here", not "loading"). Replaced with the standard `<Spinner>` panel combo (`MM.spinner.panel`).
+
+Net: 12 fewer lines across the 3 migrated files, primitive scoped to `apps/electron/src/renderer/components/ui/` (uses trading.* tokens which are project-specific, so it stays out of `@marketmind/ui`).
+
 ## [1.7.0] - 2026-05-02
 
 **v1.7 release** — Phase-2 design-language sweep: every non-dialog surface (sidebars, chart panels, auth pages, chart toolbar, list rows) brought up to the v1.6 design language. v1.6 made the dialogs uniform; v1.7 extends that to the rest of the app so the whole experience reads as one design system, not a patchwork.
