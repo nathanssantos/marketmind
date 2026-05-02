@@ -144,7 +144,7 @@ export const GridPanel = memo((props: GridPanelProps) => {
                 </IconButton>
               </TooltipWrapper>
             )}
-            {(onMaximize || onRestore) && (
+            {(onMaximize ?? onRestore) && (
               <TooltipWrapper
                 label={isMaximized ? t('common.restore') : t('common.maximize')}
                 showArrow
