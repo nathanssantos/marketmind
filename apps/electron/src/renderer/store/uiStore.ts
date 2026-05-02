@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 import { usePreferencesStore } from './preferencesStore';
 
-export type TradingSidebarTab = 'orders' | 'portfolio';
-export type MarketSidebarTab = 'indicators';
-export type AutoTradingSidebarTab = 'watchers' | 'scalping' | 'logs';
-export type OrderFlowSidebarTab = 'dom' | 'metrics';
 export type OrdersFilterOption = 'all' | 'pending' | 'active' | 'filled' | 'closed' | 'cancelled' | 'expired';
 export type OrdersSortOption = 'newest' | 'oldest' | 'symbol-asc' | 'symbol-desc' | 'quantity-desc' | 'quantity-asc' | 'pnl-desc' | 'pnl-asc' | 'price-desc' | 'price-asc';
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
@@ -20,13 +16,12 @@ const syncUI = (key: string, value: unknown) => {
 };
 
 const HYDRATE_KEYS = [
-  'activeWalletId', 'tradingSidebarTab', 'marketSidebarOpen', 'marketSidebarTab', 'autoTradingSidebarOpen', 'autoTradingSidebarTab',
+  'activeWalletId',
   'ordersFilterStatus', 'ordersSortBy', 'performancePeriod', 'setupStatsPeriod',
   'portfolioFilterOption', 'portfolioSortBy', 'ordersViewMode', 'portfolioViewMode',
   'ordersTableSortKey', 'ordersTableSortDirection', 'portfolioTableSortKey', 'portfolioTableSortDirection',
   'watchersTableSortKey', 'watchersTableSortDirection', 'showEventRow', 'enableShiftAltOrderEntry',
   'isAnalyticsOpen', 'trailingStopPanelExpanded',
-  'orderFlowSidebarOpen', 'orderFlowSidebarTab',
 ] as const;
 
 interface UIState {
@@ -34,23 +29,6 @@ interface UIState {
 
   activeWalletId: string | null;
   setActiveWalletId: (id: string | null) => void;
-
-  tradingSidebarTab: TradingSidebarTab;
-  setTradingSidebarTab: (tab: TradingSidebarTab) => void;
-
-  marketSidebarOpen: boolean;
-  setMarketSidebarOpen: (open: boolean) => void;
-  toggleMarketSidebar: () => void;
-
-  marketSidebarTab: MarketSidebarTab;
-  setMarketSidebarTab: (tab: MarketSidebarTab) => void;
-
-  autoTradingSidebarOpen: boolean;
-  setAutoTradingSidebarOpen: (open: boolean) => void;
-  toggleAutoTradingSidebar: () => void;
-
-  autoTradingSidebarTab: AutoTradingSidebarTab;
-  setAutoTradingSidebarTab: (tab: AutoTradingSidebarTab) => void;
 
   ordersFilterStatus: OrdersFilterOption;
   setOrdersFilterStatus: (filter: OrdersFilterOption) => void;
@@ -102,13 +80,6 @@ interface UIState {
   setTrailingStopPanelExpanded: (expanded: boolean) => void;
   toggleTrailingStopPanel: () => void;
 
-  orderFlowSidebarOpen: boolean;
-  setOrderFlowSidebarOpen: (open: boolean) => void;
-  toggleOrderFlowSidebar: () => void;
-
-  orderFlowSidebarTab: OrderFlowSidebarTab;
-  setOrderFlowSidebarTab: (tab: OrderFlowSidebarTab) => void;
-
   isOrdersDialogOpen: boolean;
   setOrdersDialogOpen: (open: boolean) => void;
 }
@@ -125,31 +96,6 @@ export const useUIStore = create<UIState>()(
 
     activeWalletId: null,
     setActiveWalletId: (id) => { set({ activeWalletId: id }); syncUI('activeWalletId', id); },
-
-    tradingSidebarTab: 'portfolio',
-    setTradingSidebarTab: (tab) => { set({ tradingSidebarTab: tab }); syncUI('tradingSidebarTab', tab); },
-
-    marketSidebarOpen: false,
-    setMarketSidebarOpen: (open) => { set({ marketSidebarOpen: open }); syncUI('marketSidebarOpen', open); },
-    toggleMarketSidebar: () => set((state) => {
-      const val = !state.marketSidebarOpen;
-      syncUI('marketSidebarOpen', val);
-      return { marketSidebarOpen: val };
-    }),
-
-    marketSidebarTab: 'indicators',
-    setMarketSidebarTab: (tab) => { set({ marketSidebarTab: tab }); syncUI('marketSidebarTab', tab); },
-
-    autoTradingSidebarOpen: false,
-    setAutoTradingSidebarOpen: (open) => { set({ autoTradingSidebarOpen: open }); syncUI('autoTradingSidebarOpen', open); },
-    toggleAutoTradingSidebar: () => set((state) => {
-      const val = !state.autoTradingSidebarOpen;
-      syncUI('autoTradingSidebarOpen', val);
-      return { autoTradingSidebarOpen: val };
-    }),
-
-    autoTradingSidebarTab: 'watchers',
-    setAutoTradingSidebarTab: (tab) => { set({ autoTradingSidebarTab: tab }); syncUI('autoTradingSidebarTab', tab); },
 
     ordersFilterStatus: 'closed',
     setOrdersFilterStatus: (filter) => { set({ ordersFilterStatus: filter }); syncUI('ordersFilterStatus', filter); },
@@ -220,17 +166,6 @@ export const useUIStore = create<UIState>()(
       syncUI('trailingStopPanelExpanded', val);
       return { trailingStopPanelExpanded: val };
     }),
-
-    orderFlowSidebarOpen: false,
-    setOrderFlowSidebarOpen: (open) => { set({ orderFlowSidebarOpen: open }); syncUI('orderFlowSidebarOpen', open); },
-    toggleOrderFlowSidebar: () => set((state) => {
-      const val = !state.orderFlowSidebarOpen;
-      syncUI('orderFlowSidebarOpen', val);
-      return { orderFlowSidebarOpen: val };
-    }),
-
-    orderFlowSidebarTab: 'dom',
-    setOrderFlowSidebarTab: (tab) => { set({ orderFlowSidebarTab: tab }); syncUI('orderFlowSidebarTab', tab); },
 
     isOrdersDialogOpen: false,
     setOrdersDialogOpen: (open) => set({ isOrdersDialogOpen: open }),

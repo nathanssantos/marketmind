@@ -2,7 +2,6 @@ export { OrdersList } from './OrdersList';
 export { OrdersDialog } from './OrdersDialog';
 export { Portfolio } from './Portfolio';
 export { WalletManager } from './WalletManager';
-export { TradingSidebar } from './TradingSidebar';
 
 export { CreateWalletDialog } from './CreateWalletDialog';
 

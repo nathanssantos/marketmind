@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed — legacy sidebar components (v1.10 Track 7)
+- Deleted `<MarketSidebar>`, `<TradingSidebar>`, `<AutoTradingSidebar>`, `<OrderFlowSidebar>` and their re-exports. All four were unreachable from the toolbar after Track 6 (#421); no callsite outside their own dirs imported them.
+- The tab content files inside `MarketSidebar/tabs/` (WatchersTab, MarketIndicatorsTab, LogsTab, MarketIndicatorCharts, MarketIndicatorSections, MarketNoData) are kept — they're the bodies the v1.10 panel wrappers wrap.
+- `useUIStore` cleanup: dropped `tradingSidebarTab` / `setTradingSidebarTab`, `marketSidebarOpen` / `setMarketSidebarOpen` / `toggleMarketSidebar` / `marketSidebarTab` / `setMarketSidebarTab`, `autoTradingSidebarOpen` / `setAutoTradingSidebarOpen` / `toggleAutoTradingSidebar` / `autoTradingSidebarTab` / `setAutoTradingSidebarTab`, `orderFlowSidebarOpen` / `setOrderFlowSidebarOpen` / `toggleOrderFlowSidebar` / `orderFlowSidebarTab` / `setOrderFlowSidebarTab` and the corresponding type aliases (`TradingSidebarTab`, `MarketSidebarTab`, `AutoTradingSidebarTab`, `OrderFlowSidebarTab`). The `HYDRATE_KEYS` list also stripped of the corresponding pref keys.
+- `MainLayout` heavily simplified: drops the resizing logic, the `marketSidebarOpen` / `orderFlowSidebarOpen` / sidebar-width preferences, the `isTradingOpen` / `isAutoTradingOpen` / `onToggleTrading` / `onToggleAutoTrading` props (also removed from `App.tsx` consumer). Layout is now: `<Toolbar>` + `<ChartToolsToolbar>` + `<SymbolTabBar>` + `<ChartGrid>` + `<MinimizedPanelBar>` + `<LayoutTabBar>`.
+- `OrderFlowSidebar.test.tsx` removed; `uiStore.test.ts` had 15 sidebar-state tests removed (test count is now 2324, down from 2339; net delta = removed obsolete tests, no new failures).
+
 ### Removed — sidebar toggle buttons in toolbar (v1.10 Track 6)
 - Toolbar drops the four sidebar toggle buttons (`Market`, `Order Flow`, `Trading`, `Auto-Trading`). Their content is now exposed via the `+ Add panel` menu (Track 3): Market → `marketIndicators`, Order Flow → `orderFlowMetrics`, Trading → `ticket / checklist / orders / portfolio / positions`, Auto-Trading → `watchers / autoTradingSetup / autoTradingActivity`.
 - Kept: Screener, Backtest, Analytics buttons — these are dialogs (not sidebars), so they stay where they are. The screener could become a panel later but is out of scope for v1.10.
