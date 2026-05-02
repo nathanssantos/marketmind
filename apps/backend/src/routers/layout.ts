@@ -11,6 +11,13 @@ const AUDIT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 const sha256 = (input: string): string => createHash('sha256').update(input).digest('hex');
 
+// v1.10 starter templates (trading / autotrading / scalping) replaced the
+// old single / dual / quad presets. We accept either set so an existing
+// user's persisted-but-untouched-default layout still triggers the
+// overwrite guard, but new users (post-#423) match the new ids.
+const DEFAULT_PRESET_IDS_V1 = ['dual', 'quad', 'single'];
+const DEFAULT_PRESET_IDS_V2 = ['autotrading', 'scalping', 'trading'];
+
 const isDefaultLayoutData = (raw: string): boolean => {
   try {
     const parsed = JSON.parse(raw) as {
@@ -23,7 +30,9 @@ const isDefaultLayoutData = (raw: string): boolean => {
     if (tabs[0]?.id !== 'default' || tabs[0]?.symbol !== 'BTCUSDT') return false;
     if (presets.length !== 3) return false;
     const presetIds = presets.map((p) => p.id).sort();
-    return presetIds[0] === 'dual' && presetIds[1] === 'quad' && presetIds[2] === 'single';
+    const matches = (expected: string[]): boolean =>
+      presetIds[0] === expected[0] && presetIds[1] === expected[1] && presetIds[2] === expected[2];
+    return matches(DEFAULT_PRESET_IDS_V1) || matches(DEFAULT_PRESET_IDS_V2);
   } catch {
     return false;
   }

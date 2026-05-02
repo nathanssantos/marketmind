@@ -59,31 +59,92 @@ const createNamedPanel = (
   windowState: 'normal',
 });
 
+/**
+ * Starter layout templates surfaced both as the seed layouts for new users
+ * and as choices in the "New layout" dialog (LayoutTabBar). Each template
+ * builds its grid lazily so each call generates fresh panel ids — needed
+ * when the same template is instantiated more than once (e.g. user creates
+ * "Trading 2" from the Trading template).
+ */
+export type LayoutTemplateKey = 'empty' | 'trading' | 'autoTrading' | 'scalping';
+
+interface LayoutTemplate {
+  key: LayoutTemplateKey;
+  /** i18n key for the menu/select label. */
+  labelKey: string;
+  /** Default name when seeding the user's library (and prefill in the dialog). */
+  defaultName: string;
+  buildGrid: () => GridPanelConfig[];
+}
+
+export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
+  {
+    key: 'empty',
+    labelKey: 'layout.template.empty',
+    defaultName: 'Empty',
+    buildGrid: () => [createDefaultPanel('1h', { x: 0, y: 0, w: 24, h: 80 })],
+  },
+  {
+    key: 'trading',
+    labelKey: 'layout.template.trading',
+    defaultName: 'Trading',
+    buildGrid: () => [
+      createDefaultPanel('1h', { x: 0, y: 0, w: 16, h: 64 }),
+      createNamedPanel('ticket', { x: 16, y: 0, w: 8, h: 32 }),
+      createNamedPanel('checklist', { x: 16, y: 32, w: 8, h: 32 }),
+      createNamedPanel('positions', { x: 0, y: 64, w: 12, h: 32 }),
+      createNamedPanel('orders', { x: 12, y: 64, w: 12, h: 32 }),
+    ],
+  },
+  {
+    key: 'autoTrading',
+    labelKey: 'layout.template.autoTrading',
+    defaultName: 'Auto-Trading',
+    buildGrid: () => [
+      createDefaultPanel('1h', { x: 0, y: 0, w: 14, h: 48 }),
+      createNamedPanel('watchers', { x: 14, y: 0, w: 10, h: 48 }),
+      createNamedPanel('autoTradingSetup', { x: 0, y: 48, w: 10, h: 32 }),
+      createNamedPanel('autoTradingActivity', { x: 10, y: 48, w: 14, h: 32 }),
+      createNamedPanel('positions', { x: 0, y: 80, w: 24, h: 24 }),
+    ],
+  },
+  {
+    key: 'scalping',
+    labelKey: 'layout.template.scalping',
+    defaultName: 'Scalping',
+    buildGrid: () => [
+      createDefaultPanel('5m', { x: 0, y: 0, w: 12, h: 48 }),
+      createDefaultPanel('1m', { x: 12, y: 0, w: 12, h: 48 }),
+      createNamedPanel('ticket', { x: 0, y: 48, w: 8, h: 32 }),
+      createNamedPanel('orderFlowMetrics', { x: 8, y: 48, w: 8, h: 32 }),
+      createNamedPanel('positions', { x: 16, y: 48, w: 8, h: 32 }),
+    ],
+  },
+];
+
+const getTemplate = (key: LayoutTemplateKey): LayoutTemplate => {
+  const t = LAYOUT_TEMPLATES.find((x) => x.key === key);
+  if (!t) throw new Error(`Unknown layout template: ${key}`);
+  return t;
+};
+
 const DEFAULT_LAYOUTS: LayoutPreset[] = [
   {
-    id: 'single',
-    name: 'Single Chart',
-    grid: [createDefaultPanel('1h', { x: 0, y: 0, w: 24, h: 80 })],
+    id: 'trading',
+    name: 'Trading',
+    grid: getTemplate('trading').buildGrid(),
     order: 0,
   },
   {
-    id: 'dual',
-    name: 'Dual',
-    grid: [
-      createDefaultPanel('4h', { x: 0, y: 0, w: 12, h: 80 }),
-      createDefaultPanel('1h', { x: 12, y: 0, w: 12, h: 80 }),
-    ],
+    id: 'autotrading',
+    name: 'Auto-Trading',
+    grid: getTemplate('autoTrading').buildGrid(),
     order: 1,
   },
   {
-    id: 'quad',
-    name: 'Quad',
-    grid: [
-      createDefaultPanel('1d', { x: 0, y: 0, w: 12, h: 40 }),
-      createDefaultPanel('4h', { x: 12, y: 0, w: 12, h: 40 }),
-      createDefaultPanel('1h', { x: 0, y: 40, w: 12, h: 40 }),
-      createDefaultPanel('15m', { x: 12, y: 40, w: 12, h: 40 }),
-    ],
+    id: 'scalping',
+    name: 'Scalping',
+    grid: getTemplate('scalping').buildGrid(),
     order: 2,
   },
 ];
@@ -95,7 +156,8 @@ interface LayoutActions {
   updateTabSymbol: (tabId: string, symbol: string, marketType: MarketType) => void;
   reorderSymbolTabs: (tabIds: string[]) => void;
 
-  addLayout: (name: string) => void;
+  addLayout: (name: string, templateKey?: LayoutTemplateKey) => void;
+  duplicateLayout: (layoutId: string, newName?: string) => void;
   removeLayout: (layoutId: string) => void;
   setActiveLayout: (tabId: string, layoutId: string) => void;
   renameLayout: (layoutId: string, name: string) => void;
@@ -127,7 +189,7 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     id: 'default',
     symbol: 'BTCUSDT',
     marketType: 'FUTURES',
-    activeLayoutId: 'single',
+    activeLayoutId: 'trading',
     order: 0,
   }],
   activeSymbolTabId: 'default',
@@ -172,12 +234,25 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
       .filter((t): t is SymbolTab => t !== null),
   })),
 
-  addLayout: (name) => set(state => {
-    const id = generateId();
+  addLayout: (name, templateKey = 'empty') => set(state => {
+    const template = getTemplate(templateKey);
     const layout: LayoutPreset = {
-      id,
+      id: generateId(),
       name,
-      grid: [createDefaultPanel('1h', { x: 0, y: 0, w: 12, h: 20 })],
+      grid: template.buildGrid(),
+      order: state.layoutPresets.length,
+    };
+    return { layoutPresets: [...state.layoutPresets, layout] };
+  }),
+
+  duplicateLayout: (layoutId, newName) => set(state => {
+    const source = state.layoutPresets.find(l => l.id === layoutId);
+    if (!source) return state;
+    const layout: LayoutPreset = {
+      id: generateId(),
+      name: newName ?? `${source.name} (copy)`,
+      // Re-mint each panel id so the duplicate is independent of the source.
+      grid: source.grid.map(p => ({ ...p, id: generateId() })),
       order: state.layoutPresets.length,
     };
     return { layoutPresets: [...state.layoutPresets, layout] };
