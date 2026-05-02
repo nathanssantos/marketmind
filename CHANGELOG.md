@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-05-02
+
+**v1.8 release** — enforcement + last-mile cleanup. v1.6 made the dialogs uniform, v1.7 brought every other surface up to the same design language, and v1.8 turns those rules into something the codebase enforces (CI gate) instead of relying on review. Three implementation PRs (#406–#408). Tests stay at 2332/2332 throughout.
+
 ### Added — Panel audit gate (v1.8 Track A)
 - **`scripts/audit-panel-rules.mjs`** — companion to the existing dialog audit. Two rules:
   - `bespoke-record-row` — catches `<Box>` with the `borderWidth=1 borderColor=border borderRadius=md` shape outside the `<RecordRow>` primitive
