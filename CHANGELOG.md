@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — `+ Add panel` and `Organize grid` header menus (v1.10 Track 3)
+- **`<AddPanelMenu>`** — registry-driven `+` dropdown in the main toolbar. Replaces the v1-era chart-only `+` menu. Charts: one entry per timeframe (1m / 5m / 15m / 30m / 1h / 4h / 1d), multi-instance. Every other registered panel kind (Ticket, Checklist, Orders, Portfolio, Positions, Exposure, Indicators, MarketIndicators, MarketSections, Watchers, AutoTradingSetup, AutoTradingActivity, OrderFlowMetrics): single click adds the panel; greys out with a ✓ marker when already on the active layout.
+- **`<OrganizeGridMenu>`** — second header dropdown next to `+`. Three classic algorithms: Compact (snap-to-top-left preserving order), By columns (equal-width vertical strips), By rows (full-width horizontal stack). Skips minimized panels, preserves their geometry. Wires to the existing `updateGridLayout` store action.
+- 13 i18n keys added under `panels.*` (group labels, menu labels, panel titles for all registered kinds).
+- Named-panel `<GridPanel>` bodies still need to be wired (Tracks 4.1–4.6); `addNamedPanel` works today but the panels render as empty bare frames until their components are migrated from sidebars.
+
 ### Fixed — Settings dialog tab widths + bottom padding
 - **Settings tab content area now fills the available width.** Root cause: `<Tabs.Root orientation="vertical">` resolves to `display: flex` (per Chakra's Tabs recipe), and the inner `<Flex>` wrapper holding rail + content had no `flex-grow`, so it collapsed to its content's intrinsic width — the content area was sized to the rail (220px) instead of `100% - 220px`. Adding `flex={1}` on the inner Flex restores the layout.
 - **`ChartSettingsTab` Display Options switches** — were using `<Switch>{label}</Switch>` (label rendered inline next to the toggle), which left the right half of each row empty. Migrated each to the bible-correct `<FormRow label={...}><Switch /></FormRow>` shape so the label sits on the left and the toggle on the right of the row, with helper text under the label.
