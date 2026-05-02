@@ -39,7 +39,7 @@ const createDefaultPanel = (
 const findEmptySlot = (
   grid: GridPanelConfig[],
   size: { w: number; h: number },
-  cols = 24,
+  cols = 192,
 ): GridPosition => {
   const lowestY = grid.reduce(
     (max, p) => Math.max(max, p.gridPosition.y + p.gridPosition.h),
@@ -82,18 +82,18 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
     key: 'empty',
     labelKey: 'layout.template.empty',
     defaultName: 'Empty',
-    buildGrid: () => [createDefaultPanel('1h', { x: 0, y: 0, w: 24, h: 80 })],
+    buildGrid: () => [createDefaultPanel('1h', { x: 0, y: 0, w: 192, h: 80 })],
   },
   {
     key: 'trading',
     labelKey: 'layout.template.trading',
     defaultName: 'Trading',
     buildGrid: () => [
-      createDefaultPanel('1h', { x: 0, y: 0, w: 16, h: 64 }),
-      createNamedPanel('ticket', { x: 16, y: 0, w: 8, h: 32 }),
-      createNamedPanel('checklist', { x: 16, y: 32, w: 8, h: 32 }),
-      createNamedPanel('positions', { x: 0, y: 64, w: 12, h: 32 }),
-      createNamedPanel('orders', { x: 12, y: 64, w: 12, h: 32 }),
+      createDefaultPanel('1h', { x: 0, y: 0, w: 128, h: 64 }),
+      createNamedPanel('ticket', { x: 128, y: 0, w: 64, h: 32 }),
+      createNamedPanel('checklist', { x: 128, y: 32, w: 64, h: 32 }),
+      createNamedPanel('positions', { x: 0, y: 64, w: 96, h: 32 }),
+      createNamedPanel('orders', { x: 96, y: 64, w: 96, h: 32 }),
     ],
   },
   {
@@ -101,11 +101,11 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
     labelKey: 'layout.template.autoTrading',
     defaultName: 'Auto-Trading',
     buildGrid: () => [
-      createDefaultPanel('1h', { x: 0, y: 0, w: 14, h: 48 }),
-      createNamedPanel('watchers', { x: 14, y: 0, w: 10, h: 48 }),
-      createNamedPanel('autoTradingSetup', { x: 0, y: 48, w: 10, h: 32 }),
-      createNamedPanel('autoTradingActivity', { x: 10, y: 48, w: 14, h: 32 }),
-      createNamedPanel('positions', { x: 0, y: 80, w: 24, h: 24 }),
+      createDefaultPanel('1h', { x: 0, y: 0, w: 112, h: 48 }),
+      createNamedPanel('watchers', { x: 112, y: 0, w: 80, h: 48 }),
+      createNamedPanel('autoTradingSetup', { x: 0, y: 48, w: 80, h: 32 }),
+      createNamedPanel('autoTradingActivity', { x: 80, y: 48, w: 112, h: 32 }),
+      createNamedPanel('positions', { x: 0, y: 80, w: 192, h: 24 }),
     ],
   },
   {
@@ -113,11 +113,11 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
     labelKey: 'layout.template.scalping',
     defaultName: 'Scalping',
     buildGrid: () => [
-      createDefaultPanel('5m', { x: 0, y: 0, w: 12, h: 48 }),
-      createDefaultPanel('1m', { x: 12, y: 0, w: 12, h: 48 }),
-      createNamedPanel('ticket', { x: 0, y: 48, w: 8, h: 32 }),
-      createNamedPanel('orderFlowMetrics', { x: 8, y: 48, w: 8, h: 32 }),
-      createNamedPanel('positions', { x: 16, y: 48, w: 8, h: 32 }),
+      createDefaultPanel('5m', { x: 0, y: 0, w: 96, h: 48 }),
+      createDefaultPanel('1m', { x: 96, y: 0, w: 96, h: 48 }),
+      createNamedPanel('ticket', { x: 0, y: 48, w: 64, h: 32 }),
+      createNamedPanel('orderFlowMetrics', { x: 64, y: 48, w: 64, h: 32 }),
+      createNamedPanel('positions', { x: 128, y: 48, w: 64, h: 32 }),
     ],
   },
 ];
@@ -439,9 +439,10 @@ const migrateGridGranularity = (
   fromVersion: number,
 ): LayoutPreset[] => {
   if (fromVersion >= GRID_VERSION) return presets;
-  // v1 → v2: cols 12 → 24 (×2 horizontal), rowHeight 30 → 8 (×4 vertical
-  // gives a close visual match — panels end up ~7% taller, imperceptible).
-  const fx = 2;
+  // v1 → v2: cols 12 → 192 (×16 horizontal so column granularity matches
+  // rowHeight 8 visually), rowHeight 30 → 8 (×4 vertical gives close visual
+  // match — panels end up ~7% taller, imperceptible).
+  const fx = 16;
   const fy = 4;
   return presets.map((preset) => ({
     ...preset,
