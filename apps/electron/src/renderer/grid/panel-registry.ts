@@ -180,7 +180,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: AUTOTRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/AutoTrading/panels/WatchersPanel').then((m) => ({
+        default: m.WatchersPanel,
+      })),
   },
   autoTradingSetup: {
     kind: 'autoTradingSetup',
@@ -190,7 +193,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: AUTOTRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/AutoTrading/panels/AutoTradingSetupPanel').then((m) => ({
+        default: m.AutoTradingSetupPanel,
+      })),
   },
   autoTradingActivity: {
     kind: 'autoTradingActivity',
@@ -200,7 +206,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: AUTOTRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/AutoTrading/panels/AutoTradingActivityPanel').then((m) => ({
+        default: m.AutoTradingActivityPanel,
+      })),
   },
   orderFlowMetrics: {
     kind: 'orderFlowMetrics',

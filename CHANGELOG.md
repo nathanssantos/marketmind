@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — AutoTrading panels wired to grid (v1.10 Track 4.5)
+- **`watchers` panel** registered: `<WatchersPanel>` wraps the existing `<WatchersTab>` (suggestion cards + watchers table).
+- **`autoTradingSetup` panel** registered: `<AutoTradingSetupPanel>` wraps `<ScalpingDashboard>` with the same select-wallet guard the AutoTradingSidebar uses; reads active wallet via `useActiveWallet()` and active symbol from the layout store.
+- **`autoTradingActivity` panel** registered: `<AutoTradingActivityPanel>` wraps the existing `<LogsTab>`.
+
 ### Added — Market + OrderFlow panels wired to grid (v1.10 Tracks 4.4 + 4.6)
 - **`marketIndicators` panel** registered: `<MarketIndicatorsPanel>` wraps the existing `<MarketIndicatorsTab>` (FearGreed / BTC.D / MVRV / ETF / Funding / OI / Altcoin Season / ADX / Order Book / Funding Rates) so the user can pop the entire market dashboard onto the grid.
 - **`orderFlowMetrics` panel** registered: `<OrderFlowMetricsPanel>` wraps the existing `<OrderFlowMetrics>`, reading the active symbol from the layout store (`useLayoutStore(s => s.getActiveTab()?.symbol)`).
