@@ -129,6 +129,10 @@ export const DialogShell = ({
           w={'w' in sizeProps ? sizeProps.w : undefined}
           maxH={contentMaxH ?? '90vh'}
           h={bodyFill ? (contentMaxH ?? '90vh') : undefined}
+          // Allow inline dropdowns (Selects with usePortal=false inside
+          // dialogs) to render past the body's natural height. bodyFill
+          // dialogs keep their own clip via the inner overflow="hidden".
+          overflow={bodyFill ? undefined : 'visible'}
         >
           <DialogHeader
             px={MM.dialog.headerPadding.x}
@@ -172,7 +176,13 @@ export const DialogShell = ({
               {children}
             </DialogBody>
           ) : (
-            <DialogBody p={bodyPadding} overflowY="auto">
+            // overflow="visible" on the DialogBody so inline-portalled
+            // dropdowns (Selects with usePortal=false, used inside dialogs
+            // because Chakra's modal interact-outside captures portalled
+            // clicks) can extend past the body. The DialogContent itself
+            // is still bounded by `maxH={contentMaxH ?? '90vh'}` so the
+            // dropdown never escapes the dialog as a whole.
+            <DialogBody p={bodyPadding} overflow="visible">
               <Stack gap={MM.dialog.sectionGap}>{children}</Stack>
             </DialogBody>
           )}

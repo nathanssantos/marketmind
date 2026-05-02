@@ -66,6 +66,7 @@ export const ProfileTrailingStopSection = ({ actions }: ProfileTrailingStopSecti
             options={TRAILING_MODE_OPTIONS}
             onChange={(v) => setOv('trailingStopMode', v)}
             size="sm"
+            usePortal={false}
           />
         </OverrideRow>
         <OverrideRow
@@ -155,6 +156,7 @@ export const ProfileTrailingStopSection = ({ actions }: ProfileTrailingStopSecti
             options={TRAILING_DISTANCE_MODE_OPTIONS}
             onChange={(v) => setOv('trailingDistanceMode', v)}
             size="sm"
+            usePortal={false}
           />
         </OverrideRow>
         <OverrideRow
@@ -187,6 +189,7 @@ export const ProfileTrailingStopSection = ({ actions }: ProfileTrailingStopSecti
             options={ACTIVATION_MODE_OPTIONS}
             onChange={(v) => setOv('trailingActivationModeLong', v)}
             size="sm"
+            usePortal={false}
           />
         </OverrideRow>
         <OverrideRow
@@ -200,6 +203,7 @@ export const ProfileTrailingStopSection = ({ actions }: ProfileTrailingStopSecti
             options={ACTIVATION_MODE_OPTIONS}
             onChange={(v) => setOv('trailingActivationModeShort', v)}
             size="sm"
+            usePortal={false}
           />
         </OverrideRow>
         {renderBoolFilter('useAdaptiveTrailing', 'watcherManager.trailingStop.adaptiveMode')}
