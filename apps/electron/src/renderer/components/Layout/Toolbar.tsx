@@ -3,11 +3,7 @@ import { IconButton, Logo, ToggleIconButton, TooltipWrapper } from '@renderer/co
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LuActivity,
-  LuBookOpen,
-  LuBot,
   LuChartBar,
-  LuDollarSign,
   LuSquareArrowOutUpRight,
   LuFlaskConical,
   LuScanLine,
@@ -56,16 +52,12 @@ export interface ToolbarProps {
   marketType?: MarketType;
   onMarketTypeChange?: (marketType: MarketType) => void;
   timeframe: Timeframe;
-  isTradingOpen: boolean;
-  isAutoTradingOpen: boolean;
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
   showZoomControls?: boolean;
   rightExtra?: React.ReactNode;
   onSymbolChange: (symbol: string, marketType?: MarketType) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
-  onToggleTrading: () => void;
-  onToggleAutoTrading: () => void;
 }
 
 export const Toolbar = memo(({
@@ -73,27 +65,19 @@ export const Toolbar = memo(({
   marketType,
   onMarketTypeChange,
   timeframe,
-  isTradingOpen,
-  isAutoTradingOpen,
   showNewWindowButton = true,
   showSidebarButtons = true,
   showZoomControls = true,
   rightExtra,
   onSymbolChange,
   onTimeframeChange,
-  onToggleTrading,
-  onToggleAutoTrading,
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const { openChartWindow } = useChartWindows();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
 
-  const { marketSidebarOpen, toggleMarketSidebar, orderFlowSidebarOpen, toggleOrderFlowSidebar, isAnalyticsOpen, toggleAnalytics } = useUIStore(
+  const { isAnalyticsOpen, toggleAnalytics } = useUIStore(
     useShallow((state) => ({
-      marketSidebarOpen: state.marketSidebarOpen,
-      toggleMarketSidebar: state.toggleMarketSidebar,
-      orderFlowSidebarOpen: state.orderFlowSidebarOpen,
-      toggleOrderFlowSidebar: state.toggleOrderFlowSidebar,
       isAnalyticsOpen: state.isAnalyticsOpen,
       toggleAnalytics: state.toggleAnalytics,
     }))
@@ -188,26 +172,6 @@ export const Toolbar = memo(({
 
         {showSidebarButtons && (
           <HStack gap={1} flexShrink={0}>
-            <TooltipWrapper label={t('marketSidebar.title')} showArrow>
-              <ToggleIconButton
-                active={marketSidebarOpen}
-                size="2xs"
-                aria-label={t('marketSidebar.title')}
-                onClick={toggleMarketSidebar}
-              >
-                <LuActivity />
-              </ToggleIconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('orderFlow.title')} showArrow>
-              <ToggleIconButton
-                active={orderFlowSidebarOpen}
-                size="2xs"
-                aria-label={t('orderFlow.title')}
-                onClick={toggleOrderFlowSidebar}
-              >
-                <LuBookOpen />
-              </ToggleIconButton>
-            </TooltipWrapper>
             <TooltipWrapper label={t('screener.title')} showArrow>
               <ToggleIconButton
                 active={isScreenerOpen}
@@ -257,26 +221,6 @@ export const Toolbar = memo(({
                 onClick={toggleAnalytics}
               >
                 <LuChartBar />
-              </ToggleIconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
-              <ToggleIconButton
-                active={isTradingOpen}
-                size="2xs"
-                aria-label={t('trading.sidebar.title')}
-                onClick={onToggleTrading}
-              >
-                <LuDollarSign />
-              </ToggleIconButton>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('autoTrading.sidebar.title')} showArrow>
-              <ToggleIconButton
-                active={isAutoTradingOpen}
-                size="2xs"
-                aria-label={t('autoTrading.sidebar.title')}
-                onClick={onToggleAutoTrading}
-              >
-                <LuBot />
               </ToggleIconButton>
             </TooltipWrapper>
           </HStack>

@@ -189,12 +189,8 @@ const MainLayoutComponent = ({
           marketType={marketType}
           onMarketTypeChange={onMarketTypeChange}
           timeframe={timeframe}
-          isTradingOpen={isTradingOpen}
-          isAutoTradingOpen={isAutoTradingOpen}
           onSymbolChange={onSymbolChange}
           onTimeframeChange={onTimeframeChange}
-          onToggleTrading={onToggleTrading}
-          onToggleAutoTrading={onToggleAutoTrading}
         />
         <Flex
           position="relative"
