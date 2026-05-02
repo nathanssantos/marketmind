@@ -2770,5 +2770,62 @@
   "aiTrading": {
     "confidence": "Confidence",
     "urgency": "Urgency"
+  },
+  "panels": {
+    "groups": {
+      "charts": "Charts",
+      "trading": "Trading",
+      "market": "Market",
+      "autoTrading": "Auto-Trading",
+      "orderFlow": "Order Flow"
+    },
+    "addPanel": "Add panel",
+    "alreadyOnGrid": "Already on grid",
+    "organize": "Organize grid",
+    "organizeCompact": "Compact",
+    "organizeColumns": "By columns",
+    "organizeRows": "By rows",
+    "chart": {
+      "title": "Chart"
+    },
+    "ticket": {
+      "title": "Ticket"
+    },
+    "checklist": {
+      "title": "Checklist"
+    },
+    "orders": {
+      "title": "Orders"
+    },
+    "portfolio": {
+      "title": "Portfolio"
+    },
+    "positions": {
+      "title": "Positions"
+    },
+    "exposure": {
+      "title": "Exposure & Margin"
+    },
+    "indicators": {
+      "title": "Indicators"
+    },
+    "marketIndicators": {
+      "title": "Market Indicators"
+    },
+    "marketSections": {
+      "title": "Market Sections"
+    },
+    "watchers": {
+      "title": "Watchers"
+    },
+    "autoTradingSetup": {
+      "title": "Setup Detection"
+    },
+    "autoTradingActivity": {
+      "title": "Auto-Trading Activity"
+    },
+    "orderFlowMetrics": {
+      "title": "Order Flow Metrics"
+    }
   }
 }
