@@ -157,7 +157,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: MARKET_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/MarketIndicatorsPanel').then((m) => ({
+        default: m.MarketIndicatorsPanel,
+      })),
   },
   marketSections: {
     kind: 'marketSections',
@@ -207,7 +210,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: AUTOTRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/OrderFlow/panels/OrderFlowMetricsPanel').then((m) => ({
+        default: m.OrderFlowMetricsPanel,
+      })),
   },
 };
 

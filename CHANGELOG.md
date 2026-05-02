@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Market + OrderFlow panels wired to grid (v1.10 Tracks 4.4 + 4.6)
+- **`marketIndicators` panel** registered: `<MarketIndicatorsPanel>` wraps the existing `<MarketIndicatorsTab>` (FearGreed / BTC.D / MVRV / ETF / Funding / OI / Altcoin Season / ADX / Order Book / Funding Rates) so the user can pop the entire market dashboard onto the grid.
+- **`orderFlowMetrics` panel** registered: `<OrderFlowMetricsPanel>` wraps the existing `<OrderFlowMetrics>`, reading the active symbol from the layout store (`useLayoutStore(s => s.getActiveTab()?.symbol)`).
+
 ### Added — Trading panels (Orders / Portfolio / Positions) wired to grid (v1.10 Track 4.2)
 - **`<NamedPanelRenderer>`** — new component in `Layout/` that lazy-loads a registered named panel via `getPanelDef(kind).load()` and wraps it in `<GridPanel mode="bare">`. Right-click on the panel body fires `onClose` → removes the panel from the active layout.
 - **3 trading panel kinds wired** in the registry: `orders` → `<OrdersPanel>` (existing `<OrdersList>`), `portfolio` → `<PortfolioPanel>` (existing `<Portfolio>` minus the sidebar's quickTradeHeader), `positions` → `<PositionsPanel>` (existing `<FuturesPositionsPanel>`).
