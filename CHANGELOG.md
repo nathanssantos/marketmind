@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Grid scrolls vertically + panels can exceed viewport (v1.10 Track 2)
+- **Outer grid container** now uses `overflowY="auto"` (when no panel is maximized) so the user can stack more panels than fit in one screen and scroll between them. Previously the container was `overflow="hidden"` and the row height was dynamically calculated to fit everything in the visible area, which made larger workspaces impossible.
+- **Row height fixed** at `DEFAULT_ROW_HEIGHT` (30px). Each `h` unit in panel positions now corresponds to a real, stable pixel height. Panels can be resized larger than the viewport and scroll into view.
+- Maximized panels still take the full visible viewport (`overflowY="hidden"` while maximized) — geometry computed against the container's current size.
+
 ### Added — `+ Add panel` and `Organize grid` header menus (v1.10 Track 3)
 - **`<AddPanelMenu>`** — registry-driven `+` dropdown in the main toolbar. Replaces the v1-era chart-only `+` menu. Charts: one entry per timeframe (1m / 5m / 15m / 30m / 1h / 4h / 1d), multi-instance. Every other registered panel kind (Ticket, Checklist, Orders, Portfolio, Positions, Exposure, Indicators, MarketIndicators, MarketSections, Watchers, AutoTradingSetup, AutoTradingActivity, OrderFlowMetrics): single click adds the panel; greys out with a ✓ marker when already on the active layout.
 - **`<OrganizeGridMenu>`** — second header dropdown next to `+`. Three classic algorithms: Compact (snap-to-top-left preserving order), By columns (equal-width vertical strips), By rows (full-width horizontal stack). Skips minimized panels, preserves their geometry. Wires to the existing `updateGridLayout` store action.
