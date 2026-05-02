@@ -2818,6 +2818,9 @@
     "autoTradingActivity": {
       "title": "Auto-Trading Activity"
     },
+    "orderBook": {
+      "title": "Order Book"
+    },
     "orderFlowMetrics": {
       "title": "Order Flow Metrics"
     }

@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import type { IconType } from 'react-icons';
 import {
   LuActivity,
+  LuBookOpen,
   LuChartCandlestick,
   LuClipboardList,
   LuListChecks,
@@ -188,6 +189,19 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     load: () =>
       import('@renderer/components/AutoTrading/panels/AutoTradingActivityPanel').then((m) => ({
         default: m.AutoTradingActivityPanel,
+      })),
+  },
+  orderBook: {
+    kind: 'orderBook',
+    group: 'orderFlow',
+    titleKey: 'panels.orderBook.title',
+    icon: LuBookOpen,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: AUTOTRADING_DEFAULT,
+    load: () =>
+      import('@renderer/components/OrderFlow/panels/OrderBookPanel').then((m) => ({
+        default: m.OrderBookPanel,
       })),
   },
   orderFlowMetrics: {

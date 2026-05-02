@@ -35,6 +35,7 @@ export type PanelKind =
   | 'autoTradingSetup'
   | 'autoTradingActivity'
   // Order Flow group
+  | 'orderBook'
   | 'orderFlowMetrics';
 
 interface BaseGridPanel {
