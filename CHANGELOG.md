@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed — sidebar toggle buttons in toolbar (v1.10 Track 6)
+- Toolbar drops the four sidebar toggle buttons (`Market`, `Order Flow`, `Trading`, `Auto-Trading`). Their content is now exposed via the `+ Add panel` menu (Track 3): Market → `marketIndicators`, Order Flow → `orderFlowMetrics`, Trading → `ticket / checklist / orders / portfolio / positions`, Auto-Trading → `watchers / autoTradingSetup / autoTradingActivity`.
+- Kept: Screener, Backtest, Analytics buttons — these are dialogs (not sidebars), so they stay where they are. The screener could become a panel later but is out of scope for v1.10.
+- `Toolbar`'s prop API trimmed: `isTradingOpen / isAutoTradingOpen / onToggleTrading / onToggleAutoTrading` removed. Both consumers (`MainLayout`, `ChartWindow`) updated.
+- The sidebar components themselves (`MarketSidebar`, `TradingSidebar`, `AutoTradingSidebar`, `OrderFlowSidebar`) are still in the codebase and reachable via remaining store flags — just no longer surfaced from the toolbar. Full sidebar removal lands as a follow-up cleanup once panel parity has been validated in production.
+
 ### Removed — orphan panel-kind registry entries (v1.10 cleanup)
 - Dropped `exposure`, `indicators`, `marketSections` from `PanelKind` and the registry — none had a clean 1:1 mapping to existing sidebar content. `marketIndicators` already covers what would have lived in the dropped market sections; `exposure` (Margin/Risk display) remains a future addition once a real `<MarginInfoPanel>` is sourced from live exchange data; `indicators` overlapped with the toolbar's `<IndicatorTogglePopover>` and didn't merit a duplicate panel slot. Their i18n keys also removed.
 - Chart panel's registry `load` is now a clearly-named `CHART_LOAD_UNUSED` placeholder — chart panels render via `<ChartGridPanel>` directly, not through `<NamedPanelRenderer>`.
