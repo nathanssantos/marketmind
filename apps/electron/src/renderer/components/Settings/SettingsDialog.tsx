@@ -66,6 +66,7 @@ export const SettingsDialog = ({
       title={t('settings.title')}
       description={t('settings.dialogDescription')}
       bodyPadding={0}
+      bodyFill
       hideFooter
     >
       <Tabs.Root
@@ -73,8 +74,11 @@ export const SettingsDialog = ({
               onValueChange={(e) => isSettingsTab(e.value) && setActiveTab(e.value)}
               orientation="vertical"
               variant="subtle"
+              flex={1}
+              minH={0}
+              display="flex"
             >
-              <Flex h="calc(90vh - 64px)" maxH="calc(90vh - 64px)">
+              <Flex flex={1} minH={0} minW={0}>
                 <Box
                   w="220px"
                   flexShrink={0}
@@ -130,48 +134,54 @@ export const SettingsDialog = ({
                   </Stack>
                 </Box>
 
-                <Box flex={1} overflowY="auto" px={5} pt={4} pb={8} data-testid="settings-content">
-                  <Suspense fallback={
-                    <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-                      <Spinner size={MM.spinner.panel.size} />
-                    </Flex>
-                  }>
-                    {/* Tabs.Content wrappers stay so aria-controls on the
-                        triggers still resolves to a panel id; lazy-loaded
-                        bodies render only when active to skip mount cost. */}
-                    <Tabs.Content value="account" pt={0} w="100%">
-                      {activeTab === 'account' && <AccountTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="security" pt={0} w="100%">
-                      {activeTab === 'security' && <SecurityTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="notifications" pt={0} w="100%">
-                      {activeTab === 'notifications' && <NotificationsTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="general" pt={0} w="100%">
-                      {activeTab === 'general' && <GeneralTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="chart" pt={0} w="100%">
-                      {activeTab === 'chart' && (
-                        <ChartSettingsTab
-                          config={advancedConfig}
-                          onConfigChange={onAdvancedConfigChange}
-                        />
-                      )}
-                    </Tabs.Content>
-                    <Tabs.Content value="autoTrading" pt={0} w="100%">
-                      {activeTab === 'autoTrading' && <AutoTradingTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="indicators" pt={0} w="100%">
-                      {activeTab === 'indicators' && <IndicatorsTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="data" pt={0} w="100%">
-                      {activeTab === 'data' && <DataTab />}
-                    </Tabs.Content>
-                    <Tabs.Content value="about" pt={0} w="100%">
-                      {activeTab === 'about' && <AboutTab />}
-                    </Tabs.Content>
-                  </Suspense>
+                <Box flex={1} overflowY="auto" data-testid="settings-content">
+                  {/* pb on the scroll container itself is dropped by WebKit
+                      when content overflows (last item flush against the
+                      scroll edge). Moving padding INSIDE the scroll content
+                      so it scrolls along with the rest. */}
+                  <Box px={6} pt={4} pb={10}>
+                    <Suspense fallback={
+                      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
+                        <Spinner size={MM.spinner.panel.size} />
+                      </Flex>
+                    }>
+                      {/* Tabs.Content wrappers stay so aria-controls on the
+                          triggers still resolves to a panel id; lazy-loaded
+                          bodies render only when active to skip mount cost. */}
+                      <Tabs.Content value="account" pt={0} w="100%">
+                        {activeTab === 'account' && <AccountTab />}
+                      </Tabs.Content>
+                      <Tabs.Content value="security" pt={0} w="100%">
+                        {activeTab === 'security' && <SecurityTab />}
+                      </Tabs.Content>
+                      <Tabs.Content value="notifications" pt={0} w="100%">
+                        {activeTab === 'notifications' && <NotificationsTab />}
+                      </Tabs.Content>
+                      <Tabs.Content value="general" pt={0} w="100%">
+                        {activeTab === 'general' && <GeneralTab />}
+                      </Tabs.Content>
+                      <Tabs.Content value="chart" pt={0} w="100%">
+                        {activeTab === 'chart' && (
+                          <ChartSettingsTab
+                            config={advancedConfig}
+                            onConfigChange={onAdvancedConfigChange}
+                          />
+                        )}
+                      </Tabs.Content>
+                      <Tabs.Content value="autoTrading" pt={0} w="100%">
+                        {activeTab === 'autoTrading' && <AutoTradingTab />}
+                      </Tabs.Content>
+                      <Tabs.Content value="indicators" pt={0} w="100%">
+                        {activeTab === 'indicators' && <IndicatorsTab />}
+                      </Tabs.Content>
+                      <Tabs.Content value="data" pt={0} w="100%">
+                        {activeTab === 'data' && <DataTab />}
+                      </Tabs.Content>
+                      <Tabs.Content value="about" pt={0} w="100%">
+                        {activeTab === 'about' && <AboutTab />}
+                      </Tabs.Content>
+                    </Suspense>
+                  </Box>
               </Box>
             </Flex>
       </Tabs.Root>
