@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Trading panels (Orders / Portfolio / Positions) wired to grid (v1.10 Track 4.2)
+- **`<NamedPanelRenderer>`** — new component in `Layout/` that lazy-loads a registered named panel via `getPanelDef(kind).load()` and wraps it in `<GridPanel mode="bare">`. Right-click on the panel body fires `onClose` → removes the panel from the active layout.
+- **3 trading panel kinds wired** in the registry: `orders` → `<OrdersPanel>` (existing `<OrdersList>`), `portfolio` → `<PortfolioPanel>` (existing `<Portfolio>` minus the sidebar's quickTradeHeader), `positions` → `<PositionsPanel>` (existing `<FuturesPositionsPanel>`).
+- **`ChartGrid`** now renders both chart and named panels — chart panels keep their existing path; named panels go through `<NamedPanelRenderer>`. Picking "Trading → Orders / Portfolio / Positions" from the `+ Add panel` menu now actually shows the body (was empty before).
+- Remaining panel kinds (Ticket, Checklist, Exposure, Indicators, MarketIndicators, MarketSections, Watchers, AutoTradingSetup, AutoTradingActivity, OrderFlowMetrics) still grey out as `NOT_YET_REGISTERED` until subsequent tracks wire their bodies.
+
 ### Changed — Grid scrolls vertically + panels can exceed viewport (v1.10 Track 2)
 - **Outer grid container** now uses `overflowY="auto"` (when no panel is maximized) so the user can stack more panels than fit in one screen and scroll between them. Previously the container was `overflow="hidden"` and the row height was dynamically calculated to fit everything in the visible area, which made larger workspaces impossible.
 - **Row height fixed** at `DEFAULT_ROW_HEIGHT` (30px). Each `h` unit in panel positions now corresponds to a real, stable pixel height. Panels can be resized larger than the viewport and scroll into view.

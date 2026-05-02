@@ -39,11 +39,16 @@ export interface PanelDef {
   /** Default size when added to the grid via the `+` menu. */
   defaultLayout: { w: number; h: number };
   /**
-   * Lazy-loaded panel body component. Track 1 only registers the `chart`
-   * kind; the v1.10 migration tracks (4.1–4.6) progressively register the
-   * named panels.
+   * Lazy-loaded panel body component. Receives `panelId` so panels that
+   * need to update their own grid entry can pass it back to store
+   * actions; most panel bodies just ignore it and read from a store
+   * directly.
    */
-  load: () => Promise<{ default: ComponentType<{ panelId: string }> }>;
+  load: () => Promise<{ default: ComponentType<PanelBodyProps> }>;
+}
+
+export interface PanelBodyProps {
+  panelId: string;
 }
 
 const TRADING_DEFAULT = { w: 4, h: 12 };
@@ -93,7 +98,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: TRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/Trading/panels/OrdersPanel').then((m) => ({
+        default: m.OrdersPanel,
+      })),
   },
   portfolio: {
     kind: 'portfolio',
@@ -103,7 +111,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: TRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/Trading/panels/PortfolioPanel').then((m) => ({
+        default: m.PortfolioPanel,
+      })),
   },
   positions: {
     kind: 'positions',
@@ -113,7 +124,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: TRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/Trading/panels/PositionsPanel').then((m) => ({
+        default: m.PositionsPanel,
+      })),
   },
   exposure: {
     kind: 'exposure',
