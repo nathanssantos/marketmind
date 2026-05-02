@@ -75,17 +75,30 @@ Dropdown menu with classic layout algorithms applied to whatever's currently in 
 
 Each algorithm reads the current panel list and computes new `{x, y, w, h}` for each. No new panels added; no panels removed.
 
-## Right-click behavior
+## Headers + right-click behavior
 
-### Non-chart panels
-Right-click anywhere on the panel header (not the body, since some bodies have their own context menus like Orders) opens a context menu:
-- **Close** — removes the panel from the grid (the user can re-add via `+`)
-- **(Future)** — Resize presets, pin/unpin, etc.
+### Chart panels — header WITH close button
+Chart panels keep a header bar with title (symbol/timeframe) + close `X`. Right-click on a chart is reserved for chart actions (drawing tools, snapshot, etc.) — NOT panel-close.
 
-`onContextMenu` with `preventDefault()` on Electron + web. Context menu uses `<Menu>` from the design system.
+This matches today's chart UX. Closing a chart uses the existing `X`.
 
-### Charts
-Existing right-click context menu (drawing tools, snapshot, etc.) stays — chart's own UX, not the panel-close pattern.
+### Non-chart panels — NO header, right-click closes
+Every other panel (Ticket, Checklist, Orders, Portfolio, Positions, Exposure, Watchers, Indicators, etc.) renders **without a header bar at all** — just the component itself in a dark frame.
+
+Closing them: **right-click anywhere on the panel body** opens a context menu with a single **Close** item. `onContextMenu` with `preventDefault()` on Electron + web. Removed panel returns to the `+ Add panel` menu.
+
+#### Drag handle for headerless panels
+`react-grid-layout` typically uses the panel header as the drag handle. With no header on non-chart panels, the drag handle is the **panel body** itself (or a designated `data-grid-handle` zone). Internal interactive elements (buttons, inputs, scroll areas) need to stop drag propagation so the user can interact without accidentally moving the panel. Resize handles still come from `react-grid-layout`.
+
+#### Why no header
+- Maximum content density — no chrome eating vertical space
+- Visual cohesion with the chart canvas (chart has a header because it has multiple symbols + intervals to surface; other panels have a single fixed identity already obvious from content)
+- Simpler primitive — `<GridPanel>` for non-chart is just a dark border + bg + right-click handler; no header layout to maintain
+- Right-click is a discoverable affordance once the user learns it (and the `+` menu's "Close" hint can teach it)
+
+### `<GridPanel>` primitive — two modes
+- `<GridPanel mode="chart" title onClose>` — header with title + X
+- `<GridPanel mode="bare" onClose>` — no header; right-click anywhere fires `onClose`
 
 ## Grid changes
 
@@ -109,11 +122,10 @@ Resize handle stops clamping at viewport bounds. A 2000px-tall chart is allowed.
 Audit: which existing surfaces need re-toning? Probably a new semantic token to allow theme flexibility.
 
 ### Panel framing
-New `<GridPanel>` primitive:
-- Header bar: `<GridPanelHeader title actions>` with optional close button (or rely on right-click)
-- Body: scrollable area with the panel's component
-- Border: matches chart panel border
-- Resize handle: inherited from `react-grid-layout`
+New `<GridPanel>` primitive with two modes:
+- **`mode="chart"`** — header bar with title + close `X`, body slot. Used only by chart panels (single panel type).
+- **`mode="bare"`** — no header, just the dark frame + body. Used by every other panel. Right-click anywhere fires `onClose`. Drag handle = panel body itself (with `data-grid-handle`); interactive children stop propagation.
+- Both modes share: dark background (probably `bg.panel`), border matching chart, resize handle from `react-grid-layout`.
 
 ### Header cleanup
 Remove from main header:
@@ -141,13 +153,13 @@ Add to main header:
     group: 'charts' | 'trading' | 'market' | 'autoTrading' | 'orderFlow';
   }
   ```
-- New `<GridPanel>` primitive in `@renderer/components/ui/grid-panel.tsx`:
-  - Dark bg via `bg.panel` (or new token)
-  - Header with title + optional actions slot
-  - Right-click handler on header → onClose callback
-  - Body slot with scroll
+- New `<GridPanel>` primitive in `@renderer/components/ui/grid-panel.tsx` with two modes:
+  - `mode="chart"` — header (title + close X) + body
+  - `mode="bare"` — no header; right-click anywhere on the panel body opens a context menu with "Close"
+  - Both: dark bg (`bg.panel`), border, resize handle inherited from `react-grid-layout`
+  - Drag handle: chart mode uses header; bare mode uses body with `data-grid-handle` (interactive children stop propagation)
 - Wire to `react-grid-layout` (extend `useLayoutStore`)
-- Tests: cardinality enforcement, registry lookup, default layout
+- Tests: cardinality enforcement, registry lookup, default layout, right-click close in bare mode (chart mode preserves right-click for drawing tools)
 
 ### Track 2 — Grid scroll + sizing
 - Configure `react-grid-layout`:
@@ -171,9 +183,11 @@ Each migration: extract the existing sidebar tab contents into a panel, register
 - 4.5 — Auto-Trading: Watchers + Setup Detection + Activity
 - 4.6 — Order Flow: Metrics
 
-### Track 5 — Right-click close
-- `<GridPanel>` header `onContextMenu` → context menu with Close
-- Test on Electron + web (preventDefault matters)
+### Track 5 — Right-click close (bare panels only)
+- `<GridPanel mode="bare">` `onContextMenu` on the body → context menu with Close
+- Chart panels keep their existing right-click (drawing tools, snapshot) — chart context menu unchanged
+- Test on Electron + web (`preventDefault()` matters); ensure interactive children inside bare panels don't accidentally trigger close
+- Tooltip / hint discoverability: when a panel is greyed in the `+ Add panel` menu, tooltip says "Right-click the panel to close"
 
 ### Track 6 — Layout migration / rollout
 - One-shot migration: existing user with sidebar prefs → equivalent panel set in their default layout
