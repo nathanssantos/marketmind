@@ -4,7 +4,6 @@ import { useUIStore } from './uiStore';
 describe('uiStore', () => {
   beforeEach(() => {
     useUIStore.setState({
-      tradingSidebarTab: 'portfolio',
       ordersFilterStatus: 'pending',
       ordersSortBy: 'newest',
       performancePeriod: 'all',
@@ -12,30 +11,6 @@ describe('uiStore', () => {
     });
   });
 
-  describe('tradingSidebarTab', () => {
-    it('should initialize with portfolio tab', () => {
-      const state = useUIStore.getState();
-      expect(state.tradingSidebarTab).toBe('portfolio');
-    });
-
-    it('should update to orders tab', () => {
-      const { setTradingSidebarTab } = useUIStore.getState();
-      setTradingSidebarTab('orders');
-      expect(useUIStore.getState().tradingSidebarTab).toBe('orders');
-    });
-
-    it('should update to portfolio tab', () => {
-      const { setTradingSidebarTab } = useUIStore.getState();
-      setTradingSidebarTab('portfolio');
-      expect(useUIStore.getState().tradingSidebarTab).toBe('portfolio');
-    });
-
-    it('should update to scalping tab', () => {
-      const { setTradingSidebarTab } = useUIStore.getState();
-      setTradingSidebarTab('scalping');
-      expect(useUIStore.getState().tradingSidebarTab).toBe('scalping');
-    });
-  });
 
   describe('activeWalletId', () => {
     it('should initialize with null', () => {
@@ -154,7 +129,6 @@ describe('uiStore', () => {
     it('should expose all setter functions', () => {
       const state = useUIStore.getState();
       expect(typeof state.setActiveWalletId).toBe('function');
-      expect(typeof state.setTradingSidebarTab).toBe('function');
       expect(typeof state.setOrdersFilterStatus).toBe('function');
       expect(typeof state.setPerformancePeriod).toBe('function');
       expect(typeof state.setSetupStatsPeriod).toBe('function');
@@ -171,7 +145,6 @@ describe('uiStore', () => {
     it('should expose all state properties', () => {
       const state = useUIStore.getState();
       expect(state.activeWalletId).toBeDefined();
-      expect(state.tradingSidebarTab).toBeDefined();
       expect(state.ordersFilterStatus).toBeDefined();
       expect(state.performancePeriod).toBeDefined();
       expect(state.setupStatsPeriod).toBeDefined();
@@ -379,47 +352,6 @@ describe('uiStore', () => {
       setEnableShiftAltOrderEntry(true);
       setEnableShiftAltOrderEntry(false);
       expect(useUIStore.getState().enableShiftAltOrderEntry).toBe(false);
-    });
-  });
-
-  describe('autoTradingSidebarOpen', () => {
-    beforeEach(() => {
-      useUIStore.setState({ autoTradingSidebarOpen: false });
-    });
-
-    it('starts closed by default', () => {
-      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(false);
-    });
-
-    it('toggleAutoTradingSidebar flips between open and closed', () => {
-      const { toggleAutoTradingSidebar } = useUIStore.getState();
-      toggleAutoTradingSidebar();
-      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(true);
-      toggleAutoTradingSidebar();
-      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(false);
-    });
-
-    it('setAutoTradingSidebarOpen forces a specific value', () => {
-      const { setAutoTradingSidebarOpen } = useUIStore.getState();
-      setAutoTradingSidebarOpen(true);
-      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(true);
-      setAutoTradingSidebarOpen(false);
-      expect(useUIStore.getState().autoTradingSidebarOpen).toBe(false);
-    });
-  });
-
-  describe('autoTradingSidebarTab', () => {
-    beforeEach(() => {
-      useUIStore.setState({ autoTradingSidebarTab: 'watchers' });
-    });
-
-    it('defaults to watchers', () => {
-      expect(useUIStore.getState().autoTradingSidebarTab).toBe('watchers');
-    });
-
-    it.each(['watchers', 'scalping', 'logs'] as const)('accepts %s', (tab) => {
-      useUIStore.getState().setAutoTradingSidebarTab(tab);
-      expect(useUIStore.getState().autoTradingSidebarTab).toBe(tab);
     });
   });
 
