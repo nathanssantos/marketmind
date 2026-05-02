@@ -6,7 +6,7 @@ import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChartGridPanel } from './ChartGridPanel';
 import type { GridPanelConfig } from '@shared/types/layout';
-import { DEFAULT_GRID_COLS, DEFAULT_ROW_HEIGHT, GRID_MARGIN, GRID_CONTAINER_PADDING } from '@shared/types/layout';
+import { DEFAULT_GRID_COLS, DEFAULT_ROW_HEIGHT, GRID_MARGIN, GRID_CONTAINER_PADDING, isChartPanel } from '@shared/types/layout';
 
 const buildLayoutItem = (panel: GridPanelConfig) => ({
   i: panel.id,
@@ -135,13 +135,15 @@ function ChartGridComponent() {
         >
           {panelsToRender.map(panel => (
             <Box key={panel.id} h="100%">
-              <ChartGridPanel
-                panelConfig={panel}
-                symbol={activeTab.symbol}
-                marketType={activeTab.marketType}
-                layoutId={activeLayout.id}
-                isSinglePanel={isSinglePanel}
-              />
+              {isChartPanel(panel) && (
+                <ChartGridPanel
+                  panelConfig={panel}
+                  symbol={activeTab.symbol}
+                  marketType={activeTab.marketType}
+                  layoutId={activeLayout.id}
+                  isSinglePanel={isSinglePanel}
+                />
+              )}
             </Box>
           ))}
         </GridLayout>

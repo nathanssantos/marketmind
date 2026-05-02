@@ -76,7 +76,10 @@ const ScoreBadgePair = ({
 export const ChecklistSection = memo(({ symbol, interval, marketType }: ChecklistSectionProps) => {
   const { t } = useTranslation();
   const { getDefaultProfile, isLoadingProfiles } = useTradingProfiles();
-  const focusedInterval = useLayoutStore((s) => s.getFocusedPanel()?.timeframe);
+  const focusedInterval = useLayoutStore((s) => {
+    const panel = s.getFocusedPanel();
+    return panel?.kind === 'chart' ? panel.timeframe : undefined;
+  });
   const [expanded, setExpanded] = useState(false);
 
   const effectiveInterval = focusedInterval ?? interval;

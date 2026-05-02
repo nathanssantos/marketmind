@@ -3,12 +3,16 @@ import type {
   SymbolTab,
   LayoutPreset,
   GridPanelConfig,
+  ChartPanelConfig,
+  NamedPanelConfig,
   LayoutState,
   GridPosition,
   PanelWindowState,
   ChartType,
+  PanelKind,
 } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
+import { getPanelDef } from '@renderer/grid/panel-registry';
 import { usePreferencesStore } from './preferencesStore';
 import { trpc } from '@renderer/services/trpc';
 
@@ -17,10 +21,39 @@ const generateId = (): string => `${Date.now()}-${Math.random().toString(36).sli
 const createDefaultPanel = (
   timeframe: string,
   gridPosition: GridPosition,
-): GridPanelConfig => ({
+): ChartPanelConfig => ({
   id: generateId(),
+  kind: 'chart',
   timeframe,
   chartType: 'kline',
+  gridPosition,
+  windowState: 'normal',
+});
+
+/**
+ * v1.10 Track 1 — find a free vertical slot for a new panel (default-layout
+ * dropped via the `+ Add panel` menu). Stacks below the lowest existing
+ * panel by default; consumers can drag elsewhere afterwards.
+ */
+const findEmptySlot = (
+  grid: GridPanelConfig[],
+  size: { w: number; h: number },
+  cols = 12,
+): GridPosition => {
+  const lowestY = grid.reduce(
+    (max, p) => Math.max(max, p.gridPosition.y + p.gridPosition.h),
+    0,
+  );
+  const x = Math.max(0, Math.min(cols - size.w, 0));
+  return { x, y: lowestY, w: size.w, h: size.h };
+};
+
+const createNamedPanel = (
+  kind: Exclude<PanelKind, 'chart'>,
+  gridPosition: GridPosition,
+): NamedPanelConfig => ({
+  id: generateId(),
+  kind,
   gridPosition,
   windowState: 'normal',
 });
@@ -71,7 +104,11 @@ interface LayoutActions {
   setPanelWindowState: (layoutId: string, panelId: string, state: PanelWindowState) => void;
   updatePanelConfig: (layoutId: string, panelId: string, updates: Partial<GridPanelConfig>) => void;
   addPanel: (layoutId: string, timeframe: string) => void;
+  /** v1.10 — add a single-instance named panel (Ticket, Checklist, etc.) by kind. No-ops if the kind is already on this layout (cardinality enforcement). */
+  addNamedPanel: (layoutId: string, kind: Exclude<PanelKind, 'chart'>) => void;
   removePanel: (layoutId: string, panelId: string) => void;
+  /** v1.10 — does this layout already contain a panel of this kind? Used by `+ Add panel` menu to grey-out single-instance entries. */
+  hasPanelKind: (layoutId: string, kind: PanelKind) => boolean;
 
   setFocusedPanel: (panelId: string | null) => void;
 
@@ -201,8 +238,13 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
   updatePanelConfig: (layoutId, panelId, updates) => set(state => ({
     layoutPresets: state.layoutPresets.map(l =>
       l.id === layoutId
-        ? { ...l, grid: l.grid.map(p => p.id === panelId ? { ...p, ...updates } : p) }
-        : l
+        ? {
+            ...l,
+            grid: l.grid.map((p): GridPanelConfig =>
+              p.id === panelId ? ({ ...p, ...updates } as GridPanelConfig) : p,
+            ),
+          }
+        : l,
     ),
   })),
 
@@ -214,6 +256,19 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     ),
   })),
 
+  addNamedPanel: (layoutId, kind) => set(state => {
+    const layout = state.layoutPresets.find(l => l.id === layoutId);
+    if (!layout) return state;
+    if (layout.grid.some(p => p.kind === kind)) return state;
+    const def = getPanelDef(kind);
+    const slot = findEmptySlot(layout.grid, def.defaultLayout);
+    return {
+      layoutPresets: state.layoutPresets.map(l =>
+        l.id === layoutId ? { ...l, grid: [...l.grid, createNamedPanel(kind, slot)] } : l,
+      ),
+    };
+  }),
+
   removePanel: (layoutId, panelId) => set(state => ({
     layoutPresets: state.layoutPresets.map(l =>
       l.id === layoutId
@@ -222,21 +277,36 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     ),
   })),
 
+  hasPanelKind: (layoutId, kind) => {
+    const layout = get().layoutPresets.find(l => l.id === layoutId);
+    return !!layout?.grid.some(p => p.kind === kind);
+  },
+
   setFocusedPanel: (panelId) => set({ focusedPanelId: panelId }),
 
   setPanelTimeframe: (layoutId, panelId, timeframe) => set(state => ({
     layoutPresets: state.layoutPresets.map(l =>
       l.id === layoutId
-        ? { ...l, grid: l.grid.map(p => p.id === panelId ? { ...p, timeframe } : p) }
-        : l
+        ? {
+            ...l,
+            grid: l.grid.map((p): GridPanelConfig =>
+              p.id === panelId && p.kind === 'chart' ? { ...p, timeframe } : p,
+            ),
+          }
+        : l,
     ),
   })),
 
   setPanelChartType: (layoutId, panelId, chartType) => set(state => ({
     layoutPresets: state.layoutPresets.map(l =>
       l.id === layoutId
-        ? { ...l, grid: l.grid.map(p => p.id === panelId ? { ...p, chartType } : p) }
-        : l
+        ? {
+            ...l,
+            grid: l.grid.map((p): GridPanelConfig =>
+              p.id === panelId && p.kind === 'chart' ? { ...p, chartType } : p,
+            ),
+          }
+        : l,
     ),
   })),
 
