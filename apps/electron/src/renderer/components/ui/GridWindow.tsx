@@ -9,13 +9,9 @@ export type GridWindowState = 'normal' | 'minimized' | 'maximized';
 interface GridWindowProps {
   id: string;
   windowState: GridWindowState;
-  /**
-   * @deprecated Kept for prop compatibility; the focus border is no longer
-   * drawn. focusedPanelId is still tracked so the Checklist can follow
-   * whichever chart the user clicked last.
-   */
-  isFocused?: boolean;
-  /** @deprecated Kept for prop compatibility; the focus border is no longer drawn. */
+  /** Charts keep the focused-panel accent border so the user can see which chart drives timeframe / chart-type / indicator actions. */
+  isFocused: boolean;
+  /** Hide the focus border in single-panel layouts (no other chart to choose between). */
   showFocusBorder?: boolean;
   header: ReactNode;
   children: ReactNode;
@@ -29,6 +25,8 @@ interface GridWindowProps {
 function GridWindowComponent({
   id,
   windowState,
+  isFocused,
+  showFocusBorder = true,
   header,
   children,
   onFocus,
@@ -62,7 +60,7 @@ function GridWindowComponent({
       direction="column"
       h="100%"
       borderWidth="1px"
-      borderColor="border"
+      borderColor={isFocused && showFocusBorder ? 'accent.solid' : 'border'}
       borderRadius="sm"
       overflow="hidden"
       onMouseDown={handleFocus}
