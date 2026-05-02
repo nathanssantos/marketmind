@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed — orphan panel-kind registry entries (v1.10 cleanup)
+- Dropped `exposure`, `indicators`, `marketSections` from `PanelKind` and the registry — none had a clean 1:1 mapping to existing sidebar content. `marketIndicators` already covers what would have lived in the dropped market sections; `exposure` (Margin/Risk display) remains a future addition once a real `<MarginInfoPanel>` is sourced from live exchange data; `indicators` overlapped with the toolbar's `<IndicatorTogglePopover>` and didn't merit a duplicate panel slot. Their i18n keys also removed.
+- Chart panel's registry `load` is now a clearly-named `CHART_LOAD_UNUSED` placeholder — chart panels render via `<ChartGridPanel>` directly, not through `<NamedPanelRenderer>`.
+- Net effect: `+ Add panel` menu now shows only panel kinds that actually render a body when selected. No more grey ✓ markers on items that had no working backing component.
+
 ### Added — Ticket + Checklist panels wired to grid (v1.10 Track 4.1)
 - **`ticket` panel** registered: `<TicketPanel>` wraps the existing `<QuickTradeToolbar>` quick-trade ticket. Reads active symbol + market type from the layout store so switching symbol tabs retargets the ticket (per the user's clarification: layouts save panels; tabs only re-point them at the new symbol).
 - **`checklist` panel** registered: `<ChecklistPanel>` wraps the existing `<ChecklistSection>` (trading checklist for the active symbol). Falls back to '1h' interval when no chart is focused.
