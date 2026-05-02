@@ -5,6 +5,7 @@ import 'react-grid-layout/css/styles.css';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChartGridPanel } from './ChartGridPanel';
+import { NamedPanelRenderer } from './NamedPanelRenderer';
 import type { GridPanelConfig } from '@shared/types/layout';
 import { DEFAULT_GRID_COLS, DEFAULT_ROW_HEIGHT, GRID_MARGIN, GRID_CONTAINER_PADDING, isChartPanel } from '@shared/types/layout';
 
@@ -132,11 +133,17 @@ function ChartGridComponent() {
         >
           {panelsToRender.map(panel => (
             <Box key={panel.id} h="100%">
-              {isChartPanel(panel) && (
+              {isChartPanel(panel) ? (
                 <ChartGridPanel
                   panelConfig={panel}
                   symbol={activeTab.symbol}
                   marketType={activeTab.marketType}
+                  layoutId={activeLayout.id}
+                  isSinglePanel={isSinglePanel}
+                />
+              ) : (
+                <NamedPanelRenderer
+                  panelConfig={panel}
                   layoutId={activeLayout.id}
                   isSinglePanel={isSinglePanel}
                 />
