@@ -46,6 +46,13 @@ export interface DialogShellProps {
   bodyPadding?: number | string;
   /** When set, body becomes scrollable up to this height (typical: `90vh`). */
   contentMaxH?: string;
+  /**
+   * When true, the body becomes a flex column that fills available height
+   * (no auto-scroll on the body itself). Use this when the consumer manages
+   * its own scrollable region inside (e.g. SettingsDialog with vertical
+   * Tabs). Default is `false` — the body scrolls if children overflow.
+   */
+  bodyFill?: boolean;
   children: ReactNode;
 }
 
@@ -78,6 +85,7 @@ export const DialogShell = ({
   hideCloseButton = false,
   bodyPadding = MM.dialog.bodyPadding,
   contentMaxH,
+  bodyFill = false,
   children,
 }: DialogShellProps) => {
   const { t } = useTranslation();
@@ -120,6 +128,7 @@ export const DialogShell = ({
           maxW={sizeProps.maxW}
           w={'w' in sizeProps ? sizeProps.w : undefined}
           maxH={contentMaxH ?? '90vh'}
+          h={bodyFill ? (contentMaxH ?? '90vh') : undefined}
         >
           <DialogHeader
             px={MM.dialog.headerPadding.x}
@@ -158,9 +167,15 @@ export const DialogShell = ({
             </DialogCloseTrigger>
           )}
 
-          <DialogBody p={bodyPadding} overflowY="auto">
-            <Stack gap={MM.dialog.sectionGap}>{children}</Stack>
-          </DialogBody>
+          {bodyFill ? (
+            <DialogBody p={bodyPadding} display="flex" flexDirection="column" overflow="hidden" minH={0}>
+              {children}
+            </DialogBody>
+          ) : (
+            <DialogBody p={bodyPadding} overflowY="auto">
+              <Stack gap={MM.dialog.sectionGap}>{children}</Stack>
+            </DialogBody>
+          )}
 
           {!hideFooter && (
             <DialogFooter

@@ -11,7 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings tab content area now fills the available width.** Root cause: `<Tabs.Root orientation="vertical">` resolves to `display: flex` (per Chakra's Tabs recipe), and the inner `<Flex>` wrapper holding rail + content had no `flex-grow`, so it collapsed to its content's intrinsic width — the content area was sized to the rail (220px) instead of `100% - 220px`. Adding `flex={1}` on the inner Flex restores the layout.
 - **`ChartSettingsTab` Display Options switches** — were using `<Switch>{label}</Switch>` (label rendered inline next to the toggle), which left the right half of each row empty. Migrated each to the bible-correct `<FormRow label={...}><Switch /></FormRow>` shape so the label sits on the left and the toggle on the right of the row, with helper text under the label.
 - **`GeneralTab` Theme button group** — `<HStack>` had no `w="100%"`, so the Light/Dark buttons collapsed to ~150px wide despite each having `flex={1}`. Added `w="100%"` so the buttons split the full row width.
-- **Settings content padding** — bumped horizontal padding from `px=5` (20px) to `px=6` (24px) and bottom padding from `pb=8` (32px) to `pb=10` (40px) for more breathing room when scrolled to the end of a long tab.
+- **Settings content padding** — bumped horizontal padding from `px=5` (20px) to `px=6` (24px) and bottom padding from `pb=8` (32px) to `pb=10` (40px). The `pb` was previously being eaten by the WebKit scroll-container behavior (last item flush against the scroll edge) — moved padding INSIDE the scroll container so it scrolls along with content.
+
+### Added — `<DialogShell>` `bodyFill` mode
+- New `bodyFill?: boolean` prop on `<DialogShell>`. When true, the body becomes a flex column that fills available height (`overflow: hidden`, no inner Stack wrapper) so the consumer manages its own scrollable region inside.
+- When `bodyFill` is true, `DialogContent` also gets `h={contentMaxH ?? '90vh'}` (in addition to the existing `maxH`), so the dialog stays at a consistent height regardless of how short the active tab's content is — no more dialog "shrinking" when the user switches to a small tab like General/About/Notifications.
+- Migrated `SettingsDialog` to use `bodyFill`. Replaced the brittle `h="calc(90vh - 64px)"` (which assumed a fixed 64px header height and over-estimated the body's available space, causing the dialog body to scroll instead of just the inner content) with `flex={1} minH={0}` on the inner `<Flex>`. Now small tabs (General/Notifications/About) and large tabs (Security/Chart/Data) all behave consistently — only the inner content area scrolls, the rail stays put.
 
 ## [1.8.0] - 2026-05-02
 
