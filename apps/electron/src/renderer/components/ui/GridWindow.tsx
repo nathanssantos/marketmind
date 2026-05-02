@@ -9,7 +9,14 @@ export type GridWindowState = 'normal' | 'minimized' | 'maximized';
 interface GridWindowProps {
   id: string;
   windowState: GridWindowState;
-  isFocused: boolean;
+  /**
+   * @deprecated Kept for prop compatibility; the focus border is no longer
+   * drawn. focusedPanelId is still tracked so the Checklist can follow
+   * whichever chart the user clicked last.
+   */
+  isFocused?: boolean;
+  /** @deprecated Kept for prop compatibility; the focus border is no longer drawn. */
+  showFocusBorder?: boolean;
   header: ReactNode;
   children: ReactNode;
   onFocus: (id: string) => void;
@@ -17,13 +24,11 @@ interface GridWindowProps {
   onMaximize: (id: string) => void;
   onRestore: (id: string) => void;
   onClose?: (id: string) => void;
-  showFocusBorder?: boolean;
 }
 
 function GridWindowComponent({
   id,
   windowState,
-  isFocused,
   header,
   children,
   onFocus,
@@ -31,7 +36,6 @@ function GridWindowComponent({
   onMaximize,
   onRestore,
   onClose,
-  showFocusBorder = true,
 }: GridWindowProps) {
   const isMaximized = windowState === 'maximized';
 
@@ -58,7 +62,7 @@ function GridWindowComponent({
       direction="column"
       h="100%"
       borderWidth="1px"
-      borderColor={isFocused && showFocusBorder ? 'accent.solid' : 'border'}
+      borderColor="border"
       borderRadius="sm"
       overflow="hidden"
       onMouseDown={handleFocus}

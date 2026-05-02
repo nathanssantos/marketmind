@@ -84,14 +84,6 @@ vi.mock('./LeveragePopover', () => ({
   },
 }));
 
-const checklistSectionRender = vi.fn();
-vi.mock('../Trading/ChecklistSection', () => ({
-  ChecklistSection: ({ symbol, interval, marketType }: { symbol: string; interval: string; marketType: string }) => {
-    checklistSectionRender(symbol, interval, marketType);
-    return <div data-testid="checklist-section" data-symbol={symbol} data-interval={interval} data-market={marketType} />;
-  },
-}));
-
 import { QuickTradeActions } from './QuickTradeToolbar';
 
 const renderActions = (props: Partial<React.ComponentProps<typeof QuickTradeActions>> = {}) =>
@@ -101,7 +93,6 @@ const renderActions = (props: Partial<React.ComponentProps<typeof QuickTradeActi
         <QuickTradeActions
           symbol="BTCUSDT"
           marketType="FUTURES"
-          interval="1h"
           {...props}
         />
       </ColorModeProvider>
@@ -401,7 +392,7 @@ describe('QuickTradeToolbar — Cancel Orders', () => {
   });
 });
 
-describe('QuickTradeToolbar — Grid Orders / Trailing Stop / Checklist sub-components', () => {
+describe('QuickTradeToolbar — Grid Orders / Trailing Stop sub-components', () => {
   it('renders GridOrderPopover with the action-row trigger inside the advanced section', async () => {
     const user = userEvent.setup();
     renderActions();
@@ -426,13 +417,7 @@ describe('QuickTradeToolbar — Grid Orders / Trailing Stop / Checklist sub-comp
     expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
   });
 
-  it('always renders ChecklistSection (independent of the advanced toggle)', () => {
-    renderActions({ interval: '15m' });
-    expect(checklistSectionRender).toHaveBeenCalledWith('BTCUSDT', '15m', 'FUTURES');
-    expect(screen.getByTestId('checklist-section')).toHaveAttribute('data-symbol', 'BTCUSDT');
-  });
-
-  it('hides Reverse / Close / Cancel rows for SPOT but still renders Grid + Trailing + Checklist', async () => {
+  it('hides Reverse / Close / Cancel rows for SPOT but still renders Grid + Trailing', async () => {
     const user = userEvent.setup();
     renderActions({ marketType: 'SPOT' });
 
@@ -443,7 +428,6 @@ describe('QuickTradeToolbar — Grid Orders / Trailing Stop / Checklist sub-comp
     expect(screen.queryByText('futures.cancelOrders')).not.toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.gridOrders')).toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
-    expect(screen.getByTestId('checklist-section')).toBeInTheDocument();
   });
 });
 

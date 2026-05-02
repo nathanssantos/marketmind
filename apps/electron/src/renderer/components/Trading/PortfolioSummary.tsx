@@ -1,13 +1,9 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { IconButton } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
 interface PortfolioSummaryProps {
-  expanded: boolean;
-  onToggle: () => void;
   positionsCount: number;
   profitableCount: number;
   losingCount: number;
@@ -24,8 +20,6 @@ interface PortfolioSummaryProps {
 }
 
 const PortfolioSummaryComponent = ({
-  expanded,
-  onToggle,
   positionsCount,
   profitableCount,
   losingCount,
@@ -43,10 +37,9 @@ const PortfolioSummaryComponent = ({
   const { t } = useTranslation();
 
   return (
-    <Box p={3} bg="bg.muted" borderRadius="md">
+    <Box p={3} bg="bg.surface" borderRadius="md">
       <Stack gap={2.5} fontSize="xs">
-        {expanded && (
-          <>
+        <>
             <Flex justify="space-between" align="center">
               <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
               <Flex gap={3} align="center">
@@ -142,39 +135,7 @@ const PortfolioSummaryComponent = ({
                 </Stack>
               </>
             )}
-          </>
-        )}
-
-        {!expanded && (
-          <Stack gap={1}>
-            <Flex justify="space-between" align="center">
-              <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
-              <Text fontWeight="medium" color={totalPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
-                {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
-              </Text>
-            </Flex>
-            <Flex justify="space-between" align="center">
-              <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
-              <Text fontWeight="medium">
-                {currency} {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({((totalExposure / walletBalance) * 100).toFixed(1)}%)
-              </Text>
-            </Flex>
-          </Stack>
-        )}
-
-        <Flex justify="center">
-          <IconButton
-            aria-label={expanded ? 'Collapse' : 'Expand'}
-            size="2xs"
-            variant="ghost"
-            colorPalette="gray"
-            h="14px"
-            w="100%"
-            onClick={onToggle}
-          >
-            {expanded ? <LuChevronUp /> : <LuChevronDown />}
-          </IconButton>
-        </Flex>
+        </>
       </Stack>
     </Box>
   );

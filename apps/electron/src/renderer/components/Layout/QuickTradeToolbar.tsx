@@ -17,7 +17,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuMinus, LuPlus, LuShield, LuX } from 'react-icons/lu';
 import { PiBroom } from 'react-icons/pi';
-import { ChecklistSection } from '../Trading/ChecklistSection';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
@@ -121,21 +120,16 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
 });
 BuySellButtons.displayName = 'BuySellButtons';
 
-export type QuickTradeMode = 'sidebar' | 'chart';
-
 interface QuickTradeActionsProps {
   symbol: string;
   marketType?: MarketType;
-  interval?: string;
   showDragHandle?: boolean;
   onDragStart?: (e: React.MouseEvent) => void;
   isDragging?: boolean;
-  onMenuAction?: (mode: QuickTradeMode) => void;
-  currentMode?: QuickTradeMode;
   onClose?: () => void;
 }
 
-export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interval = '1h', showDragHandle, onDragStart, isDragging, onMenuAction, currentMode, onClose }: QuickTradeActionsProps) => {
+export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDragHandle, onDragStart, isDragging, onClose }: QuickTradeActionsProps) => {
   if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('QuickTradeToolbar');
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
@@ -332,8 +326,9 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
                 {pct}%
               </Button>
             ))}
+            {marketType === 'FUTURES' && <LeveragePopover symbol={symbol} />}
           </HStack>
-          {(onMenuAction ?? onClose) && (
+          {onClose && (
             <Menu.Root>
               <Menu.Trigger asChild>
                 <IconButton size="2xs" variant="outline" color="fg.muted" aria-label="Options" flexShrink={0} h="20px" minW="20px">
@@ -342,18 +337,9 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
               </Menu.Trigger>
               <Menu.Positioner>
                 <Menu.Content minW="160px">
-                  {onMenuAction && currentMode && (
-                    <Menu.Item value="toggle-mode" onClick={() => onMenuAction(currentMode === 'sidebar' ? 'chart' : 'sidebar')}>
-                      {currentMode === 'sidebar'
-                        ? t('chart.quickTrade.moveToChart')
-                        : t('chart.quickTrade.moveToSidebar')}
-                    </Menu.Item>
-                  )}
-                  {onClose && (
-                    <Menu.Item value="close" onClick={onClose}>
-                      {t('common.close')}
-                    </Menu.Item>
-                  )}
+                  <Menu.Item value="close" onClick={onClose}>
+                    {t('common.close')}
+                  </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>
             </Menu.Root>
@@ -387,7 +373,6 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           >
             <LuPlus />
           </IconButton>
-          {marketType === 'FUTURES' && <LeveragePopover symbol={symbol} />}
         </HStack>
 
         <HStack gap={1.5}>
@@ -421,8 +406,6 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
             } />
           </VStack>
         )}
-
-        <ChecklistSection symbol={symbol} interval={interval} marketType={marketType} />
       </VStack>
 
       <ConfirmationDialog
@@ -532,13 +515,10 @@ QuickTradeActions.displayName = 'QuickTradeActions';
 interface QuickTradeToolbarProps {
   symbol: string;
   marketType?: MarketType;
-  interval?: string;
-  onMenuAction?: (mode: QuickTradeMode) => void;
-  currentMode?: QuickTradeMode;
   onClose?: () => void;
 }
 
-export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', interval, onMenuAction, currentMode, onClose }: QuickTradeToolbarProps) => {
+export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onClose }: QuickTradeToolbarProps) => {
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -621,12 +601,9 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', interva
         <QuickTradeActions
           symbol={symbol}
           marketType={marketType}
-          interval={interval}
           showDragHandle
           onDragStart={handleDragStart}
           isDragging={isDragging}
-          onMenuAction={onMenuAction}
-          currentMode={currentMode}
           onClose={onClose}
         />
       </Box>

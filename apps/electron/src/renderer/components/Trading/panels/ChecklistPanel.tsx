@@ -25,7 +25,7 @@ export const ChecklistPanel = () => {
   const interval = focusedInterval ?? DEFAULT_INTERVAL;
 
   return (
-    <Box h="100%" overflowY="auto" p={3}>
+    <Box h="100%" overflowY="auto" p={1.5}>
       <ChecklistSection symbol={symbol} interval={interval} marketType={marketType} />
     </Box>
   );

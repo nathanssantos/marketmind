@@ -81,7 +81,17 @@ export interface LayoutState {
   focusedPanelId: string | null;
 }
 
-export const DEFAULT_GRID_COLS = 12;
-export const DEFAULT_ROW_HEIGHT = 30;
+export const DEFAULT_GRID_COLS = 24;
+export const DEFAULT_ROW_HEIGHT = 8;
 export const GRID_MARGIN: [number, number] = [4, 4];
 export const GRID_CONTAINER_PADDING: [number, number] = [0, 0];
+
+/**
+ * Bump this when the grid coordinate scale changes. Persisted state below
+ * this version is migrated on hydrate (see `layoutStore.hydrateLayoutStore`).
+ *
+ * v1 → v2 (2026-05): cols 12 → 24, rowHeight 30 → 8 (Chakra-friendly
+ * multiples of 8 for finer drag/resize granularity). Migration scales x/w
+ * by 2 and y/h by 4 so panels stay roughly the same visual size.
+ */
+export const GRID_VERSION = 2;

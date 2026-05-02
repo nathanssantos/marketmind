@@ -301,7 +301,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
   const hasAnyResults = groups.long.length + groups.short.length + groups.both.length > 0;
 
   return (
-    <Stack gap={0.5} align="stretch" pt={0.5} borderTop="1px solid" borderColor="border">
+    <Stack gap={0.5} align="stretch">
       <Flex
         align="center"
         gap={1}

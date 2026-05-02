@@ -11,6 +11,7 @@ import type {
   ChartType,
   PanelKind,
 } from '@shared/types/layout';
+import { GRID_VERSION } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
 import { getPanelDef } from '@renderer/grid/panel-registry';
 import { usePreferencesStore } from './preferencesStore';
@@ -38,7 +39,7 @@ const createDefaultPanel = (
 const findEmptySlot = (
   grid: GridPanelConfig[],
   size: { w: number; h: number },
-  cols = 12,
+  cols = 24,
 ): GridPosition => {
   const lowestY = grid.reduce(
     (max, p) => Math.max(max, p.gridPosition.y + p.gridPosition.h),
@@ -62,15 +63,15 @@ const DEFAULT_LAYOUTS: LayoutPreset[] = [
   {
     id: 'single',
     name: 'Single Chart',
-    grid: [createDefaultPanel('1h', { x: 0, y: 0, w: 12, h: 20 })],
+    grid: [createDefaultPanel('1h', { x: 0, y: 0, w: 24, h: 80 })],
     order: 0,
   },
   {
     id: 'dual',
     name: 'Dual',
     grid: [
-      createDefaultPanel('4h', { x: 0, y: 0, w: 6, h: 20 }),
-      createDefaultPanel('1h', { x: 6, y: 0, w: 6, h: 20 }),
+      createDefaultPanel('4h', { x: 0, y: 0, w: 12, h: 80 }),
+      createDefaultPanel('1h', { x: 12, y: 0, w: 12, h: 80 }),
     ],
     order: 1,
   },
@@ -78,10 +79,10 @@ const DEFAULT_LAYOUTS: LayoutPreset[] = [
     id: 'quad',
     name: 'Quad',
     grid: [
-      createDefaultPanel('1d', { x: 0, y: 0, w: 6, h: 10 }),
-      createDefaultPanel('4h', { x: 6, y: 0, w: 6, h: 10 }),
-      createDefaultPanel('1h', { x: 0, y: 10, w: 6, h: 10 }),
-      createDefaultPanel('15m', { x: 6, y: 10, w: 6, h: 10 }),
+      createDefaultPanel('1d', { x: 0, y: 0, w: 12, h: 40 }),
+      createDefaultPanel('4h', { x: 12, y: 0, w: 12, h: 40 }),
+      createDefaultPanel('1h', { x: 0, y: 40, w: 12, h: 40 }),
+      createDefaultPanel('15m', { x: 12, y: 40, w: 12, h: 40 }),
     ],
     order: 2,
   },
@@ -248,13 +249,17 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     ),
   })),
 
-  addPanel: (layoutId, timeframe) => set(state => ({
-    layoutPresets: state.layoutPresets.map(l =>
-      l.id === layoutId
-        ? { ...l, grid: [...l.grid, createDefaultPanel(timeframe, { x: 0, y: 0, w: 6, h: 10 })] }
-        : l
-    ),
-  })),
+  addPanel: (layoutId, timeframe) => set(state => {
+    const layout = state.layoutPresets.find(l => l.id === layoutId);
+    if (!layout) return state;
+    const def = getPanelDef('chart');
+    const slot = findEmptySlot(layout.grid, def.defaultLayout);
+    return {
+      layoutPresets: state.layoutPresets.map(l =>
+        l.id === layoutId ? { ...l, grid: [...l.grid, createDefaultPanel(timeframe, slot)] } : l,
+      ),
+    };
+  }),
 
   addNamedPanel: (layoutId, kind) => set(state => {
     const layout = state.layoutPresets.find(l => l.id === layoutId);
@@ -340,22 +345,58 @@ const persistLayout = (): void => {
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
     const { symbolTabs, activeSymbolTabId, layoutPresets } = useLayoutStore.getState();
-    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, layoutPresets });
+    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, layoutPresets, gridVersion: GRID_VERSION });
     trpc.layout.save.mutate({ data }).catch(() => {});
   }, 500);
 };
 
 useLayoutStore.subscribe(persistLayout);
 
+const scalePosition = (pos: GridPosition, fx: number, fy: number): GridPosition => ({
+  x: Math.round(pos.x * fx),
+  y: Math.round(pos.y * fy),
+  w: Math.round(pos.w * fx),
+  h: Math.round(pos.h * fy),
+});
+
+const migrateGridGranularity = (
+  presets: LayoutPreset[],
+  fromVersion: number,
+): LayoutPreset[] => {
+  if (fromVersion >= GRID_VERSION) return presets;
+  // v1 → v2: cols 12 → 24 (×2 horizontal), rowHeight 30 → 8 (×4 vertical
+  // gives a close visual match — panels end up ~7% taller, imperceptible).
+  const fx = 2;
+  const fy = 4;
+  return presets.map((preset) => ({
+    ...preset,
+    grid: preset.grid.map((panel) => ({
+      ...panel,
+      gridPosition: scalePosition(panel.gridPosition, fx, fy),
+      ...(panel.savedGridPosition && {
+        savedGridPosition: scalePosition(panel.savedGridPosition, fx, fy),
+      }),
+    })),
+  }));
+};
+
 export const hydrateLayoutStore = async (): Promise<void> => {
   try {
     const saved = await trpc.layout.get.query();
 
     if (saved?.symbolTabs || saved?.activeSymbolTabId || saved?.layoutPresets) {
+      const savedVersion =
+        typeof (saved as { gridVersion?: number }).gridVersion === 'number'
+          ? (saved as { gridVersion: number }).gridVersion
+          : 1;
+      const migratedPresets = saved.layoutPresets
+        ? migrateGridGranularity(saved.layoutPresets, savedVersion)
+        : undefined;
+
       useLayoutStore.getState().hydrate({
         ...(saved.symbolTabs && { symbolTabs: saved.symbolTabs }),
         ...(saved.activeSymbolTabId && { activeSymbolTabId: saved.activeSymbolTabId }),
-        ...(saved.layoutPresets && { layoutPresets: saved.layoutPresets }),
+        ...(migratedPresets && { layoutPresets: migratedPresets }),
       });
       isHydrated = true;
       return;

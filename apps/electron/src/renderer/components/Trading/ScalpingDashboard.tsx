@@ -32,7 +32,7 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
 
   return (
     <Stack gap={3} align="stretch" p={4}>
-      <Flex p={3} bg="bg.muted" borderRadius="md" justify="space-between" align="center" fontSize="xs">
+      <Flex p={3} bg="bg.surface" borderRadius="md" justify="space-between" align="center" fontSize="xs">
         <Stack gap={0}>
           <Text color="fg.muted" fontWeight="medium">{t('scalping.metric.sessionPnl')}</Text>
           <Text color="fg.muted" fontSize="2xs">
@@ -87,13 +87,13 @@ export function ScalpingDashboard({ walletId, symbol, onConfigClick }: ScalpingD
       )}
 
       {isRunning && (
-        <Box bg="bg.muted" borderRadius="md">
+        <Box bg="bg.surface" borderRadius="md">
           <OrderFlowMetrics symbol={symbol} />
         </Box>
       )}
 
       {isRunning && signals.length > 0 && (
-        <Box p={3} bg="bg.muted" borderRadius="md">
+        <Box p={3} bg="bg.surface" borderRadius="md">
           <Stack gap={2.5} fontSize="xs">
             <Flex justify="space-between" align="center">
               <Text color="fg.muted" fontWeight="medium">{t('scalping.signals.title')}</Text>

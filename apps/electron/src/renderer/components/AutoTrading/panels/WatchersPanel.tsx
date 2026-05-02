@@ -7,7 +7,7 @@ import { WatchersTab } from '@renderer/components/MarketSidebar/tabs/WatchersTab
  * standalone placement on the grid.
  */
 export const WatchersPanel = () => (
-  <Box h="100%" overflowY="auto">
+  <Box h="100%" overflowY="auto" p={1.5}>
     <WatchersTab />
   </Box>
 );

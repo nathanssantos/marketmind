@@ -1,20 +1,14 @@
-import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
+import { Flex, Group, Stack } from '@chakra-ui/react';
 import { Button, Callout, EmptyState, IconButton, Select } from '@renderer/components/ui';
-import { MM } from '@marketmind/tokens';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useOrdersFilters } from '@renderer/hooks/useOrdersFilters';
-import { trpc } from '@renderer/utils/trpc';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { useUIStore, type OrdersFilterOption, type OrdersSortOption } from '@renderer/store/uiStore';
-import {
-  getOrderId,
-  isOrderActive,
-  isOrderPending,
-} from '@shared/utils';
+import { getOrderId } from '@shared/utils';
 import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@renderer/hooks/useToast';
@@ -38,11 +32,6 @@ const OrdersListComponent = () => {
     closeExecution,
     cancelExecution,
   } = useBackendTrading(activeWalletId ?? '', undefined);
-
-  const { data: statsData } = trpc.trading.getOrdersStats.useQuery(
-    { walletId: activeWalletId ?? '' },
-    { enabled: !!activeWalletId }
-  );
 
   const orders: Order[] = useMemo(() => {
     const ordersFromApi = backendOrdersData.map((o): Order => ({
@@ -187,12 +176,8 @@ const OrdersListComponent = () => {
 
   const filteredOrders = useOrdersFilters(walletOrders, filterStatus, sortBy);
 
-  const activeOrders = walletOrders.filter((o) => isOrderActive(o)).length;
-  const pendingOrders = walletOrders.filter((o) => isOrderPending(o)).length;
-  const totalCount = (statsData?.ordersCount ?? 0) + (statsData?.executionsCount ?? 0);
-
   return (
-    <Stack gap={MM.spacing.section.gap} p={MM.spacing.dialogPadding}>
+    <Stack gap={2}>
 
       {!activeWallet ? (
         <Callout tone="warning" compact>
@@ -200,29 +185,6 @@ const OrdersListComponent = () => {
         </Callout>
       ) : (
         <>
-          <Box p={3} bg="bg.muted" borderRadius="md">
-            <Stack gap={1} fontSize="xs">
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.orders.total')}</Text>
-                <Text fontWeight="medium">{totalCount}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.orders.active')}</Text>
-                <Text fontWeight="medium" color="green.fg">{activeOrders}</Text>
-              </Flex>
-              <Flex justify="space-between">
-                <Text color="fg.muted">{t('trading.orders.pending')}</Text>
-                <Text fontWeight="medium" color="orange.fg">{pendingOrders}</Text>
-              </Flex>
-            </Stack>
-          </Box>
-
-          <Flex justify="flex-end">
-            <Button size="xs" variant="ghost" onClick={() => setOrdersDialogOpen(true)}>
-              {t('trading.orders.viewAll')}
-            </Button>
-          </Flex>
-
           <Flex gap={2} align="center">
             <ChakraField.Root flex={1}>
               <Select
@@ -283,6 +245,10 @@ const OrdersListComponent = () => {
                 <BsTable />
               </IconButton>
             </Group>
+
+            <Button size="2xs" variant="outline" onClick={() => setOrdersDialogOpen(true)}>
+              {t('trading.orders.viewAll')}
+            </Button>
           </Flex>
 
           {filteredOrders.length === 0 ? (
@@ -309,12 +275,6 @@ const OrdersListComponent = () => {
               ))}
             </Stack>
           )}
-
-          <Flex justify="flex-end">
-            <Button size="xs" variant="ghost" onClick={() => setOrdersDialogOpen(true)}>
-              {t('trading.orders.viewAll')}
-            </Button>
-          </Flex>
         </>
       )}
     </Stack>

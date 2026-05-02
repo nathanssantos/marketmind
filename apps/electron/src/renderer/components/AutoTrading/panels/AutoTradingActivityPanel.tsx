@@ -7,7 +7,7 @@ import { LogsTab } from '@renderer/components/MarketSidebar/tabs/LogsTab';
  * standalone placement on the grid.
  */
 export const AutoTradingActivityPanel = () => (
-  <Box h="100%" display="flex" flexDirection="column" minH={0}>
+  <Box h="100%" display="flex" flexDirection="column" minH={0} p={1.5}>
     <LogsTab />
   </Box>
 );

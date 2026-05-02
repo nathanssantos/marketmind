@@ -11,9 +11,14 @@ export type GridPanelWindowState = 'normal' | 'minimized' | 'maximized';
 interface GridPanelBaseProps {
   /** Stable panel id used by react-grid-layout. */
   id: string;
-  /** Whether this panel is the focused one (drives accent border). */
+  /**
+   * Whether this panel is the focused one. The focus highlight border was
+   * dropped since one symbol per layout makes the visual hint redundant —
+   * the focusedPanelId tracking is still kept so the Checklist can follow
+   * whichever chart the user clicked last.
+   */
   isFocused: boolean;
-  /** Whether the parent grid has more than one panel (drives focus-border visibility). */
+  /** @deprecated Kept for prop compatibility; the focus border is no longer drawn. */
   showFocusBorder?: boolean;
   /** Window state for chart panels (min/max/normal). Bare panels stay 'normal'. */
   windowState?: GridPanelWindowState;
@@ -57,8 +62,6 @@ export const GridPanel = memo((props: GridPanelProps) => {
   const { t } = useTranslation();
   const {
     id,
-    isFocused,
-    showFocusBorder = true,
     windowState = 'normal',
     mode,
     onFocus,
@@ -99,7 +102,6 @@ export const GridPanel = memo((props: GridPanelProps) => {
   const handleContextMenuClose = useCallback(() => onClose?.(id), [onClose, id]);
 
   const isMaximized = windowState === 'maximized';
-  const focusBorder = isFocused && showFocusBorder ? 'accent.solid' : 'border';
 
   const shell = (
     <Flex
@@ -107,7 +109,7 @@ export const GridPanel = memo((props: GridPanelProps) => {
       h="100%"
       bg="bg.panel"
       borderWidth="1px"
-      borderColor={focusBorder}
+      borderColor="border"
       borderRadius="sm"
       overflow="hidden"
       onMouseDown={handleFocus}

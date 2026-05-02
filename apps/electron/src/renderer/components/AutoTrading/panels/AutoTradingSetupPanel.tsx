@@ -22,7 +22,7 @@ export const AutoTradingSetupPanel = () => {
 
   if (!activeWallet) {
     return (
-      <Box h="100%" overflowY="auto" p={3}>
+      <Box h="100%" overflowY="auto" p={1.5}>
         <Callout tone="warning" compact>
           {t('trading.wallets.selectWallet')}
         </Callout>
@@ -31,7 +31,7 @@ export const AutoTradingSetupPanel = () => {
   }
 
   return (
-    <Box h="100%" overflowY="auto">
+    <Box h="100%" overflowY="auto" p={1.5}>
       <ScalpingDashboard
         walletId={activeWallet.id}
         symbol={symbol}

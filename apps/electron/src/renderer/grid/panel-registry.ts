@@ -48,10 +48,10 @@ export interface PanelBodyProps {
   panelId: string;
 }
 
-const TRADING_DEFAULT = { w: 4, h: 12 };
-const MARKET_DEFAULT = { w: 4, h: 14 };
-const AUTOTRADING_DEFAULT = { w: 5, h: 12 };
-const CHART_DEFAULT = { w: 8, h: 16 };
+const TRADING_DEFAULT = { w: 8, h: 48 };
+const MARKET_DEFAULT = { w: 8, h: 56 };
+const AUTOTRADING_DEFAULT = { w: 10, h: 48 };
+const CHART_DEFAULT = { w: 16, h: 64 };
 
 /**
  * Chart panels never go through the registry's `load` — they render via
