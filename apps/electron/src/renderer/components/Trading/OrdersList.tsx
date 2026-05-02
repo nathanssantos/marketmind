@@ -87,6 +87,11 @@ const OrdersListComponent = () => {
       takeProfit: e.takeProfit ? parseFloat(e.takeProfit) : undefined,
       pnl: e.pnl ?? undefined,
       pnlPercent: e.pnlPercent ?? undefined,
+      // Surface the actual exit price so the table can show what the
+      // position closed at — without it the "Current Price" column
+      // displays the live ticker for every closed trade, making the
+      // displayed P&L look mismatched against the prices on screen.
+      exitPrice: e.exitPrice ? parseFloat(e.exitPrice) : undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType ?? undefined,
       marketType: e.marketType ?? 'FUTURES',

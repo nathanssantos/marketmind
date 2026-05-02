@@ -23,7 +23,9 @@ import { auditFees, auditBalance } from './audit/audit-fees-balance-pnl';
 async function auditWallet(
   wallet: (typeof wallets.$inferSelect),
   dryRun: boolean,
-  enabledChecks: Set<AuditCheck>
+  enabledChecks: Set<AuditCheck>,
+  feesCap?: number,
+  feesDays?: number,
 ): Promise<AuditSummary> {
   const start = Date.now();
   const summary: AuditSummary = {
@@ -91,6 +93,8 @@ async function auditWallet(
       openAlgoOrders,
       linkedAlgoIds,
       accountInfo,
+      feesCap,
+      feesDays,
     };
 
     if (enabledChecks.has('positions')) await auditPositions(ctx);
@@ -113,9 +117,13 @@ export async function runStartupAudit(options?: {
   dryRun?: boolean;
   walletId?: string;
   checks?: AuditCheck[];
+  feesCap?: number;
+  feesDays?: number;
 }): Promise<AuditSummary[]> {
   const dryRun = options?.dryRun ?? false;
   const filterWalletId = options?.walletId;
+  const feesCap = options?.feesCap;
+  const feesDays = options?.feesDays;
 
   logger.info({ dryRun, filterWalletId }, '[startup-audit] Starting startup audit');
 
@@ -141,7 +149,7 @@ export async function runStartupAudit(options?: {
   const enabledChecks = new Set(options?.checks ?? ALL_AUDIT_CHECKS);
 
   for (const wallet of targetWallets) {
-    const summary = await auditWallet(wallet, dryRun, enabledChecks);
+    const summary = await auditWallet(wallet, dryRun, enabledChecks, feesCap, feesDays);
     summaries.push(summary);
     totalFixed += summary.fixed;
     totalWarnings += summary.warnings.length;

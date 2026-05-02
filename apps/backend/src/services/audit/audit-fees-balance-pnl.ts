@@ -15,9 +15,11 @@ import {
 } from './audit-types';
 
 export async function auditFees(ctx: AuditContext): Promise<void> {
-  const { wallet, dryRun, summary, client } = ctx;
+  const { wallet, dryRun, summary, client, feesCap, feesDays } = ctx;
 
-  const sevenDaysAgo = new Date(Date.now() - FEES_AUDIT_DAYS * 24 * 60 * 60 * 1000);
+  const cap = feesCap ?? FEES_AUDIT_CAP;
+  const days = feesDays ?? FEES_AUDIT_DAYS;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const recentClosed = await db
     .select()
     .from(tradeExecutions)
@@ -26,11 +28,11 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
         eq(tradeExecutions.walletId, wallet.id),
         eq(tradeExecutions.status, 'closed'),
         eq(tradeExecutions.marketType, 'FUTURES'),
-        gte(tradeExecutions.closedAt, sevenDaysAgo)
+        gte(tradeExecutions.closedAt, cutoff)
       )
     );
 
-  const feesAuditCandidates = recentClosed.slice(0, FEES_AUDIT_CAP);
+  const feesAuditCandidates = recentClosed.slice(0, cap);
   for (const exec of feesAuditCandidates) {
     if (!exec.closedAt) continue;
     if (binanceApiCache.isBanned()) break;

@@ -108,7 +108,13 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
         const pnl = order.pnl ? parseFloat(order.pnl) : undefined;
         const pnlPercent = order.pnlPercent ? parseFloat(order.pnlPercent) : undefined;
         const centralPrice = centralizedPrices[order.symbol];
-        const currentPrice = centralPrice ?? order.currentPrice;
+        // Closed orders display their actual exit price (so the price
+        // shown matches the recorded P&L). Open / pending / cancelled
+        // orders fall back to the live ticker.
+        const isClosed = order.status === 'FILLED' && order.closedAt !== undefined;
+        const currentPrice = isClosed
+          ? (order.exitPrice ?? centralPrice ?? order.currentPrice)
+          : (centralPrice ?? order.currentPrice);
 
         return (
           <TradingTableRow key={getOrderId(order)}>
