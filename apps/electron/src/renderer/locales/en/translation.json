@@ -2785,6 +2785,9 @@
     "organizeCompact": "Compact",
     "organizeColumns": "By columns",
     "organizeRows": "By rows",
+    "organizeConfirmTitle": "Reorganize grid?",
+    "organizeConfirmDescription": "This will rearrange all panels in the active layout using the \"{{algo}}\" pattern. Their current positions will be lost.",
+    "organizeConfirm": "Reorganize",
     "chart": {
       "title": "Chart"
     },
