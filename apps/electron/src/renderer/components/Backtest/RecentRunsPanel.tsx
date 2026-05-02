@@ -1,5 +1,5 @@
-import { Box, Flex, HStack, Text, VStack } from '@chakra-ui/react';
-import { Badge, Button, LoadingSpinner } from '@renderer/components/ui';
+import { Flex, HStack, Text, VStack } from '@chakra-ui/react';
+import { Badge, Button, LoadingSpinner, RecordRow } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '../../utils/trpc';
 
@@ -33,15 +33,9 @@ export const RecentRunsPanel = ({ onSelect }: RecentRunsPanelProps) => {
       </Text>
       <VStack align="stretch" gap={1}>
         {items.map((item) => (
-          <Box
+          <RecordRow
             key={item.id}
-            p={2}
-            borderWidth="1px"
-            borderColor="border"
-            borderRadius="md"
-            cursor="pointer"
             onClick={() => onSelect(item.id)}
-            _hover={{ bg: 'bg.subtle' }}
             data-testid="recent-run-item"
           >
             <HStack justify="space-between">
@@ -72,7 +66,7 @@ export const RecentRunsPanel = ({ onSelect }: RecentRunsPanelProps) => {
                 </Button>
               </HStack>
             </HStack>
-          </Box>
+          </RecordRow>
         ))}
       </VStack>
     </VStack>

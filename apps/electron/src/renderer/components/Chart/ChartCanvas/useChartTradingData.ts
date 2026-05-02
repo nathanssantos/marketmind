@@ -332,7 +332,7 @@ export const useChartTradingData = ({
     const data = raw as Partial<BackendExecution> & { id?: string };
     if (!data?.id) return;
     const exec = filteredBackendExecutions.find((e) => e.id === data.id);
-    if (!exec || exec.status !== 'pending') return;
+    if (exec?.status !== 'pending') return;
     if (data.entryPrice !== undefined && data.entryPrice !== exec.entryPrice) {
       applyOptimistic(exec.id, { entryPrice: data.entryPrice }, { entryPrice: exec.entryPrice });
       orderFlashMapRef.current.set(exec.id, performance.now());

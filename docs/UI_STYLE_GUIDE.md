@@ -35,7 +35,7 @@ import { Button, IconButton, Badge, Switch, Tabs } from '@renderer/components/ui
 | **Buttons** | `Button`, `IconButton`, `ToggleIconButton`, `CloseButton` |
 | **Inputs** | `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup` |
 | **Form** | `Field` |
-| **Data Display** | `Badge`, `Card`, `Table`, `Stat`, `StatRow`, `PnLDisplay`, `MetricCard`, `CryptoIcon` |
+| **Data Display** | `Badge`, `Card`, `Table`, `Stat`, `StatRow`, `PnLDisplay`, `MetricCard`, `CryptoIcon`, `RecordRow`, `TradingSideCard` |
 | **Feedback** | `Alert`, `Skeleton`, `Progress` (`ProgressRoot`, `ProgressBar`), `LoadingSpinner`, `ErrorMessage`, `EmptyState` |
 | **Navigation** | `Tabs`, `Menu`, `Link` |
 | **Overlay** | `Dialog`, `FormDialog`, `ConfirmationDialog`, `Popover`, `TooltipWrapper` |
@@ -546,6 +546,66 @@ import { FormSection, FormRow, Switch } from '@renderer/components/ui';
 ```
 
 **Don't** hardcode literals where a token exists. If a value needs to change, change the token — primitives pick it up automatically.
+
+---
+
+## RecordRow pattern (v1.7+)
+
+For "list of object" rows and stat-card framing — Wallets, Profiles, Custom Symbols, Snapshots, Sessions, Indicators, MarketIndicator stat cards, etc. — use `<RecordRow>` from `@marketmind/ui`. It locks down the shape (`borderWidth=1 borderColor=border borderRadius=md`) so consumers only compose the inside.
+
+```tsx
+import { RecordRow } from '@renderer/components/ui';
+
+// Compact density — tight inline list rows
+<RecordRow>
+  <Flex justify="space-between">
+    <Text>{name}</Text>
+    <Badge>...</Badge>
+  </Flex>
+</RecordRow>
+
+// Card density — stand-alone card / stat block
+<RecordRow density="card" tone="muted">
+  {/* highlighted stat card body */}
+</RecordRow>
+
+// Panel-on-panel (chart legends, tooltips)
+<RecordRow tone="panel">{tooltipBody}</RecordRow>
+
+// Clickable list item
+<RecordRow onClick={() => onSelect(id)} data-testid="run-row">
+  ...
+</RecordRow>
+```
+
+| Prop | Values | Use |
+|---|---|---|
+| `density` | `'compact' \| 'card'` (default `compact`) | `card` for stand-alone surfaces; `compact` for tight inline lists |
+| `tone` | `'default' \| 'muted' \| 'panel'` (default `default`) | `muted` for highlighted stat cards; `panel` for chart tooltips on `bg.panel`; `default` (transparent) for inline rows |
+| `onClick` | optional handler | When set, adds `cursor=pointer` + `_hover={{ bg: 'bg.subtle' }}` (interactive list-item shape) |
+| `data-testid` | string | Forwarded to the root element |
+
+**Don't** hand-roll `<Box borderWidth=1 borderColor=border borderRadius=md p={N}>` — `pnpm lint:panels:strict` (CI gate as of v1.8) catches this.
+
+## TradingSideCard pattern (v1.8+)
+
+For position / order cards that need the side-coded 4px colored left accent (long=green / short=red), use `<TradingSideCard>` from the renderer-local `ui/`:
+
+```tsx
+import { TradingSideCard } from '@renderer/components/ui';
+
+<TradingSideCard side={position.side}>
+  {/* position card body */}
+</TradingSideCard>
+```
+
+| Prop | Values | Behavior |
+|---|---|---|
+| `side` | `'LONG' \| 'SHORT'` | LONG renders the green left accent (`trading.long`); SHORT renders red (`trading.short`) |
+
+Why a separate primitive vs. extending `<RecordRow>`: the 4px colored accent is a trading-specific UX cue, and `<RecordRow>` is theme-agnostic in `@marketmind/ui`. Pulling `trading.*` color tokens into the design-system package would couple it to project-domain semantics. `<TradingSideCard>` lives in `apps/electron/src/renderer/components/ui/` (alongside `MetricCard` / `PnLDisplay`) which already depends on `trading.*` tokens.
+
+**Applied surfaces:** `Trading/PositionCard`, `Trading/OrderCard`, `Trading/FuturesPositionsPanel.FuturesPositionCard`.
 
 ---
 

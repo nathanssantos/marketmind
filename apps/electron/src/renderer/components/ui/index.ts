@@ -107,3 +107,4 @@ export { MetricCard } from './MetricCard';
 export { PasswordStrengthMeter } from './PasswordStrengthMeter';
 export { PnLDisplay } from './PnLDisplay';
 export { TooltipWrapper } from './Tooltip';
+export { TradingSideCard } from './TradingSideCard';

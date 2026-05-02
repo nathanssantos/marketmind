@@ -1,5 +1,5 @@
 import { Box, Flex, Spinner, Stack, Text, useToken } from '@chakra-ui/react';
-import { Callout, PanelHeader } from '@renderer/components/ui';
+import { Callout, PanelHeader, RecordRow } from '@renderer/components/ui';
 import { MM } from '@marketmind/tokens';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -81,7 +81,7 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
       const pnlPercent = effectiveCapital > 0 ? (pnl / effectiveCapital) * 100 : 0;
 
       return (
-        <Box p={2} bg="bg.panel" borderRadius="md" borderWidth="1px" borderColor="border">
+        <RecordRow tone="panel">
           <Text fontSize="xs" fontWeight="medium" mb={1}>
             {payload[0]?.payload.time}
           </Text>
@@ -93,7 +93,7 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
               {t('trading.wallets.pnl')}: {formatCurrency(pnl, true)} ({formatPercent(pnlPercent)})
             </Text>
           </Box>
-        </Box>
+        </RecordRow>
       );
     }
     return null;

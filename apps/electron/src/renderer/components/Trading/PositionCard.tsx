@@ -1,5 +1,5 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { Badge, CryptoIcon } from '@renderer/components/ui';
+import { Flex, Stack, Text } from '@chakra-ui/react';
+import { Badge, CryptoIcon, TradingSideCard } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,13 +20,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
   const isLong = position.side === 'LONG';
 
   return (
-    <Box
-      p={3}
-      bg="bg.muted"
-      borderRadius="md"
-      borderLeft="4px solid"
-      borderColor={isLong ? 'trading.long' : 'trading.short'}
-    >
+    <TradingSideCard side={position.side}>
       <Stack gap={1.5} mb={2}>
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={1.5}>
@@ -150,7 +144,7 @@ const PositionCardComponent = ({ position, currency, onNavigateToSymbol }: Posit
           </Stack>
         </Flex>
       </Stack>
-    </Box>
+    </TradingSideCard>
   );
 };
 

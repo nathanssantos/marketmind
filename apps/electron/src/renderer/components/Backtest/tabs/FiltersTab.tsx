@@ -1,5 +1,5 @@
-import { Box, Grid, HStack, Text, VStack } from '@chakra-ui/react';
-import { CollapsibleSection, Field, NumberInput, Switch } from '@renderer/components/ui';
+import { Grid, HStack, Text, VStack } from '@chakra-ui/react';
+import { CollapsibleSection, Field, NumberInput, RecordRow, Switch } from '@renderer/components/ui';
 import {
   FILTER_DEFINITIONS,
   FILTER_GROUPS,
@@ -81,7 +81,7 @@ const FilterCard = ({
   const enabled = isToggleEnabled(state, filter.toggle.key);
 
   return (
-    <Box borderWidth="1px" borderColor="border" borderRadius="md" p={3}>
+    <RecordRow density="card">
       <HStack justify="space-between" mb={enabled && filter.params?.length ? 2 : 0}>
         <VStack align="start" gap={0}>
           <Text fontSize="sm" fontWeight="medium">{t(filter.labelKey)}</Text>
@@ -107,7 +107,7 @@ const FilterCard = ({
           ))}
         </Grid>
       )}
-    </Box>
+    </RecordRow>
   );
 };
 

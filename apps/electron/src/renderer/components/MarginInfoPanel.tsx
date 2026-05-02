@@ -1,6 +1,6 @@
 import { Box, Flex, HStack, Stack, Text, VStack } from '@chakra-ui/react';
 import { REG_T_INITIAL_MARGIN, REG_T_MAINTENANCE_MARGIN } from '@marketmind/types';
-import { Badge, Callout, FormSection, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, Callout, FormSection, RecordRow, TooltipWrapper } from '@renderer/components/ui';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuPercent, LuShield, LuTrendingUp } from 'react-icons/lu';
@@ -65,7 +65,7 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
   if (!show) return null;
 
   return (
-    <Box borderWidth="1px" borderRadius="md" borderColor="border" p={3}>
+    <RecordRow density="card">
       <Stack gap={4}>
       <FormSection
         title={
@@ -160,7 +160,7 @@ export function MarginInfoPanel({ requirements, impact, show = true }: MarginInf
         </FormSection>
       )}
       </Stack>
-    </Box>
+    </RecordRow>
   );
 }
 

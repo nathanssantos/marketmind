@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-05-02
+
+**v1.8 release** — enforcement + last-mile cleanup. v1.6 made the dialogs uniform, v1.7 brought every other surface up to the same design language, and v1.8 turns those rules into something the codebase enforces (CI gate) instead of relying on review. Three implementation PRs (#406–#408). Tests stay at 2332/2332 throughout.
+
+### Added — Panel audit gate (v1.8 Track A)
+- **`scripts/audit-panel-rules.mjs`** — companion to the existing dialog audit. Two rules:
+  - `bespoke-record-row` — catches `<Box>` with the `borderWidth=1 borderColor=border borderRadius=md` shape outside the `<RecordRow>` primitive
+  - `bespoke-loading-text` — catches `<Text>{t('common.loading')}</Text>` next to a `<Spinner>` (bible says spinners stand alone)
+- `pnpm lint:panels` (warn) / `pnpm lint:panels:strict` (gate). Wired into CI alongside `lint:dialogs:strict` and `lint:shades`.
+- **`<RecordRow>` extended** — added `tone='default' | 'muted' | 'panel'` and `onClick` (interactive variant with `cursor=pointer` + `_hover={{ bg: 'bg.subtle' }}` + `data-testid` passthrough), so the primitive can absorb the highlighted-card and clickable-list-row shapes too.
+
+### Changed — Sweep of older drift the new audit caught
+- **MarketIndicatorCharts** — 6 stat cards (FearGreed, BtcDominance, MVRV, ETF Flows, Funding Rate, Open Interest) migrated to `<RecordRow density="card" tone="muted">`.
+- **MarketIndicatorSections** — 4 sections migrated to the same shape.
+- **FuturesPositionInfo, MarginInfoPanel, FiltersTab** — outer bordered framing migrated to `<RecordRow density="card">`.
+- **EquityCurveChart** — recharts tooltip migrated to `<RecordRow tone="panel">`.
+- **RecentRunsPanel** — clickable list rows migrated to `<RecordRow onClick>`.
+- **AuthGuard** — bare `<Text>{t('common.loading')}</Text>` next to the full-page `<Spinner>` removed (bible: spinners stand alone).
+
+13 callsites total. Audit strict-clean and gating CI.
+
+### Added — Trading position card primitive (v1.8 Track P)
+- **`<TradingSideCard side="LONG" | "SHORT">`** — extracted the side-coded position-card shell (the `<Box p={3} bg="bg.muted" borderRadius="md" borderLeft="4px solid" borderColor={isLong ? 'trading.long' : 'trading.short'}>` shape that lived in 3 places). Wraps the body in a primitive that owns the trading-side color cue.
+- **3 callsites migrated** — `PositionCard`, `OrderCard`, and the inner `FuturesPositionCard` inside `FuturesPositionsPanel.tsx` all reduce to `<TradingSideCard side={...}>{body}</TradingSideCard>`.
+- **`FuturesPositionsPanel` loading state fixed** — was misusing `<EmptyState size="sm" title={t('common.loading')} />` (EmptyState is for "nothing here", not "loading"). Replaced with the standard `<Spinner>` panel combo (`MM.spinner.panel`).
+
+Net: 12 fewer lines across the 3 migrated files, primitive scoped to `apps/electron/src/renderer/components/ui/` (uses trading.* tokens which are project-specific, so it stays out of `@marketmind/ui`).
+
+### Documentation — Style Guide updates (v1.8 Track D)
+- **`docs/UI_STYLE_GUIDE.md`** — added "RecordRow pattern (v1.7+)" and "TradingSideCard pattern (v1.8+)" sections covering API matrix (density / tone / onClick for RecordRow; side for TradingSideCard), usage examples, applied surfaces, and the why-not-extend-RecordRow rationale for TradingSideCard. Both primitives added to the Data Display catalog table.
+- **`apps/electron/src/renderer/components/ui/README.md`** — RecordRow + TradingSideCard rows added to the Data Display catalog with crisp one-line descriptions and CI-gate notes.
+
 ## [1.7.0] - 2026-05-02
 
 **v1.7 release** — Phase-2 design-language sweep: every non-dialog surface (sidebars, chart panels, auth pages, chart toolbar, list rows) brought up to the v1.6 design language. v1.6 made the dialogs uniform; v1.7 extends that to the rest of the app so the whole experience reads as one design system, not a patchwork.
