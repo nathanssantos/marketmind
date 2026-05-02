@@ -52,10 +52,21 @@ Not auto-included; flag to user before adding.
 |---|---|---|---|---|
 | 1 | A | `audit-panel-rules.mjs` + RecordRow extensions + 13-callsite sweep + CI gate | 4h | **In flight (PR #406)** |
 | 2 | P | `FuturesPositionCard` primitive + loading-state fix in `FuturesPositionsPanel` | 2h | Queued |
-| 3 | D | Sweep whatever Track A surfaces in non-priority files | 2-3h | Queued |
-| 4 | Q | Optional polish tracks (need user input) | TBD | Awaiting input |
+| 3 | D | Sweep whatever Track A surfaces in non-priority files | 2-3h | **Shipped (PR #408 — pivoted to docs)** |
+| 4 | Q | Optional polish tracks (need user input) | TBD | Awaiting input — not shipped in v1.8 |
 
 **Total estimated: 8-9h** (much smaller than v1.6/v1.7).
+
+---
+
+**Status (2026-05-02 — v1.8 substantively complete; Track Q deferred):**
+
+- ✅ **Track A (#406)** — `audit-panel-rules.mjs` script + `<RecordRow>` extended (`tone='default'|'muted'|'panel'`, `onClick`) + 13-callsite sweep (MarketIndicatorCharts × 6, MarketIndicatorSections × 4, FuturesPositionInfo, MarginInfoPanel, FiltersTab, EquityCurveChart tooltip, RecentRunsPanel, AuthGuard) + CI gate (`lint:dialogs:strict` + `lint:panels:strict`) + bonus 2 pre-existing eslint errors cleared so the gate actually gates.
+- ✅ **Track P (#407)** — `<TradingSideCard side="LONG"|"SHORT">` primitive in renderer-local `ui/` (uses project-specific `trading.long` / `trading.short` tokens, so kept out of `@marketmind/ui`). 3 callsites migrated: `PositionCard`, `OrderCard`, inner `FuturesPositionCard`. `FuturesPositionsPanel` loading state fixed (was misusing `<EmptyState title="Loading..." />`, now uses the standard `<Spinner>` panel combo).
+- ✅ **Track D (#408)** — Track A's audit was strict-clean immediately after PR #406 landed (zero violations remaining), so the planned "sweep more files" pivoted to documentation. Updated `docs/UI_STYLE_GUIDE.md` with full RecordRow + TradingSideCard sections (API matrix + usage examples + applied surfaces) and `apps/electron/src/renderer/components/ui/README.md` catalog rows.
+- ⏸ **Track Q (deferred)** — dialog header copy review, loading-state coherence audit, empty-state inventory. All optional polish; awaiting user input. Not blocking v1.8 release.
+
+**Result:** the v1.7 panel-rules audit moved from documentation to a live CI gate; the position-card duplication is replaced by a single primitive; the design system docs reflect what's actually in the codebase. Tests stay at 2332/2332 throughout. Lint baseline unchanged.
 
 ## Out of scope (deferred to v1.9 or later)
 
