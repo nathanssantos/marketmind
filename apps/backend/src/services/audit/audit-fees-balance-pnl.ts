@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { tradeExecutions, wallets } from '../../db/schema';
 import { binanceApiCache } from '../binance-api-cache';
 import { getAllTradeFeesForPosition } from '../binance-futures-client';
+import { recomputeExecutionAccumulatedFunding } from '../income-events/matcher';
 import { logger } from '../logger';
 import type { AuditContext } from './audit-types';
 import {
@@ -37,6 +38,12 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
     if (!exec.closedAt) continue;
     if (binanceApiCache.isBanned()) break;
 
+    // Backfill any FUNDING_FEE income events that got linked to this
+    // execution after it closed (or, for executions created before the
+    // accumulation fix landed, that were linked but never summed into
+    // the execution row). Cheap DB-only operation, no Binance call.
+    await recomputeExecutionAccumulatedFunding(exec.id);
+
     await sleep(FEES_RATE_LIMIT_MS);
 
     const realFees = await getAllTradeFeesForPosition(
@@ -54,7 +61,21 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
     const entryFeeDelta = Math.abs(realFees.entryFee - dbEntryFee);
     const exitFeeDelta = Math.abs(realFees.exitFee - dbExitFee);
 
-    if (entryFeeDelta <= FEES_DELTA_THRESHOLD && exitFeeDelta <= FEES_DELTA_THRESHOLD) continue;
+    // Re-read execution after the funding recomputation so the audit
+    // sees up-to-date `accumulatedFunding` even when fees match.
+    const [refreshed] = await db
+      .select({ accumulatedFunding: tradeExecutions.accumulatedFunding })
+      .from(tradeExecutions)
+      .where(eq(tradeExecutions.id, exec.id))
+      .limit(1);
+    const accumulatedFunding = parseFloat(refreshed?.accumulatedFunding ?? exec.accumulatedFunding ?? '0');
+    const fundingDelta = Math.abs(accumulatedFunding - parseFloat(exec.accumulatedFunding ?? '0'));
+
+    if (
+      entryFeeDelta <= FEES_DELTA_THRESHOLD &&
+      exitFeeDelta <= FEES_DELTA_THRESHOLD &&
+      fundingDelta <= FEES_DELTA_THRESHOLD
+    ) continue;
 
     logger.info(
       {
@@ -65,8 +86,10 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
         dbExitFee,
         realEntryFee: realFees.entryFee,
         realExitFee: realFees.exitFee,
+        dbFunding: parseFloat(exec.accumulatedFunding ?? '0'),
+        recomputedFunding: accumulatedFunding,
       },
-      '[startup-audit] Fee discrepancy detected — correcting'
+      '[startup-audit] Fee or funding discrepancy detected — correcting'
     );
 
     const newEntryFee = realFees.entryFee;
@@ -76,17 +99,36 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
     const exitPrice = parseFloat(exec.exitPrice ?? '0');
     const quantity = parseFloat(exec.quantity);
     const leverage = exec.leverage ?? 1;
-    const accumulatedFunding = parseFloat(exec.accumulatedFunding ?? '0');
 
-    const grossPnl =
+    // Prefer Binance's authoritative realizedPnl (sum of `realizedPnl`
+    // across closing-side trades) over our locally-computed gross when
+    // available. Binance handles weighted average across multiple fills,
+    // partial closes, and post-only fee adjustments correctly. Local
+    // recomputation only kicks in for paper wallets or when the trade
+    // history doesn't return a realizedPnl figure.
+    const grossPnlLocal =
       exec.side === 'LONG'
         ? (exitPrice - entryPrice) * quantity
         : (entryPrice - exitPrice) * quantity;
+    const grossPnl = realFees.realizedPnl !== 0 ? realFees.realizedPnl : grossPnlLocal;
     const newPnl = grossPnl - newTotalFees + accumulatedFunding;
     const marginValue = (entryPrice * quantity) / leverage;
     const newPnlPercent = marginValue > 0 ? (newPnl / marginValue) * 100 : 0;
     const oldPnl = parseFloat(exec.pnl ?? '0');
     const pnlDelta = newPnl - oldPnl;
+
+    if (Math.abs(grossPnl - grossPnlLocal) > FEES_DELTA_THRESHOLD) {
+      logger.info(
+        {
+          executionId: exec.id,
+          symbol: exec.symbol,
+          binanceRealizedPnl: grossPnl,
+          localGrossPnl: grossPnlLocal,
+          delta: grossPnl - grossPnlLocal,
+        },
+        '[startup-audit] Binance realizedPnl differs from local grossPnl — using Binance value',
+      );
+    }
 
     if (!dryRun) {
       await db

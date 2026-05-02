@@ -11,6 +11,39 @@ export interface LinkIncomeToExecutionInput {
   binanceTranId: number;
 }
 
+/**
+ * Recomputes `tradeExecutions.accumulatedFunding` from the sum of all
+ * FUNDING_FEE income events linked to the execution. Called from
+ * `linkIncomeToExecution` whenever a FUNDING_FEE row gets linked, so
+ * an open position's accumulated funding stays in sync with what
+ * Binance has actually charged. Without this, live wallets always
+ * have `accumulatedFunding=0` on the execution row (paper wallets are
+ * driven by `funding-rate-service.ts` against the `positions` table)
+ * and the close-path P&L silently omits funding.
+ *
+ * Exported for audit scripts that backfill historical executions whose
+ * funding was never accumulated (drift introduced before this fix).
+ */
+export const recomputeExecutionAccumulatedFunding = async (executionId: string): Promise<void> => {
+  const [row] = await db
+    .select({ total: sql<string>`COALESCE(SUM(${incomeEvents.amount}::numeric), 0)::text` })
+    .from(incomeEvents)
+    .where(
+      and(
+        eq(incomeEvents.executionId, executionId),
+        eq(incomeEvents.incomeType, 'FUNDING_FEE'),
+      ),
+    );
+
+  await db
+    .update(tradeExecutions)
+    .set({
+      accumulatedFunding: row?.total ?? '0',
+      updatedAt: new Date(),
+    })
+    .where(eq(tradeExecutions.id, executionId));
+};
+
 export const linkIncomeToExecution = async (input: LinkIncomeToExecutionInput): Promise<string | null> => {
   const time = input.incomeTime;
 
@@ -40,6 +73,10 @@ export const linkIncomeToExecution = async (input: LinkIncomeToExecutionInput): 
         isNull(incomeEvents.executionId),
       ),
     );
+
+  if (input.incomeType === 'FUNDING_FEE') {
+    await recomputeExecutionAccumulatedFunding(match.id);
+  }
 
   return match.id;
 };

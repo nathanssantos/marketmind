@@ -92,6 +92,12 @@ const OrdersListComponent = () => {
       // displays the live ticker for every closed trade, making the
       // displayed P&L look mismatched against the prices on screen.
       exitPrice: e.exitPrice ? parseFloat(e.exitPrice) : undefined,
+      // Surface entry/exit fees so OrderCard can break them out.
+      // Important for the user to see what was actually paid in fees,
+      // since on small wins/losses fees can dominate the net P&L.
+      entryFee: e.entryFee ?? undefined,
+      exitFee: e.exitFee ?? undefined,
+      totalFees: e.fees ?? undefined,
       closedAt: e.closedAt ? new Date(e.closedAt) : undefined,
       setupType: e.setupType ?? undefined,
       marketType: e.marketType ?? 'FUTURES',

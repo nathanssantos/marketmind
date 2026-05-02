@@ -378,6 +378,32 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
           '[FuturesUserStream] Post-forced-reconnect REST sync failed',
         );
       }
+
+      // Position sync covers position state, but income events
+      // (FUNDING_FEE / COMMISSION / REALIZED_PNL) flow on a separate
+      // Binance channel and may have been missed during the gap. Pull
+      // them too so the wallet balance and per-execution funding stay
+      // accurate without waiting for the hourly sync to catch up.
+      try {
+        const { syncWalletIncome } = await import('./income-events/syncFromBinance');
+        const incomeResult = await syncWalletIncome(wallet);
+        if (incomeResult.inserted > 0 || incomeResult.linked > 0) {
+          logger.info(
+            {
+              walletId,
+              fetched: incomeResult.fetched,
+              inserted: incomeResult.inserted,
+              linked: incomeResult.linked,
+            },
+            '[FuturesUserStream] Post-forced-reconnect income recovery completed',
+          );
+        }
+      } catch (incomeError) {
+        logger.error(
+          { walletId, error: serializeError(incomeError) },
+          '[FuturesUserStream] Post-forced-reconnect income recovery failed',
+        );
+      }
     } catch (error) {
       logger.error({ walletId, error: serializeError(error) }, '[FuturesUserStream] forceReconnectWallet failed');
     }
@@ -495,6 +521,31 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
                 },
                 '[FuturesUserStream] Post-reconnect sync completed'
               );
+
+              // Same income-event recovery as forceReconnectWallet —
+              // funding / commission / realized-pnl events flow on a
+              // separate Binance channel and may have been missed
+              // during the disconnect.
+              try {
+                const { syncWalletIncome } = await import('./income-events/syncFromBinance');
+                const incomeResult = await syncWalletIncome(currentWallet);
+                if (incomeResult.inserted > 0 || incomeResult.linked > 0) {
+                  logger.info(
+                    {
+                      walletId: wallet.id,
+                      fetched: incomeResult.fetched,
+                      inserted: incomeResult.inserted,
+                      linked: incomeResult.linked,
+                    },
+                    '[FuturesUserStream] Post-reconnect income recovery completed',
+                  );
+                }
+              } catch (incomeError) {
+                logger.error(
+                  { walletId: wallet.id, error: serializeError(incomeError) },
+                  '[FuturesUserStream] Post-reconnect income recovery failed',
+                );
+              }
             }
           } catch (syncError) {
             logger.error(

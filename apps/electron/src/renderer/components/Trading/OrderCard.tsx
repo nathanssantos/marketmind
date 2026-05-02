@@ -213,6 +213,18 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
             </Stack>
           </Flex>
         )}
+        {(order.entryFee !== undefined && parseFloat(order.entryFee) > 0) && (
+          <Flex justify="space-between">
+            <Text color="fg.muted">{t('trading.orders.entryFee')}</Text>
+            <Text color="fg.muted">{currency} {parseFloat(order.entryFee).toFixed(4)}</Text>
+          </Flex>
+        )}
+        {(order.exitFee !== undefined && parseFloat(order.exitFee) > 0) && (
+          <Flex justify="space-between">
+            <Text color="fg.muted">{t('trading.orders.exitFee')}</Text>
+            <Text color="fg.muted">{currency} {parseFloat(order.exitFee).toFixed(4)}</Text>
+          </Flex>
+        )}
         {order.pnl !== undefined && (
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.pnl')}</Text>

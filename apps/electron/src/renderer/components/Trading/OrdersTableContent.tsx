@@ -96,6 +96,7 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
     { key: 'currentPrice', header: t('trading.orders.currentPrice'), textAlign: 'right' },
     { key: 'stopLoss', header: t('trading.orders.stopLoss'), textAlign: 'right' },
     { key: 'takeProfit', header: t('trading.orders.takeProfit'), textAlign: 'right' },
+    { key: 'fees', header: t('trading.orders.fees'), textAlign: 'right' },
     { key: 'auto', header: '', sortable: false },
     { key: 'actions', header: t('trading.orders.actions'), textAlign: 'center', sortable: false },
   ];
@@ -197,6 +198,13 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               <Text color="trading.profit">{formatPrice(order.takeProfit, currency)}</Text>
+            </TradingTableCell>
+            <TradingTableCell textAlign="right">
+              {order.totalFees && parseFloat(order.totalFees) > 0 ? (
+                <Text color="fg.muted" fontFamily="mono">{parseFloat(order.totalFees).toFixed(4)}</Text>
+              ) : (
+                <Text color="fg.muted">—</Text>
+              )}
             </TradingTableCell>
             <TradingTableCell>
               {order.isAutoTrade && (
