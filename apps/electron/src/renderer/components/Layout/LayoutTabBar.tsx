@@ -79,14 +79,19 @@ const INITIAL_DIALOG: NameDialogState = {
   isOpen: false,
   mode: 'create',
   value: '',
-  template: 'trading',
+  template: 'tradingSwing',
 };
 
 const TEMPLATE_LABELS: Record<LayoutTemplateKey, string> = {
   empty: 'Empty',
-  trading: 'Trading',
+  tradingScalp: 'Trading 1m / 5m / 15m',
+  tradingDay: 'Trading 5m / 15m / 1h',
+  tradingSwing: 'Trading 15m / 1h / 4h',
+  tradingMidterm: 'Trading 1h / 4h / 1d',
+  tradingPosition: 'Trading 4h / 1d / 1w',
+  tradingLong: 'Trading 1d / 1w / 1M',
   autoTrading: 'Auto-Trading',
-  scalping: 'Scalping',
+  autoScalping: 'Auto-Scalping',
 };
 
 export const LayoutTabBar = memo(() => {
@@ -127,7 +132,7 @@ export const LayoutTabBar = memo(() => {
         mode: 'rename',
         layoutId,
         value: layout?.name ?? '',
-        template: 'trading',
+        template: 'tradingSwing',
       });
     },
     [layoutPresets],
@@ -139,12 +144,12 @@ export const LayoutTabBar = memo(() => {
   );
 
   const handleAddClick = useCallback(() => {
-    const defaultTemplate = LAYOUT_TEMPLATES.find((t) => t.key === 'trading')!;
+    const defaultTemplate = LAYOUT_TEMPLATES.find((t) => t.key === 'tradingSwing')!;
     setDialog({
       isOpen: true,
       mode: 'create',
       value: defaultTemplate.defaultName,
-      template: 'trading',
+      template: 'tradingSwing',
     });
   }, []);
 

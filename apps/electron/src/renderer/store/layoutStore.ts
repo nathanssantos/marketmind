@@ -65,64 +65,106 @@ const createNamedPanel = (
  * builds its grid lazily so each call generates fresh panel ids — needed
  * when the same template is instantiated more than once (e.g. user creates
  * "Trading 2" from the Trading template).
+ *
+ * The trading variants share an identical panel anatomy (1 primary chart,
+ * 2 secondary timeframe charts on the right, ticket / checklist / positions
+ * / orders / portfolio rail) — only the chart timeframes differ. The user
+ * built and validated this set hand-tuned to the 192-col / 8-row grid.
  */
-export type LayoutTemplateKey = 'empty' | 'trading' | 'autoTrading' | 'scalping';
+export type LayoutTemplateKey =
+  | 'empty'
+  | 'tradingScalp'
+  | 'tradingDay'
+  | 'tradingSwing'
+  | 'tradingMidterm'
+  | 'tradingPosition'
+  | 'tradingLong'
+  | 'autoTrading'
+  | 'autoScalping';
 
 interface LayoutTemplate {
   key: LayoutTemplateKey;
-  /** i18n key for the menu/select label. */
-  labelKey: string;
   /** Default name when seeding the user's library (and prefill in the dialog). */
   defaultName: string;
   buildGrid: () => GridPanelConfig[];
 }
 
-// Trading template uses the exact proportions from the user's hand-built
-// layout (2026-05). Auto-Trading and Scalping mirror its anatomy: big
-// chart top-left, narrow right rail with auxiliary panels, full-width
-// bottom row split between two list panels.
+/** Standard trading layout — 3 chart timeframes + ticket / checklist / positions / orders / portfolio rail. */
+const buildTradingGrid = (
+  primary: string,
+  secondary: string,
+  tertiary: string,
+): GridPanelConfig[] => [
+  createDefaultPanel(primary, { x: 0, y: 0, w: 122, h: 82 }),
+  createDefaultPanel(secondary, { x: 122, y: 0, w: 37, h: 44 }),
+  createDefaultPanel(tertiary, { x: 122, y: 44, w: 37, h: 38 }),
+  createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
+  createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 9 }),
+  createNamedPanel('checklist', { x: 159, y: 44, w: 33, h: 38 }),
+  createNamedPanel('positions', { x: 0, y: 82, w: 96, h: 32 }),
+  createNamedPanel('orders', { x: 96, y: 82, w: 96, h: 32 }),
+];
+
 export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
   {
     key: 'empty',
-    labelKey: 'layout.template.empty',
     defaultName: 'Empty',
     buildGrid: () => [createDefaultPanel('1h', { x: 0, y: 0, w: 192, h: 80 })],
   },
   {
-    key: 'trading',
-    labelKey: 'layout.template.trading',
-    defaultName: 'Trading',
-    buildGrid: () => [
-      createDefaultPanel('1h', { x: 0, y: 0, w: 159, h: 78 }),
-      createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
-      createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 9 }),
-      createNamedPanel('checklist', { x: 159, y: 44, w: 33, h: 34 }),
-      createNamedPanel('positions', { x: 0, y: 78, w: 96, h: 32 }),
-      createNamedPanel('orders', { x: 96, y: 78, w: 96, h: 32 }),
-    ],
+    key: 'tradingScalp',
+    defaultName: 'Trading 1m / 5m / 15m',
+    buildGrid: () => buildTradingGrid('1m', '5m', '15m'),
+  },
+  {
+    key: 'tradingDay',
+    defaultName: 'Trading 5m / 15m / 1h',
+    buildGrid: () => buildTradingGrid('5m', '15m', '1h'),
+  },
+  {
+    key: 'tradingSwing',
+    defaultName: 'Trading 15m / 1h / 4h',
+    buildGrid: () => buildTradingGrid('15m', '1h', '4h'),
+  },
+  {
+    key: 'tradingMidterm',
+    defaultName: 'Trading 1h / 4h / 1d',
+    buildGrid: () => buildTradingGrid('1h', '4h', '1d'),
+  },
+  {
+    key: 'tradingPosition',
+    defaultName: 'Trading 4h / 1d / 1w',
+    buildGrid: () => buildTradingGrid('4h', '1d', '1w'),
+  },
+  {
+    key: 'tradingLong',
+    defaultName: 'Trading 1d / 1w / 1M',
+    buildGrid: () => buildTradingGrid('1d', '1w', '1M'),
   },
   {
     key: 'autoTrading',
-    labelKey: 'layout.template.autoTrading',
     defaultName: 'Auto-Trading',
     buildGrid: () => [
-      createDefaultPanel('1h', { x: 0, y: 0, w: 159, h: 78 }),
-      createNamedPanel('watchers', { x: 159, y: 0, w: 33, h: 44 }),
-      createNamedPanel('autoTradingSetup', { x: 159, y: 44, w: 33, h: 34 }),
-      createNamedPanel('autoTradingActivity', { x: 0, y: 78, w: 96, h: 32 }),
-      createNamedPanel('positions', { x: 96, y: 78, w: 96, h: 32 }),
+      createDefaultPanel('15m', { x: 0, y: 0, w: 122, h: 82 }),
+      createDefaultPanel('1h', { x: 122, y: 0, w: 37, h: 44 }),
+      createDefaultPanel('4h', { x: 122, y: 44, w: 37, h: 38 }),
+      createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
+      createNamedPanel('watchers', { x: 159, y: 35, w: 33, h: 47 }),
+      createNamedPanel('positions', { x: 0, y: 82, w: 96, h: 32 }),
+      createNamedPanel('orders', { x: 96, y: 82, w: 96, h: 32 }),
     ],
   },
   {
-    key: 'scalping',
-    labelKey: 'layout.template.scalping',
-    defaultName: 'Scalping',
+    key: 'autoScalping',
+    defaultName: 'Auto-Scalping',
     buildGrid: () => [
-      createDefaultPanel('5m', { x: 0, y: 0, w: 80, h: 78 }),
-      createDefaultPanel('1m', { x: 80, y: 0, w: 79, h: 78 }),
-      createNamedPanel('ticket', { x: 159, y: 0, w: 33, h: 20 }),
-      createNamedPanel('orderFlowMetrics', { x: 159, y: 20, w: 33, h: 58 }),
-      createNamedPanel('positions', { x: 0, y: 78, w: 192, h: 32 }),
+      createDefaultPanel('1m', { x: 0, y: 0, w: 133, h: 81 }),
+      createNamedPanel('orderBook', { x: 133, y: 0, w: 26, h: 81 }),
+      createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
+      createNamedPanel('orderFlowMetrics', { x: 159, y: 35, w: 33, h: 16 }),
+      createNamedPanel('autoTradingSetup', { x: 159, y: 51, w: 33, h: 30 }),
+      createNamedPanel('positions', { x: 0, y: 81, w: 96, h: 32 }),
+      createNamedPanel('orders', { x: 96, y: 81, w: 96, h: 32 }),
     ],
   },
 ];
@@ -133,11 +175,17 @@ const getTemplate = (key: LayoutTemplateKey): LayoutTemplate => {
   return t;
 };
 
+// Three layouts seeded for new users. Stable IDs (`trading` /
+// `autotrading` / `scalping`) match the backend `isDefaultLayoutData`
+// guard so the overwrite-protection still detects untouched-default
+// state. The "Trading" seed uses the swing variant (15m / 1h / 4h) as
+// the most generally useful timeframe set; the other 5 trading variants
+// are available via the New Layout dialog.
 const DEFAULT_LAYOUTS: LayoutPreset[] = [
   {
     id: 'trading',
-    name: 'Trading',
-    grid: getTemplate('trading').buildGrid(),
+    name: 'Trading 15m / 1h / 4h',
+    grid: getTemplate('tradingSwing').buildGrid(),
     order: 0,
   },
   {
@@ -148,8 +196,8 @@ const DEFAULT_LAYOUTS: LayoutPreset[] = [
   },
   {
     id: 'scalping',
-    name: 'Scalping',
-    grid: getTemplate('scalping').buildGrid(),
+    name: 'Auto-Scalping',
+    grid: getTemplate('autoScalping').buildGrid(),
     order: 2,
   },
 ];

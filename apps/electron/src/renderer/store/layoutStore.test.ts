@@ -50,15 +50,38 @@ describe('layoutStore — addLayout', () => {
     expect(created.grid[0]?.kind).toBe('chart');
   });
 
-  it('creates a layout from the trading template', () => {
+  it('creates a layout from a trading variant template (3 charts + ticket / checklist / orders / portfolio / positions)', () => {
     const { result } = renderHook(() => useLayoutStore());
     act(() => {
-      result.current.addLayout('Trading 2', 'trading');
+      result.current.addLayout('Trading 2', 'tradingSwing');
     });
     const created = result.current.layoutPresets.at(-1)!;
     expect(created.name).toBe('Trading 2');
     const kinds = created.grid.map((p) => p.kind).sort();
-    expect(kinds).toEqual(['chart', 'checklist', 'orders', 'portfolio', 'positions', 'ticket']);
+    expect(kinds).toEqual(['chart', 'chart', 'chart', 'checklist', 'orders', 'portfolio', 'positions', 'ticket']);
+    const charts = created.grid.filter((p) => p.kind === 'chart') as ChartPanelConfig[];
+    expect(charts.map((c) => c.timeframe).sort()).toEqual(['15m', '1h', '4h']);
+  });
+
+  it('each trading variant template renders its declared timeframes', () => {
+    const cases: Array<[Parameters<typeof useLayoutStore.getState>[0] extends never ? never : 'tradingScalp' | 'tradingDay' | 'tradingMidterm' | 'tradingPosition' | 'tradingLong', string[]]> = [
+      ['tradingScalp', ['15m', '1m', '5m']],
+      ['tradingDay', ['15m', '1h', '5m']],
+      ['tradingMidterm', ['1d', '1h', '4h']],
+      ['tradingPosition', ['1d', '1w', '4h']],
+      ['tradingLong', ['1M', '1d', '1w']],
+    ];
+    for (const [key, expected] of cases) {
+      const { result } = renderHook(() => useLayoutStore());
+      act(() => {
+        result.current.addLayout(`x-${key}`, key);
+      });
+      const created = result.current.layoutPresets.at(-1)!;
+      const charts = (created.grid.filter((p) => p.kind === 'chart') as ChartPanelConfig[])
+        .map((c) => c.timeframe)
+        .sort();
+      expect(charts).toEqual(expected);
+    }
   });
 
   it('creates a layout from the auto-trading template', () => {
@@ -68,24 +91,37 @@ describe('layoutStore — addLayout', () => {
     });
     const created = result.current.layoutPresets.at(-1)!;
     const kinds = created.grid.map((p) => p.kind).sort();
-    expect(kinds).toEqual(['autoTradingActivity', 'autoTradingSetup', 'chart', 'positions', 'watchers']);
+    expect(kinds).toEqual(['chart', 'chart', 'chart', 'orders', 'portfolio', 'positions', 'watchers']);
   });
 
-  it('creates a layout from the scalping template', () => {
+  it('creates a layout from the auto-scalping template', () => {
     const { result } = renderHook(() => useLayoutStore());
     act(() => {
-      result.current.addLayout('Scalp', 'scalping');
+      result.current.addLayout('Scalp', 'autoScalping');
     });
     const created = result.current.layoutPresets.at(-1)!;
+    const kinds = created.grid.map((p) => p.kind).sort();
+    expect(kinds).toContain('orderBook');
+    expect(kinds).toContain('orderFlowMetrics');
+    expect(kinds).toContain('autoTradingSetup');
+    expect(kinds).toContain('portfolio');
     const charts = created.grid.filter((p) => p.kind === 'chart') as ChartPanelConfig[];
-    expect(charts.map((c) => c.timeframe).sort()).toEqual(['1m', '5m']);
-    expect(created.grid.some((p) => p.kind === 'orderFlowMetrics')).toBe(true);
-    expect(created.grid.some((p) => p.kind === 'ticket')).toBe(true);
+    expect(charts.map((c) => c.timeframe)).toEqual(['1m']);
   });
 
-  it('LAYOUT_TEMPLATES exports all four template keys', () => {
+  it('LAYOUT_TEMPLATES exports the full set (empty + 6 trading variants + auto-trading + auto-scalping)', () => {
     const keys = LAYOUT_TEMPLATES.map((t) => t.key).sort();
-    expect(keys).toEqual(['autoTrading', 'empty', 'scalping', 'trading']);
+    expect(keys).toEqual([
+      'autoScalping',
+      'autoTrading',
+      'empty',
+      'tradingDay',
+      'tradingLong',
+      'tradingMidterm',
+      'tradingPosition',
+      'tradingScalp',
+      'tradingSwing',
+    ]);
   });
 });
 
