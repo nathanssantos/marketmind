@@ -212,7 +212,7 @@ export const LayoutTabBar = memo(() => {
                 value={dialog.template}
                 onChange={handleTemplateChange}
                 options={templateOptions}
-                usePortal
+                usePortal={false}
               />
             </ChakraField.Root>
           )}
