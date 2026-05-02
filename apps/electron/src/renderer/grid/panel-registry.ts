@@ -4,14 +4,11 @@ import type { IconType } from 'react-icons';
 import {
   LuActivity,
   LuChartCandlestick,
-  LuChartLine,
   LuClipboardList,
-  LuLayers,
   LuListChecks,
   LuListOrdered,
   LuPackage,
   LuRadar,
-  LuShield,
   LuTarget,
   LuTicket,
   LuWallet,
@@ -56,8 +53,14 @@ const MARKET_DEFAULT = { w: 4, h: 14 };
 const AUTOTRADING_DEFAULT = { w: 5, h: 12 };
 const CHART_DEFAULT = { w: 8, h: 16 };
 
-const NOT_YET_REGISTERED: PanelDef['load'] = () =>
-  Promise.reject(new Error('panel not yet registered — pending v1.10 Track 4.x migration'));
+/**
+ * Chart panels never go through the registry's `load` — they render via
+ * `<ChartGridPanel>` directly in `ChartGrid` since they need symbol +
+ * marketType + layoutId props the generic `<NamedPanelRenderer>` doesn't
+ * thread. Calling this placeholder is a programming error.
+ */
+const CHART_LOAD_UNUSED: PanelDef['load'] = () =>
+  Promise.reject(new Error('chart panels render via <ChartGridPanel>, not the registry load'));
 
 export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
   chart: {
@@ -68,7 +71,7 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'multi',
     shellMode: 'chart',
     defaultLayout: CHART_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: CHART_LOAD_UNUSED,
   },
   ticket: {
     kind: 'ticket',
@@ -135,26 +138,6 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
         default: m.PositionsPanel,
       })),
   },
-  exposure: {
-    kind: 'exposure',
-    group: 'trading',
-    titleKey: 'panels.exposure.title',
-    icon: LuShield,
-    cardinality: 'single',
-    shellMode: 'bare',
-    defaultLayout: TRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
-  },
-  indicators: {
-    kind: 'indicators',
-    group: 'market',
-    titleKey: 'panels.indicators.title',
-    icon: LuChartLine,
-    cardinality: 'single',
-    shellMode: 'bare',
-    defaultLayout: MARKET_DEFAULT,
-    load: NOT_YET_REGISTERED,
-  },
   marketIndicators: {
     kind: 'marketIndicators',
     group: 'market',
@@ -167,16 +150,6 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
       import('@renderer/components/MarketSidebar/panels/MarketIndicatorsPanel').then((m) => ({
         default: m.MarketIndicatorsPanel,
       })),
-  },
-  marketSections: {
-    kind: 'marketSections',
-    group: 'market',
-    titleKey: 'panels.marketSections.title',
-    icon: LuLayers,
-    cardinality: 'single',
-    shellMode: 'bare',
-    defaultLayout: MARKET_DEFAULT,
-    load: NOT_YET_REGISTERED,
   },
   watchers: {
     kind: 'watchers',

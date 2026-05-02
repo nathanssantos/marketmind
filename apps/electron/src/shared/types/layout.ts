@@ -28,11 +28,8 @@ export type PanelKind =
   | 'orders'
   | 'portfolio'
   | 'positions'
-  | 'exposure'
   // Market group
-  | 'indicators'
   | 'marketIndicators'
-  | 'marketSections'
   // Auto-Trading group
   | 'watchers'
   | 'autoTradingSetup'

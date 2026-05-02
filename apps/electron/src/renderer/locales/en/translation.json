@@ -2803,17 +2803,8 @@
     "positions": {
       "title": "Positions"
     },
-    "exposure": {
-      "title": "Exposure & Margin"
-    },
-    "indicators": {
-      "title": "Indicators"
-    },
     "marketIndicators": {
       "title": "Market Indicators"
-    },
-    "marketSections": {
-      "title": "Market Sections"
     },
     "watchers": {
       "title": "Watchers"
