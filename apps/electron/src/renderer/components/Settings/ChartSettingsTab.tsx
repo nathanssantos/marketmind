@@ -2,6 +2,7 @@ import {
   Button,
   Checkbox,
   Field,
+  FormRow,
   FormSection,
   NumberInput,
   Select,
@@ -77,34 +78,57 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
       </FormSection>
 
       <FormSection title={t('settings.chart.displayOptions')}>
-        <Stack gap={2}>
-          <Switch checked={showGrid} onCheckedChange={setShowGrid} size="sm" data-testid="chart-show-grid">
-            {t('chart.controls.grid')}
-          </Switch>
-          <Switch checked={showCurrentPriceLine} onCheckedChange={setShowCurrentPriceLine} size="sm" data-testid="chart-show-current-price">
-            {t('chart.controls.currentPrice')}
-          </Switch>
-          <Switch checked={showCrosshair} onCheckedChange={setShowCrosshair} size="sm" data-testid="chart-show-crosshair">
-            {t('chart.controls.crosshair')}
-          </Switch>
-          <Switch checked={chartFlipped} onCheckedChange={setChartFlipped} size="sm" data-testid="chart-flipped">
-            {t('chart.controls.flipVertical')}
-          </Switch>
-          <Text fontSize="2xs" color="fg.muted" mt={-1}>
-            {t('chart.controls.flipVerticalHelper')}
-          </Text>
+        <FormRow label={t('chart.controls.grid')}>
+          <Switch
+            checked={showGrid}
+            onCheckedChange={setShowGrid}
+            size="sm"
+            aria-label={t('chart.controls.grid')}
+            data-testid="chart-show-grid"
+          />
+        </FormRow>
+        <FormRow label={t('chart.controls.currentPrice')}>
+          <Switch
+            checked={showCurrentPriceLine}
+            onCheckedChange={setShowCurrentPriceLine}
+            size="sm"
+            aria-label={t('chart.controls.currentPrice')}
+            data-testid="chart-show-current-price"
+          />
+        </FormRow>
+        <FormRow label={t('chart.controls.crosshair')}>
+          <Switch
+            checked={showCrosshair}
+            onCheckedChange={setShowCrosshair}
+            size="sm"
+            aria-label={t('chart.controls.crosshair')}
+            data-testid="chart-show-crosshair"
+          />
+        </FormRow>
+        <FormRow
+          label={t('chart.controls.flipVertical')}
+          helper={t('chart.controls.flipVerticalHelper')}
+        >
+          <Switch
+            checked={chartFlipped}
+            onCheckedChange={setChartFlipped}
+            size="sm"
+            aria-label={t('chart.controls.flipVertical')}
+            data-testid="chart-flipped"
+          />
+        </FormRow>
+        <FormRow
+          label={t('settings.chart.liquidityIntensity')}
+          helper={t('settings.chart.liquidityIntensityHelper')}
+        >
           <Switch
             checked={liquidityColorMode === 'intensity'}
             onCheckedChange={(checked) => setLiquidityColorMode(checked ? 'intensity' : 'colored')}
             size="sm"
+            aria-label={t('settings.chart.liquidityIntensity')}
             data-testid="chart-liquidity-intensity"
-          >
-            {t('settings.chart.liquidityIntensity')}
-          </Switch>
-          <Text fontSize="2xs" color="fg.muted" mt={-1}>
-            {t('settings.chart.liquidityIntensityHelper')}
-          </Text>
-        </Stack>
+          />
+        </FormRow>
       </FormSection>
 
       <FormSection title={t('settings.chart.colorPalette')}>
@@ -148,7 +172,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
       <FormSection title={t('settings.chart.chartDimensions')}>
         <Stack gap={3}>
-          <HStack gap={3} align="flex-start">
+          <HStack gap={3} align="flex-start" w="100%">
             <Field label={t('settings.chart.rightMargin')} helperText={t('settings.chart.rightMarginHelper')}>
               <NumberInput value={config.rightMargin} onChange={(e) => handleChange('rightMargin', e.target.value)} min={0} max={500} size="xs" />
             </Field>
@@ -156,7 +180,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
               <NumberInput value={config.volumeHeightRatio} onChange={(e) => handleChange('volumeHeightRatio', e.target.value)} min={0} max={1} step={0.05} size="xs" />
             </Field>
           </HStack>
-          <HStack gap={3} align="flex-start">
+          <HStack gap={3} align="flex-start" w="100%">
             <Field label={t('settings.chart.klineSpacing')} helperText={t('settings.chart.klineSpacingHelper')}>
               <NumberInput value={config.klineSpacing} onChange={(e) => handleChange('klineSpacing', e.target.value)} min={2} max={30} size="xs" />
             </Field>
@@ -169,7 +193,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
       <FormSection title={t('settings.chart.gridSettings')}>
         <Stack gap={3}>
-          <HStack gap={3} align="flex-start">
+          <HStack gap={3} align="flex-start" w="100%">
             <Field label={t('settings.chart.gridLineWidth')} helperText={t('settings.chart.gridLineWidthHelper')}>
               <NumberInput value={config.gridLineWidth} onChange={(e) => handleChange('gridLineWidth', e.target.value)} min={1} max={5} size="xs" />
             </Field>
@@ -195,7 +219,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
       <FormSection title={t('settings.chart.chartPadding')}>
         <Stack gap={3}>
-          <HStack gap={3} align="flex-start">
+          <HStack gap={3} align="flex-start" w="100%">
             <Field label={t('settings.chart.topPadding')}>
               <NumberInput value={config.paddingTop} onChange={(e) => handleChange('paddingTop', e.target.value)} min={0} max={100} size="xs" />
             </Field>
@@ -203,7 +227,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
               <NumberInput value={config.paddingBottom} onChange={(e) => handleChange('paddingBottom', e.target.value)} min={0} max={100} size="xs" />
             </Field>
           </HStack>
-          <HStack gap={3} align="flex-start">
+          <HStack gap={3} align="flex-start" w="100%">
             <Field label={t('settings.chart.leftPadding')}>
               <NumberInput value={config.paddingLeft} onChange={(e) => handleChange('paddingLeft', e.target.value)} min={0} max={100} size="xs" />
             </Field>

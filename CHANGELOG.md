@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Settings dialog tab widths + bottom padding
+- **Settings tab content area now fills the available width.** Root cause: `<Tabs.Root orientation="vertical">` resolves to `display: flex` (per Chakra's Tabs recipe), and the inner `<Flex>` wrapper holding rail + content had no `flex-grow`, so it collapsed to its content's intrinsic width — the content area was sized to the rail (220px) instead of `100% - 220px`. Adding `flex={1}` on the inner Flex restores the layout.
+- **`ChartSettingsTab` Display Options switches** — were using `<Switch>{label}</Switch>` (label rendered inline next to the toggle), which left the right half of each row empty. Migrated each to the bible-correct `<FormRow label={...}><Switch /></FormRow>` shape so the label sits on the left and the toggle on the right of the row, with helper text under the label.
+- **`GeneralTab` Theme button group** — `<HStack>` had no `w="100%"`, so the Light/Dark buttons collapsed to ~150px wide despite each having `flex={1}`. Added `w="100%"` so the buttons split the full row width.
+- **Settings content padding** — bumped horizontal padding from `px=5` (20px) to `px=6` (24px) and bottom padding from `pb=8` (32px) to `pb=10` (40px) for more breathing room when scrolled to the end of a long tab.
+
 ## [1.8.0] - 2026-05-02
 
 **v1.8 release** — enforcement + last-mile cleanup. v1.6 made the dialogs uniform, v1.7 brought every other surface up to the same design language, and v1.8 turns those rules into something the codebase enforces (CI gate) instead of relying on review. Three implementation PRs (#406–#408). Tests stay at 2332/2332 throughout.

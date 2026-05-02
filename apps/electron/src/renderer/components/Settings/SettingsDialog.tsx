@@ -74,7 +74,7 @@ export const SettingsDialog = ({
               orientation="vertical"
               variant="subtle"
             >
-              <Flex h="calc(90vh - 64px)" maxH="calc(90vh - 64px)">
+              <Flex flex={1} h="calc(90vh - 64px)" maxH="calc(90vh - 64px)">
                 <Box
                   w="220px"
                   flexShrink={0}
@@ -130,7 +130,7 @@ export const SettingsDialog = ({
                   </Stack>
                 </Box>
 
-                <Box flex={1} overflowY="auto" px={5} pt={4} pb={8} data-testid="settings-content">
+                <Box flex={1} overflowY="auto" px={6} pt={4} pb={10} data-testid="settings-content">
                   <Suspense fallback={
                     <Flex justify="center" align="center" py={MM.spinner.panel.py}>
                       <Spinner size={MM.spinner.panel.size} />
