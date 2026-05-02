@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Ticket + Checklist panels wired to grid (v1.10 Track 4.1)
+- **`ticket` panel** registered: `<TicketPanel>` wraps the existing `<QuickTradeToolbar>` quick-trade ticket. Reads active symbol + market type from the layout store so switching symbol tabs retargets the ticket (per the user's clarification: layouts save panels; tabs only re-point them at the new symbol).
+- **`checklist` panel** registered: `<ChecklistPanel>` wraps the existing `<ChecklistSection>` (trading checklist for the active symbol). Falls back to '1h' interval when no chart is focused.
+
 ### Added — AutoTrading panels wired to grid (v1.10 Track 4.5)
 - **`watchers` panel** registered: `<WatchersPanel>` wraps the existing `<WatchersTab>` (suggestion cards + watchers table).
 - **`autoTradingSetup` panel** registered: `<AutoTradingSetupPanel>` wraps `<ScalpingDashboard>` with the same select-wallet guard the AutoTradingSidebar uses; reads active wallet via `useActiveWallet()` and active symbol from the layout store.

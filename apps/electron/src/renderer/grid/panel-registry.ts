@@ -78,7 +78,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: TRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/Trading/panels/TicketPanel').then((m) => ({
+        default: m.TicketPanel,
+      })),
   },
   checklist: {
     kind: 'checklist',
@@ -88,7 +91,10 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: TRADING_DEFAULT,
-    load: NOT_YET_REGISTERED,
+    load: () =>
+      import('@renderer/components/Trading/panels/ChecklistPanel').then((m) => ({
+        default: m.ChecklistPanel,
+      })),
   },
   orders: {
     kind: 'orders',
