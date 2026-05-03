@@ -53,6 +53,16 @@ export interface DialogShellProps {
    * Tabs). Default is `false` — the body scrolls if children overflow.
    */
   bodyFill?: boolean;
+  /**
+   * Opt-in escape hatch for dialogs that need an inline-portalled child
+   * (typically a `<Select usePortal={false}>`) to render past the body's
+   * natural height — without `'visible'` the dropdown gets clipped at
+   * the body bound. Only set this on small dialogs whose total content
+   * fits inside the dialog's max-height envelope; default `'auto'`
+   * scrolls long content (Analytics, Backtest, Settings) inside the body
+   * instead of bleeding it out of the dialog.
+   */
+  bodyOverflow?: 'auto' | 'visible';
   children: ReactNode;
 }
 
@@ -86,6 +96,7 @@ export const DialogShell = ({
   bodyPadding = MM.dialog.bodyPadding,
   contentMaxH,
   bodyFill = false,
+  bodyOverflow = 'auto',
   children,
 }: DialogShellProps) => {
   const { t } = useTranslation();
@@ -129,10 +140,12 @@ export const DialogShell = ({
           w={'w' in sizeProps ? sizeProps.w : undefined}
           maxH={contentMaxH ?? '90vh'}
           h={bodyFill ? (contentMaxH ?? '90vh') : undefined}
-          // Allow inline dropdowns (Selects with usePortal=false inside
-          // dialogs) to render past the body's natural height. bodyFill
-          // dialogs keep their own clip via the inner overflow="hidden".
-          overflow={bodyFill ? undefined : 'visible'}
+          // Default content overflow is hidden so long bodies scroll
+          // inside the body. When `bodyOverflow="visible"` is opted-in
+          // (small dialogs that need a Select dropdown to escape the
+          // body), the content also goes visible so the dropdown is
+          // clipped only by the dialog's outer max-height envelope.
+          overflow={!bodyFill && bodyOverflow === 'visible' ? 'visible' : undefined}
         >
           <DialogHeader
             px={MM.dialog.headerPadding.x}
@@ -176,13 +189,17 @@ export const DialogShell = ({
               {children}
             </DialogBody>
           ) : (
-            // overflow="visible" on the DialogBody so inline-portalled
-            // dropdowns (Selects with usePortal=false, used inside dialogs
-            // because Chakra's modal interact-outside captures portalled
-            // clicks) can extend past the body. The DialogContent itself
-            // is still bounded by `maxH={contentMaxH ?? '90vh'}` so the
-            // dropdown never escapes the dialog as a whole.
-            <DialogBody p={bodyPadding} overflow="visible">
+            // Default overflowY="auto" so long content (Analytics,
+            // Settings, etc.) scrolls inside the dialog instead of
+            // bleeding past it. Opt-in `bodyOverflow="visible"` is for
+            // small dialogs whose Select dropdowns (usePortal=false)
+            // need to extend past the body bound — the New Layout
+            // dialog is the only current case.
+            <DialogBody
+              p={bodyPadding}
+              overflow={bodyOverflow === 'visible' ? 'visible' : undefined}
+              overflowY={bodyOverflow === 'visible' ? undefined : 'auto'}
+            >
               <Stack gap={MM.dialog.sectionGap}>{children}</Stack>
             </DialogBody>
           )}

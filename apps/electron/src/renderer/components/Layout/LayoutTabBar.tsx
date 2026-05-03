@@ -207,6 +207,7 @@ export const LayoutTabBar = memo(() => {
         submitLabel={dialog.mode === 'create' ? 'Create' : 'Save'}
         submitDisabled={!dialog.value.trim()}
         size="sm"
+        bodyOverflow="visible"
       >
         <Stack gap={3}>
           {dialog.mode === 'create' && (
