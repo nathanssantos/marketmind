@@ -135,12 +135,13 @@ export class BinanceApiCache {
     while (current && typeof current === 'object' && !seen.has(current) && depth < 4) {
       seen.add(current);
       const obj = current as Record<string, unknown>;
-      const code = typeof obj.code === 'string' ? obj.code : '';
+      const codeValue = obj['code'];
+      const code = typeof codeValue === 'string' ? codeValue : '';
       if (NETWORK_ERROR_CODES.has(code)) {
         detectedCode = code;
         break;
       }
-      current = obj.cause;
+      current = obj['cause'];
       depth += 1;
     }
 
