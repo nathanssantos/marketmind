@@ -2,7 +2,6 @@ import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, tradeExecutions } from '../../db/schema';
-import { guardBinanceCall } from '../../services/binance-api-cache';
 import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   cancelAllFuturesAlgoOrders,
@@ -11,6 +10,7 @@ import {
   cancelFuturesOrder,
   createBinanceFuturesClient,
   getOpenAlgoOrders,
+  getPosition,
   isPaperWallet,
   setLeverage,
   setMarginType,
@@ -129,8 +129,7 @@ export const orderMutationsRouter = router({
         if (input.leverage) await setLeverage(client, input.symbol, input.leverage);
         await setMarginType(client, input.symbol, 'CROSSED');
 
-        const positionsForLeverage = await guardBinanceCall(() => client.getPositions({ symbol: input.symbol }));
-        const posForLeverage = positionsForLeverage.find(p => p.symbol === input.symbol);
+        const posForLeverage = await getPosition(client, input.symbol);
         const actualLeverage = posForLeverage ? Number(posForLeverage.leverage) : (input.leverage ?? 1);
 
         const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters('FUTURES');

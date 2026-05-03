@@ -4,6 +4,7 @@ import { binanceApiCache, guardBinanceCall } from '../../services/binance-api-ca
 import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   createBinanceFuturesClient,
+  getPosition,
   getSymbolLeverageBrackets,
   isPaperWallet,
   setLeverage,
@@ -31,8 +32,8 @@ export const accountConfigRouter = router({
       try {
         const client = createBinanceFuturesClient(wallet);
 
-        const positions = await guardBinanceCall(() => client.getPositions({ symbol: input.symbol }));
-        const hasOpenPosition = positions.some(
+        const positionsV3 = await guardBinanceCall(() => client.getPositionsV3({ symbol: input.symbol }));
+        const hasOpenPosition = positionsV3.some(
           (p) => p.symbol === input.symbol && Math.abs(parseFloat(String(p.positionAmt))) > 0
         );
         if (hasOpenPosition) {
@@ -85,8 +86,7 @@ export const accountConfigRouter = router({
 
       try {
         const client = createBinanceFuturesClient(wallet);
-        const positions = await guardBinanceCall(() => client.getPositions({ symbol: input.symbol }));
-        const pos = positions.find(p => p.symbol === input.symbol);
+        const pos = await getPosition(client, input.symbol);
         const result = { leverage: pos ? Number(pos.leverage) : 1 };
         binanceApiCache.set('SYMBOL_LEVERAGE', input.walletId, result, input.symbol);
         return result;
