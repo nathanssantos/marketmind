@@ -78,14 +78,28 @@ const ScoreBadgePair = ({
 export const ChecklistSection = memo(({ symbol, interval, marketType }: ChecklistSectionProps) => {
   const { t } = useTranslation();
   const { getDefaultProfile, isLoadingProfiles } = useTradingProfiles();
+  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('checklistScoreChartVisible', false);
+
+  const defaultProfile = getDefaultProfile();
+  const hasCurrentTimeframeCondition = useMemo(
+    () => (defaultProfile?.checklistConditions ?? []).some(
+      (c: ChecklistCondition) => c.enabled && c.timeframe === 'current',
+    ),
+    [defaultProfile?.checklistConditions],
+  );
+
+  // Subscribing to focusedInterval would re-render and re-fetch the
+  // checklist on every focus change. We only need it when at least one
+  // condition resolves against the current chart timeframe — otherwise
+  // the eval/persisted-history bucket is stable on the prop interval and
+  // focus changes should be a no-op.
   const focusedInterval = useLayoutStore((s) => {
+    if (!hasCurrentTimeframeCondition) return undefined;
     const panel = s.getFocusedPanel();
     return panel?.kind === 'chart' ? panel.timeframe : undefined;
   });
-  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('checklistScoreChartVisible', false);
 
   const effectiveInterval = focusedInterval ?? interval;
-  const defaultProfile = getDefaultProfile();
   const queryEnabled = Boolean(defaultProfile?.id) && Boolean(symbol) && Boolean(effectiveInterval);
 
   const checklistQuery = trpc.trading.evaluateChecklist.useQuery(
