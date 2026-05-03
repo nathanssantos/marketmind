@@ -1,5 +1,8 @@
+import type { MarketType } from '@marketmind/types';
 import { Box, useToken } from '@chakra-ui/react';
-import { memo, useEffect, useRef, useState } from 'react';
+import { Skeleton } from '@renderer/components/ui';
+import { trpc } from '@renderer/utils/trpc';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -11,18 +14,19 @@ import {
   YAxis,
 } from 'recharts';
 
-const MAX_HISTORY_POINTS = 60;
-// Auxiliary horizontal threshold — at 40% the user has a meaningful
-// share of the checklist passing without it being a strong signal yet.
-// Two ReferenceLines (one in long color, one in short color) drawn at
-// the same y so the user sees "where 40% sits" against either series.
+const MAX_HISTORY_POINTS = 1000;
+const SEED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 const REFERENCE_LEVEL = 40;
+const CHART_HEIGHT = '140px';
 
 interface ChecklistScoreChartProps {
-  /** Composite key (symbol + interval + marketType) — when this changes the history resets. */
   resetKey: string;
   longScore: number | null | undefined;
   shortScore: number | null | undefined;
+  profileId: string | null | undefined;
+  symbol: string;
+  interval: string;
+  marketType: MarketType;
 }
 
 interface HistoryPoint {
@@ -31,38 +35,56 @@ interface HistoryPoint {
   short: number | null;
 }
 
-/**
- * Tracks the rolling L / S checklist score over time and renders a small
- * Recharts line chart below the score row. History lives in component
- * state — capped at 60 points (15 s × 60 = 15 min at the current
- * refetchInterval) so the chart stays cheap to render and doesn't
- * accumulate forever. Reset on `resetKey` change so flipping symbol /
- * interval doesn't blend two unrelated series.
- */
-export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: ChecklistScoreChartProps) => {
+const mergePoint = (history: HistoryPoint[], point: HistoryPoint): HistoryPoint[] => {
+  const last = history[history.length - 1];
+  if (last && last.t === point.t && last.long === point.long && last.short === point.short) return history;
+  if (last && last.long === point.long && last.short === point.short) return history;
+  const next = [...history, point];
+  return next.length > MAX_HISTORY_POINTS ? next.slice(-MAX_HISTORY_POINTS) : next;
+};
+
+export const ChecklistScoreChart = memo(({
+  resetKey,
+  longScore,
+  shortScore,
+  profileId,
+  symbol,
+  interval,
+  marketType,
+}: ChecklistScoreChartProps) => {
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const lastResetKeyRef = useRef(resetKey);
+  const seededKeyRef = useRef<string | null>(null);
+
+  const queryEnabled = Boolean(profileId) && Boolean(symbol) && Boolean(interval);
+  const sinceMs = useMemo(() => Date.now() - SEED_LOOKBACK_MS, [resetKey]);
+
+  const historyQuery = trpc.trading.getScoreHistory.useQuery(
+    { profileId: profileId ?? '', symbol, interval, marketType, sinceMs },
+    { enabled: queryEnabled, staleTime: 60_000, refetchOnWindowFocus: false },
+  );
 
   useEffect(() => {
     if (lastResetKeyRef.current !== resetKey) {
       lastResetKeyRef.current = resetKey;
+      seededKeyRef.current = null;
       setHistory([]);
     }
   }, [resetKey]);
 
   useEffect(() => {
+    if (!historyQuery.data) return;
+    if (seededKeyRef.current === resetKey) return;
+    seededKeyRef.current = resetKey;
+    setHistory(historyQuery.data.map((p) => ({ t: p.t, long: p.long, short: p.short })));
+  }, [historyQuery.data, resetKey]);
+
+  useEffect(() => {
     if (longScore == null && shortScore == null) return;
-    const last = history[history.length - 1];
     const l = longScore ?? null;
     const s = shortScore ?? null;
-    // Skip if the last sample has the exact same scores — keeps the
-    // history tight when nothing meaningful changed between polls.
-    if (last && last.long === l && last.short === s) return;
-    setHistory((prev) => {
-      const next = [...prev, { t: Date.now(), long: l, short: s }];
-      return next.length > MAX_HISTORY_POINTS ? next.slice(-MAX_HISTORY_POINTS) : next;
-    });
-  }, [longScore, shortScore, history]);
+    setHistory((prev) => mergePoint(prev, { t: Date.now(), long: l, short: s }));
+  }, [longScore, shortScore]);
 
   const [profitColor, lossColor, gridColor, axisLabelColor, panelBg, referenceColor] = useToken('colors', [
     'trading.profit',
@@ -73,10 +95,20 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
     'fg.muted',
   ]);
 
+  const isInitialLoading = queryEnabled && historyQuery.isLoading && history.length === 0;
+
+  if (isInitialLoading) {
+    return (
+      <Box mt={1} mx={1} mb={2}>
+        <Skeleton height={CHART_HEIGHT} />
+      </Box>
+    );
+  }
+
   if (history.length < 2) return null;
 
   return (
-    <Box mt={1} mx={1} mb={2} h="80px">
+    <Box mt={1} mx={1} mb={2} h={CHART_HEIGHT}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={history} margin={{ top: 4, right: 4, bottom: 0, left: -28 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={gridColor} />
@@ -94,11 +126,6 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
             labelFormatter={(t) => new Date(Number(t)).toLocaleTimeString()}
             formatter={(value, name) => [`${Math.round(Number(value))}%`, String(name)]}
           />
-          {/*
-            Auxiliary 40% threshold — neutral light dashed line. Single
-            line (not one per side) since both series read against the
-            same y=40 reference.
-          */}
           <ReferenceLine
             y={REFERENCE_LEVEL}
             stroke={referenceColor}

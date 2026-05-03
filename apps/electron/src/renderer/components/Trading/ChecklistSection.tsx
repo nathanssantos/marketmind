@@ -302,58 +302,70 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
 
   const hasAnyResults = groups.long.length + groups.short.length + groups.both.length > 0;
 
+  const scoreBadges = isLoading && !checklistQuery.data ? (
+    <Text fontSize="2xs" color="fg.muted">
+      …
+    </Text>
+  ) : (
+    <HStack gap={2}>
+      <ScoreBadgePair letter="L" color="trading.profit" score={longScore} />
+      <ScoreBadgePair letter="S" color="trading.loss" score={shortScore} />
+    </HStack>
+  );
+
+  const optionsMenu = (
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <IconButton
+          size="2xs"
+          variant="ghost"
+          aria-label={t('checklist.section.options')}
+          h="14px"
+          minW="14px"
+        >
+          <LuEllipsisVertical size={12} />
+        </IconButton>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="160px">
+            <Menu.Item value="toggle-chart" onClick={() => setShowScoreChart(!showScoreChart)}>
+              {showScoreChart ? t('checklist.section.hideChart') : t('checklist.section.showChart')}
+            </Menu.Item>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
+  );
+
   return (
     <Stack gap={0.5} align="stretch">
-      {showScoreChart && (
-        <ChecklistScoreChart
-          resetKey={`${symbol}:${effectiveInterval}:${marketType}`}
-          longScore={longScore?.score}
-          shortScore={shortScore?.score}
-        />
-      )}
-
-      <Flex align="center" gap={1} px={1} py={0.5}>
-        <Text fontSize="xs" color="fg.muted" flex={1}>
-          {t('checklist.section.title')}
-        </Text>
-        {isLoading && !checklistQuery.data ? (
-          <Text fontSize="2xs" color="fg.muted">
-            …
+      {showScoreChart ? (
+        <>
+          <Flex align="center" gap={1} px={1} pt={0.5}>
+            <Box flex={1} />
+            {scoreBadges}
+            {optionsMenu}
+          </Flex>
+          <ChecklistScoreChart
+            resetKey={`${defaultProfile?.id ?? 'no-profile'}:${symbol}:${effectiveInterval}:${marketType}`}
+            longScore={longScore?.score}
+            shortScore={shortScore?.score}
+            profileId={defaultProfile?.id}
+            symbol={symbol}
+            interval={effectiveInterval}
+            marketType={marketType}
+          />
+        </>
+      ) : (
+        <Flex align="center" gap={1} px={1} py={0.5}>
+          <Text fontSize="xs" color="fg.muted" flex={1}>
+            {t('checklist.section.title')}
           </Text>
-        ) : (
-          <HStack gap={2}>
-            <ScoreBadgePair letter="L" color="trading.profit" score={longScore} />
-            <ScoreBadgePair letter="S" color="trading.loss" score={shortScore} />
-          </HStack>
-        )}
-        <Menu.Root>
-          <Menu.Trigger asChild>
-            <IconButton
-              size="2xs"
-              variant="ghost"
-              aria-label={t('checklist.section.options')}
-              h="14px"
-              minW="14px"
-            >
-              <LuEllipsisVertical size={12} />
-            </IconButton>
-          </Menu.Trigger>
-          <Portal>
-            <Menu.Positioner>
-              <Menu.Content minW="160px">
-                <Menu.Item
-                  value="toggle-chart"
-                  onClick={() => setShowScoreChart(!showScoreChart)}
-                >
-                  {showScoreChart
-                    ? t('checklist.section.hideChart')
-                    : t('checklist.section.showChart')}
-                </Menu.Item>
-              </Menu.Content>
-            </Menu.Positioner>
-          </Portal>
-        </Menu.Root>
-      </Flex>
+          {scoreBadges}
+          {optionsMenu}
+        </Flex>
+      )}
 
       <Stack gap={1.5} px={1} pb={1}>
         {!hasAnyResults ? (

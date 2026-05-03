@@ -43,7 +43,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
               <Text color="fg.muted" fontSize="2xs">{todayPnl?.tradesCount ?? 0} {t('trading.portfolio.trades')}</Text>
             </Stack>
             <Stack gap={0} align="flex-end">
-              <Text fontWeight="medium" fontSize="sm" color={!todayPnl ? 'fg.muted' : todayPnl.pnl >= 0 ? 'trading.profit' : 'trading.loss'}>
+              <Text fontWeight="medium" color={!todayPnl ? 'fg.muted' : todayPnl.pnl >= 0 ? 'trading.profit' : 'trading.loss'}>
                 {todayPnl ? `${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayPnl.pnl >= 0 ? '+' : ''}${todayPnl.pnlPercent.toFixed(2)}%)` : '$0.00'}
               </Text>
               <BrlValue usdtValue={todayPnl?.pnl ?? 0} />
