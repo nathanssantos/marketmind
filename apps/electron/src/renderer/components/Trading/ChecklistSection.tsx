@@ -1,15 +1,17 @@
 import type { PositionSide, MarketType } from '@marketmind/types';
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import { Badge, TooltipWrapper } from '@renderer/components/ui';
+import { Box, Flex, HStack, Portal, Stack, Text } from '@chakra-ui/react';
+import { Badge, IconButton, Menu, TooltipWrapper } from '@renderer/components/ui';
 import { useChecklistEvaluation } from '@renderer/hooks/useChecklistEvaluation';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useLayoutStore } from '@renderer/store/layoutStore';
+import { useUIPref } from '@renderer/store/preferencesStore';
 import { trpc } from '@renderer/utils/trpc';
 import { calculateChecklistScore, type ChecklistCondition } from '@marketmind/trading-core';
 import { getDefaultChecklistWeight } from '@marketmind/types';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuCheck, LuTriangle, LuX } from 'react-icons/lu';
+import { LuCheck, LuEllipsisVertical, LuTriangle, LuX } from 'react-icons/lu';
+import { ChecklistScoreChart } from './ChecklistScoreChart';
 
 interface ChecklistSectionProps {
   symbol: string;
@@ -80,6 +82,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
     const panel = s.getFocusedPanel();
     return panel?.kind === 'chart' ? panel.timeframe : undefined;
   });
+  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('checklistScoreChartVisible', false);
 
   const effectiveInterval = focusedInterval ?? interval;
   const defaultProfile = getDefaultProfile();
@@ -301,6 +304,14 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
 
   return (
     <Stack gap={0.5} align="stretch">
+      {showScoreChart && (
+        <ChecklistScoreChart
+          resetKey={`${symbol}:${effectiveInterval}:${marketType}`}
+          longScore={longScore?.score}
+          shortScore={shortScore?.score}
+        />
+      )}
+
       <Flex align="center" gap={1} px={1} py={0.5}>
         <Text fontSize="xs" color="fg.muted" flex={1}>
           {t('checklist.section.title')}
@@ -315,6 +326,33 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
             <ScoreBadgePair letter="S" color="trading.loss" score={shortScore} />
           </HStack>
         )}
+        <Menu.Root>
+          <Menu.Trigger asChild>
+            <IconButton
+              size="2xs"
+              variant="ghost"
+              aria-label={t('checklist.section.options')}
+              h="14px"
+              minW="14px"
+            >
+              <LuEllipsisVertical size={12} />
+            </IconButton>
+          </Menu.Trigger>
+          <Portal>
+            <Menu.Positioner>
+              <Menu.Content minW="160px">
+                <Menu.Item
+                  value="toggle-chart"
+                  onClick={() => setShowScoreChart(!showScoreChart)}
+                >
+                  {showScoreChart
+                    ? t('checklist.section.hideChart')
+                    : t('checklist.section.showChart')}
+                </Menu.Item>
+              </Menu.Content>
+            </Menu.Positioner>
+          </Portal>
+        </Menu.Root>
       </Flex>
 
       <Stack gap={1.5} px={1} pb={1}>

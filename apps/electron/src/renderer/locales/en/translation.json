@@ -2711,7 +2711,10 @@
       "error": "Checklist error",
       "dedupExcluded": "Not counted — same as another condition for this timeframe",
       "title": "Checklist",
-      "empty": "No conditions evaluated."
+      "empty": "No conditions evaluated.",
+      "options": "Checklist options",
+      "showChart": "Show score chart",
+      "hideChart": "Hide score chart"
     },
     "editor": {
       "moveUp": "Move up",
