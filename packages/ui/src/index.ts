@@ -62,6 +62,7 @@ export { ToggleIconButton, type ToggleIconButtonProps } from './toggle-icon-butt
 
 // Tier 2 — token-aware composed primitives
 export { Callout, type CalloutTone } from './callout';
+export { CollapsibleSection, type CollapsibleSectionProps } from './collapsible-section';
 export { ColorPicker, DEFAULT_COLOR_PRESETS, type ColorPickerProps } from './color-picker';
 export { CreateActionButton, type CreateActionButtonProps } from './create-action-button';
 export { DialogSection, type DialogSectionProps } from './dialog-section';
@@ -73,6 +74,7 @@ export {
   type MiniLineChartSeries,
 } from './mini-line-chart';
 export { PanelHeader } from './panel-header';
+export { TradingSideCard, type TradingSideCardProps } from './trading-side-card';
 export { SidebarContainer, SidebarHeader, SidebarTabsHeader } from './Sidebar';
 export {
   FieldHint,
