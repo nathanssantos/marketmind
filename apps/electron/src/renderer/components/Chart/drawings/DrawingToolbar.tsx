@@ -173,11 +173,11 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
         <Box w="1px" h="18px" bg="border" mx={0.5} />
 
         {hasProperties && (
-          <TooltipWrapper label={t('chart.drawingToolbar.properties', 'Properties')} showArrow placement="top">
+          <TooltipWrapper label={t('chart.drawingToolbar.properties')} showArrow placement="top">
             <IconButton
               size="2xs"
               variant="ghost"
-              aria-label={t('chart.drawingToolbar.properties', 'Properties')}
+              aria-label={t('chart.drawingToolbar.properties')}
               onClick={() => setPropertiesOpen(true)}
               data-testid="drawing-toolbar-properties"
             >

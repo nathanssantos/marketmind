@@ -165,7 +165,8 @@ describe('DrawingPropertiesDialog — non-supported types', () => {
     renderWithProvider(
       <DrawingPropertiesDialog isOpen onClose={() => {}} drawing={baseLine} manager={mockManager} />,
     );
-    expect(screen.getByText(/no advanced properties/i)).toBeInTheDocument();
+    // Mock t() returns the key when no fallback is provided.
+    expect(screen.getByText('chart.drawingProperties.notImplemented')).toBeInTheDocument();
   });
 
   it('returns null when drawing is null', () => {

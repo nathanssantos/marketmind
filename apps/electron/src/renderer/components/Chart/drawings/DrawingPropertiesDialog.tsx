@@ -4,12 +4,11 @@ import { FormDialog, Input } from '@renderer/components/ui';
 import { useDrawingStore } from '@renderer/store/drawingStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { Drawing } from '@marketmind/chart-studies';
+import type { DialogControlProps } from '@marketmind/types';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-interface DrawingPropertiesDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface DrawingPropertiesDialogProps extends DialogControlProps {
   drawing: Drawing | null;
   manager: CanvasManager | null;
 }
@@ -37,13 +36,12 @@ export const DrawingPropertiesDialog = ({
   if (!drawing) return null;
 
   const titleKey = `chart.drawingProperties.${drawing.type}.title`;
-  const fallbackTitle = drawing.type;
 
   return (
     <FormDialog
       isOpen={isOpen}
       onClose={onClose}
-      title={t(titleKey, fallbackTitle)}
+      title={t(titleKey)}
       hideFooter
       size="sm"
     >
@@ -53,7 +51,7 @@ export const DrawingPropertiesDialog = ({
         ) : (
           <Box>
             <Text fontSize="sm" color="fg.muted">
-              {t('chart.drawingProperties.notImplemented', 'No advanced properties for this drawing yet.')}
+              {t('chart.drawingProperties.notImplemented')}
             </Text>
           </Box>
         )}
@@ -111,7 +109,7 @@ const HorizontalLineProperties = ({ drawing, manager, onClose }: HorizontalLineP
   return (
     <ChakraField.Root>
       <ChakraField.Label fontSize="xs" color="fg.muted">
-        {t('chart.drawingProperties.horizontalLine.price', 'Price')}
+        {t('chart.drawingProperties.horizontalLine.price')}
       </ChakraField.Label>
       <Input
         type="number"

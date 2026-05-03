@@ -48,6 +48,9 @@
     "close": "Close",
     "moreActions": "More actions",
     "hideActions": "Hide actions",
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "restore": "Restore",
     "delete": "Delete",
     "edit": "Edit",
     "beta": "Beta",
@@ -968,7 +971,15 @@
       "fontSize": "Font Size",
       "bold": "Bold",
       "underline": "Underline",
-      "delete": "Delete"
+      "delete": "Delete",
+      "properties": "Properties"
+    },
+    "drawingProperties": {
+      "notImplemented": "No advanced properties for this drawing yet.",
+      "horizontalLine": {
+        "title": "Horizontal Line",
+        "price": "Price"
+      }
     },
     "navigation": {
       "resetView": "Reset to initial view",
@@ -1406,6 +1417,7 @@
     },
     "mode": {
       "title": "Trading Mode",
+      "label": "Mode",
       "auto": "Auto",
       "semiAssisted": "Semi-Assisted",
       "autoDescription": "Trades are executed automatically when setups are detected.",
