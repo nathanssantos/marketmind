@@ -246,7 +246,7 @@ export const useDrawingsRenderer = ({
       if (raw.type !== 'horizontalLine') continue;
       const cacheKey = `${raw.id}-${raw.updatedAt}`;
       const drawing = drawingIndexCache.current.get(cacheKey);
-      if (!drawing || !drawing.visible) continue;
+      if (!drawing?.visible) continue;
       if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
       renderHorizontalLineTag(
         ctx,
