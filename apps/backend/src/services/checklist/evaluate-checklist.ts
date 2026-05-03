@@ -10,7 +10,7 @@ import {
   type ConditionEvaluationResult,
   type IndicatorDefinition,
 } from '@marketmind/trading-core';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, lte } from 'drizzle-orm';
 import { db } from '../../db';
 import { klines as klinesTable, userIndicators } from '../../db/schema';
 import { mapDbKlinesToApi } from '../../utils/kline-mapper';
@@ -29,6 +29,13 @@ export interface EvaluateChecklistInput {
   marketType: MarketType;
   conditions: ChecklistCondition[];
   side?: PositionSide | 'BOTH';
+  /**
+   * Evaluate the checklist as of this point in time (epoch ms). When set,
+   * the kline series is truncated to closes at-or-before this timestamp
+   * and the live exchange prefetch is skipped. Used by the score-history
+   * backfill to reconstruct historical scores.
+   */
+  referenceTime?: number;
 }
 
 export interface EvaluateChecklistConditionResult {
@@ -86,15 +93,21 @@ const fetchKlinesForTimeframe = async (
   symbol: string,
   interval: string,
   marketType: MarketType,
+  referenceTime?: number,
 ): Promise<Kline[]> => {
-  await prefetchKlines({ symbol, interval, targetCount: CHECKLIST_KLINE_LOOKBACK, marketType });
+  if (referenceTime == null) {
+    await prefetchKlines({ symbol, interval, targetCount: CHECKLIST_KLINE_LOOKBACK, marketType });
+  }
+
+  const baseWhere = [
+    eq(klinesTable.symbol, symbol),
+    eq(klinesTable.interval, interval),
+    eq(klinesTable.marketType, marketType),
+  ];
+  if (referenceTime != null) baseWhere.push(lte(klinesTable.closeTime, new Date(referenceTime)));
 
   const rows = await db.query.klines.findMany({
-    where: and(
-      eq(klinesTable.symbol, symbol),
-      eq(klinesTable.interval, interval),
-      eq(klinesTable.marketType, marketType),
-    ),
+    where: and(...baseWhere),
     orderBy: [desc(klinesTable.openTime)],
     limit: CHECKLIST_KLINE_LOOKBACK,
   });
@@ -195,7 +208,7 @@ const conditionAppliesToSide = (
 export const evaluateChecklist = async (
   input: EvaluateChecklistInput,
 ): Promise<EvaluateChecklistResult> => {
-  const { userId, symbol, interval, marketType, conditions, side } = input;
+  const { userId, symbol, interval, marketType, conditions, side, referenceTime } = input;
 
   const enabledConditions = conditions.filter((c) => c.enabled);
 
@@ -243,7 +256,7 @@ export const evaluateChecklist = async (
   const klinesByTimeframe = new Map<string, Kline[]>();
   await Promise.all(
     Array.from(timeframes).map(async (tf) => {
-      const klines = await fetchKlinesForTimeframe(symbol, tf, marketType);
+      const klines = await fetchKlinesForTimeframe(symbol, tf, marketType, referenceTime);
       klinesByTimeframe.set(tf, klines);
     }),
   );

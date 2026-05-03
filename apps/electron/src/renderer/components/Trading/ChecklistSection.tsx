@@ -1,15 +1,17 @@
 import type { PositionSide, MarketType } from '@marketmind/types';
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import { Badge, TooltipWrapper } from '@renderer/components/ui';
+import { Box, Flex, HStack, Portal, Stack, Text } from '@chakra-ui/react';
+import { Badge, IconButton, Menu, TooltipWrapper } from '@renderer/components/ui';
 import { useChecklistEvaluation } from '@renderer/hooks/useChecklistEvaluation';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useLayoutStore } from '@renderer/store/layoutStore';
+import { useUIPref } from '@renderer/store/preferencesStore';
 import { trpc } from '@renderer/utils/trpc';
 import { calculateChecklistScore, type ChecklistCondition } from '@marketmind/trading-core';
 import { getDefaultChecklistWeight } from '@marketmind/types';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuCheck, LuTriangle, LuX } from 'react-icons/lu';
+import { LuCheck, LuEllipsisVertical, LuTriangle, LuX } from 'react-icons/lu';
+import { ChecklistScoreChart } from './ChecklistScoreChart';
 
 interface ChecklistSectionProps {
   symbol: string;
@@ -76,13 +78,28 @@ const ScoreBadgePair = ({
 export const ChecklistSection = memo(({ symbol, interval, marketType }: ChecklistSectionProps) => {
   const { t } = useTranslation();
   const { getDefaultProfile, isLoadingProfiles } = useTradingProfiles();
+  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('checklistScoreChartVisible', false);
+
+  const defaultProfile = getDefaultProfile();
+  const hasCurrentTimeframeCondition = useMemo(
+    () => (defaultProfile?.checklistConditions ?? []).some(
+      (c: ChecklistCondition) => c.enabled && c.timeframe === 'current',
+    ),
+    [defaultProfile?.checklistConditions],
+  );
+
+  // Subscribing to focusedInterval would re-render and re-fetch the
+  // checklist on every focus change. We only need it when at least one
+  // condition resolves against the current chart timeframe — otherwise
+  // the eval/persisted-history bucket is stable on the prop interval and
+  // focus changes should be a no-op.
   const focusedInterval = useLayoutStore((s) => {
+    if (!hasCurrentTimeframeCondition) return undefined;
     const panel = s.getFocusedPanel();
     return panel?.kind === 'chart' ? panel.timeframe : undefined;
   });
 
   const effectiveInterval = focusedInterval ?? interval;
-  const defaultProfile = getDefaultProfile();
   const queryEnabled = Boolean(defaultProfile?.id) && Boolean(symbol) && Boolean(effectiveInterval);
 
   const checklistQuery = trpc.trading.evaluateChecklist.useQuery(
@@ -299,23 +316,70 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
 
   const hasAnyResults = groups.long.length + groups.short.length + groups.both.length > 0;
 
+  const scoreBadges = isLoading && !checklistQuery.data ? (
+    <Text fontSize="2xs" color="fg.muted">
+      …
+    </Text>
+  ) : (
+    <HStack gap={2}>
+      <ScoreBadgePair letter="L" color="trading.profit" score={longScore} />
+      <ScoreBadgePair letter="S" color="trading.loss" score={shortScore} />
+    </HStack>
+  );
+
+  const optionsMenu = (
+    <Menu.Root>
+      <Menu.Trigger asChild>
+        <IconButton
+          size="2xs"
+          variant="ghost"
+          aria-label={t('checklist.section.options')}
+          h="14px"
+          minW="14px"
+        >
+          <LuEllipsisVertical size={12} />
+        </IconButton>
+      </Menu.Trigger>
+      <Portal>
+        <Menu.Positioner>
+          <Menu.Content minW="160px">
+            <Menu.Item value="toggle-chart" onClick={() => setShowScoreChart(!showScoreChart)}>
+              {showScoreChart ? t('checklist.section.hideChart') : t('checklist.section.showChart')}
+            </Menu.Item>
+          </Menu.Content>
+        </Menu.Positioner>
+      </Portal>
+    </Menu.Root>
+  );
+
   return (
     <Stack gap={0.5} align="stretch">
-      <Flex align="center" gap={1} px={1} py={0.5}>
-        <Text fontSize="xs" color="fg.muted" flex={1}>
-          {t('checklist.section.title')}
-        </Text>
-        {isLoading && !checklistQuery.data ? (
-          <Text fontSize="2xs" color="fg.muted">
-            …
+      {showScoreChart ? (
+        <>
+          <Flex align="center" gap={1} px={1} pt={0.5}>
+            <Box flex={1} />
+            {scoreBadges}
+            {optionsMenu}
+          </Flex>
+          <ChecklistScoreChart
+            resetKey={`${defaultProfile?.id ?? 'no-profile'}:${symbol}:${effectiveInterval}:${marketType}`}
+            longScore={longScore?.score}
+            shortScore={shortScore?.score}
+            profileId={defaultProfile?.id}
+            symbol={symbol}
+            interval={effectiveInterval}
+            marketType={marketType}
+          />
+        </>
+      ) : (
+        <Flex align="center" gap={1} px={1} py={0.5}>
+          <Text fontSize="xs" color="fg.muted" flex={1}>
+            {t('checklist.section.title')}
           </Text>
-        ) : (
-          <HStack gap={2}>
-            <ScoreBadgePair letter="L" color="trading.profit" score={longScore} />
-            <ScoreBadgePair letter="S" color="trading.loss" score={shortScore} />
-          </HStack>
-        )}
-      </Flex>
+          {scoreBadges}
+          {optionsMenu}
+        </Flex>
+      )}
 
       <Stack gap={1.5} px={1} pb={1}>
         {!hasAnyResults ? (

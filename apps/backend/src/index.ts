@@ -90,7 +90,11 @@ const start = async (): Promise<void> => {
             code === 'UNPROCESSABLE_CONTENT' ||
             code === 'TOO_MANY_REQUESTS' ||
             code === 'CLIENT_CLOSED_REQUEST';
-          if (is4xx) {
+          // Network-outage fast-fails are infrastructural (DNS / interface
+          // down between renderer poll and exchange) — logging the full
+          // axios stack on each retry just floods the feed. Demote to debug.
+          const isOutage = code === 'SERVICE_UNAVAILABLE';
+          if (is4xx || isOutage) {
             fastify.log.debug({ path, code }, 'tRPC client error');
           } else {
             fastify.log.error({ path, error }, 'tRPC error');

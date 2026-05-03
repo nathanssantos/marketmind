@@ -22,6 +22,7 @@ import { ChecklistFields } from './fields/ChecklistFields';
 import type { ChecklistFieldsValue } from './fields/ChecklistFields';
 import { ParamFields } from './fields/ParamFields';
 import { SelectField } from './fields/SelectField';
+import { ThresholdsFields } from './fields/ThresholdsFields';
 
 export type IndicatorConfigMode = 'create' | 'edit' | 'checklist-condition';
 
@@ -282,11 +283,18 @@ export const IndicatorConfigDialog = ({
         )}
 
         {(mode === 'create' || mode === 'edit') && selectedDefinition && (
-          <ParamFields
-            params={selectedDefinition.params}
-            values={params}
-            onChange={handleParamChange}
-          />
+          <>
+            <ParamFields
+              params={selectedDefinition.params}
+              values={params}
+              onChange={handleParamChange}
+            />
+            <ThresholdsFields
+              definition={selectedDefinition}
+              values={params}
+              onChange={handleParamChange}
+            />
+          </>
         )}
 
         {mode === 'checklist-condition' && selectedDefinition && (

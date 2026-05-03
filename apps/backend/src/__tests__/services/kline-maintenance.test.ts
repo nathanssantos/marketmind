@@ -72,6 +72,12 @@ vi.mock('../../services/binance-kline-stream', () => ({
   },
 }));
 
+const mockIsCustomSymbolSync = vi.fn().mockReturnValue(false);
+
+vi.mock('../../services/custom-symbol-service', () => ({
+  getCustomSymbolService: () => ({ isCustomSymbolSync: mockIsCustomSymbolSync }),
+}));
+
 const mockIsKlineCorrupted = vi.fn();
 const mockIsKlineStaleCorrupted = vi.fn();
 const mockIsKlineSpikeCorrupted = vi.fn();
@@ -92,6 +98,7 @@ vi.mock('../../services/logger', () => ({
     warn: vi.fn(),
     error: vi.fn(),
     trace: vi.fn(),
+    debug: vi.fn(),
   },
   serializeError: (error: unknown) => error instanceof Error ? error.message : String(error),
 }));
@@ -225,6 +232,7 @@ const setupDefaultMocks = () => {
   mockIsKlineStaleCorrupted.mockReturnValue(null);
   mockIsKlineSpikeCorrupted.mockReturnValue(null);
   mockFetchBinanceKlinesBatch.mockResolvedValue(new Map());
+  mockIsCustomSymbolSync.mockReturnValue(false);
 
   mockDbInsert.mockReturnValue({
     values: vi.fn().mockReturnValue({
@@ -1464,6 +1472,21 @@ describe('KlineMaintenance', () => {
   });
 
   describe('detectGaps - branch coverage', () => {
+    it('short-circuits on custom symbols without hitting DB', async () => {
+      mockIsCustomSymbolSync.mockReturnValue(true);
+      mockFetchHistoricalKlinesFromAPI.mockResolvedValue([]);
+
+      const callsBeforeRun = mockDbQueryKlinesFindMany.mock.calls.length;
+      const result = await maintenance.forceCheckSymbol('POLITIFI', '1d', 'SPOT');
+
+      // No klines fetch (DB) and no Binance fetch should occur for a custom symbol.
+      expect(mockDbQueryKlinesFindMany.mock.calls.length).toBe(callsBeforeRun);
+      expect(mockFetchHistoricalKlinesFromAPI).not.toHaveBeenCalled();
+      expect(result.gapsFilled).toBe(0);
+
+      mockIsCustomSymbolSync.mockReturnValue(false);
+    });
+
     it('should use SPOT start time for SPOT market type', async () => {
       mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
       mockDbQueryKlinesFindMany.mockResolvedValue([]);
@@ -2220,6 +2243,55 @@ describe('KlineMaintenance', () => {
       mockDbQueryKlinesFindMany.mockResolvedValue([]);
 
       await maintenance.checkAndFillGaps();
+    });
+  });
+
+  describe('custom-symbol filtering', () => {
+    afterEach(() => {
+      // Reset to default behavior (no custom symbols) so other tests
+      // aren't affected by suite-level state.
+      mockIsCustomSymbolSync.mockReturnValue(false);
+    });
+
+    it('skips custom-symbol watchers from the active-pairs list', async () => {
+      mockIsCustomSymbolSync.mockImplementation((s: string) => s === 'POLITIFI');
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([
+        { symbol: 'POLITIFI', interval: '1h', marketType: 'SPOT' },
+        { symbol: 'BTCUSDT', interval: '1h', marketType: 'FUTURES' },
+      ]);
+      mockSpotGetActiveSubscriptions.mockReturnValue([]);
+      mockFuturesGetActiveSubscriptions.mockReturnValue([]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      await maintenance.checkAndFillGaps();
+
+      // POLITIFI should never reach the kline-detect path (so the klines
+      // query was never called for POLITIFI/1h/SPOT).
+      const klinesCalls = mockDbQueryKlinesFindMany.mock.calls;
+      const politifiCalled = klinesCalls.some((call) => {
+        const where = call[0]?.where;
+        return where && JSON.stringify(where).includes('POLITIFI');
+      });
+      expect(politifiCalled).toBe(false);
+    });
+
+    it('skips custom symbols from kline-stream subscriptions', async () => {
+      mockIsCustomSymbolSync.mockImplementation((s: string) => s === 'POLITIFI');
+      mockDbQueryActiveWatchersFindMany.mockResolvedValue([]);
+      mockSpotGetActiveSubscriptions.mockReturnValue([{ symbol: 'POLITIFI', interval: '1h' }]);
+      mockFuturesGetActiveSubscriptions.mockReturnValue([{ symbol: 'POLITIFI', interval: '1h' }]);
+      mockDbQueryPairMaintenanceLogFindFirst.mockResolvedValue(null);
+      mockDbQueryKlinesFindMany.mockResolvedValue([]);
+
+      await maintenance.checkAndFillGaps();
+
+      const klinesCalls = mockDbQueryKlinesFindMany.mock.calls;
+      const politifiCalled = klinesCalls.some((call) => {
+        const where = call[0]?.where;
+        return where && JSON.stringify(where).includes('POLITIFI');
+      });
+      expect(politifiCalled).toBe(false);
     });
   });
 });

@@ -19,8 +19,8 @@ const mockMethods = {
   setLeverage: vi.fn(),
   setMarginType: vi.fn(),
   setIsolatedPositionMargin: vi.fn(),
-  getPositions: vi.fn(),
-  getAccountInformation: vi.fn(),
+  getPositionsV3: vi.fn(),
+  getAccountInformationV3: vi.fn(),
   submitNewOrder: vi.fn(),
   cancelOrder: vi.fn(),
   cancelAllOpenOrders: vi.fn(),
@@ -33,8 +33,8 @@ vi.mock('binance', () => ({
     setLeverage = mockMethods.setLeverage;
     setMarginType = mockMethods.setMarginType;
     setIsolatedPositionMargin = mockMethods.setIsolatedPositionMargin;
-    getPositions = mockMethods.getPositions;
-    getAccountInformation = mockMethods.getAccountInformation;
+    getPositionsV3 = mockMethods.getPositionsV3;
+    getAccountInformationV3 = mockMethods.getAccountInformationV3;
     submitNewOrder = mockMethods.submitNewOrder;
     cancelOrder = mockMethods.cancelOrder;
     cancelAllOpenOrders = mockMethods.cancelAllOpenOrders;
@@ -221,20 +221,25 @@ describe('BinanceFuturesClient Service', () => {
 
   describe('getPositions', () => {
     it('should return filtered positions with non-zero amounts', async () => {
-      mockMethods.getPositions.mockResolvedValue([
-        { symbol: 'BTCUSDT', positionAmt: '0.1', entryPrice: '50000', positionSide: 'LONG', leverage: 10, marginType: 'ISOLATED', markPrice: '51000', unRealizedProfit: '100', liquidationPrice: '45000', isolatedMargin: '500', notional: '5100', isolatedWallet: '500', updateTime: Date.now() },
-        { symbol: 'ETHUSDT', positionAmt: '0', entryPrice: '0', positionSide: 'BOTH', leverage: 1, marginType: 'CROSS', markPrice: '0', unRealizedProfit: '0', liquidationPrice: '0', isolatedMargin: '0', notional: '0', isolatedWallet: '0', updateTime: Date.now() },
+      mockMethods.getPositionsV3.mockResolvedValue([
+        { symbol: 'BTCUSDT', positionAmt: '0.1', entryPrice: '50000', positionSide: 'LONG', markPrice: '51000', unRealizedProfit: '100', liquidationPrice: '45000', isolatedMargin: '500', notional: '5100', isolatedWallet: '500', updateTime: Date.now() },
+        { symbol: 'ETHUSDT', positionAmt: '0', entryPrice: '0', positionSide: 'BOTH', markPrice: '0', unRealizedProfit: '0', liquidationPrice: '0', isolatedMargin: '0', notional: '0', isolatedWallet: '0', updateTime: Date.now() },
       ]);
+      mockMethods.getAccountInformationV3.mockResolvedValue({
+        positions: [{ symbol: 'BTCUSDT', positionSide: 'LONG', leverage: '10', isolated: true }],
+      });
 
       const client = createBinanceFuturesClientForPrices();
       const result = await getPositions(client);
 
       expect(result).toHaveLength(1);
       expect(result[0]!.symbol).toBe('BTCUSDT');
+      expect(result[0]!.leverage).toBe(10);
+      expect(result[0]!.marginType).toBe('isolated');
     });
 
     it('should throw on error', async () => {
-      mockMethods.getPositions.mockRejectedValue(new Error('API error'));
+      mockMethods.getPositionsV3.mockRejectedValue(new Error('API error'));
 
       const client = createBinanceFuturesClientForPrices();
       await expect(getPositions(client)).rejects.toThrow('API error');
@@ -243,20 +248,24 @@ describe('BinanceFuturesClient Service', () => {
 
   describe('getPosition', () => {
     it('should return position for symbol', async () => {
-      mockMethods.getPositions.mockResolvedValue([
-        { symbol: 'BTCUSDT', positionAmt: '0.1', entryPrice: '50000', positionSide: 'LONG', leverage: 10, marginType: 'ISOLATED', markPrice: '51000', unRealizedProfit: '100', liquidationPrice: '45000', isolatedMargin: '500', notional: '5100', isolatedWallet: '500', updateTime: Date.now() },
+      mockMethods.getPositionsV3.mockResolvedValue([
+        { symbol: 'BTCUSDT', positionAmt: '0.1', entryPrice: '50000', positionSide: 'LONG', markPrice: '51000', unRealizedProfit: '100', liquidationPrice: '45000', isolatedMargin: '500', notional: '5100', isolatedWallet: '500', updateTime: Date.now() },
       ]);
+      mockMethods.getAccountInformationV3.mockResolvedValue({
+        positions: [{ symbol: 'BTCUSDT', positionSide: 'LONG', leverage: '10', isolated: true }],
+      });
 
       const client = createBinanceFuturesClientForPrices();
       const result = await getPosition(client, 'BTCUSDT');
 
       expect(result).not.toBeNull();
       expect(result!.symbol).toBe('BTCUSDT');
+      expect(result!.leverage).toBe(10);
     });
 
     it('should return null for no position', async () => {
-      mockMethods.getPositions.mockResolvedValue([
-        { symbol: 'BTCUSDT', positionAmt: '0', entryPrice: '0', positionSide: 'BOTH', leverage: 1, marginType: 'CROSS', markPrice: '0', unRealizedProfit: '0', liquidationPrice: '0', isolatedMargin: '0', notional: '0', isolatedWallet: '0', updateTime: Date.now() },
+      mockMethods.getPositionsV3.mockResolvedValue([
+        { symbol: 'BTCUSDT', positionAmt: '0', entryPrice: '0', positionSide: 'BOTH', markPrice: '0', unRealizedProfit: '0', liquidationPrice: '0', isolatedMargin: '0', notional: '0', isolatedWallet: '0', updateTime: Date.now() },
       ]);
 
       const client = createBinanceFuturesClientForPrices();
@@ -268,7 +277,7 @@ describe('BinanceFuturesClient Service', () => {
 
   describe('getAccountInfo', () => {
     it('should return account information', async () => {
-      mockMethods.getAccountInformation.mockResolvedValue({
+      mockMethods.getAccountInformationV3.mockResolvedValue({
         feeTier: 0,
         canTrade: true,
         canDeposit: true,

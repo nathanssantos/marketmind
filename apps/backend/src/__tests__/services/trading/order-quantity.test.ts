@@ -14,13 +14,12 @@ vi.mock('../../../services/binance-api-cache', () => ({
   guardBinanceCall: <T>(fn: () => Promise<T> | T) => Promise.resolve(fn()),
 }));
 
+const mockGetAccountInformationV3 = vi.fn();
 const mockGetAccountInformation = vi.fn();
-const mockGetPositions = vi.fn();
 
 vi.mock('../../../services/binance-futures-client', () => ({
   createBinanceFuturesClient: () => ({
-    getAccountInformation: mockGetAccountInformation,
-    getPositions: mockGetPositions,
+    getAccountInformationV3: mockGetAccountInformationV3,
   }),
 }));
 
@@ -67,8 +66,10 @@ describe('calculateQtyFromPercent', () => {
   });
 
   it('live FUTURES 75% @ 10x → notional ≈ balance * 7.5 (boleta bug)', async () => {
-    mockGetAccountInformation.mockResolvedValue({ availableBalance: '1000', positions: [] });
-    mockGetPositions.mockResolvedValue([{ symbol: 'BTCUSDT', leverage: '10' }]);
+    mockGetAccountInformationV3.mockResolvedValue({
+      availableBalance: '1000',
+      positions: [{ symbol: 'BTCUSDT', leverage: '10' }],
+    });
 
     const wallet = makeWallet();
 
@@ -87,8 +88,10 @@ describe('calculateQtyFromPercent', () => {
   });
 
   it('rounds quantity to stepSize', async () => {
-    mockGetAccountInformation.mockResolvedValue({ availableBalance: '1000', positions: [] });
-    mockGetPositions.mockResolvedValue([{ symbol: 'BTCUSDT', leverage: '5' }]);
+    mockGetAccountInformationV3.mockResolvedValue({
+      availableBalance: '1000',
+      positions: [{ symbol: 'BTCUSDT', leverage: '5' }],
+    });
 
     const wallet = makeWallet();
 
@@ -103,12 +106,12 @@ describe('calculateQtyFromPercent', () => {
     expect(/^\d+\.\d{1,3}$/.test(result.quantity)).toBe(true);
   });
 
-  it('falls back to accountInfo.positions when getPositions returns empty', async () => {
-    mockGetAccountInformation.mockResolvedValue({
+  it('reads leverage from accountInformationV3.positions', async () => {
+    // V3 positionRisk dropped leverage — accountInfoV3 is the only source.
+    mockGetAccountInformationV3.mockResolvedValue({
       availableBalance: '1000',
       positions: [{ symbol: 'BTCUSDT', leverage: '20' }],
     });
-    mockGetPositions.mockResolvedValue([]);
 
     const wallet = makeWallet();
 
@@ -123,9 +126,8 @@ describe('calculateQtyFromPercent', () => {
     expect(result.leverage).toBe(20);
   });
 
-  it('falls back to 1x leverage when neither source returns a symbol leverage', async () => {
-    mockGetAccountInformation.mockResolvedValue({ availableBalance: '1000', positions: [] });
-    mockGetPositions.mockResolvedValue([]);
+  it('falls back to 1x leverage when accountInfo has no entry for the symbol', async () => {
+    mockGetAccountInformationV3.mockResolvedValue({ availableBalance: '1000', positions: [] });
 
     const wallet = makeWallet();
 
@@ -153,8 +155,7 @@ describe('calculateQtyFromPercent', () => {
   });
 
   it('rejects when live FUTURES balance is zero', async () => {
-    mockGetAccountInformation.mockResolvedValue({ availableBalance: '0', positions: [] });
-    mockGetPositions.mockResolvedValue([]);
+    mockGetAccountInformationV3.mockResolvedValue({ availableBalance: '0', positions: [] });
 
     const wallet = makeWallet();
 

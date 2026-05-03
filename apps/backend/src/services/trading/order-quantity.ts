@@ -56,10 +56,9 @@ export async function calculateQtyFromPercent(input: CalculateQtyInput): Promise
   } else if (marketType === 'FUTURES') {
     const client = createBinanceFuturesClient(wallet);
 
-    const [accountInfo, positions] = await Promise.all([
-      guardBinanceCall(() => client.getAccountInformation()),
-      guardBinanceCall(() => client.getPositions({ symbol })).catch(() => []),
-    ]);
+    // V3 positionRisk dropped leverage — pull it from accountInfoV3
+    // exclusively. Single API call instead of two.
+    const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
 
     balance = parseFloat(String(accountInfo.availableBalance ?? '0'));
     if (balance <= 0) {
@@ -69,17 +68,12 @@ export async function calculateQtyFromPercent(input: CalculateQtyInput): Promise
       });
     }
 
-    const symbolPos = positions.find((p) => p.symbol === symbol);
-    if (symbolPos && Number(symbolPos.leverage) > 0) {
-      leverage = Number(symbolPos.leverage);
+    const acctPos = accountInfo.positions?.find((p) => p.symbol === symbol);
+    if (acctPos && Number(acctPos.leverage) > 0) {
+      leverage = Number(acctPos.leverage);
     } else {
-      const acctPos = accountInfo.positions?.find((p) => p.symbol === symbol);
-      if (acctPos && Number(acctPos.leverage) > 0) {
-        leverage = Number(acctPos.leverage);
-      } else {
-        logger.warn({ symbol, walletId: wallet.id }, 'Could not determine live leverage — falling back to 1x');
-        leverage = 1;
-      }
+      logger.warn({ symbol, walletId: wallet.id }, 'Could not determine live leverage — falling back to 1x');
+      leverage = 1;
     }
   } else {
     const client = createBinanceClient(wallet);
