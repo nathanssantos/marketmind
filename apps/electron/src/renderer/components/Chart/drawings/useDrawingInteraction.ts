@@ -5,9 +5,12 @@ import type { Kline } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { createDrawingMapper } from '@renderer/utils/canvas/canvasHelpers';
 import { INDICATOR_COLORS } from '@shared/constants';
-import { useDrawingStore } from '@renderer/store/drawingStore';
+import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useCallback, useEffect, useRef } from 'react';
 import { useOHLCMagnet } from './useOHLCMagnet';
+import { getHandlePoints } from './drawingHandles';
+
+const DRAWING_HANDLE_SNAP_PIXEL_THRESHOLD = 12;
 
 type InteractionPhase = 'idle' | 'placing-first' | 'placing-second' | 'placing-third' | 'drawing-freeform' | 'dragging';
 
@@ -21,7 +24,12 @@ interface UseDrawingInteractionProps {
 export interface OHLCSnapIndicator {
   x: number;
   y: number;
-  ohlcType: 'open' | 'high' | 'low' | 'close';
+  /**
+   * `'handle'` is used when the magnet is snapping to an existing
+   * drawing's anchor point (corner / endpoint / fib swing / etc.) —
+   * same visual indicator dot, no OHLC letter label.
+   */
+  ohlcType: 'open' | 'high' | 'low' | 'close' | 'handle';
 }
 
 interface CancelInteractionOptions {
@@ -626,6 +634,44 @@ export const useDrawingInteraction = ({
       lastSnapRef.current = null;
       return { x, y, snapped: false };
     }
+
+    // Drawing-handle magnet pass — when the cursor is near another
+    // drawing's anchor (corner / endpoint / fib swing / position
+    // entry-SL-TP), prefer that snap target over OHLC. The user
+    // wants to snap to an existing drawing's anchor more often than
+    // to a candle vertex when both are nearby; the explicit anchor
+    // is what the user placed deliberately. Same visual indicator as
+    // OHLC snap, just no letter label.
+    if (useDrawingStore.getState().magnetEnabled) {
+      const store = useDrawingStore.getState();
+      const drawings = store.drawingsByKey[compositeKey(symbol, interval)] ?? [];
+      const mapper = createDrawingMapper(manager);
+      const draggingId = dragStartRef.current?.originalDrawing.id;
+      let bestDist = DRAWING_HANDLE_SNAP_PIXEL_THRESHOLD;
+      let bestPoint: { x: number; y: number } | null = null;
+      for (const drawing of drawings) {
+        if (!drawing.visible) continue;
+        // Don't snap to the drawing being dragged — would pin it to
+        // its own current handle position.
+        if (drawing.id === draggingId) continue;
+        const resolved = resolveDrawingIndices(drawing, klines);
+        const points = getHandlePoints(resolved, mapper);
+        for (const pt of points) {
+          const dx = x - pt.x;
+          const dy = y - pt.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestPoint = pt;
+          }
+        }
+      }
+      if (bestPoint) {
+        lastSnapRef.current = { x: bestPoint.x, y: bestPoint.y, ohlcType: 'handle' };
+        return { x: bestPoint.x, y: bestPoint.y, snapped: true };
+      }
+    }
+
     const result = snap(x, y);
     if (!result.snapped || !result.ohlcType) {
       lastSnapRef.current = null;
@@ -635,7 +681,7 @@ export const useDrawingInteraction = ({
     const snappedY = manager.priceToY(result.snappedPrice);
     lastSnapRef.current = { x: snappedX, y: snappedY, ohlcType: result.ohlcType };
     return { x: snappedX, y: snappedY, snapped: true };
-  }, [manager, snap]);
+  }, [manager, snap, symbol, interval]);
 
   return {
     handleMouseDown,

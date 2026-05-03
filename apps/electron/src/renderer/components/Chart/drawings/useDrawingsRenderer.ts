@@ -15,7 +15,7 @@ import { renderArea } from './renderers/renderArea';
 import { renderFibonacci } from './renderers/renderFibonacci';
 import { renderArrow } from './renderers/renderArrow';
 import { renderRay } from './renderers/renderRay';
-import { renderHorizontalLine } from './renderers/renderHorizontalLine';
+import { renderHorizontalLine, renderHorizontalLineTag } from './renderers/renderHorizontalLine';
 import { renderChannel } from './renderers/renderChannel';
 import { renderTrendLine } from './renderers/renderTrendLine';
 import { renderPriceRange } from './renderers/renderPriceRange';
@@ -42,6 +42,9 @@ const OHLC_LABELS: Record<OHLCSnapIndicator['ohlcType'], string> = {
   high: 'H',
   low: 'L',
   close: 'C',
+  // Drawing-handle snap reuses the indicator dot but skips the letter
+  // (no meaningful OHLC label for an arbitrary anchor point).
+  handle: '',
 };
 
 interface UseDrawingsRendererProps {
@@ -233,6 +236,26 @@ export const useDrawingsRenderer = ({
     }
 
     ctx.restore();
+
+    // Post-clip pass for elements that need to render past the chart
+    // bounds (e.g. horizontal-line price tags that overlay the price
+    // axis). The drawings layer above is clipped to (0,0,chartWidth,
+    // chartHeight); without this second pass the tag would never
+    // reach the price-scale area where it visually belongs.
+    for (const raw of sorted) {
+      if (raw.type !== 'horizontalLine') continue;
+      const cacheKey = `${raw.id}-${raw.updatedAt}`;
+      const drawing = drawingIndexCache.current.get(cacheKey);
+      if (!drawing || !drawing.visible) continue;
+      if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
+      renderHorizontalLineTag(
+        ctx,
+        drawing as Drawing & { type: 'horizontalLine'; price: number },
+        mapper,
+        dimensions.chartWidth,
+        dimensions.chartHeight,
+      );
+    }
 
     if (snapIndicator) {
       renderSnapIndicator(ctx, snapIndicator, themeColors);
