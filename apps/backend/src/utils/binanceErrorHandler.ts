@@ -1,9 +1,12 @@
 import { TRPCError } from '@trpc/server';
-import { BinanceIpBannedError, binanceApiCache } from '../services/binance-api-cache';
+import { BinanceIpBannedError, BinanceNetworkOutageError, binanceApiCache } from '../services/binance-api-cache';
 
 export const mapBinanceErrorToTRPC = (error: unknown): TRPCError => {
   if (error instanceof TRPCError) return error;
   if (error instanceof BinanceIpBannedError) return new TRPCError({ code: 'TOO_MANY_REQUESTS', message: error.message });
+  // 503 with a friendly message — frontend can show "exchange unreachable"
+  // without the noisy stack the generic 500 would carry.
+  if (error instanceof BinanceNetworkOutageError) return new TRPCError({ code: 'SERVICE_UNAVAILABLE', message: error.message });
   return new TRPCError({
     code: 'INTERNAL_SERVER_ERROR',
     message: error instanceof Error ? error.message : 'Binance API error',

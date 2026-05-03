@@ -97,10 +97,21 @@ class BinanceRateLimiter {
   }
 }
 
+// Network-outage cooldown — when DNS/socket errors fire we fast-fail
+// subsequent calls for a brief window. The window is short enough that
+// the next call after expiry probes connectivity automatically; if it
+// also fails the window is re-armed.
+const OUTAGE_COOLDOWN_MS = 5 * TIME_MS.SECOND;
+const NETWORK_ERROR_CODES = new Set([
+  'ENOTFOUND', 'EADDRNOTAVAIL', 'ETIMEDOUT', 'ECONNREFUSED',
+  'ENETUNREACH', 'ECONNRESET', 'EAI_AGAIN',
+]);
+
 class BinanceApiCache {
   private cache: Map<string, CacheEntry<unknown>> = new Map();
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
   private banExpiry = 0;
+  private outageExpiry = 0;
 
   constructor() {
     this.cleanupInterval = setInterval(() => this.cleanup(), 60 * TIME_MS.SECOND);
@@ -110,6 +121,41 @@ class BinanceApiCache {
     if (this.banExpiry > 0 && Date.now() < this.banExpiry) return;
     this.banExpiry = expiryTimestamp;
     logger.warn({ expiresIn: Math.ceil((expiryTimestamp - Date.now()) / 1000) }, '[BinanceApiCache] IP banned');
+  }
+
+  markNetworkOutage(error: unknown): boolean {
+    const code = typeof error === 'object' && error !== null && 'code' in error
+      ? String((error as { code: unknown }).code)
+      : '';
+    const cause = typeof error === 'object' && error !== null && 'cause' in error
+      ? (error as { cause: unknown }).cause
+      : undefined;
+    const causeCode = typeof cause === 'object' && cause !== null && 'code' in cause
+      ? String((cause as { code: unknown }).code)
+      : '';
+
+    const isNetworkError = NETWORK_ERROR_CODES.has(code) || NETWORK_ERROR_CODES.has(causeCode);
+    if (!isNetworkError) return false;
+
+    const wasOpen = this.outageExpiry === 0 || Date.now() >= this.outageExpiry;
+    this.outageExpiry = Date.now() + OUTAGE_COOLDOWN_MS;
+    if (wasOpen) {
+      logger.warn({ code: code || causeCode, cooldownMs: OUTAGE_COOLDOWN_MS }, '[BinanceApiCache] Network outage detected — fast-failing for cooldown');
+    }
+    return true;
+  }
+
+  isOutage(): boolean {
+    if (this.outageExpiry === 0) return false;
+    if (Date.now() >= this.outageExpiry) {
+      this.outageExpiry = 0;
+      return false;
+    }
+    return true;
+  }
+
+  getOutageExpiresIn(): number {
+    return this.isOutage() ? this.outageExpiry - Date.now() : 0;
   }
 
   isBanned(): boolean {
@@ -215,10 +261,20 @@ export class BinanceIpBannedError extends Error {
   }
 }
 
+export class BinanceNetworkOutageError extends Error {
+  constructor() {
+    super('Binance network unreachable — backing off briefly.');
+    this.name = 'BinanceNetworkOutageError';
+  }
+}
+
 export async function guardBinanceCall<T>(fn: () => Promise<T>): Promise<T> {
   if (binanceApiCache.isBanned()) {
     const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
     throw new BinanceIpBannedError(waitSeconds);
+  }
+  if (binanceApiCache.isOutage()) {
+    throw new BinanceNetworkOutageError();
   }
 
   await binanceRateLimiter.acquireSlot();
@@ -227,6 +283,7 @@ export async function guardBinanceCall<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (error) {
     binanceApiCache.checkAndSetBan(error);
+    binanceApiCache.markNetworkOutage(error);
     throw error;
   }
 }
