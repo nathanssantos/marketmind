@@ -64,12 +64,13 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
     });
   }, [longScore, shortScore, history]);
 
-  const [profitColor, lossColor, gridColor, axisLabelColor, panelBg] = useToken('colors', [
+  const [profitColor, lossColor, gridColor, axisLabelColor, panelBg, referenceColor] = useToken('colors', [
     'trading.profit',
     'trading.loss',
     'chart.grid',
     'chart.axis.label',
     'bg.surface',
+    'fg.muted',
   ]);
 
   if (history.length < 2) return null;
@@ -94,23 +95,16 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
             formatter={(value, name) => [`${Math.round(Number(value))}%`, String(name)]}
           />
           {/*
-            Auxiliary 40% threshold — color-coded dashed line (long/short).
-            No label text: the user reads "where 40% sits" from the
-            color of the dashed line against the matching series.
+            Auxiliary 40% threshold — neutral light dashed line. Single
+            line (not one per side) since both series read against the
+            same y=40 reference.
           */}
           <ReferenceLine
             y={REFERENCE_LEVEL}
-            stroke={profitColor}
+            stroke={referenceColor}
             strokeWidth={0.5}
             strokeDasharray="2 4"
-            opacity={0.6}
-          />
-          <ReferenceLine
-            y={REFERENCE_LEVEL}
-            stroke={lossColor}
-            strokeWidth={0.5}
-            strokeDasharray="2 4"
-            opacity={0.6}
+            opacity={0.5}
           />
           <Line
             type="monotone"
