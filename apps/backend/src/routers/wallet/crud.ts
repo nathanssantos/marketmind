@@ -104,7 +104,7 @@ export const walletCrudRouter = router({
             testnet: input.walletType === 'testnet',
             disableTimeSync: true,
           });
-          const accountInfo = await client.getAccountInformation();
+          const accountInfo = await client.getAccountInformationV3();
 
           if (!accountInfo) {
             throw new TRPCError({

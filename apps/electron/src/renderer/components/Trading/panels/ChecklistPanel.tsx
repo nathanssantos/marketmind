@@ -8,25 +8,20 @@ const DEFAULT_INTERVAL = '1h';
  * v1.10 Track 4.1 — registered as the `checklist` panel kind. Standalone
  * panel that shows the trading checklist for the active symbol.
  *
- * Interval defaults to the focused chart panel's timeframe (so the
- * checklist follows what the user is looking at) and falls back to '1h'
- * if no chart is focused yet. ChecklistSection itself already pulls a
- * focusedInterval from the layout store as its primary source — this
- * just makes sure we pass a sane interval prop when no chart is
- * focused.
+ * Note: this panel intentionally does NOT read the focused chart's
+ * timeframe — that subscription happens inside ChecklistSection and is
+ * gated on whether any condition resolves to `timeframe='current'`. If
+ * we read it here, every focus change would re-render this panel and
+ * pass a new `interval` prop, defeating the gating. Pass the static
+ * fallback and let the section decide.
  */
 export const ChecklistPanel = () => {
   const symbol = useLayoutStore((s) => s.getActiveTab()?.symbol ?? 'BTCUSDT');
   const marketType = useLayoutStore((s) => s.getActiveTab()?.marketType ?? 'FUTURES');
-  const focusedInterval = useLayoutStore((s) => {
-    const panel = s.getFocusedPanel();
-    return panel?.kind === 'chart' ? panel.timeframe : undefined;
-  });
-  const interval = focusedInterval ?? DEFAULT_INTERVAL;
 
   return (
     <Box h="100%" overflowY="auto" p={1.5}>
-      <ChecklistSection symbol={symbol} interval={interval} marketType={marketType} />
+      <ChecklistSection symbol={symbol} interval={DEFAULT_INTERVAL} marketType={marketType} />
     </Box>
   );
 };

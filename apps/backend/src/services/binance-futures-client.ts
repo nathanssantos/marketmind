@@ -99,12 +99,43 @@ export async function modifyIsolatedPositionMargin(
   }
 }
 
-export async function getPositions(client: USDMClient): Promise<FuturesPosition[]> {
+// V3 positionRisk dropped leverage + marginType — they only live on the
+// account-info endpoint now. We fetch both and merge by (symbol, side)
+// so the public shape stays identical to the legacy V2 wrapper.
+type LeverageInfo = { leverage: number; isolated: boolean };
+
+const buildLeverageMap = (
+  accountPositions: ReadonlyArray<{ symbol: string; positionSide: string; leverage: string | number; isolated: boolean }>,
+): Map<string, LeverageInfo> => {
+  const out = new Map<string, LeverageInfo>();
+  for (const ap of accountPositions) {
+    out.set(`${ap.symbol}_${ap.positionSide}`, {
+      leverage: Number(ap.leverage),
+      isolated: ap.isolated,
+    });
+  }
+  return out;
+};
+
+export async function getPositions(
+  client: USDMClient,
+  options?: { symbol?: string }
+): Promise<FuturesPosition[]> {
   try {
-    const positions = await guardBinanceCall(() => client.getPositions());
-    return positions
-      .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
-      .map((p) => ({
+    const positionsV3 = await guardBinanceCall(() =>
+      options?.symbol
+        ? client.getPositionsV3({ symbol: options.symbol })
+        : client.getPositionsV3()
+    );
+    const open = positionsV3.filter((p) => parseFloat(String(p.positionAmt)) !== 0);
+    if (open.length === 0) return [];
+
+    const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
+    const leverageMap = buildLeverageMap(accountInfo.positions ?? []);
+
+    return open.map((p) => {
+      const acct = leverageMap.get(`${p.symbol}_${p.positionSide}`);
+      return {
         symbol: p.symbol,
         positionSide: p.positionSide,
         positionAmt: String(p.positionAmt),
@@ -112,13 +143,14 @@ export async function getPositions(client: USDMClient): Promise<FuturesPosition[
         markPrice: String(p.markPrice || '0'),
         unrealizedPnl: String(p.unRealizedProfit),
         liquidationPrice: String(p.liquidationPrice),
-        leverage: Number(p.leverage),
-        marginType: p.marginType as MarginType,
+        leverage: acct?.leverage ?? 1,
+        marginType: (acct?.isolated ? 'isolated' : 'cross') as MarginType,
         isolatedMargin: String(p.isolatedMargin),
         notional: String(p.notional),
         isolatedWallet: String(p.isolatedWallet),
         updateTime: p.updateTime,
-      }));
+      };
+    });
   } catch (error) {
     logger.error({ error }, 'Failed to get futures positions');
     throw error;
@@ -130,12 +162,16 @@ export async function getPosition(
   symbol: string
 ): Promise<FuturesPosition | null> {
   try {
-    const positions = await guardBinanceCall(() => client.getPositions({ symbol }));
+    const positions = await guardBinanceCall(() => client.getPositionsV3({ symbol }));
     const position = positions.find(
       (p) => p.symbol === symbol && parseFloat(String(p.positionAmt)) !== 0
     );
 
     if (!position) return null;
+
+    const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
+    const leverageMap = buildLeverageMap(accountInfo.positions ?? []);
+    const acct = leverageMap.get(`${position.symbol}_${position.positionSide}`);
 
     return {
       symbol: position.symbol,
@@ -145,8 +181,8 @@ export async function getPosition(
       markPrice: String(position.markPrice || '0'),
       unrealizedPnl: String(position.unRealizedProfit),
       liquidationPrice: String(position.liquidationPrice),
-      leverage: Number(position.leverage),
-      marginType: position.marginType as MarginType,
+      leverage: acct?.leverage ?? 1,
+      marginType: (acct?.isolated ? 'isolated' : 'cross') as MarginType,
       isolatedMargin: String(position.isolatedMargin),
       notional: String(position.notional),
       isolatedWallet: String(position.isolatedWallet),
@@ -160,7 +196,7 @@ export async function getPosition(
 
 export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount> {
   try {
-    const account = await guardBinanceCall(() => client.getAccountInformation());
+    const account = await guardBinanceCall(() => client.getAccountInformationV3());
     return {
       feeTier: Number(account.feeTier),
       canTrade: account.canTrade,

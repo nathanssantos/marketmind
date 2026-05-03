@@ -10,6 +10,7 @@ export {
   Card,
   Checkbox,
   CloseButton,
+  CollapsibleSection,
   ColorPicker,
   CreateActionButton,
   DataCard,
@@ -37,6 +38,7 @@ export {
   Logo,
   Menu,
   MetaText,
+  MiniLineChart,
   NumberInput,
   PageTitle,
   PanelHeader,
@@ -64,6 +66,7 @@ export {
   Tabs,
   Textarea,
   ToggleIconButton,
+  TradingSideCard,
   type AlertRootProps,
   type BadgeProps,
   type BetaBadgeProps,
@@ -71,12 +74,16 @@ export {
   type CalloutTone,
   type CheckboxProps,
   type CloseButtonProps,
+  type CollapsibleSectionProps,
   type ColorPickerProps,
   type CreateActionButtonProps,
   type DialogSectionProps,
   type IconButtonProps,
   type ImageProps,
   type LinkProps,
+  type MiniLineChartProps,
+  type MiniLineChartReferenceLine,
+  type MiniLineChartSeries,
   type NumberInputProps,
   type PasswordInputProps,
   type RadioGroupProps,
@@ -87,11 +94,11 @@ export {
   type SkeletonProps,
   type TextareaProps,
   type ToggleIconButtonProps,
+  type TradingSideCardProps,
 } from '@marketmind/ui';
 
 // Stays app-side — i18n / runtime-coupled (Tier 3).
 export { ColorModeProvider, useColorMode } from './color-mode';
-export { CollapsibleSection } from './CollapsibleSection';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export { CryptoIcon } from './CryptoIcon';
 export { DialogShell, type DialogShellProps, type DialogSize } from './dialog-shell';
@@ -109,4 +116,3 @@ export { MetricCard } from './MetricCard';
 export { PasswordStrengthMeter } from './PasswordStrengthMeter';
 export { PnLDisplay } from './PnLDisplay';
 export { TooltipWrapper } from './Tooltip';
-export { TradingSideCard } from './TradingSideCard';

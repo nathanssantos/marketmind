@@ -2698,7 +2698,11 @@
       "type": "Type",
       "indicator": "Indicator",
       "label": "Label",
-      "labelPlaceholder": "EMA 20"
+      "labelPlaceholder": "EMA 20",
+      "thresholds": "Thresholds",
+      "thresholdsHint": "Drawn as horizontal zones in the indicator pane.",
+      "oversold": "Oversold",
+      "overbought": "Overbought"
     }
   },
   "checklist": {
@@ -2711,7 +2715,11 @@
       "error": "Checklist error",
       "dedupExcluded": "Not counted — same as another condition for this timeframe",
       "title": "Checklist",
-      "empty": "No conditions evaluated."
+      "empty": "No conditions evaluated.",
+      "options": "Checklist options",
+      "showChart": "Show score chart",
+      "hideChart": "Hide score chart",
+      "collectingHistory": "Collecting history…"
     },
     "editor": {
       "moveUp": "Move up",

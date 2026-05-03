@@ -71,13 +71,13 @@ const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
   // Flow modals — click triggers from real UI affordances (data-testid)
   if (modalId === 'createWallet') {
     await openSettingsTab(page, 'wallets');
-    await clickTrigger(page, 'trigger-create-wallet');
+    await clickTrigger(page, 'wallet-create-trigger');
     return;
   }
   if (modalId === 'tradingProfiles' || modalId === 'importProfile') {
     await openSettingsTab(page, 'tradingProfiles');
     if (modalId === 'importProfile') {
-      await clickTrigger(page, 'trigger-import-profile');
+      await clickTrigger(page, 'profile-import-trigger');
     }
     return;
   }

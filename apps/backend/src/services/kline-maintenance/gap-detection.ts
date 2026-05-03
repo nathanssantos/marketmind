@@ -3,12 +3,18 @@ import { MAINTENANCE_KLINES } from '../../constants';
 import { db } from '../../db';
 import { klines, pairMaintenanceLog } from '../../db/schema';
 import { fetchFuturesKlinesFromAPI, fetchHistoricalKlinesFromAPI, getIntervalMilliseconds } from '../binance-historical';
+import { getCustomSymbolService } from '../custom-symbol-service';
 import { logger, serializeError } from '../logger';
 import type { ActivePair, GapInfo } from './types';
 
 const MIN_GAP_SIZE_TO_FILL = 1;
 
 export const detectGaps = async (pair: ActivePair): Promise<GapInfo[]> => {
+  // Custom symbols don't have Binance gaps to detect — their klines come
+  // from CustomSymbolService.backfillKlines, computed from constituents.
+  // Short-circuit before any DB work.
+  if (getCustomSymbolService()?.isCustomSymbolSync(pair.symbol)) return [];
+
   const now = Date.now();
   const intervalMs = getIntervalMilliseconds(pair.interval);
   const lookbackMs = MAINTENANCE_KLINES * intervalMs;
@@ -112,6 +118,20 @@ export const detectGaps = async (pair: ActivePair): Promise<GapInfo[]> => {
 };
 
 export const fillGap = async (gap: GapInfo, silent = false): Promise<number> => {
+  // Defensive: never route custom-symbol gaps through Binance. Custom
+  // symbols (POLITIFI etc.) are composite indices computed from
+  // constituents by CustomSymbolService — Binance has no idea what they
+  // are and returns 400 Bad Request. The active-pairs collector already
+  // filters them out; this is the second-layer guard in case any other
+  // call path reaches here.
+  if (getCustomSymbolService()?.isCustomSymbolSync(gap.symbol)) {
+    if (!silent) {
+      logger.debug({ symbol: gap.symbol, interval: gap.interval, marketType: gap.marketType },
+        '[gap-fill] Skipped — custom symbol uses CustomSymbolService backfill');
+    }
+    return 0;
+  }
+
   if (!silent) {
     logger.info(
       {

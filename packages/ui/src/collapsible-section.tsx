@@ -2,7 +2,13 @@ import { Box, Collapsible, Flex, Text } from '@chakra-ui/react';
 import { useState, type ReactNode } from 'react';
 import { LuChevronDown, LuChevronUp } from 'react-icons/lu';
 
-interface CollapsibleSectionProps {
+const SIZE_CONFIG = {
+  sm: { titleSize: 'xs' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 14, py: 2, gap: 2 },
+  md: { titleSize: 'sm' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 16, py: 2, gap: 2 },
+  lg: { titleSize: 'sm' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 16, py: 2, gap: 3 },
+} as const;
+
+export interface CollapsibleSectionProps {
   title: string;
   description?: string;
   defaultOpen?: boolean;
@@ -11,16 +17,10 @@ interface CollapsibleSectionProps {
   children: ReactNode;
   headerAction?: ReactNode;
   badge?: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: keyof typeof SIZE_CONFIG;
   onToggle?: (isOpen: boolean) => void;
   variant?: 'collapsible' | 'static';
 }
-
-const sizeConfig = {
-  sm: { titleSize: 'xs' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 14, py: 2, gap: 2 },
-  md: { titleSize: 'sm' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 16, py: 2, gap: 2 },
-  lg: { titleSize: 'sm' as const, titleWeight: 'semibold' as const, descSize: 'xs' as const, iconSize: 16, py: 2, gap: 3 },
-} as const;
 
 export const CollapsibleSection = ({
   title,
@@ -38,7 +38,7 @@ export const CollapsibleSection = ({
   const isControlled = open !== undefined;
   const [internalOpen, setInternalOpen] = useState(defaultOpen);
   const isOpen = variant === 'static' ? true : isControlled ? open : internalOpen;
-  const config = sizeConfig[size];
+  const config = SIZE_CONFIG[size];
 
   const handleToggle = () => {
     if (variant === 'static') return;
@@ -49,9 +49,8 @@ export const CollapsibleSection = ({
   };
 
   const ChevronIcon = isOpen ? LuChevronUp : LuChevronDown;
-  const isStatic = variant === 'static';
 
-  if (isStatic) {
+  if (variant === 'static') {
     return (
       <Box>
         <Flex align="flex-start" justify="space-between" gap={2} mb={config.gap}>

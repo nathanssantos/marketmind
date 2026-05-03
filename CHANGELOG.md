@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-05-03
+
+### Added
+- **Checklist L/S score chart** — toggleable from the 3-dot options menu in the checklist header. Recharts `LineChart` (140px) showing rolling Long / Short scores on the same axis with a single neutral 40% reference line. When the chart is visible the L/S badges + ⋮ menu sit above the chart and the "Checklist" label hides; when collapsed the original full row is preserved. Backed by a new `checklist_score_history` table (`profileId × symbol × interval × marketType × recordedAt` unique index, source `live | backfill`). Live samples write through on every `evaluateChecklist` call; first chart-open seeds from `getScoreHistory` (last 7d) and triggers a `backfillScoreHistory` mutation that walks up to 100 evenly-spaced kline closes within the lookback window and reconstructs scores. Surfaces a "Collecting history…" hint between backfill completion and the first live points.
+- **Per-instance oscillator thresholds** — `IndicatorConfigDialog` exposes a Thresholds section with Oversold / Overbought number inputs for any catalog entry whose `defaultThresholds` carries both values (RSI, Stoch K/D, CCI, WPR, MFI, TSI, Custom RSI). Persisted on `UserIndicator.params` under reserved keys `_thresholdOversold` / `_thresholdOverbought`; consumed by `renderPaneLine` + `renderPaneMulti` via the new `getEffectiveOscillatorThresholds()` helper from `@marketmind/trading-core`. User overrides take precedence over catalog defaults; falls back to catalog when unset. No DB migration (params is already JSON).
+- **`@marketmind/ui` graduations** — `MiniLineChart` (generic multi-series chart with Skeleton fallback + ReferenceLine support, used by ChecklistScoreChart), `CollapsibleSection` (size variants, static / collapsible modes), `TradingSideCard` (LONG / SHORT-coded 4px accent). All Tier-2 token-aware primitives; renderer-side index re-exports keep callsites intact.
+- **`BinanceNetworkOutageError` + 5s cooldown** — `guardBinanceCall` detects DNS/socket errors (`ENOTFOUND`, `EADDRNOTAVAIL`, `ETIMEDOUT`, `ECONNREFUSED`, `ENETUNREACH`, `ECONNRESET`, `EAI_AGAIN`) up to 4 levels deep in the cause chain. Subsequent calls during the cooldown fast-fail in <1ms instead of waiting through 3 axios retries × timeout. tRPC error mapper translates to `SERVICE_UNAVAILABLE` (503); `onError` demotes them to debug log level so brief network blips don't flood the error feed.
+
+### Changed
+- **Binance SDK V3 endpoint migration** — `client.getPositions()` and `client.getAccountInformation()` (USDM) replaced with `getPositionsV3()` and `getAccountInformationV3()` across `binance-futures-client`, `wallet/crud`, `futures-trading/order-mutations`, `futures-trading/account-config`, `trading/order-mutations`, `trading/order-quantity`. V3 `positionRisk` dropped `leverage` and `marginType`; the internal `getPositions(client)` and `getPosition(client, symbol)` wrappers now fetch both V3 endpoints and merge by `(symbol, positionSide)` so the public `FuturesPosition` shape stays identical. `order-quantity.ts` deduplicated to a single `getAccountInformationV3` call. Spot `MainClient.getAccountInformation` left intact (not deprecated).
+- **Checklist focus-tracking gated on `timeframe='current'`** — previously `ChecklistSection` re-fetched on every focused-chart change; the parent `ChecklistPanel` always passed `interval = focusedInterval ?? '1h'`. Refactored: panel passes static `'1h'`, section's `useLayoutStore` selector short-circuits to `undefined` when no enabled condition uses `timeframe='current'`. Focus changes are a no-op when the checklist has no current-timeframe conditions, so the persisted score history bucket stays stable.
+- **Portfolio "Today's P&L" font size** standardized to the panel `xs` baseline (was `sm`).
+
+### Fixed
+- **Custom-symbol gap-filler routing** — composite symbols (POLITIFI etc.) had their klines persisted with `marketType='SPOT'` regardless of constituent market type, then the regular gap-filler hammered Binance with `/api/v3/klines?symbol=POLITIFI` and got 400 Bad Request — including a chronic 8-year gap fill attempt (2017-08-17 → 2025-08-22). Two-layer guard: `active-pairs.ts` filters custom symbols out of the maintenance loop's input list; `gap-detection.ts` and `kline-maintenance.forceCheckSymbol` short-circuit defensively. CustomSymbolService remains the sole backfill path for these.
+
 ## [1.10.0] - 2026-05-02
 
 ### Added — v1.10 panel-polish bundle

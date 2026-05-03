@@ -470,3 +470,39 @@ export type NewScalpingConfig = typeof scalpingConfig.$inferInsert;
 
 export type SymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inferSelect;
 export type NewSymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inferInsert;
+
+/**
+ * Rolling history of checklist L/S scores keyed by (user, profile,
+ * symbol, interval, marketType, recordedAt). Each call to
+ * `evaluateChecklist` writes a row; backfill scripts can populate
+ * historical rows by simulating the evaluator at past kline closes.
+ *
+ * Used to seed the checklist score chart on mount so the user sees
+ * trend across days, not just the live polling window.
+ */
+export const checklistScoreHistory = pgTable('checklist_score_history', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  profileId: varchar('profile_id', { length: 255 })
+    .notNull()
+    .references(() => tradingProfiles.id, { onDelete: 'cascade' }),
+  symbol: varchar({ length: 32 }).notNull(),
+  interval: varchar({ length: 10 }).notNull(),
+  marketType: varchar('market_type', { length: 10 }).$type<MarketType>().default('FUTURES').notNull(),
+  scoreLong: numeric('score_long', { precision: 5, scale: 2 }).notNull(),
+  scoreShort: numeric('score_short', { precision: 5, scale: 2 }).notNull(),
+  recordedAt: timestamp('recorded_at', { mode: 'date' }).defaultNow().notNull(),
+  source: varchar({ length: 20 }).default('live').notNull(),
+}, (table) => ({
+  scopeRecordedAtIdx: index('checklist_score_history_scope_idx').on(
+    table.profileId, table.symbol, table.interval, table.marketType, table.recordedAt,
+  ),
+  uniqRow: uniqueIndex('checklist_score_history_unique_idx').on(
+    table.profileId, table.symbol, table.interval, table.marketType, table.recordedAt,
+  ),
+}));
+
+export type ChecklistScoreHistoryRow = typeof checklistScoreHistory.$inferSelect;
+export type NewChecklistScoreHistoryRow = typeof checklistScoreHistory.$inferInsert;
