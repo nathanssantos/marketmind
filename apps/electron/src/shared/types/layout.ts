@@ -35,6 +35,7 @@ export type PanelKind =
   | 'autoTradingSetup'
   | 'autoTradingActivity'
   // Order Flow group
+  | 'orderBook'
   | 'orderFlowMetrics';
 
 interface BaseGridPanel {
@@ -81,7 +82,18 @@ export interface LayoutState {
   focusedPanelId: string | null;
 }
 
-export const DEFAULT_GRID_COLS = 12;
-export const DEFAULT_ROW_HEIGHT = 30;
+export const DEFAULT_GRID_COLS = 192;
+export const DEFAULT_ROW_HEIGHT = 8;
 export const GRID_MARGIN: [number, number] = [4, 4];
 export const GRID_CONTAINER_PADDING: [number, number] = [0, 0];
+
+/**
+ * Bump this when the grid coordinate scale changes. Persisted state below
+ * this version is migrated on hydrate (see `layoutStore.hydrateLayoutStore`).
+ *
+ * v1 → v2 (2026-05): cols 12 → 192, rowHeight 30 → 8. Both axes now share
+ * a ~1:1 cell granularity (column unit width ≈ rowHeight at typical desktop
+ * viewports of 1280–1920px). Migration scales x/w by 16 and y/h by 4 so
+ * panels keep roughly the same visual size.
+ */
+export const GRID_VERSION = 2;

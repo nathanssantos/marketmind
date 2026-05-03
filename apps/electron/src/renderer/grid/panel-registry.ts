@@ -3,6 +3,7 @@ import type { ComponentType } from 'react';
 import type { IconType } from 'react-icons';
 import {
   LuActivity,
+  LuBookOpen,
   LuChartCandlestick,
   LuClipboardList,
   LuListChecks,
@@ -48,10 +49,10 @@ export interface PanelBodyProps {
   panelId: string;
 }
 
-const TRADING_DEFAULT = { w: 4, h: 12 };
-const MARKET_DEFAULT = { w: 4, h: 14 };
-const AUTOTRADING_DEFAULT = { w: 5, h: 12 };
-const CHART_DEFAULT = { w: 8, h: 16 };
+const TRADING_DEFAULT = { w: 64, h: 48 };
+const MARKET_DEFAULT = { w: 64, h: 56 };
+const AUTOTRADING_DEFAULT = { w: 80, h: 48 };
+const CHART_DEFAULT = { w: 128, h: 64 };
 
 /**
  * Chart panels never go through the registry's `load` — they render via
@@ -188,6 +189,19 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     load: () =>
       import('@renderer/components/AutoTrading/panels/AutoTradingActivityPanel').then((m) => ({
         default: m.AutoTradingActivityPanel,
+      })),
+  },
+  orderBook: {
+    kind: 'orderBook',
+    group: 'orderFlow',
+    titleKey: 'panels.orderBook.title',
+    icon: LuBookOpen,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: AUTOTRADING_DEFAULT,
+    load: () =>
+      import('@renderer/components/OrderFlow/panels/OrderBookPanel').then((m) => ({
+        default: m.OrderBookPanel,
       })),
   },
   orderFlowMetrics: {

@@ -9,7 +9,7 @@ import { MarketIndicatorsTab } from '../tabs/MarketIndicatorsTab';
  * the grid.
  */
 export const MarketIndicatorsPanel = () => (
-  <Box h="100%" overflowY="auto">
+  <Box h="100%" overflowY="auto" p={1.5}>
     <MarketIndicatorsTab />
   </Box>
 );

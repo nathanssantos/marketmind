@@ -1,8 +1,9 @@
-import { Flex, Text, Portal } from '@chakra-ui/react';
-import { FormDialog, IconButton, Input, Menu, TooltipWrapper } from '@renderer/components/ui';
-import { useLayoutStore } from '@renderer/store/layoutStore';
-import { memo, useCallback, useState } from 'react';
-import { LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu';
+import { Flex, Stack, Text, Portal } from '@chakra-ui/react';
+import { Field as ChakraField } from '@chakra-ui/react/field';
+import { FormDialog, IconButton, Input, Menu, Select, TooltipWrapper } from '@renderer/components/ui';
+import { LAYOUT_TEMPLATES, useLayoutStore, type LayoutTemplateKey } from '@renderer/store/layoutStore';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { LuCopy, LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu';
 
 const LayoutTab = memo(({
   id,
@@ -12,6 +13,7 @@ const LayoutTab = memo(({
   onActivate,
   onDelete,
   onRename,
+  onDuplicate,
 }: {
   id: string;
   name: string;
@@ -20,6 +22,7 @@ const LayoutTab = memo(({
   onActivate: (id: string) => void;
   onDelete: (id: string) => void;
   onRename: (id: string) => void;
+  onDuplicate: (id: string) => void;
 }) => {
   return (
     <Menu.Root>
@@ -42,10 +45,14 @@ const LayoutTab = memo(({
       </Menu.ContextTrigger>
       <Portal>
         <Menu.Positioner>
-          <Menu.Content minW="120px">
+          <Menu.Content minW="140px">
             <Menu.Item value="rename" onClick={() => onRename(id)}>
               <LuPencil />
               Rename
+            </Menu.Item>
+            <Menu.Item value="duplicate" onClick={() => onDuplicate(id)}>
+              <LuCopy />
+              Duplicate
             </Menu.Item>
             {canClose && (
               <Menu.Item value="delete" onClick={() => onDelete(id)} color="fg.error">
@@ -65,9 +72,27 @@ interface NameDialogState {
   mode: 'create' | 'rename';
   layoutId?: string;
   value: string;
+  template: LayoutTemplateKey;
 }
 
-const INITIAL_DIALOG: NameDialogState = { isOpen: false, mode: 'create', value: '' };
+const INITIAL_DIALOG: NameDialogState = {
+  isOpen: false,
+  mode: 'create',
+  value: '',
+  template: 'tradingSwing',
+};
+
+const TEMPLATE_LABELS: Record<LayoutTemplateKey, string> = {
+  empty: 'Empty',
+  tradingScalp: 'Trading 1m / 5m / 15m',
+  tradingDay: 'Trading 5m / 15m / 1h',
+  tradingSwing: 'Trading 15m / 1h / 4h',
+  tradingMidterm: 'Trading 1h / 4h / 1d',
+  tradingPosition: 'Trading 4h / 1d / 1w',
+  tradingLong: 'Trading 1d / 1w / 1M',
+  autoTrading: 'Auto-Trading',
+  autoScalping: 'Auto-Scalping',
+};
 
 export const LayoutTabBar = memo(() => {
   const layoutPresets = useLayoutStore((s) => s.layoutPresets);
@@ -78,10 +103,16 @@ export const LayoutTabBar = memo(() => {
   });
   const setActiveLayout = useLayoutStore((s) => s.setActiveLayout);
   const addLayout = useLayoutStore((s) => s.addLayout);
+  const duplicateLayout = useLayoutStore((s) => s.duplicateLayout);
   const removeLayout = useLayoutStore((s) => s.removeLayout);
   const renameLayout = useLayoutStore((s) => s.renameLayout);
 
   const [dialog, setDialog] = useState<NameDialogState>(INITIAL_DIALOG);
+
+  const templateOptions = useMemo(
+    () => LAYOUT_TEMPLATES.map((t) => ({ value: t.key, label: TEMPLATE_LABELS[t.key] })),
+    [],
+  );
 
   const handleActivate = useCallback(
     (layoutId: string) => setActiveLayout(activeSymbolTabId, layoutId),
@@ -96,13 +127,37 @@ export const LayoutTabBar = memo(() => {
   const handleRenameClick = useCallback(
     (layoutId: string) => {
       const layout = layoutPresets.find(l => l.id === layoutId);
-      setDialog({ isOpen: true, mode: 'rename', layoutId, value: layout?.name ?? '' });
+      setDialog({
+        isOpen: true,
+        mode: 'rename',
+        layoutId,
+        value: layout?.name ?? '',
+        template: 'tradingSwing',
+      });
     },
     [layoutPresets],
   );
 
+  const handleDuplicateClick = useCallback(
+    (layoutId: string) => duplicateLayout(layoutId),
+    [duplicateLayout],
+  );
+
   const handleAddClick = useCallback(() => {
-    setDialog({ isOpen: true, mode: 'create', value: '' });
+    const defaultTemplate = LAYOUT_TEMPLATES.find((t) => t.key === 'tradingSwing')!;
+    setDialog({
+      isOpen: true,
+      mode: 'create',
+      value: defaultTemplate.defaultName,
+      template: 'tradingSwing',
+    });
+  }, []);
+
+  const handleTemplateChange = useCallback((value: string) => {
+    const tplKey = value as LayoutTemplateKey;
+    const tpl = LAYOUT_TEMPLATES.find((t) => t.key === tplKey);
+    if (!tpl) return;
+    setDialog((prev) => ({ ...prev, template: tplKey, value: tpl.defaultName }));
   }, []);
 
   const handleDialogClose = useCallback(() => setDialog(INITIAL_DIALOG), []);
@@ -112,7 +167,7 @@ export const LayoutTabBar = memo(() => {
     if (!name) return;
 
     if (dialog.mode === 'rename' && dialog.layoutId) renameLayout(dialog.layoutId, name);
-    else if (dialog.mode === 'create') addLayout(name);
+    else if (dialog.mode === 'create') addLayout(name, dialog.template);
 
     setDialog(INITIAL_DIALOG);
   }, [dialog, renameLayout, addLayout]);
@@ -133,6 +188,7 @@ export const LayoutTabBar = memo(() => {
               onActivate={handleActivate}
               onDelete={handleDelete}
               onRename={handleRenameClick}
+              onDuplicate={handleDuplicateClick}
             />
           ))}
         </Flex>
@@ -151,14 +207,32 @@ export const LayoutTabBar = memo(() => {
         submitLabel={dialog.mode === 'create' ? 'Create' : 'Save'}
         submitDisabled={!dialog.value.trim()}
         size="sm"
+        bodyOverflow="visible"
       >
-        <Input
-          placeholder="Layout name"
-          value={dialog.value}
-          onChange={(e) => setDialog(prev => ({ ...prev, value: e.target.value }))}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleDialogSubmit(); }}
-          autoFocus
-        />
+        <Stack gap={3}>
+          {dialog.mode === 'create' && (
+            <ChakraField.Root>
+              <ChakraField.Label fontSize="xs" color="fg.muted">Template</ChakraField.Label>
+              <Select
+                size="sm"
+                value={dialog.template}
+                onChange={handleTemplateChange}
+                options={templateOptions}
+                usePortal={false}
+              />
+            </ChakraField.Root>
+          )}
+          <ChakraField.Root>
+            <ChakraField.Label fontSize="xs" color="fg.muted">Name</ChakraField.Label>
+            <Input
+              placeholder="Layout name"
+              value={dialog.value}
+              onChange={(e) => setDialog(prev => ({ ...prev, value: e.target.value }))}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleDialogSubmit(); }}
+              autoFocus
+            />
+          </ChakraField.Root>
+        </Stack>
       </FormDialog>
     </>
   );

@@ -1,5 +1,61 @@
 import { ORDER_LINE_LAYOUT } from '@shared/constants';
 
+/**
+ * Parses a CSS color string into RGB components in 0..255. Supports
+ * `#rrggbb` / `#rgb` / `rgb()` / `rgba()`. Falls back to mid-gray when
+ * the input is anything else (including named colors and hsl) — the
+ * caller's text color decision will pick white in that case, which is
+ * the conservative default. Returning null lets callers know parsing
+ * failed if they need a different fallback.
+ */
+const parseColorRgb = (color: string): { r: number; g: number; b: number } | null => {
+  const trimmed = color.trim().toLowerCase();
+  if (trimmed.startsWith('#')) {
+    const hex = trimmed.slice(1);
+    if (hex.length === 3) {
+      return {
+        r: parseInt(hex[0]! + hex[0]!, 16),
+        g: parseInt(hex[1]! + hex[1]!, 16),
+        b: parseInt(hex[2]! + hex[2]!, 16),
+      };
+    }
+    if (hex.length === 6 || hex.length === 8) {
+      return {
+        r: parseInt(hex.slice(0, 2), 16),
+        g: parseInt(hex.slice(2, 4), 16),
+        b: parseInt(hex.slice(4, 6), 16),
+      };
+    }
+    return null;
+  }
+  const rgbMatch = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  if (rgbMatch) {
+    return { r: parseInt(rgbMatch[1]!, 10), g: parseInt(rgbMatch[2]!, 10), b: parseInt(rgbMatch[3]!, 10) };
+  }
+  return null;
+};
+
+/**
+ * Picks black or white text for a given background using the WCAG
+ * relative-luminance formula. Threshold tuned at 0.55 (slightly biased
+ * toward black) so light-but-saturated colors (yellow, cyan, gold)
+ * still get black text where pure 0.5 would flip to white. Without
+ * this, white text on the user's white-default horizontal-line color
+ * is unreadable; same for any user-picked light color across all
+ * price-tag callers (live price, order entry/SL/TP, indicator
+ * overlays, horizontal-line tag).
+ */
+export const getReadableTextColor = (bgColor: string): string => {
+  const rgb = parseColorRgb(bgColor);
+  if (!rgb) return '#ffffff';
+  const toLinear = (c: number): number => {
+    const norm = c / 255;
+    return norm <= 0.03928 ? norm / 12.92 : Math.pow((norm + 0.055) / 1.055, 2.4);
+  };
+  const luminance = 0.2126 * toLinear(rgb.r) + 0.7152 * toLinear(rgb.g) + 0.0722 * toLinear(rgb.b);
+  return luminance > 0.55 ? '#000000' : '#ffffff';
+};
+
 export const drawPriceTag = (
   ctx: CanvasRenderingContext2D,
   priceText: string,
@@ -7,8 +63,9 @@ export const drawPriceTag = (
   x: number,
   fillColor: string,
   fixedWidth: number = 64,
-  textColor: string = '#ffffff'
+  textColor?: string
 ): { width: number; height: number } => {
+  const resolvedTextColor = textColor ?? getReadableTextColor(fillColor);
   const labelPadding = 8;
   const labelHeight = 18;
   const arrowWidth = 6;
@@ -29,7 +86,7 @@ export const drawPriceTag = (
   ctx.closePath();
   ctx.fill();
 
-  ctx.fillStyle = textColor;
+  ctx.fillStyle = resolvedTextColor;
   ctx.fillText(priceText, x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
   ctx.restore();
 
@@ -47,8 +104,9 @@ export const drawCurrentPriceTag = (
   fillColor: string,
   borderColor: string,
   fixedWidth: number = 64,
-  textColor: string = '#ffffff'
+  textColor?: string
 ): void => {
+  const resolvedTextColor = textColor ?? getReadableTextColor(fillColor);
   const labelPadding = 8;
   const arrowWidth = 6;
   const priceHeight = 18;
@@ -78,7 +136,7 @@ export const drawCurrentPriceTag = (
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  ctx.fillStyle = textColor;
+  ctx.fillStyle = resolvedTextColor;
   ctx.fillText(priceText, x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
 
   if (timerText) {

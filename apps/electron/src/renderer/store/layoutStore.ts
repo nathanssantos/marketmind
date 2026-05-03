@@ -11,6 +11,7 @@ import type {
   ChartType,
   PanelKind,
 } from '@shared/types/layout';
+import { GRID_VERSION } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
 import { getPanelDef } from '@renderer/grid/panel-registry';
 import { usePreferencesStore } from './preferencesStore';
@@ -38,7 +39,7 @@ const createDefaultPanel = (
 const findEmptySlot = (
   grid: GridPanelConfig[],
   size: { w: number; h: number },
-  cols = 12,
+  cols = 192,
 ): GridPosition => {
   const lowestY = grid.reduce(
     (max, p) => Math.max(max, p.gridPosition.y + p.gridPosition.h),
@@ -58,31 +59,145 @@ const createNamedPanel = (
   windowState: 'normal',
 });
 
+/**
+ * Starter layout templates surfaced both as the seed layouts for new users
+ * and as choices in the "New layout" dialog (LayoutTabBar). Each template
+ * builds its grid lazily so each call generates fresh panel ids — needed
+ * when the same template is instantiated more than once (e.g. user creates
+ * "Trading 2" from the Trading template).
+ *
+ * The trading variants share an identical panel anatomy (1 primary chart,
+ * 2 secondary timeframe charts on the right, ticket / checklist / positions
+ * / orders / portfolio rail) — only the chart timeframes differ. The user
+ * built and validated this set hand-tuned to the 192-col / 8-row grid.
+ */
+export type LayoutTemplateKey =
+  | 'empty'
+  | 'tradingScalp'
+  | 'tradingDay'
+  | 'tradingSwing'
+  | 'tradingMidterm'
+  | 'tradingPosition'
+  | 'tradingLong'
+  | 'autoTrading'
+  | 'autoScalping';
+
+interface LayoutTemplate {
+  key: LayoutTemplateKey;
+  /** Default name when seeding the user's library (and prefill in the dialog). */
+  defaultName: string;
+  buildGrid: () => GridPanelConfig[];
+}
+
+/** Standard trading layout — 3 chart timeframes + ticket / checklist / positions / orders / portfolio rail. */
+const buildTradingGrid = (
+  primary: string,
+  secondary: string,
+  tertiary: string,
+): GridPanelConfig[] => [
+  createDefaultPanel(primary, { x: 0, y: 0, w: 122, h: 82 }),
+  createDefaultPanel(secondary, { x: 122, y: 0, w: 37, h: 44 }),
+  createDefaultPanel(tertiary, { x: 122, y: 44, w: 37, h: 38 }),
+  createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
+  createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 9 }),
+  createNamedPanel('checklist', { x: 159, y: 44, w: 33, h: 38 }),
+  createNamedPanel('positions', { x: 0, y: 82, w: 96, h: 32 }),
+  createNamedPanel('orders', { x: 96, y: 82, w: 96, h: 32 }),
+];
+
+export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
+  {
+    key: 'empty',
+    defaultName: 'Empty',
+    buildGrid: () => [createDefaultPanel('1h', { x: 0, y: 0, w: 192, h: 80 })],
+  },
+  {
+    key: 'tradingScalp',
+    defaultName: 'Trading 1m / 5m / 15m',
+    buildGrid: () => buildTradingGrid('1m', '5m', '15m'),
+  },
+  {
+    key: 'tradingDay',
+    defaultName: 'Trading 5m / 15m / 1h',
+    buildGrid: () => buildTradingGrid('5m', '15m', '1h'),
+  },
+  {
+    key: 'tradingSwing',
+    defaultName: 'Trading 15m / 1h / 4h',
+    buildGrid: () => buildTradingGrid('15m', '1h', '4h'),
+  },
+  {
+    key: 'tradingMidterm',
+    defaultName: 'Trading 1h / 4h / 1d',
+    buildGrid: () => buildTradingGrid('1h', '4h', '1d'),
+  },
+  {
+    key: 'tradingPosition',
+    defaultName: 'Trading 4h / 1d / 1w',
+    buildGrid: () => buildTradingGrid('4h', '1d', '1w'),
+  },
+  {
+    key: 'tradingLong',
+    defaultName: 'Trading 1d / 1w / 1M',
+    buildGrid: () => buildTradingGrid('1d', '1w', '1M'),
+  },
+  {
+    key: 'autoTrading',
+    defaultName: 'Auto-Trading',
+    buildGrid: () => [
+      createDefaultPanel('15m', { x: 0, y: 0, w: 122, h: 82 }),
+      createDefaultPanel('1h', { x: 122, y: 0, w: 37, h: 44 }),
+      createDefaultPanel('4h', { x: 122, y: 44, w: 37, h: 38 }),
+      createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
+      createNamedPanel('watchers', { x: 159, y: 35, w: 33, h: 47 }),
+      createNamedPanel('positions', { x: 0, y: 82, w: 96, h: 32 }),
+      createNamedPanel('orders', { x: 96, y: 82, w: 96, h: 32 }),
+    ],
+  },
+  {
+    key: 'autoScalping',
+    defaultName: 'Auto-Scalping',
+    buildGrid: () => [
+      createDefaultPanel('1m', { x: 0, y: 0, w: 133, h: 81 }),
+      createNamedPanel('orderBook', { x: 133, y: 0, w: 26, h: 81 }),
+      createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
+      createNamedPanel('orderFlowMetrics', { x: 159, y: 35, w: 33, h: 16 }),
+      createNamedPanel('autoTradingSetup', { x: 159, y: 51, w: 33, h: 30 }),
+      createNamedPanel('positions', { x: 0, y: 81, w: 96, h: 32 }),
+      createNamedPanel('orders', { x: 96, y: 81, w: 96, h: 32 }),
+    ],
+  },
+];
+
+const getTemplate = (key: LayoutTemplateKey): LayoutTemplate => {
+  const t = LAYOUT_TEMPLATES.find((x) => x.key === key);
+  if (!t) throw new Error(`Unknown layout template: ${key}`);
+  return t;
+};
+
+// Three layouts seeded for new users. Stable IDs (`trading` /
+// `autotrading` / `scalping`) match the backend `isDefaultLayoutData`
+// guard so the overwrite-protection still detects untouched-default
+// state. The "Trading" seed uses the swing variant (15m / 1h / 4h) as
+// the most generally useful timeframe set; the other 5 trading variants
+// are available via the New Layout dialog.
 const DEFAULT_LAYOUTS: LayoutPreset[] = [
   {
-    id: 'single',
-    name: 'Single Chart',
-    grid: [createDefaultPanel('1h', { x: 0, y: 0, w: 12, h: 20 })],
+    id: 'trading',
+    name: 'Trading 15m / 1h / 4h',
+    grid: getTemplate('tradingSwing').buildGrid(),
     order: 0,
   },
   {
-    id: 'dual',
-    name: 'Dual',
-    grid: [
-      createDefaultPanel('4h', { x: 0, y: 0, w: 6, h: 20 }),
-      createDefaultPanel('1h', { x: 6, y: 0, w: 6, h: 20 }),
-    ],
+    id: 'autotrading',
+    name: 'Auto-Trading',
+    grid: getTemplate('autoTrading').buildGrid(),
     order: 1,
   },
   {
-    id: 'quad',
-    name: 'Quad',
-    grid: [
-      createDefaultPanel('1d', { x: 0, y: 0, w: 6, h: 10 }),
-      createDefaultPanel('4h', { x: 6, y: 0, w: 6, h: 10 }),
-      createDefaultPanel('1h', { x: 0, y: 10, w: 6, h: 10 }),
-      createDefaultPanel('15m', { x: 6, y: 10, w: 6, h: 10 }),
-    ],
+    id: 'scalping',
+    name: 'Auto-Scalping',
+    grid: getTemplate('autoScalping').buildGrid(),
     order: 2,
   },
 ];
@@ -94,7 +209,8 @@ interface LayoutActions {
   updateTabSymbol: (tabId: string, symbol: string, marketType: MarketType) => void;
   reorderSymbolTabs: (tabIds: string[]) => void;
 
-  addLayout: (name: string) => void;
+  addLayout: (name: string, templateKey?: LayoutTemplateKey) => void;
+  duplicateLayout: (layoutId: string, newName?: string) => void;
   removeLayout: (layoutId: string) => void;
   setActiveLayout: (tabId: string, layoutId: string) => void;
   renameLayout: (layoutId: string, name: string) => void;
@@ -126,7 +242,7 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     id: 'default',
     symbol: 'BTCUSDT',
     marketType: 'FUTURES',
-    activeLayoutId: 'single',
+    activeLayoutId: 'trading',
     order: 0,
   }],
   activeSymbolTabId: 'default',
@@ -171,12 +287,25 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
       .filter((t): t is SymbolTab => t !== null),
   })),
 
-  addLayout: (name) => set(state => {
-    const id = generateId();
+  addLayout: (name, templateKey = 'empty') => set(state => {
+    const template = getTemplate(templateKey);
     const layout: LayoutPreset = {
-      id,
+      id: generateId(),
       name,
-      grid: [createDefaultPanel('1h', { x: 0, y: 0, w: 12, h: 20 })],
+      grid: template.buildGrid(),
+      order: state.layoutPresets.length,
+    };
+    return { layoutPresets: [...state.layoutPresets, layout] };
+  }),
+
+  duplicateLayout: (layoutId, newName) => set(state => {
+    const source = state.layoutPresets.find(l => l.id === layoutId);
+    if (!source) return state;
+    const layout: LayoutPreset = {
+      id: generateId(),
+      name: newName ?? `${source.name} (copy)`,
+      // Re-mint each panel id so the duplicate is independent of the source.
+      grid: source.grid.map(p => ({ ...p, id: generateId() })),
       order: state.layoutPresets.length,
     };
     return { layoutPresets: [...state.layoutPresets, layout] };
@@ -248,13 +377,17 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     ),
   })),
 
-  addPanel: (layoutId, timeframe) => set(state => ({
-    layoutPresets: state.layoutPresets.map(l =>
-      l.id === layoutId
-        ? { ...l, grid: [...l.grid, createDefaultPanel(timeframe, { x: 0, y: 0, w: 6, h: 10 })] }
-        : l
-    ),
-  })),
+  addPanel: (layoutId, timeframe) => set(state => {
+    const layout = state.layoutPresets.find(l => l.id === layoutId);
+    if (!layout) return state;
+    const def = getPanelDef('chart');
+    const slot = findEmptySlot(layout.grid, def.defaultLayout);
+    return {
+      layoutPresets: state.layoutPresets.map(l =>
+        l.id === layoutId ? { ...l, grid: [...l.grid, createDefaultPanel(timeframe, slot)] } : l,
+      ),
+    };
+  }),
 
   addNamedPanel: (layoutId, kind) => set(state => {
     const layout = state.layoutPresets.find(l => l.id === layoutId);
@@ -340,22 +473,59 @@ const persistLayout = (): void => {
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
     const { symbolTabs, activeSymbolTabId, layoutPresets } = useLayoutStore.getState();
-    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, layoutPresets });
+    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, layoutPresets, gridVersion: GRID_VERSION });
     trpc.layout.save.mutate({ data }).catch(() => {});
   }, 500);
 };
 
 useLayoutStore.subscribe(persistLayout);
 
+export const scalePosition = (pos: GridPosition, fx: number, fy: number): GridPosition => ({
+  x: Math.round(pos.x * fx),
+  y: Math.round(pos.y * fy),
+  w: Math.round(pos.w * fx),
+  h: Math.round(pos.h * fy),
+});
+
+export const migrateGridGranularity = (
+  presets: LayoutPreset[],
+  fromVersion: number,
+): LayoutPreset[] => {
+  if (fromVersion >= GRID_VERSION) return presets;
+  // v1 → v2: cols 12 → 192 (×16 horizontal so column granularity matches
+  // rowHeight 8 visually), rowHeight 30 → 8 (×4 vertical gives close visual
+  // match — panels end up ~7% taller, imperceptible).
+  const fx = 16;
+  const fy = 4;
+  return presets.map((preset) => ({
+    ...preset,
+    grid: preset.grid.map((panel) => ({
+      ...panel,
+      gridPosition: scalePosition(panel.gridPosition, fx, fy),
+      ...(panel.savedGridPosition && {
+        savedGridPosition: scalePosition(panel.savedGridPosition, fx, fy),
+      }),
+    })),
+  }));
+};
+
 export const hydrateLayoutStore = async (): Promise<void> => {
   try {
     const saved = await trpc.layout.get.query();
 
     if (saved?.symbolTabs || saved?.activeSymbolTabId || saved?.layoutPresets) {
+      const savedVersion =
+        typeof (saved as { gridVersion?: number }).gridVersion === 'number'
+          ? (saved as { gridVersion: number }).gridVersion
+          : 1;
+      const migratedPresets = saved.layoutPresets
+        ? migrateGridGranularity(saved.layoutPresets, savedVersion)
+        : undefined;
+
       useLayoutStore.getState().hydrate({
         ...(saved.symbolTabs && { symbolTabs: saved.symbolTabs }),
         ...(saved.activeSymbolTabId && { activeSymbolTabId: saved.activeSymbolTabId }),
-        ...(saved.layoutPresets && { layoutPresets: saved.layoutPresets }),
+        ...(migratedPresets && { layoutPresets: migratedPresets }),
       });
       isHydrated = true;
       return;

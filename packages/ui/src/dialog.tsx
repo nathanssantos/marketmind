@@ -21,20 +21,35 @@ import {
   DialogPositioner as ChakraDialogPositioner,
   DialogRoot as ChakraDialogRoot,
   DialogTitle as ChakraDialogTitle,
+  Portal,
 } from '@chakra-ui/react';
 
 export const DialogRoot = ({ placement = 'center', ...props }: DialogRootProps) => {
   return <ChakraDialogRoot placement={placement} {...props} />;
 };
 
+// Wrap Backdrop + Positioner in <Portal> so dialogs render at the document
+// root and escape any parent overflow:hidden — required since v1.10 because
+// dialogs are now triggered from inside grid panels (panel shells use
+// overflow:hidden to clip their content). Without portaling the dialog
+// would be clipped to the panel's bounds, often making the action buttons
+// unreachable.
 export const DialogBackdrop = (props: DialogBackdropProps) => {
-  // @ts-expect-error
-  return <ChakraDialogBackdrop {...props} />;
+  return (
+    <Portal>
+      {/* @ts-expect-error */}
+      <ChakraDialogBackdrop {...props} />
+    </Portal>
+  );
 };
 
 export const DialogPositioner = (props: DialogPositionerProps) => {
-  // @ts-expect-error
-  return <ChakraDialogPositioner {...props} />;
+  return (
+    <Portal>
+      {/* @ts-expect-error */}
+      <ChakraDialogPositioner {...props} />
+    </Portal>
+  );
 };
 
 export const DialogContent = (props: DialogContentProps) => {

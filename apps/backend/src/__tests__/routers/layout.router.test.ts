@@ -33,6 +33,22 @@ const DEFAULT_LAYOUT = JSON.stringify({
   ],
 });
 
+// v2 default layout shape: trading / autotrading / scalping replaced
+// the old single / dual / quad presets in v1.10. The overwrite-protection
+// guard accepts both id sets so existing users + fresh installs both
+// trip the same check.
+const DEFAULT_LAYOUT_V2 = JSON.stringify({
+  symbolTabs: [
+    { id: 'default', symbol: 'BTCUSDT', marketType: 'FUTURES', activeLayoutId: 'trading', order: 0 },
+  ],
+  activeSymbolTabId: 'default',
+  layoutPresets: [
+    { id: 'trading', name: 'Trading', grid: [], order: 0 },
+    { id: 'autotrading', name: 'Auto-Trading', grid: [], order: 1 },
+    { id: 'scalping', name: 'Scalping', grid: [], order: 2 },
+  ],
+});
+
 describe('Layout Router', () => {
   beforeAll(async () => {
     await setupTestDatabase();
@@ -111,6 +127,23 @@ describe('Layout Router', () => {
       const caller = createAuthenticatedCaller(user, session);
       await caller.layout.save({ data: DEFAULT_LAYOUT });
       const result = await caller.layout.save({ data: DEFAULT_LAYOUT });
+      expect(result.success).toBe(true);
+    });
+
+    it('refuses to overwrite a non-default layout with the v2 default state (trading/autotrading/scalping)', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      await caller.layout.save({ data: NON_DEFAULT_LAYOUT });
+
+      await expect(caller.layout.save({ data: DEFAULT_LAYOUT_V2 })).rejects.toThrow(
+        expect.objectContaining({ code: 'PRECONDITION_FAILED' }),
+      );
+    });
+
+    it('allows the v2 default state to be saved when no row exists (fresh user post-v1.10)', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const caller = createAuthenticatedCaller(user, session);
+      const result = await caller.layout.save({ data: DEFAULT_LAYOUT_V2 });
       expect(result.success).toBe(true);
     });
 

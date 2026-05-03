@@ -1,28 +1,21 @@
-import { Box } from '@chakra-ui/react';
-import { Callout } from '@renderer/components/ui';
+import { Box, Flex } from '@chakra-ui/react';
+import { Badge, Callout } from '@renderer/components/ui';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { ScalpingDashboard } from '@renderer/components/Trading/ScalpingDashboard';
+import { ScalpingConfigDialog } from '@renderer/components/Trading/ScalpingConfig';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-/**
- * v1.10 Track 4.5 — registered as the `autoTradingSetup` panel kind.
- * Wraps the existing `<ScalpingDashboard>` (auto-trading setup detection)
- * with the same wallet-required guard the AutoTradingSidebar uses today.
- *
- * onConfigClick is a no-op in the grid panel context — the user can open
- * the scalping config dialog from the trading menu instead. We can wire
- * a config affordance later if needed.
- */
 export const AutoTradingSetupPanel = () => {
   const { t } = useTranslation();
   const { activeWallet } = useActiveWallet();
   const symbol = useLayoutStore((s) => s.getActiveTab()?.symbol ?? 'BTCUSDT');
-  const noop = () => {};
+  const [configOpen, setConfigOpen] = useState(false);
 
   if (!activeWallet) {
     return (
-      <Box h="100%" overflowY="auto" p={3}>
+      <Box h="100%" overflowY="auto" p={1.5}>
         <Callout tone="warning" compact>
           {t('trading.wallets.selectWallet')}
         </Callout>
@@ -31,11 +24,21 @@ export const AutoTradingSetupPanel = () => {
   }
 
   return (
-    <Box h="100%" overflowY="auto">
+    <Box h="100%" overflowY="auto" p={1.5}>
+      <Flex justify="flex-end" px={2} pb={1}>
+        <Badge colorPalette="purple" variant="subtle" size="xs">
+          {t('common.beta')}
+        </Badge>
+      </Flex>
       <ScalpingDashboard
         walletId={activeWallet.id}
         symbol={symbol}
-        onConfigClick={noop}
+        onConfigClick={() => setConfigOpen(true)}
+      />
+      <ScalpingConfigDialog
+        walletId={activeWallet.id}
+        isOpen={configOpen}
+        onClose={() => setConfigOpen(false)}
       />
     </Box>
   );

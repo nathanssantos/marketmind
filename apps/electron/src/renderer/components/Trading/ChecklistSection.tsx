@@ -1,15 +1,15 @@
 import type { PositionSide, MarketType } from '@marketmind/types';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import { Badge, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, TooltipWrapper } from '@renderer/components/ui';
 import { useChecklistEvaluation } from '@renderer/hooks/useChecklistEvaluation';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { trpc } from '@renderer/utils/trpc';
 import { calculateChecklistScore, type ChecklistCondition } from '@marketmind/trading-core';
 import { getDefaultChecklistWeight } from '@marketmind/types';
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuCheck, LuChevronDown, LuChevronRight, LuTriangle, LuX } from 'react-icons/lu';
+import { LuCheck, LuTriangle, LuX } from 'react-icons/lu';
 
 interface ChecklistSectionProps {
   symbol: string;
@@ -80,7 +80,6 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
     const panel = s.getFocusedPanel();
     return panel?.kind === 'chart' ? panel.timeframe : undefined;
   });
-  const [expanded, setExpanded] = useState(false);
 
   const effectiveInterval = focusedInterval ?? interval;
   const defaultProfile = getDefaultProfile();
@@ -301,20 +300,8 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
   const hasAnyResults = groups.long.length + groups.short.length + groups.both.length > 0;
 
   return (
-    <Stack gap={0.5} align="stretch" pt={0.5} borderTop="1px solid" borderColor="border">
-      <Flex
-        align="center"
-        gap={1}
-        px={1}
-        py={0.5}
-        cursor="pointer"
-        borderRadius="sm"
-        _hover={{ bg: 'bg.muted' }}
-        onClick={() => setExpanded((v) => !v)}
-      >
-        <IconButton size="2xs" variant="ghost" aria-label="Toggle checklist" h="14px" minW="14px">
-          {expanded ? <LuChevronDown /> : <LuChevronRight />}
-        </IconButton>
+    <Stack gap={0.5} align="stretch">
+      <Flex align="center" gap={1} px={1} py={0.5}>
         <Text fontSize="xs" color="fg.muted" flex={1}>
           {t('checklist.section.title')}
         </Text>
@@ -330,21 +317,19 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         )}
       </Flex>
 
-      {expanded && (
-        <Stack gap={1.5} px={1} pb={1}>
-          {!hasAnyResults ? (
-            <Text fontSize="2xs" color="fg.muted" px={1}>
-              {t('checklist.section.empty')}
-            </Text>
-          ) : (
-            <>
-              {renderGroup(groups.long, 'checklist.section.long', 'Long')}
-              {renderGroup(groups.short, 'checklist.section.short', 'Short')}
-              {renderGroup(groups.both, 'checklist.section.both', 'Both')}
-            </>
-          )}
-        </Stack>
-      )}
+      <Stack gap={1.5} px={1} pb={1}>
+        {!hasAnyResults ? (
+          <Text fontSize="2xs" color="fg.muted" px={1}>
+            {t('checklist.section.empty')}
+          </Text>
+        ) : (
+          <>
+            {renderGroup(groups.long, 'checklist.section.long', 'Long')}
+            {renderGroup(groups.short, 'checklist.section.short', 'Short')}
+            {renderGroup(groups.both, 'checklist.section.both', 'Both')}
+          </>
+        )}
+      </Stack>
     </Stack>
   );
 });

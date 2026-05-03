@@ -20,25 +20,8 @@ vi.mock('@renderer/context/GlobalActionsContext', () => ({
 }));
 
 // Heavy children — neutralize them so we don't pull in their hooks/data.
-vi.mock('./FuturesPositionsPanel', () => ({
-  FuturesPositionsPanel: () => null,
-}));
-
-vi.mock('./OrphanOrders', () => ({
-  OrphanOrderCard: () => null,
-  OrphanOrdersTable: () => null,
-}));
-
 vi.mock('./PortfolioSummary', () => ({
   PortfolioSummary: () => null,
-}));
-
-vi.mock('./PortfolioTable', () => ({
-  PortfolioTable: () => null,
-}));
-
-vi.mock('./PositionCard', () => ({
-  PositionCard: () => null,
 }));
 
 vi.mock('@renderer/components/BrlValue', () => ({
@@ -101,7 +84,7 @@ describe('Portfolio', () => {
     expect(screen.getByText('trading.portfolio.noWallet')).toBeDefined();
   });
 
-  it('renders the empty-state when wallet exists but positions + orphan orders are both empty', () => {
+  it('renders the empty-state when wallet exists but no positions are open', () => {
     usePortfolioDataMock.mockReturnValue({
       ...baseData,
       activeWallet: {
@@ -119,34 +102,5 @@ describe('Portfolio', () => {
       </ChakraProvider>,
     );
     expect(screen.getByText('trading.portfolio.empty')).toBeDefined();
-  });
-
-  it('does not render the empty-state when there is at least one orphan order', () => {
-    usePortfolioDataMock.mockReturnValue({
-      ...baseData,
-      activeWallet: {
-        id: 'w1',
-        walletBalance: '10000',
-        currency: 'USDT' as const,
-      },
-      activeWalletId: 'w1',
-      orphanOrders: [{
-        id: 'orphan-1',
-        symbol: 'BTCUSDT',
-        side: 'BUY' as const,
-        type: 'STOP_MARKET' as const,
-        price: '50000',
-        quantity: '0.1',
-        exchangeOrderId: 'x1',
-      }],
-    });
-    useGlobalActionsOptionalMock.mockReturnValue(undefined);
-
-    render(
-      <ChakraProvider value={defaultSystem}>
-        <Portfolio />
-      </ChakraProvider>,
-    );
-    expect(screen.queryByText('trading.portfolio.empty')).toBeNull();
   });
 });

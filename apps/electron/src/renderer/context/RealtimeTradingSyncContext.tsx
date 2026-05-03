@@ -16,12 +16,14 @@ import { toaster } from '../utils/toaster';
 
 /**
  * Trailing-debounce window for batching tRPC query invalidations triggered by
- * realtime socket events. With high-frequency event storms (rapid order /
- * position / wallet updates), a smaller window means N invalidations × N
- * refetches per second. 100 ms is the sweet spot: feels instantaneous to a
- * human but coalesces a typical multi-event burst into one refetch cycle.
+ * realtime socket events. Bursts of order/position/wallet updates still
+ * collapse into a single refetch within one render frame, but a single
+ * event (the user closing one position by hand) lands in the UI almost
+ * instantly. Higher values (the previous 100 ms) added perceptible lag
+ * after a manual action even though the backend processed the Binance
+ * event within milliseconds.
  */
-const INVALIDATION_FLUSH_MS = 100;
+const INVALIDATION_FLUSH_MS = 16;
 
 interface RealtimeTradingSyncContextValue {
   forceRefresh: () => void;

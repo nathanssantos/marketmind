@@ -4,9 +4,12 @@ import type { Drawing } from '@marketmind/chart-studies';
 import { DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuBold, LuLock, LuLockOpen, LuMinus, LuTrash2, LuUnderline } from 'react-icons/lu';
+import { LuBold, LuLock, LuLockOpen, LuMinus, LuSettings, LuTrash2, LuUnderline } from 'react-icons/lu';
+import { DrawingPropertiesDialog } from './DrawingPropertiesDialog';
+
+const PROPERTIES_DIALOG_TYPES = new Set<Drawing['type']>(['horizontalLine']);
 
 const COLOR_PRESETS = ['#ffffff', '#ef4444', '#22c55e', '#2196F3', '#eab308', '#f97316', '#a855f7', '#06b6d4'] as const;
 const LINE_WIDTHS = [1, 2, 3] as const;
@@ -23,6 +26,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
   const selectedDrawingId = useDrawingStore(s => s.selectedDrawingId);
   const key = compositeKey(symbol, interval);
   const drawings = useDrawingStore(s => s.drawingsByKey[key]);
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
 
   const selectedDrawing = useMemo(() => drawings?.find(d => d.id === selectedDrawingId) ?? null, [drawings, selectedDrawingId]);
 
@@ -47,6 +51,7 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
   const isText = selectedDrawing.type === 'text';
   const textDrawing = isText ? (selectedDrawing) : null;
   const currentLineWidth = selectedDrawing.lineWidth ?? DEFAULT_LINE_WIDTH;
+  const hasProperties = PROPERTIES_DIALOG_TYPES.has(selectedDrawing.type);
 
   return (
     <Box
@@ -167,6 +172,20 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
 
         <Box w="1px" h="18px" bg="border" mx={0.5} />
 
+        {hasProperties && (
+          <TooltipWrapper label={t('chart.drawingToolbar.properties')} showArrow placement="top">
+            <IconButton
+              size="2xs"
+              variant="ghost"
+              aria-label={t('chart.drawingToolbar.properties')}
+              onClick={() => setPropertiesOpen(true)}
+              data-testid="drawing-toolbar-properties"
+            >
+              <LuSettings />
+            </IconButton>
+          </TooltipWrapper>
+        )}
+
         <TooltipWrapper label={t(isLocked ? 'chart.drawingToolbar.unlock' : 'chart.drawingToolbar.lock', isLocked ? 'Unlock' : 'Lock')} showArrow placement="top">
           <IconButton
             size="2xs"
@@ -191,6 +210,13 @@ export const DrawingToolbar = ({ manager, symbol, interval }: DrawingToolbarProp
           </IconButton>
         </TooltipWrapper>
       </HStack>
+
+      <DrawingPropertiesDialog
+        isOpen={propertiesOpen}
+        onClose={() => setPropertiesOpen(false)}
+        drawing={selectedDrawing}
+        manager={manager}
+      />
     </Box>
   );
 };

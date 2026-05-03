@@ -11,7 +11,7 @@ import { OrderFlowMetrics } from '../OrderFlowMetrics';
 export const OrderFlowMetricsPanel = () => {
   const symbol = useLayoutStore((s) => s.getActiveTab()?.symbol ?? 'BTCUSDT');
   return (
-    <Box h="100%" overflowY="auto">
+    <Box h="100%" overflowY="auto" p={1.5}>
       <OrderFlowMetrics symbol={symbol} />
     </Box>
   );
