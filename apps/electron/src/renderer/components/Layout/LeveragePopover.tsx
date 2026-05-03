@@ -38,8 +38,17 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
 
   const utils = trpc.useUtils();
   const setLeverageMutation = trpc.futuresTrading.setLeverage.useMutation({
-    onSuccess: () => {
-      void utils.futuresTrading.getSymbolLeverage.invalidate({ walletId: walletId!, symbol });
+    onSuccess: (data) => {
+      // The Binance setLeverage response already carries the new
+      // leverage value, so we patch the cache directly instead of
+      // invalidate+refetch. The previous flow had a race where the
+      // refetch hit accountInformationV3 before that endpoint had
+      // propagated the change, so the value would briefly snap back
+      // to the old leverage on the trigger button.
+      utils.futuresTrading.getSymbolLeverage.setData(
+        { walletId: walletId!, symbol },
+        { leverage: data.leverage },
+      );
       void utils.futuresTrading.getPositions.invalidate();
     },
     onError: (error) => {
