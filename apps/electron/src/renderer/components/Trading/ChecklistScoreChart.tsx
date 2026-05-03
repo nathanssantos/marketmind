@@ -75,7 +75,7 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
   if (history.length < 2) return null;
 
   return (
-    <Box mt={1} mx={1} h="80px">
+    <Box mt={1} mx={1} mb={2} h="80px">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={history} margin={{ top: 4, right: 4, bottom: 0, left: -28 }}>
           <CartesianGrid strokeDasharray="2 4" stroke={gridColor} />
@@ -93,13 +93,17 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
             labelFormatter={(t) => new Date(Number(t)).toLocaleTimeString()}
             formatter={(value, name) => [`${Math.round(Number(value))}%`, String(name)]}
           />
+          {/*
+            Auxiliary 40% threshold — color-coded dashed line (long/short).
+            No label text: the user reads "where 40% sits" from the
+            color of the dashed line against the matching series.
+          */}
           <ReferenceLine
             y={REFERENCE_LEVEL}
             stroke={profitColor}
             strokeWidth={0.5}
             strokeDasharray="2 4"
             opacity={0.6}
-            label={{ value: `L ${REFERENCE_LEVEL}%`, position: 'insideRight', fill: profitColor, fontSize: 6, dy: -3 }}
           />
           <ReferenceLine
             y={REFERENCE_LEVEL}
@@ -107,7 +111,6 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
             strokeWidth={0.5}
             strokeDasharray="2 4"
             opacity={0.6}
-            label={{ value: `S ${REFERENCE_LEVEL}%`, position: 'insideLeft', fill: lossColor, fontSize: 6, dy: -3 }}
           />
           <Line
             type="monotone"
