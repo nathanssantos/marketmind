@@ -3,6 +3,7 @@ import { Button, Popover, TooltipWrapper } from '@renderer/components/ui';
 import { LeverageSelector } from '@renderer/components/LeverageSelector';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { trpc } from '@renderer/utils/trpc';
+import { toaster } from '@renderer/utils/toaster';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -21,12 +22,17 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
     { enabled: !!walletId && !!symbol },
   );
 
-  const { data: activeExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
-    { walletId: walletId! },
+  // Use the all-executions query (manual + auto) so the disabled state
+  // catches positions opened via the boleta — autoTrading.getActiveExecutions
+  // only tracks auto-trading-managed positions and would leave manual
+  // entries undetected, sending the user into a silent backend
+  // PRECONDITION_FAILED.
+  const { data: tradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
+    { walletId: walletId!, limit: 100 },
     { enabled: !!walletId },
   );
 
-  const hasOpenPosition = (activeExecutions ?? []).some(
+  const hasOpenPosition = (tradeExecutions ?? []).some(
     (e) => e.symbol === symbol && e.status === 'open'
   );
 
@@ -35,6 +41,17 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
     onSuccess: () => {
       void utils.futuresTrading.getSymbolLeverage.invalidate({ walletId: walletId!, symbol });
       void utils.futuresTrading.getPositions.invalidate();
+    },
+    onError: (error) => {
+      // Surface backend errors (PRECONDITION_FAILED for open positions,
+      // network outage, etc.) — without this the popover silently
+      // ignored failed clicks and the user saw no change.
+      toaster.create({
+        type: 'error',
+        title: t('futures.leverageChangeFailed'),
+        description: error.message,
+        duration: 6000,
+      });
     },
   });
 
