@@ -99,7 +99,7 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
             strokeWidth={0.5}
             strokeDasharray="2 4"
             opacity={0.6}
-            label={{ value: `L ${REFERENCE_LEVEL}%`, position: 'insideRight', fill: profitColor, fontSize: 8, dy: -4 }}
+            label={{ value: `L ${REFERENCE_LEVEL}%`, position: 'insideRight', fill: profitColor, fontSize: 6, dy: -3 }}
           />
           <ReferenceLine
             y={REFERENCE_LEVEL}
@@ -107,7 +107,7 @@ export const ChecklistScoreChart = memo(({ resetKey, longScore, shortScore }: Ch
             strokeWidth={0.5}
             strokeDasharray="2 4"
             opacity={0.6}
-            label={{ value: `S ${REFERENCE_LEVEL}%`, position: 'insideLeft', fill: lossColor, fontSize: 8, dy: -4 }}
+            label={{ value: `S ${REFERENCE_LEVEL}%`, position: 'insideLeft', fill: lossColor, fontSize: 6, dy: -3 }}
           />
           <Line
             type="monotone"
