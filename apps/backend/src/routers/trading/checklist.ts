@@ -1,13 +1,16 @@
 import { checklistConditionSchema, conditionSideSchema } from '@marketmind/trading-core';
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { checklistScoreHistory } from '../../db/schema';
+import { checklistScoreHistory, klines as klinesTable } from '../../db/schema';
 import { tradingProfileQueries } from '../../services/database/tradingProfileQueries';
 import { evaluateChecklist } from '../../services/checklist/evaluate-checklist';
 import { logger, serializeError } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
 import { parseChecklistConditions } from '../../utils/profile-transformers';
+
+const MAX_BACKFILL_SAMPLES = 100;
+const DEFAULT_BACKFILL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const checklistRouter = router({
   evaluateChecklist: protectedProcedure
@@ -115,5 +118,84 @@ export const checklistRouter = router({
         short: parseFloat(r.scoreShort),
         source: r.source,
       }));
+    }),
+
+  backfillScoreHistory: protectedProcedure
+    .input(
+      z.object({
+        profileId: z.string(),
+        symbol: z.string().min(1),
+        interval: z.string().min(1),
+        marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+        lookbackMs: z.number().int().positive().max(30 * 24 * 60 * 60 * 1000).optional(),
+        targetSamples: z.number().int().positive().max(MAX_BACKFILL_SAMPLES).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const profile = await tradingProfileQueries.getByIdAndUser(input.profileId, ctx.user.id);
+      const conditions = parseChecklistConditions(profile.checklistConditions);
+      if (conditions.length === 0) return { sampled: 0, inserted: 0 };
+
+      const lookback = input.lookbackMs ?? DEFAULT_BACKFILL_LOOKBACK_MS;
+      const target = input.targetSamples ?? MAX_BACKFILL_SAMPLES;
+      const since = new Date(Date.now() - lookback);
+
+      const closeRows = await db
+        .select({ closeTime: klinesTable.closeTime })
+        .from(klinesTable)
+        .where(
+          and(
+            eq(klinesTable.symbol, input.symbol),
+            eq(klinesTable.interval, input.interval),
+            eq(klinesTable.marketType, input.marketType),
+            gte(klinesTable.closeTime, since),
+            lte(klinesTable.closeTime, new Date()),
+          ),
+        )
+        .orderBy(asc(klinesTable.closeTime));
+
+      if (closeRows.length === 0) return { sampled: 0, inserted: 0 };
+
+      const step = Math.max(1, Math.ceil(closeRows.length / target));
+      const sampleTimes: number[] = [];
+      for (let i = 0; i < closeRows.length; i += step) sampleTimes.push(closeRows[i]!.closeTime.getTime());
+
+      let inserted = 0;
+      for (const t of sampleTimes) {
+        try {
+          const result = await evaluateChecklist({
+            userId: ctx.user.id,
+            symbol: input.symbol,
+            interval: input.interval,
+            marketType: input.marketType,
+            conditions,
+            referenceTime: t,
+          });
+          if (!Number.isFinite(result.scoreLong.score) || !Number.isFinite(result.scoreShort.score)) continue;
+          const inserts = await db
+            .insert(checklistScoreHistory)
+            .values({
+              userId: ctx.user.id,
+              profileId: input.profileId,
+              symbol: input.symbol,
+              interval: input.interval,
+              marketType: input.marketType,
+              scoreLong: result.scoreLong.score.toFixed(2),
+              scoreShort: result.scoreShort.score.toFixed(2),
+              recordedAt: new Date(t),
+              source: 'backfill',
+            })
+            .onConflictDoNothing()
+            .returning({ id: checklistScoreHistory.id });
+          if (inserts.length > 0) inserted += 1;
+        } catch (e) {
+          logger.warn(
+            { error: serializeError(e), profileId: input.profileId, symbol: input.symbol, t },
+            '[checklist] backfill sample failed',
+          );
+        }
+      }
+
+      return { sampled: sampleTimes.length, inserted };
     }),
 });

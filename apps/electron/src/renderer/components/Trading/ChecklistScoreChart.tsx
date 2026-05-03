@@ -43,6 +43,9 @@ const mergePoint = (history: HistoryPoint[], point: HistoryPoint): HistoryPoint[
   return next.length > MAX_HISTORY_POINTS ? next.slice(-MAX_HISTORY_POINTS) : next;
 };
 
+const BACKFILL_TRIGGER_THRESHOLD = 5;
+const BACKFILL_TRIGGER_SPAN_MS = 24 * 60 * 60 * 1000;
+
 export const ChecklistScoreChart = memo(({
   resetKey,
   longScore,
@@ -55,6 +58,7 @@ export const ChecklistScoreChart = memo(({
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const lastResetKeyRef = useRef(resetKey);
   const seededKeyRef = useRef<string | null>(null);
+  const backfilledKeyRef = useRef<string | null>(null);
 
   const queryEnabled = Boolean(profileId) && Boolean(symbol) && Boolean(interval);
   const sinceMs = useMemo(() => Date.now() - SEED_LOOKBACK_MS, [resetKey]);
@@ -64,10 +68,15 @@ export const ChecklistScoreChart = memo(({
     { enabled: queryEnabled, staleTime: 60_000, refetchOnWindowFocus: false },
   );
 
+  const backfillMutation = trpc.trading.backfillScoreHistory.useMutation({
+    onSettled: () => historyQuery.refetch(),
+  });
+
   useEffect(() => {
     if (lastResetKeyRef.current !== resetKey) {
       lastResetKeyRef.current = resetKey;
       seededKeyRef.current = null;
+      backfilledKeyRef.current = null;
       setHistory([]);
     }
   }, [resetKey]);
@@ -78,6 +87,21 @@ export const ChecklistScoreChart = memo(({
     seededKeyRef.current = resetKey;
     setHistory(historyQuery.data.map((p) => ({ t: p.t, long: p.long, short: p.short })));
   }, [historyQuery.data, resetKey]);
+
+  useEffect(() => {
+    if (!queryEnabled || !profileId) return;
+    if (!historyQuery.data) return;
+    if (backfilledKeyRef.current === resetKey) return;
+    if (backfillMutation.isPending) return;
+    const points = historyQuery.data;
+    const oldestT = points[0]?.t;
+    const isSparse =
+      points.length < BACKFILL_TRIGGER_THRESHOLD ||
+      (oldestT != null && Date.now() - oldestT < BACKFILL_TRIGGER_SPAN_MS);
+    if (!isSparse) return;
+    backfilledKeyRef.current = resetKey;
+    backfillMutation.mutate({ profileId, symbol, interval, marketType });
+  }, [historyQuery.data, queryEnabled, profileId, symbol, interval, marketType, resetKey, backfillMutation]);
 
   useEffect(() => {
     if (longScore == null && shortScore == null) return;
@@ -95,7 +119,8 @@ export const ChecklistScoreChart = memo(({
     'fg.muted',
   ]);
 
-  const isInitialLoading = queryEnabled && historyQuery.isLoading && history.length === 0;
+  const isInitialLoading =
+    queryEnabled && (historyQuery.isLoading || backfillMutation.isPending) && history.length === 0;
 
   if (isInitialLoading) {
     return (
