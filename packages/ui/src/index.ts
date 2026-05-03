@@ -66,6 +66,12 @@ export { ColorPicker, DEFAULT_COLOR_PRESETS, type ColorPickerProps } from './col
 export { CreateActionButton, type CreateActionButtonProps } from './create-action-button';
 export { DialogSection, type DialogSectionProps } from './dialog-section';
 export { FormRow, FormSection } from './form-section';
+export {
+  MiniLineChart,
+  type MiniLineChartProps,
+  type MiniLineChartReferenceLine,
+  type MiniLineChartSeries,
+} from './mini-line-chart';
 export { PanelHeader } from './panel-header';
 export { SidebarContainer, SidebarHeader, SidebarTabsHeader } from './Sidebar';
 export {
