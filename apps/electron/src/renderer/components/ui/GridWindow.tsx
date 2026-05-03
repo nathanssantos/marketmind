@@ -9,7 +9,10 @@ export type GridWindowState = 'normal' | 'minimized' | 'maximized';
 interface GridWindowProps {
   id: string;
   windowState: GridWindowState;
+  /** Charts keep the focused-panel accent border so the user can see which chart drives timeframe / chart-type / indicator actions. */
   isFocused: boolean;
+  /** Hide the focus border in single-panel layouts (no other chart to choose between). */
+  showFocusBorder?: boolean;
   header: ReactNode;
   children: ReactNode;
   onFocus: (id: string) => void;
@@ -17,13 +20,13 @@ interface GridWindowProps {
   onMaximize: (id: string) => void;
   onRestore: (id: string) => void;
   onClose?: (id: string) => void;
-  showFocusBorder?: boolean;
 }
 
 function GridWindowComponent({
   id,
   windowState,
   isFocused,
+  showFocusBorder = true,
   header,
   children,
   onFocus,
@@ -31,7 +34,6 @@ function GridWindowComponent({
   onMaximize,
   onRestore,
   onClose,
-  showFocusBorder = true,
 }: GridWindowProps) {
   const isMaximized = windowState === 'maximized';
 

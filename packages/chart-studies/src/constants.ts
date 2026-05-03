@@ -26,6 +26,8 @@ export const DRAWING_COLORS = {
   handle: '#ffffff',
   handleStroke: '#2196F3',
   selected: '#2196F3',
+  magnetAnchor: 'rgba(255, 196, 0, 0.85)',
+  magnetAnchorStroke: 'rgba(0, 0, 0, 0.5)',
 } as const;
 
 export const DEFAULT_LINE_WIDTH = 1;

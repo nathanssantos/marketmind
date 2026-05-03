@@ -84,14 +84,6 @@ vi.mock('./LeveragePopover', () => ({
   },
 }));
 
-const checklistSectionRender = vi.fn();
-vi.mock('../Trading/ChecklistSection', () => ({
-  ChecklistSection: ({ symbol, interval, marketType }: { symbol: string; interval: string; marketType: string }) => {
-    checklistSectionRender(symbol, interval, marketType);
-    return <div data-testid="checklist-section" data-symbol={symbol} data-interval={interval} data-market={marketType} />;
-  },
-}));
-
 import { QuickTradeActions } from './QuickTradeToolbar';
 
 const renderActions = (props: Partial<React.ComponentProps<typeof QuickTradeActions>> = {}) =>
@@ -101,7 +93,6 @@ const renderActions = (props: Partial<React.ComponentProps<typeof QuickTradeActi
         <QuickTradeActions
           symbol="BTCUSDT"
           marketType="FUTURES"
-          interval="1h"
           {...props}
         />
       </ColorModeProvider>
@@ -241,11 +232,8 @@ describe('QuickTradeToolbar — Buy / Sell flow (regression: v0.107)', () => {
 });
 
 describe('QuickTradeToolbar — Reverse Position', () => {
-  it('the reverse row is disabled when there is no open position', async () => {
-    const user = userEvent.setup();
+  it('the reverse row is disabled when there is no open position', () => {
     renderActions();
-
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
 
     const row = screen.getByText('futures.reversePosition').parentElement!;
     expect(row).toHaveStyle({ opacity: '0.4' });
@@ -256,7 +244,6 @@ describe('QuickTradeToolbar — Reverse Position', () => {
     setDefaults({ positions: [{ id: 'pos-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }] });
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.reversePosition'));
 
     expect(await screen.findByText('futures.reverseConfirmTitle')).toBeInTheDocument();
@@ -277,7 +264,6 @@ describe('QuickTradeToolbar — Reverse Position', () => {
     const user = userEvent.setup();
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.reversePosition'));
 
     const dialog = screen.getByText('futures.reverseConfirmTitle').closest('[role="dialog"]')!;
@@ -294,7 +280,6 @@ describe('QuickTradeToolbar — Reverse Position', () => {
     const user = userEvent.setup();
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.reversePosition'));
 
     const dialog = screen.getByText('futures.reverseConfirmTitle').closest('[role="dialog"]')!;
@@ -307,11 +292,9 @@ describe('QuickTradeToolbar — Reverse Position', () => {
 });
 
 describe('QuickTradeToolbar — Close Position', () => {
-  it('the close row is disabled when there is no open position', async () => {
-    const user = userEvent.setup();
+  it('the close row is disabled when there is no open position', () => {
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     const row = screen.getByText('futures.closePosition').parentElement!;
     expect(row).toHaveStyle({ opacity: '0.4' });
   });
@@ -321,7 +304,6 @@ describe('QuickTradeToolbar — Close Position', () => {
     const user = userEvent.setup();
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.closePosition'));
 
     expect(await screen.findByText('futures.closePositionConfirmTitle')).toBeInTheDocument();
@@ -342,7 +324,6 @@ describe('QuickTradeToolbar — Close Position', () => {
     const user = userEvent.setup();
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.closePosition'));
 
     const dialog = screen.getByText('futures.closePositionConfirmTitle').closest('[role="dialog"]')!;
@@ -359,7 +340,6 @@ describe('QuickTradeToolbar — Cancel Orders', () => {
     const user = userEvent.setup();
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.cancelOrders'));
 
     expect(await screen.findByText('futures.cancelOrdersConfirmTitle')).toBeInTheDocument();
@@ -375,7 +355,6 @@ describe('QuickTradeToolbar — Cancel Orders', () => {
     const user = userEvent.setup();
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.cancelOrders'));
 
     const dialog = screen.getByText('futures.cancelOrdersConfirmTitle').closest('[role="dialog"]')!;
@@ -389,7 +368,6 @@ describe('QuickTradeToolbar — Cancel Orders', () => {
     const user = userEvent.setup();
     renderActions();
 
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
     await user.click(screen.getByText('futures.cancelOrders'));
 
     const dialog = screen.getByText('futures.cancelOrdersConfirmTitle').closest('[role="dialog"]')!;
@@ -401,49 +379,31 @@ describe('QuickTradeToolbar — Cancel Orders', () => {
   });
 });
 
-describe('QuickTradeToolbar — Grid Orders / Trailing Stop / Checklist sub-components', () => {
-  it('renders GridOrderPopover with the action-row trigger inside the advanced section', async () => {
-    const user = userEvent.setup();
+describe('QuickTradeToolbar — Grid Orders / Trailing Stop sub-components', () => {
+  it('renders GridOrderPopover with the action-row trigger always visible', () => {
     renderActions();
-
-    expect(gridOrderPopoverRender).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
 
     expect(gridOrderPopoverRender).toHaveBeenCalled();
     expect(screen.getByTestId('grid-popover')).toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.gridOrders')).toBeInTheDocument();
   });
 
-  it('renders TrailingStopPopover with the symbol and the trigger element', async () => {
-    const user = userEvent.setup();
+  it('renders TrailingStopPopover with the symbol and the trigger element', () => {
     renderActions();
-
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
 
     expect(trailingStopPopoverRender).toHaveBeenCalledWith('BTCUSDT');
     expect(screen.getByTestId('trailing-popover-BTCUSDT')).toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
   });
 
-  it('always renders ChecklistSection (independent of the advanced toggle)', () => {
-    renderActions({ interval: '15m' });
-    expect(checklistSectionRender).toHaveBeenCalledWith('BTCUSDT', '15m', 'FUTURES');
-    expect(screen.getByTestId('checklist-section')).toHaveAttribute('data-symbol', 'BTCUSDT');
-  });
-
-  it('hides Reverse / Close / Cancel rows for SPOT but still renders Grid + Trailing + Checklist', async () => {
-    const user = userEvent.setup();
+  it('hides Reverse / Close / Cancel rows for SPOT but still renders Grid + Trailing', () => {
     renderActions({ marketType: 'SPOT' });
-
-    await user.click(screen.getByRole('button', { name: /toggle advanced/i }));
 
     expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
     expect(screen.queryByText('futures.closePosition')).not.toBeInTheDocument();
     expect(screen.queryByText('futures.cancelOrders')).not.toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.gridOrders')).toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
-    expect(screen.getByTestId('checklist-section')).toBeInTheDocument();
   });
 });
 

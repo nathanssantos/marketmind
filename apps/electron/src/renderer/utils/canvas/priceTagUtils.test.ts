@@ -1,6 +1,73 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ORDER_LINE_LAYOUT } from '@shared/constants';
-import { drawPriceTag } from './priceTagUtils';
+import { drawPriceTag, getReadableTextColor } from './priceTagUtils';
+
+describe('getReadableTextColor', () => {
+  it('returns black for light backgrounds', () => {
+    expect(getReadableTextColor('#ffffff')).toBe('#000000');
+    expect(getReadableTextColor('#cccccc')).toBe('#000000');
+    expect(getReadableTextColor('#ffff00')).toBe('#000000'); // saturated yellow
+    expect(getReadableTextColor('#00ffff')).toBe('#000000'); // saturated cyan
+    expect(getReadableTextColor('#00ff00')).toBe('#000000'); // pure green has high luminance
+  });
+
+  it('returns white for dark / mid backgrounds', () => {
+    expect(getReadableTextColor('#000000')).toBe('#ffffff');
+    expect(getReadableTextColor('#333333')).toBe('#ffffff');
+    expect(getReadableTextColor('#ff0000')).toBe('#ffffff'); // saturated red
+    expect(getReadableTextColor('#0000ff')).toBe('#ffffff');
+  });
+
+  it('handles short hex (#fff / #000)', () => {
+    expect(getReadableTextColor('#fff')).toBe('#000000');
+    expect(getReadableTextColor('#000')).toBe('#ffffff');
+  });
+
+  it('handles rgb() and rgba() syntax', () => {
+    expect(getReadableTextColor('rgb(255, 255, 255)')).toBe('#000000');
+    expect(getReadableTextColor('rgba(20, 20, 20, 0.9)')).toBe('#ffffff');
+  });
+
+  it('falls back to white for unparseable input', () => {
+    expect(getReadableTextColor('papayawhip')).toBe('#ffffff');
+    expect(getReadableTextColor('hsl(0, 100%, 50%)')).toBe('#ffffff');
+    expect(getReadableTextColor('not-a-color')).toBe('#ffffff');
+  });
+});
+
+describe('drawPriceTag — dynamic text color', () => {
+  let ctx: CanvasRenderingContext2D;
+
+  beforeEach(() => {
+    ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      beginPath: vi.fn(),
+      moveTo: vi.fn(),
+      lineTo: vi.fn(),
+      closePath: vi.fn(),
+      fill: vi.fn(),
+      fillText: vi.fn(),
+      fillStyle: '',
+    } as unknown as CanvasRenderingContext2D;
+  });
+
+  it('uses dark text on a light fill when textColor is omitted', () => {
+    drawPriceTag(ctx, '12345.67', 100, 500, '#ffffff');
+    // Last fillStyle assignment is the text color
+    expect(ctx.fillStyle).toBe('#000000');
+  });
+
+  it('uses light text on a dark fill when textColor is omitted', () => {
+    drawPriceTag(ctx, '12345.67', 100, 500, '#1a1a2e');
+    expect(ctx.fillStyle).toBe('#ffffff');
+  });
+
+  it('respects an explicit textColor override on a light fill', () => {
+    drawPriceTag(ctx, '12345.67', 100, 500, '#ffffff', 64, '#ff00ff');
+    expect(ctx.fillStyle).toBe('#ff00ff');
+  });
+});
 
 describe('priceTagUtils', () => {
   describe('drawPriceTag', () => {

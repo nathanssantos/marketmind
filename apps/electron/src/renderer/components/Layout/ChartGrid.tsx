@@ -5,8 +5,9 @@ import 'react-grid-layout/css/styles.css';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { ChartGridPanel } from './ChartGridPanel';
+import { NamedPanelRenderer } from './NamedPanelRenderer';
 import type { GridPanelConfig } from '@shared/types/layout';
-import { DEFAULT_GRID_COLS, DEFAULT_ROW_HEIGHT, GRID_MARGIN, GRID_CONTAINER_PADDING } from '@shared/types/layout';
+import { DEFAULT_GRID_COLS, DEFAULT_ROW_HEIGHT, GRID_MARGIN, GRID_CONTAINER_PADDING, isChartPanel } from '@shared/types/layout';
 
 const buildLayoutItem = (panel: GridPanelConfig) => ({
   i: panel.id,
@@ -56,25 +57,15 @@ function ChartGridComponent() {
     [activeLayout],
   );
 
-  const maxRow = useMemo(() => {
-    const panels = maximizedPanel ? [maximizedPanel] : visiblePanels;
-    let max = 0;
-    for (const p of panels) {
-      const bottom = p.gridPosition.y + p.gridPosition.h;
-      if (bottom > max) max = bottom;
-    }
-    return Math.max(max, 1);
-  }, [maximizedPanel, visiblePanels]);
-
-  const dynamicRowHeight = useMemo(() => {
-    if (containerHeight <= 0 || maxRow <= 0) return DEFAULT_ROW_HEIGHT;
-    const totalMargin = GRID_MARGIN[1] * (maxRow - 1);
-    return Math.floor((containerHeight - totalMargin) / maxRow);
-  }, [containerHeight, maxRow]);
-
+  // v1.10 Track 2 — grid uses a fixed row height so panels have stable
+  // pixel heights. The container scrolls vertically when content exceeds
+  // viewport, and panels can be resized larger than the viewport.
   const gridLayout = useMemo((): Layout => {
     if (maximizedPanel) {
-      const fullRows = Math.max(1, Math.floor(containerHeight / (dynamicRowHeight + GRID_MARGIN[1])));
+      const fullRows = Math.max(
+        1,
+        Math.floor(containerHeight / (DEFAULT_ROW_HEIGHT + GRID_MARGIN[1])),
+      );
       return [{
         i: maximizedPanel.id,
         x: 0, y: 0,
@@ -83,7 +74,7 @@ function ChartGridComponent() {
       }];
     }
     return visiblePanels.map(buildLayoutItem);
-  }, [maximizedPanel, visiblePanels, containerHeight, dynamicRowHeight]);
+  }, [maximizedPanel, visiblePanels, containerHeight]);
 
   const handleLayoutChange = useCallback(
     (layout: Layout) => {
@@ -112,14 +103,21 @@ function ChartGridComponent() {
   const panelsToRender = maximizedPanel ? [maximizedPanel] : visiblePanels;
 
   return (
-    <Box ref={containerRef} w="100%" h="100%" overflow="hidden" position="relative">
+    <Box
+      ref={containerRef}
+      w="100%"
+      h="100%"
+      overflowX="hidden"
+      overflowY={maximizedPanel ? 'hidden' : 'auto'}
+      position="relative"
+    >
       {mounted && containerWidth > 0 && (
         <GridLayout
           layout={gridLayout}
           width={containerWidth}
           gridConfig={{
             cols: DEFAULT_GRID_COLS,
-            rowHeight: dynamicRowHeight,
+            rowHeight: DEFAULT_ROW_HEIGHT,
             margin: GRID_MARGIN,
             containerPadding: GRID_CONTAINER_PADDING,
           }}
@@ -135,13 +133,21 @@ function ChartGridComponent() {
         >
           {panelsToRender.map(panel => (
             <Box key={panel.id} h="100%">
-              <ChartGridPanel
-                panelConfig={panel}
-                symbol={activeTab.symbol}
-                marketType={activeTab.marketType}
-                layoutId={activeLayout.id}
-                isSinglePanel={isSinglePanel}
-              />
+              {isChartPanel(panel) ? (
+                <ChartGridPanel
+                  panelConfig={panel}
+                  symbol={activeTab.symbol}
+                  marketType={activeTab.marketType}
+                  layoutId={activeLayout.id}
+                  isSinglePanel={isSinglePanel}
+                />
+              ) : (
+                <NamedPanelRenderer
+                  panelConfig={panel}
+                  layoutId={activeLayout.id}
+                  isSinglePanel={isSinglePanel}
+                />
+              )}
             </Box>
           ))}
         </GridLayout>

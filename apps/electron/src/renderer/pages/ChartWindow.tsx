@@ -49,10 +49,6 @@ function ChartWindowContent(): ReactElement {
           onTimeframeChange={handleTimeframeChange}
           showNewWindowButton={false}
           showSidebarButtons={false}
-          isTradingOpen={false}
-          isAutoTradingOpen={false}
-          onToggleTrading={() => { }}
-          onToggleAutoTrading={() => { }}
           rightExtra={
             <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
               <ToggleIconButton

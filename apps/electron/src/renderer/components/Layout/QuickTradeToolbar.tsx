@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Button, ConfirmationDialog, IconButton, Menu, Slider, TooltipWrapper } from '@renderer/components/ui';
+import { Button, ConfirmationDialog, IconButton, Menu, Slider } from '@renderer/components/ui';
 import { Box, Flex, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBookTicker } from '@renderer/hooks/useBookTicker';
@@ -15,9 +15,8 @@ import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { calculateLiquidationPrice } from '@marketmind/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuChevronDown, LuChevronUp, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuMinus, LuPlus, LuShield, LuX } from 'react-icons/lu';
+import { LuArrowUpDown, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuMinus, LuPlus, LuShield, LuX } from 'react-icons/lu';
 import { PiBroom } from 'react-icons/pi';
-import { ChecklistSection } from '../Trading/ChecklistSection';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
@@ -58,12 +57,9 @@ interface BuySellButtonsProps {
   onPlaceOrder: (side: 'BUY' | 'SELL', price: number) => void;
   buyLabel: string;
   sellLabel: string;
-  showAdvanced: boolean;
-  onToggleAdvanced: () => void;
-  toggleAdvancedLabel: string;
 }
 
-const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrder, buyLabel, sellLabel, showAdvanced, onToggleAdvanced, toggleAdvancedLabel }: BuySellButtonsProps) => {
+const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrder, buyLabel, sellLabel }: BuySellButtonsProps) => {
   const { bidPrice, askPrice } = useBookTicker(symbol);
   const buyPrice = askPrice > 0 ? askPrice : currentPrice;
   const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
@@ -79,37 +75,21 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
           <Text fontSize="2xs" fontWeight="bold">{buyPrice > 0 ? formatChartPrice(buyPrice) : '—'}</Text>
         </VStack>
       </Button>
-      <VStack gap={0} h="34px" w="32px" flexShrink={0} justify="stretch">
-        <Box
-          h="17px"
-          w="32px"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          borderWidth="1px"
-          borderBottomWidth={0}
-          borderColor="border"
-          borderTopRadius="md"
-        >
-          <Text fontSize="2xs" color="fg.muted" lineHeight="1" whiteSpace="nowrap">
-            {spread > 0 ? spread.toFixed(2) : '—'}
-          </Text>
-        </Box>
-        <TooltipWrapper label={toggleAdvancedLabel} showArrow>
-          <IconButton
-            size="2xs"
-            variant="outline"
-            aria-label="Toggle advanced"
-            onClick={onToggleAdvanced}
-            h="17px"
-            w="32px"
-            minW="32px"
-            borderTopRadius={0}
-          >
-            {showAdvanced ? <LuChevronUp /> : <LuChevronDown />}
-          </IconButton>
-        </TooltipWrapper>
-      </VStack>
+      <Box
+        h="34px"
+        w="32px"
+        flexShrink={0}
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        borderWidth="1px"
+        borderColor="border"
+        borderRadius="md"
+      >
+        <Text fontSize="2xs" color="fg.muted" lineHeight="1" whiteSpace="nowrap">
+          {spread > 0 ? spread.toFixed(2) : '—'}
+        </Text>
+      </Box>
       <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={onSell} loading={isCreatingOrder} flex={1}>
         <VStack gap={0} lineHeight="1">
           <Text fontSize="2xs">{sellLabel}</Text>
@@ -121,21 +101,16 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
 });
 BuySellButtons.displayName = 'BuySellButtons';
 
-export type QuickTradeMode = 'sidebar' | 'chart';
-
 interface QuickTradeActionsProps {
   symbol: string;
   marketType?: MarketType;
-  interval?: string;
   showDragHandle?: boolean;
   onDragStart?: (e: React.MouseEvent) => void;
   isDragging?: boolean;
-  onMenuAction?: (mode: QuickTradeMode) => void;
-  currentMode?: QuickTradeMode;
   onClose?: () => void;
 }
 
-export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interval = '1h', showDragHandle, onDragStart, isDragging, onMenuAction, currentMode, onClose }: QuickTradeActionsProps) => {
+export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDragHandle, onDragStart, isDragging, onClose }: QuickTradeActionsProps) => {
   if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('QuickTradeToolbar');
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
@@ -152,7 +127,6 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
     cancelAllOrders,
     isCancellingAllOrders,
   } = useBackendFuturesTrading(activeWallet?.id ?? '');
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [showReverseConfirm, setShowReverseConfirm] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showCancelOrdersConfirm, setShowCancelOrdersConfirm] = useState(false);
@@ -332,8 +306,13 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
                 {pct}%
               </Button>
             ))}
+            {marketType === 'FUTURES' && (
+              <Box ml="auto">
+                <LeveragePopover symbol={symbol} />
+              </Box>
+            )}
           </HStack>
-          {(onMenuAction ?? onClose) && (
+          {onClose && (
             <Menu.Root>
               <Menu.Trigger asChild>
                 <IconButton size="2xs" variant="outline" color="fg.muted" aria-label="Options" flexShrink={0} h="20px" minW="20px">
@@ -342,18 +321,9 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
               </Menu.Trigger>
               <Menu.Positioner>
                 <Menu.Content minW="160px">
-                  {onMenuAction && currentMode && (
-                    <Menu.Item value="toggle-mode" onClick={() => onMenuAction(currentMode === 'sidebar' ? 'chart' : 'sidebar')}>
-                      {currentMode === 'sidebar'
-                        ? t('chart.quickTrade.moveToChart')
-                        : t('chart.quickTrade.moveToSidebar')}
-                    </Menu.Item>
-                  )}
-                  {onClose && (
-                    <Menu.Item value="close" onClick={onClose}>
-                      {t('common.close')}
-                    </Menu.Item>
-                  )}
+                  <Menu.Item value="close" onClick={onClose}>
+                    {t('common.close')}
+                  </Menu.Item>
                 </Menu.Content>
               </Menu.Positioner>
             </Menu.Root>
@@ -387,7 +357,6 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
           >
             <LuPlus />
           </IconButton>
-          {marketType === 'FUTURES' && <LeveragePopover symbol={symbol} />}
         </HStack>
 
         <HStack gap={1.5}>
@@ -398,31 +367,24 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', interva
             onPlaceOrder={handleQuickOrder}
             buyLabel={t('chart.quickTrade.buy')}
             sellLabel={t('chart.quickTrade.sell')}
-            showAdvanced={showAdvanced}
-            onToggleAdvanced={() => setShowAdvanced((prev) => !prev)}
-            toggleAdvancedLabel={showAdvanced ? t('common.hideActions') : t('common.moreActions')}
           />
         </HStack>
 
-        {showAdvanced && (
-          <VStack gap={0.5} align="stretch" pt={0.5} borderTop="1px solid" borderColor="border">
-            {marketType === 'FUTURES' && (
-              <>
-                <ActionRow icon={<LuArrowUpDown />} label={t('futures.reversePosition')} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition} />
-                <ActionRow icon={<LuX />} label={t('futures.closePosition')} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition} />
-                <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
-              </>
-            )}
-            <GridOrderPopover triggerElement={
-              <ActionRow icon={<LuGrid3X3 />} label={t('chart.quickTrade.gridOrders')} />
-            } />
-            <TrailingStopPopover symbol={symbol} triggerElement={
-              <ActionRow icon={<LuShield />} label={t('chart.quickTrade.trailingStop')} />
-            } />
-          </VStack>
-        )}
-
-        <ChecklistSection symbol={symbol} interval={interval} marketType={marketType} />
+        <VStack gap={0.5} align="stretch">
+          {marketType === 'FUTURES' && (
+            <>
+              <ActionRow icon={<LuArrowUpDown />} label={t('futures.reversePosition')} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition} />
+              <ActionRow icon={<LuX />} label={t('futures.closePosition')} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition} />
+              <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
+            </>
+          )}
+          <GridOrderPopover triggerElement={
+            <ActionRow icon={<LuGrid3X3 />} label={t('chart.quickTrade.gridOrders')} />
+          } />
+          <TrailingStopPopover symbol={symbol} triggerElement={
+            <ActionRow icon={<LuShield />} label={t('chart.quickTrade.trailingStop')} />
+          } />
+        </VStack>
       </VStack>
 
       <ConfirmationDialog
@@ -532,13 +494,10 @@ QuickTradeActions.displayName = 'QuickTradeActions';
 interface QuickTradeToolbarProps {
   symbol: string;
   marketType?: MarketType;
-  interval?: string;
-  onMenuAction?: (mode: QuickTradeMode) => void;
-  currentMode?: QuickTradeMode;
   onClose?: () => void;
 }
 
-export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', interval, onMenuAction, currentMode, onClose }: QuickTradeToolbarProps) => {
+export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onClose }: QuickTradeToolbarProps) => {
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -621,12 +580,9 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', interva
         <QuickTradeActions
           symbol={symbol}
           marketType={marketType}
-          interval={interval}
           showDragHandle
           onDragStart={handleDragStart}
           isDragging={isDragging}
-          onMenuAction={onMenuAction}
-          currentMode={currentMode}
           onClose={onClose}
         />
       </Box>

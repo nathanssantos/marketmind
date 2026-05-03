@@ -34,6 +34,7 @@ export const ProfileFibEntrySection = ({ actions }: ProfileFibEntrySectionProps)
               options={FIB_LEVEL_OPTIONS}
               onChange={(v) => setOv('fibonacciTargetLevelLong', v)}
               size="sm"
+              usePortal={false}
             />
           </OverrideRow>
           <OverrideRow
@@ -47,6 +48,7 @@ export const ProfileFibEntrySection = ({ actions }: ProfileFibEntrySectionProps)
               options={FIB_LEVEL_OPTIONS}
               onChange={(v) => setOv('fibonacciTargetLevelShort', v)}
               size="sm"
+              usePortal={false}
             />
           </OverrideRow>
           <OverrideRow
@@ -60,6 +62,7 @@ export const ProfileFibEntrySection = ({ actions }: ProfileFibEntrySectionProps)
               options={SWING_RANGE_OPTIONS}
               onChange={(v) => setOv('fibonacciSwingRange', v)}
               size="sm"
+              usePortal={false}
             />
           </OverrideRow>
           <OverrideRow
@@ -111,6 +114,7 @@ export const ProfileFibEntrySection = ({ actions }: ProfileFibEntrySectionProps)
               options={STOP_MODE_OPTIONS}
               onChange={(v) => setOv('initialStopMode', v)}
               size="sm"
+              usePortal={false}
             />
           </OverrideRow>
           <OverrideRow
@@ -124,6 +128,7 @@ export const ProfileFibEntrySection = ({ actions }: ProfileFibEntrySectionProps)
               options={TP_MODE_OPTIONS}
               onChange={(v) => setOv('tpCalculationMode', v)}
               size="sm"
+              usePortal={false}
             />
           </OverrideRow>
         </Stack>

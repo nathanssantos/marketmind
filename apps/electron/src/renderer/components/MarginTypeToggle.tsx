@@ -60,7 +60,7 @@ export function MarginTypeToggle({ value, onChange, disabled = false }: MarginTy
         </Button>
       </Flex>
 
-      <Box p={2} bg="bg.muted" borderRadius="md">
+      <Box p={2} bg="bg.surface" borderRadius="md">
         <Text fontSize="2xs" color="fg.muted">
           {value === 'ISOLATED'
             ? t('futures.isolatedDesc')

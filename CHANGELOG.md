@@ -7,6 +7,122 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-05-02
+
+### Added — v1.10 panel-polish bundle
+
+**Grid + UX foundation**
+- Grid granularity bump: cols `12 → 192` (×16 horizontal), rowHeight `30 → 8` (×4 vertical) for ~1:1 cell ratio at typical viewports. Migration on hydrate scales existing layouts to keep visual size identical (`gridVersion` 1 → 2).
+- Layout templates rebuilt from user-validated layouts: 6 trading variants (1m/5m/15m, 5m/15m/1h, 15m/1h/4h, 1h/4h/1d, 4h/1d/1w, 1d/1w/1M), Auto-Trading, Auto-Scalping. New `LAYOUT_TEMPLATES` array exported from `layoutStore`. New Layout dialog gains a Template selector + preset name pre-fill.
+- `duplicateLayout(layoutId, newName?)` action — re-mints panel ids on the copy. Right-click on layout tab adds Duplicate between Rename and Delete.
+- `+ Add panel` menu cardinality is per-layout: each layout can hold its own Ticket / Checklist / etc independently.
+- `Organize grid` (Compact / By columns / By rows) gated by a confirmation dialog so an accidental click doesn't wipe a hand-tuned layout.
+- Per-panel "Properties" dialog scaffolding (`DrawingPropertiesDialog` for drawings; `PROPERTIES_DIALOG_TYPES` registry).
+- Order Book panel restored — `DomLadder` + `useDepth` lost when `OrderFlowSidebar` was deleted in Track 7. Plus `ScalpingConfigDialog` wired into `AutoTradingSetupPanel` (was a noop before).
+
+**Panel polish**
+- Ticket fills its panel; `<QuickTradeActions>` rendered inline (no floating-drag wrapper). Action rows always inline below buy/sell — user hides them by sizing the panel smaller.
+- Leverage popover right-justified next to the size presets (`ml="auto"`).
+- Spread display becomes a plain bordered box (chevron slot gone).
+- Checklist always expanded — chevron toggle dropped.
+- Orders panel drops the Total/Active/Pending summary card and the duplicate top "View All Orders" button; remaining "View All Orders" promoted to the filter row.
+- Positions panel renders the standalone Portfolio positions list (filter + sort + table/cards), no title.
+- Portfolio panel becomes "Exposure" — drops positions section / orphan orders / expand-collapse toggle. Daily P&L + summary stats (exposure / margin / stop-protected / TP-projected) only.
+- Auto-Trading group renamed (i18n only): Watchers → Auto-Trading, Setup Detection → Auto-Scalping, Auto-Trading Activity → Logs. Beta badge on Auto-Scalping.
+- Compact `p={1.5}` outer panel padding everywhere; inner components no longer carry their own dialog-sized padding.
+- ChecklistSection drops its top divider line.
+
+**Theme**
+- Card backgrounds switched from `bg.muted` to `bg.surface` (PortfolioSummary, daily-P&L card, MarginTypeToggle hint, TradingSideCard, ScalpingDashboard cards) — subtler shade.
+- Focus border kept on chart panels only (`<GridWindow>`); dropped from bare panels (`<GridPanel>`). Single-symbol layouts make the visual hint redundant on non-charts.
+- Dialog `<DialogPositioner>` and `<DialogBackdrop>` in `@marketmind/ui` now wrap themselves in `<Portal>` so dialogs from inside grid panels escape `overflow:hidden` clips.
+- DialogShell adds opt-in `bodyOverflow="visible"` prop for small dialogs that need an inline `<Select usePortal={false}>` dropdown to extend past the body bound (e.g. New Layout). Default stays `overflowY="auto"` so long dialogs (Analytics, Settings, Backtest) keep scrolling inside the body instead of bleeding past the dialog.
+
+**Drawings**
+- Magnet anchor snap on hover (matches the existing OHLC magnet pattern). Snap to handle takes priority over OHLC; reuses `lastSnapRef` + `renderSnapIndicator` with a new `'handle'` ohlcType (no letter label).
+- Horizontal-line price tag on the price scale — overlays the axis like the live-price tag, not clipped to chart bounds. Tag color follows `drawing.color`; price formatted without thousands separator (matches other tags).
+- Bidirectional value config: `<DrawingPropertiesDialog>` + numeric Price input. Drag updates store → input reflects; Enter / blur commits → renderer redraws.
+- `getReadableTextColor(bg)` — WCAG luminance-based black/white text picker (threshold 0.55). Applied to `drawPriceTag` and `drawCurrentPriceTag` so user-customized light tag colors stay readable.
+
+**ORB**
+- Renders every day including weekends — every market session's `tradingDays` bumped to `[0..6]`. Session names (NYSE, TSE, B3, …) preserved.
+
+### Fixed — trading-flow audit (truth-in-numbers pass)
+
+- **Funding fee accumulation pipeline (HIGH)** — `tradeExecutions.accumulatedFunding` was never written for live wallets even though Binance `FUNDING_FEE` income events arrived in `incomeEvents` and were linked via `executionId`. Per-trade P&L silently omitted funding for every live trade. New `recomputeExecutionAccumulatedFunding(executionId)` uses time-window match (wallet+symbol+incomeTime BETWEEN openedAt..closedAt) — authoritative against Binance, robust to the linker's greedy assignment when executions overlap. Refuses to overwrite a non-zero value with zero.
+- **`scripts/audit/repair-funding.ts`** — one-off repair script that recomputes funding from time-window match, recomputes pnl by `pnl += fundingDelta`, and applies the aggregate delta to wallet balance. Applied to the affected wallet (20 executions, +47.14 USDT swing).
+- **Audit reconciliation prefers Binance `realizedPnl`** over local `(exit-entry)*qty` when available — Binance handles weighted-average multi-fill, partial closes, post-only adjustments correctly.
+- **`audit-fees` accepts `--fees-cap` / `--fees-days`** CLI flags so users can run wider one-off corrections (e.g. `--fees-cap=500 --fees-days=30`).
+- **Income-event recovery on user-stream reconnect** — `forceReconnectWallet` and the native client `'reconnected'` handler now call `syncWalletIncome` after the position sync. Funding / commission / realized-PNL events that landed during the gap no longer wait for the next hourly poll.
+- **Closed-order exit price** — Orders table "Current Price" column rendered the live ticker for closed positions, making P&L look mismatched against the displayed price. Closed rows now display the actual `exitPrice` from the trade execution.
+- **Realtime sync debounce** dropped 100ms → 16ms (one render frame). Bursts still coalesce; manual closes feel instant.
+- **Fee breakdown in Orders table + OrderCard** — entry / exit fees rendered explicitly; P&L relabeled "Net P&L".
+
+### Notes — v1.10.0
+
+- 2387 unit tests + 27 browser tests passing (+50 new tests vs v1.8: layoutStore migration / templates / duplicate, drawing handles geometry, magnet anchor render, horizontal-line render + tag, properties dialog binding, priceTag dynamic color).
+- Visual-regression baseline will need a refresh after merge — granularity + padding + theme changes are large enough to invalidate the v1.8 baseline.
+- E2E + a11y tracks (Track 9) and `audit-grid-panel-rules.mjs` (Track A) deferred to v1.10.1.
+
+### Removed — legacy sidebar components (v1.10 Track 7)
+- Deleted `<MarketSidebar>`, `<TradingSidebar>`, `<AutoTradingSidebar>`, `<OrderFlowSidebar>` and their re-exports. All four were unreachable from the toolbar after Track 6 (#421); no callsite outside their own dirs imported them.
+- The tab content files inside `MarketSidebar/tabs/` (WatchersTab, MarketIndicatorsTab, LogsTab, MarketIndicatorCharts, MarketIndicatorSections, MarketNoData) are kept — they're the bodies the v1.10 panel wrappers wrap.
+- `useUIStore` cleanup: dropped `tradingSidebarTab` / `setTradingSidebarTab`, `marketSidebarOpen` / `setMarketSidebarOpen` / `toggleMarketSidebar` / `marketSidebarTab` / `setMarketSidebarTab`, `autoTradingSidebarOpen` / `setAutoTradingSidebarOpen` / `toggleAutoTradingSidebar` / `autoTradingSidebarTab` / `setAutoTradingSidebarTab`, `orderFlowSidebarOpen` / `setOrderFlowSidebarOpen` / `toggleOrderFlowSidebar` / `orderFlowSidebarTab` / `setOrderFlowSidebarTab` and the corresponding type aliases (`TradingSidebarTab`, `MarketSidebarTab`, `AutoTradingSidebarTab`, `OrderFlowSidebarTab`). The `HYDRATE_KEYS` list also stripped of the corresponding pref keys.
+- `MainLayout` heavily simplified: drops the resizing logic, the `marketSidebarOpen` / `orderFlowSidebarOpen` / sidebar-width preferences, the `isTradingOpen` / `isAutoTradingOpen` / `onToggleTrading` / `onToggleAutoTrading` props (also removed from `App.tsx` consumer). Layout is now: `<Toolbar>` + `<ChartToolsToolbar>` + `<SymbolTabBar>` + `<ChartGrid>` + `<MinimizedPanelBar>` + `<LayoutTabBar>`.
+- `OrderFlowSidebar.test.tsx` removed; `uiStore.test.ts` had 15 sidebar-state tests removed (test count is now 2324, down from 2339; net delta = removed obsolete tests, no new failures).
+
+### Removed — sidebar toggle buttons in toolbar (v1.10 Track 6)
+- Toolbar drops the four sidebar toggle buttons (`Market`, `Order Flow`, `Trading`, `Auto-Trading`). Their content is now exposed via the `+ Add panel` menu (Track 3): Market → `marketIndicators`, Order Flow → `orderFlowMetrics`, Trading → `ticket / checklist / orders / portfolio / positions`, Auto-Trading → `watchers / autoTradingSetup / autoTradingActivity`.
+- Kept: Screener, Backtest, Analytics buttons — these are dialogs (not sidebars), so they stay where they are. The screener could become a panel later but is out of scope for v1.10.
+- `Toolbar`'s prop API trimmed: `isTradingOpen / isAutoTradingOpen / onToggleTrading / onToggleAutoTrading` removed. Both consumers (`MainLayout`, `ChartWindow`) updated.
+- The sidebar components themselves (`MarketSidebar`, `TradingSidebar`, `AutoTradingSidebar`, `OrderFlowSidebar`) are still in the codebase and reachable via remaining store flags — just no longer surfaced from the toolbar. Full sidebar removal lands as a follow-up cleanup once panel parity has been validated in production.
+
+### Removed — orphan panel-kind registry entries (v1.10 cleanup)
+- Dropped `exposure`, `indicators`, `marketSections` from `PanelKind` and the registry — none had a clean 1:1 mapping to existing sidebar content. `marketIndicators` already covers what would have lived in the dropped market sections; `exposure` (Margin/Risk display) remains a future addition once a real `<MarginInfoPanel>` is sourced from live exchange data; `indicators` overlapped with the toolbar's `<IndicatorTogglePopover>` and didn't merit a duplicate panel slot. Their i18n keys also removed.
+- Chart panel's registry `load` is now a clearly-named `CHART_LOAD_UNUSED` placeholder — chart panels render via `<ChartGridPanel>` directly, not through `<NamedPanelRenderer>`.
+- Net effect: `+ Add panel` menu now shows only panel kinds that actually render a body when selected. No more grey ✓ markers on items that had no working backing component.
+
+### Added — Ticket + Checklist panels wired to grid (v1.10 Track 4.1)
+- **`ticket` panel** registered: `<TicketPanel>` wraps the existing `<QuickTradeToolbar>` quick-trade ticket. Reads active symbol + market type from the layout store so switching symbol tabs retargets the ticket (per the user's clarification: layouts save panels; tabs only re-point them at the new symbol).
+- **`checklist` panel** registered: `<ChecklistPanel>` wraps the existing `<ChecklistSection>` (trading checklist for the active symbol). Falls back to '1h' interval when no chart is focused.
+
+### Added — AutoTrading panels wired to grid (v1.10 Track 4.5)
+- **`watchers` panel** registered: `<WatchersPanel>` wraps the existing `<WatchersTab>` (suggestion cards + watchers table).
+- **`autoTradingSetup` panel** registered: `<AutoTradingSetupPanel>` wraps `<ScalpingDashboard>` with the same select-wallet guard the AutoTradingSidebar uses; reads active wallet via `useActiveWallet()` and active symbol from the layout store.
+- **`autoTradingActivity` panel** registered: `<AutoTradingActivityPanel>` wraps the existing `<LogsTab>`.
+
+### Added — Market + OrderFlow panels wired to grid (v1.10 Tracks 4.4 + 4.6)
+- **`marketIndicators` panel** registered: `<MarketIndicatorsPanel>` wraps the existing `<MarketIndicatorsTab>` (FearGreed / BTC.D / MVRV / ETF / Funding / OI / Altcoin Season / ADX / Order Book / Funding Rates) so the user can pop the entire market dashboard onto the grid.
+- **`orderFlowMetrics` panel** registered: `<OrderFlowMetricsPanel>` wraps the existing `<OrderFlowMetrics>`, reading the active symbol from the layout store (`useLayoutStore(s => s.getActiveTab()?.symbol)`).
+
+### Added — Trading panels (Orders / Portfolio / Positions) wired to grid (v1.10 Track 4.2)
+- **`<NamedPanelRenderer>`** — new component in `Layout/` that lazy-loads a registered named panel via `getPanelDef(kind).load()` and wraps it in `<GridPanel mode="bare">`. Right-click on the panel body fires `onClose` → removes the panel from the active layout.
+- **3 trading panel kinds wired** in the registry: `orders` → `<OrdersPanel>` (existing `<OrdersList>`), `portfolio` → `<PortfolioPanel>` (existing `<Portfolio>` minus the sidebar's quickTradeHeader), `positions` → `<PositionsPanel>` (existing `<FuturesPositionsPanel>`).
+- **`ChartGrid`** now renders both chart and named panels — chart panels keep their existing path; named panels go through `<NamedPanelRenderer>`. Picking "Trading → Orders / Portfolio / Positions" from the `+ Add panel` menu now actually shows the body (was empty before).
+- Remaining panel kinds (Ticket, Checklist, Exposure, Indicators, MarketIndicators, MarketSections, Watchers, AutoTradingSetup, AutoTradingActivity, OrderFlowMetrics) still grey out as `NOT_YET_REGISTERED` until subsequent tracks wire their bodies.
+
+### Changed — Grid scrolls vertically + panels can exceed viewport (v1.10 Track 2)
+- **Outer grid container** now uses `overflowY="auto"` (when no panel is maximized) so the user can stack more panels than fit in one screen and scroll between them. Previously the container was `overflow="hidden"` and the row height was dynamically calculated to fit everything in the visible area, which made larger workspaces impossible.
+- **Row height fixed** at `DEFAULT_ROW_HEIGHT` (30px). Each `h` unit in panel positions now corresponds to a real, stable pixel height. Panels can be resized larger than the viewport and scroll into view.
+- Maximized panels still take the full visible viewport (`overflowY="hidden"` while maximized) — geometry computed against the container's current size.
+
+### Added — `+ Add panel` and `Organize grid` header menus (v1.10 Track 3)
+- **`<AddPanelMenu>`** — registry-driven `+` dropdown in the main toolbar. Replaces the v1-era chart-only `+` menu. Charts: one entry per timeframe (1m / 5m / 15m / 30m / 1h / 4h / 1d), multi-instance. Every other registered panel kind (Ticket, Checklist, Orders, Portfolio, Positions, Exposure, Indicators, MarketIndicators, MarketSections, Watchers, AutoTradingSetup, AutoTradingActivity, OrderFlowMetrics): single click adds the panel; greys out with a ✓ marker when already on the active layout.
+- **`<OrganizeGridMenu>`** — second header dropdown next to `+`. Three classic algorithms: Compact (snap-to-top-left preserving order), By columns (equal-width vertical strips), By rows (full-width horizontal stack). Skips minimized panels, preserves their geometry. Wires to the existing `updateGridLayout` store action.
+- 13 i18n keys added under `panels.*` (group labels, menu labels, panel titles for all registered kinds).
+- Named-panel `<GridPanel>` bodies still need to be wired (Tracks 4.1–4.6); `addNamedPanel` works today but the panels render as empty bare frames until their components are migrated from sidebars.
+
+### Fixed — Settings dialog tab widths + bottom padding
+- **Settings tab content area now fills the available width.** Root cause: `<Tabs.Root orientation="vertical">` resolves to `display: flex` (per Chakra's Tabs recipe), and the inner `<Flex>` wrapper holding rail + content had no `flex-grow`, so it collapsed to its content's intrinsic width — the content area was sized to the rail (220px) instead of `100% - 220px`. Adding `flex={1}` on the inner Flex restores the layout.
+- **`ChartSettingsTab` Display Options switches** — were using `<Switch>{label}</Switch>` (label rendered inline next to the toggle), which left the right half of each row empty. Migrated each to the bible-correct `<FormRow label={...}><Switch /></FormRow>` shape so the label sits on the left and the toggle on the right of the row, with helper text under the label.
+- **`GeneralTab` Theme button group** — `<HStack>` had no `w="100%"`, so the Light/Dark buttons collapsed to ~150px wide despite each having `flex={1}`. Added `w="100%"` so the buttons split the full row width.
+- **Settings content padding** — bumped horizontal padding from `px=5` (20px) to `px=6` (24px) and bottom padding from `pb=8` (32px) to `pb=10` (40px). The `pb` was previously being eaten by the WebKit scroll-container behavior (last item flush against the scroll edge) — moved padding INSIDE the scroll container so it scrolls along with content.
+
+### Added — `<DialogShell>` `bodyFill` mode
+- New `bodyFill?: boolean` prop on `<DialogShell>`. When true, the body becomes a flex column that fills available height (`overflow: hidden`, no inner Stack wrapper) so the consumer manages its own scrollable region inside.
+- When `bodyFill` is true, `DialogContent` also gets `h={contentMaxH ?? '90vh'}` (in addition to the existing `maxH`), so the dialog stays at a consistent height regardless of how short the active tab's content is — no more dialog "shrinking" when the user switches to a small tab like General/About/Notifications.
+- Migrated `SettingsDialog` to use `bodyFill`. Replaced the brittle `h="calc(90vh - 64px)"` (which assumed a fixed 64px header height and over-estimated the body's available space, causing the dialog body to scroll instead of just the inner content) with `flex={1} minH={0}` on the inner `<Flex>`. Now small tabs (General/Notifications/About) and large tabs (Security/Chart/Data) all behave consistently — only the inner content area scrolls, the rail stays put.
+
 ## [1.8.0] - 2026-05-02
 
 **v1.8 release** — enforcement + last-mile cleanup. v1.6 made the dialogs uniform, v1.7 brought every other surface up to the same design language, and v1.8 turns those rules into something the codebase enforces (CI gate) instead of relying on review. Three implementation PRs (#406–#408). Tests stay at 2332/2332 throughout.

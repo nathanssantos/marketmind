@@ -18,6 +18,7 @@ interface FormDialogProps {
   hideCloseButton?: boolean;
   bodyPadding?: number | string;
   contentMaxH?: string;
+  bodyOverflow?: 'auto' | 'visible';
 }
 
 /**

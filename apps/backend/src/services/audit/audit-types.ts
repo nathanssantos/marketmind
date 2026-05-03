@@ -39,6 +39,10 @@ export interface AuditContext {
   openAlgoOrders: FuturesAlgoOrder[];
   linkedAlgoIds: Set<string>;
   accountInfo: { totalWalletBalance: string; availableBalance: string };
+  /** Override the default trade cap for the fees check. */
+  feesCap?: number;
+  /** Override the default lookback window (days) for the fees check. */
+  feesDays?: number;
 }
 
 export function generateExecutionId(): string {

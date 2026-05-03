@@ -44,6 +44,7 @@ export function ExecutionSection({
           value={executionMode}
           options={EXECUTION_MODE_OPTIONS}
           onChange={(value) => onModeChange(value as ScalpingExecutionMode)}
+          usePortal={false}
         />
       </Field>
 
@@ -74,6 +75,7 @@ export function ExecutionSection({
           value={signalInterval}
           options={SIGNAL_INTERVAL_OPTIONS}
           onChange={(value) => onParamChange('signalInterval', value)}
+          usePortal={false}
         />
       </Field>
     </VStack>

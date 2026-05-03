@@ -46,6 +46,23 @@ export interface DialogShellProps {
   bodyPadding?: number | string;
   /** When set, body becomes scrollable up to this height (typical: `90vh`). */
   contentMaxH?: string;
+  /**
+   * When true, the body becomes a flex column that fills available height
+   * (no auto-scroll on the body itself). Use this when the consumer manages
+   * its own scrollable region inside (e.g. SettingsDialog with vertical
+   * Tabs). Default is `false` — the body scrolls if children overflow.
+   */
+  bodyFill?: boolean;
+  /**
+   * Opt-in escape hatch for dialogs that need an inline-portalled child
+   * (typically a `<Select usePortal={false}>`) to render past the body's
+   * natural height — without `'visible'` the dropdown gets clipped at
+   * the body bound. Only set this on small dialogs whose total content
+   * fits inside the dialog's max-height envelope; default `'auto'`
+   * scrolls long content (Analytics, Backtest, Settings) inside the body
+   * instead of bleeding it out of the dialog.
+   */
+  bodyOverflow?: 'auto' | 'visible';
   children: ReactNode;
 }
 
@@ -78,6 +95,8 @@ export const DialogShell = ({
   hideCloseButton = false,
   bodyPadding = MM.dialog.bodyPadding,
   contentMaxH,
+  bodyFill = false,
+  bodyOverflow = 'auto',
   children,
 }: DialogShellProps) => {
   const { t } = useTranslation();
@@ -120,6 +139,13 @@ export const DialogShell = ({
           maxW={sizeProps.maxW}
           w={'w' in sizeProps ? sizeProps.w : undefined}
           maxH={contentMaxH ?? '90vh'}
+          h={bodyFill ? (contentMaxH ?? '90vh') : undefined}
+          // Default content overflow is hidden so long bodies scroll
+          // inside the body. When `bodyOverflow="visible"` is opted-in
+          // (small dialogs that need a Select dropdown to escape the
+          // body), the content also goes visible so the dropdown is
+          // clipped only by the dialog's outer max-height envelope.
+          overflow={!bodyFill && bodyOverflow === 'visible' ? 'visible' : undefined}
         >
           <DialogHeader
             px={MM.dialog.headerPadding.x}
@@ -158,9 +184,25 @@ export const DialogShell = ({
             </DialogCloseTrigger>
           )}
 
-          <DialogBody p={bodyPadding} overflowY="auto">
-            <Stack gap={MM.dialog.sectionGap}>{children}</Stack>
-          </DialogBody>
+          {bodyFill ? (
+            <DialogBody p={bodyPadding} display="flex" flexDirection="column" overflow="hidden" minH={0}>
+              {children}
+            </DialogBody>
+          ) : (
+            // Default overflowY="auto" so long content (Analytics,
+            // Settings, etc.) scrolls inside the dialog instead of
+            // bleeding past it. Opt-in `bodyOverflow="visible"` is for
+            // small dialogs whose Select dropdowns (usePortal=false)
+            // need to extend past the body bound — the New Layout
+            // dialog is the only current case.
+            <DialogBody
+              p={bodyPadding}
+              overflow={bodyOverflow === 'visible' ? 'visible' : undefined}
+              overflowY={bodyOverflow === 'visible' ? undefined : 'auto'}
+            >
+              <Stack gap={MM.dialog.sectionGap}>{children}</Stack>
+            </DialogBody>
+          )}
 
           {!hideFooter && (
             <DialogFooter

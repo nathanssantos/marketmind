@@ -64,6 +64,7 @@ export const FilterRow = memo(({ filter, indicators, onUpdate, onRemove }: Filte
         options={indicatorOptions}
         onChange={handleIndicatorChange}
         minWidth="140px"
+        usePortal={false}
       />
 
       <Select
@@ -72,6 +73,7 @@ export const FilterRow = memo(({ filter, indicators, onUpdate, onRemove }: Filte
         options={operatorOptions}
         onChange={handleOperatorChange}
         minWidth="120px"
+        usePortal={false}
       />
 
       {needsValue(filter.operator) && (

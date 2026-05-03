@@ -22,7 +22,7 @@ export const TradingSideCard = ({ children, side }: TradingSideCardProps) => {
   return (
     <Box
       p={3}
-      bg="bg.muted"
+      bg="bg.surface"
       borderRadius="md"
       borderLeft="4px solid"
       borderColor={side === 'LONG' ? 'trading.long' : 'trading.short'}

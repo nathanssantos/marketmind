@@ -4,13 +4,13 @@ import { ErrorMessage, LoadingSpinner } from '@renderer/components/ui';
 import { useKlinePagination } from '@renderer/hooks/useKlinePagination';
 import { useKlineLiveStream } from '@renderer/hooks/useKlineLiveStream';
 import type { MarketType, Interval } from '@marketmind/types';
-import type { GridPanelConfig } from '@shared/types/layout';
+import type { ChartPanelConfig } from '@shared/types/layout';
 import { memo, useCallback, useMemo } from 'react';
 
 interface ChartPanelContentProps {
   symbol: string;
   marketType: MarketType;
-  panelConfig: GridPanelConfig;
+  panelConfig: ChartPanelConfig;
 }
 
 function ChartPanelContentComponent({ symbol, marketType, panelConfig }: ChartPanelContentProps) {

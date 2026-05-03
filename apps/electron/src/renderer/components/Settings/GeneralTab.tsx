@@ -21,7 +21,7 @@ export const GeneralTab = () => {
         title={t('header.theme')}
         description={t('settings.theme.description')}
       >
-        <HStack gap={2}>
+        <HStack gap={2} w="100%">
           <Button
             flex={1}
             size="sm"

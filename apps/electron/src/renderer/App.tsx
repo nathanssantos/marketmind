@@ -2,7 +2,7 @@ import { Box, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
 import { CryptoIcon, IconButton } from './components/ui';
 import type { ChartType, MarketType } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import { useCallback, useEffect, useMemo, type ReactElement } from 'react';
+import { useEffect, useMemo, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuX } from 'react-icons/lu';
 import { KeyboardShortcutDispatcher } from './components/KeyboardShortcutDispatcher';
@@ -31,7 +31,7 @@ import { useSetupToasts } from './hooks/useSetupToasts';
 import { useAutoActivateDefaultIndicators } from './hooks/useAutoActivateDefaultIndicators';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useShallow } from 'zustand/shallow';
-import { useChartPref, useUIPref } from './store/preferencesStore';
+import { useChartPref } from './store/preferencesStore';
 import { useCurrencyAutoRefresh } from './store/currencyStore';
 import { getToasterNavigateToSymbol, setToasterNavigateToSymbol, toaster } from './utils/toaster';
 
@@ -165,8 +165,6 @@ function AppContent(): ReactElement {
 
   const [chartType] = useChartPref<ChartType>('chartType', 'kline');
   const [timeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);
-  const [isTradingOpen, setIsTradingOpen] = useUIPref('tradingSidebarOpen', true);
-  const [isAutoTradingOpen, setIsAutoTradingOpen] = useUIPref('autoTradingSidebarOpen', false);
   const [advancedConfig, setAdvancedConfig] = useChartPref<AdvancedControlsConfig>('advancedConfig', {
     rightMargin: CHART_CONFIG.CHART_RIGHT_MARGIN,
     volumeHeightRatio: CHART_CONFIG.VOLUME_HEIGHT_RATIO,
@@ -187,13 +185,6 @@ function AppContent(): ReactElement {
     [indicatorInstances],
   );
 
-  const toggleTrading = useCallback(() => {
-    setIsTradingOpen((prev) => !prev);
-  }, [setIsTradingOpen]);
-
-  const toggleAutoTrading = useCallback(() => {
-    setIsAutoTradingOpen((prev) => !prev);
-  }, [setIsAutoTradingOpen]);
 
   const {
     allKlines: paginatedKlines,
@@ -248,10 +239,6 @@ function AppContent(): ReactElement {
       <MainLayout
         advancedConfig={advancedConfig}
         onAdvancedConfigChange={setAdvancedConfig}
-        isTradingOpen={isTradingOpen}
-        isAutoTradingOpen={isAutoTradingOpen}
-        onToggleTrading={toggleTrading}
-        onToggleAutoTrading={toggleAutoTrading}
         symbol={effectiveSymbol}
         marketType={effectiveMarketType}
         onMarketTypeChange={handleMarketTypeChange}

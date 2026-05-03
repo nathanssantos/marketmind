@@ -85,16 +85,18 @@ describe('Dialog', () => {
         expect(container.firstChild).toBeInTheDocument();
     });
 
-    it('should render DialogPositioner', () => {
-        const { container } = renderWithChakra(
+    it('should render DialogPositioner (portalled to body)', () => {
+        renderWithChakra(
             <Dialog.Root open>
                 <Dialog.Positioner>
-                    <Dialog.Content>Content</Dialog.Content>
+                    <Dialog.Content>Positioner Content</Dialog.Content>
                 </Dialog.Positioner>
             </Dialog.Root>
         );
 
-        expect(container.firstChild).toBeInTheDocument();
+        // Positioner now wraps itself in <Portal>, so it lands at the
+        // document body — query via screen rather than the local container.
+        expect(screen.getByText('Positioner Content')).toBeInTheDocument();
     });
 
     it('should render DialogContent', () => {
