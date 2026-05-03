@@ -107,7 +107,7 @@ const NETWORK_ERROR_CODES = new Set([
   'ENETUNREACH', 'ECONNRESET', 'EAI_AGAIN',
 ]);
 
-class BinanceApiCache {
+export class BinanceApiCache {
   private cache: Map<string, CacheEntry<unknown>> = new Map();
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
   private banExpiry = 0;
@@ -124,23 +124,31 @@ class BinanceApiCache {
   }
 
   markNetworkOutage(error: unknown): boolean {
-    const code = typeof error === 'object' && error !== null && 'code' in error
-      ? String((error as { code: unknown }).code)
-      : '';
-    const cause = typeof error === 'object' && error !== null && 'cause' in error
-      ? (error as { cause: unknown }).cause
-      : undefined;
-    const causeCode = typeof cause === 'object' && cause !== null && 'code' in cause
-      ? String((cause as { code: unknown }).code)
-      : '';
+    // Walk the cause chain up to 4 levels deep — axios sometimes wraps
+    // the original socket error inside its own AxiosError, and tRPC may
+    // re-wrap that, so the actual { code: 'ENOTFOUND' } can sit a few
+    // levels down. We also stop early if we hit a cycle.
+    const seen = new Set<unknown>();
+    let current: unknown = error;
+    let depth = 0;
+    let detectedCode = '';
+    while (current && typeof current === 'object' && !seen.has(current) && depth < 4) {
+      seen.add(current);
+      const code = 'code' in current ? String((current as { code: unknown }).code) : '';
+      if (NETWORK_ERROR_CODES.has(code)) {
+        detectedCode = code;
+        break;
+      }
+      current = 'cause' in current ? (current as { cause: unknown }).cause : undefined;
+      depth += 1;
+    }
 
-    const isNetworkError = NETWORK_ERROR_CODES.has(code) || NETWORK_ERROR_CODES.has(causeCode);
-    if (!isNetworkError) return false;
+    if (!detectedCode) return false;
 
     const wasOpen = this.outageExpiry === 0 || Date.now() >= this.outageExpiry;
     this.outageExpiry = Date.now() + OUTAGE_COOLDOWN_MS;
     if (wasOpen) {
-      logger.warn({ code: code || causeCode, cooldownMs: OUTAGE_COOLDOWN_MS }, '[BinanceApiCache] Network outage detected — fast-failing for cooldown');
+      logger.warn({ code: detectedCode, cooldownMs: OUTAGE_COOLDOWN_MS }, '[BinanceApiCache] Network outage detected — fast-failing for cooldown');
     }
     return true;
   }

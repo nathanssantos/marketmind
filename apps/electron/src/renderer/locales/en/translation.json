@@ -2718,7 +2718,8 @@
       "empty": "No conditions evaluated.",
       "options": "Checklist options",
       "showChart": "Show score chart",
-      "hideChart": "Hide score chart"
+      "hideChart": "Hide score chart",
+      "collectingHistory": "Collecting history…"
     },
     "editor": {
       "moveUp": "Move up",

@@ -1,8 +1,9 @@
 import type { MarketType } from '@marketmind/types';
-import { Box, useToken } from '@chakra-ui/react';
+import { Box, Flex, Text, useToken } from '@chakra-ui/react';
 import { MiniLineChart, type MiniLineChartReferenceLine, type MiniLineChartSeries } from '@renderer/components/ui';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const MAX_HISTORY_POINTS = 1000;
 const SEED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -52,6 +53,7 @@ export const ChecklistScoreChart = memo(({
   interval,
   marketType,
 }: ChecklistScoreChartProps) => {
+  const { t } = useTranslation();
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const lastResetKeyRef = useRef(resetKey);
   const seededKeyRef = useRef<string | null>(null);
@@ -133,6 +135,28 @@ export const ChecklistScoreChart = memo(({
 
   const isInitialLoading =
     queryEnabled && (historyQuery.isLoading || backfillMutation.isPending) && history.length === 0;
+
+  // After the backfill mutation settled and we still have <2 points,
+  // surface a small hint instead of a blank space — saves the user from
+  // wondering why the chart they enabled didn't appear. Live polling
+  // will fill it within a couple of refetch ticks.
+  const showCollectingHint =
+    queryEnabled &&
+    !isInitialLoading &&
+    history.length < 2 &&
+    backfilledKeyRef.current === resetKey;
+
+  if (showCollectingHint) {
+    return (
+      <Box mt={1} mx={1} mb={2} h={CHART_HEIGHT}>
+        <Flex h="100%" align="center" justify="center">
+          <Text fontSize="2xs" color="fg.muted">
+            {t('checklist.section.collectingHistory')}
+          </Text>
+        </Flex>
+      </Box>
+    );
+  }
 
   return (
     <Box mt={1} mx={1} mb={2}>

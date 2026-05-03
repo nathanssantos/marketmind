@@ -9,6 +9,7 @@ import {
   outputMaintenanceResults,
   type CorruptionFixEntry,
 } from '../watcher-batch-logger';
+import { getCustomSymbolService } from '../custom-symbol-service';
 import { getActivePairsWithSubscriptions } from './active-pairs';
 import { detectAndFixCorruptedKlines, detectAndFixMisalignedKlines } from './corruption-detection';
 import { detectGaps, fillGap } from './gap-detection';
@@ -238,6 +239,16 @@ class KlineMaintenance {
 
   async forceCheckSymbol(symbol: string, interval: Interval, marketType: MarketType = 'FUTURES'): Promise<{ gapsFilled: number; corruptedFixed: number }> {
     const pair: ActivePair = { symbol, interval, marketType };
+
+    // Custom-symbol short-circuit: their klines are computed by
+    // CustomSymbolService and never need the Binance gap/corruption
+    // pipeline. Mirror the guard already in detectGaps/fillGap so the
+    // misalignment + corruption passes don't run either.
+    if (getCustomSymbolService()?.isCustomSymbolSync(symbol)) {
+      logger.debug({ symbol, interval, marketType },
+        '[KlineMaintenance] forceCheckSymbol skipped — custom symbol uses CustomSymbolService backfill');
+      return { gapsFilled: 0, corruptedFixed: 0 };
+    }
 
     const misalignedDeleted = await detectAndFixMisalignedKlines(pair);
 
