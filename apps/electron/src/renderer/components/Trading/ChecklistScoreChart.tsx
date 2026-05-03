@@ -32,8 +32,8 @@ interface HistoryPoint {
 
 const mergePoint = (history: HistoryPoint[], point: HistoryPoint): HistoryPoint[] => {
   const last = history[history.length - 1];
-  if (last && last.t === point.t && last.long === point.long && last.short === point.short) return history;
-  if (last && last.long === point.long && last.short === point.short) return history;
+  if (last?.t === point.t && last?.long === point.long && last?.short === point.short) return history;
+  if (last?.long === point.long && last?.short === point.short) return history;
   const next = [...history, point];
   return next.length > MAX_HISTORY_POINTS ? next.slice(-MAX_HISTORY_POINTS) : next;
 };
