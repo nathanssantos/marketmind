@@ -72,6 +72,10 @@ vi.mock('../../services/binance-kline-stream', () => ({
   },
 }));
 
+vi.mock('../../services/custom-symbol-service', () => ({
+  getCustomSymbolService: () => ({ isCustomSymbolSync: () => false }),
+}));
+
 const mockIsKlineCorrupted = vi.fn();
 const mockIsKlineStaleCorrupted = vi.fn();
 const mockIsKlineSpikeCorrupted = vi.fn();
