@@ -82,6 +82,17 @@ interface UIState {
 
   isOrdersDialogOpen: boolean;
   setOrdersDialogOpen: (open: boolean) => void;
+
+  // Standalone dialogs that graduated out of Settings (per the v1.6
+  // "Settings is for prefs, not records" rule). Exposed in the store so
+  // MCP screenshot tooling and E2E tests can open them without
+  // depending on header/sidebar UI structure that drifts faster than
+  // the gallery script does.
+  isWalletsDialogOpen: boolean;
+  setWalletsDialogOpen: (open: boolean) => void;
+
+  isTradingProfilesDialogOpen: boolean;
+  setTradingProfilesDialogOpen: (open: boolean) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -169,5 +180,11 @@ export const useUIStore = create<UIState>()(
 
     isOrdersDialogOpen: false,
     setOrdersDialogOpen: (open) => set({ isOrdersDialogOpen: open }),
+
+    isWalletsDialogOpen: false,
+    setWalletsDialogOpen: (open) => set({ isWalletsDialogOpen: open }),
+
+    isTradingProfilesDialogOpen: false,
+    setTradingProfilesDialogOpen: (open) => set({ isTradingProfilesDialogOpen: open }),
   })
 );
