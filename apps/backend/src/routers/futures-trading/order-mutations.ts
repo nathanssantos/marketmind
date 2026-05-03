@@ -9,8 +9,8 @@ import {
   cancelFuturesAlgoOrder,
   cancelFuturesOrder,
   createBinanceFuturesClient,
+  getConfiguredLeverage,
   getOpenAlgoOrders,
-  getPosition,
   isPaperWallet,
   setLeverage,
   setMarginType,
@@ -129,8 +129,10 @@ export const orderMutationsRouter = router({
         if (input.leverage) await setLeverage(client, input.symbol, input.leverage);
         await setMarginType(client, input.symbol, 'CROSSED');
 
-        const posForLeverage = await getPosition(client, input.symbol);
-        const actualLeverage = posForLeverage ? Number(posForLeverage.leverage) : (input.leverage ?? 1);
+        // Read post-setLeverage value from accountInfoV3 — V3 positionRisk
+        // dropped leverage entirely, so we can't use the position wrapper
+        // for "what leverage will this order use" anymore.
+        const actualLeverage = await getConfiguredLeverage(client, input.symbol);
 
         const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
         const filters = symbolFiltersMap.get(input.symbol);

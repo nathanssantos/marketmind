@@ -157,6 +157,30 @@ export async function getPositions(
   }
 }
 
+/**
+ * Reads the configured leverage for `symbol` regardless of whether a
+ * position is currently open. accountInformationV3.positions[] is the
+ * canonical source — it carries the leverage the user has set even
+ * when positionAmt is 0. Use this whenever you want "what leverage
+ * would a new order use?", not "what leverage is the open position
+ * running at?". Returns 1 as a safe fallback if the symbol has never
+ * been configured (rare) or the response is malformed.
+ */
+export async function getConfiguredLeverage(
+  client: USDMClient,
+  symbol: string
+): Promise<number> {
+  try {
+    const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
+    const acctPos = accountInfo.positions?.find((p) => p.symbol === symbol);
+    const leverage = acctPos ? Number(acctPos.leverage) : 1;
+    return Number.isFinite(leverage) && leverage > 0 ? leverage : 1;
+  } catch (error) {
+    logger.error({ error: serializeError(error), symbol }, 'Failed to get configured leverage');
+    throw error;
+  }
+}
+
 export async function getPosition(
   client: USDMClient,
   symbol: string
