@@ -1,4 +1,5 @@
 import { CHART_CONFIG, OSCILLATOR_CONFIG } from '@shared/constants';
+import { getEffectiveOscillatorThresholds } from '@marketmind/trading-core';
 import {
   createDynamicValueToY,
   createNormalizedValueToY,
@@ -47,8 +48,7 @@ export const renderPaneLine: GenericRenderer = (ctx, input) => {
     ?? DEFAULT_LINE_COLOR;
   const lineWidth = (getInstanceParam<number>(input.instance, input.definition, 'lineWidth') ?? DEFAULT_LINE_WIDTH);
 
-  const oversold = input.definition.defaultThresholds?.oversold;
-  const overbought = input.definition.defaultThresholds?.overbought;
+  const { oversold, overbought } = getEffectiveOscillatorThresholds(input.definition, input.instance.params);
   if (typeof oversold === 'number' && typeof overbought === 'number' && valueRange) {
     const overboughtY = valueToY(overbought);
     const oversoldY = valueToY(oversold);

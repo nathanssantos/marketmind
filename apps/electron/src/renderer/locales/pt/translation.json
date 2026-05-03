@@ -2797,7 +2797,11 @@
       "type": "Type",
       "indicator": "Indicator",
       "label": "Label",
-      "labelPlaceholder": "EMA 20"
+      "labelPlaceholder": "EMA 20",
+      "thresholds": "Thresholds",
+      "thresholdsHint": "Drawn as horizontal zones in the indicator pane.",
+      "oversold": "Oversold",
+      "overbought": "Overbought"
     }
   },
   "checklist": {
