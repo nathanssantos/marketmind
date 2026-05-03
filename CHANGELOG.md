@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-05-03
+
 ### Added
 - **Checklist L/S score chart** — toggleable from the 3-dot options menu in the checklist header. Recharts `LineChart` (140px) showing rolling Long / Short scores on the same axis with a single neutral 40% reference line. When the chart is visible the L/S badges + ⋮ menu sit above the chart and the "Checklist" label hides; when collapsed the original full row is preserved. Backed by a new `checklist_score_history` table (`profileId × symbol × interval × marketType × recordedAt` unique index, source `live | backfill`). Live samples write through on every `evaluateChecklist` call; first chart-open seeds from `getScoreHistory` (last 7d) and triggers a `backfillScoreHistory` mutation that walks up to 100 evenly-spaced kline closes within the lookback window and reconstructs scores. Surfaces a "Collecting history…" hint between backfill completion and the first live points.
 - **Per-instance oscillator thresholds** — `IndicatorConfigDialog` exposes a Thresholds section with Oversold / Overbought number inputs for any catalog entry whose `defaultThresholds` carries both values (RSI, Stoch K/D, CCI, WPR, MFI, TSI, Custom RSI). Persisted on `UserIndicator.params` under reserved keys `_thresholdOversold` / `_thresholdOverbought`; consumed by `renderPaneLine` + `renderPaneMulti` via the new `getEffectiveOscillatorThresholds()` helper from `@marketmind/trading-core`. User overrides take precedence over catalog defaults; falls back to catalog when unset. No DB migration (params is already JSON).
