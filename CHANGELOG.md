@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.4] - 2026-05-04
+
+### Fixed
+- **WalletCard sidebar Net P&L now matches Analytics modal.** The card was deriving `netPnL = currentBalance − (initialBalance + netDeposits)`, which bakes in unrealized PnL on currently-open positions plus COIN_SWAP movements. Analytics modal switched to income-events ground truth in v1.11.2, so the two surfaces could disagree by hundreds of dollars on the same wallet at the same instant (user reported WalletCard −$162 vs Analytics +$930). The card now sources `netPnL`/`grossPnL`/`totalFees`/`totalFunding` from the same `useBackendAnalytics(wallet.id, 'all').performance` query the Analytics modal uses.
+
 ## [1.11.3] - 2026-05-04
 
 ### Fixed — leverage resolution: fail loud, never silently default to 1×
