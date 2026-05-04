@@ -197,13 +197,19 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
 
   const netDeposits = wallet.totalDeposits - wallet.totalWithdrawals;
   const effectiveInitial = wallet.initialBalance + netDeposits;
-  const netPnL = wallet.balance - effectiveInitial;
-  const netPnLPercent = effectiveInitial > 0 ? (netPnL / effectiveInitial) * PERCENT_MULTIPLIER : 0;
-  const isProfitable = netPnL >= 0;
 
+  // Net P&L sourced from Binance income events (same as Analytics modal
+  // headline). Earlier this card derived `netPnL = balance − effectiveInitial`,
+  // which baked in unrealized PnL on currently-open positions plus
+  // COIN_SWAP movements — and disagreed with Analytics by hundreds of
+  // dollars on the same wallet at the same instant. Using `performance.netPnL`
+  // keeps the numbers consistent everywhere.
   const totalFees = performance?.totalFees ?? 0;
   const totalFunding = performance?.totalFunding ?? 0;
-  const grossPnL = netPnL + totalFees + totalFunding;
+  const grossPnL = performance?.grossPnL ?? 0;
+  const netPnL = performance?.netPnL ?? 0;
+  const netPnLPercent = effectiveInitial > 0 ? (netPnL / effectiveInitial) * PERCENT_MULTIPLIER : 0;
+  const isProfitable = netPnL >= 0;
 
   const badgeInfo = getWalletTypeBadge(wallet.walletType);
   const canSync = wallet.walletType === 'testnet' || wallet.walletType === 'live';
