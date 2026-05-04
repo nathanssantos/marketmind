@@ -261,12 +261,32 @@ export async function getPositions(
 }
 
 /**
+ * Thrown when neither symbolConfig nor accountInformationV3.positions
+ * yields a usable leverage value for a symbol. Surfaced to callers so
+ * the renderer / order-execution layer can refuse to ship a tiny
+ * 1× order based on a silently-defaulted value.
+ */
+export class LeverageUnavailableError extends Error {
+  constructor(public readonly symbol: string) {
+    super(`Could not determine configured leverage for ${symbol}.`);
+    this.name = 'LeverageUnavailableError';
+  }
+}
+
+/**
  * Reads the configured leverage for `symbol` regardless of whether a
  * position is currently open. Source of truth is
  * `getFuturesSymbolConfig` (/fapi/v1/symbolConfig), which carries the
- * leverage the user has set even when positionAmt is 0. Returns 1 as a
- * safe fallback if the symbol has never been configured (rare) or the
- * response is malformed.
+ * leverage the user has set even when positionAmt is 0. Falls back to
+ * deriving from `notional / initialMargin` on accountInformationV3 if
+ * symbolConfig comes up empty for the symbol.
+ *
+ * Throws `LeverageUnavailableError` when both sources fail. Earlier
+ * this returned `1` as a "safe" default — it isn't safe: a frontend
+ * 95% × intended-15× sizing silently fell to 95% × 1× = 6.3% of the
+ * intended notional, producing scalp-killer 0.006 BTC entries. Failing
+ * loud lets the caller surface the error and disable the buy button
+ * instead of placing a wrong-sized order.
  */
 export async function getConfiguredLeverage(
   client: USDMClient,
@@ -283,8 +303,11 @@ export async function getConfiguredLeverage(
     // return an entry for this symbol.
     const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
     const acctPos = accountInfo.positions?.find((p) => p.symbol === symbol);
-    return fallbackInfoFromAccountPosition(acctPos)?.leverage ?? 1;
+    const fallback = fallbackInfoFromAccountPosition(acctPos)?.leverage;
+    if (fallback !== undefined) return fallback;
+    throw new LeverageUnavailableError(symbol);
   } catch (error) {
+    if (error instanceof LeverageUnavailableError) throw error;
     logger.error({ error: serializeError(error), symbol }, 'Failed to get configured leverage');
     throw error;
   }

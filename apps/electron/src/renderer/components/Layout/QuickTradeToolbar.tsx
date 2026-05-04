@@ -222,7 +222,7 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
   const priceSymbols = useMemo(() => [symbol], [symbol]);
   const currentPrice = usePricesForSymbols(priceSymbols)[symbol] ?? 0;
 
-  const { getQuantity, leverage } = useOrderQuantity(symbol, marketType);
+  const { getQuantity, leverage, isReady, notReadyReason } = useOrderQuantity(symbol, marketType);
 
   const handleQuickOrder = useCallback((side: 'BUY' | 'SELL', price: number) => {
     if (!activeWallet?.id) {
@@ -234,13 +234,20 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
       toastError(t('chart.quickTrade.noPriceError'));
       return;
     }
+    // Refuse to size when leverage / wallet aren't fully loaded.
+    // Falling back to leverage=1 has historically shipped scalp-killer
+    // 0.006 BTC orders when the user intended ~1 BTC at 15×.
+    if (!isReady) {
+      toastError(notReadyReason ?? t('chart.quickTrade.invalidQuantityError'));
+      return;
+    }
     const previewQty = getQuantity(price);
     if (!previewQty || parseFloat(previewQty) <= 0) {
       toastError(t('chart.quickTrade.invalidQuantityError'));
       return;
     }
     setPendingOrder({ side, price, quantity: previewQty });
-  }, [activeWallet?.id, symbol, getQuantity, warning, toastError, t]);
+  }, [activeWallet?.id, symbol, getQuantity, isReady, notReadyReason, warning, toastError, t]);
 
   const handleConfirmOrder = useCallback(async () => {
     if (!activeWallet?.id || !pendingOrder) return;

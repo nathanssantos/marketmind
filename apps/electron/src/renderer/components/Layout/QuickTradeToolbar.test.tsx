@@ -117,7 +117,7 @@ const setDefaults = (overrides: { positions?: unknown[]; sizePercent?: number; p
     createOrder: createOrderMock,
     isCreatingOrder: false,
   });
-  useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5 });
+  useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
   useToastMock.mockReturnValue({ warning: warningMock, error: errorMock });
   useQuickTradeStoreMock.mockReturnValue({ sizePercent, setSizePercent: setSizePercentMock });
   usePricesForSymbolsMock.mockReturnValue({ BTCUSDT: price });
@@ -187,7 +187,7 @@ describe('QuickTradeToolbar — Buy / Sell flow (regression: v0.107)', () => {
   });
 
   it('errors when computed quantity is invalid (e.g. 0)', async () => {
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0', leverage: 5 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0', leverage: 5, isReady: true, notReadyReason: null });
     const user = userEvent.setup();
     renderActions();
 
@@ -488,7 +488,7 @@ describe('QuickTradeToolbar — Pending order confirmation dialog', () => {
 
   it('shows the order summary (symbol, side, price, quantity, leverage)', async () => {
     setDefaults({ ask: 50_050 });
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.2500', leverage: 10 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.2500', leverage: 10, isReady: true, notReadyReason: null });
     await openConfirm();
 
     const dialog = await screen.findByRole('dialog');
@@ -508,7 +508,7 @@ describe('QuickTradeToolbar — Pending order confirmation dialog', () => {
 
   it('totalValue = quantity × price', async () => {
     setDefaults({ ask: 50_050 });
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
     await openConfirm();
 
     const dialog = await screen.findByRole('dialog');
@@ -518,7 +518,7 @@ describe('QuickTradeToolbar — Pending order confirmation dialog', () => {
 
   it('margin = totalValue / leverage', async () => {
     setDefaults({ ask: 50_050 });
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
     await openConfirm();
 
     const dialog = await screen.findByRole('dialog');

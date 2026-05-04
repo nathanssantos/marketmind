@@ -2,7 +2,7 @@ import type { MarketType } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import type { WalletRecord } from '../database/walletQueries';
 import { isPaperWallet } from '../binance-client';
-import { createBinanceFuturesClient } from '../binance-futures-client';
+import { createBinanceFuturesClient, getConfiguredLeverage, LeverageUnavailableError } from '../binance-futures-client';
 import { createBinanceClient } from '../binance-client';
 import { guardBinanceCall } from '../binance-api-cache';
 import { getMinNotionalFilterService } from '../min-notional-filter';
@@ -56,8 +56,13 @@ export async function calculateQtyFromPercent(input: CalculateQtyInput): Promise
   } else if (marketType === 'FUTURES') {
     const client = createBinanceFuturesClient(wallet);
 
-    // V3 positionRisk dropped leverage — pull it from accountInfoV3
-    // exclusively. Single API call instead of two.
+    // V3 dropped the leverage field from accountInfoV3.positions. Use
+    // the canonical helper that pulls from /fapi/v1/symbolConfig with
+    // a defensive notional/initialMargin fallback. If neither yields a
+    // usable value the helper throws LeverageUnavailableError — refuse
+    // to size from a default 1× because that silently produces a
+    // tiny order (95% × 15× intent → 95% × 1× = 6.3% of intended
+    // notional in scalp scenarios).
     const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
 
     balance = parseFloat(String(accountInfo.availableBalance ?? '0'));
@@ -68,12 +73,17 @@ export async function calculateQtyFromPercent(input: CalculateQtyInput): Promise
       });
     }
 
-    const acctPos = accountInfo.positions?.find((p) => p.symbol === symbol);
-    if (acctPos && Number(acctPos.leverage) > 0) {
-      leverage = Number(acctPos.leverage);
-    } else {
-      logger.warn({ symbol, walletId: wallet.id }, 'Could not determine live leverage — falling back to 1x');
-      leverage = 1;
+    try {
+      leverage = await getConfiguredLeverage(client, symbol);
+    } catch (error) {
+      if (error instanceof LeverageUnavailableError) {
+        logger.error({ symbol, walletId: wallet.id }, 'Refusing to size order — leverage unavailable for symbol');
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: `Could not read leverage for ${symbol}. Open the leverage popover to set it explicitly, then retry.`,
+        });
+      }
+      throw error;
     }
   } else {
     const client = createBinanceClient(wallet);
