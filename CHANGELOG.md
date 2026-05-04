@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.2] - 2026-05-04
+
+### Added — Analytics modal content sweep
+- **Equity Curve breakdown** — chart now overlays 4 cumulative series on top of the main equity area: realized PnL (green), fees (red), funding (orange), and net transfers (gray dashed). Each toggleable via legend chips in the panel header. Tooltip shows all series + real-profit % at the hovered timestamp.
+- **Breakeven step line** — `initialBalance + cumulativeNetTransfers(t)`, steps up on every deposit / down on every withdrawal. The gap between the equity area and breakeven IS real profit (what survived after fees + funding, discounting capital movements).
+- **Headline strip above the chart** — Real Profit / Breakeven / Equity at-a-glance.
+- **Long vs Short panel** — side-by-side cards showing trade count, win rate, net PnL, and avg per side. Streaks (longest win / loss) callout below.
+- **Best / Worst Trade section** — symbol + side + duration + PnL$ + PnL% for the top winner and bottom loser of the period.
+- **Setup Breakdown / Symbol Breakdown tables** — top 5 of each (sortable by absolute PnL), rendered with the standard `TradingTable` primitive.
+- **PerformancePanel — 4th metric row** — Total Fees / Total Funding / Avg Trade Duration. Net PnL subtext now shows fees with proper sign.
+
+### Fixed — Analytics correctness
+- **Net PnL ground truth** — `getPerformance.netPnL/totalFees/totalFunding/grossPnL` now read from `incomeEvents` (Binance authoritative) when available, with a fallback to per-trade fields on paper wallets. Resolves the divergence where the headline showed `-$90.74` (per-trade `tradeExecutions.fees` had drifted +$950 from Binance reality due to partial-fill double-counting upstream) while the equity curve correctly showed `+$930.77`.
+- **Total Return sign-consistent with Net PnL across all periods** — both now derive from the same income-events base. Earlier Total Return was wallet-balance-based on `'all'` (currentBalance − effectiveCapital, which includes unrealized drawdown + COIN_SWAP_WITHDRAW), producing pairs like `Total Return -3.59% / Net PnL +$930.77`.
+- **Equity curve no longer double-counts transfers** — seed point uses `initialBalance` instead of `effectiveCapital`. The previous seed already baked totalDeposits / totalWithdrawals from wallet metadata, then the loop summed the same TRANSFER income events on top, inflating equity by the deposits and producing a fake "real profit" that included capital movements.
+
+### Fixed — Ticket precision + reactivity
+- **Wallet balance updates in the same render frame as the Binance event** — new `mergeWalletBalanceUpdate` helper patches `wallet.list` directly from the `wallet:update` socket payload (extracts USDT `wb` / `cw`). Previously the renderer scheduled a 250ms debounced invalidate → refetch round-trip — net delay 300–700ms before the ticket's "100%" reflected freed-up capital after a close. Critical for scalping where the next entry sizes against the live total.
+- **Quantity floors instead of rounding nearest** — `roundTradingQty` used `toFixed()` (round-nearest), so `0.46599999` became `"0.4660"` and over-allocated against the user's percentage. Combined with float drift in `(balance × leverage × pct) / price`, this could push qty over the LOT_SIZE filter → insufficient-margin reject OR server-side floor producing smaller-than-expected fill. Now floors via `Math.floor` and snaps to the symbol's actual `stepSize` (Binance LOT_SIZE) when known. Ticket preview = actual fill.
+- **`useOrderQuantity` queries `getSymbolFilters`** — passes real `stepSize` through to `roundTradingQty`. 1h staleTime since exchange info rarely changes.
+
+### Changed — Realtime sync redundancy trim
+- **Mutation onSuccess no longer fires invalidates the socket layer already covers** — `createOrder`, `cancelOrder`, `closeExecution`, `cancelExecution` previously each fired 5–7 invalidations (`getTradeExecutions`, `getActiveExecutions`, `getOrders`, `getPositions`, `getOpenDbOrderIds`, `wallet.list`). Most were duplicate work: `position:update` / `order:created` / `wallet:update` socket events arrive 100–300ms later and patch the same caches via merge helpers. The redundant invalidates triggered an extra refetch round-trip per click and a visible stutter on the Buy/Sell button. Kept invalidations only for caches the socket layer doesn't touch (analytics aggregations; algo-order channel for SL/TP edits).
+- **Socket handlers no longer schedule cross-domain invalidates** — `position:update` dropped `'wallet'` (the matching `wallet:update` event already patches the balance; cosmetic position updates like leverage / SL/TP changes don't move balance). `order:created` and `order:cancelled` dropped `'wallet'` similarly. `trade:notification` dropped all schedules — it's a side channel for toasts; the underlying state changes already arrive on dedicated socket channels.
+- **Debounce timer no longer resets on each call** — earlier `scheduleInvalidation` cleared+reset the 250ms timer on every call. A burst of 3 socket events within 30ms (e.g. position close → wallet:update → position:update flash) kept pushing the deadline back, so the safety-net invalidate fired ~280ms AFTER the LAST event in the burst — felt like extra lag. Now keys accumulate into the original window; first event sets the deadline.
+
+### Notes
+- 30 backend analytics router tests passing (+10 new ones for the new fields). 2455 renderer unit tests passing. Type-check + lint clean across both apps.
+
 ## [1.11.1] - 2026-05-03
 
 ### Fixed
