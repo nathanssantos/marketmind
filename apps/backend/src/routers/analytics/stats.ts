@@ -7,8 +7,20 @@ import {
 } from '../../services/income-events';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
+import type { IncomeType } from '../../constants/income-types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Equity-curve incidence types: realized PnL, fees (commission), funding,
+// and capital movements (deposit/withdraw). Renderer plots each as a
+// separate cumulative series so the user can see whether equity is
+// drifting from PnL itself or from fees/funding/transfers.
+const EQUITY_CURVE_TYPES: readonly IncomeType[] = [
+  'REALIZED_PNL',
+  'COMMISSION',
+  'FUNDING_FEE',
+  'TRANSFER',
+];
 
 export const statsProcedures = {
   getSetupStats: protectedProcedure
@@ -243,33 +255,71 @@ export const statsProcedures = {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       const initialBalance = parseFloat(wallet.initialBalance ?? '0');
-      const curveDeposits = parseFloat(wallet.totalDeposits ?? '0');
-      const curveWithdrawals = parseFloat(wallet.totalWithdrawals ?? '0');
-      const effectiveCapital = initialBalance + curveDeposits - curveWithdrawals;
 
+      // Query all 4 incidence types in a single pass so we can build
+      // separate cumulative series for the chart (PnL / fees / funding /
+      // net transfers) without round-tripping the DB four times.
       const points = await getEquityCurvePoints({
         walletId: input.walletId,
         userId: ctx.user.id,
         from: wallet.createdAt,
         to: new Date(Date.now() + DAY_MS),
         tz: input.tz,
+        types: EQUITY_CURVE_TYPES,
       });
 
-      const equityPoints: Array<{ timestamp: string; balance: number; pnl: number }> = [
+      // Seed at `initialBalance` (the seed deposit when the wallet was
+      // created, before any post-creation transfers/trades). Each
+      // TRANSFER event in the loop below then adds the historical
+      // deposit/withdrawal as it actually occurred, which makes the
+      // breakeven line `initialBalance + cumulativeNetTransfers(t)`
+      // step up/down in lockstep with the real capital movements.
+      //
+      // Earlier we seeded at `effectiveCapital` (initialBalance +
+      // totalDeposits - totalWithdrawals from wallet meta), which
+      // already bakes in *all* historical transfers. Adding the same
+      // TRANSFER events again on top double-counted deposits, inflating
+      // the equity line by `totalDeposits` and producing a "real
+      // profit" that included both the trading gains AND the deposits.
+      const equityPoints: Array<{
+        timestamp: string;
+        balance: number;
+        pnl: number;
+        cumulativePnl: number;
+        cumulativeFees: number;
+        cumulativeFunding: number;
+        cumulativeNetTransfers: number;
+      }> = [
         {
           timestamp: wallet.createdAt.toISOString(),
-          balance: effectiveCapital,
+          balance: initialBalance,
           pnl: 0,
+          cumulativePnl: 0,
+          cumulativeFees: 0,
+          cumulativeFunding: 0,
+          cumulativeNetTransfers: 0,
         },
       ];
 
-      let runningBalance = effectiveCapital;
+      let runningBalance = initialBalance;
+      let runningPnl = 0;
+      let runningFees = 0;
+      let runningFunding = 0;
+      let runningTransfers = 0;
       for (const point of points) {
         runningBalance += point.delta;
+        if (point.incomeType === 'REALIZED_PNL') runningPnl += point.delta;
+        else if (point.incomeType === 'COMMISSION') runningFees += point.delta;
+        else if (point.incomeType === 'FUNDING_FEE') runningFunding += point.delta;
+        else if (point.incomeType === 'TRANSFER') runningTransfers += point.delta;
         equityPoints.push({
           timestamp: new Date(point.time).toISOString(),
           balance: parseFloat(runningBalance.toFixed(2)),
           pnl: parseFloat(point.delta.toFixed(2)),
+          cumulativePnl: parseFloat(runningPnl.toFixed(2)),
+          cumulativeFees: parseFloat(runningFees.toFixed(2)),
+          cumulativeFunding: parseFloat(runningFunding.toFixed(2)),
+          cumulativeNetTransfers: parseFloat(runningTransfers.toFixed(2)),
         });
       }
 

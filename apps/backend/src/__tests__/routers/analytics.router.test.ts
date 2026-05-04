@@ -361,11 +361,10 @@ describe('Analytics Router', () => {
       expect(Math.sign(monthResult.netPnL)).toBe(Math.sign(monthResult.totalReturn));
     });
 
-    it('should keep netPnL = sum(trade.pnl) so W × avgWin + L × avgLoss matches', async () => {
-      // Regression for the W/L count vs netPnL desync: the previous
-      // implementation overrode netPnL with `getDailyIncomeSum` whenever a
-      // period was selected, mixing two data sources and breaking the math
-      // users expect (W × avgWin + L × avgLoss == netPnL).
+    it('falls back to per-trade fields when no income events exist (paper-wallet path)', async () => {
+      // Paper wallets never sync from Binance, so income_events is empty.
+      // In that mode netPnL must reconstruct from trade-level pnl + fees +
+      // accumulated_funding so the user still gets a sensible headline.
       const { user, session } = await createAuthenticatedUser();
       const wallet = await createTestWallet({
         userId: user.id,
@@ -405,28 +404,140 @@ describe('Analytics Router', () => {
         closedAt: recent,
       });
 
-      // Stuff a stray Binance income event into the period — under the old
-      // implementation this would have polluted netPnL and broken the math.
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'day' });
+
+      // netPnL = sum(trade.pnl) when income events are absent.
+      expect(result.netPnL).toBeCloseTo(250, 0);
+      // grossPnL fallback = netPnL + fees (so net = gross − fees holds).
+      expect(result.grossPnL).toBeCloseTo(253, 0);
+      // Fees flipped to negative so the sign convention matches the
+      // income-events path.
+      expect(result.totalFees).toBeCloseTo(-3, 0);
+    });
+
+    it('uses incomeEvents as ground truth for netPnL/totalFees/totalFunding when present', async () => {
+      // Regression: before this PR, headline netPnL summed
+      // `tradeExecutions.pnl/fees/accumulatedFunding` even when Binance
+      // income events were available. Per-trade fees can drift from
+      // Binance reality (partial-fill double counting), so on a real
+      // wallet the headline disagreed with what the equity curve was
+      // showing for the same period. Income events ARE Binance's
+      // ground truth — the headline now follows it.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
       const db = getTestDatabase();
+
+      const now = new Date();
+      const recent = new Date(now.getTime() - 60 * 60 * 1000);
+
+      // Per-trade rows show inflated fees + a positive net.
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '500',
+        fees: '20',
+        openedAt: recent,
+        closedAt: recent,
+      });
+
+      // But Binance ground truth says: gross was 500, fees only 8, no
+      // funding. Real net = 500 - 8 = 492.
+      await db.insert(incomeEvents).values([
+        {
+          userId: user.id,
+          walletId: wallet.id,
+          binanceTranId: 1,
+          incomeType: 'REALIZED_PNL',
+          amount: '500',
+          asset: 'USDT',
+          symbol: 'BTCUSDT',
+          incomeTime: recent,
+          source: 'binance',
+        },
+        {
+          userId: user.id,
+          walletId: wallet.id,
+          binanceTranId: 2,
+          incomeType: 'COMMISSION',
+          amount: '-8',
+          asset: 'USDT',
+          symbol: 'BTCUSDT',
+          incomeTime: recent,
+          source: 'binance',
+        },
+      ]);
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      expect(result.grossPnL).toBeCloseTo(500, 1);
+      expect(result.totalFees).toBeCloseTo(-8, 1);
+      expect(result.totalFunding).toBeCloseTo(0, 1);
+      expect(result.netPnL).toBeCloseTo(492, 1);
+
+      // Per-trade aggregates still reflect the trade-level data — they're
+      // descriptive stats, not authoritative totals. avgWin reads pnl
+      // off the row (500) which is fine.
+      expect(result.avgWin).toBeCloseTo(500, 1);
+      expect(result.winningTrades).toBe(1);
+    });
+
+    it('keeps Total Return sign-consistent with Net PnL (income-events-based)', async () => {
+      // Regression: Total Return was wallet-balance-based for 'all'
+      // (currentBalance - effectiveCapital) but PnL-based for filtered
+      // periods. This produced opposite signs when the wallet had
+      // unrealized losses on open positions or COIN_SWAP withdrawals
+      // (e.g. Total Return -3.59% alongside Net PnL +$930.77).
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        initialBalance: '1000',
+        currentBalance: '700', // Wallet sitting in unrealized drawdown
+        totalDeposits: '0',
+        totalWithdrawals: '0',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const now = new Date();
+      const recent = new Date(now.getTime() - 60 * 60 * 1000);
+
+      // Realized profit of +$100 from a closed trade.
+      await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        status: 'closed',
+        pnl: '100',
+        fees: '1',
+        openedAt: recent,
+        closedAt: recent,
+      });
       await db.insert(incomeEvents).values({
         userId: user.id,
         walletId: wallet.id,
-        binanceTranId: Date.now(),
-        incomeType: 'FUNDING_FEE',
-        amount: '999',
+        binanceTranId: 1,
+        incomeType: 'REALIZED_PNL',
+        amount: '100',
         asset: 'USDT',
         symbol: 'BTCUSDT',
         incomeTime: recent,
         source: 'binance',
       });
 
-      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'day' });
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
 
-      const expectedNet = result.winningTrades * result.avgWin + result.losingTrades * result.avgLoss;
-      expect(result.netPnL).toBeCloseTo(expectedNet, 1);
-
-      // The stray FUNDING_FEE row must NOT bleed into netPnL.
-      expect(result.netPnL).toBeCloseTo(250, 0);
+      // netPnL is positive (+$100 realized), so totalReturn must also
+      // be positive — even though currentBalance ($700) < effectiveCapital
+      // ($1000) thanks to the open-position drawdown.
+      expect(result.netPnL).toBeGreaterThan(0);
+      expect(result.totalReturn).toBeGreaterThan(0);
+      expect(result.totalReturn).toBeCloseTo(10, 1); // $100 / $1000 * 100
     });
   });
 
@@ -744,6 +855,262 @@ describe('Analytics Router', () => {
           walletId: 'non-existent-wallet',
         })
       ).rejects.toThrow(TRPCError);
+    });
+
+    it('seeds equity at initialBalance (not effectiveCapital) so transfers don\'t double-count', async () => {
+      // Regression: earlier we seeded at effectiveCapital (= initialBalance
+      // + totalDeposits - totalWithdrawals from wallet meta), then added
+      // every TRANSFER income event on top. The transfers were counted
+      // twice — once via wallet meta, once via the event loop — inflating
+      // the equity line by `totalDeposits` and showing a fake "real
+      // profit" that included the deposits themselves.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        initialBalance: '1000',
+        totalDeposits: '500',
+        totalWithdrawals: '0',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+      const now = Date.now();
+
+      // Single TRANSFER deposit of $500 corresponding to wallet.totalDeposits.
+      await db.insert(incomeEvents).values({
+        userId: user.id,
+        walletId: wallet.id,
+        binanceTranId: 1,
+        incomeType: 'TRANSFER',
+        amount: '500',
+        asset: 'USDT',
+        symbol: null,
+        incomeTime: new Date(now + 1000),
+        source: 'binance',
+      });
+
+      const result = await caller.analytics.getEquityCurve({ walletId: wallet.id });
+
+      // Seed at initialBalance (1000), not effectiveCapital (1500).
+      expect(result[0]!.balance).toBe(1000);
+      expect(result[0]!.cumulativeNetTransfers).toBe(0);
+      // After the TRANSFER: balance = 1000 + 500 = 1500, transfers = 500.
+      expect(result[1]!.balance).toBe(1500);
+      expect(result[1]!.cumulativeNetTransfers).toBe(500);
+    });
+
+    it('returns separate cumulative series for PnL, fees, funding and net transfers', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+      const now = Date.now();
+
+      await db.insert(incomeEvents).values([
+        { userId: user.id, walletId: wallet.id, binanceTranId: 1, incomeType: 'REALIZED_PNL', amount: '300', asset: 'USDT', symbol: 'BTCUSDT', incomeTime: new Date(now + 1000), source: 'binance' },
+        { userId: user.id, walletId: wallet.id, binanceTranId: 2, incomeType: 'COMMISSION', amount: '-12', asset: 'USDT', symbol: 'BTCUSDT', incomeTime: new Date(now + 2000), source: 'binance' },
+        { userId: user.id, walletId: wallet.id, binanceTranId: 3, incomeType: 'FUNDING_FEE', amount: '-3', asset: 'USDT', symbol: 'BTCUSDT', incomeTime: new Date(now + 3000), source: 'binance' },
+        { userId: user.id, walletId: wallet.id, binanceTranId: 4, incomeType: 'TRANSFER', amount: '200', asset: 'USDT', symbol: null, incomeTime: new Date(now + 4000), source: 'binance' },
+      ]);
+
+      const result = await caller.analytics.getEquityCurve({ walletId: wallet.id });
+
+      // Final point reflects all 4 series.
+      const last = result[result.length - 1]!;
+      expect(last.cumulativePnl).toBe(300);
+      expect(last.cumulativeFees).toBe(-12);
+      expect(last.cumulativeFunding).toBe(-3);
+      expect(last.cumulativeNetTransfers).toBe(200);
+      // Balance = initialBalance + sum of all 4 cumulative deltas.
+      expect(last.balance).toBe(10485);
+    });
+
+    it('breakeven derived as initialBalance + cumulativeNetTransfers stays consistent', async () => {
+      // The frontend reads `breakeven = initialBalance + cumulativeNetTransfers`.
+      // This test guards the contract: with no TRANSFER events, the
+      // chart's breakeven (computed in the renderer) must equal
+      // initialBalance for every point. After a deposit, it must step
+      // up by exactly the deposit amount.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        initialBalance: '5000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+      const now = Date.now();
+
+      await db.insert(incomeEvents).values([
+        { userId: user.id, walletId: wallet.id, binanceTranId: 1, incomeType: 'REALIZED_PNL', amount: '150', asset: 'USDT', symbol: 'BTCUSDT', incomeTime: new Date(now + 1000), source: 'binance' },
+        { userId: user.id, walletId: wallet.id, binanceTranId: 2, incomeType: 'TRANSFER', amount: '1000', asset: 'USDT', symbol: null, incomeTime: new Date(now + 2000), source: 'binance' },
+        { userId: user.id, walletId: wallet.id, binanceTranId: 3, incomeType: 'TRANSFER', amount: '-300', asset: 'USDT', symbol: null, incomeTime: new Date(now + 3000), source: 'binance' },
+      ]);
+
+      const result = await caller.analytics.getEquityCurve({ walletId: wallet.id });
+
+      const initialBalance = 5000;
+      // Helper that mirrors the frontend's breakeven derivation.
+      const breakevenAt = (cumulativeNetTransfers: number) => initialBalance + cumulativeNetTransfers;
+
+      // Point 0 (seed): no transfers yet → breakeven = initialBalance.
+      expect(breakevenAt(result[0]!.cumulativeNetTransfers)).toBe(5000);
+      // Point 1 (REALIZED_PNL): no transfer yet → breakeven still 5000.
+      expect(breakevenAt(result[1]!.cumulativeNetTransfers)).toBe(5000);
+      // Point 2 (TRANSFER +1000): breakeven steps up to 6000.
+      expect(breakevenAt(result[2]!.cumulativeNetTransfers)).toBe(6000);
+      // Point 3 (TRANSFER -300): breakeven steps down to 5700.
+      expect(breakevenAt(result[3]!.cumulativeNetTransfers)).toBe(5700);
+
+      // Real profit at last point = balance - breakeven = realized PnL only.
+      const last = result[result.length - 1]!;
+      expect(last.balance - breakevenAt(last.cumulativeNetTransfers)).toBeCloseTo(150, 1);
+    });
+  });
+
+  describe('getPerformance — new analytics fields', () => {
+    it('breaks down LONG vs SHORT with their own win rate and PnL', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+      const caller = createAuthenticatedCaller(user, session);
+      const recent = new Date(Date.now() - 60 * 60 * 1000);
+
+      // 2 long winners + 1 long loser → 66.7% win rate, +$150 net
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', side: 'LONG', pnl: '100', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', side: 'LONG', pnl: '100', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', side: 'LONG', pnl: '-50', openedAt: recent, closedAt: recent });
+      // 1 short winner + 1 short loser → 50% win rate, +$30 net
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', side: 'SHORT', pnl: '80', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', side: 'SHORT', pnl: '-50', openedAt: recent, closedAt: recent });
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      expect(result.long).not.toBeNull();
+      expect(result.long!.trades).toBe(3);
+      expect(result.long!.winRate).toBeCloseTo(66.67, 1);
+      expect(result.long!.netPnL).toBeCloseTo(150, 1);
+
+      expect(result.short).not.toBeNull();
+      expect(result.short!.trades).toBe(2);
+      expect(result.short!.winRate).toBeCloseTo(50, 1);
+      expect(result.short!.netPnL).toBeCloseTo(30, 1);
+    });
+
+    it('returns null for sides with no trades (renderer hides the column)', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+      const caller = createAuthenticatedCaller(user, session);
+      const recent = new Date(Date.now() - 60 * 60 * 1000);
+
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', side: 'LONG', pnl: '100', openedAt: recent, closedAt: recent });
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      expect(result.long).not.toBeNull();
+      expect(result.short).toBeNull();
+    });
+
+    it('computes longest win/loss streaks from chronologically ordered closes', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+      const caller = createAuthenticatedCaller(user, session);
+      const t0 = Date.now() - 10 * 60 * 60 * 1000;
+
+      // W W W L L W L → longest win streak = 3, longest loss streak = 2
+      const pnls = ['100', '50', '75', '-30', '-20', '40', '-10'];
+      for (let i = 0; i < pnls.length; i++) {
+        await createTestTradeExecution({
+          userId: user.id,
+          walletId: wallet.id,
+          status: 'closed',
+          pnl: pnls[i]!,
+          openedAt: new Date(t0 + i * 60 * 60 * 1000),
+          closedAt: new Date(t0 + i * 60 * 60 * 1000),
+        });
+      }
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      expect(result.longestWinStreak).toBe(3);
+      expect(result.longestLossStreak).toBe(2);
+    });
+
+    it('computes avgTradeDurationHours from openedAt → closedAt deltas', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const open1 = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const close1 = new Date(open1.getTime() + 2 * 60 * 60 * 1000); // 2h
+      const open2 = new Date(Date.now() - 8 * 60 * 60 * 1000);
+      const close2 = new Date(open2.getTime() + 4 * 60 * 60 * 1000); // 4h
+
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', pnl: '50', openedAt: open1, closedAt: close1 });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', pnl: '50', openedAt: open2, closedAt: close2 });
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      // Avg of (2h, 4h) = 3h
+      expect(result.avgTradeDurationHours).toBeCloseTo(3, 1);
+    });
+
+    it('returns top symbols sorted by absolute netPnL', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+      const caller = createAuthenticatedCaller(user, session);
+      const recent = new Date(Date.now() - 60 * 60 * 1000);
+
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', symbol: 'BTCUSDT', pnl: '500', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', symbol: 'BTCUSDT', pnl: '100', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', symbol: 'ETHUSDT', pnl: '-300', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', symbol: 'SOLUSDT', pnl: '50', openedAt: recent, closedAt: recent });
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      // Sort: BTC ($600) > ETH (-$300, abs 300) > SOL ($50)
+      expect(result.bySymbol[0]!.symbol).toBe('BTCUSDT');
+      expect(result.bySymbol[0]!.netPnL).toBeCloseTo(600, 1);
+      expect(result.bySymbol[1]!.symbol).toBe('ETHUSDT');
+      expect(result.bySymbol[1]!.netPnL).toBeCloseTo(-300, 1);
+      expect(result.bySymbol[2]!.symbol).toBe('SOLUSDT');
+    });
+
+    it('reports best and worst trades with full context', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+      const caller = createAuthenticatedCaller(user, session);
+      const recent = new Date(Date.now() - 60 * 60 * 1000);
+
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', symbol: 'BTCUSDT', side: 'LONG', pnl: '500', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', symbol: 'ETHUSDT', side: 'SHORT', pnl: '-200', openedAt: recent, closedAt: recent });
+      await createTestTradeExecution({ userId: user.id, walletId: wallet.id, status: 'closed', symbol: 'SOLUSDT', side: 'LONG', pnl: '50', openedAt: recent, closedAt: recent });
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      expect(result.bestTrade).not.toBeNull();
+      expect(result.bestTrade!.symbol).toBe('BTCUSDT');
+      expect(result.bestTrade!.side).toBe('LONG');
+      expect(result.bestTrade!.pnl).toBeCloseTo(500, 1);
+
+      expect(result.worstTrade).not.toBeNull();
+      expect(result.worstTrade!.symbol).toBe('ETHUSDT');
+      expect(result.worstTrade!.side).toBe('SHORT');
+      expect(result.worstTrade!.pnl).toBeCloseTo(-200, 1);
+    });
+
+    it('returns null bestTrade/worstTrade when there are no winners/losers', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper', initialBalance: '10000' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.analytics.getPerformance({ walletId: wallet.id, period: 'all' });
+
+      expect(result.bestTrade).toBeNull();
+      expect(result.worstTrade).toBeNull();
     });
   });
 });

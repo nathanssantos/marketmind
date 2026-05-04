@@ -1,8 +1,56 @@
-import { and, desc, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { tradeExecutions } from '../../db/schema';
+import { db } from '../../db';
+import { incomeEvents, tradeExecutions } from '../../db/schema';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
+
+// Ground-truth source for realized PnL, fees and funding: Binance's
+// income events stream. `tradeExecutions.fees` and `.accumulated_funding`
+// are derived per-trade by our own bookkeeping and have known drift
+// vs. Binance's real reporting (e.g. partial-fill double-counting).
+// Both `getPerformance` and `getEquityCurve` share this helper so the
+// numbers shown in the Analytics modal stay internally consistent.
+interface IncomeBreakdown {
+  realizedPnL: number;
+  fees: number;
+  funding: number;
+}
+
+export const sumIncomeBreakdown = async (
+  walletId: string,
+  userId: string,
+  from?: Date,
+  to?: Date,
+): Promise<IncomeBreakdown> => {
+  const conditions = [
+    eq(incomeEvents.walletId, walletId),
+    eq(incomeEvents.userId, userId),
+    sql`${incomeEvents.incomeType} IN ('REALIZED_PNL', 'COMMISSION', 'FUNDING_FEE')`,
+  ];
+  if (from) conditions.push(gte(incomeEvents.incomeTime, from));
+  if (to) conditions.push(lte(incomeEvents.incomeTime, to));
+
+  const rows = await db
+    .select({
+      incomeType: incomeEvents.incomeType,
+      total: sql<string>`COALESCE(SUM(${incomeEvents.amount}), 0)`,
+    })
+    .from(incomeEvents)
+    .where(and(...conditions))
+    .groupBy(incomeEvents.incomeType);
+
+  let realizedPnL = 0;
+  let fees = 0;
+  let funding = 0;
+  for (const row of rows) {
+    const amount = parseFloat(row.total);
+    if (row.incomeType === 'REALIZED_PNL') realizedPnL = amount;
+    else if (row.incomeType === 'COMMISSION') fees = amount;
+    else if (row.incomeType === 'FUNDING_FEE') funding = amount;
+  }
+  return { realizedPnL, fees, funding };
+};
 
 export const tradeProcedures = {
   getTradeHistory: protectedProcedure
@@ -106,27 +154,64 @@ export const tradeProcedures = {
         return pnl < 0;
       });
 
-      // Sum of per-trade realized PnL — internally consistent with the W/L
-      // count, avgWin, avgLoss, profitFactor, and largestWin/Loss reported
-      // below. We deliberately do NOT override this with `getDailyIncomeSum`
-      // even when a period is selected: doing so would mix two data sources
-      // (Binance daily-income sum vs per-trade pnl) and break the math users
-      // expect (W × avgWin + L × avgLoss == netPnL). Funding paid on
-      // currently-open positions is reported separately as `totalFunding`.
-      const totalPnL = trades.reduce((sum, t) => {
+      // Per-trade summed PnL — used as the count-consistent base for
+      // avgWin / avgLoss / profitFactor / largestWin/Loss / streaks below.
+      // For the headline cards (netPnL, totalFees, totalFunding, grossPnL)
+      // we prefer Binance income-event aggregates (see ground-truth
+      // section below) because per-trade fees can drift from Binance's
+      // real reporting (partial-fill double counting, etc).
+      const tradePnLSum = trades.reduce((sum, t) => {
         const pnl = t.pnl ? parseFloat(t.pnl) : 0;
         return sum + pnl;
       }, 0);
 
-      const totalFees = trades.reduce((sum, t) => {
-        const fees = t.fees ? parseFloat(t.fees) : 0;
-        return sum + fees;
-      }, 0);
+      // Headline aggregates — pulled from `incomeEvents` so they match
+      // what Binance actually charged/credited the wallet. Same period
+      // filter as the trade query (when applicable) so the two stay
+      // aligned. Falls back to per-trade sums if the income table is
+      // empty (e.g. paper wallets that never sync from Binance).
+      const incomePeriodFrom = whereConditions.length > 3
+        ? (() => {
+            // We pushed gte(closedAt, startDate) above when period !== 'all'
+            const now = new Date();
+            const startDate = new Date();
+            switch (input.period) {
+              case 'day': startDate.setDate(now.getDate() - 1); break;
+              case 'week': startDate.setDate(now.getDate() - 7); break;
+              case 'month': startDate.setMonth(now.getMonth() - 1); break;
+              case 'all': /* no filter */ break;
+            }
+            return startDate;
+          })()
+        : undefined;
 
-      const totalFunding = trades.reduce((sum, t) => {
-        const funding = t.accumulatedFunding ? parseFloat(t.accumulatedFunding) : 0;
-        return sum + funding;
-      }, 0);
+      const incomeBreakdown = await sumIncomeBreakdown(
+        input.walletId,
+        ctx.user.id,
+        incomePeriodFrom,
+      );
+      const hasIncomeEvents =
+        incomeBreakdown.realizedPnL !== 0
+        || incomeBreakdown.fees !== 0
+        || incomeBreakdown.funding !== 0;
+
+      // grossPnL = realized PnL before fees/funding (what Binance reports
+      //            in REALIZED_PNL income events).
+      // totalFees = COMMISSION events (always negative).
+      // totalFunding = FUNDING_FEE events (can be either sign).
+      // netPnL = grossPnL + fees + funding (what survived after costs).
+      // When we don't have income events (paper wallet), reconstruct
+      // approximations from per-trade fields.
+      const grossPnL = hasIncomeEvents
+        ? incomeBreakdown.realizedPnL
+        : tradePnLSum + trades.reduce((sum, t) => sum + (t.fees ? parseFloat(t.fees) : 0), 0);
+      const totalFees = hasIncomeEvents
+        ? incomeBreakdown.fees
+        : -trades.reduce((sum, t) => sum + (t.fees ? parseFloat(t.fees) : 0), 0);
+      const totalFunding = hasIncomeEvents
+        ? incomeBreakdown.funding
+        : trades.reduce((sum, t) => sum + (t.accumulatedFunding ? parseFloat(t.accumulatedFunding) : 0), 0);
+      const totalPnL = grossPnL + totalFees + totalFunding;
 
       const winRate = totalTrades > 0 ? (winningTrades.length / totalTrades) * 100 : 0;
 
@@ -148,21 +233,21 @@ export const tradeProcedures = {
       const wallet = await walletQueries.findByIdAndUser(input.walletId, ctx.user.id, { throwIfNotFound: false });
 
       const initialBalance = wallet ? parseFloat(wallet.initialBalance ?? '0') : 0;
-      const currentBalance = wallet ? parseFloat(wallet.currentBalance ?? '0') : 0;
       const walletTotalDeposits = wallet ? parseFloat(wallet.totalDeposits ?? '0') : 0;
       const walletTotalWithdrawals = wallet ? parseFloat(wallet.totalWithdrawals ?? '0') : 0;
       const effectiveCapital = initialBalance + walletTotalDeposits - walletTotalWithdrawals;
 
-      // Period-aware return: when a period is filtered, reflect that period's
-      // PnL relative to the effective capital base. The all-time variant uses
-      // the wallet's current balance (which captures unrealized PnL on open
-      // positions, deposits, withdrawals, etc). Mixing the two — as the
-      // previous implementation did — produced contradictory cards (e.g.
-      // Net PnL +$615 alongside Total Return -37% on the same Week filter).
+      // Total Return mirrors Net PnL across all periods so the two cards
+      // never disagree in sign. Earlier we mixed sources — wallet-balance-
+      // based for 'all' (includes unrealized PnL, coin swaps, anything
+      // Binance counts) vs PnL-based for filtered periods — which produced
+      // pairs like "Total Return -3.59% / Net PnL +$930" because the
+      // wallet balance reflected open-position drawdown + coin swaps that
+      // never touch realized PnL income events. By dividing the
+      // income-events-based netPnL (same source as the headline card) by
+      // effectiveCapital, both cards always agree.
       const totalReturn = effectiveCapital > 0
-        ? input.period === 'all'
-          ? ((currentBalance - effectiveCapital) / effectiveCapital) * 100
-          : (totalPnL / effectiveCapital) * 100
+        ? (totalPnL / effectiveCapital) * 100
         : 0;
 
       const largestWin = winningTrades.length > 0
@@ -194,7 +279,138 @@ export const tradeProcedures = {
       }
 
       const netPnL = totalPnL;
-      const grossPnL = totalPnL + totalFees;
+
+      // Trades sorted by close time — needed for streaks (consecutive
+      // wins/losses) and for "first trade closed before all the others"
+      // semantics on best/worst-by-time. Filter rejects trades with no
+      // closedAt because they shouldn't be in the closed bucket but
+      // defensive against orphan rows.
+      const closedSorted = trades
+        .filter((t) => t.closedAt)
+        .sort((a, b) => new Date(a.closedAt!).getTime() - new Date(b.closedAt!).getTime());
+
+      let longestWinStreak = 0;
+      let longestLossStreak = 0;
+      let currentWinStreak = 0;
+      let currentLossStreak = 0;
+      let durationSumMs = 0;
+      let durationSampleCount = 0;
+      for (const t of closedSorted) {
+        const pnl = t.pnl ? parseFloat(t.pnl) : 0;
+        if (pnl > 0) {
+          currentWinStreak++;
+          currentLossStreak = 0;
+          if (currentWinStreak > longestWinStreak) longestWinStreak = currentWinStreak;
+        } else if (pnl < 0) {
+          currentLossStreak++;
+          currentWinStreak = 0;
+          if (currentLossStreak > longestLossStreak) longestLossStreak = currentLossStreak;
+        } else {
+          currentWinStreak = 0;
+          currentLossStreak = 0;
+        }
+        if (t.openedAt && t.closedAt) {
+          const ms = new Date(t.closedAt).getTime() - new Date(t.openedAt).getTime();
+          if (ms > 0) {
+            durationSumMs += ms;
+            durationSampleCount++;
+          }
+        }
+      }
+      const avgTradeDurationHours = durationSampleCount > 0
+        ? durationSumMs / durationSampleCount / (60 * 60 * 1000)
+        : 0;
+
+      // Long vs Short breakdown — same metric semantics as the top-level
+      // panel (win rate, netPnL, avg per side) so users can answer
+      // "which direction is paying me?". Returns null for a side when
+      // no trades exist (renderer hides the column).
+      const directionStats = (side: 'LONG' | 'SHORT') => {
+        const subset = trades.filter((t) => t.side === side);
+        if (subset.length === 0) return null;
+        let wins = 0;
+        let netPnl = 0;
+        for (const t of subset) {
+          const pnl = t.pnl ? parseFloat(t.pnl) : 0;
+          netPnl += pnl;
+          if (pnl > 0) wins++;
+        }
+        return {
+          trades: subset.length,
+          winRate: parseFloat(((wins / subset.length) * 100).toFixed(2)),
+          netPnL: parseFloat(netPnl.toFixed(2)),
+          avgPnL: parseFloat((netPnl / subset.length).toFixed(2)),
+        };
+      };
+
+      // Per-symbol breakdown — top performers + biggest drains. Sort by
+      // |netPnL| so the table surfaces "where is my money coming from
+      // (or going to)". Renderer caps to top N.
+      const bySymbolMap = new Map<string, { symbol: string; trades: number; wins: number; losses: number; netPnL: number }>();
+      for (const t of trades) {
+        const symbol = t.symbol;
+        const pnl = t.pnl ? parseFloat(t.pnl) : 0;
+        const entry = bySymbolMap.get(symbol) ?? { symbol, trades: 0, wins: 0, losses: 0, netPnL: 0 };
+        entry.trades++;
+        entry.netPnL += pnl;
+        if (pnl > 0) entry.wins++;
+        else if (pnl < 0) entry.losses++;
+        bySymbolMap.set(symbol, entry);
+      }
+      const bySymbol = Array.from(bySymbolMap.values())
+        .map((s) => ({
+          symbol: s.symbol,
+          trades: s.trades,
+          winRate: s.trades > 0 ? parseFloat(((s.wins / s.trades) * 100).toFixed(2)) : 0,
+          netPnL: parseFloat(s.netPnL.toFixed(2)),
+        }))
+        .sort((a, b) => Math.abs(b.netPnL) - Math.abs(a.netPnL));
+
+      // Best / worst trade — full row info so the renderer can show
+      // symbol + side + duration + close date in a compact card.
+      type BestWorstTrade = {
+        id: string;
+        symbol: string;
+        side: string;
+        pnl: number;
+        pnlPercent: number;
+        openedAt: string | null;
+        closedAt: string | null;
+        durationHours: number;
+      };
+      const tradeRowToCard = (t: typeof trades[number]): BestWorstTrade => {
+        const pnl = t.pnl ? parseFloat(t.pnl) : 0;
+        const entryPrice = t.entryPrice ? parseFloat(t.entryPrice) : 0;
+        const quantity = t.quantity ? parseFloat(t.quantity) : 0;
+        const notional = entryPrice * quantity;
+        const ms = t.openedAt && t.closedAt
+          ? new Date(t.closedAt).getTime() - new Date(t.openedAt).getTime()
+          : 0;
+        return {
+          id: t.id,
+          symbol: t.symbol,
+          side: t.side,
+          pnl: parseFloat(pnl.toFixed(2)),
+          pnlPercent: notional > 0 ? parseFloat(((pnl / notional) * 100).toFixed(2)) : 0,
+          openedAt: t.openedAt ? new Date(t.openedAt).toISOString() : null,
+          closedAt: t.closedAt ? new Date(t.closedAt).toISOString() : null,
+          durationHours: ms > 0 ? parseFloat((ms / (60 * 60 * 1000)).toFixed(2)) : 0,
+        };
+      };
+      let bestTrade: BestWorstTrade | null = null;
+      let worstTrade: BestWorstTrade | null = null;
+      if (winningTrades.length > 0) {
+        const winnersSorted = [...winningTrades].sort(
+          (a, b) => parseFloat(b.pnl ?? '0') - parseFloat(a.pnl ?? '0')
+        );
+        bestTrade = tradeRowToCard(winnersSorted[0]!);
+      }
+      if (losingTrades.length > 0) {
+        const losersSorted = [...losingTrades].sort(
+          (a, b) => parseFloat(a.pnl ?? '0') - parseFloat(b.pnl ?? '0')
+        );
+        worstTrade = tradeRowToCard(losersSorted[0]!);
+      }
 
       return {
         totalTrades,
@@ -215,6 +431,14 @@ export const tradeProcedures = {
         effectiveCapital: parseFloat(effectiveCapital.toFixed(2)),
         totalDeposits: parseFloat(walletTotalDeposits.toFixed(2)),
         totalWithdrawals: parseFloat(walletTotalWithdrawals.toFixed(2)),
+        avgTradeDurationHours: parseFloat(avgTradeDurationHours.toFixed(2)),
+        longestWinStreak,
+        longestLossStreak,
+        long: directionStats('LONG'),
+        short: directionStats('SHORT'),
+        bySymbol,
+        bestTrade,
+        worstTrade,
       };
     }),
 };
