@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-05-03
+
+### Fixed
+- **Binance V3 leverage source of truth** — V3 dropped `leverage` and `isolated` from `accountInformationV3.positions[]`, so the V3 migration in v1.11.0 silently fell back to `1×` for all readers (`getPositions`, `getPosition`, `getConfiguredLeverage`, `getAccountInfo`). Symptoms: chart's position line PnL% line showed raw notional move (e.g. `-0.07%`) instead of leveraged move (`-0.7%`) on a 10× position; Portfolio table + PositionCard rendered `1x` badge instead of the actual leverage; ticket leverage display showed `1×` even after the user had set `10×` via the popover. Switched to `/fapi/v1/symbolConfig` (SDK: `getFuturesSymbolConfig`) as canonical source — returns `{ symbol, marginType: 'CROSSED'|'ISOLATED', leverage }` per symbol, regardless of whether a position is open. Added a defensive fallback that derives leverage from `notional / initialMargin` (mathematically exact: `initialMargin = notional / leverage` by definition) when `symbolConfig` misses an entry. 10s in-memory WeakMap cache amortizes the bulk-fetch cost across position-sync's 30s ticks.
+- **`live-order-executor` reset manually-set leverage to 1× on every fill** — the entry path called `setFuturesLeverage(symbol, config.leverage ?? 1)`, so when a watcher's `autoTradingConfig.leverage` was null (the common "use the user's symbol leverage" case), the `?? 1` fallback silently overwrote the user's manually-configured leverage every entry. Now only calls `setFuturesLeverage` when `config.leverage != null`.
+- **Race between `position-sync` and `handleManualOrderFill`** could create duplicate `tradeExecutions` rows for the same position — both paths inserted on the first fill push, doubling Portfolio exposure until the periodic sync ran reconciliation. Two-layer same-side guards: `handleManualOrderFill` re-checks for an existing open exec before INSERT; `position-sync`'s unknown-position branch re-reads recent inserts via `.where(...).limit(1)` before treating as orphan.
+- **`position-sync` now reconciles `leverage` on existing exec rows** — for positions opened before the V3 fix landed (rows stored with `leverage=1` despite running at e.g. 10× on Binance), the next 30s sync tick detects `dbLeverage !== exchangeLeverage` and writes the corrected value, then emits `position:update` via socket so the chart line, Portfolio panel, and PositionCard refresh without waiting for the next tRPC poll. No close+reopen needed.
+
+### Changed
+- **`getConfiguredLeverage(client, symbol)` queries `/fapi/v1/symbolConfig` directly** instead of scanning `accountInformationV3.positions[]`. The new endpoint returns the user-configured leverage even when `positionAmt = 0`, which is exactly the "what leverage would a new order use?" semantic the function name implies.
+- **`leverage-popover` patches the React Query cache directly** from the `setLeverage` mutation response instead of invalidating + refetching, so the trigger label updates instantly when clicking 1×/10×/etc.
+
+### Notes
+- Diagnostic script at `apps/backend/scripts/debug/diag-leverage.ts` compares all 3 leverage sources against a live Binance account (`accountInformationV3.positions[]`, `getFuturesSymbolConfig`, `getPositions`) — useful for confirming the fix on real accounts and for catching future API shape drift.
+- 12 new tests in `binance-futures-client.test.ts` pin the leverage-resolution contract end-to-end (canonical source, defensive fallback, last-resort 1× fallback, ISOLATED marginType, defensive zero-leverage rejection). Total: 5,517 backend tests passing.
+
 ## [1.11.0] - 2026-05-03
 
 ### Added
