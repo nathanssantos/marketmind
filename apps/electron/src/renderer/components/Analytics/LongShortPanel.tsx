@@ -1,5 +1,5 @@
 import { Box, Grid, Stack, Text } from '@chakra-ui/react';
-import { Callout, PanelHeader } from '@renderer/components/ui';
+import { Callout, PanelHeader, RecordRow } from '@renderer/components/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatWalletCurrencyWithSign } from '@renderer/utils/currencyFormatter';
@@ -31,15 +31,15 @@ const SideCard = ({
   const { t } = useTranslation();
   if (!stats) {
     return (
-      <Box borderWidth="1px" borderColor="border.muted" borderRadius="md" p={3}>
+      <RecordRow density="card">
         <Text fontSize="xs" color="fg.muted" mb={1}>{label}</Text>
         <Text fontSize="sm" color="fg.muted">{t('analytics.noTradesForSide')}</Text>
-      </Box>
+      </RecordRow>
     );
   }
   const pnlColor = stats.netPnL > 0 ? 'trading.profit' : stats.netPnL < 0 ? 'trading.loss' : 'fg.muted';
   return (
-    <Box borderWidth="1px" borderColor="border.muted" borderRadius="md" p={3}>
+    <RecordRow density="card">
       <Text fontSize="xs" color="fg.muted" mb={2}>{label}</Text>
       <Stack gap={1.5}>
         <Stat label={t('analytics.tradeCount', { count: stats.trades })} value={`${stats.winRate.toFixed(1)}%`} />
@@ -54,7 +54,7 @@ const SideCard = ({
           valueColor={pnlColor}
         />
       </Stack>
-    </Box>
+    </RecordRow>
   );
 };
 

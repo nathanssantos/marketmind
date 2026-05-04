@@ -1,5 +1,5 @@
 import { Badge, Box, Grid, Stack, Text } from '@chakra-ui/react';
-import { PanelHeader } from '@renderer/components/ui';
+import { PanelHeader, RecordRow } from '@renderer/components/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatWalletCurrencyWithSign } from '@renderer/utils/currencyFormatter';
@@ -49,15 +49,15 @@ const TradeCard = ({
   const { t } = useTranslation();
   if (!trade) {
     return (
-      <Box borderWidth="1px" borderColor="border.muted" borderRadius="md" p={3}>
+      <RecordRow density="card">
         <Text fontSize="xs" color="fg.muted" mb={1}>{label}</Text>
         <Text fontSize="sm" color="fg.muted">–</Text>
-      </Box>
+      </RecordRow>
     );
   }
   const pnlColor = tone === 'profit' ? 'trading.profit' : 'trading.loss';
   return (
-    <Box borderWidth="1px" borderColor="border.muted" borderRadius="md" p={3}>
+    <RecordRow density="card">
       <Text fontSize="xs" color="fg.muted" mb={2}>{label}</Text>
       <Box display="flex" alignItems="center" gap={2} mb={1}>
         <Text fontSize="sm" fontWeight="semibold">{trade.symbol}</Text>
@@ -76,7 +76,7 @@ const TradeCard = ({
       </Text>
       {/* Reserved t() reference so unused-translation lint doesn't flag */}
       <Box display="none">{t('analytics.bestTrade')}</Box>
-    </Box>
+    </RecordRow>
   );
 };
 
