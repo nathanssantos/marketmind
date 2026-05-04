@@ -99,42 +99,118 @@ export async function modifyIsolatedPositionMargin(
   }
 }
 
-// V3 positionRisk dropped leverage + marginType — they only live on the
-// account-info endpoint now. We fetch both and merge by (symbol, side)
-// so the public shape stays identical to the legacy V2 wrapper.
+// V3 endpoints (positionRisk + accountInformation) no longer carry
+// `leverage` or the `isolated` boolean — Binance moved per-symbol
+// margin/leverage config to /fapi/v1/symbolConfig (SDK:
+// `getFuturesSymbolConfig`). That endpoint returns the user-configured
+// leverage and marginType regardless of whether a position is open,
+// which is exactly what the renderer needs (chart line PnL%, badges,
+// ticket).
+//
+// We keep a defensive fallback that derives leverage from
+// `notional / initialMargin` when symbolConfig is unavailable for a
+// symbol (rare; happens for newly listed symbols mid-window). Both are
+// quoted in USDT and `initialMargin = notional / leverage` by
+// definition, so the math is exact (Binance always rounds leverage to
+// integer).
 type LeverageInfo = { leverage: number; isolated: boolean };
 
-interface LeverageLookup {
-  bySymbolSide: Map<string, LeverageInfo>;
-  bySymbol: Map<string, LeverageInfo>;
-}
-
-const buildLeverageMap = (
-  accountPositions: ReadonlyArray<{ symbol: string; positionSide: string; leverage: string | number; isolated: boolean }>,
-): LeverageLookup => {
-  // Two indices: (symbol, side) for hedge-mode-correct lookup, and
-  // (symbol) as a fallback when the side-keyed entry is missing or
-  // when the renderer just wants "what leverage does this symbol run
-  // at" without caring about side. setLeverage on Binance applies
-  // symmetrically to both sides, so the symbol-only fallback is safe
-  // (both sides should match).
-  const bySymbolSide = new Map<string, LeverageInfo>();
-  const bySymbol = new Map<string, LeverageInfo>();
-  for (const ap of accountPositions) {
-    const info: LeverageInfo = { leverage: Number(ap.leverage), isolated: ap.isolated };
-    bySymbolSide.set(`${ap.symbol}_${ap.positionSide}`, info);
-    // Prefer the entry that has the higher leverage when both sides
-    // disagree (defensive against partially-applied configs).
-    const existing = bySymbol.get(ap.symbol);
-    if (!existing || (Number.isFinite(info.leverage) && info.leverage > existing.leverage)) {
-      bySymbol.set(ap.symbol, info);
-    }
-  }
-  return { bySymbolSide, bySymbol };
+type SymbolConfigLite = {
+  symbol: string;
+  marginType?: string;
+  leverage?: string | number;
 };
 
-const lookupLeverage = (map: LeverageLookup, symbol: string, positionSide: string): LeverageInfo | undefined =>
-  map.bySymbolSide.get(`${symbol}_${positionSide}`) ?? map.bySymbol.get(symbol);
+type AccountPositionLite = {
+  symbol: string;
+  positionSide: string;
+  notional?: string | number;
+  initialMargin?: string | number;
+  isolatedWallet?: string | number;
+  isolatedMargin?: string | number;
+};
+
+const deriveLeverageFromMargin = (
+  notional: string | number | undefined,
+  initialMargin: string | number | undefined,
+): number | undefined => {
+  const n = Math.abs(Number(notional));
+  const im = Number(initialMargin);
+  if (!Number.isFinite(n) || !Number.isFinite(im) || im <= 0) return undefined;
+  const computed = n / im;
+  if (!Number.isFinite(computed) || computed <= 0) return undefined;
+  return Math.round(computed);
+};
+
+const symbolConfigToInfo = (cfg: SymbolConfigLite): LeverageInfo | undefined => {
+  const leverage = Number(cfg.leverage);
+  if (!Number.isFinite(leverage) || leverage <= 0) return undefined;
+  const isolated = String(cfg.marginType ?? '').toUpperCase() === 'ISOLATED';
+  return { leverage, isolated };
+};
+
+const buildLeverageMapFromSymbolConfigs = (
+  configs: ReadonlyArray<SymbolConfigLite>,
+): Map<string, LeverageInfo> => {
+  const bySymbol = new Map<string, LeverageInfo>();
+  for (const cfg of configs) {
+    const info = symbolConfigToInfo(cfg);
+    if (!info) continue;
+    bySymbol.set(cfg.symbol, info);
+  }
+  return bySymbol;
+};
+
+// Defensive fallback: when symbolConfig misses a symbol, derive
+// leverage and isolated flag from the open position itself.
+const fallbackInfoFromAccountPosition = (ap: AccountPositionLite | undefined): LeverageInfo | undefined => {
+  if (!ap) return undefined;
+  const leverage = deriveLeverageFromMargin(ap.notional, ap.initialMargin);
+  if (leverage === undefined) return undefined;
+  const isolatedWallet = Number(ap.isolatedWallet);
+  const isolatedMargin = Number(ap.isolatedMargin);
+  const isolated = (Number.isFinite(isolatedWallet) && isolatedWallet > 0)
+    || (Number.isFinite(isolatedMargin) && isolatedMargin > 0);
+  return { leverage, isolated };
+};
+
+// In-memory cache for symbolConfig responses. The config endpoint is
+// cheap to call but returns 700+ rows when unfiltered, so we cache for
+// a short TTL to amortize cost across the 30s position-sync ticks and
+// the per-fill manual-fill handlers that fire several times in quick
+// succession.
+const SYMBOL_CONFIG_TTL_MS = 10_000;
+type CachedSymbolConfigs = {
+  configs: ReadonlyArray<SymbolConfigLite>;
+  fetchedAt: number;
+};
+const symbolConfigCache = new WeakMap<USDMClient, CachedSymbolConfigs>();
+
+export const __resetSymbolConfigCache = (client?: USDMClient) => {
+  if (client) symbolConfigCache.delete(client);
+  // WeakMap has no .clear(); for tests we just rely on per-client deletion.
+};
+
+const fetchSymbolConfigs = async (
+  client: USDMClient,
+  options?: { symbol?: string },
+): Promise<ReadonlyArray<SymbolConfigLite>> => {
+  // When asking for a single symbol, hit the API directly — the
+  // response is tiny and we don't want to wait for or pollute the
+  // bulk cache.
+  if (options?.symbol) {
+    const result = await guardBinanceCall(() => client.getFuturesSymbolConfig({ symbol: options.symbol }));
+    return result as ReadonlyArray<SymbolConfigLite>;
+  }
+  const cached = symbolConfigCache.get(client);
+  if (cached && Date.now() - cached.fetchedAt < SYMBOL_CONFIG_TTL_MS) {
+    return cached.configs;
+  }
+  const fresh = await guardBinanceCall(() => client.getFuturesSymbolConfig({}));
+  const configs = fresh as ReadonlyArray<SymbolConfigLite>;
+  symbolConfigCache.set(client, { configs, fetchedAt: Date.now() });
+  return configs;
+};
 
 export async function getPositions(
   client: USDMClient,
@@ -149,11 +225,21 @@ export async function getPositions(
     const open = positionsV3.filter((p) => parseFloat(String(p.positionAmt)) !== 0);
     if (open.length === 0) return [];
 
-    const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
-    const leverageMap = buildLeverageMap(accountInfo.positions ?? []);
+    // Pull leverage + marginType from symbolConfig (canonical source).
+    // Fall back to deriving leverage from notional/initialMargin via
+    // accountInformationV3 if symbolConfig misses an entry.
+    const [symbolConfigs, accountInfo] = await Promise.all([
+      fetchSymbolConfigs(client, options),
+      guardBinanceCall(() => client.getAccountInformationV3()),
+    ]);
+    const leverageMap = buildLeverageMapFromSymbolConfigs(symbolConfigs);
+    const accountPositionsBySymbol = new Map<string, AccountPositionLite>(
+      (accountInfo.positions ?? []).map((p) => [p.symbol, p as never as AccountPositionLite]),
+    );
 
     return open.map((p) => {
-      const acct = lookupLeverage(leverageMap, p.symbol, p.positionSide);
+      const info = leverageMap.get(p.symbol)
+        ?? fallbackInfoFromAccountPosition(accountPositionsBySymbol.get(p.symbol));
       return {
         symbol: p.symbol,
         positionSide: p.positionSide,
@@ -162,8 +248,8 @@ export async function getPositions(
         markPrice: String(p.markPrice || '0'),
         unrealizedPnl: String(p.unRealizedProfit),
         liquidationPrice: String(p.liquidationPrice),
-        leverage: acct?.leverage ?? 1,
-        marginType: (acct?.isolated ? 'isolated' : 'cross') as MarginType,
+        leverage: info?.leverage ?? 1,
+        marginType: (info?.isolated ? 'isolated' : 'cross') as MarginType,
         isolatedMargin: String(p.isolatedMargin),
         notional: String(p.notional),
         isolatedWallet: String(p.isolatedWallet),
@@ -178,22 +264,28 @@ export async function getPositions(
 
 /**
  * Reads the configured leverage for `symbol` regardless of whether a
- * position is currently open. accountInformationV3.positions[] is the
- * canonical source — it carries the leverage the user has set even
- * when positionAmt is 0. Use this whenever you want "what leverage
- * would a new order use?", not "what leverage is the open position
- * running at?". Returns 1 as a safe fallback if the symbol has never
- * been configured (rare) or the response is malformed.
+ * position is currently open. Source of truth is
+ * `getFuturesSymbolConfig` (/fapi/v1/symbolConfig), which carries the
+ * leverage the user has set even when positionAmt is 0. Returns 1 as a
+ * safe fallback if the symbol has never been configured (rare) or the
+ * response is malformed.
  */
 export async function getConfiguredLeverage(
   client: USDMClient,
   symbol: string
 ): Promise<number> {
   try {
+    const configs = await fetchSymbolConfigs(client, { symbol });
+    const cfg = configs.find((c) => c.symbol === symbol);
+    if (cfg) {
+      const info = symbolConfigToInfo(cfg);
+      if (info) return info.leverage;
+    }
+    // Fallback: derive from open-position margin if symbolConfig didn't
+    // return an entry for this symbol.
     const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
     const acctPos = accountInfo.positions?.find((p) => p.symbol === symbol);
-    const leverage = acctPos ? Number(acctPos.leverage) : 1;
-    return Number.isFinite(leverage) && leverage > 0 ? leverage : 1;
+    return fallbackInfoFromAccountPosition(acctPos as never)?.leverage ?? 1;
   } catch (error) {
     logger.error({ error: serializeError(error), symbol }, 'Failed to get configured leverage');
     throw error;
@@ -212,9 +304,13 @@ export async function getPosition(
 
     if (!position) return null;
 
-    const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
-    const leverageMap = buildLeverageMap(accountInfo.positions ?? []);
-    const acct = lookupLeverage(leverageMap, position.symbol, position.positionSide);
+    const [symbolConfigs, accountInfo] = await Promise.all([
+      fetchSymbolConfigs(client, { symbol }),
+      guardBinanceCall(() => client.getAccountInformationV3()),
+    ]);
+    const leverageMap = buildLeverageMapFromSymbolConfigs(symbolConfigs);
+    const accountPositionLite = (accountInfo.positions ?? []).find((p) => p.symbol === symbol) as never as AccountPositionLite | undefined;
+    const info = leverageMap.get(symbol) ?? fallbackInfoFromAccountPosition(accountPositionLite);
 
     return {
       symbol: position.symbol,
@@ -224,8 +320,8 @@ export async function getPosition(
       markPrice: String(position.markPrice || '0'),
       unrealizedPnl: String(position.unRealizedProfit),
       liquidationPrice: String(position.liquidationPrice),
-      leverage: acct?.leverage ?? 1,
-      marginType: (acct?.isolated ? 'isolated' : 'cross') as MarginType,
+      leverage: info?.leverage ?? 1,
+      marginType: (info?.isolated ? 'isolated' : 'cross') as MarginType,
       isolatedMargin: String(position.isolatedMargin),
       notional: String(position.notional),
       isolatedWallet: String(position.isolatedWallet),
@@ -239,7 +335,11 @@ export async function getPosition(
 
 export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount> {
   try {
-    const account = await guardBinanceCall(() => client.getAccountInformationV3());
+    const [account, symbolConfigs] = await Promise.all([
+      guardBinanceCall(() => client.getAccountInformationV3()),
+      fetchSymbolConfigs(client),
+    ]);
+    const leverageMap = buildLeverageMapFromSymbolConfigs(symbolConfigs);
     return {
       feeTier: Number(account.feeTier),
       canTrade: account.canTrade,
@@ -275,21 +375,25 @@ export async function getAccountInfo(client: USDMClient): Promise<FuturesAccount
       })),
       positions: account.positions
         .filter((p) => parseFloat(String(p.positionAmt)) !== 0)
-        .map((p) => ({
-          symbol: p.symbol,
-          positionSide: p.positionSide,
-          positionAmt: String(p.positionAmt),
-          entryPrice: String(p.entryPrice),
-          markPrice: '0',
-          unrealizedPnl: String(p.unrealizedProfit),
-          liquidationPrice: '0',
-          leverage: Number(p.leverage),
-          marginType: ((p as unknown as { marginType?: string }).marginType as MarginType) ?? 'CROSSED',
-          isolatedMargin: String((p as unknown as { isolatedMargin?: number }).isolatedMargin ?? 0),
-          notional: String(p.notional),
-          isolatedWallet: String(p.isolatedWallet),
-          updateTime: p.updateTime,
-        })),
+        .map((p) => {
+          const lite = p as never as AccountPositionLite;
+          const info = leverageMap.get(p.symbol) ?? fallbackInfoFromAccountPosition(lite);
+          return {
+            symbol: p.symbol,
+            positionSide: p.positionSide,
+            positionAmt: String(p.positionAmt),
+            entryPrice: String(p.entryPrice),
+            markPrice: '0',
+            unrealizedPnl: String(p.unrealizedProfit),
+            liquidationPrice: '0',
+            leverage: info?.leverage ?? 1,
+            marginType: (info?.isolated ? 'isolated' : 'cross') as MarginType,
+            isolatedMargin: String((p as unknown as { isolatedMargin?: number }).isolatedMargin ?? 0),
+            notional: String(p.notional),
+            isolatedWallet: String(p.isolatedWallet),
+            updateTime: p.updateTime,
+          };
+        }),
     };
   } catch (error) {
     logger.error({ error }, 'Failed to get futures account info');
