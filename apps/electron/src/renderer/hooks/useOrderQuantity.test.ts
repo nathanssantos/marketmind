@@ -49,7 +49,7 @@ describe('useOrderQuantity', () => {
       activeWallet: { id: 'w1', currentBalance: '10000' },
     });
     useQuickTradeStoreMock.mockReturnValue(10);
-    getSymbolLeverageQueryMock.mockReturnValue({ data: { leverage: 5 } });
+    getSymbolLeverageQueryMock.mockReturnValue({ data: { leverage: 5 }, isLoading: false, error: null });
     getSymbolFiltersQueryMock.mockReturnValue({ data: undefined });
   });
 
@@ -73,26 +73,47 @@ describe('useOrderQuantity', () => {
     expect(result.current.leverage).toBe(1);
   });
 
-  it('returns 0 quantity when balance is zero', () => {
+  it('refuses to compute qty when balance is zero (isReady=false)', () => {
     useActiveWalletMock.mockReturnValue({
       activeWallet: { id: 'w1', currentBalance: '0' },
     });
     const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
-    expect(result.current.getQuantity(50_000)).toBe('0.0000');
+    expect(result.current.getQuantity(50_000)).toBe('0');
+    expect(result.current.isReady).toBe(false);
+    expect(result.current.notReadyReason).toContain('zero');
   });
 
-  it('returns 0 quantity when price is zero or negative', () => {
+  it('returns 0 quantity when price is zero or negative (still ready, just no qty)', () => {
     const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
     expect(result.current.getQuantity(0)).toBe('0.0000');
     expect(result.current.getQuantity(-1)).toBe('0.0000');
   });
 
-  it('falls back to leverage=1 when symbolLeverage query has no data', () => {
-    getSymbolLeverageQueryMock.mockReturnValue({ data: undefined });
+  it('refuses to compute qty when leverage query is loading (returns 0, isReady=false)', () => {
+    // Regression: previously fell back to leverage=1 on undefined data,
+    // producing scalp-killer 0.006 BTC entries when the user intended
+    // ~1 BTC at 15× because the leverage query hadn't resolved yet.
+    // Now we fail closed and the renderer disables the buy button.
+    getSymbolLeverageQueryMock.mockReturnValue({ data: undefined, isLoading: true, error: null });
     const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
-    // 10000 × 1 × 0.10 / 50000 = 0.02
-    expect(result.current.getQuantity(50_000)).toBe('0.0200');
-    expect(result.current.leverage).toBe(1);
+    expect(result.current.getQuantity(50_000)).toBe('0');
+    expect(result.current.isReady).toBe(false);
+    expect(result.current.notReadyReason).toContain('Loading leverage');
+  });
+
+  it('refuses to compute qty when leverage query errors (server returned PRECONDITION_FAILED)', () => {
+    getSymbolLeverageQueryMock.mockReturnValue({ data: undefined, isLoading: false, error: { message: 'Could not determine configured leverage for BTCUSDT.' } });
+    const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
+    expect(result.current.getQuantity(50_000)).toBe('0');
+    expect(result.current.isReady).toBe(false);
+    expect(result.current.notReadyReason).toContain('Could not determine');
+  });
+
+  it('isReady=true on FUTURES happy path with leverage loaded', () => {
+    getSymbolLeverageQueryMock.mockReturnValue({ data: { leverage: 5 }, isLoading: false, error: null });
+    const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
+    expect(result.current.isReady).toBe(true);
+    expect(result.current.notReadyReason).toBeNull();
   });
 
   it('reflects sizePercent changes from the store', () => {
@@ -103,10 +124,12 @@ describe('useOrderQuantity', () => {
     expect(result.current.sizePercent).toBe(50);
   });
 
-  it('handles missing wallet gracefully (balance=0)', () => {
+  it('refuses to compute when there is no active wallet (isReady=false)', () => {
     useActiveWalletMock.mockReturnValue({ activeWallet: null });
     const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
-    expect(result.current.getQuantity(50_000)).toBe('0.0000');
+    expect(result.current.getQuantity(50_000)).toBe('0');
     expect(result.current.balance).toBe(0);
+    expect(result.current.isReady).toBe(false);
+    expect(result.current.notReadyReason).toContain('No active wallet');
   });
 });
