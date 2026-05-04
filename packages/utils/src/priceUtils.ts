@@ -114,9 +114,46 @@ export const roundTradingPrice = (price: number): string => {
   return price.toFixed(6);
 };
 
-export const roundTradingQty = (qty: number): string => {
-  if (qty >= 100) return qty.toFixed(0);
-  if (qty >= 1) return qty.toFixed(2);
-  if (qty >= 0.001) return qty.toFixed(4);
-  return qty.toFixed(6);
+// Floor (truncate) qty to a digit count, never round up. The ticket
+// computes `(balance × leverage × pct) / price` and submits to the
+// exchange — if we round nearest with toFixed(), small float drift can
+// push the requested qty 1 step over the percentage the user
+// configured. The exchange will then either reject (insufficient
+// margin) or fill at a smaller-than-intended size when its lot-size
+// filter floors. Either path frustrates scalpers who need 100% to
+// MEAN 100% (or just under), never over.
+//
+// `floorToDigits(0.4659999999, 4) === '0.4659'` (vs toFixed(4)
+// returning '0.4660' which over-allocates by 0.0001 BTC).
+const floorToDigits = (qty: number, digits: number): string => {
+  if (!Number.isFinite(qty) || qty <= 0) return (0).toFixed(digits);
+  const factor = 10 ** digits;
+  const floored = Math.floor(qty * factor) / factor;
+  return floored.toFixed(digits);
+};
+
+export const roundTradingQty = (qty: number, stepSize?: number): string => {
+  // Defend against non-finite inputs up front so downstream branches
+  // can assume qty is a real positive number. Returning the
+  // highest-precision zero matches the contract (caller can parseFloat
+  // and get 0).
+  if (!Number.isFinite(qty) || qty <= 0) return (0).toFixed(6);
+  // When the caller knows the exchange's lot-size filter (Binance
+  // SYMBOL_FILTER LOT_SIZE), prefer that — guarantees the qty is
+  // accepted by the exchange and the user's percentage is honored
+  // exactly (just under, never over).
+  if (stepSize && stepSize > 0) {
+    const steps = Math.floor(qty / stepSize);
+    const snapped = steps * stepSize;
+    // Derive precision from stepSize: 0.001 → 3, 0.01 → 2, 1 → 0, etc.
+    const stepDigits = Math.max(0, -Math.floor(Math.log10(stepSize)));
+    return snapped.toFixed(stepDigits);
+  }
+  // Fallback when stepSize isn't available — pick a digit count by
+  // magnitude. Truncate (floor) instead of round nearest so we never
+  // overshoot the user's percentage.
+  if (qty >= 100) return floorToDigits(qty, 0);
+  if (qty >= 1) return floorToDigits(qty, 2);
+  if (qty >= 0.001) return floorToDigits(qty, 4);
+  return floorToDigits(qty, 6);
 };

@@ -16,6 +16,7 @@ import {
   mergeOrderUpdate,
   mergePositionClosed,
   mergePositionUpdate,
+  mergeWalletBalanceUpdate,
 } from '../services/socketCacheMerge';
 import { trpc } from '../utils/trpc';
 import { usePriceStore } from '../store/priceStore';
@@ -199,7 +200,20 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     scheduleRef.current('orders', 'wallet');
   }, !!walletId);
 
-  useSocketEvent('wallet:update', () => scheduleRef.current('wallet'), !!walletId);
+  useSocketEvent('wallet:update', (raw) => {
+    if (!walletId) return;
+    // Patch wallet.list cache directly with the new balance from the
+    // payload — same render frame as the socket event, no tRPC round
+    // trip. Critical for scalping: when a position closes, the ticket
+    // percentage must reflect freed-up capital immediately so the next
+    // entry sizes against the live total. Without this patch the
+    // ticket waits ~300–700ms (debounce + refetch) before reflecting
+    // the new balance.
+    utils.wallet.list.setData(undefined, (prev) =>
+      mergeWalletBalanceUpdate(prev as never, walletId, raw as never)
+    );
+    scheduleRef.current('wallet');
+  }, !!walletId);
 
   // v1.6 Track F.2 — backend signals after a user-stream reconnect (the
   // listenKey expired, the watchdog forced a reconnect, or a message

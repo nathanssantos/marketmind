@@ -1,37 +1,39 @@
 import type { MarketType } from '@marketmind/types';
 import { useCallback } from 'react';
 import { trpc } from '../utils/trpc';
+
+// Mutation onSuccess invalidations are scoped narrowly: trading caches
+// (executions, orders, positions, wallet balance) are kept in sync via
+// socket events from the user-stream → RealtimeTradingSyncContext, which
+// patches them in the same render frame as Binance reports the change
+// AND fires a debounced reconciliation invalidate. Re-firing those
+// invalidates here would just trigger a duplicate refetch round-trip
+// 100–300ms before the socket-driven patch lands — net effect: 5–7
+// extra in-flight tRPC calls per click and a stutter on the ticket
+// button. We keep only invalidations the socket layer doesn't cover
+// (server-side analytics aggregations).
 export const useBackendTradingMutations = () => {
   const utils = trpc.useUtils();
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: () => {
-      void utils.trading.getTradeExecutions.invalidate();
-      void utils.autoTrading.getActiveExecutions.invalidate();
-      void utils.trading.getOrders.invalidate();
-      void utils.trading.getPositions.invalidate();
       void utils.analytics.getPerformance.invalidate();
-      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
     onSuccess: (data) => {
+      // The cancel response carries the authoritative open-executions
+      // list — patch the cache directly. order:cancelled socket event
+      // also lands and reconciles via the merge helper.
       if (data.openExecutions) {
         const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
         utils.trading.getTradeExecutions.setData(
           { walletId, status: 'open', limit: 500 },
           data.openExecutions,
         );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
       }
-      void utils.autoTrading.getActiveExecutions.invalidate();
-      void utils.trading.getOrders.invalidate();
       void utils.analytics.getPerformance.invalidate();
-      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 
@@ -43,13 +45,9 @@ export const useBackendTradingMutations = () => {
           { walletId, status: 'open', limit: 500 },
           data.openExecutions,
         );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
       }
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 
@@ -61,12 +59,8 @@ export const useBackendTradingMutations = () => {
           { walletId, status: 'open', limit: 500 },
           data.openExecutions,
         );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
       }
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 
@@ -78,10 +72,12 @@ export const useBackendTradingMutations = () => {
           { walletId, status: 'open', limit: 500 },
           data.openExecutions,
         );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
       }
-      void utils.autoTrading.getActiveExecutions.invalidate();
+      // SL/TP changes mutate algo-orders that have no socket coverage
+      // (algo events fire on their own private channel and aren't part
+      // of the user-stream we patch). Refresh the algo-order caches to
+      // reflect the new SL/TP price; trading-execution caches handled
+      // by the setData above + position:update sockets.
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
     },
@@ -95,10 +91,7 @@ export const useBackendTradingMutations = () => {
           { walletId, status: 'open', limit: 500 },
           data.openExecutions,
         );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
       }
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
     },
@@ -106,8 +99,6 @@ export const useBackendTradingMutations = () => {
 
   const updatePendingEntryMutation = trpc.trading.updatePendingEntry.useMutation({
     onSuccess: () => {
-
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
     },
