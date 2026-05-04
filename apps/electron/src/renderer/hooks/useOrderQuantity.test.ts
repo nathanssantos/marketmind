@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const useActiveWalletMock = vi.fn();
 const useQuickTradeStoreMock = vi.fn();
 const getSymbolLeverageQueryMock = vi.fn();
+const getSymbolFiltersQueryMock = vi.fn();
 
 vi.mock('./useActiveWallet', () => ({
   useActiveWallet: () => useActiveWalletMock(),
@@ -21,11 +22,23 @@ vi.mock('@/renderer/utils/trpc', () => ({
         useQuery: () => getSymbolLeverageQueryMock(),
       },
     },
+    trading: {
+      getSymbolFilters: {
+        useQuery: () => getSymbolFiltersQueryMock(),
+      },
+    },
   },
 }));
 
 vi.mock('@shared/utils', () => ({
-  roundTradingQty: (qty: number) => qty.toFixed(4),
+  roundTradingQty: (qty: number, stepSize?: number) => {
+    if (stepSize && stepSize > 0) {
+      const steps = Math.floor(qty / stepSize);
+      const stepDigits = Math.max(0, -Math.floor(Math.log10(stepSize)));
+      return (steps * stepSize).toFixed(stepDigits);
+    }
+    return qty.toFixed(4);
+  },
 }));
 
 import { useOrderQuantity } from './useOrderQuantity';
@@ -37,6 +50,7 @@ describe('useOrderQuantity', () => {
     });
     useQuickTradeStoreMock.mockReturnValue(10);
     getSymbolLeverageQueryMock.mockReturnValue({ data: { leverage: 5 } });
+    getSymbolFiltersQueryMock.mockReturnValue({ data: undefined });
   });
 
   afterEach(() => {

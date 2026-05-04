@@ -5,6 +5,7 @@ import {
   mergeOrderUpdate,
   mergePositionClosed,
   mergePositionUpdate,
+  mergeWalletBalanceUpdate,
   isOpenOrder,
 } from './socketCacheMerge';
 
@@ -180,4 +181,68 @@ describe('isOpenOrder', () => {
   it('FILLED is not open', () => expect(isOpenOrder({ status: 'FILLED' })).toBe(false));
   it('CANCELED is not open', () => expect(isOpenOrder({ status: 'CANCELED' })).toBe(false));
   it('undefined status is not open', () => expect(isOpenOrder({})).toBe(false));
+});
+
+describe('mergeWalletBalanceUpdate', () => {
+  interface Wallet {
+    id: string;
+    currentBalance?: string | null;
+    totalWalletBalance?: string | null;
+  }
+  const base: Wallet[] = [
+    { id: 'w1', currentBalance: '5000.00', totalWalletBalance: '5000.00' },
+    { id: 'w2', currentBalance: '1000.00', totalWalletBalance: '1000.00' },
+  ];
+
+  it('returns prev unchanged when prev is undefined', () => {
+    expect(mergeWalletBalanceUpdate(undefined, 'w1', { balances: [{ a: 'USDT', wb: '6000' }] })).toBeUndefined();
+  });
+
+  it('patches the matching wallet currentBalance from USDT wb', () => {
+    const next = mergeWalletBalanceUpdate(base, 'w1', { balances: [{ a: 'USDT', wb: '5500.50' }] });
+    expect(next).not.toBe(base);
+    expect(next![0]!.currentBalance).toBe('5500.50');
+    expect(next![0]!.totalWalletBalance).toBe('5500.50');
+    // Other wallets unaffected.
+    expect(next![1]).toBe(base[1]);
+  });
+
+  it('falls back to cw (cross wallet) when wb missing', () => {
+    const next = mergeWalletBalanceUpdate(base, 'w1', { balances: [{ a: 'USDT', wb: '', cw: '5500.50' }] });
+    expect(next![0]!.currentBalance).toBe('5500.50');
+  });
+
+  it('accepts a flat patch with currentBalance/totalWalletBalance (paper synthesizer path)', () => {
+    const next = mergeWalletBalanceUpdate(base, 'w1', { currentBalance: '4250.00' });
+    expect(next![0]!.currentBalance).toBe('4250.00');
+  });
+
+  it('returns same reference when balance unchanged', () => {
+    const next = mergeWalletBalanceUpdate(base, 'w1', { balances: [{ a: 'USDT', wb: '5000.00' }] });
+    expect(next).toBe(base);
+  });
+
+  it('returns same reference when wallet not in cache', () => {
+    const next = mergeWalletBalanceUpdate(base, 'unknown', { balances: [{ a: 'USDT', wb: '99' }] });
+    expect(next).toBe(base);
+  });
+
+  it('returns same reference when payload has no usable balance', () => {
+    const next = mergeWalletBalanceUpdate(base, 'w1', { balances: [{ a: 'BNB', wb: '5' }] });
+    expect(next).toBe(base);
+  });
+
+  it('preserves untouched fields on the wallet (extensible WalletLike)', () => {
+    interface ExtWallet extends Wallet {
+      name: string;
+      exchange: string;
+    }
+    const ext: ExtWallet[] = [
+      { id: 'w1', name: 'Live', exchange: 'BINANCE', currentBalance: '5000', totalWalletBalance: '5000' },
+    ];
+    const next = mergeWalletBalanceUpdate(ext, 'w1', { balances: [{ a: 'USDT', wb: '5500' }] });
+    expect(next![0]!.name).toBe('Live');
+    expect(next![0]!.exchange).toBe('BINANCE');
+    expect(next![0]!.currentBalance).toBe('5500');
+  });
 });

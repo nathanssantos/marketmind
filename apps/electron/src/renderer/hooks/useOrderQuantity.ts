@@ -10,6 +10,8 @@ export interface UseOrderQuantityResult {
   leverage: number;
   balance: number;
   sizePercent: number;
+  stepSize: number;
+  minNotional: number;
 }
 
 export const useOrderQuantity = (symbol: string | undefined, marketType: MarketType | undefined): UseOrderQuantityResult => {
@@ -25,12 +27,23 @@ export const useOrderQuantity = (symbol: string | undefined, marketType: MarketT
   );
   const leverage = isFutures ? (symbolLeverage?.leverage ?? 1) : 1;
 
+  // Symbol filters drive precision: stepSize is the LOT_SIZE step the
+  // exchange will accept. We floor the computed qty to it client-side
+  // so the ticket displays exactly what will be submitted (no
+  // surprise smaller-than-expected fills from server-side floor).
+  const { data: symbolFilters } = trpc.trading.getSymbolFilters.useQuery(
+    { symbol: symbol ?? '', marketType: marketType ?? 'FUTURES' },
+    { enabled: !!symbol, staleTime: 60 * 60 * 1000 },
+  );
+  const stepSize = symbolFilters?.stepSize ?? 0;
+  const minNotional = symbolFilters?.minNotional ?? 0;
+
   const getQuantity = useCallback((price: number): string => {
     const pct = sizePercent / 100;
     const marginPower = isFutures ? balance * leverage : balance;
     const qty = marginPower > 0 && price > 0 ? (marginPower * pct) / price : 0;
-    return roundTradingQty(qty);
-  }, [balance, sizePercent, leverage, isFutures]);
+    return roundTradingQty(qty, stepSize > 0 ? stepSize : undefined);
+  }, [balance, sizePercent, leverage, isFutures, stepSize]);
 
-  return { getQuantity, leverage, balance, sizePercent };
+  return { getQuantity, leverage, balance, sizePercent, stepSize, minNotional };
 };

@@ -139,3 +139,62 @@ export const mergeOrderCancelled = <T extends OrderLike>(
 /** Returns true iff the order is in an actively-open state. */
 export const isOpenOrder = (order: { status?: string }): boolean =>
   Boolean(order.status && OPEN_ORDER_STATUSES.has(order.status));
+
+interface WalletLike {
+  id: string;
+  currentBalance?: string | null;
+  totalWalletBalance?: string | null;
+  [key: string]: unknown;
+}
+
+interface WalletUpdatePayload {
+  // Binance USER_DATA stream payload pass-through:
+  //   reason: 'ORDER' | 'FUNDING_FEE' | 'WITHDRAW' | 'DEPOSIT' | …
+  //   balances: [{ a: 'USDT', wb: '<wallet balance>', cw: '<cross wallet balance>', ... }]
+  reason?: string;
+  balances?: Array<{ a: string; wb: string; cw?: string; bc?: string }>;
+  // Some emit paths (paper close synthesizers) push a flat patch instead.
+  currentBalance?: string;
+  totalWalletBalance?: string;
+}
+
+/**
+ * Patches the wallet.list cache with the new balance from a socket event
+ * BEFORE the belt-and-suspenders tRPC invalidate fires. This is what makes
+ * "close a position → ticket immediately reflects 100% of the freed
+ * capital" actually happen. Without this, the renderer waits the full
+ * INVALIDATION_FLUSH_MS + network round-trip + DB query before the
+ * ticket can show the new percentage base — perceptible as a 300-700ms
+ * lag for scalpers.
+ */
+export const mergeWalletBalanceUpdate = <T extends WalletLike>(
+  prev: T[] | undefined,
+  walletId: string,
+  payload: WalletUpdatePayload,
+): T[] | undefined => {
+  if (!prev) return prev;
+  const usdt = payload.balances?.find((b) => b.a === 'USDT');
+  // Prefer wallet balance (`wb`) — that's the total, including unrealized.
+  // Fall back to cross-wallet balance (`cw`) which excludes isolated.
+  // Empty string is treated as "no value" too (Binance can return ''
+  // when wb wasn't part of the delta), hence the truthiness check.
+  const candidates = [usdt?.wb, usdt?.cw, payload.currentBalance, payload.totalWalletBalance];
+  const newBalance = candidates.find((v): v is string => Boolean(v));
+  if (!newBalance) return prev;
+  const idx = prev.findIndex((w) => w.id === walletId);
+  if (idx < 0) return prev;
+  const wallet = prev[idx]!;
+  if (
+    wallet.currentBalance === newBalance
+    && wallet.totalWalletBalance === newBalance
+  ) {
+    return prev;
+  }
+  const next = prev.slice();
+  next[idx] = {
+    ...wallet,
+    currentBalance: newBalance,
+    totalWalletBalance: newBalance,
+  };
+  return next;
+};
