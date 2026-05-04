@@ -199,15 +199,13 @@ const fetchSymbolConfigs = async (
   // response is tiny and we don't want to wait for or pollute the
   // bulk cache.
   if (options?.symbol) {
-    const result = await guardBinanceCall(() => client.getFuturesSymbolConfig({ symbol: options.symbol }));
-    return result as ReadonlyArray<SymbolConfigLite>;
+    return guardBinanceCall(() => client.getFuturesSymbolConfig({ symbol: options.symbol }));
   }
   const cached = symbolConfigCache.get(client);
   if (cached && Date.now() - cached.fetchedAt < SYMBOL_CONFIG_TTL_MS) {
     return cached.configs;
   }
-  const fresh = await guardBinanceCall(() => client.getFuturesSymbolConfig({}));
-  const configs = fresh as ReadonlyArray<SymbolConfigLite>;
+  const configs = await guardBinanceCall(() => client.getFuturesSymbolConfig({}));
   symbolConfigCache.set(client, { configs, fetchedAt: Date.now() });
   return configs;
 };
@@ -285,7 +283,7 @@ export async function getConfiguredLeverage(
     // return an entry for this symbol.
     const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
     const acctPos = accountInfo.positions?.find((p) => p.symbol === symbol);
-    return fallbackInfoFromAccountPosition(acctPos as never)?.leverage ?? 1;
+    return fallbackInfoFromAccountPosition(acctPos)?.leverage ?? 1;
   } catch (error) {
     logger.error({ error: serializeError(error), symbol }, 'Failed to get configured leverage');
     throw error;
