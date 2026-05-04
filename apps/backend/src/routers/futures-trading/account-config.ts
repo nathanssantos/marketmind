@@ -7,6 +7,7 @@ import {
   getConfiguredLeverage,
   getSymbolLeverageBrackets,
   isPaperWallet,
+  LeverageUnavailableError,
   setLeverage,
   setMarginType,
 } from '../../services/binance-futures-client';
@@ -81,16 +82,28 @@ export const accountConfigRouter = router({
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
       if (isPaperWallet(wallet)) return { leverage: 1 };
 
+      // Cache only on positive (>0) results — never poison the cache
+      // with a fallback / loading-state value that could be served to
+      // the order-sizing path.
       const cached = binanceApiCache.get<{ leverage: number }>('SYMBOL_LEVERAGE', input.walletId, input.symbol);
-      if (cached) return cached;
+      if (cached && cached.leverage > 0) return cached;
 
       try {
         const client = createBinanceFuturesClient(wallet);
         const leverage = await getConfiguredLeverage(client, input.symbol);
+        // getConfiguredLeverage now throws LeverageUnavailableError when
+        // it can't determine the value — so a returned `leverage` here
+        // is always genuine. Safe to cache.
         const result = { leverage };
         binanceApiCache.set('SYMBOL_LEVERAGE', input.walletId, result, input.symbol);
         return result;
       } catch (error) {
+        if (error instanceof LeverageUnavailableError) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: error.message,
+          });
+        }
         throw mapBinanceErrorToTRPC(error);
       }
     }),

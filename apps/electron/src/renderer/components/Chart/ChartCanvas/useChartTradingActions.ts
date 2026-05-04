@@ -94,11 +94,19 @@ export const useChartTradingActions = ({
     updatePendingEntry,
   } = useBackendTradingMutations();
 
-  const { getQuantity: getOrderQuantity } = useOrderQuantity(symbol, marketType);
+  const { getQuantity: getOrderQuantity, isReady: isOrderSizingReady, notReadyReason: orderSizingReason } = useOrderQuantity(symbol, marketType);
 
   const handleLongEntry = useCallback(async (price: number) => {
     if (!backendWalletId) { warning(t('trading.ticket.noWallet')); return; }
     if (!symbol) return;
+
+    if (!isOrderSizingReady) {
+      // Refuse to ship a chart-drag entry while leverage/balance are still
+      // loading — silently defaulting to 1× has produced 0.006 BTC entries
+      // when the user intended ~1 BTC at 15×.
+      toastError(orderSizingReason ?? t('chart.quickTrade.invalidQuantityError'));
+      return;
+    }
 
     const marketPrice = latestKlinesPriceRef.current;
     const hasOpenShort = (backendExecutions ?? []).some(
@@ -125,11 +133,16 @@ export const useChartTradingActions = ({
       orderLoadingMapRef.current.delete(optimisticId);
       manager?.markDirty('overlays');
     }
-  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions, manager, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
+  }, [addBackendOrder, symbol, marketType, getOrderQuantity, isOrderSizingReady, orderSizingReason, warning, toastError, t, backendWalletId, utils, backendExecutions, manager, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
 
   const handleShortEntry = useCallback(async (price: number) => {
     if (!backendWalletId) { warning(t('trading.ticket.noWallet')); return; }
     if (!symbol) return;
+
+    if (!isOrderSizingReady) {
+      toastError(orderSizingReason ?? t('chart.quickTrade.invalidQuantityError'));
+      return;
+    }
 
     const marketPrice = latestKlinesPriceRef.current;
     const hasOpenLong = (backendExecutions ?? []).some(
@@ -156,7 +169,7 @@ export const useChartTradingActions = ({
       orderLoadingMapRef.current.delete(optimisticId);
       manager?.markDirty('overlays');
     }
-  }, [addBackendOrder, symbol, marketType, getOrderQuantity, warning, toastError, t, backendWalletId, utils, backendExecutions, manager, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
+  }, [addBackendOrder, symbol, marketType, getOrderQuantity, isOrderSizingReady, orderSizingReason, warning, toastError, t, backendWalletId, utils, backendExecutions, manager, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, latestKlinesPriceRef]);
 
   const handleOrderCloseRequest = useCallback((orderId: string | null): void => {
     const target = parseCloseTarget(orderId);

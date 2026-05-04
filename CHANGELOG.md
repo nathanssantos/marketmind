@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.3] - 2026-05-04
+
+### Fixed — leverage resolution: fail loud, never silently default to 1×
+- **Root cause for the "95% × 15× = 0.006 BTC" scalp trap.** Two code paths silently defaulted leverage to 1× when Binance's data layer momentarily couldn't return it (V3 endpoint propagation hiccup, fresh symbol with no open position, brief API stall):
+  1. `getConfiguredLeverage` had a final `?? 1` fallback after both `getFuturesSymbolConfig` and `accountInformationV3` lookups missed. The ticket then computed `95% × 1× / price` = 6.3% of the intended notional, producing 0.006 BTC entries when the user intended ~1 BTC.
+  2. `services/trading/order-quantity.ts` was a stale duplicate that read `acctPos.leverage` directly from V3 accountInfo — the V3-dropped field. Logged "Could not determine live leverage — falling back to 1x" and proceeded with wrong sizing.
+- **Fix in three layers**:
+  - New `LeverageUnavailableError` exported from `binance-futures-client`. `getConfiguredLeverage` throws it instead of defaulting to 1.
+  - `services/trading/order-quantity.ts` delegates to canonical `getConfiguredLeverage` and converts the error to `PRECONDITION_FAILED` with actionable copy ("Open the leverage popover to set it explicitly, then retry").
+  - `getSymbolLeverage` router translates `LeverageUnavailableError` to `PRECONDITION_FAILED` and stops poisoning the SYMBOL_LEVERAGE cache with stale fallback values (`cached.leverage > 0` guard).
+- **Frontend `useOrderQuantity` exposes `isReady` + `notReadyReason`.** Returns `qty='0'` when leverage is loading, errored, or undefined. Both ticket (QuickTradeToolbar) and chart-drag entries (useChartTradingActions) gate their handlers on `isReady`, surfacing the reason as a toast so the user knows exactly why their click didn't go through ("Loading leverage…" / "Could not read leverage").
+
+### Notes
+- 41 binance-futures-client tests passing (+ 2 rewritten to assert throw rather than 1× fallback). 9 useOrderQuantity tests passing (+ 3 new: refuses on loading, refuses on error, isReady=true on happy path). 8 order-quantity tests rewritten to use the new mock surface. 47 QuickTradeToolbar tests passing (mocks updated). 2457 renderer unit tests + type-check + lint clean.
+
 ## [1.11.2] - 2026-05-04
 
 ### Added — Analytics modal content sweep

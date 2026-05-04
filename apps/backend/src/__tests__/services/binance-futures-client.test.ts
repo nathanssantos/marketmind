@@ -391,18 +391,25 @@ describe('BinanceFuturesClient Service', () => {
       expect(result).toBe(10);
     });
 
-    it('returns 1 when both symbolConfig and accountInfo lack the symbol', async () => {
+    it('throws LeverageUnavailableError when both symbolConfig and accountInfo lack the symbol', async () => {
+      // Refusing to fall back to 1× is a deliberate safety choice — the
+      // ticket / sizing path used to silently produce 95% × 1× = 6.3% of
+      // intended notional on a 15× scalp setup when leverage was
+      // momentarily unavailable. Now we surface the error so the
+      // renderer can disable the buy button.
       mockMethods.getFuturesSymbolConfig.mockResolvedValue([]);
       mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
 
       const client = createBinanceFuturesClientForPrices();
       __resetSymbolConfigCache(client);
-      const result = await getConfiguredLeverage(client, 'BTCUSDT');
 
-      expect(result).toBe(1);
+      await expect(getConfiguredLeverage(client, 'BTCUSDT')).rejects.toMatchObject({
+        name: 'LeverageUnavailableError',
+        symbol: 'BTCUSDT',
+      });
     });
 
-    it('handles invalid leverage values defensively', async () => {
+    it('throws LeverageUnavailableError on invalid (zero) leverage from symbolConfig', async () => {
       mockMethods.getFuturesSymbolConfig.mockResolvedValue([
         { symbol: 'BTCUSDT', marginType: 'CROSSED', isAutoAddMargin: false, leverage: 0, maxNotionalValue: '0' },
       ]);
@@ -410,10 +417,10 @@ describe('BinanceFuturesClient Service', () => {
 
       const client = createBinanceFuturesClientForPrices();
       __resetSymbolConfigCache(client);
-      // leverage=0 is rejected; falls back to 1
-      const result = await getConfiguredLeverage(client, 'BTCUSDT');
 
-      expect(result).toBe(1);
+      await expect(getConfiguredLeverage(client, 'BTCUSDT')).rejects.toMatchObject({
+        name: 'LeverageUnavailableError',
+      });
     });
   });
 
