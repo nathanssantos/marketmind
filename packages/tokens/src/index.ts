@@ -21,6 +21,14 @@ export const config = defineConfig({
       color: 'fg',
       userSelect: 'text',
     },
+    // Recharts surfaces (`<svg class="recharts-surface">`) take focus on
+    // click and the browser default outline draws a stray rectangle that
+    // looks like a stuck selection ring. Disable it everywhere — focus
+    // outlines on chart svgs are useless for keyboard nav anyway (Recharts
+    // doesn't expose a focusable element interface).
+    '.recharts-wrapper, .recharts-surface, .recharts-wrapper *:focus, .recharts-surface:focus': {
+      outline: 'none',
+    },
   },
 });
 
