@@ -104,18 +104,37 @@ export async function modifyIsolatedPositionMargin(
 // so the public shape stays identical to the legacy V2 wrapper.
 type LeverageInfo = { leverage: number; isolated: boolean };
 
+interface LeverageLookup {
+  bySymbolSide: Map<string, LeverageInfo>;
+  bySymbol: Map<string, LeverageInfo>;
+}
+
 const buildLeverageMap = (
   accountPositions: ReadonlyArray<{ symbol: string; positionSide: string; leverage: string | number; isolated: boolean }>,
-): Map<string, LeverageInfo> => {
-  const out = new Map<string, LeverageInfo>();
+): LeverageLookup => {
+  // Two indices: (symbol, side) for hedge-mode-correct lookup, and
+  // (symbol) as a fallback when the side-keyed entry is missing or
+  // when the renderer just wants "what leverage does this symbol run
+  // at" without caring about side. setLeverage on Binance applies
+  // symmetrically to both sides, so the symbol-only fallback is safe
+  // (both sides should match).
+  const bySymbolSide = new Map<string, LeverageInfo>();
+  const bySymbol = new Map<string, LeverageInfo>();
   for (const ap of accountPositions) {
-    out.set(`${ap.symbol}_${ap.positionSide}`, {
-      leverage: Number(ap.leverage),
-      isolated: ap.isolated,
-    });
+    const info: LeverageInfo = { leverage: Number(ap.leverage), isolated: ap.isolated };
+    bySymbolSide.set(`${ap.symbol}_${ap.positionSide}`, info);
+    // Prefer the entry that has the higher leverage when both sides
+    // disagree (defensive against partially-applied configs).
+    const existing = bySymbol.get(ap.symbol);
+    if (!existing || (Number.isFinite(info.leverage) && info.leverage > existing.leverage)) {
+      bySymbol.set(ap.symbol, info);
+    }
   }
-  return out;
+  return { bySymbolSide, bySymbol };
 };
+
+const lookupLeverage = (map: LeverageLookup, symbol: string, positionSide: string): LeverageInfo | undefined =>
+  map.bySymbolSide.get(`${symbol}_${positionSide}`) ?? map.bySymbol.get(symbol);
 
 export async function getPositions(
   client: USDMClient,
@@ -134,7 +153,7 @@ export async function getPositions(
     const leverageMap = buildLeverageMap(accountInfo.positions ?? []);
 
     return open.map((p) => {
-      const acct = leverageMap.get(`${p.symbol}_${p.positionSide}`);
+      const acct = lookupLeverage(leverageMap, p.symbol, p.positionSide);
       return {
         symbol: p.symbol,
         positionSide: p.positionSide,
@@ -195,7 +214,7 @@ export async function getPosition(
 
     const accountInfo = await guardBinanceCall(() => client.getAccountInformationV3());
     const leverageMap = buildLeverageMap(accountInfo.positions ?? []);
-    const acct = leverageMap.get(`${position.symbol}_${position.positionSide}`);
+    const acct = lookupLeverage(leverageMap, position.symbol, position.positionSide);
 
     return {
       symbol: position.symbol,

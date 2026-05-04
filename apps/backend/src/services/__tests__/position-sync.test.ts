@@ -252,10 +252,20 @@ describe('PositionSyncService', () => {
     });
 
     it('should identify unknown positions on exchange', async () => {
-      mockDbSelect.mockReturnValue({
+      // Two .select() chains run in unknown-position path:
+      //   1) initial dbOpenPositions read (.from().where()) → []
+      //   2) race-guard re-check (.from().where().limit(1)) → []
+      // Both use the same mock so we make .where return a thenable
+      // that ALSO carries .limit(1) → [] (no concurrent exec).
+      const chainable = {
         from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([]),
-      } as never);
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([]),
+        then: (fn: (v: unknown) => void) => Promise.resolve([]).then(fn),
+        catch: (fn: (v: unknown) => void) => Promise.resolve([]).catch(fn),
+        finally: (fn: () => void) => Promise.resolve([]).finally(fn),
+      };
+      mockDbSelect.mockReturnValue(chainable as never);
 
       mockGetPositions.mockResolvedValue([
         {
@@ -272,6 +282,54 @@ describe('PositionSyncService', () => {
 
       expect(result.changes.unknownPositions).toContain('ETHUSDT');
       expect(result.detailedUnknown).toHaveLength(1);
+    });
+
+    it('skips inserting unknown position when same-side exec already exists (race guard)', async () => {
+      // Simulates the race: dbOpenPositions read returned []
+      // (handleManualOrderFill hadn't committed yet), Binance shows
+      // the position, but by the time we re-check before insert,
+      // user-stream has committed the exec. position-sync should bail
+      // instead of double-inserting.
+      let selectCallCount = 0;
+      const initialReadEmpty = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([]),
+        then: (fn: (v: unknown) => void) => Promise.resolve([]).then(fn),
+        catch: (fn: (v: unknown) => void) => Promise.resolve([]).catch(fn),
+        finally: (fn: () => void) => Promise.resolve([]).finally(fn),
+      };
+      const reCheckHasMatch = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([{ id: 'concurrent-exec-1' }]),
+        then: (fn: (v: unknown) => void) => Promise.resolve([]).then(fn),
+        catch: (fn: (v: unknown) => void) => Promise.resolve([]).catch(fn),
+        finally: (fn: () => void) => Promise.resolve([]).finally(fn),
+      };
+
+      mockDbSelect.mockImplementation(() => {
+        selectCallCount += 1;
+        // 1st = dbOpenPositions read, 2nd = race-guard re-check
+        return (selectCallCount === 1 ? initialReadEmpty : reCheckHasMatch) as never;
+      });
+
+      mockGetPositions.mockResolvedValue([
+        {
+          symbol: 'ETHUSDT',
+          positionAmt: '0.5',
+          entryPrice: '3000',
+          unrealizedPnl: '50',
+          leverage: 5,
+          marginType: 'ISOLATED',
+        } as never,
+      ]);
+
+      const result = await service.syncWallet(mockWallet as never);
+
+      // Unknown was reported (Binance had it), but no insert fired.
+      expect(result.changes.unknownPositions).toContain('ETHUSDT');
+      expect(mockDbInsert).not.toHaveBeenCalled();
     });
 
     it('should detect updated positions', async () => {
@@ -599,10 +657,18 @@ describe('PositionSyncService', () => {
         emitRiskAlert: mockEmitRiskAlert,
       });
 
-      mockDbSelect.mockReturnValue({
+      // Two .select() chains run: 1) initial dbOpenPositions read,
+      // 2) race-guard re-check before insert. Both return [] so the
+      // unknown-adopt path proceeds.
+      const chainable = {
         from: vi.fn().mockReturnThis(),
-        where: vi.fn().mockResolvedValue([]),
-      } as never);
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue([]),
+        then: (fn: (v: unknown) => void) => Promise.resolve([]).then(fn),
+        catch: (fn: (v: unknown) => void) => Promise.resolve([]).catch(fn),
+        finally: (fn: () => void) => Promise.resolve([]).finally(fn),
+      };
+      mockDbSelect.mockReturnValue(chainable as never);
 
       mockGetPositions.mockResolvedValue([
         {

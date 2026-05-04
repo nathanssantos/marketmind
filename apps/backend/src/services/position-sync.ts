@@ -378,6 +378,35 @@ export class PositionSyncService {
           }
         } else {
           const side: PositionSide = positionAmt > 0 ? 'LONG' : 'SHORT';
+
+          // Race guard: dbOpenPositions was read at the start of this
+          // sync. If user-stream's handleManualOrderFill committed an
+          // exec between then and now, our snapshot is stale — re-check
+          // immediately before insert. Without this the Portfolio
+          // briefly summed two open execs (handleManualOrderFill +
+          // position-sync) and showed double exposure for the symbol.
+          const [recentlyInserted] = await db
+            .select({ id: tradeExecutions.id })
+            .from(tradeExecutions)
+            .where(
+              and(
+                eq(tradeExecutions.walletId, wallet.id),
+                eq(tradeExecutions.symbol, symbol),
+                eq(tradeExecutions.side, side),
+                eq(tradeExecutions.status, 'open'),
+                eq(tradeExecutions.marketType, 'FUTURES')
+              )
+            )
+            .limit(1);
+
+          if (recentlyInserted) {
+            logger.info(
+              { walletId: wallet.id, symbol, side, existing: recentlyInserted.id },
+              '[PositionSync] Skipped unknown-position insert — same-side exec was inserted by user-stream concurrently'
+            );
+            continue;
+          }
+
           const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
           try {
