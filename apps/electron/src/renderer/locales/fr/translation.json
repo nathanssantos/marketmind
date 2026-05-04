@@ -2903,6 +2903,7 @@
     "liquidationPrice": "Liquidation Price",
     "distanceToLiq": "Distance to liquidation",
     "leverageLockedPosition": "Close position to change leverage",
+    "leverageChangeFailed": "Impossible de modifier le levier",
     "marginType": "Margin Type",
     "marginTypeInfo": "Isolated: Each position has its own margin. Crossed: All positions share margin.",
     "isolated": "Isolated",

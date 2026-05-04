@@ -65,43 +65,62 @@ const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
     await openSettingsTab(page, 'account');
     return;
   }
-  if (modalId === 'orders') {
-    await toggleSidebar(page, 'trading', true);
-  }
-  // Flow modals — click triggers from real UI affordances (data-testid)
-  if (modalId === 'createWallet') {
-    await openSettingsTab(page, 'wallets');
-    await clickTrigger(page, 'wallet-create-trigger');
+  // Standalone dialogs opened via the ui-store flag (single source of
+  // truth — independent of header/sidebar UI structure that drifts).
+  if (modalId === 'createWallet' || modalId === 'tradingProfiles') {
+    await page.evaluate((id) => {
+      const ui = (window as { __uiStore?: { getState: () => Record<string, (v?: unknown) => void> } }).__uiStore?.getState();
+      if (id === 'createWallet') ui?.setWalletsDialogOpen?.(true);
+      if (id === 'tradingProfiles') ui?.setTradingProfilesDialogOpen?.(true);
+    }, modalId);
+    await page.waitForTimeout(300);
+    if (modalId === 'createWallet') {
+      // The dialog opens with the wallet list visible; click the
+      // create trigger to land on the form. waitForSelector first so
+      // the click only fires once the panel has actually rendered.
+      await page.waitForSelector('[data-testid="wallet-create-trigger"]', { timeout: 5000 });
+      await clickTrigger(page, 'wallet-create-trigger');
+    }
     return;
   }
-  if (modalId === 'tradingProfiles' || modalId === 'importProfile') {
-    await openSettingsTab(page, 'tradingProfiles');
-    if (modalId === 'importProfile') {
-      await clickTrigger(page, 'profile-import-trigger');
-    }
+  if (modalId === 'importProfile') {
+    await page.evaluate(() => {
+      const ui = (window as { __uiStore?: { getState: () => Record<string, (v?: unknown) => void> } }).__uiStore?.getState();
+      ui?.setTradingProfilesDialogOpen?.(true);
+    });
+    await page.waitForTimeout(300);
+    await page.waitForSelector('[data-testid="profile-import-trigger"]', { timeout: 5000 });
+    await clickTrigger(page, 'profile-import-trigger');
+    return;
+  }
+  if (modalId === 'orders') {
+    await page.evaluate(() => {
+      const ui = (window as { __uiStore?: { getState: () => Record<string, (v?: unknown) => void> } }).__uiStore?.getState();
+      ui?.setOrdersDialogOpen?.(true);
+    });
+    await page.waitForTimeout(300);
     return;
   }
   if (modalId === 'addWatcher') {
     await openSettingsTab(page, 'autoTrading');
+    await page.waitForSelector('[data-testid="trigger-add-watcher"]', { timeout: 5000 });
     await clickTrigger(page, 'trigger-add-watcher');
     return;
   }
   if (modalId === 'startWatchers') {
     await toggleSidebar(page, 'autoTrading', true);
+    await page.waitForSelector('[data-testid="trigger-start-watchers"]', { timeout: 5000 });
     await clickTrigger(page, 'trigger-start-watchers');
     return;
   }
   await page.evaluate((id) => {
     const w = window as Window & {
-      __uiStore?: { getState: () => Record<string, (v?: unknown) => void> };
       __backtestModalStore?: { getState: () => { openBacktest: () => void } };
       __screenerStore?: { getState: () => { setScreenerOpen: (v: boolean) => void } };
+      __uiStore?: { getState: () => Record<string, (v?: unknown) => void> };
     };
     const ui = w.__uiStore?.getState();
     switch (id) {
-      case 'orders':
-        ui?.setOrdersDialogOpen?.(true);
-        break;
       case 'backtest':
         w.__backtestModalStore?.getState().openBacktest();
         break;

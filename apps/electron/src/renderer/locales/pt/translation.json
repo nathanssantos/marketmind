@@ -2884,6 +2884,7 @@
     "liquidationPrice": "Liquidation Price",
     "distanceToLiq": "Distance to liquidation",
     "leverageLockedPosition": "Close position to change leverage",
+    "leverageChangeFailed": "Não foi possível alterar a alavancagem",
     "marginType": "Margin Type",
     "marginTypeInfo": "Isolated: Each position has its own margin. Crossed: All positions share margin.",
     "isolated": "Isolated",

@@ -2785,6 +2785,7 @@
     "liquidated": "Position would be liquidated at current price!",
     "liquidationWarning": "Warning: Position is close to liquidation.",
     "leverageLockedPosition": "Close position to change leverage",
+    "leverageChangeFailed": "Could not change leverage",
     "marginType": "Margin Type",
     "marginTypeInfo": "Isolated: Each position has its own margin. Crossed: All positions share margin.",
     "isolated": "Isolated",

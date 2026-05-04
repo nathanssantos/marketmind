@@ -108,6 +108,18 @@ export async function handleOrderUpdate(
           originalQty,
           remaining: originalQty - filledQty,
         }, '[FuturesUserStream] Partial fill - updated quantity with filled amount');
+
+        // Emit so the renderer paints the new size immediately rather
+        // than waiting for the next refetch tick. Without this the user
+        // sees the order line at the original qty until the periodic
+        // poll catches up.
+        const wsService = getWebSocketService();
+        if (wsService) {
+          wsService.emitPositionUpdate(walletId, {
+            ...pendingExec,
+            quantity: filledQty.toString(),
+          });
+        }
       }
       return;
     }

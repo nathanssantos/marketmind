@@ -130,3 +130,63 @@ describe('handleOrderUpdate — CANCELED branch', () => {
     expect(mockEmitPositionUpdate).not.toHaveBeenCalled();
   });
 });
+
+describe('handleOrderUpdate — PARTIALLY_FILLED branch', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('emits position:update with the partial fill quantity so the chart paints immediately', async () => {
+    const pending = { id: 'exec-99', walletId: 'wallet-1', symbol: 'BTCUSDT', entryOrderId: '99', status: 'pending', quantity: '0' };
+    mockDbSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([pending]),
+        }),
+      }),
+    });
+    mockDbUpdate.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
+
+    const event = makeEvent({
+      X: 'PARTIALLY_FILLED',
+      x: 'TRADE',
+      i: 99,
+      q: '1.0',
+      z: '0.4',
+    });
+
+    await handleOrderUpdate(createMockCtx(), 'wallet-1', event);
+
+    expect(mockEmitPositionUpdate).toHaveBeenCalledTimes(1);
+    expect(mockEmitPositionUpdate).toHaveBeenCalledWith(
+      'wallet-1',
+      expect.objectContaining({ id: 'exec-99', quantity: '0.4' }),
+    );
+  });
+
+  it('does not emit when there is no pending execution to update', async () => {
+    mockDbSelect.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    });
+
+    const event = makeEvent({
+      X: 'PARTIALLY_FILLED',
+      x: 'TRADE',
+      i: 99,
+      q: '1.0',
+      z: '0.4',
+    });
+
+    await handleOrderUpdate(createMockCtx(), 'wallet-1', event);
+
+    expect(mockEmitPositionUpdate).not.toHaveBeenCalled();
+  });
+});

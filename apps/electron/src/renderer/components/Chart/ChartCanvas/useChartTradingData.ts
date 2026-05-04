@@ -265,68 +265,47 @@ export const useChartTradingData = ({
     if (changed) setOverrideVersion(v => v + 1);
   }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions]);
 
-  // Snapshot closing positions when a `position:closed` event arrives so
-  // the chart shows the order line for ~800ms while the query
-  // invalidation refetches. Without this the line just freezes until the
-  // next render. v1.6 Track F.3.
-  const utils = trpc.useUtils();
+  // Snapshot the closing position so the chart can play the
+  // "line fades out + flash" animation for ~800 ms even if the query
+  // cache reconciles faster. RealtimeTradingSyncContext has already
+  // patched the cache to status='closed' synchronously by the time this
+  // fires — we just hold a snapshot for the visual.
   useSocketEvent('position:closed', (data: PositionClosedPayload) => {
     if (!backendWalletId) return;
     const exec = filteredBackendExecutions.find((e) => e.id === data.positionId);
-    if (exec) {
-      closingSnapshotsRef.current.set(exec.id, exec);
-      orderFlashMapRef.current.set(exec.id, performance.now());
+    if (!exec) return;
+    closingSnapshotsRef.current.set(exec.id, exec);
+    orderFlashMapRef.current.set(exec.id, performance.now());
+    setClosingVersion((v) => v + 1);
+    setTimeout(() => {
+      closingSnapshotsRef.current.delete(exec.id);
       setClosingVersion((v) => v + 1);
-      // Clear the snapshot after the flash + a small data-refresh buffer
-      // so the close animation always plays even if the server refetch is
-      // faster than the animation.
-      setTimeout(() => {
-        closingSnapshotsRef.current.delete(exec.id);
-        setClosingVersion((v) => v + 1);
-      }, 800);
-    }
-    // Force-refetch the active executions immediately as a belt-and-
-    // suspenders against missed websocket invalidation upstream.
-    void utils.autoTrading.getActiveExecutions.invalidate({ walletId: backendWalletId });
+    }, 800);
   }, !!backendWalletId);
 
-  // v1.6 Track F.3 #14 — live-patch the chart on position:update so
-  // trailing-stop activation, server-pushed SL/TP changes, and qty
-  // updates show immediately, without waiting for the next query
-  // refetch (~250ms via the RealtimeTradingSyncContext debounce). The
-  // existing optimistic-override system tracks the patch until the
-  // server cache catches up, then auto-cleans. Idempotent with user-
-  // initiated optimistic patches — the override merges patches.
+  // Flash animation when SL/TP/entryPrice change. The cache patch itself
+  // happens upstream in RealtimeTradingSyncContext (setData on the
+  // socket payload) so the chart already re-renders with the new values
+  // — this hook only kicks the flash timer so the user sees a visible
+  // "I noticed" cue. We still also call applyOptimistic to mark the
+  // override as touched so any concurrent user-initiated drag doesn't
+  // get clobbered by a stale auto-clear sweep.
   useSocketEvent('position:update', (raw) => {
     if (!backendWalletId) return;
     const data = raw as Partial<BackendExecution> & { id?: string };
     if (!data?.id) return;
     const exec = filteredBackendExecutions.find((e) => e.id === data.id);
     if (!exec) return;
-    const patches: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice'>> = {};
-    const previous: typeof patches = {};
-    if (data.stopLoss !== undefined && data.stopLoss !== exec.stopLoss) {
-      patches.stopLoss = data.stopLoss;
-      previous.stopLoss = exec.stopLoss;
-    }
-    if (data.takeProfit !== undefined && data.takeProfit !== exec.takeProfit) {
-      patches.takeProfit = data.takeProfit;
-      previous.takeProfit = exec.takeProfit;
-    }
-    if (data.entryPrice !== undefined && data.entryPrice !== exec.entryPrice) {
-      patches.entryPrice = data.entryPrice;
-      previous.entryPrice = exec.entryPrice;
-    }
-    if (Object.keys(patches).length > 0) {
-      applyOptimistic(exec.id, patches, previous);
+    if (
+      data.stopLoss !== undefined ||
+      data.takeProfit !== undefined ||
+      data.entryPrice !== undefined ||
+      data.status !== undefined
+    ) {
       orderFlashMapRef.current.set(exec.id, performance.now());
     }
   }, !!backendWalletId);
 
-  // v1.6 Track F.3 #14 — live-patch limit-order line position when the
-  // server pushes a price change (e.g. user dragged it on another
-  // device, or the system modified it). Mirrors the position:update
-  // path above for entry orders.
   useSocketEvent('order:update', (raw) => {
     if (!backendWalletId) return;
     const data = raw as Partial<BackendExecution> & { id?: string };
@@ -334,7 +313,6 @@ export const useChartTradingData = ({
     const exec = filteredBackendExecutions.find((e) => e.id === data.id);
     if (exec?.status !== 'pending') return;
     if (data.entryPrice !== undefined && data.entryPrice !== exec.entryPrice) {
-      applyOptimistic(exec.id, { entryPrice: data.entryPrice }, { entryPrice: exec.entryPrice });
       orderFlashMapRef.current.set(exec.id, performance.now());
     }
   }, !!backendWalletId);

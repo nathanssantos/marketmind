@@ -171,7 +171,7 @@ export const orderMutationsRouter = router({
 
         let futuresLeverage = 1;
         if (input.marketType === 'FUTURES') {
-          const { createBinanceFuturesClient, getPosition, setMarginType } = await import('../../services/binance-futures-client');
+          const { createBinanceFuturesClient, getConfiguredLeverage, setMarginType } = await import('../../services/binance-futures-client');
           const futuresClient = createBinanceFuturesClient(wallet);
           try {
             await setMarginType(futuresClient, input.symbol, 'CROSSED');
@@ -179,8 +179,11 @@ export const orderMutationsRouter = router({
             logger.warn({ symbol: input.symbol }, 'Could not apply margin type — proceeding with current settings');
           }
           try {
-            const posForLev = await getPosition(futuresClient, input.symbol);
-            if (posForLev) futuresLeverage = Number(posForLev.leverage);
+            // Read configured leverage from accountInfoV3 — works whether
+            // or not a position is currently open (V3 positionRisk dropped
+            // leverage, so the previous getPosition() route returned null
+            // for un-opened symbols and silently fell back to 1x).
+            futuresLeverage = await getConfiguredLeverage(futuresClient, input.symbol);
           } catch {
             logger.warn({ symbol: input.symbol }, 'Could not read leverage from exchange');
           }

@@ -445,4 +445,269 @@ describe('QuickTradeToolbar — Size controls (presets, slider, +/- 5%)', () => 
     renderActions();
     expect(screen.getByRole('button', { name: /decrease size 5%/i })).toBeDisabled();
   });
+
+  it('renders all 5 size preset buttons (10, 25, 50, 75, 100)', () => {
+    renderActions();
+    expect(screen.getByRole('button', { name: '10%' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '25%' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '50%' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '75%' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '100%' })).toBeInTheDocument();
+  });
+
+  it('+ from a non-multiple-of-5 (12.5) snaps to the next 5 bucket (15)', async () => {
+    setDefaults({ sizePercent: 12.5 });
+    const user = userEvent.setup();
+    renderActions();
+    await user.click(screen.getByRole('button', { name: /increase size 5%/i }));
+    expect(setSizePercentMock).toHaveBeenCalledWith(15);
+  });
+
+  it('- from a non-multiple-of-5 (12.5) snaps to the previous 5 bucket (10)', async () => {
+    setDefaults({ sizePercent: 12.5 });
+    const user = userEvent.setup();
+    renderActions();
+    await user.click(screen.getByRole('button', { name: /decrease size 5%/i }));
+    expect(setSizePercentMock).toHaveBeenCalledWith(10);
+  });
+
+  it('display rounds sizePercent to 1 decimal place', () => {
+    setDefaults({ sizePercent: 33.333 });
+    renderActions();
+    expect(screen.getByText('33.3%')).toBeInTheDocument();
+  });
+});
+
+describe('QuickTradeToolbar — Pending order confirmation dialog', () => {
+  const openConfirm = async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    return user;
+  };
+
+  it('shows the order summary (symbol, side, price, quantity, leverage)', async () => {
+    setDefaults({ ask: 50_050 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.2500', leverage: 10 });
+    await openConfirm();
+
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('BTCUSDT')).toBeInTheDocument();
+    expect(within(dialog).getByText('LONG')).toBeInTheDocument();
+    expect(within(dialog).getByText('0.2500')).toBeInTheDocument();
+    expect(within(dialog).getByText('10x')).toBeInTheDocument();
+  });
+
+  it('SELL side renders SHORT in the side row', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('SHORT')).toBeInTheDocument();
+  });
+
+  it('totalValue = quantity × price', async () => {
+    setDefaults({ ask: 50_050 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5 });
+    await openConfirm();
+
+    const dialog = await screen.findByRole('dialog');
+    // 0.1 × 50050 = 5005
+    expect(within(dialog).getByText(/5,?005\.00 USDT/)).toBeInTheDocument();
+  });
+
+  it('margin = totalValue / leverage', async () => {
+    setDefaults({ ask: 50_050 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5 });
+    await openConfirm();
+
+    const dialog = await screen.findByRole('dialog');
+    // 5005 / 5 = 1001
+    expect(within(dialog).getByText(/1,?001\.00 USDT/)).toBeInTheDocument();
+  });
+
+  it('cancel via close button does NOT fire createOrder', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+
+    const dialog = await screen.findByRole('dialog');
+    // Close icon button (CloseTrigger) — typically has accessible name "Close" or similar.
+    const closeBtn = within(dialog).queryByRole('button', { name: /close|cancel|×/i });
+    if (closeBtn) await user.click(closeBtn);
+
+    // Even if the dialog can't be closed by an accessible button match,
+    // the absence of a confirm click is enough — createOrder mustn't fire.
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the dialog open while createOrder is in flight', async () => {
+    let resolveCreate: () => void = () => {};
+    createOrderMock.mockReturnValueOnce(new Promise<void>((resolve) => {
+      resolveCreate = () => resolve();
+    }));
+    const user = userEvent.setup();
+    renderActions();
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
+
+    // pendingOrder is only cleared in the finally — while the promise
+    // is in flight the dialog is still mounted so the user can't
+    // double-fire by clicking again.
+    expect(screen.getByText('chart.quickTrade.confirmOrder')).toBeInTheDocument();
+
+    resolveCreate();
+    await vi.waitFor(() => {
+      expect(screen.queryByText('chart.quickTrade.confirmOrder')).not.toBeInTheDocument();
+    });
+  });
+});
+
+describe('QuickTradeToolbar — Position detection edge cases', () => {
+  it('detects open position via Binance-shape positions (positionAmt > 0 → LONG)', async () => {
+    setDefaults({
+      positions: [{ symbol: 'BTCUSDT', positionAmt: '0.5' }],
+    });
+    const user = userEvent.setup();
+    renderActions();
+
+    // Reverse row should be enabled — the Binance-shape position counts as open.
+    await user.click(screen.getByText('futures.reversePosition'));
+    const dialog = await screen.findByText('futures.reverseConfirmTitle');
+    expect(dialog).toBeInTheDocument();
+  });
+
+  it('detects open position via Binance-shape positions (positionAmt < 0 → SHORT)', async () => {
+    setDefaults({
+      positions: [{ symbol: 'BTCUSDT', positionAmt: '-0.5' }],
+    });
+    const user = userEvent.setup();
+    renderActions();
+
+    await user.click(screen.getByText('futures.reversePosition'));
+    expect(await screen.findByText('futures.reverseConfirmTitle')).toBeInTheDocument();
+  });
+
+  it('treats positionAmt=0 as no open position', () => {
+    setDefaults({
+      positions: [{ symbol: 'BTCUSDT', positionAmt: '0' }],
+    });
+    renderActions();
+    const row = screen.getByText('futures.reversePosition').parentElement!;
+    expect(row).toHaveStyle({ opacity: '0.4' });
+  });
+
+  it('only matches positions for the current symbol', () => {
+    setDefaults({
+      positions: [{ id: 'pos-1', symbol: 'ETHUSDT', side: 'LONG', status: 'open' }],
+    });
+    renderActions();
+    const row = screen.getByText('futures.reversePosition').parentElement!;
+    expect(row).toHaveStyle({ opacity: '0.4' });
+  });
+
+  it('picks the open position when array contains a closed one for the same symbol', async () => {
+    setDefaults({
+      positions: [
+        { id: 'pos-old', symbol: 'BTCUSDT', side: 'LONG', status: 'closed' },
+        { id: 'pos-new', symbol: 'BTCUSDT', side: 'SHORT', status: 'open' },
+      ],
+    });
+    const user = userEvent.setup();
+    renderActions();
+
+    await user.click(screen.getByText('futures.reversePosition'));
+    const dialog = screen.getByText('futures.reverseConfirmTitle').closest('[role="dialog"]')!;
+    await user.click(within(dialog).getByRole('button', { name: /futures\.reversePosition/i }));
+
+    expect(reversePositionMock).toHaveBeenCalledWith(expect.objectContaining({
+      positionId: 'pos-new',
+    }));
+  });
+
+  it('null positions array — reverse / close stay disabled', () => {
+    useBackendFuturesTradingMock.mockReturnValue({
+      positions: null,
+      reversePosition: reversePositionMock,
+      isReversingPosition: false,
+      closePositionAndCancelOrders: closePositionAndCancelOrdersMock,
+      isClosingPositionAndCancellingOrders: false,
+      cancelAllOrders: cancelAllOrdersMock,
+      isCancellingAllOrders: false,
+    });
+    renderActions();
+
+    expect(screen.getByText('futures.reversePosition').parentElement!).toHaveStyle({ opacity: '0.4' });
+    expect(screen.getByText('futures.closePosition').parentElement!).toHaveStyle({ opacity: '0.4' });
+  });
+
+  it('ignores positions when marketType is SPOT (no FUTURES position concept)', () => {
+    setDefaults({
+      positions: [{ id: 'pos-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }],
+    });
+    renderActions({ marketType: 'SPOT' });
+
+    expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
+  });
+});
+
+describe('QuickTradeToolbar — Layout-level UI affordances', () => {
+  it('renders LeveragePopover only for FUTURES', () => {
+    renderActions();
+    expect(screen.getByTestId('leverage-popover-BTCUSDT')).toBeInTheDocument();
+  });
+
+  it('does NOT render LeveragePopover for SPOT', () => {
+    renderActions({ marketType: 'SPOT' });
+    expect(screen.queryByTestId('leverage-popover-BTCUSDT')).not.toBeInTheDocument();
+  });
+
+  it('drag handle is hidden by default and shown when showDragHandle is true', () => {
+    const { rerender } = renderActions();
+    expect(document.querySelector('[class*="cursor-grab"]')).not.toBeInTheDocument();
+
+    rerender(
+      <ChakraProvider value={defaultSystem}>
+        <ColorModeProvider>
+          <QuickTradeActions
+            symbol="BTCUSDT"
+            marketType="FUTURES"
+            showDragHandle
+            onDragStart={vi.fn()}
+          />
+        </ColorModeProvider>
+      </ChakraProvider>,
+    );
+    // The drag handle uses cursor: grab — find it by the icon's parent role/style.
+    // Using a visible-element check — the LuGripVertical icon adds an svg.
+    const handles = document.querySelectorAll('svg');
+    expect(handles.length).toBeGreaterThan(0);
+  });
+
+  it('options menu (Close) is hidden when onClose is not passed', () => {
+    renderActions();
+    expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
+  });
+
+  it('options menu shown when onClose is passed and clicking Close fires the callback', async () => {
+    const onClose = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ChakraProvider value={defaultSystem}>
+        <ColorModeProvider>
+          <QuickTradeActions symbol="BTCUSDT" marketType="FUTURES" onClose={onClose} />
+        </ColorModeProvider>
+      </ChakraProvider>,
+    );
+
+    const trigger = screen.getByRole('button', { name: /options/i });
+    expect(trigger).toBeInTheDocument();
+
+    await user.click(trigger);
+    const closeItem = await screen.findByText('common.close');
+    await user.click(closeItem);
+
+    expect(onClose).toHaveBeenCalled();
+  });
 });

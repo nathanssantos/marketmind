@@ -48,13 +48,20 @@ export const executeLiveOrder = async (
 
   if (watcher.marketType === 'FUTURES') {
     try {
-      const configLeverage = config.leverage ?? 1;
-
-      await autoTradingService.setFuturesLeverage(
-        wallet,
-        watcher.symbol,
-        configLeverage
-      );
+      // Respect the user's manually-configured leverage for this symbol
+      // when the auto-trading config doesn't specify one. Previously the
+      // `?? 1` fallback forced leverage=1 on every entry, silently
+      // resetting whatever the user had set in the leverage popover. We
+      // now only override when config.leverage is explicitly set —
+      // null / undefined means "use whatever Binance has for this
+      // symbol".
+      if (config.leverage != null) {
+        await autoTradingService.setFuturesLeverage(
+          wallet,
+          watcher.symbol,
+          config.leverage
+        );
+      }
 
       await autoTradingService.setFuturesMarginType(
         wallet,
@@ -64,7 +71,7 @@ export const executeLiveOrder = async (
 
       log('> Futures leverage/margin configured', {
         symbol: watcher.symbol,
-        leverage: configLeverage,
+        leverage: config.leverage ?? '(user-configured)',
         marginType: 'CROSSED',
       });
     } catch (leverageError) {

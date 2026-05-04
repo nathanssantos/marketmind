@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import type {
   AppNotificationPayload,
   PositionClosedPayload,
@@ -10,26 +10,27 @@ import { createPlatformAdapter } from '../adapters/factory';
 import { useSocketEvent, useWalletSubscription } from '../hooks/socket';
 import { socketBus } from '../services/socketBus';
 import { QUERY_CONFIGS } from '../services/queryConfig';
+import {
+  mergeOrderCancelled,
+  mergeOrderCreated,
+  mergeOrderUpdate,
+  mergePositionClosed,
+  mergePositionUpdate,
+} from '../services/socketCacheMerge';
 import { trpc } from '../utils/trpc';
 import { usePriceStore } from '../store/priceStore';
 import { toaster } from '../utils/toaster';
 
 /**
- * Trailing-debounce window for batching tRPC query invalidations triggered by
- * realtime socket events. Bursts of order/position/wallet updates still
- * collapse into a single refetch within one render frame, but a single
- * event (the user closing one position by hand) lands in the UI almost
- * instantly. Higher values (the previous 100 ms) added perceptible lag
- * after a manual action even though the backend processed the Binance
- * event within milliseconds.
+ * Reconciliation-only debounce. Socket payloads are applied to the
+ * React Query cache via `setData` (synchronous, instant) the moment
+ * they arrive, so the UI updates in the same render frame as the
+ * event. This invalidate is a *belt-and-suspenders* sweep that fires
+ * a few hundred ms later to reconcile any field the merge couldn't
+ * derive (e.g. server-side aggregations, related queries we don't
+ * patch). 250 ms keeps the safety net out of the hot path.
  */
-const INVALIDATION_FLUSH_MS = 16;
-
-interface RealtimeTradingSyncContextValue {
-  forceRefresh: () => void;
-}
-
-const RealtimeTradingSyncContext = createContext<RealtimeTradingSyncContextValue | null>(null);
+const INVALIDATION_FLUSH_MS = 250;
 
 interface RealtimeTradingSyncProviderProps {
   walletId: string | undefined;
@@ -119,17 +120,85 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
   });
 
-  useSocketEvent('position:update', (_position) => {
+  // Socket → cache patch helpers. The renderer's React Query cache for
+  // executions lives behind two query keys: `trading.getTradeExecutions`
+  // (general dialogs / portfolio views) and `autoTrading.getActiveExecutions`
+  // (chart). We patch both so every consumer sees the change without
+  // round-tripping the backend.
+  const patchExecutionCaches = useCallback((
+    payload: Parameters<typeof mergePositionUpdate>[1],
+  ) => {
+    if (!walletId) return;
+    utils.trading.getTradeExecutions.setData(
+      { walletId, limit: 100 },
+      (prev) => mergePositionUpdate(prev, payload),
+    );
+    utils.autoTrading.getActiveExecutions.setData(
+      { walletId },
+      (prev) => mergePositionUpdate(prev, payload),
+    );
+  }, [walletId, utils]);
+
+  const closeExecutionInCaches = useCallback((
+    payload: Parameters<typeof mergePositionClosed>[1],
+  ) => {
+    if (!walletId) return;
+    utils.trading.getTradeExecutions.setData(
+      { walletId, limit: 100 },
+      (prev) => mergePositionClosed(prev, payload),
+    );
+    utils.autoTrading.getActiveExecutions.setData(
+      { walletId },
+      (prev) => mergePositionClosed(prev, payload),
+    );
+  }, [walletId, utils]);
+
+  useSocketEvent('position:update', (raw) => {
+    const payload = raw as Parameters<typeof mergePositionUpdate>[1];
+    if (payload?.id) patchExecutionCaches(payload);
     scheduleRef.current('positions', 'wallet');
   }, !!walletId);
 
-  useSocketEvent('position:closed', (_data: PositionClosedPayload) => {
+  useSocketEvent('position:closed', (data: PositionClosedPayload) => {
+    closeExecutionInCaches(data);
     scheduleRef.current('positions', 'wallet', 'setupStats', 'equityCurve');
   }, !!walletId);
 
-  useSocketEvent('order:update', () => scheduleRef.current('orders'), !!walletId);
-  useSocketEvent('order:created', () => scheduleRef.current('orders', 'wallet'), !!walletId);
-  useSocketEvent('order:cancelled', () => scheduleRef.current('orders', 'wallet'), !!walletId);
+  useSocketEvent('order:update', (raw) => {
+    if (!walletId) return;
+    const payload = raw as Record<string, unknown> & { orderId?: string; id?: string };
+    if (payload?.orderId || payload?.id) {
+      utils.trading.getOrders.setData(
+        { walletId, limit: 100 },
+        (prev) => mergeOrderUpdate(prev, payload as never),
+      );
+    }
+    scheduleRef.current('orders');
+  }, !!walletId);
+
+  useSocketEvent('order:created', (raw) => {
+    if (!walletId) return;
+    const payload = raw as Record<string, unknown> & { orderId?: string; id?: string };
+    if (payload?.orderId || payload?.id) {
+      utils.trading.getOrders.setData(
+        { walletId, limit: 100 },
+        (prev) => mergeOrderCreated(prev, payload as never),
+      );
+    }
+    scheduleRef.current('orders', 'wallet');
+  }, !!walletId);
+
+  useSocketEvent('order:cancelled', (data) => {
+    if (!walletId) return;
+    if (data?.orderId) {
+      utils.trading.getOrders.setData(
+        { walletId, limit: 100 },
+        (prev) => mergeOrderCancelled(prev, data.orderId),
+      );
+    }
+    scheduleRef.current('orders', 'wallet');
+  }, !!walletId);
+
   useSocketEvent('wallet:update', () => scheduleRef.current('wallet'), !!walletId);
 
   // v1.6 Track F.2 — backend signals after a user-stream reconnect (the
@@ -243,26 +312,5 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     };
   }, []);
 
-  const forceRefresh = useCallback(() => {
-    for (const key of ['positions', 'orders', 'wallet', 'setupStats', 'equityCurve']) {
-      pendingInvalidations.current.add(key);
-    }
-    flushInvalidations();
-  }, [flushInvalidations]);
-
-  const value: RealtimeTradingSyncContextValue = { forceRefresh };
-
-  return (
-    <RealtimeTradingSyncContext.Provider value={value}>
-      {children}
-    </RealtimeTradingSyncContext.Provider>
-  );
-};
-
-export const useRealtimeTradingSyncContext = (): RealtimeTradingSyncContextValue => {
-  const context = useContext(RealtimeTradingSyncContext);
-  if (!context) {
-    return { forceRefresh: () => {} };
-  }
-  return context;
+  return <>{children}</>;
 };
