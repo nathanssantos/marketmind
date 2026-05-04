@@ -16,11 +16,21 @@ vi.mock('../../../services/binance-api-cache', () => ({
 
 const mockGetAccountInformationV3 = vi.fn();
 const mockGetAccountInformation = vi.fn();
+const mockGetConfiguredLeverage = vi.fn();
+
+class MockLeverageUnavailableError extends Error {
+  constructor(public readonly symbol: string) {
+    super(`Could not determine configured leverage for ${symbol}.`);
+    this.name = 'LeverageUnavailableError';
+  }
+}
 
 vi.mock('../../../services/binance-futures-client', () => ({
   createBinanceFuturesClient: () => ({
     getAccountInformationV3: mockGetAccountInformationV3,
   }),
+  getConfiguredLeverage: (...args: unknown[]) => mockGetConfiguredLeverage(...args),
+  LeverageUnavailableError: MockLeverageUnavailableError,
 }));
 
 vi.mock('../../../services/binance-client', () => ({
@@ -66,10 +76,8 @@ describe('calculateQtyFromPercent', () => {
   });
 
   it('live FUTURES 75% @ 10x → notional ≈ balance * 7.5 (boleta bug)', async () => {
-    mockGetAccountInformationV3.mockResolvedValue({
-      availableBalance: '1000',
-      positions: [{ symbol: 'BTCUSDT', leverage: '10' }],
-    });
+    mockGetAccountInformationV3.mockResolvedValue({ availableBalance: '1000', positions: [] });
+    mockGetConfiguredLeverage.mockResolvedValue(10);
 
     const wallet = makeWallet();
 
@@ -88,10 +96,8 @@ describe('calculateQtyFromPercent', () => {
   });
 
   it('rounds quantity to stepSize', async () => {
-    mockGetAccountInformationV3.mockResolvedValue({
-      availableBalance: '1000',
-      positions: [{ symbol: 'BTCUSDT', leverage: '5' }],
-    });
+    mockGetAccountInformationV3.mockResolvedValue({ availableBalance: '1000', positions: [] });
+    mockGetConfiguredLeverage.mockResolvedValue(5);
 
     const wallet = makeWallet();
 
@@ -106,12 +112,9 @@ describe('calculateQtyFromPercent', () => {
     expect(/^\d+\.\d{1,3}$/.test(result.quantity)).toBe(true);
   });
 
-  it('reads leverage from accountInformationV3.positions', async () => {
-    // V3 positionRisk dropped leverage — accountInfoV3 is the only source.
-    mockGetAccountInformationV3.mockResolvedValue({
-      availableBalance: '1000',
-      positions: [{ symbol: 'BTCUSDT', leverage: '20' }],
-    });
+  it('reads leverage via getConfiguredLeverage (canonical V3 path)', async () => {
+    mockGetAccountInformationV3.mockResolvedValue({ availableBalance: '1000', positions: [] });
+    mockGetConfiguredLeverage.mockResolvedValue(20);
 
     const wallet = makeWallet();
 
@@ -124,22 +127,27 @@ describe('calculateQtyFromPercent', () => {
     });
 
     expect(result.leverage).toBe(20);
+    expect(mockGetConfiguredLeverage).toHaveBeenCalled();
   });
 
-  it('falls back to 1x leverage when accountInfo has no entry for the symbol', async () => {
+  it('throws PRECONDITION_FAILED when leverage is unavailable (no silent 1× fallback)', async () => {
+    // Regression: previously fell back to 1x leverage and produced
+    // 6.7% of intended notional on a 15× scalp setup. Now we surface
+    // the error so the renderer can disable the order button.
     mockGetAccountInformationV3.mockResolvedValue({ availableBalance: '1000', positions: [] });
+    mockGetConfiguredLeverage.mockRejectedValue(new MockLeverageUnavailableError('BTCUSDT'));
 
     const wallet = makeWallet();
 
-    const result = await calculateQtyFromPercent({
-      wallet,
-      symbol: 'BTCUSDT',
-      marketType: 'FUTURES',
-      percent: 50,
-      price: 100000,
-    });
-
-    expect(result.leverage).toBe(1);
+    await expect(
+      calculateQtyFromPercent({
+        wallet,
+        symbol: 'BTCUSDT',
+        marketType: 'FUTURES',
+        percent: 50,
+        price: 100000,
+      }),
+    ).rejects.toThrow(/Could not read leverage/i);
   });
 
   it('rejects percent out of range', async () => {
