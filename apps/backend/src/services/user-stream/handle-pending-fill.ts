@@ -144,10 +144,26 @@ export async function handlePendingFill(
 
   const wsService = getWebSocketService();
   if (wsService) {
+    // Emit the fully-merged post-update shape — pendingExecution was
+    // selected before the db.update above so spreading it alone leaves
+    // stale qty/fee/algo-ids in the payload, which then misleads the
+    // renderer's setData merge into showing the old quantity until the
+    // next refetch reconciles.
     wsService.emitPositionUpdate(walletId, {
       ...pendingExecution,
       status: 'open',
       entryPrice: fillPrice.toString(),
+      quantity: fillQty.toString(),
+      entryFee: entryFee.toString(),
+      commissionAsset: commissionAsset || 'USDT',
+      openedAt: new Date(),
+      stopLossAlgoId: activationSlAlgoId,
+      takeProfitAlgoId: activationTpAlgoId,
+      stopLossOrderId: activationSlOrderId,
+      takeProfitOrderId: activationTpOrderId,
+      stopLossIsAlgo: activationSlIsAlgo,
+      takeProfitIsAlgo: activationTpIsAlgo,
+      liquidationPrice: activationLiquidationPrice ?? null,
     });
 
     // v1.6 Track F.4 — POSITION_OPENED toast for limit-entry fills.

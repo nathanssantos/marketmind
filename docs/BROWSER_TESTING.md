@@ -1,6 +1,6 @@
 # Browser Testing & Automation
 
-This document describes the browser-automation surface wired up for the repo. It has four layers, each usable on its own.
+This document describes the browser-automation surface wired up for the repo. It has five layers, each usable on its own.
 
 | Layer | What it is | When to use |
 |---|---|---|
@@ -8,8 +8,9 @@ This document describes the browser-automation surface wired up for the repo. It
 | 2. Chart perf harness | `apps/electron/e2e/perf/` — Playwright specs that exercise the real chart with mocked tRPC | Reproducible FPS / p95 frame / render-rate numbers, regression checks |
 | 3. Feature E2E specs | `apps/electron/e2e/*.spec.ts` — Playwright specs covering full user flows + runtime bridges (drawings, stream health, wallet, trading) | Behavioral regression tests that need real DOM + canvas + socket events |
 | 4. Electron smoke | `apps/electron/e2e/electron/` — `_electron.launch()` against `dist-electron/main/index.js` | Preload bridge, IPC, packaged-build sanity |
+| 5. Visual gallery + diff | `packages/mcp-screenshot/` + `.github/workflows/visual-regression.yml` — Playwright captures every modal / sidebar / settings tab in light + dark, pixelmatch'd against a baseline | Catch unintended visual regressions in CI before they ship |
 
-All four rely on the renderer-only `VITE_E2E_BYPASS_AUTH=true` flag to skip `AuthGuard` + `useBackendAuth`. In prod builds the branch is dead-code-eliminated — zero runtime cost.
+All five rely on the renderer-only `VITE_E2E_BYPASS_AUTH=true` flag to skip `AuthGuard` + `useBackendAuth`. In prod builds the branch is dead-code-eliminated — zero runtime cost.
 
 ---
 
@@ -400,3 +401,48 @@ Key rules:
 | `ChartCanvas/renderers/renderFVG.browser.test.tsx` | FVG zone pixel sampling, viewport-culling regression |
 | `ChartCanvas/renderers/renderFibonacci.browser.test.tsx` | Fibonacci "nearest" pivot-selection regression, level hit-testing |
 | `utils/canvas/ViewportNavigator.browser.test.ts` | `clientX - rect.left` pixel → data-index math |
+
+---
+
+## Layer 5 — Visual gallery + diff
+
+A scripted Playwright run captures a screenshot for every "surface" the app exposes (every modal, every Settings tab, each sidebar, light + dark themes), then `pixelmatch` compares against the committed baseline at `apps/electron/screenshots/baseline/`. CI gates on the diff via `.github/workflows/visual-regression.yml` with `maxDiffPixels=40000` (~3.1%, tuned to absorb font-render noise).
+
+### Run
+
+```bash
+# Generate a fresh gallery (writes to apps/electron/screenshots/<timestamp>/):
+pnpm --filter @marketmind/electron dev   # one terminal
+node scripts/visual-gallery.mjs           # another
+
+# Diff against baseline:
+node scripts/visual-diff.mjs <session>
+```
+
+### Surface contract
+
+`packages/mcp-screenshot/src/types.ts` declares three lists (`SettingsTabId[]`, `ModalId[]`, `SidebarId[]`) that drive the gallery. **These MUST stay in sync with the actual app surfaces.** Whenever a Settings tab is renamed/removed (e.g. `wallets` graduating to its own dialog), the gallery's testid clicks time out and the workflow fails on every PR until the lists are updated.
+
+The contract is enforced at unit-test time by [`apps/electron/src/renderer/services/__tests__/galleryContract.test.ts`](../apps/electron/src/renderer/services/__tests__/galleryContract.test.ts) — it cross-references the gallery's `SETTINGS_TABS` with the app's `SETTINGS_TABS` from `Settings/constants.ts` and fails the build if either side has drifted.
+
+**When you add or remove a Settings tab:**
+1. Update `apps/electron/src/renderer/components/Settings/constants.ts` (the actual app)
+2. Update `packages/mcp-screenshot/src/types.ts` `SettingsTabId` + `SETTINGS_TABS`
+3. The contract test passes automatically — if it fails, the message names the missing tab(s)
+
+**When you graduate a Settings tab into a standalone dialog** (the v1.6 "Settings is for prefs, not records" rule):
+1. Remove the tab id from `SettingsTabId` + `SETTINGS_TABS`
+2. Add a `ModalId` for the new dialog (e.g. `tradingProfiles`)
+3. Add a `useUIStore` flag — `is<Name>Open` + `set<Name>Open(open: boolean)` — and render the dialog in `MainLayout` controlled by that flag
+4. Update `packages/mcp-screenshot/src/capture.ts` `openModalById` to call the store flag rather than chasing a Settings-tab-then-click-trigger flow
+
+The store-flag pattern is what `WalletsDialog` and `TradingProfilesDialog` use; they're rendered once at `MainLayout` level and opened from anywhere via `useUIStore.getState().setWalletsDialogOpen(true)`. The gallery does the exact same thing via `__uiStore.getState().setWalletsDialogOpen(true)` — no testid-chase required.
+
+### Why testid-chase doesn't scale
+
+The previous gallery flow (still used for `addWatcher` / `startWatchers`) opens a Settings tab, then `await page.locator('[data-testid="..."]').click({ timeout: 5000 })`. That works ONLY when:
+- The testid still exists in the renderer (testid renames silently break the gallery)
+- The element is mounted + visible at the time of the click (Settings dialog has lazy-loaded tabs via `React.lazy`)
+- The clicked element actually opens the modal you want
+
+For dialogs that have a programmatic open path via the store, prefer the store flag — it doesn't depend on UI structure surviving refactors.

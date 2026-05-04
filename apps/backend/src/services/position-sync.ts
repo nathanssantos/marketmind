@@ -296,19 +296,29 @@ export class PositionSyncService {
           const exchangeQty = Math.abs(parseFloat(String(exchangePosition.positionAmt)));
           const dbEntryPrice = parseFloat(dbPosition.entryPrice);
           const exchangeEntryPrice = parseFloat(String(exchangePosition.entryPrice));
+          const dbLeverage = dbPosition.leverage ?? 1;
+          const exchangeLeverage = Number(exchangePosition.leverage) || 1;
 
           const qtyChanged = Math.abs(dbQty - exchangeQty) > 0.00001;
           const priceChanged = Math.abs(dbEntryPrice - exchangeEntryPrice) > 0.01;
           const exchangeLiqPrice = exchangePosition.liquidationPrice?.toString();
           const liqPriceMissing = !dbPosition.liquidationPrice && !!exchangeLiqPrice;
+          // Reconcile leverage too — handles execs created before the
+          // V3 leverage-storage fix landed (those rows have leverage=1
+          // even though the position is running at e.g. 10× on Binance).
+          // Without this, the chart's PnL% line keeps showing the raw
+          // notional move on a leveraged position until the position
+          // is closed and re-opened.
+          const leverageChanged = exchangeLeverage > 0 && dbLeverage !== exchangeLeverage;
 
-          if (qtyChanged || priceChanged || liqPriceMissing) {
+          if (qtyChanged || priceChanged || liqPriceMissing || leverageChanged) {
             const updateSet: Record<string, unknown> = {
               liquidationPrice: exchangeLiqPrice,
               updatedAt: new Date(),
             };
             if (qtyChanged) updateSet['quantity'] = exchangeQty.toString();
             if (priceChanged) updateSet['entryPrice'] = exchangeEntryPrice.toString();
+            if (leverageChanged) updateSet['leverage'] = exchangeLeverage;
 
             await db
               .update(tradeExecutions)
@@ -335,6 +345,30 @@ export class PositionSyncService {
                 field: 'Entry Price',
                 oldValue: dbEntryPrice,
                 newValue: exchangeEntryPrice,
+              });
+            }
+            if (leverageChanged) {
+              result.detailedUpdated?.push({
+                walletId: wallet.id,
+                executionId: dbPosition.id,
+                symbol: dbPosition.symbol,
+                field: 'Leverage',
+                oldValue: dbLeverage,
+                newValue: exchangeLeverage,
+              });
+            }
+
+            // Push the corrected exec to the renderer so the chart
+            // line and Portfolio panel update without waiting for the
+            // next tRPC poll.
+            const wsService = getWebSocketService();
+            if (wsService) {
+              wsService.emitPositionUpdate(wallet.id, {
+                ...dbPosition,
+                ...(qtyChanged ? { quantity: exchangeQty.toString() } : {}),
+                ...(priceChanged ? { entryPrice: exchangeEntryPrice.toString() } : {}),
+                ...(leverageChanged ? { leverage: exchangeLeverage } : {}),
+                ...(exchangeLiqPrice ? { liquidationPrice: exchangeLiqPrice } : {}),
               });
             }
           }
@@ -378,6 +412,35 @@ export class PositionSyncService {
           }
         } else {
           const side: PositionSide = positionAmt > 0 ? 'LONG' : 'SHORT';
+
+          // Race guard: dbOpenPositions was read at the start of this
+          // sync. If user-stream's handleManualOrderFill committed an
+          // exec between then and now, our snapshot is stale — re-check
+          // immediately before insert. Without this the Portfolio
+          // briefly summed two open execs (handleManualOrderFill +
+          // position-sync) and showed double exposure for the symbol.
+          const [recentlyInserted] = await db
+            .select({ id: tradeExecutions.id })
+            .from(tradeExecutions)
+            .where(
+              and(
+                eq(tradeExecutions.walletId, wallet.id),
+                eq(tradeExecutions.symbol, symbol),
+                eq(tradeExecutions.side, side),
+                eq(tradeExecutions.status, 'open'),
+                eq(tradeExecutions.marketType, 'FUTURES')
+              )
+            )
+            .limit(1);
+
+          if (recentlyInserted) {
+            logger.info(
+              { walletId: wallet.id, symbol, side, existing: recentlyInserted.id },
+              '[PositionSync] Skipped unknown-position insert — same-side exec was inserted by user-stream concurrently'
+            );
+            continue;
+          }
+
           const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
           try {

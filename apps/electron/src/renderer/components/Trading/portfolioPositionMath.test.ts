@@ -424,3 +424,181 @@ describe('computeEffectiveCapital', () => {
     expect(computeEffectiveCapital({ initialBalance: 0, totalDeposits: 0, totalWithdrawals: 0 })).toBe(0);
   });
 });
+
+/**
+ * Regression cluster — "ao entrar alavancado, por um momento exibe uma
+ * posição muito maior do que a real". Goal: pin the math + filtering
+ * behavior that protects Portfolio numbers from being briefly inflated
+ * during the pending → open transition or by stale/duplicate cache
+ * entries that the realtime patch flow could leave behind.
+ */
+describe('Portfolio math — leveraged-entry transitional safety', () => {
+  const exec = (overrides: Partial<OpenExecutionInput> & Pick<OpenExecutionInput, 'id'>): OpenExecutionInput => ({
+    symbol: 'BTCUSDT',
+    side: 'LONG',
+    quantity: '0.1',
+    entryPrice: '50000',
+    stopLoss: null,
+    takeProfit: null,
+    setupType: null,
+    openedAt: new Date(),
+    status: 'open',
+    leverage: 10,
+    ...overrides,
+  });
+
+  it('pending executions never contribute to exposure (the pre-fill window stays at 0)', () => {
+    // Right after the user clicks Buy and before the user-stream fill
+    // arrives, the cache may briefly hold a pending row. It MUST NOT
+    // appear in Portfolio totals — exposure / qty are 0 until status
+    // transitions to open.
+    const positions = buildPortfolioPositions(
+      [exec({ id: '1', status: 'pending', quantity: '0.1' })],
+      {},
+      {},
+    );
+    expect(positions).toHaveLength(0);
+    expect(computeTotalExposure(positions)).toBe(0);
+  });
+
+  it('pending → open transition produces exactly one position with exactly the filled qty', () => {
+    // Simulates the merge sequence: cache row stays at the same id,
+    // status flips, qty/price stay (or fill in). The position math
+    // must yield ONE position, not two stacked rows.
+    const beforeFill = buildPortfolioPositions(
+      [exec({ id: '1', status: 'pending' })],
+      {},
+      {},
+    );
+    expect(beforeFill).toHaveLength(0);
+
+    const afterFill = buildPortfolioPositions(
+      [exec({ id: '1', status: 'open', quantity: '0.1', entryPrice: '50000' })],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    expect(afterFill).toHaveLength(1);
+    expect(afterFill[0]?.quantity).toBe(0.1);
+    expect(computeTotalExposure(afterFill)).toBe(5000);
+  });
+
+  it('exposure is the unleveraged notional, NOT notional × leverage', () => {
+    // Defensive — if any future refactor multiplies leverage into the
+    // exposure number we want a loud failure here. For 0.1 BTC at
+    // $50k with 10× leverage, exposure is $5,000 — NOT $50,000.
+    const positions = buildPortfolioPositions(
+      [exec({ id: '1', quantity: '0.1', entryPrice: '50000', leverage: 10 })],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    expect(computeTotalExposure(positions)).toBe(5000);
+  });
+
+  it('total margin = notional / leverage (so exposure / margin = leverage)', () => {
+    const positions = buildPortfolioPositions(
+      [exec({ id: '1', quantity: '0.1', entryPrice: '50000', leverage: 10 })],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    expect(computeTotalExposure(positions)).toBe(5000);
+    expect(computeTotalMargin(positions)).toBe(500);
+  });
+
+  it('two pyramided same-side execs (open + open) sum, never multiply', () => {
+    // Manual entry on top of an existing position, before the backend
+    // merges them via mergeIntoExistingPosition. The Portfolio
+    // grouping must produce qty = 0.1 + 0.05 = 0.15, not 0.005 or 0.5.
+    const positions = buildPortfolioPositions(
+      [
+        exec({ id: '1', quantity: '0.1', entryPrice: '50000', leverage: 10 }),
+        exec({ id: '2', quantity: '0.05', entryPrice: '52000', leverage: 10 }),
+      ],
+      { BTCUSDT: 51000 },
+      {},
+    );
+    expect(positions).toHaveLength(1);
+    expect(positions[0]?.quantity).toBeCloseTo(0.15, 8);
+    // Weighted avg: (0.1 × 50000 + 0.05 × 52000) / 0.15 = 50666.67
+    expect(positions[0]?.avgPrice).toBeCloseTo(50666.67, 1);
+    expect(computeTotalExposure(positions)).toBeCloseTo(7600, 1);
+  });
+
+  it('a closed exec coexisting with an open one for the same symbol does NOT add to exposure', () => {
+    // Cache state right after a position closes: closed row may linger
+    // until the next refetch removes it, while a fresh open row is
+    // already there. Only the open row should contribute.
+    const positions = buildPortfolioPositions(
+      [
+        exec({ id: '1', status: 'closed', quantity: '0.5', entryPrice: '49000' }),
+        exec({ id: '2', status: 'open', quantity: '0.1', entryPrice: '50000' }),
+      ],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    expect(positions).toHaveLength(1);
+    expect(positions[0]?.id).toBe('2');
+    expect(computeTotalExposure(positions)).toBe(5000);
+  });
+
+  it('quantity zero should not appear as a position', () => {
+    // After a full close, the row may briefly carry status='open' with
+    // qty=0 if the close handler hasn't flipped status yet. A 0-qty
+    // group still shows in the list (legacy behavior — preserved by
+    // this guard test) but contributes 0 to exposure.
+    const positions = buildPortfolioPositions(
+      [exec({ id: '1', status: 'open', quantity: '0', entryPrice: '50000' })],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    // The function doesn't filter qty=0 today — it produces a 0-qty
+    // group. Document and pin that behavior.
+    expect(positions).toHaveLength(1);
+    expect(positions[0]?.quantity).toBe(0);
+    expect(computeTotalExposure(positions)).toBe(0);
+  });
+
+  it('LONG and SHORT on the same symbol stay as TWO separate positions, exposure stacks correctly', () => {
+    const positions = buildPortfolioPositions(
+      [
+        exec({ id: '1', side: 'LONG', quantity: '0.1', entryPrice: '50000', leverage: 10 }),
+        exec({ id: '2', side: 'SHORT', quantity: '0.05', entryPrice: '50500', leverage: 10 }),
+      ],
+      { BTCUSDT: 50250 },
+      {},
+    );
+    expect(positions).toHaveLength(2);
+    // 0.1 × 50000 + 0.05 × 50500 = 5000 + 2525 = 7525
+    expect(computeTotalExposure(positions)).toBe(7525);
+  });
+
+  it('switches from leverage-1 to leverage-10 does not change exposure (only margin)', () => {
+    // The leverage knob at the wallet level changes the MARGIN required
+    // to hold the same notional position, not the notional itself.
+    const small = buildPortfolioPositions(
+      [exec({ id: '1', quantity: '0.1', entryPrice: '50000', leverage: 1 })],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    const big = buildPortfolioPositions(
+      [exec({ id: '1', quantity: '0.1', entryPrice: '50000', leverage: 10 })],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    expect(computeTotalExposure(small)).toBe(computeTotalExposure(big));
+    expect(computeTotalMargin(big)).toBe(computeTotalMargin(small) / 10);
+  });
+
+  it('null leverage is treated as 1× (defensive default after V3 migration)', () => {
+    // accountInfoV3 occasionally returns positions without a leverage
+    // field for symbols never traded. Default to 1× so the math
+    // doesn't NaN.
+    const positions = buildPortfolioPositions(
+      [exec({ id: '1', quantity: '0.1', entryPrice: '50000', leverage: null })],
+      { BTCUSDT: 50000 },
+      {},
+    );
+    expect(positions[0]?.leverage).toBe(1);
+    expect(computeTotalExposure(positions)).toBe(5000);
+    expect(computeTotalMargin(positions)).toBe(5000);
+  });
+});

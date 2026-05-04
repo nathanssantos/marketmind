@@ -15,6 +15,8 @@ import { AnalyticsDialog } from '../Analytics';
 import { BacktestDialog } from '../Backtest';
 import { ScreenerDialog } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
+import { TradingProfilesDialog } from '../Trading/TradingProfilesDialog';
+import { WalletsDialog } from '../Trading/WalletsDialog';
 import { DEFAULT_SETTINGS_TAB, type SettingsTab } from '../Settings/constants';
 import { ChartToolsToolbar } from './ChartToolsToolbar';
 import { SymbolTabBar } from './SymbolTabBar';
@@ -53,12 +55,16 @@ const MainLayoutComponent = ({
   perfMonitor.recordComponentRender('MainLayout');
   const settingsDialog = useDisclosure();
   const [settingsInitialTab, setSettingsInitialTab] = useState<SettingsTab>(DEFAULT_SETTINGS_TAB);
+  const isWalletsDialogOpen = useUIStore((s) => s.isWalletsDialogOpen);
+  const isTradingProfilesDialogOpen = useUIStore((s) => s.isTradingProfilesDialogOpen);
 
   const closeAll = useCallback(() => {
     settingsDialog.close();
     const ui = useUIStore.getState();
     ui.setOrdersDialogOpen(false);
     ui.setAnalyticsOpen(false);
+    ui.setWalletsDialogOpen(false);
+    ui.setTradingProfilesDialogOpen(false);
     useBacktestDialogStore.getState().closeBacktest();
     useScreenerStore.getState().setScreenerOpen(false);
     // Sidebars are gone in v1.10 — their content lives in grid panels.
@@ -141,6 +147,14 @@ const MainLayoutComponent = ({
         <ScreenerDialog onSymbolClick={onNavigateToSymbol} />
         <BacktestDialog />
         <AnalyticsDialog />
+        <WalletsDialog
+          isOpen={isWalletsDialogOpen}
+          onClose={() => useUIStore.getState().setWalletsDialogOpen(false)}
+        />
+        <TradingProfilesDialog
+          isOpen={isTradingProfilesDialogOpen}
+          onClose={() => useUIStore.getState().setTradingProfilesDialogOpen(false)}
+        />
       </Box>
     </GlobalActionsProvider>
   );

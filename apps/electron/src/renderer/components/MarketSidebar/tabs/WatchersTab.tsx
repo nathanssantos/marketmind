@@ -17,7 +17,6 @@ import { useTranslation } from 'react-i18next';
 import { LuCheck, LuOctagonX, LuPlay, LuSlidersHorizontal, LuX } from 'react-icons/lu';
 import { useShallow } from 'zustand/react/shallow';
 import { StartWatchersDialog } from '@renderer/components/Trading/StartWatchersDialog';
-import { TradingProfilesDialog } from '@renderer/components/Trading/TradingProfilesDialog';
 import { formatSuggestionPrice, sortWatchers } from './watchersTabUtils';
 
 interface ActiveWatcher {
@@ -33,7 +32,7 @@ const WatchersTabComponent = () => {
   const { t } = useTranslation();
   const globalActions = useGlobalActionsOptional();
   const startWatchers = useDisclosure();
-  const profiles = useDisclosure();
+  const openTradingProfilesDialog = () => useUIStore.getState().setTradingProfilesDialogOpen(true);
 
   const { currentUser } = useBackendAuth();
   const { activeWallet } = useActiveWallet();
@@ -81,7 +80,7 @@ const WatchersTabComponent = () => {
               size="2xs"
               variant="ghost"
               aria-label={t('tradingProfiles.modalTitle')}
-              onClick={profiles.open}
+              onClick={openTradingProfilesDialog}
               data-testid="trigger-trading-profiles"
             >
               <LuSlidersHorizontal />
@@ -166,7 +165,6 @@ const WatchersTabComponent = () => {
       {activeWalletId && <SuggestionsSection walletId={activeWalletId} userId={currentUser?.id?.toString()} />}
 
       <StartWatchersDialog isOpen={startWatchers.isOpen} onClose={startWatchers.close} />
-      <TradingProfilesDialog isOpen={profiles.isOpen} onClose={profiles.close} />
     </Stack>
   );
 };

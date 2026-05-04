@@ -2,7 +2,7 @@ import type { PositionSide } from '@marketmind/types';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions, wallets, orders } from '../../db/schema';
-import { getPosition } from '../binance-futures-client';
+import { getConfiguredLeverage, getPosition } from '../binance-futures-client';
 import { generateEntityId } from '../../utils/id';
 import { logger } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
@@ -243,17 +243,60 @@ export async function handleManualOrderFill(
     return;
   }
 
+  // Race guard: position-sync (30s interval + on-reconnect) may have
+  // already inserted an "unknown position" exec for this fill while
+  // user-stream was processing it. Without this check the Portfolio
+  // briefly displayed double exposure (handleManualOrderFill + sync
+  // both inserted, summing qty). If a same-side open exec already
+  // exists, position-sync owns the row and will keep it in sync; we
+  // skip our insert.
+  const [existingSameSide] = await db
+    .select({ id: tradeExecutions.id })
+    .from(tradeExecutions)
+    .where(
+      and(
+        eq(tradeExecutions.walletId, walletId),
+        eq(tradeExecutions.symbol, symbol),
+        eq(tradeExecutions.side, direction),
+        eq(tradeExecutions.status, 'open'),
+        eq(tradeExecutions.marketType, 'FUTURES')
+      )
+    )
+    .limit(1);
+
+  if (existingSameSide) {
+    logger.info(
+      { symbol, orderId, direction, existingSameSide: existingSameSide.id },
+      '[FuturesUserStream] Skipped execution creation — same-side open exec already exists (likely from position-sync)'
+    );
+    return;
+  }
+
   const walletRow = await ctx.getCachedWallet(walletId);
   if (!walletRow) return;
 
+  // Leverage and liquidation price are pulled separately:
+  // - leverage from getConfiguredLeverage (accountInfoV3 lookup by
+  //   symbol — doesn't depend on positionSide matching across V3
+  //   endpoints, which can be out of sync immediately after a fill)
+  // - liquidationPrice from getPosition (positionRisk has the live
+  //   value once the position is opened)
+  // Previously both came from getPosition, which delegated leverage
+  // through a `${symbol}_${positionSide}` map lookup that fell back
+  // to 1 whenever accountInfoV3 hadn't propagated the new position
+  // yet. The chart's PnL% then read 1× and showed the raw notional
+  // move (e.g. -0.07%) instead of the leveraged equivalent (-0.7%
+  // for 10×).
   let manualLeverage = 1;
   let manualLiquidationPrice: string | undefined;
   const conn = ctx.connections.get(walletId);
   if (conn) {
     try {
+      manualLeverage = await getConfiguredLeverage(conn.apiClient, symbol);
+    } catch { /* best-effort */ }
+    try {
       const pos = await getPosition(conn.apiClient, symbol);
       if (pos) {
-        manualLeverage = Number(pos.leverage) || 1;
         const lp = parseFloat(pos.liquidationPrice || '0');
         if (lp > 0) manualLiquidationPrice = lp.toString();
       }

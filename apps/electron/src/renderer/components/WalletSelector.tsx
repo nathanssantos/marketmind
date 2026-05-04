@@ -4,33 +4,29 @@ import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuBuilding2, LuCoins, LuSettings, LuWallet } from 'react-icons/lu';
 import { useActiveWallet } from '../hooks/useActiveWallet';
-import { useDisclosure } from '../hooks/useDisclosure';
-import { WalletsDialog } from './Trading/WalletsDialog';
+import { useUIStore } from '../store/uiStore';
 
 const WalletSelectorComponent = () => {
   const { t } = useTranslation();
   const { activeWallet, wallets, setActiveWalletId, isLoading } = useActiveWallet();
   const [isOpen, setIsOpen] = useState(false);
-  const manageDialog = useDisclosure();
+  const openWalletsDialog = () => useUIStore.getState().setWalletsDialogOpen(true);
 
   if (isLoading) return null;
 
   if (wallets.length === 0) {
     return (
-      <>
-        <Button
-          size="2xs"
-          variant="outline"
-          color="fg.muted"
-          onClick={manageDialog.open}
-          aria-label={t('walletSelector.manage')}
-          data-testid="wallet-selector-empty"
-        >
-          <LuWallet />
-          {t('walletSelector.noWallets')}
-        </Button>
-        <WalletsDialog isOpen={manageDialog.isOpen} onClose={manageDialog.close} />
-      </>
+      <Button
+        size="2xs"
+        variant="outline"
+        color="fg.muted"
+        onClick={openWalletsDialog}
+        aria-label={t('walletSelector.manage')}
+        data-testid="wallet-selector-empty"
+      >
+        <LuWallet />
+        {t('walletSelector.noWallets')}
+      </Button>
     );
   }
 
@@ -39,7 +35,7 @@ const WalletSelectorComponent = () => {
 
   const openManage = () => {
     setIsOpen(false);
-    manageDialog.open();
+    openWalletsDialog();
   };
 
   return (
@@ -144,8 +140,6 @@ const WalletSelectorComponent = () => {
           </Flex>
         </Stack>
       </Popover>
-
-      <WalletsDialog isOpen={manageDialog.isOpen} onClose={manageDialog.close} />
     </>
   );
 };

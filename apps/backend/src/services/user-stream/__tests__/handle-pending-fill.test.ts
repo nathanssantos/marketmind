@@ -137,6 +137,27 @@ describe('handlePendingFill', () => {
     }));
   });
 
+  it('emits position:update with the post-fill quantity (not the stale pending qty)', async () => {
+    // Regression guard: previously the emit spread `pendingExecution`
+    // (selected before db.update) which left the renderer's setData
+    // merge with the old quantity until the next refetch caught up.
+    const ctx = createMockCtx();
+    const pending = createMockPending({ quantity: '0' });
+
+    await handlePendingFill(
+      ctx, 'wallet-1', pending as never, 'BTCUSDT', 'BUY', 12345, '50000', '50000', '0.5', '0.25', 'USDT'
+    );
+
+    expect(mockEmitPositionUpdate).toHaveBeenCalled();
+    const [, payload] = mockEmitPositionUpdate.mock.calls[0]!;
+    expect(payload).toMatchObject({
+      id: 'pending-1',
+      status: 'open',
+      entryPrice: '50000',
+      quantity: '0.5',
+    });
+  });
+
   it('should merge into existing position when same-side open execution exists', async () => {
     const existingOpen = { id: 'existing-1', side: 'LONG' };
     mockDbSelect.mockReturnValue({

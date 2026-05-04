@@ -298,6 +298,11 @@ describe('handleManualOrderFill', () => {
       entryPrice: '50000',
       quantity: '0.1',
     };
+    // Select call sequence with the race-guard check added:
+    //   1) manual-order fetch        → [manualOrder]
+    //   2) opposite-side existing?   → [] (none)
+    //   3) same-side existing? (race)→ [] (no concurrent insert)
+    //   4) re-read inserted exec     → [insertedExec]
     let selectCallCount = 0;
     mockDbSelect.mockImplementation(() => ({
       from: vi.fn().mockReturnValue({
@@ -306,6 +311,7 @@ describe('handleManualOrderFill', () => {
             selectCallCount++;
             if (selectCallCount === 1) return Promise.resolve([manualOrder]);
             if (selectCallCount === 2) return Promise.resolve([]);
+            if (selectCallCount === 3) return Promise.resolve([]);
             return Promise.resolve([insertedExec]);
           }),
         }),
@@ -328,6 +334,38 @@ describe('handleManualOrderFill', () => {
       side: 'LONG',
       status: 'open',
     }));
+  });
+
+  it('skips execution creation when same-side open exec already exists (race with position-sync)', async () => {
+    // Race: position-sync ran between handleOrderUpdate's dispatch and
+    // this handler's INSERT, picked up the Binance position as
+    // "unknown" and inserted an exec for it. Without this guard,
+    // handleManualOrderFill ALSO inserts → Portfolio briefly sums two
+    // open execs → exposure displayed at 2× the real position size.
+    const manualOrder = { walletId: 'wallet-1', orderId: '12345', type: 'MARKET', origQty: '0.1' };
+    const concurrentExec = { id: 'sync-inserted-1' };
+    let selectCallCount = 0;
+    mockDbSelect.mockImplementation(() => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockImplementation(() => {
+            selectCallCount++;
+            if (selectCallCount === 1) return Promise.resolve([manualOrder]);
+            if (selectCallCount === 2) return Promise.resolve([]); // no opposite
+            return Promise.resolve([concurrentExec]); // same-side already there
+          }),
+        }),
+      }),
+    }));
+
+    const ctx = createMockCtx();
+    await handleManualOrderFill(
+      ctx, 'wallet-1', 'BTCUSDT', 'BUY', 12345, '50000', '50000', '0.1', 0
+    );
+
+    // No insert, no emit — position-sync owns the row.
+    expect(mockDbInsert).not.toHaveBeenCalled();
+    expect(mockEmitPositionUpdate).not.toHaveBeenCalled();
   });
 
   it('should skip execution creation when opposite position exists', async () => {
