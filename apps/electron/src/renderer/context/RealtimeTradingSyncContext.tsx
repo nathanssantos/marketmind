@@ -30,6 +30,15 @@ import { toaster } from '../utils/toaster';
  * a few hundred ms later to reconcile any field the merge couldn't
  * derive (e.g. server-side aggregations, related queries we don't
  * patch). 250 ms keeps the safety net out of the hot path.
+ *
+ * IMPORTANT: scheduleInvalidation does NOT extend the timer on
+ * subsequent calls. Earlier behavior cleared+reset the timer on every
+ * call, which meant a burst of socket events (close → wallet:update →
+ * position:update flash, all within ~30ms) kept pushing the invalidate
+ * back. Net effect: the safety net fired ~270ms AFTER the last event,
+ * not 250ms after the first — felt like extra lag to the user.
+ * Now we just accumulate keys into the existing pending set, leaving
+ * the original timer intact.
  */
 const INVALIDATION_FLUSH_MS = 250;
 
@@ -69,7 +78,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
   const scheduleInvalidation = useCallback((...keys: string[]) => {
     for (const key of keys) pendingInvalidations.current.add(key);
-    if (flushTimeoutRef.current) clearTimeout(flushTimeoutRef.current);
+    // Don't reset the timer if one is already armed — accumulating keys
+    // into the existing window keeps the safety net firing on a stable
+    // schedule even under bursty events. See INVALIDATION_FLUSH_MS doc.
+    if (flushTimeoutRef.current) return;
     flushTimeoutRef.current = setTimeout(flushInvalidations, INVALIDATION_FLUSH_MS);
   }, [flushInvalidations]);
 
@@ -157,7 +169,13 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   useSocketEvent('position:update', (raw) => {
     const payload = raw as Parameters<typeof mergePositionUpdate>[1];
     if (payload?.id) patchExecutionCaches(payload);
-    scheduleRef.current('positions', 'wallet');
+    // No 'wallet' here: position updates that genuinely move the wallet
+    // balance (fills, liquidations) ALWAYS pair with a wallet:update
+    // event from Binance's user-stream — that one patches wallet.list
+    // directly via mergeWalletBalanceUpdate. Scheduling 'wallet' here
+    // too forced an unnecessary refetch round-trip on cosmetic updates
+    // (leverage change, SL/TP price tweak) that don't move the balance.
+    scheduleRef.current('positions');
   }, !!walletId);
 
   useSocketEvent('position:closed', (data: PositionClosedPayload) => {
@@ -186,7 +204,9 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
         (prev) => mergeOrderCreated(prev, payload as never),
       );
     }
-    scheduleRef.current('orders', 'wallet');
+    // Creating an order doesn't move wallet balance (only fills do).
+    // The fill → wallet:update event arrives separately and patches.
+    scheduleRef.current('orders');
   }, !!walletId);
 
   useSocketEvent('order:cancelled', (data) => {
@@ -197,7 +217,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
         (prev) => mergeOrderCancelled(prev, data.orderId),
       );
     }
-    scheduleRef.current('orders', 'wallet');
+    // Cancelling an open (non-filled) order doesn't move balance. If
+    // the cancel frees cross-margin reserve, Binance emits a separate
+    // wallet:update which patches via mergeWalletBalanceUpdate.
+    scheduleRef.current('orders');
   }, !!walletId);
 
   useSocketEvent('wallet:update', (raw) => {
@@ -293,7 +316,13 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       // best-effort
     }
 
-    scheduleRef.current('positions', 'wallet');
+    // No invalidate scheduling here — trade:notification is a side
+    // channel for toasts/native notifications. The underlying state
+    // changes (position closed, opened, etc.) ALREADY arrive on their
+    // own dedicated socket channels (position:closed, position:update,
+    // wallet:update), each of which patches the cache + schedules the
+    // appropriate invalidate. Scheduling here too just doubled the
+    // safety-net work without adding freshness.
     })();
   }, !!walletId);
 
