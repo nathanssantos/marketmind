@@ -119,7 +119,7 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
           label={t('trading.analytics.performance.netPnL')}
           value={formatCurrencyWithBrl(performance.netPnL)}
           valueColor={getValueColor(performance.netPnL)}
-          subtext={`Gross: ${formatCurrency(performance.grossPnL)} · Fees: ${formatWalletCurrency(performance.totalFees, currency)}${performance.totalFunding !== 0 ? ` · Funding: ${formatCurrency(performance.totalFunding)}` : ''}`}
+          subtext={`Gross: ${formatCurrency(performance.grossPnL)} · Fees: ${formatCurrency(performance.totalFees)}${performance.totalFunding !== 0 ? ` · Funding: ${formatCurrency(performance.totalFunding)}` : ''}`}
         />
         <MetricCard
           label={t('trading.analytics.performance.winRate')}
@@ -163,6 +163,34 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
           valueColor="trading.loss"
         />
       </Grid>
+
+      <Grid templateColumns="repeat(3, 1fr)" gap={2}>
+        <MetricCard
+          label={t('analytics.totalFees')}
+          value={formatWalletCurrency(performance.totalFees, currency)}
+          valueColor="trading.loss"
+        />
+        <MetricCard
+          label={t('analytics.totalFunding')}
+          value={formatCurrency(performance.totalFunding)}
+          valueColor={getValueColor(performance.totalFunding)}
+        />
+        <MetricCard
+          label={t('analytics.avgDuration')}
+          value={formatDuration(performance.avgTradeDurationHours ?? 0, t)}
+        />
+      </Grid>
     </Stack>
   );
+};
+
+const formatDuration = (hours: number, t: (k: string, opts?: Record<string, unknown>) => string): string => {
+  if (hours <= 0) return '–';
+  if (hours < 1) return t('analytics.durationMinutes', { minutes: Math.round(hours * 60) });
+  if (hours < 24) return t('analytics.durationHours', { hours: hours.toFixed(1) });
+  const days = Math.floor(hours / 24);
+  const remHours = Math.round(hours - days * 24);
+  return remHours > 0
+    ? `${days}d ${t('analytics.durationHours', { hours: remHours })}`
+    : `${days}d`;
 };

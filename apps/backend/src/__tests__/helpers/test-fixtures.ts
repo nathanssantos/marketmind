@@ -26,6 +26,9 @@ export interface CreateWalletOptions {
   name?: string;
   walletType?: 'live' | 'testnet' | 'paper';
   initialBalance?: string;
+  currentBalance?: string;
+  totalDeposits?: string;
+  totalWithdrawals?: string;
   currency?: string;
   apiKey?: string;
   apiSecret?: string;
@@ -245,6 +248,9 @@ export const createTestWallet = async (options: CreateWalletOptions): Promise<Wa
     name = 'Test Wallet',
     walletType = 'paper',
     initialBalance = '10000',
+    currentBalance,
+    totalDeposits,
+    totalWithdrawals,
     currency = 'USDT',
     apiKey = 'paper-trading',
     apiSecret = 'paper-trading',
@@ -261,7 +267,9 @@ export const createTestWallet = async (options: CreateWalletOptions): Promise<Wa
     apiKeyEncrypted: apiKey,
     apiSecretEncrypted: apiSecret,
     initialBalance,
-    currentBalance: initialBalance,
+    currentBalance: currentBalance ?? initialBalance,
+    ...(totalDeposits !== undefined ? { totalDeposits } : {}),
+    ...(totalWithdrawals !== undefined ? { totalWithdrawals } : {}),
     currency,
     isActive: true,
     agentTradingEnabled,
