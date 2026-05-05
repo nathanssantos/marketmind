@@ -231,7 +231,14 @@ export const executionUpdatesRouter = router({
           .update(tradeExecutions)
           .set({ entryPrice: formattedPrice, limitEntryPrice: formattedPrice, updatedAt: new Date() })
           .where(eq(tradeExecutions.id, input.id));
-        return { success: true };
+        return {
+          success: true,
+          oldOrderId: null,
+          newOrderId: null,
+          symbol: execution.symbol,
+          newPrice: formattedPrice,
+          newQty: formattedQty,
+        };
       }
 
       const { createBinanceFuturesClient, cancelFuturesAlgoOrder, cancelFuturesOrder, submitFuturesAlgoOrder, submitFuturesOrder } = await import('../../services/binance-futures-client');
@@ -353,7 +360,20 @@ export const executionUpdatesRouter = router({
         newQty: formattedQty,
       }, 'Updated pending entry order price and quantity');
 
-      return { success: true };
+      // Return both orderIds so the renderer can immediately remove
+      // the cancelled order from its open-orders cache (and not wait
+      // for the eventually-consistent refetch). Without this, the
+      // chart paints both the old and new entry lines for ~200-500ms
+      // after the move — the user perceives it as a "ghost copy" of
+      // the order at the previous price that disappears later.
+      return {
+        success: true,
+        oldOrderId: oldEntryOrderId ?? null,
+        newOrderId,
+        symbol: execution.symbol,
+        newPrice: formattedPrice,
+        newQty: formattedQty,
+      };
     }),
 
   cancelIndividualProtectionOrder: protectedProcedure
