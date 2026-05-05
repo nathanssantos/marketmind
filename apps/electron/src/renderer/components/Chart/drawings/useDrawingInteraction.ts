@@ -317,6 +317,8 @@ export const useDrawingInteraction = ({
         text: '', fontSize: DEFAULT_FONT_SIZE, fontWeight: 'normal', textDecoration: 'none', color: INDICATOR_COLORS.LABEL_TEXT,
       };
       store.addDrawing(drawing);
+      // Text needs to enter edit mode immediately after placing — keep
+      // the auto-select / tool-clear behavior here only.
       store.selectDrawing(drawing.id);
       manager?.markDirty('overlays');
       return true;
@@ -329,7 +331,6 @@ export const useDrawingInteraction = ({
         index, price, time,
       };
       store.addDrawing(drawing);
-      store.selectDrawing(drawing.id);
       manager?.markDirty('overlays');
       return true;
     }
@@ -538,7 +539,6 @@ export const useDrawingInteraction = ({
       const finalDrawing = { ...drawing, stopLossPrice: price, takeProfitPrice: tp } as Drawing;
 
       store.addDrawing(finalDrawing);
-      store.selectDrawing(finalDrawing.id);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');
@@ -585,7 +585,6 @@ export const useDrawingInteraction = ({
       }
 
       store.addDrawing(drawing);
-      store.selectDrawing(drawing.id);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');
@@ -596,7 +595,6 @@ export const useDrawingInteraction = ({
       const drawing = pendingDrawingRef.current;
       const store = useDrawingStore.getState();
       store.addDrawing(drawing);
-      store.selectDrawing(drawing.id);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');
