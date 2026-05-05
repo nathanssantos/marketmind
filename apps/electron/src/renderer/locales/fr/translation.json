@@ -434,6 +434,8 @@
       "maintenance": {
         "title": "Maintenance des Klines",
         "description": "Détecter et réparer les bougies manquantes ou corrompues sur toutes les paires actives",
+        "periodicEnabled": "Maintenance périodique",
+        "periodicEnabledHelper": "Lance les vérifications de gaps et de corruption automatiquement toutes les 2 heures. Désactivée par défaut — utilisez le bouton manuel ci-dessous si nécessaire.",
         "repairAll": "Réparer Tous les Gaps",
         "repairing": "Réparation...",
         "pairsChecked": "{{count}} paires vérifiées",

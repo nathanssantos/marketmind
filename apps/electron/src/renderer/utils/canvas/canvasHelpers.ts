@@ -87,4 +87,5 @@ export const createDrawingMapper = (manager: CanvasManager): CoordinateMapper =>
     return Math.floor(viewport.start + (x / dimensions.chartWidth) * (viewport.end - viewport.start));
   },
   indexToCenterX: (index: number) => manager.indexToCenterX(index),
+  timeToIndex: (timestamp: number) => manager.timeToIndex(timestamp),
 });

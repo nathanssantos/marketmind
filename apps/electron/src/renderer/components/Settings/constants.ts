@@ -33,6 +33,14 @@ export interface SettingsTabDef {
   group: SettingsGroup;
   icon: IconType;
   labelKey: string;
+  /**
+   * When `true`, the tab is hidden in production builds. Used for admin /
+   * local-only surfaces (e.g. Data → Kline Maintenance) that don't
+   * make sense for end users — the prod backend keeps a single shared
+   * kline catalog distributed to all clients, so per-user maintenance
+   * UI is dev-only.
+   */
+  devOnly?: boolean;
 }
 
 export const SETTINGS_TAB_DEFS: readonly SettingsTabDef[] = [
@@ -46,7 +54,7 @@ export const SETTINGS_TAB_DEFS: readonly SettingsTabDef[] = [
   { id: 'autoTrading', group: 'trading', icon: LuBot, labelKey: 'settings.tabs.autoTrading' },
   { id: 'indicators', group: 'trading', icon: LuActivity, labelKey: 'settings.tabs.indicators' },
 
-  { id: 'data', group: 'system', icon: LuDatabase, labelKey: 'settings.tabs.data' },
+  { id: 'data', group: 'system', icon: LuDatabase, labelKey: 'settings.tabs.data', devOnly: true },
   { id: 'about', group: 'system', icon: LuInfo, labelKey: 'settings.tabs.about' },
 ];
 

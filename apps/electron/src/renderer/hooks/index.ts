@@ -35,4 +35,3 @@ export { useBackendAutoTrading, useCapitalLimits, useTopSymbols } from './useBac
 export { useBackendKlines, useKlineStream } from './useBackendKlines';
 export { useBackendTradingMutations } from './useBackendTradingMutations';
 export { useEventRefreshScheduler } from './useEventRefreshScheduler';
-export { useVisibilityChange } from './useVisibilityChange';

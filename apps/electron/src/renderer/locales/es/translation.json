@@ -434,6 +434,8 @@
       "maintenance": {
         "title": "Mantenimiento de Klines",
         "description": "Detectar y reparar velas faltantes o corruptas en todos los pares activos",
+        "periodicEnabled": "Mantenimiento periódico",
+        "periodicEnabledHelper": "Ejecuta comprobaciones de gaps y corrupción automáticamente cada 2 horas. Desactivado por defecto — use el botón manual de abajo si lo necesita.",
         "repairAll": "Reparar Todos los Gaps",
         "repairing": "Reparando...",
         "pairsChecked": "{{count}} pares verificados",
