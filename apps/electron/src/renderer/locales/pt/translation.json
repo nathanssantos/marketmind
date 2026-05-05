@@ -33,7 +33,9 @@
     "drawing": {
       "delete": "Excluir desenho selecionado",
       "copy": "Copiar desenho selecionado",
-      "paste": "Colar desenho"
+      "paste": "Colar desenho",
+      "undo": "Desfazer última alteração",
+      "redo": "Refazer última alteração desfeita"
     },
     "trading": {
       "cancelSlTpPlacement": "Cancelar colocação de SL/TP",

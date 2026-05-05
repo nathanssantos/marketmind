@@ -33,7 +33,9 @@
     "drawing": {
       "delete": "Delete selected drawing",
       "copy": "Copy selected drawing",
-      "paste": "Paste drawing"
+      "paste": "Paste drawing",
+      "undo": "Undo last drawing change",
+      "redo": "Redo last undone drawing change"
     },
     "trading": {
       "cancelSlTpPlacement": "Cancel SL/TP placement",
