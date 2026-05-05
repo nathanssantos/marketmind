@@ -226,6 +226,26 @@ export const useDrawingInteraction = ({
     return { index: idx, price: result.snappedPrice, time };
   }, [manager, snap, klines]);
 
+  /**
+   * Freehand variant for pencil / highlighter — keeps the index as a
+   * float so the rendered line follows the cursor smoothly instead of
+   * stair-stepping on integer kline boundaries (the OHLC magnet's
+   * `Math.round(rawIndex)` is bypassed entirely). Time is interpolated
+   * to the nearest kline so pagination prepends still re-anchor the
+   * stroke correctly.
+   */
+  const getFreehandIndexAndPrice = useCallback((x: number, y: number): { index: number; price: number; time?: number } => {
+    if (!manager) return { index: 0, price: 0 };
+    const dimensions = manager.getDimensions();
+    const viewport = manager.getViewport();
+    if (!dimensions || !viewport) return { index: 0, price: 0 };
+    const rawIndex = viewport.start + (x / dimensions.chartWidth) * (viewport.end - viewport.start);
+    const price = manager.yToPrice(y);
+    const roundedIdx = Math.round(rawIndex);
+    const time = roundedIdx >= 0 && roundedIdx < klines.length ? klines[roundedIdx]?.openTime : undefined;
+    return { index: rawIndex, price, time };
+  }, [manager, klines]);
+
   const handleMouseDown = useCallback((x: number, y: number): boolean => {
     if (!manager) return false;
 
@@ -278,10 +298,11 @@ export const useDrawingInteraction = ({
     const { index, price, time } = getIndexAndPrice(x, y);
 
     if (activeTool === 'pencil' || activeTool === 'highlighter') {
+      const fh = getFreehandIndexAndPrice(x, y);
       const drawing: Drawing = {
         id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
-        points: [{ index, price, time }],
+        points: [{ index: fh.index, price: fh.price, time: fh.time }],
       };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'drawing-freeform';
@@ -438,7 +459,7 @@ export const useDrawingInteraction = ({
         const dy = y - ly;
         if (dx * dx + dy * dy < 9) return true;
       }
-      const { index, price, time } = getIndexAndPrice(x, y);
+      const { index, price, time } = getFreehandIndexAndPrice(x, y);
       pendingDrawingRef.current = {
         ...pending,
         points: [...pending.points, { index, price, time }],
