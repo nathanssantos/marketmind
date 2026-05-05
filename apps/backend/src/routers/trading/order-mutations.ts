@@ -445,14 +445,17 @@ export const orderMutationsRouter = router({
           const intendedSide: PositionSide = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
           const oppositeDirection = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
           // Binance MARKET fills come back with `price` set to the avg
-          // fill price (Binance returns 0 for unfilled orders, so the
-          // ?? guard kicks in for paper / dry-run paths). The
-          // referencePrice from the renderer is the last-known book
-          // price at click time — final fallback for paper.
-          const fillPrice = parseFloat(binanceOrder.price ?? '0')
-            || parseFloat(orderInput.price ?? '0')
-            || (orderInput as { referencePrice?: number }).referencePrice
-            || 0;
+          // fill price; for unfilled / paper / dry-run paths it's 0 or
+          // missing. Walk through fallbacks in priority order, picking
+          // the first positive number — covers live fills, server-
+          // computed paper fills, and renderer-supplied book reference.
+          const refPrice = (orderInput as { referencePrice?: number }).referencePrice ?? 0;
+          const candidates = [
+            parseFloat(binanceOrder.price ?? '0'),
+            parseFloat(orderInput.price ?? '0'),
+            refPrice,
+          ];
+          const fillPrice = candidates.find((p) => Number.isFinite(p) && p > 0) ?? 0;
           const fillQty = parseFloat(binanceOrder.executedQty ?? binanceOrder.origQty ?? '0');
 
           const [existingOpposite] = await ctx.db
