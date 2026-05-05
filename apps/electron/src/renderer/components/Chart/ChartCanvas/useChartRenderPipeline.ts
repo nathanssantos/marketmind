@@ -8,6 +8,7 @@ import type { useSlTpPlacementMode } from '@renderer/hooks/useSlTpPlacementMode'
 import type { UseChartBaseRenderersResult } from './useChartBaseRenderers';
 import type { UseGenericChartIndicatorRenderersResult } from './useGenericChartIndicatorRenderers';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
+import { clearPriceTagBuffer } from '../utils/priceTagBuffer';
 import { renderDragPreview, renderSlTpPreview, renderTsPreview, renderOrderPreview } from './chartPreviewRenderers';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 
@@ -113,6 +114,7 @@ export const useChartRenderPipeline = ({
       const g = r.generic;
 
       timed('clear', () => manager.clear());
+      clearPriceTagBuffer(manager);
       timed('watermark', b.renderWatermark);
       timed('grid', b.renderGrid);
       timed('customIndicators', g.renderAllCustomIndicators);

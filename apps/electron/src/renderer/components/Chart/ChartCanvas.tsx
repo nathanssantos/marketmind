@@ -96,6 +96,7 @@ const ChartCanvasInternal = ({
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair] = useChartPref('showCrosshair', true);
+  const [stackPriceTags] = useChartPref<boolean>('stackPriceTags', true);
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
@@ -390,7 +391,7 @@ const ChartCanvasInternal = ({
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags);
 
   const auxiliarySetup = useChartAuxiliarySetup({
     manager, klines, symbol: symbol ?? '', timeframe, colors, hasTradingEnabled,

@@ -54,6 +54,7 @@ export const useOrderLinesRenderer = (
   draggedOrderIdRef?: RefObject<string | null>,
   colors?: ChartThemeColors,
   showCurrentPriceTimer: boolean = true,
+  stackPriceTags: boolean = true,
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -170,9 +171,10 @@ export const useOrderLinesRenderer = (
       showProfitLossAreas,
       infoTagBg: colors?.background ?? 'rgba(26, 32, 44, 0.95)',
       infoTagText: colors?.text ?? '#ffffff',
-      currentPriceTag: currentPriceTagInBounds
+      currentPriceTag: stackPriceTags && currentPriceTagInBounds
         ? { y: currentPriceY + currentPriceTagHeight / 2 - 9, height: currentPriceTagHeight }
         : null,
+      stackPriceTags,
     };
 
     const pendingOrders = activeOrders.filter((order) => isOrderPending(order));

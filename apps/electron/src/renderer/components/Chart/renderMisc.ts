@@ -17,6 +17,7 @@ import { PRICE_TAG_WIDTH } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
 import { getDirectionArrow } from './utils/directionArrow';
 import { PRICE_TAG_HEIGHT, resolvePriceTagCollisions } from './utils/priceTagCollision';
+import { drainPriceTagBuffer } from './utils/priceTagBuffer';
 
 export const renderPendingSetups = (
   rc: RenderContext,
@@ -207,23 +208,49 @@ export const renderLiquidationLines = (
 export const renderPriceTags = (
   rc: RenderContext
 ): void => {
-  const { ctx, chartWidth, chartHeight, currentPriceTag } = rc;
+  const { ctx, chartWidth, chartHeight, currentPriceTag, stackPriceTags } = rc;
 
-  const visible = rc.priceTags.filter((t) => t.y >= 0 && t.y <= chartHeight);
-  const resolvedYs = resolvePriceTagCollisions({
-    tags: visible.map((t) => ({ y: t.y, height: PRICE_TAG_HEIGHT })),
-    fixedAnchor: currentPriceTag,
-    chartHeight,
-  });
+  type Combined = {
+    priceText: string;
+    y: number;
+    fillColor: string;
+    flashAlpha?: number;
+    width: number;
+    textColor?: string;
+  };
+  const indicatorTags = drainPriceTagBuffer(rc.manager);
+  const orderTags: Combined[] = rc.priceTags.map((t) => ({
+    priceText: t.priceText,
+    y: t.y,
+    fillColor: t.fillColor,
+    flashAlpha: t.flashAlpha,
+    width: PRICE_TAG_WIDTH,
+  }));
+  const indicatorTagsTyped: Combined[] = indicatorTags.map((t) => ({
+    priceText: t.priceText,
+    y: t.y,
+    fillColor: t.fillColor,
+    width: t.width,
+    textColor: t.textColor,
+  }));
+  const all = [...orderTags, ...indicatorTagsTyped].filter((t) => t.y >= 0 && t.y <= chartHeight);
 
-  visible.forEach(({ priceText, fillColor, flashAlpha: tagFlash }, i) => {
+  const resolvedYs = stackPriceTags
+    ? resolvePriceTagCollisions({
+        tags: all.map((t) => ({ y: t.y, height: PRICE_TAG_HEIGHT })),
+        fixedAnchor: currentPriceTag,
+        chartHeight,
+      })
+    : all.map((t) => t.y);
+
+  all.forEach(({ priceText, fillColor, flashAlpha: tagFlash, width, textColor }, i) => {
     const y = resolvedYs[i] ?? 0;
-    const tagSize = drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
+    const tagSize = drawPriceTag(ctx, priceText, y, chartWidth, fillColor, width, textColor);
     if (tagFlash && tagFlash > 0) {
       ctx.save();
       ctx.globalAlpha = tagFlash;
       ctx.fillStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
-      ctx.fillRect(chartWidth, y - tagSize.height / 2, PRICE_TAG_WIDTH, tagSize.height);
+      ctx.fillRect(chartWidth, y - tagSize.height / 2, width, tagSize.height);
       ctx.restore();
       rc.needsAnimation = true;
     }

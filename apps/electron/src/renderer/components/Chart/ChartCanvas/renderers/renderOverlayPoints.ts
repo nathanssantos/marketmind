@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { queuePriceTag } from '../../utils/priceTagBuffer';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
@@ -45,12 +45,10 @@ export const renderOverlayPoints: GenericRenderer = (ctx, input) => {
   if (!dimensions) return;
   const tagY = manager.priceToY(lastValue);
   if (tagY < 0 || tagY > dimensions.chartHeight) return;
-  drawPriceTag(
-    canvasCtx,
-    formatChartPrice(lastValue),
-    tagY,
-    dimensions.chartWidth,
-    color,
-    CHART_CONFIG.CANVAS_PADDING_RIGHT,
-  );
+  queuePriceTag(manager, {
+    priceText: formatChartPrice(lastValue),
+    y: tagY,
+    fillColor: color,
+    width: CHART_CONFIG.CANVAS_PADDING_RIGHT,
+  });
 };

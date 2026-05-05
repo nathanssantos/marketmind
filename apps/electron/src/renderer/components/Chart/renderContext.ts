@@ -37,4 +37,5 @@ export interface RenderContext {
   infoTagBg: string;
   infoTagText: string;
   currentPriceTag: { y: number; height: number } | null;
+  stackPriceTags: boolean;
 }
