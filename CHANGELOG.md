@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.8] - 2026-05-05
+
+### Added — market indicators split into individual grid panels
+Six chart-driven indicators that used to share the single "Market Indicators" aggregate panel are now individual grid panels the user can place anywhere on the layout, resize independently, and let the chart fill the entire panel height instead of being capped to a fixed 60–80px row inside a stacked card. New panel kinds: `marketFearGreed`, `marketBtcDominance`, `marketMvrv`, `marketProductionCost`, `marketOpenInterest`, `marketLongShort`. Each lazy-loaded under `apps/electron/src/renderer/components/MarketSidebar/panels/individual/`, owns its own tRPC query (per-indicator staleTime + refetchInterval), uses a shared `MarketIndicatorPanelShell` with header row + ResponsiveContainer chart filling remaining height via `flex={1} + minH={0}`. Visual treatment matches `ChecklistPanel` (transparent body, no tinted card-on-card background — the GridPanel container provides the dark surface).
+
+### Changed
+- **Aggregate `marketIndicators` panel** still ships for back-compat with stored layouts, but its body now renders only the 4 indicators that don't have an individual panel: Altcoin Season, ADX Trend Strength, Order Book, Funding Rates. Older layouts holding the aggregate keep working and just see a smaller list.
+- **Checklist L/S score chart reference lines**: was a single arbitrary line at 40 — now three lines at 25 / 50 / 75 (neutral midpoint + conviction zones above 75 / below 25).
+
+### Notes
+- 6 new i18n keys under `panels.*` (en only — pt/es/fr fall through the i18n default; matches the existing `panels.*` block which is en-only).
+- 2464 renderer unit tests passing. Type-check + lint + i18n audit clean.
+
 ## [1.11.7] - 2026-05-05
 
 ### Fixed — multi-chart cross-sync lag

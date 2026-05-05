@@ -4,14 +4,6 @@ import { trpc } from '@renderer/utils/trpc';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  BtcDominanceSection,
-  FearGreedSection,
-  LongShortSection,
-  MvrvSection,
-  OpenInterestSection,
-  ProductionCostSection,
-} from './MarketIndicatorCharts';
-import {
   AdxSection,
   AltcoinSeasonSection,
   FundingRatesSection,
@@ -24,6 +16,16 @@ import {
   useContainerWidth,
 } from './marketIndicatorUtils';
 
+/**
+ * Aggregate "Market Indicators" panel — surfaces the indicators that
+ * don't (yet) have their own grid panel: Altcoin Season, ADX, Order
+ * Book, Funding Rates. The 6 chart-driven indicators (Fear & Greed,
+ * BTC Dominance, MVRV, BTC Production Cost, Open Interest, Long/Short
+ * Ratio) are now individual `marketX` panels — see
+ * `panels/individual/*Panel.tsx` and `grid/panel-registry.ts`. Older
+ * stored layouts that still include this aggregate panel keep working;
+ * they just see a smaller list now.
+ */
 const MarketIndicatorsTabComponent = () => {
   const { t } = useTranslation();
   const { ref: containerRef, hasWidth } = useContainerWidth();
@@ -39,36 +41,6 @@ const MarketIndicatorsTabComponent = () => {
   const { data: fundingRates, isLoading: isFundingLoading } = trpc.autoTrading.getBatchFundingRates.useQuery(
     { symbols: POPULAR_FUNDING_SYMBOLS },
     { staleTime: REFRESH_INTERVALS.fundingRates, refetchInterval: REFRESH_INTERVALS.fundingRates }
-  );
-
-  const { data: fearGreed, isLoading: isFearGreedLoading } = trpc.autoTrading.getFearGreedIndex.useQuery(
-    undefined,
-    { staleTime: REFRESH_INTERVALS.fearGreed, refetchInterval: REFRESH_INTERVALS.fearGreed }
-  );
-
-  const { data: btcDominance, isLoading: isBtcDominanceLoading } = trpc.autoTrading.getBtcDominance.useQuery(
-    undefined,
-    { staleTime: REFRESH_INTERVALS.btcDominance, refetchInterval: REFRESH_INTERVALS.btcDominance }
-  );
-
-  const { data: mvrv, isLoading: isMvrvLoading } = trpc.autoTrading.getMvrvRatio.useQuery(
-    undefined,
-    { staleTime: REFRESH_INTERVALS.onChain, refetchInterval: REFRESH_INTERVALS.onChain }
-  );
-
-  const { data: btcProductionCost, isLoading: isProductionCostLoading } = trpc.autoTrading.getBtcProductionCost.useQuery(
-    undefined,
-    { staleTime: REFRESH_INTERVALS.onChain, refetchInterval: REFRESH_INTERVALS.onChain }
-  );
-
-  const { data: openInterest, isLoading: isOpenInterestLoading } = trpc.autoTrading.getOpenInterest.useQuery(
-    { symbol: 'BTCUSDT' },
-    { staleTime: REFRESH_INTERVALS.openInterest, refetchInterval: REFRESH_INTERVALS.openInterest }
-  );
-
-  const { data: longShortRatio, isLoading: isLongShortLoading } = trpc.autoTrading.getLongShortRatio.useQuery(
-    { symbol: 'BTCUSDT', period: '1h' },
-    { staleTime: REFRESH_INTERVALS.longShortRatio, refetchInterval: REFRESH_INTERVALS.longShortRatio }
   );
 
   const { data: altcoinSeason, isLoading: isAltcoinSeasonLoading } = trpc.autoTrading.getAltcoinSeasonIndex.useQuery(
@@ -95,12 +67,6 @@ const MarketIndicatorsTabComponent = () => {
         <Badge size="xs" variant="outline" colorPalette="gray">31d</Badge>
       </Flex>
 
-      <FearGreedSection fearGreed={fearGreed} isLoading={isFearGreedLoading} hasWidth={hasWidth} />
-      <BtcDominanceSection btcDominance={btcDominance} isLoading={isBtcDominanceLoading} hasWidth={hasWidth} />
-      <MvrvSection mvrv={mvrv} isLoading={isMvrvLoading} hasWidth={hasWidth} />
-      <ProductionCostSection btcProductionCost={btcProductionCost} isLoading={isProductionCostLoading} hasWidth={hasWidth} />
-      <OpenInterestSection openInterest={openInterest} isLoading={isOpenInterestLoading} hasWidth={hasWidth} />
-      <LongShortSection longShortRatio={longShortRatio} isLoading={isLongShortLoading} hasWidth={hasWidth} />
       <AltcoinSeasonSection altcoinSeason={altcoinSeason} isLoading={isAltcoinSeasonLoading} hasWidth={hasWidth} />
       <AdxSection adxTrendStrength={adxTrendStrength} isLoading={isAdxLoading} hasWidth={hasWidth} />
       <OrderBookSection orderBook={orderBook} isLoading={isOrderBookLoading} />
