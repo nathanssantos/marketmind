@@ -21,7 +21,7 @@ const renderConsolidatedSLTP = (
   position: GroupedPosition,
   type: 'stopLoss' | 'takeProfit',
   consolidatedPrice: number,
-  isPendingPosition: boolean
+  _isPendingPosition: boolean
 ): void => {
   const { ctx, manager, chartWidth } = rc;
   const isLongPosition = position.netQuantity > 0;
@@ -42,7 +42,7 @@ const renderConsolidatedSLTP = (
       ? ((consolidatedPrice - position.avgPrice) / position.avgPrice) * 100
       : ((position.avgPrice - consolidatedPrice) / position.avgPrice) * 100) * position.leverage;
     const slSign = slResultPercent >= 0 ? '+' : '';
-    const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
+    const pendingLabel = '';
     const infoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)${pendingLabel}`;
 
     const slFlash = position.orderIds.reduce((max: number, id: string) => Math.max(max, rc.getFlashAlpha(`${id}-sl`)), 0);
@@ -105,7 +105,7 @@ const renderConsolidatedSLTP = (
     const tpProfitPercent = (isLongPosition
       ? ((consolidatedPrice - position.avgPrice) / position.avgPrice) * 100
       : ((position.avgPrice - consolidatedPrice) / position.avgPrice) * 100) * position.leverage;
-    const pendingLabel = isPendingPosition ? ' [PENDING]' : '';
+    const pendingLabel = '';
     const infoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%)${pendingLabel}`;
 
     const tpFlash = position.orderIds.reduce((max: number, id: string) => Math.max(max, rc.getFlashAlpha(`${id}-tp`)), 0);

@@ -44,7 +44,7 @@ const renderSLTPForPendingOrder = (
       ? ((order.stopLoss - entryPrice) / entryPrice) * 100
       : ((entryPrice - order.stopLoss) / entryPrice) * 100;
     const slSign = slResultPercent >= 0 ? '+' : '';
-    const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
+    const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)`;
 
     if (isHoveredOnly) {
       drawInfoTag(ctx, slInfoText, stopY, slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL, rc.infoTagBg, rc.infoTagText, true, null);
@@ -97,7 +97,7 @@ const renderSLTPForPendingOrder = (
     const tpProfitPercent = isLong
       ? ((order.takeProfit - entryPrice) / entryPrice) * 100
       : ((entryPrice - order.takeProfit) / entryPrice) * 100;
-    const tpInfoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%) [PENDING]`;
+    const tpInfoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%)`;
 
     if (isHoveredOnly) {
       drawInfoTag(ctx, tpInfoText, tpY, ORDER_LINE_COLORS.TP_FILL, rc.infoTagBg, rc.infoTagText, true, null);
@@ -154,8 +154,8 @@ export const renderPendingOrders = (
     ctx.save();
     setStandardFont(ctx);
 
-    const lineColor = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
-    const fillColor = isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+    const lineColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_LINE : ORDER_LINE_COLORS.POSITION_SHORT_LINE;
+    const fillColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_FILL : ORDER_LINE_COLORS.POSITION_SHORT_FILL;
 
     drawHorizontalLine(ctx, y, chartWidth, lineColor);
 
@@ -228,8 +228,8 @@ export const renderHoveredPendingOrder = (
   ctx.save();
   setStandardFont(ctx);
 
-  const lineColor = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
-  const fillColor = isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+  const lineColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_LINE : ORDER_LINE_COLORS.POSITION_SHORT_LINE;
+  const fillColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_FILL : ORDER_LINE_COLORS.POSITION_SHORT_FILL;
 
   const priceText = formatChartPrice(getOrderPrice(order));
   drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);

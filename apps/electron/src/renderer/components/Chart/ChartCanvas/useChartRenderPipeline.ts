@@ -138,9 +138,9 @@ export const useChartRenderPipeline = ({
       timed('gridPreview', r.renderGridPreview);
 
       timed('previews', () => {
-        renderDragPreview(manager, r.orderDragHandler, r.t);
-        renderSlTpPreview(manager, r.slTpPlacement, r.allExecutions);
-        renderTsPreview(manager, r.tsPlacementActive, r.tsPlacementPreviewPrice);
+        renderDragPreview(manager, r.orderDragHandler, r.t, _colors.background, _colors.text);
+        renderSlTpPreview(manager, r.slTpPlacement, r.allExecutions, _colors.background, _colors.text);
+        renderTsPreview(manager, r.tsPlacementActive, r.tsPlacementPreviewPrice, _colors.background, _colors.text);
       });
 
       timed('currentPriceLabel', b.renderCurrentPriceLine_Label);
