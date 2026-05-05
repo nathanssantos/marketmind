@@ -15,7 +15,6 @@ import {
 import type { GroupedPosition, TrailingStopLineConfig } from './orderLineTypes';
 import { PRICE_TAG_WIDTH } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
-import { getDirectionArrow } from './utils/directionArrow';
 import { PRICE_TAG_HEIGHT, resolvePriceTagCollisions } from './utils/priceTagCollision';
 import { drainPriceTagBuffer } from './utils/priceTagBuffer';
 
@@ -64,11 +63,11 @@ export const renderPendingSetups = (
     drawHorizontalLine(ctx, entryY, chartWidth, lineColor);
 
     const setupLabel = setup.label ?? setup.type;
-    const directionSymbol = getDirectionArrow(isLong, manager.isFlipped());
+    const setupDirection: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
     const orderTypeLabel = isLimitOrder ? 'LIMIT' : 'MKT';
-    const infoText = `${directionSymbol} ${setupLabel} (${orderTypeLabel})`;
+    const infoText = `${setupLabel} (${orderTypeLabel})`;
 
-    drawInfoTag(ctx, infoText, entryY, lineColor, rc.infoTagBg, rc.infoTagText, false, null, 'bot');
+    drawInfoTag(ctx, infoText, entryY, lineColor, rc.infoTagBg, rc.infoTagText, false, null, 'bot', false, 0, null, setupDirection);
 
     if (setup.stopLoss) {
       const slY = manager.priceToY(setup.stopLoss);
@@ -142,8 +141,8 @@ export const renderTrailingStops = (
 
     const activationPctDisplay = ((activationPercent - 1) * 100);
     const pctSign = activationPctDisplay >= 0 ? '+' : '';
-    const tsArrow = getDirectionArrow(pos.side === 'long', manager.isFlipped());
-    const tsLabel = `TS ${tsArrow} (${pctSign}${activationPctDisplay.toFixed(1)}%)`;
+    const tsDirection: 'up' | 'down' = (pos.side === 'long' ? !manager.isFlipped() : manager.isFlipped()) ? 'up' : 'down';
+    const tsLabel = `TS (${pctSign}${activationPctDisplay.toFixed(1)}%)`;
 
     ctx.save();
     ctx.strokeStyle = ORDER_LINE_COLORS.TRAILING_STOP_LINE;
@@ -157,7 +156,7 @@ export const renderTrailingStops = (
 
     setStandardFont(ctx);
     const tsCloseBtn = { x: 0, y: 0, size: 14 };
-    drawInfoTag(ctx, tsLabel, tsY, ORDER_LINE_COLORS.TRAILING_STOP_FILL, rc.infoTagBg, rc.infoTagText, true, tsCloseBtn, 'shield');
+    drawInfoTag(ctx, tsLabel, tsY, ORDER_LINE_COLORS.TRAILING_STOP_FILL, rc.infoTagBg, rc.infoTagText, true, tsCloseBtn, 'shield', false, 0, null, tsDirection);
     rc.tsCloseButtons.push(tsCloseBtn);
 
     const tsPriceText = formatChartPrice(activationPrice);
@@ -194,9 +193,8 @@ export const renderLiquidationLines = (
     ctx.setLineDash([]);
 
     setStandardFont(ctx);
-    const liqArrow = getDirectionArrow(side === 'LONG', manager.isFlipped());
-    const liqLabel = `LIQ ${liqArrow}`;
-    drawInfoTag(ctx, liqLabel, liqY, ORDER_LINE_COLORS.LIQUIDATION_FILL, rc.infoTagBg, rc.infoTagText, false);
+    const liqDirection: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
+    drawInfoTag(ctx, 'LIQ', liqY, ORDER_LINE_COLORS.LIQUIDATION_FILL, rc.infoTagBg, rc.infoTagText, false, null, null, false, 0, null, liqDirection);
 
     const liqPriceText = formatChartPrice(liqPrice);
     rc.priceTags.push({ priceText: liqPriceText, y: liqY, fillColor: ORDER_LINE_COLORS.LIQUIDATION_FILL });

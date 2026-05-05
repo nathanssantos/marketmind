@@ -1,6 +1,6 @@
 import type { EntryOrderType, FibonacciProjectionData, MarketType, Order, PositionSide } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
-import { ORDER_LINE_COLORS } from '@shared/constants/chartColors';
+import { ORDER_LINE_COLORS, ORDER_LINE_LAYOUT } from '@shared/constants/chartColors';
 
 export interface BackendExecution {
   id: string;
@@ -102,7 +102,7 @@ export const SLTP_BUTTON = {
   WIDTH: 20,
   HEIGHT: 14,
   GAP: 3,
-  BORDER_RADIUS: 3,
+  BORDER_RADIUS: ORDER_LINE_LAYOUT.LABEL_BORDER_RADIUS,
   FONT_SIZE: 9,
   SL_BG: 'rgba(185, 28, 28, 0.85)',
   SL_BORDER: ORDER_LINE_COLORS.SL_LOSS_LINE,
