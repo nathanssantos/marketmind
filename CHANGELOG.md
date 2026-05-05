@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.5] - 2026-05-04
+
+### Fixed — order reactivity + ghost copies
+- **MARKET orders from the ticket appear instantly.** `createOrder` mutation onSuccess only invalidated analytics; the executions cache had to wait for the socket event (200–500ms). Now patches `getTradeExecutions` directly from the mutation response's `data.openExecutions` (authoritative server snapshot) — entry appears in the same render frame as the click.
+- **No more "ghost copy" when moving a LIMIT order on the chart.** Backend cancel + new submit happens in one call, but the renderer's `getOpenOrders` cache (Binance direct query) still held the cancelled `orderId` until the next refetch — chart painted both the old and new entry lines for ~200–500ms after each drag. `updatePendingEntry` now returns `oldOrderId` / `newOrderId`. The mutation onSuccess uses `queryClient.setQueriesData` (with key predicate) to drop the cancelled order from every variant of `getOpenOrders` / `getOpenAlgoOrders` cache regardless of input shape (walletId vs walletId+symbol).
+- **Cancel single / Cancel all wipes lines from chart instantly.** `cancelOrder` now uses `onMutate` (fires BEFORE the network request) to drop the orderId from open-order caches the instant the user clicks Cancel. `cancelAllOrders` empties both caches optimistically. Without this, cancelled order lines lingered visibly on the chart for the full ACK + refetch round-trip.
+
+### Notes
+- Extracted `dropOrderFromCaches` / `removeOrderFromAllOpenOrderCaches` helpers in `useBackendTradingMutations` and `useBackendFuturesTrading` so the pattern is reusable for future mutations.
+- 2457 renderer unit tests + 76 backend trading router tests + type-check + lint clean.
+
 ## [1.11.4] - 2026-05-04
 
 ### Fixed
