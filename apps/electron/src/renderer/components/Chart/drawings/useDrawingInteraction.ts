@@ -241,8 +241,14 @@ export const useDrawingInteraction = ({
     if (!dimensions || !viewport) return { index: 0, price: 0 };
     const rawIndex = viewport.start + (x / dimensions.chartWidth) * (viewport.end - viewport.start);
     const price = manager.yToPrice(y);
-    const roundedIdx = Math.round(rawIndex);
-    const time = roundedIdx >= 0 && roundedIdx < klines.length ? klines[roundedIdx]?.openTime : undefined;
+    // CRITICAL: time must reference floor(rawIndex), not round(rawIndex).
+    // `resolveDrawingIndices` (chart-studies) reconstructs the saved index
+    // as `floor(intPart) + frac` and looks up time against `floor` — if we
+    // stored time off the rounded kline, the resolved index would jump by
+    // one whenever the fractional part crossed 0.5, producing the
+    // grid-aligned scalloped pattern in freehand strokes after mouseup.
+    const flooredIdx = Math.floor(rawIndex);
+    const time = flooredIdx >= 0 && flooredIdx < klines.length ? klines[flooredIdx]?.openTime : undefined;
     return { index: rawIndex, price, time };
   }, [manager, klines]);
 
