@@ -1,5 +1,7 @@
 import type { MarketType } from '@marketmind/types';
 import { useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
 import { trpc } from '../utils/trpc';
 
 // Mutation onSuccess invalidations are scoped narrowly: trading caches
@@ -14,14 +16,60 @@ import { trpc } from '../utils/trpc';
 // (server-side analytics aggregations).
 export const useBackendTradingMutations = () => {
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
+
+  // Drop a cancelled order from every cached variant of
+  // getOpenOrders / getOpenAlgoOrders, regardless of input shape.
+  // updatePendingEntry can be invoked across (walletId), (walletId,
+  // symbol), and any other future input combo — using setQueriesData
+  // with a partial key match keeps each variant in sync without us
+  // having to mirror the call site's input.
+  const removeOrderFromAllOpenOrderCaches = (orderIdToRemove: string) => {
+    const removeFn = (data: unknown): unknown => {
+      if (!Array.isArray(data)) return data;
+      return (data as Array<{ orderId?: string | number; id?: string }>).filter(
+        (o) => String(o.orderId ?? o.id) !== orderIdToRemove,
+      );
+    };
+    queryClient.setQueriesData(
+      { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },
+      removeFn,
+    );
+    queryClient.setQueriesData(
+      { queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders) },
+      removeFn,
+    );
+  };
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Patch tradeExecutions cache directly from the mutation response
+      // — the backend returns the authoritative open-executions list
+      // immediately, so newly-placed entries appear in Orders /
+      // Portfolio / chart in the same render frame as the mutation
+      // resolves, without waiting 200–500ms for the socket event.
+      if (data.openExecutions) {
+        const wId = data.openExecutions[0]?.walletId ?? '';
+        if (wId) {
+          utils.trading.getTradeExecutions.setData(
+            { walletId: wId, status: 'open', limit: 500 },
+            data.openExecutions,
+          );
+        }
+      }
       void utils.analytics.getPerformance.invalidate();
     },
   });
 
   const cancelOrderMutation = trpc.trading.cancelOrder.useMutation({
+    onMutate: ({ orderId }) => {
+      // Optimistically drop the order from every open-orders cache
+      // variant the renderer may be holding (orphan-orders panel,
+      // chart's pending lines, etc.). Without this the cancelled
+      // order's entry line lingers on the chart for the 200–500ms
+      // refetch round-trip after the cancel ACKs.
+      if (orderId) removeOrderFromAllOpenOrderCaches(String(orderId));
+    },
     onSuccess: (data) => {
       // The cancel response carries the authoritative open-executions
       // list — patch the cache directly. order:cancelled socket event
@@ -98,7 +146,18 @@ export const useBackendTradingMutations = () => {
   });
 
   const updatePendingEntryMutation = trpc.trading.updatePendingEntry.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Drop the cancelled order from getOpenOrders cache immediately
+      // so the chart doesn't paint a "ghost copy" at the old price
+      // while the cache eventually-consistently catches up. Without
+      // this patch, the user sees the old + new entry line side by
+      // side for 200–500ms after each chart drag — long enough to
+      // misclick.
+      if (data?.oldOrderId) {
+        removeOrderFromAllOpenOrderCaches(String(data.oldOrderId));
+      }
+      // Belt-and-suspenders refetch — the new orderId only enters
+      // these caches once Binance returns it on the next list call.
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
     },

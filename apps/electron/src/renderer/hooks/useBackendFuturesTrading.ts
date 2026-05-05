@@ -1,11 +1,38 @@
 import type { FuturesOrderType, PositionSide } from '@marketmind/types';
 import { useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
 import { usePollingInterval } from './usePollingInterval';
+
 export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
+
+  // Optimistic-remove helper: drops an orderId from every variant of
+  // futuresTrading.getOpenOrders / getOpenAlgoOrders cache so the
+  // chart's pending-order line vanishes the instant the user clicks
+  // Cancel — without waiting for the 200–500ms refetch round-trip
+  // after the cancel ACKs on Binance. Without this the cancelled
+  // order's price line lingers visibly on the chart.
+  const dropOrderFromCaches = (orderIdToRemove: string) => {
+    const removeFn = (data: unknown): unknown => {
+      if (!Array.isArray(data)) return data;
+      return (data as Array<{ orderId?: string | number; id?: string }>).filter(
+        (o) => String(o.orderId ?? o.id) !== orderIdToRemove,
+      );
+    };
+    queryClient.setQueriesData(
+      { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },
+      removeFn,
+    );
+    queryClient.setQueriesData(
+      { queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders) },
+      removeFn,
+    );
+  };
   const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
 
   const { data: positions, isLoading: isLoadingPositions } = trpc.futuresTrading.getPositions.useQuery(
@@ -77,6 +104,9 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   });
 
   const cancelOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
+    onMutate: ({ orderId }) => {
+      if (orderId) dropOrderFromCaches(String(orderId));
+    },
     onSuccess: (data) => {
       if (data.openExecutions) {
         const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
@@ -210,6 +240,21 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   );
 
   const cancelAllOrdersMutation = trpc.futuresTrading.cancelAllOrders.useMutation({
+    onMutate: () => {
+      // User-initiated "cancel all" — wipe both open-order caches
+      // immediately so all pending entry / SL / TP lines vanish from
+      // the chart in the same render frame as the click. Refetches
+      // below confirm with Binance.
+      const emptyArray = (data: unknown): unknown => (Array.isArray(data) ? [] : data);
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },
+        emptyArray,
+      );
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders) },
+        emptyArray,
+      );
+    },
     onSuccess: () => {
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.trading.getOrders.invalidate();
