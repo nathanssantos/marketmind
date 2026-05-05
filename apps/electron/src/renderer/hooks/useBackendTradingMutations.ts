@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
 import { trpc } from '../utils/trpc';
+import { replaceOpenExecutionsInAllCaches } from '../services/executionCacheSync';
 
 // Mutation onSuccess invalidations are scoped narrowly: trading caches
 // (executions, orders, positions, wallet balance) are kept in sync via
@@ -41,22 +42,31 @@ export const useBackendTradingMutations = () => {
     );
   };
 
+  // Helper: every mutation whose response carries `data.openExecutions`
+  // funnels the snapshot through `replaceOpenExecutionsInAllCaches`,
+  // which fans out across both `trading.getTradeExecutions` and
+  // `autoTrading.getActiveExecutions` (chart consumer) and across every
+  // input variant (status+limit+pagination). Earlier we patched a
+  // single hardcoded variant — sibling chart instances waited 200–500ms
+  // for the socket event to land before they reflected the change.
+  const fanOutOpenExecutions = (
+    data: {
+      walletId?: string | null;
+      openExecutions?: Array<{ walletId?: string | null; [k: string]: unknown }>;
+    }
+  ) => {
+    if (!data.openExecutions) return;
+    const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+    if (!wId) return;
+    replaceOpenExecutionsInAllCaches(queryClient, wId, data.openExecutions as never);
+  };
+
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: (data) => {
-      // Patch tradeExecutions cache directly from the mutation response
-      // — the backend returns the authoritative open-executions list
-      // immediately, so newly-placed entries appear in Orders /
-      // Portfolio / chart in the same render frame as the mutation
-      // resolves, without waiting 200–500ms for the socket event.
-      if (data.openExecutions) {
-        const wId = data.openExecutions[0]?.walletId ?? '';
-        if (wId) {
-          utils.trading.getTradeExecutions.setData(
-            { walletId: wId, status: 'open', limit: 500 },
-            data.openExecutions,
-          );
-        }
-      }
+      // Backend returns authoritative open-executions list. Fan it out
+      // to every cache variant so charts/Portfolio/dialogs all reflect
+      // the new entry in the same render frame.
+      fanOutOpenExecutions(data);
       void utils.analytics.getPerformance.invalidate();
     },
   });
@@ -71,29 +81,14 @@ export const useBackendTradingMutations = () => {
       if (orderId) removeOrderFromAllOpenOrderCaches(String(orderId));
     },
     onSuccess: (data) => {
-      // The cancel response carries the authoritative open-executions
-      // list — patch the cache directly. order:cancelled socket event
-      // also lands and reconciles via the merge helper.
-      if (data.openExecutions) {
-        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      }
+      fanOutOpenExecutions(data);
       void utils.analytics.getPerformance.invalidate();
     },
   });
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      }
+      fanOutOpenExecutions(data);
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
     },
@@ -101,31 +96,19 @@ export const useBackendTradingMutations = () => {
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      }
+      fanOutOpenExecutions(data);
       void utils.analytics.getPerformance.invalidate();
     },
   });
 
   const updateExecutionSLTPMutation = trpc.trading.updateTradeExecutionSLTP.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      }
+      fanOutOpenExecutions(data);
       // SL/TP changes mutate algo-orders that have no socket coverage
       // (algo events fire on their own private channel and aren't part
       // of the user-stream we patch). Refresh the algo-order caches to
-      // reflect the new SL/TP price; trading-execution caches handled
-      // by the setData above + position:update sockets.
+      // reflect the new SL/TP price; execution caches handled by the
+      // fanout above + position:update sockets.
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
     },
@@ -133,13 +116,7 @@ export const useBackendTradingMutations = () => {
 
   const cancelProtectionOrderMutation = trpc.trading.cancelIndividualProtectionOrder.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const walletId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      }
+      fanOutOpenExecutions(data);
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
     },

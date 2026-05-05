@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.7] - 2026-05-05
+
+### Fixed — multi-chart cross-sync lag
+- **Sibling chart instances now reflect SL/TP/order changes in the same render frame as the active chart.** When the user had multiple chart panels of the same symbol open at different timeframes (e.g. BTCUSDT 1m + 5m + 15m), dragging an SL line / TP line / pending LIMIT entry on chart A took 200–500ms to propagate to charts B and C. Root cause: every `setData` call (mutation onSuccess + socket handler) used a hardcoded literal input, e.g. `utils.trading.getTradeExecutions.setData({ walletId, status:'open', limit:500 }, …)` — which patched ONE specific cache row. But the renderer subscribes from three angles:
+  1. **Charts**: `autoTrading.getActiveExecutions({ walletId })` — a completely different procedure, never patched by the mutation.
+  2. **Portfolio panel**: `trading.getTradeExecutions({ walletId, status:'open', limit:500 })`.
+  3. **Other dialogs / popovers**: `trading.getTradeExecutions({ walletId, limit:100 })` and other paginated variants.
+  React Query hashes each input shape into a separate cache row, so patching one variant left every other consumer stale until the eventually-consistent socket event arrived ~250ms later.
+- New `apps/electron/src/renderer/services/executionCacheSync.ts` exports three helpers — `replaceOpenExecutionsInAllCaches` / `patchExecutionInAllCaches` / `markExecutionClosedInAllCaches` — that use `setQueriesData` with a `queryKey` predicate to fan out across EVERY variant of both procedures per wallet in a single call. Status:'closed' variants are explicitly skipped on the open-replace path so closed-only views aren't polluted.
+- All migrated callsites: `useBackendTradingMutations.ts` (createOrder / cancelOrder / closeExecution / cancelExecution / updateSLTP / cancelProtectionOrder), `useBackendFuturesTrading.ts` (createOrder / cancelOrder / closePosition / reversePosition / closePositionAndCancelOrders), and `RealtimeTradingSyncContext.tsx` (`patchExecutionCaches` / `closeExecutionInCaches` socket handlers — the hardcoded `{ walletId, limit: 100 }` and `{ walletId }` literal inputs are gone).
+- Bonus: dropped redundant `.invalidate()` calls that became unnecessary with the fan-out (the helper already covers `getTradeExecutions` + `getActiveExecutions` + `wallet.list` etc).
+
+### Notes
+- 7 new unit tests in `executionCacheSync.test.ts` pin the predicate behavior end-to-end (replace, partial patch, mark-closed) across multiple cache variants. 2464 renderer unit tests passing. Type-check + lint clean.
+
 ## [1.11.6] - 2026-05-04
 
 ### Fixed
