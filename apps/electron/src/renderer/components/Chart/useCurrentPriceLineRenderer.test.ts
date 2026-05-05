@@ -253,7 +253,7 @@ describe('useCurrentPriceLineRenderer', () => {
 
       result.current.renderLabel();
 
-      expect(mockCtx.fillText).toHaveBeenCalledWith(expect.any(String), 736, expect.any(Number));
+      expect(mockCtx.fillText).toHaveBeenCalledWith(expect.any(String), 728 + 5, expect.any(Number));
     });
   });
 

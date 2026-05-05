@@ -239,7 +239,7 @@ export const GRID_ORDER_COLORS = {
 } as const;
 
 export const ORDER_LINE_LAYOUT = {
-  LABEL_PADDING: 8,
+  LABEL_PADDING: 5,
   LABEL_HEIGHT: 18,
   ARROW_WIDTH: 6,
   CLOSE_BUTTON_SIZE: 14,

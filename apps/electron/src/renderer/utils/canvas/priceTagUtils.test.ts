@@ -102,7 +102,7 @@ describe('priceTagUtils', () => {
       const result = drawPriceTag(ctx, '99.99', 150, 50, 'rgba(239, 68, 68, 0.9)', customWidth);
 
       expect(result).toEqual({ width: 100, height: 18 });
-      expect(ctx.fillText).toHaveBeenCalledWith('99.99', 58, 150 + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
+      expect(ctx.fillText).toHaveBeenCalledWith('99.99', 50 + ORDER_LINE_LAYOUT.LABEL_PADDING, 150 + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
     });
 
     it('should return correct dimensions for standard width (72px)', () => {
@@ -181,7 +181,7 @@ describe('priceTagUtils', () => {
     it('should render text with correct padding', () => {
       const x = 100;
       const y = 200;
-      const labelPadding = 8;
+      const labelPadding = ORDER_LINE_LAYOUT.LABEL_PADDING;
 
       drawPriceTag(ctx, '123.45', y, x, 'rgba(0, 0, 0, 0.9)');
 

@@ -2,6 +2,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawShieldIcon } from '@renderer/utils/canvas/canvasIcons';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { ORDER_LINE_COLORS } from '@shared/constants';
+import { drawInfoTag } from '../orderLineDrawing';
 import { getOrderPrice, isOrderLong, isOrderPending } from '@shared/utils';
 import type { Order } from '@marketmind/types';
 import type { MutableRefObject } from 'react';
@@ -221,6 +222,8 @@ export const renderOrderPreview = (
   manager: CanvasManager,
   orderPreviewRef: MutableRefObject<{ price: number; type: 'long' | 'short' } | null>,
   t: (key: string) => string,
+  infoTagBg: string,
+  infoTagText: string,
 ): void => {
   const orderPreviewValue = orderPreviewRef.current;
   if (!orderPreviewValue) return;
@@ -232,46 +235,25 @@ export const renderOrderPreview = (
   const y = manager.priceToY(orderPreviewValue.price);
   const isLong = orderPreviewValue.type === 'long';
 
-  const willBeActive = false;
-
-  const color = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
-  const opacity = willBeActive ? 0.8 : 0.5; ctx.save();
-  ctx.globalAlpha = opacity;
-  ctx.strokeStyle = color;
+  const lineColor = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
-
   ctx.beginPath();
   ctx.moveTo(0, y);
   ctx.lineTo(dimensions.chartWidth, y);
   ctx.stroke();
 
   ctx.globalAlpha = 1;
-  ctx.fillStyle = color;
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  const statusLabel = willBeActive ? t('trading.active') : t('trading.pending');
-  const directionSymbol = isLong ? '\u2191' : '\u2193';
-  const label = `${directionSymbol} @ ${orderPreviewValue.price.toFixed(2)} [${statusLabel}]`;
-  const labelPadding = 8;
-  const textMetrics = ctx.measureText(label);
-  const textWidth = textMetrics.width;
-  const labelHeight = 18;
-  const arrowWidth = 6;
-  const labelWidth = textWidth + labelPadding * 2;
-
-  ctx.beginPath();
-  ctx.moveTo(labelWidth + arrowWidth, y);
-  ctx.lineTo(labelWidth, y - labelHeight / 2);
-  ctx.lineTo(0, y - labelHeight / 2);
-  ctx.lineTo(0, y + labelHeight / 2);
-  ctx.lineTo(labelWidth, y + labelHeight / 2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-  ctx.fillText(label, labelPadding, y);
+  const statusLabel = t('trading.pending');
+  const direction: 'up' | 'down' = isLong !== manager.isFlipped() ? 'up' : 'down';
+  const label = `@ ${orderPreviewValue.price.toFixed(2)} [${statusLabel}]`;
+  drawInfoTag(ctx, label, y, lineColor, infoTagBg, infoTagText, false, null, null, false, 0, null, direction);
 
   ctx.restore();
 };

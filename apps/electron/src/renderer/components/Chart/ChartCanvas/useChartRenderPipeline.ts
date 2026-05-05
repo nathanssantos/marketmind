@@ -146,7 +146,7 @@ export const useChartRenderPipeline = ({
       timed('currentPriceLabel', b.renderCurrentPriceLine_Label);
       timed('crosshair', b.renderCrosshairPriceLine);
 
-      timed('orderPreview', () => renderOrderPreview(manager, r.orderPreviewRef, r.t));
+      timed('orderPreview', () => renderOrderPreview(manager, r.orderPreviewRef, r.t, _colors.background, _colors.text));
     };
 
     const renderWithDirtyFlagCleanup = (): void => {

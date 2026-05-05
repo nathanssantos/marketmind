@@ -160,6 +160,7 @@ export const renderPendingOrders = (
     drawHorizontalLine(ctx, y, chartWidth, lineColor);
 
     const typeLabel = isLong ? 'L' : 'S';
+    const direction: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
     const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
 
     const orderId = getOrderId(order);
@@ -169,7 +170,7 @@ export const renderPendingOrders = (
     rc.priceTags.push({ priceText: formatChartPrice(getOrderPrice(order)), y, fillColor, flashAlpha });
 
     const closeButtonRef = { x: 0, y: 0, size: 14 };
-    const entryTagSize = drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, rc.now);
+    const entryTagSize = drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, rc.now, null, direction);
     drawInfoTagFlash(ctx, entryTagSize, y, flashAlpha);
 
     rc.orderHitboxes.push({
@@ -236,13 +237,14 @@ export const renderHoveredPendingOrder = (
   drawHorizontalLine(ctx, y, chartWidth, lineColor);
 
   const typeLabel = isLong ? 'L' : 'S';
+  const direction: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
   const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
 
   const hoveredOrderId = getOrderId(order);
   const hoveredLoading = rc.isOrderLoading(hoveredOrderId);
   if (hoveredLoading) rc.needsAnimation = true;
   const closeButtonRef = { x: 0, y: 0, size: 14 };
-  drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, rc.now);
+  drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, rc.now, null, direction);
 
   rc.orderHitboxes.push({
     orderId: hoveredOrderId,
