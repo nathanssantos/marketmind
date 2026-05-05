@@ -53,7 +53,7 @@ const renderConsolidatedSLTP = (
     const slConsLoading = position.orderIds.some((id: string) => rc.isOrderLoading(id));
     if (slConsLoading) rc.needsAnimation = true;
     const closeButtonRef = { x: 0, y: 0, size: 14 };
-    const slTagSize = drawInfoTag(ctx, infoText, y, slTagColor, true, closeButtonRef, null, slConsLoading, rc.now);
+    const slTagSize = drawInfoTag(ctx, infoText, y, slTagColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, null, slConsLoading, rc.now);
     drawInfoTagFlash(ctx, slTagSize, y, slFlash);
 
     rc.orderHitboxes.push({
@@ -116,7 +116,7 @@ const renderConsolidatedSLTP = (
     const tpConsLoading = position.orderIds.some((id: string) => rc.isOrderLoading(id));
     if (tpConsLoading) rc.needsAnimation = true;
     const closeButtonRef = { x: 0, y: 0, size: 14 };
-    const tpTagSize = drawInfoTag(ctx, infoText, y, tpFillColor, true, closeButtonRef, null, tpConsLoading, rc.now);
+    const tpTagSize = drawInfoTag(ctx, infoText, y, tpFillColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, null, tpConsLoading, rc.now);
     drawInfoTagFlash(ctx, tpTagSize, y, tpFlash);
 
     rc.orderHitboxes.push({

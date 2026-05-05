@@ -12,7 +12,7 @@ describe('useOrderLinesRenderer', () => {
   beforeEach(() => {
     mockCtx = {
       save: vi.fn(), restore: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(),
-      stroke: vi.fn(), fill: vi.fn(), fillText: vi.fn(), fillRect: vi.fn(), closePath: vi.fn(),
+      arcTo: vi.fn(), stroke: vi.fn(), fill: vi.fn(), fillText: vi.fn(), fillRect: vi.fn(), closePath: vi.fn(),
       rect: vi.fn(), clip: vi.fn(), setLineDash: vi.fn(), measureText: vi.fn(() => ({ width: 50 })),
       roundRect: vi.fn(), arc: vi.fn(), globalAlpha: 1,
       lineWidth: 1, strokeStyle: '', fillStyle: '', font: '', lineCap: 'butt', lineJoin: 'miter',

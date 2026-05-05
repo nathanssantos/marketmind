@@ -45,6 +45,7 @@ describe('drawPriceTag — dynamic text color', () => {
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
+      arcTo: vi.fn(),
       closePath: vi.fn(),
       fill: vi.fn(),
       fillText: vi.fn(),
@@ -80,6 +81,7 @@ describe('priceTagUtils', () => {
         beginPath: vi.fn(),
         moveTo: vi.fn(),
         lineTo: vi.fn(),
+        arcTo: vi.fn(),
         closePath: vi.fn(),
         fill: vi.fn(),
         fillText: vi.fn(),
@@ -90,7 +92,7 @@ describe('priceTagUtils', () => {
     it('should draw a price tag with default width', () => {
       const result = drawPriceTag(ctx, '100.50', 200, 100, 'rgba(34, 197, 94, 0.9)');
 
-      expect(result).toEqual({ width: 70, height: 18 });
+      expect(result).toEqual({ width: 64, height: 18 });
       expect(ctx.save).toHaveBeenCalled();
       expect(ctx.restore).toHaveBeenCalled();
     });
@@ -99,33 +101,30 @@ describe('priceTagUtils', () => {
       const customWidth = 100;
       const result = drawPriceTag(ctx, '99.99', 150, 50, 'rgba(239, 68, 68, 0.9)', customWidth);
 
-      expect(result).toEqual({ width: 106, height: 18 });
+      expect(result).toEqual({ width: 100, height: 18 });
       expect(ctx.fillText).toHaveBeenCalledWith('99.99', 58, 150 + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
     });
 
     it('should return correct dimensions for standard width (72px)', () => {
       const result = drawPriceTag(ctx, '1234.56', 100, 200, 'rgba(59, 130, 246, 0.9)', 72);
 
-      expect(result.width).toBe(78);
+      expect(result.width).toBe(72);
       expect(result.height).toBe(18);
     });
 
     it('should handle different price formats', () => {
       const result1 = drawPriceTag(ctx, '0.01', 100, 100, 'rgba(0, 0, 0, 0.9)');
-      expect(result1).toEqual({ width: 70, height: 18 });
+      expect(result1).toEqual({ width: 64, height: 18 });
 
       const result2 = drawPriceTag(ctx, '99999.99', 100, 100, 'rgba(0, 0, 0, 0.9)');
-      expect(result2).toEqual({ width: 70, height: 18 });
+      expect(result2).toEqual({ width: 64, height: 18 });
     });
 
-    it('should calculate correct width including arrow', () => {
+    it('should return the fixed width unchanged (no arrow)', () => {
       const fixedWidth = 72;
-      const arrowWidth = 6;
-      const expectedWidth = fixedWidth + arrowWidth;
-
       const result = drawPriceTag(ctx, '123.45', 200, 100, 'rgba(0, 0, 0, 0.9)', fixedWidth);
 
-      expect(result.width).toBe(expectedWidth);
+      expect(result.width).toBe(fixedWidth);
     });
 
     it('should always return height of 18px', () => {
@@ -141,7 +140,7 @@ describe('priceTagUtils', () => {
 
       widths.forEach((width) => {
         const result = drawPriceTag(ctx, '100.00', 100, 100, 'rgba(0, 0, 0, 0.9)', width);
-        expect(result.width).toBe(width + 6);
+        expect(result.width).toBe(width);
       });
     });
 
@@ -155,8 +154,8 @@ describe('priceTagUtils', () => {
       const result1 = drawPriceTag(ctx, '0.00', 0, 0, 'rgba(0, 0, 0, 0.9)');
       const result2 = drawPriceTag(ctx, '999.99', 1000, 1000, 'rgba(0, 0, 0, 0.9)');
 
-      expect(result1).toEqual({ width: 70, height: 18 });
-      expect(result2).toEqual({ width: 70, height: 18 });
+      expect(result1).toEqual({ width: 64, height: 18 });
+      expect(result2).toEqual({ width: 64, height: 18 });
     });
 
     it('should work with different color formats', () => {
@@ -169,18 +168,14 @@ describe('priceTagUtils', () => {
 
       colors.forEach((color) => {
         const result = drawPriceTag(ctx, '100.00', 100, 100, color);
-        expect(result).toEqual({ width: 70, height: 18 });
+        expect(result).toEqual({ width: 64, height: 18 });
       });
     });
 
-    it('should draw arrow pointing left at correct position', () => {
-      const x = 100;
-      const y = 200;
-      const arrowWidth = 6;
+    it('should use rounded rectangle path (arcTo) instead of arrow', () => {
+      drawPriceTag(ctx, '50.00', 200, 100, 'rgba(0, 0, 0, 0.9)');
 
-      drawPriceTag(ctx, '50.00', y, x, 'rgba(0, 0, 0, 0.9)');
-
-      expect(ctx.moveTo).toHaveBeenCalledWith(x - arrowWidth, y);
+      expect(ctx.arcTo).toHaveBeenCalled();
     });
 
     it('should render text with correct padding', () => {
@@ -193,7 +188,7 @@ describe('priceTagUtils', () => {
       expect(ctx.fillText).toHaveBeenCalledWith('123.45', x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
     });
 
-    it('should set fill style to white for text', () => {
+    it('should set fill style to white for text on a dark fill', () => {
       drawPriceTag(ctx, '100.00', 100, 100, 'rgba(0, 0, 0, 0.9)');
 
       expect(ctx.fillStyle).toBe('#ffffff');

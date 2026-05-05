@@ -16,6 +16,7 @@ import type { GroupedPosition, TrailingStopLineConfig } from './orderLineTypes';
 import { PRICE_TAG_WIDTH } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
 import { getDirectionArrow } from './utils/directionArrow';
+import { PRICE_TAG_HEIGHT, resolvePriceTagCollisions } from './utils/priceTagCollision';
 
 export const renderPendingSetups = (
   rc: RenderContext,
@@ -66,7 +67,7 @@ export const renderPendingSetups = (
     const orderTypeLabel = isLimitOrder ? 'LIMIT' : 'MKT';
     const infoText = `${directionSymbol} ${setupLabel} (${orderTypeLabel})`;
 
-    drawInfoTag(ctx, infoText, entryY, fillColor, false, null, 'bot');
+    drawInfoTag(ctx, infoText, entryY, lineColor, rc.infoTagBg, rc.infoTagText, false, null, 'bot');
 
     if (setup.stopLoss) {
       const slY = manager.priceToY(setup.stopLoss);
@@ -84,7 +85,7 @@ export const renderPendingSetups = (
       const slInfoText = `SL (${slPercent.toFixed(2)}%)`;
 
       rc.priceTags.push({ priceText: slPriceText, y: slY, fillColor: slTagColor });
-      drawInfoTag(ctx, slInfoText, slY, slTagColor, false, null, null);
+      drawInfoTag(ctx, slInfoText, slY, slTagColor, rc.infoTagBg, rc.infoTagText, false, null, null);
     }
 
     if (setup.takeProfit) {
@@ -99,7 +100,7 @@ export const renderPendingSetups = (
 
       const tpSetupFillColor = ORDER_LINE_COLORS.TP_FILL;
       rc.priceTags.push({ priceText: tpPriceText, y: tpY, fillColor: tpSetupFillColor });
-      drawInfoTag(ctx, tpInfoText, tpY, tpSetupFillColor, false, null, null);
+      drawInfoTag(ctx, tpInfoText, tpY, tpSetupFillColor, rc.infoTagBg, rc.infoTagText, false, null, null);
     }
 
     ctx.restore();
@@ -155,7 +156,7 @@ export const renderTrailingStops = (
 
     setStandardFont(ctx);
     const tsCloseBtn = { x: 0, y: 0, size: 14 };
-    drawInfoTag(ctx, tsLabel, tsY, ORDER_LINE_COLORS.TRAILING_STOP_FILL, true, tsCloseBtn, 'shield');
+    drawInfoTag(ctx, tsLabel, tsY, ORDER_LINE_COLORS.TRAILING_STOP_FILL, rc.infoTagBg, rc.infoTagText, true, tsCloseBtn, 'shield');
     rc.tsCloseButtons.push(tsCloseBtn);
 
     const tsPriceText = formatChartPrice(activationPrice);
@@ -194,7 +195,7 @@ export const renderLiquidationLines = (
     setStandardFont(ctx);
     const liqArrow = getDirectionArrow(side === 'LONG', manager.isFlipped());
     const liqLabel = `LIQ ${liqArrow}`;
-    drawInfoTag(ctx, liqLabel, liqY, ORDER_LINE_COLORS.LIQUIDATION_FILL, false);
+    drawInfoTag(ctx, liqLabel, liqY, ORDER_LINE_COLORS.LIQUIDATION_FILL, rc.infoTagBg, rc.infoTagText, false);
 
     const liqPriceText = formatChartPrice(liqPrice);
     rc.priceTags.push({ priceText: liqPriceText, y: liqY, fillColor: ORDER_LINE_COLORS.LIQUIDATION_FILL });
@@ -206,26 +207,23 @@ export const renderLiquidationLines = (
 export const renderPriceTags = (
   rc: RenderContext
 ): void => {
-  const { ctx, chartWidth, chartHeight } = rc;
+  const { ctx, chartWidth, chartHeight, currentPriceTag } = rc;
 
-  rc.priceTags.forEach(({ priceText, y, fillColor, flashAlpha: tagFlash }) => {
-    if (y < 0 || y > chartHeight) return;
+  const visible = rc.priceTags.filter((t) => t.y >= 0 && t.y <= chartHeight);
+  const resolvedYs = resolvePriceTagCollisions({
+    tags: visible.map((t) => ({ y: t.y, height: PRICE_TAG_HEIGHT })),
+    fixedAnchor: currentPriceTag,
+    chartHeight,
+  });
+
+  visible.forEach(({ priceText, fillColor, flashAlpha: tagFlash }, i) => {
+    const y = resolvedYs[i] ?? 0;
     const tagSize = drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
     if (tagFlash && tagFlash > 0) {
-      const arrowWidth = 6;
-      const tagX = chartWidth;
-      const tagEndX = tagX + PRICE_TAG_WIDTH;
       ctx.save();
       ctx.globalAlpha = tagFlash;
       ctx.fillStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
-      ctx.beginPath();
-      ctx.moveTo(tagX - arrowWidth, y);
-      ctx.lineTo(tagX, y - tagSize.height / 2);
-      ctx.lineTo(tagEndX, y - tagSize.height / 2);
-      ctx.lineTo(tagEndX, y + tagSize.height / 2);
-      ctx.lineTo(tagX, y + tagSize.height / 2);
-      ctx.closePath();
-      ctx.fill();
+      ctx.fillRect(chartWidth, y - tagSize.height / 2, PRICE_TAG_WIDTH, tagSize.height);
       ctx.restore();
       rc.needsAnimation = true;
     }

@@ -1,5 +1,6 @@
 import type { Order, TradingSetup } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
+import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import { getKlineClose, getOrderId, isOrderActive, isOrderPending } from '@shared/utils';
 import { ORDER_LINE_ANIMATION } from '@shared/constants';
 import type { RefObject } from 'react';
@@ -50,7 +51,9 @@ export const useOrderLinesRenderer = (
   orderLoadingMapRef?: RefObject<Map<string, number>>,
   orderFlashMapRef?: RefObject<Map<string, number>>,
   trailingStopConfig?: TrailingStopLineConfig | null,
-  draggedOrderIdRef?: RefObject<string | null>
+  draggedOrderIdRef?: RefObject<string | null>,
+  colors?: ChartThemeColors,
+  showCurrentPriceTimer: boolean = true,
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -118,6 +121,9 @@ export const useOrderLinesRenderer = (
     if (!lastKline) return false;
 
     const currentPrice = getKlineClose(lastKline);
+    const currentPriceY = manager.priceToY(currentPrice);
+    const currentPriceTagInBounds = currentPriceY >= 0 && currentPriceY <= chartHeight;
+    const currentPriceTagHeight = showCurrentPriceTimer ? 18 + 16 : 18;
     const now = performance.now();
 
     closeButtonsRef.current = [];
@@ -162,6 +168,11 @@ export const useOrderLinesRenderer = (
       tsCloseButtons: tsCloseButtonsRef.current,
       needsAnimation: false,
       showProfitLossAreas,
+      infoTagBg: colors?.background ?? 'rgba(26, 32, 44, 0.95)',
+      infoTagText: colors?.text ?? '#ffffff',
+      currentPriceTag: currentPriceTagInBounds
+        ? { y: currentPriceY + currentPriceTagHeight / 2 - 9, height: currentPriceTagHeight }
+        : null,
     };
 
     const pendingOrders = activeOrders.filter((order) => isOrderPending(order));

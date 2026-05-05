@@ -390,7 +390,7 @@ const ChartCanvasInternal = ({
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors);
 
   const auxiliarySetup = useChartAuxiliarySetup({
     manager, klines, symbol: symbol ?? '', timeframe, colors, hasTradingEnabled,

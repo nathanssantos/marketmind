@@ -1,4 +1,5 @@
 import { drawBotIcon, drawShieldIcon } from '@renderer/utils/canvas/canvasIcons';
+import { drawFlatLeftStrokePath, drawPillPath } from '@renderer/utils/canvas/priceTagUtils';
 import { ORDER_LINE_COLORS, ORDER_LINE_LAYOUT, ORDER_LINE_ANIMATION } from '@shared/constants';
 import { SLTP_BUTTON } from './orderLineTypes';
 
@@ -28,18 +29,18 @@ export const drawInfoTagFlash = (
   flashAlpha: number
 ): void => {
   if (flashAlpha <= 0) return;
-  const bodyEnd = tagSize.width - ORDER_LINE_LAYOUT.ARROW_WIDTH;
-  const halfH = tagSize.height / 2;
   ctx.save();
   ctx.globalAlpha = flashAlpha;
   ctx.fillStyle = ORDER_LINE_COLORS.FLASH_OVERLAY;
-  ctx.beginPath();
-  ctx.moveTo(tagSize.width, y);
-  ctx.lineTo(bodyEnd, y - halfH);
-  ctx.lineTo(0, y - halfH);
-  ctx.lineTo(0, y + halfH);
-  ctx.lineTo(bodyEnd, y + halfH);
-  ctx.closePath();
+  drawPillPath(
+    ctx,
+    0,
+    y - tagSize.height / 2,
+    tagSize.width,
+    tagSize.height,
+    ORDER_LINE_LAYOUT.LABEL_BORDER_RADIUS,
+    'flat-left',
+  );
   ctx.fill();
   ctx.restore();
 };
@@ -83,36 +84,86 @@ const drawSpinner = (
   ctx.stroke();
 };
 
+export interface InlineSlTpButtons {
+  showSl: boolean;
+  showTp: boolean;
+  slButtonRef?: { x: number; y: number; width: number; height: number } | null;
+  tpButtonRef?: { x: number; y: number; width: number; height: number } | null;
+}
+
+const DIRECTION_TRIANGLE_SIZE = 7;
+const DIRECTION_TRIANGLE_GAP = 4;
+
+const drawDirectionTriangle = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  direction: 'up' | 'down',
+  color: string,
+): void => {
+  const half = DIRECTION_TRIANGLE_SIZE / 2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  if (direction === 'up') {
+    ctx.moveTo(x + half, y - half);
+    ctx.lineTo(x + DIRECTION_TRIANGLE_SIZE, y + half);
+    ctx.lineTo(x, y + half);
+  } else {
+    ctx.moveTo(x, y - half);
+    ctx.lineTo(x + DIRECTION_TRIANGLE_SIZE, y - half);
+    ctx.lineTo(x + half, y + half);
+  }
+  ctx.closePath();
+  ctx.fill();
+};
+
 export const drawInfoTag = (
   ctx: CanvasRenderingContext2D,
   text: string,
   y: number,
-  fillColor: string,
+  borderColor: string,
+  bgColor: string,
+  textColor: string,
   hasCloseButton: boolean = false,
   closeButtonRef?: { x: number; y: number; size: number } | null,
   icon: 'bot' | 'shield' | null = null,
   isLoading: boolean = false,
-  timestamp: number = 0
+  timestamp: number = 0,
+  inlineSlTp: InlineSlTpButtons | null = null,
+  direction: 'up' | 'down' | null = null
 ): { width: number; height: number } => {
-  const { LABEL_PADDING, LABEL_HEIGHT, ARROW_WIDTH, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_MARGIN, ICON_SIZE, ICON_MARGIN, CLOSE_CROSS_PADDING } = ORDER_LINE_LAYOUT;
+  const {
+    LABEL_PADDING,
+    LABEL_HEIGHT,
+    CLOSE_BUTTON_SIZE,
+    CLOSE_BUTTON_MARGIN,
+    ICON_SIZE,
+    ICON_MARGIN,
+    CLOSE_CROSS_PADDING,
+    LABEL_BORDER_RADIUS,
+    LABEL_BORDER_WIDTH,
+  } = ORDER_LINE_LAYOUT;
 
   const textWidth = ctx.measureText(text).width;
   const closeButtonSpace = hasCloseButton ? CLOSE_BUTTON_SIZE + CLOSE_BUTTON_MARGIN : 0;
   const iconSpace = icon ? ICON_SIZE + ICON_MARGIN : 0;
-  const totalContentWidth = closeButtonSpace + iconSpace + textWidth;
-  const tagWidth = totalContentWidth + LABEL_PADDING * 2;
+  const directionSpace = direction ? DIRECTION_TRIANGLE_SIZE + DIRECTION_TRIANGLE_GAP : 0;
+  const inlineSlSpace = inlineSlTp?.showSl ? SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP : 0;
+  const inlineTpSpace = inlineSlTp?.showTp ? SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP : 0;
+  const totalContentWidth = closeButtonSpace + iconSpace + directionSpace + textWidth + inlineSlSpace + inlineTpSpace;
+  const rightPadding = inlineSlTp ? 1 : LABEL_PADDING;
+  const tagWidth = totalContentWidth + LABEL_PADDING + rightPadding;
 
   ctx.save();
-  ctx.fillStyle = fillColor;
 
-  ctx.beginPath();
-  ctx.moveTo(tagWidth + ARROW_WIDTH, y);
-  ctx.lineTo(tagWidth, y - LABEL_HEIGHT / 2);
-  ctx.lineTo(0, y - LABEL_HEIGHT / 2);
-  ctx.lineTo(0, y + LABEL_HEIGHT / 2);
-  ctx.lineTo(tagWidth, y + LABEL_HEIGHT / 2);
-  ctx.closePath();
+  ctx.fillStyle = bgColor;
+  drawPillPath(ctx, 0, y - LABEL_HEIGHT / 2, tagWidth, LABEL_HEIGHT, LABEL_BORDER_RADIUS, 'flat-left');
   ctx.fill();
+
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = LABEL_BORDER_WIDTH;
+  drawFlatLeftStrokePath(ctx, 0, y - LABEL_HEIGHT / 2, tagWidth, LABEL_HEIGHT, LABEL_BORDER_RADIUS);
+  ctx.stroke();
 
   if (hasCloseButton && closeButtonRef) {
     const closeButtonX = LABEL_PADDING;
@@ -126,7 +177,7 @@ export const drawInfoTag = (
     if (isLoading) {
       drawSpinner(ctx, closeButtonX + CLOSE_BUTTON_SIZE / 2, y, CLOSE_BUTTON_SIZE / 2 - 2, timestamp);
     } else {
-      ctx.strokeStyle = ORDER_LINE_COLORS.TEXT_WHITE;
+      ctx.strokeStyle = textColor;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(closeButtonX + CLOSE_CROSS_PADDING, closeButtonY + CLOSE_CROSS_PADDING);
@@ -151,11 +202,56 @@ export const drawInfoTag = (
     currentX += ICON_SIZE + ICON_MARGIN;
   }
 
-  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
+  if (direction) {
+    drawDirectionTriangle(ctx, currentX, y, direction, textColor);
+    currentX += DIRECTION_TRIANGLE_SIZE + DIRECTION_TRIANGLE_GAP;
+  }
+
+  ctx.fillStyle = textColor;
   ctx.fillText(text, currentX, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
 
+  if (inlineSlTp) {
+    let inlineX = currentX + textWidth + SLTP_BUTTON.GAP;
+    const btnY = y - SLTP_BUTTON.HEIGHT / 2;
+    ctx.save();
+    ctx.font = `${SLTP_BUTTON.FONT_SIZE}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 1;
+    if (inlineSlTp.showSl) {
+      ctx.fillStyle = SLTP_BUTTON.SL_BG;
+      ctx.beginPath();
+      ctx.roundRect(inlineX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, SLTP_BUTTON.BORDER_RADIUS);
+      ctx.fill();
+      ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
+      ctx.fillText('SL', inlineX + SLTP_BUTTON.WIDTH / 2, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
+      if (inlineSlTp.slButtonRef) {
+        inlineSlTp.slButtonRef.x = inlineX;
+        inlineSlTp.slButtonRef.y = btnY;
+        inlineSlTp.slButtonRef.width = SLTP_BUTTON.WIDTH;
+        inlineSlTp.slButtonRef.height = SLTP_BUTTON.HEIGHT;
+      }
+      inlineX += SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP;
+    }
+    if (inlineSlTp.showTp) {
+      ctx.fillStyle = SLTP_BUTTON.TP_BG;
+      ctx.beginPath();
+      ctx.roundRect(inlineX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, SLTP_BUTTON.BORDER_RADIUS);
+      ctx.fill();
+      ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
+      ctx.fillText('TP', inlineX + SLTP_BUTTON.WIDTH / 2, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
+      if (inlineSlTp.tpButtonRef) {
+        inlineSlTp.tpButtonRef.x = inlineX;
+        inlineSlTp.tpButtonRef.y = btnY;
+        inlineSlTp.tpButtonRef.width = SLTP_BUTTON.WIDTH;
+        inlineSlTp.tpButtonRef.height = SLTP_BUTTON.HEIGHT;
+      }
+    }
+    ctx.restore();
+  }
+
   ctx.restore();
-  return { width: tagWidth + ARROW_WIDTH, height: LABEL_HEIGHT };
+  return { width: tagWidth, height: LABEL_HEIGHT };
 };
 
 export const drawPercentBadge = (
@@ -167,7 +263,7 @@ export const drawPercentBadge = (
 ): { width: number; height: number } => {
   const percentPadding = 4;
   const percentHeight = 14;
-  const borderRadius = 3;
+  const borderRadius = ORDER_LINE_LAYOUT.LABEL_BORDER_RADIUS;
   const percentWidth = ctx.measureText(percentText).width;
   const badgeWidth = percentWidth + percentPadding * 2;
 
