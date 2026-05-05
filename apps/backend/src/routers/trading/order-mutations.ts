@@ -421,6 +421,96 @@ export const orderMutationsRouter = router({
               });
             }
           }
+        } else if (
+          binanceOrder.status === 'FILLED'
+          && !orderInput.reduceOnly
+          && orderInput.marketType === 'FUTURES'
+          && parseFloat(binanceOrder.executedQty ?? '0') > 0
+        ) {
+          // MARKET (or insta-fill) entry: insert the open tradeExecution
+          // row right here. We used to leave this to handleManualOrderFill
+          // in the user-stream when ORDER_TRADE_UPDATE arrived, but that
+          // races against the orders-table insert above — the user-stream
+          // handler does `select … from orders where orderId=…` and
+          // returns early when it doesn't find the row yet, so the
+          // tradeExecution row never gets inserted. The fill stays on
+          // Binance with no DB representation until position-sync (30s
+          // later) adopts the unknown position, leaving every MARKET
+          // entry briefly invisible to the renderer + flagged as
+          // "UNPROTECTED POSITION (no SL/TP)" by PositionMonitor.
+          //
+          // handleManualOrderFill already guards against duplicate inserts
+          // via its same-side-exec check, so this is safe — whichever
+          // path lands first wins, and the other no-ops.
+          const intendedSide: PositionSide = orderInput.side === 'BUY' ? 'LONG' : 'SHORT';
+          const oppositeDirection = intendedSide === 'LONG' ? 'SHORT' : 'LONG';
+          // Binance MARKET fills come back with `price` set to the avg
+          // fill price; for unfilled / paper / dry-run paths it's 0 or
+          // missing. Walk through fallbacks in priority order, picking
+          // the first positive number — covers live fills, server-
+          // computed paper fills, and renderer-supplied book reference.
+          const refPrice = (orderInput as { referencePrice?: number }).referencePrice ?? 0;
+          const candidates = [
+            parseFloat(binanceOrder.price ?? '0'),
+            parseFloat(orderInput.price ?? '0'),
+            refPrice,
+          ];
+          const fillPrice = candidates.find((p) => Number.isFinite(p) && p > 0) ?? 0;
+          const fillQty = parseFloat(binanceOrder.executedQty ?? binanceOrder.origQty ?? '0');
+
+          const [existingOpposite] = await ctx.db
+            .select({ id: tradeExecutions.id })
+            .from(tradeExecutions)
+            .where(
+              and(
+                eq(tradeExecutions.walletId, orderInput.walletId),
+                eq(tradeExecutions.symbol, orderInput.symbol),
+                eq(tradeExecutions.side, oppositeDirection),
+                eq(tradeExecutions.status, 'open'),
+                eq(tradeExecutions.marketType, orderInput.marketType)
+              )
+            )
+            .limit(1);
+
+          // Skip the insert if there's an opposite-side open exec — that
+          // makes this fill a reduce against the existing position, which
+          // handleManualOrderFill / handleUntrackedReduceFill in the
+          // user-stream are responsible for closing.
+          if (!existingOpposite && fillPrice > 0 && fillQty > 0) {
+            // Same-side dedup against handleManualOrderFill — whichever
+            // path wins the race owns the row.
+            const [existingSameSide] = await ctx.db
+              .select({ id: tradeExecutions.id })
+              .from(tradeExecutions)
+              .where(
+                and(
+                  eq(tradeExecutions.walletId, orderInput.walletId),
+                  eq(tradeExecutions.symbol, orderInput.symbol),
+                  eq(tradeExecutions.side, intendedSide),
+                  eq(tradeExecutions.status, 'open'),
+                  eq(tradeExecutions.marketType, orderInput.marketType)
+                )
+              )
+              .limit(1);
+
+            if (!existingSameSide) {
+              await ctx.db.insert(tradeExecutions).values({
+                id: generateEntityId(),
+                userId: ctx.user.id,
+                walletId: orderInput.walletId,
+                symbol: orderInput.symbol,
+                side: intendedSide,
+                entryPrice: String(fillPrice),
+                quantity: String(fillQty),
+                entryOrderId: binanceOrder.orderId,
+                entryOrderType: 'MARKET',
+                status: 'open',
+                marketType: orderInput.marketType,
+                openedAt: new Date(),
+                leverage: futuresLeverage,
+              });
+            }
+          }
         }
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)

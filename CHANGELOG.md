@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.6] - 2026-05-04
+
+### Fixed
+- **MARKET ticket entries no longer take 25–30 seconds to appear.** Race between the `createOrder` mutation's `INSERT INTO orders` and Binance's `ORDER_TRADE_UPDATE` user-stream event left the position invisible to the renderer until `position-sync`'s 30s loop adopted it as an "unknown position". `handleManualOrderFill` looks up the order by `orderId` BEFORE inserting the `tradeExecution` row — when the user-stream event beat the order-table commit (separate connection, separate event loop), the lookup missed and the handler bailed with "No open execution found". `PositionMonitor` then flagged "UNPROTECTED POSITION — no SL/TP" because the adopted exec has no SL/TP fields. Backend `createOrder` now inserts the `tradeExecution` row directly when Binance returns `FILLED` on a non-reduceOnly FUTURES MARKET order. Same opposite-side / same-side dedup guards `handleManualOrderFill` uses, so whichever path wins the race owns the row and the other no-ops.
+- **Net effect**: PR #441's `data.openExecutions` patch now actually includes the new MARKET position in the response, so the renderer's cache patch lands instantly (was previously empty for MARKET because the row wasn't inserted yet). End-to-end ticket reactivity finally complete.
+
 ## [1.11.5] - 2026-05-04
 
 ### Fixed — order reactivity + ghost copies
