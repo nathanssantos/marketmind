@@ -5,6 +5,7 @@ import { getQueryKey } from '@trpc/react-query';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
+import { replaceOpenExecutionsInAllCaches } from '../services/executionCacheSync';
 import { usePollingInterval } from './usePollingInterval';
 
 export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
@@ -32,6 +33,21 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       { queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders) },
       removeFn,
     );
+  };
+
+  // Fans out the authoritative open-executions snapshot across both
+  // execution-cache procedures (chart's autoTrading.getActiveExecutions
+  // included) for every input variant — see executionCacheSync.ts.
+  const fanOutOpenExecutions = (
+    data: {
+      walletId?: string | null;
+      openExecutions?: Array<{ walletId?: string | null; [k: string]: unknown }>;
+    }
+  ) => {
+    if (!data.openExecutions) return;
+    const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
+    if (!wId) return;
+    replaceOpenExecutionsInAllCaches(queryClient, wId, data.openExecutions as never);
   };
   const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
 
@@ -85,21 +101,15 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const createOrderMutation = trpc.futuresTrading.createOrder.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const wId = data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId: wId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
-      }
+      // Fan-out covers both trading.getTradeExecutions AND
+      // autoTrading.getActiveExecutions across every input variant —
+      // sibling charts at other timeframes update in the same render
+      // frame as the click.
+      fanOutOpenExecutions(data);
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenDbOrderIds.invalidate();
       void utils.futuresTrading.getPositions.invalidate();
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 
@@ -108,19 +118,10 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       if (orderId) dropOrderFromCaches(String(orderId));
     },
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId: wId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
-      }
+      fanOutOpenExecutions(data);
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenDbOrderIds.invalidate();
       void utils.trading.getOrders.invalidate();
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
     },
   });
@@ -137,39 +138,19 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const closePositionMutation = trpc.futuresTrading.closePosition.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId: wId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
-      }
+      fanOutOpenExecutions(data);
       void utils.futuresTrading.getPositions.invalidate();
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 
   const reversePositionMutation = trpc.futuresTrading.reversePosition.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId: wId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
-      }
+      fanOutOpenExecutions(data);
       void utils.futuresTrading.getPositions.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 
@@ -263,21 +244,11 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const closePositionAndCancelOrdersMutation = trpc.futuresTrading.closePositionAndCancelOrders.useMutation({
     onSuccess: (data) => {
-      if (data.openExecutions) {
-        const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
-        utils.trading.getTradeExecutions.setData(
-          { walletId: wId, status: 'open', limit: 500 },
-          data.openExecutions,
-        );
-      } else {
-        void utils.trading.getTradeExecutions.invalidate();
-      }
+      fanOutOpenExecutions(data);
       void utils.futuresTrading.getPositions.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
-      void utils.wallet.list.invalidate();
     },
   });
 

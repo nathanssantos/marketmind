@@ -6,6 +6,7 @@ import type {
   StreamReconnectedPayload,
   TradeNotificationPayload,
 } from '@marketmind/types';
+import { useQueryClient } from '@tanstack/react-query';
 import { createPlatformAdapter } from '../adapters/factory';
 import { useSocketEvent, useWalletSubscription } from '../hooks/socket';
 import { socketBus } from '../services/socketBus';
@@ -14,10 +15,12 @@ import {
   mergeOrderCancelled,
   mergeOrderCreated,
   mergeOrderUpdate,
-  mergePositionClosed,
-  mergePositionUpdate,
   mergeWalletBalanceUpdate,
 } from '../services/socketCacheMerge';
+import {
+  markExecutionClosedInAllCaches,
+  patchExecutionInAllCaches,
+} from '../services/executionCacheSync';
 import { trpc } from '../utils/trpc';
 import { usePriceStore } from '../store/priceStore';
 import { toaster } from '../utils/toaster';
@@ -50,6 +53,7 @@ interface RealtimeTradingSyncProviderProps {
 export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTradingSyncProviderProps) => {
   const recentAlertsRef = useRef<Map<string, number>>(new Map());
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
   const hasDisconnectedRef = useRef<boolean>(false);
   const pendingInvalidations = useRef(new Set<string>());
   const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -133,42 +137,33 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     usePriceStore.getState().updatePrice(data.symbol, data.price, 'websocket');
   });
 
-  // Socket → cache patch helpers. The renderer's React Query cache for
-  // executions lives behind two query keys: `trading.getTradeExecutions`
-  // (general dialogs / portfolio views) and `autoTrading.getActiveExecutions`
-  // (chart). We patch both so every consumer sees the change without
-  // round-tripping the backend.
+  // Socket → cache patch helpers. The renderer holds execution state
+  // across two procedures (`trading.getTradeExecutions`,
+  // `autoTrading.getActiveExecutions`) and many input variants
+  // (`status:'open' limit:500` / `limit:100` / paginated, etc). The
+  // helpers in `executionCacheSync.ts` use `setQueriesData` with a
+  // queryKey predicate to fan out across every variant per wallet, so
+  // a single socket event reaches every chart/dialog/panel in the
+  // same render frame regardless of which input shape they subscribed
+  // with. Earlier this hardcoded `{ walletId, limit: 100 }` and
+  // silently dropped every other variant.
   const patchExecutionCaches = useCallback((
-    payload: Parameters<typeof mergePositionUpdate>[1],
+    payload: Parameters<typeof patchExecutionInAllCaches>[2],
   ) => {
     if (!walletId) return;
-    utils.trading.getTradeExecutions.setData(
-      { walletId, limit: 100 },
-      (prev) => mergePositionUpdate(prev, payload),
-    );
-    utils.autoTrading.getActiveExecutions.setData(
-      { walletId },
-      (prev) => mergePositionUpdate(prev, payload),
-    );
-  }, [walletId, utils]);
+    patchExecutionInAllCaches(queryClient, walletId, payload);
+  }, [walletId, queryClient]);
 
   const closeExecutionInCaches = useCallback((
-    payload: Parameters<typeof mergePositionClosed>[1],
+    payload: Parameters<typeof markExecutionClosedInAllCaches>[2],
   ) => {
     if (!walletId) return;
-    utils.trading.getTradeExecutions.setData(
-      { walletId, limit: 100 },
-      (prev) => mergePositionClosed(prev, payload),
-    );
-    utils.autoTrading.getActiveExecutions.setData(
-      { walletId },
-      (prev) => mergePositionClosed(prev, payload),
-    );
-  }, [walletId, utils]);
+    markExecutionClosedInAllCaches(queryClient, walletId, payload);
+  }, [walletId, queryClient]);
 
   useSocketEvent('position:update', (raw) => {
-    const payload = raw as Parameters<typeof mergePositionUpdate>[1];
-    if (payload?.id) patchExecutionCaches(payload);
+    const payload = raw as { id?: string; [k: string]: unknown };
+    if (payload?.id) patchExecutionCaches(payload as { id: string });
     // No 'wallet' here: position updates that genuinely move the wallet
     // balance (fills, liquidations) ALWAYS pair with a wallet:update
     // event from Binance's user-stream — that one patches wallet.list
