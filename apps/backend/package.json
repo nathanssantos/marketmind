@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/backend",
-  "version": "1.11.8",
+  "version": "1.11.9",
   "description": "MarketMind Backend API Server",
   "keywords": [
     "trading",

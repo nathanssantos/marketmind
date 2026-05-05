@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.9] - 2026-05-05
+
+### Fixed — checklist L/S score chart staleness
+Two bugs that combined to make the chart appear frozen / out of sync with the live L/S badges in the header:
+- **Stale seed across timeframe switches.** The seed effect gated on `seededKeyRef.current === resetKey`. On a tf switch the resetKey flipped first, then the seed effect fired with the PREVIOUS interval's cached `historyQuery.data` (the new fetch hadn't landed yet). It seeded with stale points and set `seededKeyRef` to the new key — locking the chart to the old data; the eventual refetch's data delivery no-op'd. Now the seed gates on data identity (`lastSeededDataRef`). Every fresh server payload re-seeds the chart, and any live-appended points with `t > server.maxT` are concatenated after the server slice (no live-trail loss when refetches land).
+- **Chart line frozen at the last value-change timestamp.** `mergePoint` skipped any new point with matching long+short values, so a score holding steady at 49% only ever produced ONE data point — at the moment it first hit 49%. The chart line ended at that timestamp, leaving a visible gap to the right edge while the badge displayed 49% live. Now `mergePoint` allows same-value points after a `SAME_VALUE_HEARTBEAT_MS` (30s) gap, AND the live-append effect arms a `setInterval` at the heartbeat cadence so a stable score still advances the line. Density stays bounded (~120 points/hour, well under `MAX_HISTORY_POINTS=1000`).
+
+### Notes
+- 2464 renderer unit tests passing. Type-check + lint clean.
+
 ## [1.11.8] - 2026-05-05
 
 ### Added — market indicators split into individual grid panels
