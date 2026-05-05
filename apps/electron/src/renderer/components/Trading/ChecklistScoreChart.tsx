@@ -18,6 +18,13 @@ const Y_DOMAIN: [number, number] = [0, 100];
 const Y_TICKS = [0, 50, 100];
 const BACKFILL_TRIGGER_THRESHOLD = 5;
 const BACKFILL_TRIGGER_SPAN_MS = 24 * 60 * 60 * 1000;
+// Re-emit a "live" point at most every SAME_VALUE_HEARTBEAT_MS even
+// when the score is stable. Without this the chart line ends at the
+// timestamp of the last value CHANGE — visually frozen mid-chart
+// while the live badge shows a fresher number. Setting the heartbeat
+// to 30s balances density (chart stays "alive" at the right edge)
+// against memory (~120 points/hour, well under MAX_HISTORY_POINTS).
+const SAME_VALUE_HEARTBEAT_MS = 30_000;
 
 interface ChecklistScoreChartProps {
   resetKey: string;
@@ -37,8 +44,23 @@ interface HistoryPoint {
 
 const mergePoint = (history: HistoryPoint[], point: HistoryPoint): HistoryPoint[] => {
   const last = history[history.length - 1];
+  // Exact dup (same timestamp + values): never add.
   if (last?.t === point.t && last?.long === point.long && last?.short === point.short) return history;
-  if (last?.long === point.long && last?.short === point.short) return history;
+  // Same values, different time: collapse only if within the heartbeat
+  // window. If the score has been stable for longer, emit a refresh
+  // point so the chart line stays anchored near "now" instead of
+  // ending at the last value-change timestamp. Without this, a stable
+  // score for 10 minutes would freeze the visual line 10 minutes from
+  // the right edge of the chart even though the badge shows the value
+  // is current.
+  if (
+    last?.long === point.long
+    && last?.short === point.short
+    && last !== undefined
+    && (point.t - last.t) < SAME_VALUE_HEARTBEAT_MS
+  ) {
+    return history;
+  }
   const next = [...history, point];
   return next.length > MAX_HISTORY_POINTS ? next.slice(-MAX_HISTORY_POINTS) : next;
 };
@@ -61,7 +83,7 @@ export const ChecklistScoreChart = memo(({
   const { t } = useTranslation();
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const lastResetKeyRef = useRef(resetKey);
-  const seededKeyRef = useRef<string | null>(null);
+  const lastSeededDataRef = useRef<unknown>(null);
   const backfilledKeyRef = useRef<string | null>(null);
 
   const queryEnabled = Boolean(profileId) && Boolean(symbol) && Boolean(interval);
@@ -79,18 +101,37 @@ export const ChecklistScoreChart = memo(({
   useEffect(() => {
     if (lastResetKeyRef.current !== resetKey) {
       lastResetKeyRef.current = resetKey;
-      seededKeyRef.current = null;
+      lastSeededDataRef.current = null;
       backfilledKeyRef.current = null;
       setHistory([]);
     }
   }, [resetKey]);
 
+  // Seed / re-seed from server. Earlier this gated on a per-resetKey
+  // ref so the FIRST data delivery wins forever. That had a race on
+  // timeframe switch: the previous interval's cached data was still
+  // in `historyQuery.data` when resetKey flipped, so the chart got
+  // seeded with stale points and locked there — subsequent refetches
+  // for the new interval no-op'd. Now we gate on data identity
+  // instead: every fresh server payload re-seeds the history,
+  // preserving any LIVE-appended points that are newer than the
+  // server's max timestamp (so we don't lose the live trail when a
+  // refetch lands).
   useEffect(() => {
     if (!historyQuery.data) return;
-    if (seededKeyRef.current === resetKey) return;
-    seededKeyRef.current = resetKey;
-    setHistory(historyQuery.data.map((p) => ({ t: p.t, long: p.long, short: p.short })));
-  }, [historyQuery.data, resetKey]);
+    if (lastSeededDataRef.current === historyQuery.data) return;
+    lastSeededDataRef.current = historyQuery.data;
+    const serverPoints: HistoryPoint[] = historyQuery.data.map((p) => ({
+      t: p.t,
+      long: p.long,
+      short: p.short,
+    }));
+    const serverMaxT = serverPoints[serverPoints.length - 1]?.t ?? 0;
+    setHistory((prev) => {
+      const livePoints = prev.filter((p) => p.t > serverMaxT);
+      return [...serverPoints, ...livePoints];
+    });
+  }, [historyQuery.data]);
 
   useEffect(() => {
     if (!queryEnabled || !profileId) return;
@@ -107,11 +148,22 @@ export const ChecklistScoreChart = memo(({
     backfillMutation.mutate({ profileId, symbol, interval, marketType });
   }, [historyQuery.data, queryEnabled, profileId, symbol, interval, marketType, resetKey, backfillMutation]);
 
+  // Live append: write a point whenever scores change AND a heartbeat
+  // tick (every SAME_VALUE_HEARTBEAT_MS) so the line keeps extending
+  // visually even when scores stay flat. Earlier we depended only on
+  // [longScore, shortScore] — value-stable scores never re-fired the
+  // effect, so the line was stuck at the last value-CHANGE timestamp.
   useEffect(() => {
     if (longScore == null && shortScore == null) return;
     const l = longScore ?? null;
     const s = shortScore ?? null;
+
     setHistory((prev) => mergePoint(prev, { t: Date.now(), long: l, short: s }));
+
+    const heartbeatId = setInterval(() => {
+      setHistory((prev) => mergePoint(prev, { t: Date.now(), long: l, short: s }));
+    }, SAME_VALUE_HEARTBEAT_MS);
+    return () => clearInterval(heartbeatId);
   }, [longScore, shortScore]);
 
   const tokens = useToken('colors', [
