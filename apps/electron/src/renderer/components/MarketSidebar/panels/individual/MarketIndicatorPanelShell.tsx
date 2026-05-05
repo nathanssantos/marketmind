@@ -30,7 +30,12 @@ export const MarketIndicatorPanelShell = ({
   emptyMessage = '–',
   children,
 }: MarketIndicatorPanelShellProps) => (
-  <Stack h="100%" gap={2} p={3} bg="bg.muted" borderRadius="md" overflow="hidden">
+  // No tinted bg / borderRadius — the GridPanel container already
+  // provides the dark surface and rounded edges. Adding our own
+  // `bg.muted` produced the lighter card-on-card look the user
+  // flagged; matching ChecklistPanel's transparent body keeps the
+  // visual consistent with the rest of the bare-shell panels.
+  <Stack h="100%" gap={2} p={1.5} overflow="hidden">
     <Flex align="center" justify="space-between" gap={2} flexShrink={0} flexWrap="wrap">
       <Text fontSize="sm" fontWeight="medium">{title}</Text>
       {badges}
