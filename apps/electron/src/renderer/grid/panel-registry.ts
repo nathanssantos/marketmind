@@ -152,6 +152,89 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
         default: m.MarketIndicatorsPanel,
       })),
   },
+  // Individual market-indicator panels — split out of the aggregate
+  // dashboard so the user can resize each chart independently and
+  // place them anywhere on the grid. Aggregate `marketIndicators` is
+  // kept registered for back-compat with stored layouts but its body
+  // (MarketIndicatorsTab) renders only the indicators NOT split out.
+  marketFearGreed: {
+    kind: 'marketFearGreed',
+    group: 'market',
+    titleKey: 'panels.marketFearGreed.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/FearGreedPanel').then((m) => ({
+        default: m.FearGreedPanel,
+      })),
+  },
+  marketBtcDominance: {
+    kind: 'marketBtcDominance',
+    group: 'market',
+    titleKey: 'panels.marketBtcDominance.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/BtcDominancePanel').then((m) => ({
+        default: m.BtcDominancePanel,
+      })),
+  },
+  marketMvrv: {
+    kind: 'marketMvrv',
+    group: 'market',
+    titleKey: 'panels.marketMvrv.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/MvrvPanel').then((m) => ({
+        default: m.MvrvPanel,
+      })),
+  },
+  marketProductionCost: {
+    kind: 'marketProductionCost',
+    group: 'market',
+    titleKey: 'panels.marketProductionCost.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/ProductionCostPanel').then((m) => ({
+        default: m.ProductionCostPanel,
+      })),
+  },
+  marketOpenInterest: {
+    kind: 'marketOpenInterest',
+    group: 'market',
+    titleKey: 'panels.marketOpenInterest.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/OpenInterestPanel').then((m) => ({
+        default: m.OpenInterestPanel,
+      })),
+  },
+  marketLongShort: {
+    kind: 'marketLongShort',
+    group: 'market',
+    titleKey: 'panels.marketLongShort.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/LongShortPanel').then((m) => ({
+        default: m.LongShortPanel,
+      })),
+  },
   watchers: {
     kind: 'watchers',
     group: 'autoTrading',

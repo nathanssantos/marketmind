@@ -2862,6 +2862,24 @@
     "marketIndicators": {
       "title": "Market Indicators"
     },
+    "marketFearGreed": {
+      "title": "Fear & Greed"
+    },
+    "marketBtcDominance": {
+      "title": "BTC Dominance"
+    },
+    "marketMvrv": {
+      "title": "MVRV Ratio"
+    },
+    "marketProductionCost": {
+      "title": "BTC Production Cost"
+    },
+    "marketOpenInterest": {
+      "title": "Open Interest"
+    },
+    "marketLongShort": {
+      "title": "Long/Short Ratio"
+    },
     "watchers": {
       "title": "Auto-Trading"
     },

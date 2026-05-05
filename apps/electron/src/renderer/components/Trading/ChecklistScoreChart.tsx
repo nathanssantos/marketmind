@@ -7,7 +7,12 @@ import { useTranslation } from 'react-i18next';
 
 const MAX_HISTORY_POINTS = 1000;
 const SEED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
-const REFERENCE_LEVEL = 40;
+// Three guide lines on the L/S score chart: 25 / 50 / 75. The middle
+// line is the "neutral" axis; outer lines mark the conviction zones
+// (above 75 = strong; below 25 = weak). Earlier we shipped a single
+// line at 40, which was an arbitrary threshold neither tied to the
+// scale's midpoint nor to a meaningful trigger level.
+const REFERENCE_LEVELS = [25, 50, 75] as const;
 const CHART_HEIGHT = '140px';
 const Y_DOMAIN: [number, number] = [0, 100];
 const Y_TICKS = [0, 50, 100];
@@ -129,9 +134,10 @@ export const ChecklistScoreChart = memo(({
     { dataKey: 'short', name: 'S', color: lossColor },
   ], [profitColor, lossColor]);
 
-  const referenceLines = useMemo<MiniLineChartReferenceLine[]>(() => [
-    { y: REFERENCE_LEVEL, color: referenceColor },
-  ], [referenceColor]);
+  const referenceLines = useMemo<MiniLineChartReferenceLine[]>(
+    () => REFERENCE_LEVELS.map((y) => ({ y, color: referenceColor })),
+    [referenceColor],
+  );
 
   const isInitialLoading =
     queryEnabled && (historyQuery.isLoading || backfillMutation.isPending) && history.length === 0;
