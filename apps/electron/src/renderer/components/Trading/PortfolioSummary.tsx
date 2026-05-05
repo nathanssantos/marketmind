@@ -37,7 +37,7 @@ const PortfolioSummaryComponent = ({
   const { t } = useTranslation();
 
   return (
-    <Box p={3} bg="bg.surface" borderRadius="md">
+    <Box p={3} bg="bg.surface" borderRadius="md" flex={1} minH={0}>
       <Stack gap={2.5} fontSize="xs">
         <>
             <Flex justify="space-between" align="center">

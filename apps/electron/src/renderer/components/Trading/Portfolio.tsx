@@ -28,7 +28,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
   const { totalPnL, totalPnLPercent, profitableCount, losingCount } = stats;
 
   return (
-    <Stack gap={2}>
+    <Stack gap={2} flex={1} minH={0}>
       {headerContent}
 
       {!activeWallet ? (
@@ -37,7 +37,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
         </Callout>
       ) : (
         <>
-          <Flex p={3} bg="bg.surface" borderRadius="md" justify="space-between" align="center" fontSize="xs">
+          <Flex p={3} bg="bg.surface" borderRadius="md" justify="space-between" align="center" fontSize="xs" flexShrink={0}>
             <Stack gap={0}>
               <Text color="fg.muted" fontWeight="medium">{t('trading.portfolio.dailyPnl')}</Text>
               <Text color="fg.muted" fontSize="2xs">{todayPnl?.tradesCount ?? 0} {t('trading.portfolio.trades')}</Text>
