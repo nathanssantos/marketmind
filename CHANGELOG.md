@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.4] - 2026-05-06
+
+### Changed — default checklist + layouts cloned from maintainer's setup (#477)
+- **Checklist seed**: dropped RSI 14 (redundant alongside RSI 2). Ships with 24 entries (RSI 2 + Stoch 14 ladder × 6 timeframes × LONG/SHORT) instead of 36. Users who want RSI 14 can still add it manually.
+- **Layout templates**: added Market Indicators template (Fear & Greed, BTC Dominance, MVRV, Production Cost, Open Interest, Long/Short across 7 panels). Renamed trading templates from "Trading 15m / 1h / 4h" to "15m / 1h / 4h" to match the maintainer's naming. New default seed is "15m / 1h / 4h" (formerly "Trading 15m / 1h / 4h"); the other 6 trading variants + Market Indicators are available via the New Layout dialog.
+
+### Added — marketing-screenshots pipeline (#477)
+Reproducible screenshot capture at 4K (3840×2160) for the landing site. New script `scripts/marketing-screenshots.mjs` switches layouts and opens dialogs via the e2e bridge, saves directly to `marketmind-site/public/images/`. The 7 PNGs on the landing site are now generated from the v1.13.x app with the maintainer's actual profile + layouts cloned into demo fixtures, plus deterministic synthetic kline data + checklist evaluation results + open positions for visual richness.
+
+`packages/mcp-screenshot` viewport defaults bumped from 1440×900 @ DPR 1 to 1920×1080 @ DPR 2 (3840×2160 native). New env vars: `MM_MCP_VIEWPORT`, `MM_MCP_SCALE`. Visual regression workflow pinned back to the old values so baseline PNGs still diff cleanly.
+
 ## [1.13.3] - 2026-05-06
 
 ### Fixed — TradingProfilesDialog rendered without the profile editor (#475)
