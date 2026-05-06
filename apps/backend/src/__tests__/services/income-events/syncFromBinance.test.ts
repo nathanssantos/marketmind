@@ -222,4 +222,139 @@ describe('syncWalletIncome', () => {
     const rows = await db.select().from(incomeEvents).where(eq(incomeEvents.walletId, wallet.id));
     expect(rows).toHaveLength(2);
   });
+
+  // Backfill behavior — these guard the v1.12 fix where the previous
+  // 30-day cap silently truncated history for wallets that had been
+  // trading on Binance before MarketMind connected.
+  describe('historical backfill', () => {
+    it('paginates in 7-day windows when wallet.createdAt is months ago', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+
+      // Pretend the wallet was connected ~21 days ago — that's 4 windows
+      // of 7 days each (3 full + 1 partial).
+      const TWENTY_ONE_DAYS_MS = 21 * 24 * 60 * 60 * 1000;
+      const fakeCreatedAt = new Date(Date.now() - TWENTY_ONE_DAYS_MS);
+
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'live-key',
+        apiSecret: 'live-secret',
+      });
+      await db
+        .update(wallets)
+        .set({ marketType: 'FUTURES', createdAt: fakeCreatedAt })
+        .where(eq(wallets.id, wallet.id));
+      const [refreshed] = await db.select().from(wallets).where(eq(wallets.id, wallet.id));
+
+      vi.mocked(getIncomeHistory).mockResolvedValue([]);
+
+      await syncWalletIncome(refreshed!);
+
+      // Each window is 7 days. 21 days back = 3 windows expected (last
+      // partial window sweeps to `now`).
+      const calls = vi.mocked(getIncomeHistory).mock.calls;
+      expect(calls.length).toBeGreaterThanOrEqual(3);
+
+      // No two calls should span more than 7 days — Binance's API limit.
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+      for (const [, params] of calls) {
+        if (params?.startTime != null && params?.endTime != null) {
+          expect(params.endTime - params.startTime).toBeLessThanOrEqual(SEVEN_DAYS_MS);
+        }
+      }
+    });
+
+    it('on first sync, starts from wallet.createdAt — not now-24h', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+
+      const TEN_DAYS_MS = 10 * 24 * 60 * 60 * 1000;
+      const fakeCreatedAt = new Date(Date.now() - TEN_DAYS_MS);
+
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'live-key',
+        apiSecret: 'live-secret',
+      });
+      await db
+        .update(wallets)
+        .set({ marketType: 'FUTURES', createdAt: fakeCreatedAt })
+        .where(eq(wallets.id, wallet.id));
+      const [refreshed] = await db.select().from(wallets).where(eq(wallets.id, wallet.id));
+
+      vi.mocked(getIncomeHistory).mockResolvedValue([]);
+      await syncWalletIncome(refreshed!);
+
+      const firstCall = vi.mocked(getIncomeHistory).mock.calls[0];
+      expect(firstCall?.[1]?.startTime).toBeGreaterThanOrEqual(fakeCreatedAt.getTime() - 1);
+      // Crucially, it must NOT be now-24h (the old default).
+      const TWENTY_FOUR_HOURS_AGO = Date.now() - 24 * 60 * 60 * 1000;
+      expect(firstCall?.[1]?.startTime).toBeLessThan(TWENTY_FOUR_HOURS_AGO);
+    });
+
+    it('caps backfill at 6 months even when wallet.createdAt is older', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+
+      // Binance only retains income history for ~6 months. A wallet
+      // claiming to be 2 years old is fine but we shouldn't waste
+      // 100+ pointless API calls trying to fetch beyond that horizon.
+      const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
+      const fakeCreatedAt = new Date(Date.now() - TWO_YEARS_MS);
+
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'live-key',
+        apiSecret: 'live-secret',
+      });
+      await db
+        .update(wallets)
+        .set({ marketType: 'FUTURES', createdAt: fakeCreatedAt })
+        .where(eq(wallets.id, wallet.id));
+      const [refreshed] = await db.select().from(wallets).where(eq(wallets.id, wallet.id));
+
+      vi.mocked(getIncomeHistory).mockResolvedValue([]);
+      await syncWalletIncome(refreshed!);
+
+      const firstCall = vi.mocked(getIncomeHistory).mock.calls[0];
+      const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
+      const SIX_MONTHS_AGO = Date.now() - SIX_MONTHS_MS;
+      // First call's startTime should be ~6 months ago, not 2 years ago.
+      expect(firstCall?.[1]?.startTime).toBeGreaterThanOrEqual(SIX_MONTHS_AGO - 60_000);
+      expect(firstCall?.[1]?.startTime).toBeLessThanOrEqual(SIX_MONTHS_AGO + 60_000);
+    });
+
+    it('on resync, continues from lastSynced + 1 (not from creation)', async () => {
+      const { wallet, user } = await makeLiveWallet();
+      const db = getTestDatabase();
+
+      // Seed an existing event from 3 days ago — sync should continue
+      // from there, not restart from wallet.createdAt.
+      const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+      const lastEventTime = new Date(Date.now() - THREE_DAYS_MS);
+      await db.insert(incomeEvents).values({
+        walletId: wallet.id,
+        userId: user.id,
+        binanceTranId: 700001,
+        incomeType: 'REALIZED_PNL',
+        amount: '50',
+        asset: 'USDT',
+        symbol: 'BTCUSDT',
+        source: 'binance',
+        incomeTime: lastEventTime,
+      });
+
+      vi.mocked(getIncomeHistory).mockResolvedValue([]);
+      await syncWalletIncome(wallet);
+
+      const firstCall = vi.mocked(getIncomeHistory).mock.calls[0];
+      // Must start AFTER the seeded event, not from wallet.createdAt.
+      expect(firstCall?.[1]?.startTime).toBeGreaterThan(lastEventTime.getTime());
+      expect(firstCall?.[1]?.startTime).toBeLessThan(lastEventTime.getTime() + 1000);
+    });
+  });
 });

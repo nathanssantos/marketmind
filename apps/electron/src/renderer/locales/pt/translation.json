@@ -1200,6 +1200,7 @@
       "netDeposits": "Depósitos Líquidos",
       "totalPnL": "L&P Total",
       "viewPerformance": "Ver Desempenho",
+      "backfillHistory": "Recarregar histórico",
       "delete": "Excluir Carteira",
       "performanceTitle": "Desempenho - {{name}}",
       "currentBalance": "Saldo Atual",

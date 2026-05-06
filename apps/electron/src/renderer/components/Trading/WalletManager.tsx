@@ -9,7 +9,7 @@ import { useDisclosure } from '@renderer/hooks';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChartBar, LuInfo, LuRefreshCw, LuTrash2 } from 'react-icons/lu';
+import { LuChartBar, LuHistory, LuInfo, LuRefreshCw, LuTrash2 } from 'react-icons/lu';
 import { useUIStore } from '../../store/uiStore';
 import { CreateWalletDialog } from './CreateWalletDialog';
 
@@ -30,10 +30,12 @@ export const WalletManager = () => {
     createWallet,
     syncBalance,
     syncTransfers,
+    fullResyncIncome,
     isDeleting,
     isCreatingPaper,
     isCreating,
     isSyncing,
+    isResyncingIncome,
   } = useBackendWallet();
 
   const wallets: ExtendedWallet[] = useMemo(() => {
@@ -111,6 +113,16 @@ export const WalletManager = () => {
     }
   };
 
+  const handleFullResync = async (id: string) => {
+    setSyncingWalletId(id);
+    try {
+      await fullResyncIncome(id);
+      await syncBalance(id);
+    } finally {
+      setSyncingWalletId(null);
+    }
+  };
+
   const createDialog = useDisclosure();
 
   return (
@@ -148,8 +160,9 @@ export const WalletManager = () => {
               onDelete={() => { void handleDeleteWallet(wallet.id); }}
               onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
               onSync={() => { void handleSyncBalance(wallet.id); }}
+              onFullResync={() => { void handleFullResync(wallet.id); }}
               isDeleting={isDeleting}
-              isSyncing={syncingWalletId === wallet.id || isSyncing}
+              isSyncing={syncingWalletId === wallet.id || isSyncing || isResyncingIncome}
             />
           ))}
         </Stack>
@@ -173,6 +186,7 @@ interface WalletCardProps {
   onDelete: () => void;
   onViewPerformance: () => void;
   onSync: () => void;
+  onFullResync: () => void;
   isDeleting?: boolean;
   isSyncing?: boolean;
 }
@@ -191,7 +205,7 @@ const getWalletTypeBadge = (walletType: WalletType) => {
   }
 };
 
-const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isDeleting = false, isSyncing = false }: WalletCardProps) => {
+const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onFullResync, isDeleting = false, isSyncing = false }: WalletCardProps) => {
   const { t } = useTranslation();
   const { performance } = useBackendAnalytics(wallet.id, 'all');
 
@@ -280,6 +294,19 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, isD
                     <LuChartBar />
                     <Text>{t('trading.wallets.viewPerformance')}</Text>
                   </MenuItem>
+                  {canSync && (
+                    <MenuItem
+                      value="backfill"
+                      onClick={onFullResync}
+                      px={4}
+                      py={2.5}
+                      _hover={{ bg: 'bg.muted' }}
+                      disabled={isSyncing}
+                    >
+                      <LuHistory />
+                      <Text>{t('trading.wallets.backfillHistory')}</Text>
+                    </MenuItem>
+                  )}
                   <MenuItem
                     value="delete"
                     onClick={onDelete}

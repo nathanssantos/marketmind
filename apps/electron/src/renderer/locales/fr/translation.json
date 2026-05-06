@@ -1215,6 +1215,7 @@
       "netDeposits": "Dépôts Nets",
       "totalPnL": "P&L Total",
       "viewPerformance": "Voir les Performances",
+      "backfillHistory": "Recharger l'historique",
       "delete": "Supprimer le Portefeuille",
       "performanceTitle": "Performances - {{name}}",
       "currentBalance": "Solde Actuel",
