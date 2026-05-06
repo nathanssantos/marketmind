@@ -53,10 +53,22 @@ export const installVisualFixtures = async (
         catch { inputs = {}; }
       }
 
+      // Special path: `_klineMap` is a Record<symbol-interval, Kline[]> the
+      // mock dispatches on for `kline.list`. Lets a single fixture cover
+      // every (symbol, interval) combination the renderer asks for, instead
+      // of every chart panel rendering the same series.
+      const klineMap = map.get('_klineMap') as Record<string, unknown> | undefined;
+
       const body = paths.map((path, i) => {
+        const input = unwrap(inputs[String(i)]) as Record<string, unknown> | undefined;
+        if (path === 'kline.list' && klineMap && input) {
+          const sym = input.symbol as string | undefined;
+          const intv = input.interval as string | undefined;
+          const key = `${sym}:${intv}`;
+          const series = klineMap[key];
+          return { result: { data: series ?? [] } };
+        }
         const data = map.has(path) ? map.get(path) : null;
-        // Touch inputs for prefix paths in case future fixtures want them.
-        unwrap(inputs[String(i)]);
         return { result: { data } };
       });
 
