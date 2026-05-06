@@ -163,9 +163,11 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
     symbol: string,
     side: PositionSide,
     openedAt: number,
-    closedAt?: number
+    closedAt?: number,
+    entryOrderId?: string | null,
+    exitOrderId?: string | null,
   ): Promise<AllTradeFeesResult | null> {
-    return binanceGetAllTradeFeesForPosition(this.client, symbol, side, openedAt, closedAt);
+    return binanceGetAllTradeFeesForPosition(this.client, symbol, side, openedAt, closedAt, entryOrderId, exitOrderId);
   }
 
   async getOrderEntryFee(
