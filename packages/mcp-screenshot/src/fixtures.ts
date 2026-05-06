@@ -720,7 +720,38 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   { path: 'setup.getConfig', value: null },
   { path: 'signalSuggestions.list', value: [] },
   { path: 'preferences.getByCategory', value: [] },
-  { path: 'preferences.getAll', value: [] },
+  // PreferencesHydrator reads chart.indicatorInstances on mount and feeds
+  // them into useIndicatorStore. Pre-loading EMA 9, EMA 21, EMA 200,
+  // Volume, Volume Profile + ORB makes those indicators visible across
+  // every chart panel on every screenshot — without per-scene wiring.
+  // ORB renders only on intervalMinutes < 15 (1m / 5m), so it's a no-op
+  // on the longer-TF charts. Stable instance ids so the renderer's
+  // per-instance pane mapping is reproducible across runs.
+  {
+    path: 'preferences.getAll',
+    value: {
+      chart: {
+        indicatorInstances: [
+          { id: 'inst-ema9', userIndicatorId: 'ui-ema9', catalogType: 'ema', params: { period: 9, color: '#ff00ff', lineWidth: 1 }, visible: true },
+          { id: 'inst-ema21', userIndicatorId: 'ui-ema21', catalogType: 'ema', params: { period: 21, color: '#00e676', lineWidth: 1 }, visible: true },
+          { id: 'inst-ema200', userIndicatorId: 'ui-ema200', catalogType: 'ema', params: { period: 200, color: '#607d8b', lineWidth: 3 }, visible: true },
+          { id: 'inst-volume', userIndicatorId: 'ui-volume', catalogType: 'volume', params: { color: '#607d8b' }, visible: true },
+          { id: 'inst-vp', userIndicatorId: 'ui-vp', catalogType: 'volumeProfile', params: { numBuckets: 100, maxBarWidth: 120, opacity: 30 }, visible: true },
+          // ORB instance is hydrated but `useGenericChartIndicatorRenderers`'s
+          // ORB renderer gates on intervalMinutes < 15 AND requires session
+          // event timestamps to fall inside the chart's visible viewport.
+          // The synthetic kline series end at 2026-04-27 19:00 UTC and the
+          // chart's default viewport shows the last ~80 candles (~80m on a
+          // 1m chart) which lands outside the NYSE 13:30 UTC session-open
+          // marker — so ORB lines paint correctly but off-screen. Keeping
+          // the instance in case a future scene scrolls/zooms to make it
+          // visible. Marked `visible: false` so it doesn't trigger the
+          // `useMarketEvents` fetch on every chart panel.
+          { id: 'inst-orb', userIndicatorId: 'ui-orb', catalogType: 'orb', params: { orbPeriodMinutes: 15 }, visible: false },
+        ],
+      },
+    },
+  },
   { path: 'drawing.list', value: [] },
   // The user's full saved layouts (9 presets: 6 trading multi-tf
    // variants + Auto-Trading + Auto-Scalping + Market Indicators).
