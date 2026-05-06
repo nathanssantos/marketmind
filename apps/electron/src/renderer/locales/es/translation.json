@@ -1226,6 +1226,7 @@
       "netDeposits": "Depósitos Netos",
       "totalPnL": "P&L Total",
       "viewPerformance": "Ver Rendimiento",
+      "backfillHistory": "Recargar historial",
       "delete": "Eliminar Cartera",
       "performanceTitle": "Rendimiento - {{name}}",
       "currentBalance": "Saldo Actual",

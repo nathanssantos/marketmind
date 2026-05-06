@@ -191,4 +191,48 @@ export const walletSyncRouter = router({
         });
       }
     }),
+
+  // Force a full re-sync of income events from wallet creation (or
+  // 6 months ago, whichever is more recent — Binance's API horizon).
+  // Use this to backfill wallets that were originally synced under the
+  // old 30-day cap. Idempotent: re-running it just re-fetches the same
+  // pages and `onConflictDoNothing` skips already-stored rows.
+  fullResyncIncome: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+      }
+
+      if (isPaperWallet(wallet)) {
+        return { success: true, fetched: 0, inserted: 0, message: 'Paper wallet — no income to sync' };
+      }
+
+      try {
+        const { syncWalletIncome } = await import('../../services/income-events');
+        // Override `lastSynced` by passing startTime=0 — sync code clamps
+        // to (now - 6mo) horizon, so we don't ask Binance for ancient
+        // data it doesn't retain anyway.
+        const result = await syncWalletIncome(wallet, { startTime: 0 });
+        return {
+          success: true,
+          fetched: result.fetched,
+          inserted: result.inserted,
+          linked: result.linked,
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `Failed to backfill income: ${errorMessage}`,
+          cause: error,
+        });
+      }
+    }),
 });

@@ -50,6 +50,21 @@ export const useBackendWallet = () => {
     },
   });
 
+  // Force a full backfill of income events from wallet creation (capped
+  // at 6 months by Binance's API horizon). For wallets connected before
+  // v1.12 — the previous 30-day lookback silently truncated history,
+  // skewing lifetime PnL numbers in the Analytics modal. Re-running this
+  // re-fetches every available page; idempotent thanks to the
+  // (walletId, binanceTranId) unique index.
+  const fullResyncIncomeMutation = trpc.wallet.fullResyncIncome.useMutation({
+    onSuccess: () => {
+      void utils.wallet.list.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.analytics.getEquityCurve.invalidate();
+      void utils.analytics.getDailyPerformance.invalidate();
+    },
+  });
+
   const createWallet = useCallback(
     async (data: { name: string; apiKey: string; apiSecret: string; walletType: 'testnet' | 'live' }) => {
       return createMutation.mutateAsync(data);
@@ -92,6 +107,13 @@ export const useBackendWallet = () => {
     [syncTransfersMutation]
   );
 
+  const fullResyncIncome = useCallback(
+    async (id: string) => {
+      return fullResyncIncomeMutation.mutateAsync({ id });
+    },
+    [fullResyncIncomeMutation]
+  );
+
   const stableWallets = useMemo(() => wallets ?? EMPTY_WALLETS, [wallets]);
 
   return {
@@ -103,17 +125,20 @@ export const useBackendWallet = () => {
     deleteWallet,
     syncBalance,
     syncTransfers,
+    fullResyncIncome,
     isCreating: createMutation.isPending,
     isCreatingPaper: createPaperMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isSyncing: syncBalanceMutation.isPending,
     isSyncingTransfers: syncTransfersMutation.isPending,
+    isResyncingIncome: fullResyncIncomeMutation.isPending,
     createError: createMutation.error,
     createPaperError: createPaperMutation.error,
     updateError: updateMutation.error,
     deleteError: deleteMutation.error,
     syncError: syncBalanceMutation.error,
     syncTransfersError: syncTransfersMutation.error,
+    resyncIncomeError: fullResyncIncomeMutation.error,
   };
 };

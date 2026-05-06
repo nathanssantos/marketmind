@@ -17,8 +17,25 @@ import { linkIncomeToExecution } from './matcher';
 
 const SYNTHETIC_WINDOW_MS = 60_000;
 
-const DEFAULT_LOOKBACK_MS = 24 * TIME_MS.HOUR;
-const MAX_INITIAL_LOOKBACK_MS = 30 * 24 * TIME_MS.HOUR;
+// Binance `/fapi/v1/income` enforces a max 7-day window per call. Older
+// callers only requested 24h-30d, so the bug rarely surfaced — but it
+// silently truncated any range >7d to the latest 7 days, leaving holes
+// in the income table. We now paginate explicitly in 7-day windows.
+const INCOME_API_WINDOW_MS = 7 * 24 * TIME_MS.HOUR;
+
+// Binance retains income history for ~6 months. Going further back via
+// `/fapi/v1/income` returns empty pages — we cap the initial backfill
+// at this horizon for fresh-wallet syncs to avoid 26+ pointless calls.
+const MAX_BACKFILL_MS = 180 * 24 * TIME_MS.HOUR;
+
+// Per-page limit on records (Binance max).
+const PAGE_LIMIT = 1000;
+
+// Hard cap on total API calls per `syncWalletIncome` invocation. With
+// 7-day windows, 200 pages = ~3.8 years of history — far past Binance's
+// 6-month retention, but the safety net protects against runaway pagination
+// if a dense window keeps returning full pages of 1000.
+const MAX_PAGES_PER_SYNC = 200;
 
 const INCOME_TYPE_SET = new Set<string>(INCOME_TYPES);
 
@@ -169,25 +186,66 @@ export const syncWalletIncome = async (wallet: Wallet, options: SyncOptions = {}
   try {
     const lastSynced = options.startTime ?? (await getLastSyncedTime(wallet.id));
     const now = options.endTime ?? Date.now();
-    const defaultStart = now - DEFAULT_LOOKBACK_MS;
-    const maxInitial = now - MAX_INITIAL_LOOKBACK_MS;
-    const startTime = lastSynced ? Math.max(lastSynced + 1, maxInitial) : defaultStart;
+
+    // Pick a startTime that captures everything the user has done on
+    // Binance for this wallet:
+    //   - Resync (lastSynced exists) → continue from the last event we
+    //     ingested. Cap at MAX_BACKFILL_MS so an interrupted sync that
+    //     hasn't run for years doesn't try to pull >6 months (Binance's
+    //     retention horizon) for nothing.
+    //   - First sync (lastSynced is null) → go back to wallet.createdAt
+    //     so we catch every income event since the user connected the
+    //     wallet to MarketMind. Bounded by MAX_BACKFILL_MS for the same
+    //     reason.
+    //   - The previous logic capped at 24h on first sync and 30 days on
+    //     resync — which silently truncated months of history for any
+    //     trader who'd been on Binance before connecting their wallet.
+    //     That's the root cause of the lifetime-PNL discrepancy this
+    //     fix addresses.
+    const horizonStart = now - MAX_BACKFILL_MS;
+    const startTime = lastSynced
+      ? Math.max(lastSynced + 1, horizonStart)
+      : Math.max(wallet.createdAt.getTime(), horizonStart);
 
     const client = createBinanceFuturesClient(wallet);
     const records: IncomeHistoryRecord[] = [];
-    let pageStart = startTime;
-    const MAX_PAGES = 50;
-    for (let page = 0; page < MAX_PAGES; page++) {
-      const batch = await getIncomeHistory(client, {
-        startTime: pageStart,
-        endTime: now,
-        limit: 1000,
-      });
-      records.push(...batch);
-      if (batch.length < 1000) break;
-      const lastTime = batch[batch.length - 1]?.time ?? pageStart;
-      if (lastTime <= pageStart) break;
-      pageStart = lastTime;
+
+    // Paginate in 7-day windows because Binance enforces a max time
+    // range per call. Within each window, paginate again on `time` if
+    // a single 7-day slice somehow has >1000 events (a heavy scalping
+    // session can hit this). The outer loop runs at least once even
+    // when startTime >= now (e.g. wallet was created in the same ms
+    // we're syncing — happens in tests, and harmless in prod since
+    // Binance just returns an empty page).
+    let pageCount = 0;
+    let windowStart = Math.min(startTime, now);
+    let done = false;
+    while (!done) {
+      const windowEnd = Math.min(windowStart + INCOME_API_WINDOW_MS, now);
+      let pageStart = windowStart;
+
+      while (true) {
+        if (pageCount >= MAX_PAGES_PER_SYNC) {
+          done = true;
+          break;
+        }
+        pageCount++;
+
+        const batch = await getIncomeHistory(client, {
+          startTime: pageStart,
+          endTime: windowEnd,
+          limit: PAGE_LIMIT,
+        });
+        records.push(...batch);
+        if (batch.length < PAGE_LIMIT) break;
+
+        const lastTime = batch[batch.length - 1]?.time ?? pageStart;
+        if (lastTime <= pageStart) break;
+        pageStart = lastTime + 1;
+      }
+
+      if (windowEnd >= now) done = true;
+      else windowStart = windowEnd + 1;
     }
 
     result.fetched = records.length;

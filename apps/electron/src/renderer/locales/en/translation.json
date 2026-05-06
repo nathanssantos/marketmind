@@ -1097,6 +1097,7 @@
       "netDeposits": "Net Deposits",
       "totalPnL": "Total P&L",
       "viewPerformance": "View Performance",
+      "backfillHistory": "Backfill history",
       "delete": "Delete Wallet",
       "performanceTitle": "Performance - {{name}}",
       "currentBalance": "Current Balance",
