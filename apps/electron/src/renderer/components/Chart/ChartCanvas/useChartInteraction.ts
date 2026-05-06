@@ -1,10 +1,9 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
-import type { Kline, MarketEvent, Order } from '@marketmind/types';
-import type { TooltipData } from './useChartState';
+import type { Kline, Order } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
 import { useCallback, useEffect, useRef } from 'react';
-import { processTooltipHitTest } from './tooltipHitTest';
+import { processKlineHoverHitTest } from './klineHoverHitTest';
 
 const RIGHT_MOUSE_BUTTON = 2;
 
@@ -14,21 +13,17 @@ export interface UseChartInteractionProps {
   klines: Kline[];
   advancedConfig?: AdvancedControlsConfig;
   showVolume: boolean;
-  showEventRow: boolean;
   isPanning: boolean;
   shiftPressed: boolean;
   altPressed: boolean;
-  tooltipEnabledRef: React.MutableRefObject<boolean>;
   mousePositionRef: React.MutableRefObject<{ x: number; y: number } | null>;
   orderPreviewRef: React.MutableRefObject<{ price: number; type: 'long' | 'short' } | null>;
   hoveredMAIndexRef: React.MutableRefObject<number | undefined>;
   hoveredOrderIdRef: React.MutableRefObject<string | null>;
   lastHoveredOrderRef: React.MutableRefObject<string | null>;
-  lastTooltipOrderRef: React.MutableRefObject<string | null>;
-  setTooltipData: (data: TooltipData) => void;
+  setHoveredKline: (kline: Kline | null, klineIndex?: number) => void;
   setOrderToClose: (orderId: string | null) => void;
   getHoveredOrder: (x: number, y: number) => Order | null;
-  getEventAtPosition: (x: number, y: number) => MarketEvent | null;
   getClickedOrderId: (x: number, y: number) => string | null;
   getSLTPAtPosition: (x: number, y: number) => { type: 'stopLoss' | 'takeProfit'; orderId: string; price: number } | null;
   onLongEntry?: (price: number) => void;
@@ -80,21 +75,17 @@ export const useChartInteraction = ({
   klines,
   advancedConfig,
   showVolume,
-  showEventRow,
   isPanning,
   shiftPressed,
   altPressed,
-  tooltipEnabledRef,
   mousePositionRef,
   orderPreviewRef,
   hoveredMAIndexRef,
   hoveredOrderIdRef,
   lastHoveredOrderRef,
-  lastTooltipOrderRef,
-  setTooltipData,
+  setHoveredKline,
   setOrderToClose,
   getHoveredOrder,
-  getEventAtPosition,
   getClickedOrderId,
   getSLTPAtPosition,
   onLongEntry,
@@ -132,25 +123,19 @@ export const useChartInteraction = ({
     }, 300);
   }, []);
 
-  const processMouseMoveTooltip = useCallback((mouseX: number, mouseY: number, rect: DOMRect): void => {
-    if (!manager || !tooltipEnabledRef.current) return;
-
-    processTooltipHitTest({
+  const processMouseMoveHover = useCallback((mouseX: number, mouseY: number): void => {
+    if (!manager) return;
+    hoveredMAIndexRef.current = undefined;
+    processKlineHoverHitTest({
       manager,
       mouseX,
       mouseY,
-      rect,
       klines,
       advancedConfig,
       showVolume,
-      showEventRow,
-      lastTooltipOrderRef,
-      getHoveredOrder,
-      getEventAtPosition,
-      hoveredMAIndexRef,
-      setTooltipData,
+      setHoveredKline,
     });
-  }, [manager, klines, advancedConfig, showVolume, getHoveredOrder, showEventRow, getEventAtPosition, setTooltipData, hoveredMAIndexRef, lastTooltipOrderRef, tooltipEnabledRef]);
+  }, [manager, klines, advancedConfig, showVolume, setHoveredKline, hoveredMAIndexRef]);
 
   const handleCanvasMouseMove = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!canvasRef.current) return;
@@ -260,42 +245,31 @@ export const useChartInteraction = ({
       mouseMoveRafRef.current = null;
       const pending = pendingMouseEventRef.current;
       if (pending) {
-        processMouseMoveTooltip(pending.x, pending.y, pending.rect);
+        processMouseMoveHover(pending.x, pending.y);
       }
     });
   }, [
     canvasRef, manager, klines, advancedConfig, isPanning,
     shiftPressed, altPressed,
     mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef,
-    setTooltipData, getHoveredOrder,
-    getClickedOrderId, getSLTPAtPosition, orderDragHandler, gridInteraction, drawingInteraction, cursorManager,
-    handleMouseMove, updateCursor, processMouseMoveTooltip,
+    getHoveredOrder, getClickedOrderId, getSLTPAtPosition,
+    orderDragHandler, gridInteraction, drawingInteraction, cursorManager,
+    handleMouseMove, updateCursor, processMouseMoveHover,
   ]);
 
   const handleCanvasMouseLeave = useCallback((): void => {
     handleMouseLeave();
     gridInteraction?.cancelGrid();
-    // Drawing interaction may be mid-placement (placing-second / placing-third
-    // / drawing-freeform) or mid-drag. Cancelling here releases the phase
-    // back to 'idle' so the next click on the canvas isn't trapped in a
-    // stale phase. The drawing store keeps any drawing already-committed —
-    // a drag interrupted by a leave just freezes at its current position.
     drawingInteraction?.cancelInteraction();
     mousePositionRef.current = null;
     orderPreviewRef.current = null;
     hoveredOrderIdRef.current = null;
     lastHoveredOrderRef.current = null;
-    lastTooltipOrderRef.current = null;
-    setTooltipData({
-      kline: null,
-      x: 0,
-      y: 0,
-      visible: false,
-    });
+    setHoveredKline(null);
     if (manager) {
       manager.markDirty('overlays');
     }
-  }, [handleMouseLeave, gridInteraction, drawingInteraction, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef, setTooltipData, manager]);
+  }, [handleMouseLeave, gridInteraction, drawingInteraction, mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef, setHoveredKline, manager]);
 
   const handleCanvasMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     if (!manager || !canvasRef.current) return;
@@ -352,12 +326,6 @@ export const useChartInteraction = ({
       return;
     }
 
-    // Note: a previous version had an `if (drawingInteraction?.isDrawing())`
-    // short-circuit here that swallowed mousedown while a drawing was in
-    // any non-idle phase. That broke channel/pitchfork: their finalize
-    // click happens during phase 'placing-third', and was being
-    // intercepted before reaching the drawing handler. The handler itself
-    // already branches on phase + tool, so the guard is redundant.
     if (drawingInteraction?.handleMouseDown(mouseX, mouseY)) {
       event.preventDefault();
       event.stopPropagation();
@@ -380,11 +348,6 @@ export const useChartInteraction = ({
     }
 
     if (drawingInteraction?.isDrawing()) {
-      // Always release drawing state on mouseup, even if `mousePositionRef`
-      // is null (which can happen if mouseleave fires between move and up).
-      // The bug it covers: phase getting stuck in 'dragging' / 'placing-*'
-      // and the next click being treated as a continuation of the previous
-      // interaction — the user-visible "mouse grudado" symptom.
       const mousePos = mousePositionRef.current;
       if (mousePos) {
         drawingInteraction.handleMouseUp(mousePos.x, mousePos.y);
@@ -417,12 +380,6 @@ export const useChartInteraction = ({
     };
   }, []);
 
-  // Safety net: if the user releases the mouse outside the canvas while a
-  // drawing interaction is in flight, the canvas's mouseup handler never
-  // fires. Without a window-level fallback the phase ref stays stuck and
-  // subsequent clicks behave as a continuation of the previous interaction
-  // ("mouse grudado"). The listener is registered once and reads the latest
-  // drawingInteraction through a ref so it doesn't churn on every render.
   const drawingInteractionRef = useRef(drawingInteraction);
   useEffect(() => {
     drawingInteractionRef.current = drawingInteraction;
