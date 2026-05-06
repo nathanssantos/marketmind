@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.2] - 2026-05-06
+
+### Added — checklist panel "Edit profile" shortcut (#472)
+After v1.6 (#358) dropped the Trading Profiles tab from Settings, the checklist editor became 2 clicks away (Auto-Trading sidebar → sliders icon → edit default profile). Restored the shortcut from where users actually look at the checklist data: the panel's 3-dot options menu now has an "Edit profile (checklist)" item that opens the existing TradingProfilesDialog. i18n in en/pt/es/fr.
+
 ## [1.13.1] - 2026-05-06
 
 ### Fixed — chart panel indicators frozen between candle closes (#469)
