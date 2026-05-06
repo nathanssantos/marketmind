@@ -13,6 +13,11 @@ env:
   PNPM_VERSION: '9'
   VITE_E2E_BYPASS_AUTH: 'true'
   MM_MCP_BASE_URL: 'http://localhost:5174'
+  # Lock viewport / DPR for visual regression so the baseline PNGs stay
+  # comparable across runs. The mcp-screenshot defaults (1920×1080 / DPR 2)
+  # are tuned for marketing/docs captures, not for diffing.
+  MM_MCP_VIEWPORT: '1440x900'
+  MM_MCP_SCALE: '1'
 
 jobs:
   visual-diff:
