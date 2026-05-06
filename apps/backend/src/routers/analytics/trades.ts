@@ -4,6 +4,24 @@ import { db } from '../../db';
 import { incomeEvents, tradeExecutions } from '../../db/schema';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
+import { startOfDayAgoInTz } from '../../utils/tz-bucket';
+
+// Period → first day of the rolling window in user's TZ.
+//   'day'   = today (midnight tz to now)
+//   'week'  = today + 6 prior days = 7 calendar days
+//   'month' = today + 29 prior days = 30 calendar days (matches
+//             Binance's "30D" terminology, not strict calendar month)
+//   'all'   = no filter (returned as undefined by caller)
+const periodStart = (period: 'day' | 'week' | 'month', tz: string, now = new Date()): Date => {
+  switch (period) {
+    case 'day':
+      return startOfDayAgoInTz(0, tz, now);
+    case 'week':
+      return startOfDayAgoInTz(6, tz, now);
+    case 'month':
+      return startOfDayAgoInTz(29, tz, now);
+  }
+};
 
 // Ground-truth source for realized PnL, fees and funding: Binance's
 // income events stream. `tradeExecutions.fees` and `.accumulated_funding`
@@ -121,22 +139,7 @@ export const tradeProcedures = {
       ];
 
       if (input.period !== 'all') {
-        const now = new Date();
-        const startDate = new Date();
-
-        switch (input.period) {
-          case 'day':
-            startDate.setDate(now.getDate() - 1);
-            break;
-          case 'week':
-            startDate.setDate(now.getDate() - 7);
-            break;
-          case 'month':
-            startDate.setMonth(now.getMonth() - 1);
-            break;
-        }
-
-        whereConditions.push(gte(tradeExecutions.closedAt, startDate));
+        whereConditions.push(gte(tradeExecutions.closedAt, periodStart(input.period, input.tz)));
       }
 
       const trades = await ctx.db
@@ -166,24 +169,12 @@ export const tradeProcedures = {
       }, 0);
 
       // Headline aggregates — pulled from `incomeEvents` so they match
-      // what Binance actually charged/credited the wallet. Same period
-      // filter as the trade query (when applicable) so the two stay
+      // what Binance actually charged/credited the wallet. Same TZ-aware
+      // period boundary as the trade query so the two cards stay
       // aligned. Falls back to per-trade sums if the income table is
       // empty (e.g. paper wallets that never sync from Binance).
-      const incomePeriodFrom = whereConditions.length > 3
-        ? (() => {
-            // We pushed gte(closedAt, startDate) above when period !== 'all'
-            const now = new Date();
-            const startDate = new Date();
-            switch (input.period) {
-              case 'day': startDate.setDate(now.getDate() - 1); break;
-              case 'week': startDate.setDate(now.getDate() - 7); break;
-              case 'month': startDate.setMonth(now.getMonth() - 1); break;
-              case 'all': /* no filter */ break;
-            }
-            return startDate;
-          })()
-        : undefined;
+      const incomePeriodFrom =
+        input.period !== 'all' ? periodStart(input.period, input.tz) : undefined;
 
       const incomeBreakdown = await sumIncomeBreakdown(
         input.walletId,
