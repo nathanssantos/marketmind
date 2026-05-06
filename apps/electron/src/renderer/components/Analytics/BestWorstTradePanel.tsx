@@ -1,5 +1,5 @@
-import { Badge, Box, Grid, Stack, Text } from '@chakra-ui/react';
-import { PanelHeader, RecordRow } from '@renderer/components/ui';
+import { Box, Grid, Stack, Text } from '@chakra-ui/react';
+import { Badge, PanelHeader, RecordRow } from '@renderer/components/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatWalletCurrencyWithSign } from '@renderer/utils/currencyFormatter';

@@ -1113,4 +1113,170 @@ describe('Analytics Router', () => {
       expect(result.worstTrade).toBeNull();
     });
   });
+
+  // Day-level metrics — sit alongside trade-level. Bucketed by user-TZ
+  // calendar day from `incomeEvents` (Binance ground truth).
+  describe('getPerformance — day-level metrics', () => {
+    const insertDailyIncome = async (
+      walletId: string,
+      userId: string,
+      day: Date,
+      pnlAmount: string,
+    ) => {
+      const db = getTestDatabase();
+      await db.insert(incomeEvents).values({
+        walletId,
+        userId,
+        binanceTranId: Math.floor(Math.random() * 1_000_000_000),
+        incomeType: 'REALIZED_PNL',
+        amount: pnlAmount,
+        asset: 'USDT',
+        symbol: 'BTCUSDT',
+        source: 'binance',
+        incomeTime: day,
+      });
+    };
+
+    it('counts winning / losing / breakeven days from income events', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const now = new Date();
+      const day = (daysAgo: number) =>
+        new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, 12);
+
+      // Spread events across distinct calendar days so the day buckets
+      // map 1:1 to days.
+      await insertDailyIncome(wallet.id, user.id, day(1), '50'); // Day -1: winner
+      await insertDailyIncome(wallet.id, user.id, day(2), '-30'); // Day -2: loser
+      await insertDailyIncome(wallet.id, user.id, day(3), '120'); // Day -3: winner
+      // Day -4 through -6: no events → breakeven days (when 'month' window)
+
+      const result = await caller.analytics.getPerformance({
+        walletId: wallet.id,
+        period: 'week',
+      });
+
+      expect(result.winningDays).toBe(2);
+      expect(result.losingDays).toBe(1);
+      // 7 calendar days in 'week' window minus 2 winning + 1 losing = 4 breakeven
+      // (could vary by 1 due to test-time-of-day rounding; allow flex)
+      expect(result.breakevenDays).toBeGreaterThanOrEqual(3);
+      expect(result.breakevenDays).toBeLessThanOrEqual(5);
+    });
+
+    it('computes day-level win rate as winningDays / totalDaysInRange', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const now = new Date();
+      const day = (daysAgo: number) =>
+        new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, 12);
+
+      // 2 winning days out of a 7-day window = ~28.57%
+      await insertDailyIncome(wallet.id, user.id, day(1), '50');
+      await insertDailyIncome(wallet.id, user.id, day(3), '120');
+
+      const result = await caller.analytics.getPerformance({
+        walletId: wallet.id,
+        period: 'week',
+      });
+
+      expect(result.dayWinRate).toBeGreaterThan(20);
+      expect(result.dayWinRate).toBeLessThan(35);
+      expect(result.winningDays).toBe(2);
+    });
+
+    it('computes avgProfitPerDay as totalProfit / winningDays', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const now = new Date();
+      const day = (daysAgo: number) =>
+        new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, 12);
+
+      // 3 winning days: $100, $200, $300. avg = $200.
+      // 2 losing days: -$50, -$150. avg = $100.
+      await insertDailyIncome(wallet.id, user.id, day(1), '100');
+      await insertDailyIncome(wallet.id, user.id, day(2), '-50');
+      await insertDailyIncome(wallet.id, user.id, day(3), '200');
+      await insertDailyIncome(wallet.id, user.id, day(4), '-150');
+      await insertDailyIncome(wallet.id, user.id, day(5), '300');
+
+      const result = await caller.analytics.getPerformance({
+        walletId: wallet.id,
+        period: 'week',
+      });
+
+      expect(result.avgProfitPerDay).toBeCloseTo(200, 1);
+      expect(result.avgLossPerDay).toBeCloseTo(100, 1);
+    });
+
+    it('returns zeros for day-level metrics on a wallet with no income events', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.analytics.getPerformance({
+        walletId: wallet.id,
+        period: 'week',
+      });
+
+      expect(result.winningDays).toBe(0);
+      expect(result.losingDays).toBe(0);
+      expect(result.dayWinRate).toBe(0);
+      expect(result.avgProfitPerDay).toBe(0);
+      expect(result.avgLossPerDay).toBe(0);
+    });
+
+    it('combines REALIZED_PNL + COMMISSION + FUNDING_FEE into the day bucket', async () => {
+      // Mirrors `getDailyIncomeSum` semantics: a day is winning/losing
+      // based on the NET of all PNL_CONTRIBUTING_TYPES — so a day with
+      // +$10 realized but -$15 fees nets to a losing day.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const now = new Date();
+      const dayAt = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12);
+
+      await db.insert(incomeEvents).values([
+        { walletId: wallet.id, userId: user.id, binanceTranId: 9001, incomeType: 'REALIZED_PNL', amount: '10', asset: 'USDT', symbol: 'BTCUSDT', source: 'binance', incomeTime: dayAt },
+        { walletId: wallet.id, userId: user.id, binanceTranId: 9002, incomeType: 'COMMISSION', amount: '-15', asset: 'USDT', symbol: 'BTCUSDT', source: 'binance', incomeTime: dayAt },
+      ]);
+
+      const result = await caller.analytics.getPerformance({
+        walletId: wallet.id,
+        period: 'week',
+      });
+
+      // Net for that day = +10 - 15 = -5 → losing day.
+      expect(result.losingDays).toBe(1);
+      expect(result.winningDays).toBe(0);
+    });
+  });
 });

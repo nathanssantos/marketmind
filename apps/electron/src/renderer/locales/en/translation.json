@@ -1097,6 +1097,7 @@
       "netDeposits": "Net Deposits",
       "totalPnL": "Total P&L",
       "viewPerformance": "View Performance",
+      "backfillHistory": "Backfill history",
       "delete": "Delete Wallet",
       "performanceTitle": "Performance - {{name}}",
       "currentBalance": "Current Balance",
@@ -1370,6 +1371,9 @@
         "maxDrawdown": "Max Drawdown",
         "largestWin": "Largest Win",
         "largestLoss": "Largest Loss",
+        "dayWinRate": "Day Win Rate",
+        "avgProfitPerDay": "Avg Profit / Day",
+        "avgLossPerDay": "Avg Loss / Day",
         "noData": "No performance data available"
       },
       "setupStats": {

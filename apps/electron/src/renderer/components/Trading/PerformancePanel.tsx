@@ -180,6 +180,28 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
           value={formatDuration(performance.avgTradeDurationHours ?? 0, t)}
         />
       </Grid>
+
+      {/* Day-level metrics — mirrors Binance's "P&L Details" page where
+          Win Rate is computed across days (not trades), and Avg Profit /
+          Avg Loss are per-day. Sits below the trade-level metrics so
+          users can compare both shapes side by side. */}
+      <Grid templateColumns="repeat(3, 1fr)" gap={2}>
+        <MetricCard
+          label={t('trading.analytics.performance.dayWinRate')}
+          value={`${performance.dayWinRate?.toFixed(1) ?? '0.0'}%`}
+          subtext={`${performance.winningDays ?? 0}W / ${performance.losingDays ?? 0}L / ${performance.breakevenDays ?? 0}B`}
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.avgProfitPerDay')}
+          value={formatCurrency(performance.avgProfitPerDay ?? 0)}
+          valueColor="trading.profit"
+        />
+        <MetricCard
+          label={t('trading.analytics.performance.avgLossPerDay')}
+          value={formatCurrency(-(performance.avgLossPerDay ?? 0))}
+          valueColor="trading.loss"
+        />
+      </Grid>
     </Stack>
   );
 };

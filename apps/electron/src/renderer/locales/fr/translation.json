@@ -1215,6 +1215,7 @@
       "netDeposits": "Dépôts Nets",
       "totalPnL": "P&L Total",
       "viewPerformance": "Voir les Performances",
+      "backfillHistory": "Recharger l'historique",
       "delete": "Supprimer le Portefeuille",
       "performanceTitle": "Performances - {{name}}",
       "currentBalance": "Solde Actuel",
@@ -1487,6 +1488,9 @@
         "maxDrawdown": "Drawdown Maximum",
         "largestWin": "Plus Grand Gain",
         "largestLoss": "Plus Grande Perte",
+        "dayWinRate": "Taux de Réussite par Jour",
+        "avgProfitPerDay": "Profit Moyen / Jour",
+        "avgLossPerDay": "Perte Moyenne / Jour",
         "noData": "Aucune donnée de performance disponible"
       },
       "setupStats": {

@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-05-06
+
+### Fixed — income sync 30-day backfill cap (#462)
+The previous lookback strategy silently truncated history for any wallet that had been trading on Binance before being connected to MarketMind. Brand-new wallets fetched only 24h, stale-sync wallets capped at 30 days regardless of how much was missing, and single-call pagination ignored Binance's 7-day-per-call window — silently truncating any range >7d to the latest 7-day slice.
+
+A wallet showing `balance 6258 - initial 55 - deposits 5884 = $318` cumulative realized was rendering Net P&L +\$1851 in the Analytics modal. The \$1533 phantom gain matched our `totalFees` total — strong signal we were summing a partial window. After the fix:
+
+- `MAX_INITIAL_LOOKBACK_MS` (30d) → `MAX_BACKFILL_MS` (180d). Binance's `/fapi/v1/income` keeps history for ~6 months — past that, calls return empty pages, so the cap is honest.
+- First-sync `startTime` is now `max(wallet.createdAt, now - 6mo)` — whichever is more recent.
+- Explicit 7-day-window pagination. Outer loop iterates windows from startTime to now. Inner loop handles >1000 records within a single window (heavy scalping days).
+- New `wallet.fullResyncIncome` mutation for existing wallets needing to recover the missing history. Idempotent via the `(walletId, binanceTranId)` unique index.
+- WalletCard 3-dot menu gains "Backfill history" item (canSync wallets only). i18n in en/pt/es/fr.
+- 4 new integration tests pin the new behavior (paginates 7-day windows, first-sync from `wallet.createdAt`, caps at 6mo, resync continues from `lastSynced + 1`).
+
+### Fixed — analytics period filters use server TZ (#465)
+`getPerformance` / `getSetupStats` previously computed Today/Week/Month boundaries via `Date.setDate(now.getDate() - N)` — server's local TZ. For a user in BRT against a UTC server, "Today" rolled over at 21:00 BRT (= 00:00 UTC), so a winning trade closed at 22:00 BRT landed in "yesterday" until 03:00 UTC the next morning.
+
+- New `apps/backend/src/utils/tz-bucket.ts` — `startOfDayInTz`, `startOfDayAgoInTz`, `startOfMonthInTz`, `startOfMonthAgoInTz`. Pure `Intl` based, no deps, DST-correct (offset is recomputed each call from a noon-UTC probe).
+- 17 unit tests covering UTC, BRT (UTC-3), JST (UTC+9), Berlin in both CET (UTC+1) and CEST (UTC+2 with DST), month boundaries.
+- Period semantics aligned with Binance's UI labels:
+  - `day` → today since midnight in tz
+  - `week` → today + 6 prior days = 7 calendar days rolling
+  - `month` → today + 29 prior days = 30 days rolling (matches Binance's "30D")
+- `getSetupStats` now accepts `tz` (was missing); frontend hook passes browser TZ.
+
+### Fixed — Best/Worst trade LONG/SHORT badge missing padding (#465)
+`BestWorstTradePanel` was importing `Badge` from `@chakra-ui/react` instead of the `@renderer/components/ui` wrapper. The wrapper applies `paddingInline`/`paddingBlock` per size; without those, the LONG/SHORT label was painted flush against the badge edges, looked cramped.
+
+### Added — day-level metrics (#466)
+Binance's "P&L Details" page shows two distinct metric shapes our Analytics modal didn't:
+
+| Shape | Win Rate | Avg Profit | Avg Loss |
+|---|---|---|---|
+| **Trade-level** (existing) | 41.3% (305W / 433L) | \$29.09 / trade | \$19.07 / trade |
+| **Day-level** (NEW) | 15.85% (58W / 51L / 257B) | \$89.04 / day | \$98.39 / day |
+
+Both are valid — trade-level answers "how often does a trade pay?", day-level answers "how often does a trading day end green?". They diverge sharply for high-frequency traders. We now show both side by side, mirroring Binance's display.
+
+- Backend `getPerformance` returns `winningDays`, `losingDays`, `breakevenDays`, `totalDaysInRange`, `dayWinRate`, `avgProfitPerDay`, `avgLossPerDay`. Bucketed via `getDailyIncomeSum` (same income-events ground truth as headline cards). Days with no events count as breakeven, matching Binance's "Breakeven Days: 257" semantics.
+- Frontend `PerformancePanel` gains a 3-card row: Day Win Rate (with W/L/B subtext) + Avg Profit/Day + Avg Loss/Day.
+- i18n in en/pt/es/fr.
+- 5 new integration tests covering counting, win-rate computation, avg per day, zero-event wallet, and net-of-fees day classification (a day with +\$10 realized but -\$15 fees nets to a losing day).
+
+### Notes
+- 5558 backend tests + 2458 renderer unit tests passing across all 3 PRs.
+- Existing wallets that hit the 30-day cap will still show partial history until the user clicks "Backfill history" from the WalletCard menu — the periodic sync uses `lastSynced + 1` so it doesn't retroactively fetch missed pre-30-day data on its own.
+
 ## [1.12.0] - 2026-05-06
 
 ### Added — chart price tag rebrand + collision system (#456)

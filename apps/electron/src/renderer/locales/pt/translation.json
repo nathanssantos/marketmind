@@ -1200,6 +1200,7 @@
       "netDeposits": "Depósitos Líquidos",
       "totalPnL": "L&P Total",
       "viewPerformance": "Ver Desempenho",
+      "backfillHistory": "Recarregar histórico",
       "delete": "Excluir Carteira",
       "performanceTitle": "Desempenho - {{name}}",
       "currentBalance": "Saldo Atual",
@@ -1470,6 +1471,9 @@
         "maxDrawdown": "Drawdown Máximo",
         "largestWin": "Maior Ganho",
         "largestLoss": "Maior Perda",
+        "dayWinRate": "Taxa de Acerto por Dia",
+        "avgProfitPerDay": "Lucro Médio / Dia",
+        "avgLossPerDay": "Perda Média / Dia",
         "noData": "Nenhum dado de desempenho disponível"
       },
       "setupStats": {
