@@ -2873,6 +2873,7 @@
       "options": "Options de la checklist",
       "showChart": "Afficher le graphique de score",
       "hideChart": "Masquer le graphique de score",
+      "editProfile": "Modifier le profil (checklist)",
       "collectingHistory": "Collecte de l'historique…"
     },
     "editor": {

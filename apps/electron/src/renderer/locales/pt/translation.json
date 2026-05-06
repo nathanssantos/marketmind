@@ -2854,6 +2854,7 @@
       "options": "Opções da checklist",
       "showChart": "Mostrar gráfico de score",
       "hideChart": "Ocultar gráfico de score",
+      "editProfile": "Editar perfil (checklist)",
       "collectingHistory": "Coletando histórico…"
     },
     "editor": {
