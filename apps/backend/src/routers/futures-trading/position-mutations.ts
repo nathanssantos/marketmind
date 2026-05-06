@@ -23,6 +23,17 @@ import { protectedProcedure, router } from '../../trpc';
 import { formatQuantityForBinance } from '../../utils/formatters';
 import { generateEntityId } from '../../utils/id';
 
+// In-flight reverse-position calls keyed by `${walletId}:${symbol}`.
+// Two parallel reverses on the same live wallet+symbol would otherwise
+// double-flip the position: each call snapshots `getPosition`, both
+// cancel orders, both close (one no-ops thanks to reduceOnly), but
+// each then opens a fresh leg — leaving the user 2× sized in the
+// flipped direction. Rejecting concurrent calls with CONFLICT is
+// safer than queueing them (the second click is almost always
+// accidental, and queueing risks acting on stale market state by the
+// time the lock frees).
+const liveReverseInFlight = new Set<string>();
+
 export const positionMutationsRouter = router({
   createPosition: protectedProcedure
     .input(
@@ -361,84 +372,97 @@ export const positionMutationsRouter = router({
           };
         }
 
-        const client = createBinanceFuturesClient(wallet);
-        const position = await getPosition(client, input.symbol);
+        const lockKey = `${input.walletId}:${input.symbol}`;
+        if (liveReverseInFlight.has(lockKey)) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'A reverse for this position is already in progress',
+          });
+        }
+        liveReverseInFlight.add(lockKey);
 
-        if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
-
-        const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
-        const stepSize = symbolFilters.get(input.symbol)?.stepSize?.toString();
-
-        const positionAmt = parseFloat(position.positionAmt);
-        const quantity = Math.abs(positionAmt);
-        const closeSide = positionAmt > 0 ? 'SELL' : 'BUY';
-        const openSide = positionAmt > 0 ? 'BUY' : 'SELL';
-        const formattedQty = formatQuantityForBinance(quantity, stepSize);
-
-        await cancelAllSymbolOrders(client, input.symbol);
-
-        // reduceOnly:true keeps the close from accidentally opening a new
-        // position in the opposite direction — e.g. if a concurrent order
-        // already flipped the live position to flat or to the other side,
-        // a non-reduce-only MARKET would happily open fresh exposure.
-        const closeResult = await submitFuturesOrder(client, {
-          symbol: input.symbol,
-          side: closeSide,
-          type: 'MARKET',
-          quantity: formattedQty,
-          reduceOnly: true,
-        });
-
-        let openResult;
         try {
-          openResult = await submitFuturesOrder(client, {
+          const client = createBinanceFuturesClient(wallet);
+          const position = await getPosition(client, input.symbol);
+
+          if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
+
+          const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
+          const stepSize = symbolFilters.get(input.symbol)?.stepSize?.toString();
+
+          const positionAmt = parseFloat(position.positionAmt);
+          const quantity = Math.abs(positionAmt);
+          const closeSide = positionAmt > 0 ? 'SELL' : 'BUY';
+          const openSide = positionAmt > 0 ? 'BUY' : 'SELL';
+          const formattedQty = formatQuantityForBinance(quantity, stepSize);
+
+          await cancelAllSymbolOrders(client, input.symbol);
+
+          // reduceOnly:true keeps the close from accidentally opening a new
+          // position in the opposite direction — e.g. if a concurrent order
+          // already flipped the live position to flat or to the other side,
+          // a non-reduce-only MARKET would happily open fresh exposure.
+          const closeResult = await submitFuturesOrder(client, {
             symbol: input.symbol,
-            side: openSide,
+            side: closeSide,
             type: 'MARKET',
             quantity: formattedQty,
+            reduceOnly: true,
           });
-        } catch (openError) {
-          // Close already filled, open failed — surface a clear error so
-          // the user knows their position was closed but the reverse leg
-          // didn't go through (typical causes: insufficient margin after
-          // realizing the close PnL, exchange-side reject, network blip).
-          const reason = openError instanceof Error ? openError.message : String(openError);
-          logger.error({
+
+          let openResult;
+          try {
+            openResult = await submitFuturesOrder(client, {
+              symbol: input.symbol,
+              side: openSide,
+              type: 'MARKET',
+              quantity: formattedQty,
+            });
+          } catch (openError) {
+            // Close already filled, open failed — surface a clear error so
+            // the user knows their position was closed but the reverse leg
+            // didn't go through (typical causes: insufficient margin after
+            // realizing the close PnL, exchange-side reject, network blip).
+            const reason = openError instanceof Error ? openError.message : String(openError);
+            logger.error({
+              walletId: input.walletId,
+              symbol: input.symbol,
+              closeOrderId: closeResult.orderId,
+              error: reason,
+            }, 'Reverse: close filled but reopen failed');
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: `Position closed (orderId ${closeResult.orderId}) but reopen failed: ${reason}`,
+            });
+          }
+
+          logger.info({
             walletId: input.walletId,
             symbol: input.symbol,
             closeOrderId: closeResult.orderId,
-            error: reason,
-          }, 'Reverse: close filled but reopen failed');
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: `Position closed (orderId ${closeResult.orderId}) but reopen failed: ${reason}`,
-          });
+            openOrderId: openResult.orderId,
+            newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
+            quantity: formattedQty,
+          }, 'Position reversed: cancel orders → close → open');
+
+          const openExecutions = await ctx.db.select().from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.userId, ctx.user.id),
+              eq(tradeExecutions.status, 'open'),
+            ));
+
+          return {
+            success: true,
+            closeOrderId: closeResult.orderId,
+            openOrderId: openResult.orderId,
+            newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
+            walletId: input.walletId,
+            openExecutions,
+          };
+        } finally {
+          liveReverseInFlight.delete(lockKey);
         }
-
-        logger.info({
-          walletId: input.walletId,
-          symbol: input.symbol,
-          closeOrderId: closeResult.orderId,
-          openOrderId: openResult.orderId,
-          newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
-          quantity: formattedQty,
-        }, 'Position reversed: cancel orders → close → open');
-
-        const openExecutions = await ctx.db.select().from(tradeExecutions)
-          .where(and(
-            eq(tradeExecutions.walletId, input.walletId),
-            eq(tradeExecutions.userId, ctx.user.id),
-            eq(tradeExecutions.status, 'open'),
-          ));
-
-        return {
-          success: true,
-          closeOrderId: closeResult.orderId,
-          openOrderId: openResult.orderId,
-          newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
-          walletId: input.walletId,
-          openExecutions,
-        };
       } catch (error) {
         // Don't double-wrap our own TRPCErrors (the open-failure path
         // throws a structured TRPCError with the close orderId in the

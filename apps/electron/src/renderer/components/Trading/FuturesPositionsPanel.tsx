@@ -271,10 +271,17 @@ const FuturesPositionsPanelComponent = () => {
     realtimePrices,
     isLoadingPositions,
     closePosition,
-    isClosingPosition,
     reversePosition,
-    isReversingPosition,
   } = useBackendFuturesTrading(activeWalletId ?? '');
+
+  // Per-positionId pending sets — the singleton `isReversingPosition`
+  // / `isClosingPosition` from useMutation lights up every card's
+  // spinner whenever any position is in flight, which is misleading
+  // when the user has multiple positions open. Track the set of
+  // positionIds currently reversing/closing locally so only the
+  // relevant card shows its own spinner.
+  const [reversingIds, setReversingIds] = useState<Set<string>>(new Set());
+  const [closingIds, setClosingIds] = useState<Set<string>>(new Set());
 
   const openPositions = useMemo((): FuturesPosition[] => {
     if (!Array.isArray(positions)) return [];
@@ -284,15 +291,33 @@ const FuturesPositionsPanelComponent = () => {
   }, [positions]);
 
   const handleClosePosition = async (positionId: string, symbol: string) => {
-    if (!activeWalletId) return;
-    await closePosition({ walletId: activeWalletId, symbol, positionId });
+    if (!activeWalletId || closingIds.has(positionId)) return;
+    setClosingIds((prev) => new Set(prev).add(positionId));
+    try {
+      await closePosition({ walletId: activeWalletId, symbol, positionId });
+    } finally {
+      setClosingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(positionId);
+        return next;
+      });
+    }
   };
 
   const handleReversePosition = async (positionId: string, positionSymbol: string) => {
-    if (!activeWalletId) return;
-    const result = await reversePosition({ walletId: activeWalletId, symbol: positionSymbol, positionId });
-    if (result && 'success' in result && !result.success && 'error' in result && typeof result.error === 'string') {
-      throw new Error(result.error);
+    if (!activeWalletId || reversingIds.has(positionId)) return;
+    setReversingIds((prev) => new Set(prev).add(positionId));
+    try {
+      const result = await reversePosition({ walletId: activeWalletId, symbol: positionSymbol, positionId });
+      if (result && 'success' in result && !result.success && 'error' in result && typeof result.error === 'string') {
+        throw new Error(result.error);
+      }
+    } finally {
+      setReversingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(positionId);
+        return next;
+      });
     }
   };
 
@@ -326,9 +351,9 @@ const FuturesPositionsPanelComponent = () => {
             position={position}
             currentPrice={realtimePrices[position.symbol]}
             onClose={() => { void handleClosePosition(position.id, position.symbol); }}
-            isClosing={isClosingPosition}
+            isClosing={closingIds.has(position.id)}
             onReverse={() => { void handleReversePosition(position.id, position.symbol); }}
-            isReversing={isReversingPosition}
+            isReversing={reversingIds.has(position.id)}
             onNavigateToSymbol={globalActions?.navigateToSymbol}
           />
         ))}
