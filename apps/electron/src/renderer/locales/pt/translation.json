@@ -1471,6 +1471,9 @@
         "maxDrawdown": "Drawdown Máximo",
         "largestWin": "Maior Ganho",
         "largestLoss": "Maior Perda",
+        "dayWinRate": "Taxa de Acerto por Dia",
+        "avgProfitPerDay": "Lucro Médio / Dia",
+        "avgLossPerDay": "Perda Média / Dia",
         "noData": "Nenhum dado de desempenho disponível"
       },
       "setupStats": {
