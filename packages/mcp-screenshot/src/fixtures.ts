@@ -211,8 +211,24 @@ const TRADE_EXECUTIONS = closedExecutions.map((t, i) => {
   };
 });
 
-// 2 open positions — one LONG in profit, one SHORT in profit. Drawn on
-// the chart as order lines + populate the Portfolio / Positions panels.
+// Anchor the open-position prices on the LAST candle of the relevant
+// synthetic series so the entry / SL / TP lines actually fall inside
+// the chart's visible range. Earlier the entries were hard-coded at
+// 67200 / 3478 (BTC / ETH spot prices from when the fixture was
+// authored) but the synthetic generator drifts upward over 500
+// candles so the visible range had moved past the entry by ~15-20%.
+const lastCloseOf = (symbol: string, interval: string): number => {
+  const series = SYNTHETIC_KLINES[symbol]?.[interval];
+  return series?.[series.length - 1]?.close ?? 0;
+};
+
+const btc15mClose = lastCloseOf('BTCUSDT', '15m');
+const eth15mClose = lastCloseOf('ETHUSDT', '15m');
+
+// 2 open positions — one LONG in profit (BTCUSDT), one SHORT in profit
+// (ETHUSDT). Anchored on the last candle's close so the entry / SL /
+// TP horizontal lines render mid-chart instead of off-screen. SL ≈ 1%
+// adverse, TP ≈ 1.8% favorable — realistic 1.8R scalping shape.
 const OPEN_EXECUTIONS = [
   {
     id: 'exec-open-001',
@@ -222,11 +238,11 @@ const OPEN_EXECUTIONS = [
     setupType: 'breakout-retest',
     symbol: 'BTCUSDT',
     side: 'long',
-    entryPrice: '67200',
+    entryPrice: (btc15mClose * 0.992).toFixed(2),
     exitPrice: null,
     quantity: '0.08',
-    pnl: '124.0',
-    pnlPercent: '2.31',
+    pnl: (btc15mClose * 0.008 * 0.08).toFixed(2),
+    pnlPercent: '0.81',
     fees: '0.25',
     entryFee: '0.25',
     exitFee: null,
@@ -234,8 +250,8 @@ const OPEN_EXECUTIONS = [
     leverage: 10,
     marketType: 'FUTURES',
     status: 'open',
-    stopLoss: '66800',
-    takeProfit: '68500',
+    stopLoss: (btc15mClose * 0.985).toFixed(2),
+    takeProfit: (btc15mClose * 1.008).toFixed(2),
     exitReason: null,
     openedAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
     closedAt: null,
@@ -250,11 +266,11 @@ const OPEN_EXECUTIONS = [
     setupType: 'pin-inside-combo',
     symbol: 'ETHUSDT',
     side: 'short',
-    entryPrice: '3478',
+    entryPrice: (eth15mClose * 1.006).toFixed(2),
     exitPrice: null,
     quantity: '0.6',
-    pnl: '18.6',
-    pnlPercent: '0.89',
+    pnl: (eth15mClose * 0.006 * 0.6).toFixed(2),
+    pnlPercent: '0.62',
     fees: '0.20',
     entryFee: '0.20',
     exitFee: null,
@@ -262,8 +278,8 @@ const OPEN_EXECUTIONS = [
     leverage: 5,
     marketType: 'FUTURES',
     status: 'open',
-    stopLoss: '3520',
-    takeProfit: '3420',
+    stopLoss: (eth15mClose * 1.013).toFixed(2),
+    takeProfit: (eth15mClose * 0.99).toFixed(2),
     exitReason: null,
     openedAt: new Date(Date.now() - 1 * 3_600_000).toISOString(),
     closedAt: null,
@@ -320,7 +336,9 @@ const DAILY_PERFORMANCE = closedExecutions
   .sort((a, b) => a.date.localeCompare(b.date));
 
 // User indicator instances — one per default seed in trading-core. Stable
-// IDs so checklist conditions can reference them.
+// IDs so checklist conditions can reference them. ORB is included with
+// a stable id (`ui-orb`) so the marketing-screenshots script can drop a
+// chart instance for it on demand.
 const USER_INDICATORS = [
   { id: 'ui-ema9', userId: 'e2e-user', catalogType: 'ema', label: 'EMA 9', params: '{"period":9,"color":"#ff00ff","lineWidth":1}', isCustom: false, createdAt: NOW, updatedAt: NOW },
   { id: 'ui-ema21', userId: 'e2e-user', catalogType: 'ema', label: 'EMA 21', params: '{"period":21,"color":"#00e676","lineWidth":1}', isCustom: false, createdAt: NOW, updatedAt: NOW },
@@ -329,6 +347,7 @@ const USER_INDICATORS = [
   { id: 'ui-stoch14', userId: 'e2e-user', catalogType: 'stoch', label: 'Stoch 14', params: '{"period":14,"smoothK":3,"smoothD":3,"color":"#2196f3","lineWidth":1}', isCustom: false, createdAt: NOW, updatedAt: NOW },
   { id: 'ui-volume', userId: 'e2e-user', catalogType: 'volume', label: 'Volume', params: '{"color":"#607d8b"}', isCustom: false, createdAt: NOW, updatedAt: NOW },
   { id: 'ui-vp', userId: 'e2e-user', catalogType: 'volumeProfile', label: 'Volume Profile', params: '{"numBuckets":100,"maxBarWidth":120,"opacity":30}', isCustom: false, createdAt: NOW, updatedAt: NOW },
+  { id: 'ui-orb', userId: 'e2e-user', catalogType: 'orb', label: 'ORB 15m', params: '{"orbPeriodMinutes":15}', isCustom: false, createdAt: NOW, updatedAt: NOW },
 ];
 
 // Mirrors the v1.13.x default checklist (RSI 2 + Stoch 14 ladder across
@@ -511,11 +530,26 @@ const WATCHER_STATUS = {
   persistedWatchers: ACTIVE_WATCHERS.length,
 };
 
+// Anchor ticker `lastPrice` to the last close of the synthetic 15m series
+// for each symbol. The price store hydrates from this — so the chart's
+// right-axis price tag, the open-position unrealized PnL, the wallet's
+// "Today's PnL" headline, and the live ticker chips on top of every panel
+// all converge on the same number. Earlier fixtures hard-coded BTC at
+// 67450 / ETH at 3478 — the synthetic generator drifts beyond that, so
+// (currentPrice − entryPrice) × qty came out negative even though the
+// fixture intended a profitable open position.
+const tickerFor = (symbol: string, changePct: string, volume: string) => ({
+  symbol,
+  priceChangePercent: changePct,
+  lastPrice: lastCloseOf(symbol, '15m').toFixed(2),
+  volume,
+});
+
 const DAILY_TICKERS = [
-  { symbol: 'BTCUSDT', priceChangePercent: '-2.27', lastPrice: '67450.5', volume: '125000' },
-  { symbol: 'ETHUSDT', priceChangePercent: '1.42', lastPrice: '3478.2', volume: '480000' },
-  { symbol: 'SOLUSDT', priceChangePercent: '-0.85', lastPrice: '171.4', volume: '2200000' },
-  { symbol: 'BNBUSDT', priceChangePercent: '0.34', lastPrice: '618.9', volume: '95000' },
+  tickerFor('BTCUSDT', '+0.84', '125000'),
+  tickerFor('ETHUSDT', '+1.42', '480000'),
+  tickerFor('SOLUSDT', '-0.85', '2200000'),
+  { symbol: 'BNBUSDT', priceChangePercent: '+0.34', lastPrice: '618.90', volume: '95000' },
 ];
 
 export interface Fixture {
@@ -640,7 +674,7 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
       activeProfileId: 'profile-1',
     },
   },
-  { path: 'autoTrading.getActiveExecutions', value: [] },
+  { path: 'autoTrading.getActiveExecutions', value: OPEN_EXECUTIONS },
   { path: 'autoTrading.getExecutionHistory', value: TRADE_EXECUTIONS.slice(0, 5) },
   { path: 'autoTrading.getRecentLogs', value: [
       { id: 1, level: 'info', message: 'Watcher BTCUSDT 1h started', createdAt: '2026-04-27T18:55:00.000Z' },

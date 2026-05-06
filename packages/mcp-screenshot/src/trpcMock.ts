@@ -21,6 +21,15 @@ export const installVisualFixtures = async (
   await context.addInitScript((entries: Fixture[]) => {
     const map = new Map<string, unknown>(entries.map((e) => [e.path, e.value]));
 
+    // Expose the kline map to the page so the marketing-screenshots
+    // script can read it (needed for seedLivePrices, which pushes the
+    // synthetic last-close into the priceStore so unrealized PnL math
+    // doesn't fall through to the entryPrice fallback).
+    const klineMap = map.get('_klineMap');
+    if (klineMap) {
+      (window as Window & { __klineMapCache?: unknown }).__klineMapCache = klineMap;
+    }
+
     const unwrap = (value: unknown): unknown =>
       value && typeof value === 'object' && 'json' in (value as Record<string, unknown>)
         ? (value as { json: unknown }).json

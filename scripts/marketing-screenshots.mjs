@@ -32,6 +32,11 @@ process.env.MM_MCP_SCREENSHOT_DIR ??= '/tmp/marketing-screenshots-session';
 const OUT_DIR = process.env.MM_MARKETING_OUT_DIR
   ?? path.resolve(import.meta.dirname, '..', '..', 'marketmind-site', 'public', 'images');
 
+// Layout switches re-mount every chart panel from scratch (canvas
+// recreate, kline fetch, indicator recompute on the worker pool, drawing
+// re-resolve from time anchors). 1.2s was too aggressive — the volume
+// profile and order line tags were still streaming in when the shutter
+// fired. 2.5s puts us safely past the populated state.
 const switchLayout = async (presetName) => {
   const page = await getPage();
   await page.evaluate((name) => {
@@ -41,7 +46,40 @@ const switchLayout = async (presetName) => {
     const tabId = store.activeSymbolTabId;
     if (preset && tabId) store.setActiveLayout?.(tabId, preset.id);
   }, presetName);
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(2500);
+  await seedLivePrices();
+};
+
+// Add a chart instance for one of the seeded user-indicators. Stable
+// IDs (set in fixtures.ts USER_INDICATORS) let us add a chart pane
+// instance directly — no clicking through the IndicatorLibrary needed.
+// The renderer reads `instances` from `useIndicatorStore` to mount panes
+// + render series, so a single addInstance call paints the indicator
+// on every chart panel after the next compute tick.
+const enableIndicator = async ({ userIndicatorId, catalogType, params }) => {
+  const page = await getPage();
+  await page.evaluate(({ userIndicatorId, catalogType, params }) => {
+    const indStore = window.__indicatorStore?.getState?.();
+    indStore?.addInstance?.({
+      userIndicatorId,
+      catalogType,
+      params,
+      visible: true,
+    });
+  }, { userIndicatorId, catalogType, params });
+  await page.waitForTimeout(2000);
+};
+
+const clearIndicators = async () => {
+  const page = await getPage();
+  await page.evaluate(() => {
+    const indStore = window.__indicatorStore?.getState?.();
+    const instances = indStore?.instances ?? [];
+    for (const inst of instances) {
+      indStore?.removeInstance?.(inst.id);
+    }
+  });
+  await page.waitForTimeout(500);
 };
 
 const closeAll = async () => {
@@ -51,6 +89,37 @@ const closeAll = async () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
   });
   await page.waitForTimeout(200);
+};
+
+// The renderer's PnL math (`portfolioPositionMath.buildPortfolioPositions`)
+// reads currentPrice from `priceStore.prices[symbol]` (websocket-fed in
+// production). Without WS in the fixture, prices is empty and PnL falls
+// back to entryPrice → markPrice → 0. To make the screenshots show
+// realistic ~+0.8% / +0.6% unrealized PnL on the open positions, push
+// canonical prices straight into the store after each layout switch.
+// Values match the fixture's `lastCloseOf(symbol, '15m')` × the slight
+// favorable drift the entries assume.
+const seedLivePrices = async () => {
+  const page = await getPage();
+  await page.evaluate(() => {
+    const store = window.__priceStore?.getState?.();
+    if (!store?.updatePrice) return;
+    // Pull the synthetic last-close from the trpc fixture map. The mock
+    // stashes it in `_klineMap`; we reuse the same value the position
+    // entry/SL/TP were anchored to.
+    const klineMap = window.__klineMapCache;
+    const lastClose = (sym) => {
+      const series = klineMap?.[`${sym}:15m`];
+      return series?.[series.length - 1]?.close;
+    };
+    const btc = lastClose('BTCUSDT') ?? 85000;
+    const eth = lastClose('ETHUSDT') ?? 3500;
+    const sol = lastClose('SOLUSDT') ?? 170;
+    store.updatePrice('BTCUSDT', btc, 'websocket');
+    store.updatePrice('ETHUSDT', eth, 'websocket');
+    store.updatePrice('SOLUSDT', sol, 'websocket');
+  });
+  await page.waitForTimeout(800);
 };
 
 const scenes = [
@@ -129,6 +198,11 @@ const scenes = [
     },
     capture: async () => captureFullPage({ label: 'screenshot-6', theme: 'dark' }),
   },
+  // ORB scene was attempted (commit history) but the synthetic kline
+  // generator has no session boundary metadata, so the ORB renderer
+  // produces no visible output. Keeping the `enableIndicator` /
+  // `clearIndicators` helpers wired so a future capture can re-enable
+  // ORB once we add session boundary fixtures.
 ];
 
 await mkdir(OUT_DIR, { recursive: true });
