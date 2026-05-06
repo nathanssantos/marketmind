@@ -30,7 +30,10 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
   const handleRestore = useCallback((id: string) => setPanelWindowState(layoutId, id, 'normal'), [setPanelWindowState, layoutId]);
   const handleClose = useCallback((id: string) => removePanel(layoutId, id), [removePanel, layoutId]);
 
-  const hoveredKline = useChartHoverStore((s) => s.hoveredKlineByChart[makeChartKey(symbol, panelConfig.timeframe)]);
+  const hoverKey = makeChartKey(symbol, panelConfig.timeframe);
+  const hoveredKline = useChartHoverStore((s) => s.hoveredKlineByChart[hoverKey] ?? null);
+  const currentKline = useChartHoverStore((s) => s.currentKlineByChart[hoverKey] ?? null);
+  const headerKline = hoveredKline ?? currentKline;
 
   const streamHealth = useStreamHealth({
     symbol,
@@ -44,10 +47,10 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
       <HStack gap={2} align="center" overflow="hidden" minW={0} flexWrap="nowrap" whiteSpace="nowrap">
         <StreamHealthDot status={streamHealth.status} />
         <Text fontSize="xs" color="fg.muted" flexShrink={0}>{panelConfig.timeframe} {panelConfig.chartType}</Text>
-        {hoveredKline && <KlineOHLCRow kline={hoveredKline} compact />}
+        {headerKline && <KlineOHLCRow kline={headerKline} compact />}
       </HStack>
     ),
-    [streamHealth.status, panelConfig.timeframe, panelConfig.chartType, hoveredKline],
+    [streamHealth.status, panelConfig.timeframe, panelConfig.chartType, headerKline],
   );
 
   return (

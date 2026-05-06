@@ -32,7 +32,6 @@ import {
   LuCalendarDays,
   LuFlipVertical2,
   LuMagnet,
-  LuMessageSquare,
 } from 'react-icons/lu';
 
 
@@ -84,14 +83,12 @@ DrawingToolButton.displayName = 'DrawingToolButton';
 export const ChartToolsToolbar = memo(() => {
   const { t } = useTranslation();
 
-  const [showTooltip, setShowTooltip] = useChartPref('showTooltip', false);
   const [showEventRow, setShowEventRow] = useChartPref('showEventRow', false);
   const [chartFlipped, setChartFlipped] = useChartPref<boolean>('chartFlipped', false);
 
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
   const setMagnetEnabled = useDrawingStore(s => s.setMagnetEnabled);
 
-  const handleTooltipToggle = useCallback(() => setShowTooltip(!showTooltip), [showTooltip, setShowTooltip]);
   const handleEventRowToggle = useCallback(() => setShowEventRow(!showEventRow), [showEventRow, setShowEventRow]);
   const handleMagnetToggle = useCallback(() => setMagnetEnabled(!magnetEnabled), [magnetEnabled, setMagnetEnabled]);
   const handleFlipToggle = useCallback(() => setChartFlipped(!chartFlipped), [chartFlipped, setChartFlipped]);
@@ -141,12 +138,6 @@ export const ChartToolsToolbar = memo(() => {
           onClick={handleMagnetToggle}
         />
         <Separator orientation="horizontal" width="100%" />
-        <ChartToolButton
-          active={showTooltip}
-          label={t('chart.controls.tooltip')}
-          icon={<LuMessageSquare />}
-          onClick={handleTooltipToggle}
-        />
         <ChartToolButton
           active={showEventRow}
           label={t('chart.controls.marketEvents')}

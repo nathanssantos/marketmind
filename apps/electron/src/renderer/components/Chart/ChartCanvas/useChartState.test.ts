@@ -1,96 +1,15 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useChartState, useCursorManager } from './useChartState';
-import { tooltipStore } from './tooltipStore';
-import type { Kline } from '@marketmind/types';
-
-const createMockKline = (overrides?: Partial<Kline>): Kline => ({
-  symbol: 'BTCUSDT',
-  interval: '1h',
-  openTime: Date.now() - 3600000,
-  closeTime: Date.now(),
-  open: '50000',
-  high: '51000',
-  low: '49000',
-  close: '50500',
-  volume: '1000',
-  quoteVolume: '50000000',
-  trades: 10000,
-  takerBuyBaseVolume: '500',
-  takerBuyQuoteVolume: '25000000',
-  ...overrides,
-});
 
 describe('useChartState', () => {
-  beforeEach(() => {
-    tooltipStore.hideTooltip();
-  });
-
   it('should initialize with default state', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
-
+    const { result } = renderHook(() => useChartState({ klines: [] }));
     expect(result.current.state.orderToClose).toBeNull();
-    expect(tooltipStore.getSnapshot().visible).toBe(false);
-    expect(tooltipStore.getSnapshot().kline).toBeNull();
-  });
-
-  it('should set tooltip data via tooltipStore', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
-
-    const mockKline = createMockKline();
-
-    act(() => {
-      result.current.actions.setTooltip({
-        kline: mockKline,
-        x: 100,
-        y: 200,
-        visible: true,
-        klineIndex: 5,
-      });
-    });
-
-    const snap = tooltipStore.getSnapshot();
-    expect(snap.visible).toBe(true);
-    expect(snap.kline).toEqual(mockKline);
-    expect(snap.x).toBe(100);
-    expect(snap.y).toBe(200);
-    expect(snap.klineIndex).toBe(5);
-  });
-
-  it('should hide tooltip', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
-
-    const mockKline = createMockKline();
-
-    act(() => {
-      result.current.actions.setTooltip({
-        kline: mockKline,
-        x: 100,
-        y: 200,
-        visible: true,
-      });
-    });
-
-    expect(tooltipStore.getSnapshot().visible).toBe(true);
-
-    act(() => {
-      result.current.actions.hideTooltip();
-    });
-
-    expect(tooltipStore.getSnapshot().visible).toBe(false);
-    expect(tooltipStore.getSnapshot().kline).toBeNull();
   });
 
   it('should set orderToClose', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
+    const { result } = renderHook(() => useChartState({ klines: [] }));
 
     act(() => {
       result.current.actions.setOrderToClose('order-123');
@@ -106,21 +25,16 @@ describe('useChartState', () => {
   });
 
   it('should provide refs for interaction tracking', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
+    const { result } = renderHook(() => useChartState({ klines: [] }));
 
     expect(result.current.refs.mousePosition.current).toBeNull();
     expect(result.current.refs.orderPreview.current).toBeNull();
     expect(result.current.refs.hoveredMAIndex.current).toBeUndefined();
     expect(result.current.refs.cursor.current).toBe('crosshair');
-    expect(result.current.refs.tooltipEnabled.current).toBe(true);
   });
 
   it('should allow modifying refs', () => {
-    const { result } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
+    const { result } = renderHook(() => useChartState({ klines: [] }));
 
     result.current.refs.mousePosition.current = { x: 50, y: 100 };
     result.current.refs.orderPreview.current = { price: 50000, type: 'long' };
@@ -189,12 +103,9 @@ describe('useChartState cleanup', () => {
 
   it('should clean up timeouts on unmount', () => {
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
-    const { result, unmount } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
+    const { result, unmount } = renderHook(() => useChartState({ klines: [] }));
 
     result.current.refs.interactionTimeout.current = setTimeout(() => {}, 1000);
-    result.current.refs.tooltipDebounce.current = setTimeout(() => {}, 1000);
 
     unmount();
 
@@ -204,9 +115,7 @@ describe('useChartState cleanup', () => {
 
   it('should clean up animation frames on unmount', () => {
     const cancelAnimationFrameSpy = vi.spyOn(global, 'cancelAnimationFrame');
-    const { result, unmount } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
+    const { result, unmount } = renderHook(() => useChartState({ klines: [] }));
 
     result.current.refs.mouseMoveRaf.current = requestAnimationFrame(() => {});
 
@@ -217,9 +126,7 @@ describe('useChartState cleanup', () => {
   });
 
   it('should handle cleanup when refs are null', () => {
-    const { unmount } = renderHook(() =>
-      useChartState({ klines: [] })
-    );
+    const { unmount } = renderHook(() => useChartState({ klines: [] }));
 
     expect(() => unmount()).not.toThrow();
   });
