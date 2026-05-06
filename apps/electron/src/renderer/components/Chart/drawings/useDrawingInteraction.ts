@@ -77,6 +77,7 @@ const applyDragUpdate = (
   newPrice: number,
   newTime: number | undefined,
   timeAt: (idx: number) => number | undefined,
+  timeAtFloor: (idx: number) => number | undefined,
 ): void => {
   if (handleType === 'body' || handleType === null) {
     if (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork') {
@@ -139,10 +140,16 @@ const applyDragUpdate = (
     }
 
     if (originalDrawing.type === 'pencil' || originalDrawing.type === 'highlighter') {
+      // Freehand uses `timeAtFloor` instead of the rounded `timeAt`:
+      // `resolveDrawingIndices` rebuilds freehand point indices as
+      // `floor(stored.index) + frac` and looks up time off `floor`. If we
+      // saved time at the rounded kline, the resolved index would jump by 1
+      // whenever frac >= 0.5 — the same stair-step bug we fixed at
+      // creation time.
       store.updateDrawing(originalDrawing.id, {
         points: originalDrawing.points.map(p => {
           const ni = p.index + deltaIndex;
-          return { index: ni, price: p.price + deltaPrice, time: timeAt(ni) };
+          return { index: ni, price: p.price + deltaPrice, time: timeAtFloor(ni) };
         }),
       });
     }
@@ -489,8 +496,13 @@ export const useDrawingInteraction = ({
         if (rounded < 0 || rounded >= klines.length) return undefined;
         return klines[rounded]?.openTime;
       };
+      const timeAtFloor = (idx: number) => {
+        const floored = Math.floor(idx);
+        if (floored < 0 || floored >= klines.length) return undefined;
+        return klines[floored]?.openTime;
+      };
 
-      applyDragUpdate(store, originalDrawing, handleType, deltaIndex, deltaPrice, newIndex, newPrice, newTime, timeAt);
+      applyDragUpdate(store, originalDrawing, handleType, deltaIndex, deltaPrice, newIndex, newPrice, newTime, timeAt, timeAtFloor);
 
       manager.markDirty('overlays');
       return true;
