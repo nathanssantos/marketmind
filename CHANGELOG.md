@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.3] - 2026-05-06
+
+### Fixed — TradingProfilesDialog rendered without the profile editor (#475)
+Despite its name, the dialog was rendering only `WatcherManager` + `SetupToggleSection`. The `TradingProfilesManager` component (which owns the profile cards and the `ChecklistEditor` inside `ProfileEditorDialog`) was orphaned since v1.6 — `#358` dropped the Settings tab and "wired" the dialog but forgot to mount the manager itself. Net effect: opening the dialog showed watchers + setup toggles but NO way to view or edit profiles, leaving the checklist editor unreachable.
+
+This release mounts `<TradingProfilesManager />` at the top of the dialog. Combined with #472 (Checklist panel options → "Edit profile" shortcut), the full v1.5/pre-v1.6 flow is restored from the renderer.
+
 ## [1.13.2] - 2026-05-06
 
 ### Added — checklist panel "Edit profile" shortcut (#472)
