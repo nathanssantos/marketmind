@@ -392,8 +392,13 @@ export const positionMutationsRouter = router({
 
           const positionAmt = parseFloat(position.positionAmt);
           const quantity = Math.abs(positionAmt);
-          const closeSide = positionAmt > 0 ? 'SELL' : 'BUY';
-          const openSide = positionAmt > 0 ? 'BUY' : 'SELL';
+          // Both legs of the reverse go in the SAME direction. The close
+          // is reduceOnly:true so it only zeroes the existing position;
+          // the open then continues in the same direction to build the
+          // flipped exposure. Example for SHORT 0.1: BUY 0.1 reduceOnly
+          // (flat) → BUY 0.1 (LONG 0.1). The previous code sent BUY then
+          // SELL, which silently re-opened a SHORT instead of flipping.
+          const flipSide = positionAmt > 0 ? 'SELL' : 'BUY';
           const formattedQty = formatQuantityForBinance(quantity, stepSize);
 
           await cancelAllSymbolOrders(client, input.symbol);
@@ -404,7 +409,7 @@ export const positionMutationsRouter = router({
           // a non-reduce-only MARKET would happily open fresh exposure.
           const closeResult = await submitFuturesOrder(client, {
             symbol: input.symbol,
-            side: closeSide,
+            side: flipSide,
             type: 'MARKET',
             quantity: formattedQty,
             reduceOnly: true,
@@ -414,7 +419,7 @@ export const positionMutationsRouter = router({
           try {
             openResult = await submitFuturesOrder(client, {
               symbol: input.symbol,
-              side: openSide,
+              side: flipSide,
               type: 'MARKET',
               quantity: formattedQty,
             });
