@@ -251,80 +251,97 @@ export const positionMutationsRouter = router({
         if (isPaperWallet(wallet)) {
           if (!input.positionId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'positionId is required for paper wallets' });
 
-          const [position] = await ctx.db
-            .select()
-            .from(positions)
-            .where(
-              and(
-                eq(positions.id, input.positionId),
-                eq(positions.userId, ctx.user.id),
-                eq(positions.status, 'open')
-              )
-            )
-            .limit(1);
-
-          if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
-
           const dataService = getBinanceFuturesDataService();
-          const markPriceData = await dataService.getMarkPrice(position.symbol);
-          const exitPrice = markPriceData ? markPriceData.markPrice : parseFloat(position.currentPrice ?? position.entryPrice);
+          const markPriceData = await dataService.getMarkPrice(input.symbol);
 
-          const entryPrice = parseFloat(position.entryPrice);
-          const quantity = parseFloat(position.entryQty);
-          const posLeverage = position.leverage ?? 1;
-          const accumulatedFunding = parseFloat(position.accumulatedFunding ?? '0');
+          const reversed = await ctx.db.transaction(async (tx) => {
+            // FOR UPDATE locks the row so concurrent reverse / close calls
+            // serialize. Without this, two simultaneous clicks would both
+            // see status='open', both close the position, and both try to
+            // insert a new one — leaving the user with two open positions
+            // or a duplicate-id error.
+            const [position] = await tx
+              .select()
+              .from(positions)
+              .where(
+                and(
+                  eq(positions.id, input.positionId!),
+                  eq(positions.userId, ctx.user.id),
+                  eq(positions.status, 'open')
+                )
+              )
+              .for('update')
+              .limit(1);
 
-          const { netPnl, pnlPercent } = calculatePnl({
-            entryPrice,
-            exitPrice,
-            quantity,
-            side: position.side,
-            marketType: 'FUTURES',
-            leverage: posLeverage,
-            accumulatedFunding,
-          });
+            if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
 
-          await ctx.db
-            .update(positions)
-            .set({
-              status: 'closed',
-              closedAt: new Date(),
-              updatedAt: new Date(),
+            const exitPrice = markPriceData ? markPriceData.markPrice : parseFloat(position.currentPrice ?? position.entryPrice);
+            const entryPrice = parseFloat(position.entryPrice);
+            const quantity = parseFloat(position.entryQty);
+            const posLeverage = position.leverage ?? 1;
+            const accumulatedFunding = parseFloat(position.accumulatedFunding ?? '0');
+
+            const { netPnl, pnlPercent } = calculatePnl({
+              entryPrice,
+              exitPrice,
+              quantity,
+              side: position.side,
+              marketType: 'FUTURES',
+              leverage: posLeverage,
+              accumulatedFunding,
+            });
+
+            await tx
+              .update(positions)
+              .set({
+                status: 'closed',
+                closedAt: new Date(),
+                updatedAt: new Date(),
+                currentPrice: exitPrice.toString(),
+                pnl: netPnl.toString(),
+                pnlPercent: pnlPercent.toString(),
+              })
+              .where(eq(positions.id, input.positionId!));
+
+            const newSide = position.side === 'LONG' ? 'SHORT' : 'LONG';
+            const newPositionId = generateEntityId();
+            const newLiquidationPrice = calculateLiquidationPrice(exitPrice, posLeverage, newSide);
+
+            await tx.insert(positions).values({
+              id: newPositionId,
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: position.symbol,
+              side: newSide,
+              entryPrice: exitPrice.toString(),
+              entryQty: position.entryQty,
               currentPrice: exitPrice.toString(),
-              pnl: netPnl.toString(),
-              pnlPercent: pnlPercent.toString(),
-            })
-            .where(eq(positions.id, input.positionId));
+              status: 'open',
+              marketType: 'FUTURES',
+              leverage: posLeverage,
+              marginType: position.marginType,
+              liquidationPrice: newLiquidationPrice.toString(),
+              accumulatedFunding: '0',
+            });
 
-          const newSide = position.side === 'LONG' ? 'SHORT' : 'LONG';
-          const newPositionId = generateEntityId();
-          const newLiquidationPrice = calculateLiquidationPrice(exitPrice, posLeverage, newSide);
-
-          await ctx.db.insert(positions).values({
-            id: newPositionId,
-            userId: ctx.user.id,
-            walletId: input.walletId,
-            symbol: position.symbol,
-            side: newSide,
-            entryPrice: exitPrice.toString(),
-            entryQty: position.entryQty,
-            currentPrice: exitPrice.toString(),
-            status: 'open',
-            marketType: 'FUTURES',
-            leverage: posLeverage,
-            marginType: position.marginType,
-            liquidationPrice: newLiquidationPrice.toString(),
-            accumulatedFunding: '0',
+            return {
+              newPositionId,
+              newSide,
+              netPnl,
+              symbol: position.symbol,
+              oldSide: position.side,
+              exitPrice,
+            };
           });
 
           logger.info({
             positionId: input.positionId,
-            newPositionId,
-            symbol: position.symbol,
-            oldSide: position.side,
-            newSide,
-            exitPrice,
-            closedPnl: netPnl.toFixed(4),
+            newPositionId: reversed.newPositionId,
+            symbol: reversed.symbol,
+            oldSide: reversed.oldSide,
+            newSide: reversed.newSide,
+            exitPrice: reversed.exitPrice,
+            closedPnl: reversed.netPnl.toFixed(4),
           }, 'Paper futures position reversed');
 
           const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
@@ -334,7 +351,14 @@ export const positionMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
-          return { success: true, closedPnl: netPnl, newPositionId, newSide, walletId: input.walletId, openExecutions: paperOpenExecutions };
+          return {
+            success: true,
+            closedPnl: reversed.netPnl,
+            newPositionId: reversed.newPositionId,
+            newSide: reversed.newSide,
+            walletId: input.walletId,
+            openExecutions: paperOpenExecutions,
+          };
         }
 
         const client = createBinanceFuturesClient(wallet);
@@ -353,19 +377,43 @@ export const positionMutationsRouter = router({
 
         await cancelAllSymbolOrders(client, input.symbol);
 
+        // reduceOnly:true keeps the close from accidentally opening a new
+        // position in the opposite direction — e.g. if a concurrent order
+        // already flipped the live position to flat or to the other side,
+        // a non-reduce-only MARKET would happily open fresh exposure.
         const closeResult = await submitFuturesOrder(client, {
           symbol: input.symbol,
           side: closeSide,
           type: 'MARKET',
           quantity: formattedQty,
+          reduceOnly: true,
         });
 
-        const openResult = await submitFuturesOrder(client, {
-          symbol: input.symbol,
-          side: openSide,
-          type: 'MARKET',
-          quantity: formattedQty,
-        });
+        let openResult;
+        try {
+          openResult = await submitFuturesOrder(client, {
+            symbol: input.symbol,
+            side: openSide,
+            type: 'MARKET',
+            quantity: formattedQty,
+          });
+        } catch (openError) {
+          // Close already filled, open failed — surface a clear error so
+          // the user knows their position was closed but the reverse leg
+          // didn't go through (typical causes: insufficient margin after
+          // realizing the close PnL, exchange-side reject, network blip).
+          const reason = openError instanceof Error ? openError.message : String(openError);
+          logger.error({
+            walletId: input.walletId,
+            symbol: input.symbol,
+            closeOrderId: closeResult.orderId,
+            error: reason,
+          }, 'Reverse: close filled but reopen failed');
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Position closed (orderId ${closeResult.orderId}) but reopen failed: ${reason}`,
+          });
+        }
 
         logger.info({
           walletId: input.walletId,
@@ -392,6 +440,10 @@ export const positionMutationsRouter = router({
           openExecutions,
         };
       } catch (error) {
+        // Don't double-wrap our own TRPCErrors (the open-failure path
+        // throws a structured TRPCError with the close orderId in the
+        // message; mapBinanceErrorToTRPC would lose that context).
+        if (error instanceof TRPCError) throw error;
         throw mapBinanceErrorToTRPC(error);
       }
     }),
