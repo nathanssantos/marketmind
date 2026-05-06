@@ -25,7 +25,7 @@ export const useBackendAnalytics = (walletId: string, period: AnalyticsPeriod = 
 
   const { data: setupStats, isLoading: isLoadingSetupStats } =
     trpc.analytics.getSetupStats.useQuery(
-      { walletId, period },
+      { walletId, period, tz },
       { enabled: !!walletId, refetchInterval: statsPolling }
     );
 
