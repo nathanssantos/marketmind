@@ -5,6 +5,7 @@ import { useChecklistEvaluation } from '@renderer/hooks/useChecklistEvaluation';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
+import { useUIStore } from '@renderer/store/uiStore';
 import { trpc } from '@renderer/utils/trpc';
 import { calculateChecklistScore, type ChecklistCondition } from '@marketmind/trading-core';
 import { getDefaultChecklistWeight } from '@marketmind/types';
@@ -327,6 +328,8 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
     </HStack>
   );
 
+  const openProfileEditor = () => useUIStore.getState().setTradingProfilesDialogOpen(true);
+
   const optionsMenu = (
     <Menu.Root>
       <Menu.Trigger asChild>
@@ -342,9 +345,12 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       </Menu.Trigger>
       <Portal>
         <Menu.Positioner>
-          <Menu.Content minW="160px">
+          <Menu.Content minW="180px">
             <Menu.Item value="toggle-chart" onClick={() => setShowScoreChart(!showScoreChart)}>
               {showScoreChart ? t('checklist.section.hideChart') : t('checklist.section.showChart')}
+            </Menu.Item>
+            <Menu.Item value="edit-profile" onClick={openProfileEditor}>
+              {t('checklist.section.editProfile')}
             </Menu.Item>
           </Menu.Content>
         </Menu.Positioner>

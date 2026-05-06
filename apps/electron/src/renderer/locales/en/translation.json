@@ -2755,6 +2755,7 @@
       "options": "Checklist options",
       "showChart": "Show score chart",
       "hideChart": "Hide score chart",
+      "editProfile": "Edit profile (checklist)",
       "collectingHistory": "Collecting history…"
     },
     "editor": {
