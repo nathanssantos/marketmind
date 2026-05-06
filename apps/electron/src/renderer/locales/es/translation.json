@@ -2884,6 +2884,7 @@
       "options": "Opciones del checklist",
       "showChart": "Mostrar gráfico de puntaje",
       "hideChart": "Ocultar gráfico de puntaje",
+      "editProfile": "Editar perfil (checklist)",
       "collectingHistory": "Recopilando historial…"
     },
     "editor": {

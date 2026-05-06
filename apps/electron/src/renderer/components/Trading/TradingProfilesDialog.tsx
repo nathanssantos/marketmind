@@ -1,5 +1,6 @@
 import { DialogShell, Separator } from '@renderer/components/ui';
 import { SetupToggleSection } from '@renderer/components/Trading/SetupToggleSection';
+import { TradingProfilesManager } from '@renderer/components/Trading/TradingProfilesManager';
 import { WatcherManager } from '@renderer/components/Trading/WatcherManager';
 import type { DialogControlProps } from '@marketmind/types';
 import { memo } from 'react';
@@ -19,6 +20,8 @@ export const TradingProfilesDialog = memo(({ isOpen, onClose }: TradingProfilesD
       description={t('tradingProfiles.dialogDescription')}
       hideFooter
     >
+      <TradingProfilesManager />
+      <Separator />
       <WatcherManager />
       <Separator />
       <SetupToggleSection />
