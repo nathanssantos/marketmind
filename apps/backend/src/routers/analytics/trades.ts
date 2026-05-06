@@ -3,8 +3,11 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { incomeEvents, tradeExecutions } from '../../db/schema';
 import { walletQueries } from '../../services/database/walletQueries';
+import { getDailyIncomeSum } from '../../services/income-events';
 import { protectedProcedure } from '../../trpc';
 import { startOfDayAgoInTz } from '../../utils/tz-bucket';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 // Period → first day of the rolling window in user's TZ.
 //   'day'   = today (midnight tz to now)
@@ -403,6 +406,55 @@ export const tradeProcedures = {
         worstTrade = tradeRowToCard(losersSorted[0]!);
       }
 
+      // Day-level metrics — sit alongside the existing trade-level
+      // win-rate / avgWin / avgLoss because Binance reports both shapes:
+      //   * Trade-level: 305W / 433L → "Win Rate 41.3%", avgWin $29.09
+      //   * Day-level:   58W / 51L / 257B → "Win Rate 15.85%", avgProfit
+      //                  per winning day $89.04
+      // Both are valid metrics for different questions ("how often does
+      // a trade pay?" vs "how often does a trading day end green?"). We
+      // render them side by side so users can compare directly with
+      // Binance's P&L Details screen.
+      //
+      // Bucket source is the same `incomeEvents` ground truth as the
+      // headline cards — bucketed by user-TZ calendar day via
+      // `getDailyIncomeSum` (Postgres `TO_CHAR(... AT TIME ZONE tz)`).
+      // Days with no income events are counted as breakeven, matching
+      // Binance's "Breakeven Days" semantics (winning + losing +
+      // breakeven = total days in range).
+      const dayRangeFrom = input.period === 'all'
+        ? (wallet?.createdAt ?? new Date(Date.now() - MS_PER_DAY))
+        : periodStart(input.period, input.tz);
+      const dayRangeTo = new Date();
+      const dailyBuckets = await getDailyIncomeSum({
+        walletId: input.walletId,
+        userId: ctx.user.id,
+        from: dayRangeFrom,
+        to: dayRangeTo,
+        tz: input.tz,
+      });
+      let winningDays = 0;
+      let losingDays = 0;
+      let totalProfitDays = 0;
+      let totalLossDays = 0;
+      for (const dayTotal of dailyBuckets.values()) {
+        if (dayTotal > 0) {
+          winningDays++;
+          totalProfitDays += dayTotal;
+        } else if (dayTotal < 0) {
+          losingDays++;
+          totalLossDays += Math.abs(dayTotal);
+        }
+      }
+      const totalDaysInRange = Math.max(
+        1,
+        Math.ceil((dayRangeTo.getTime() - dayRangeFrom.getTime()) / MS_PER_DAY),
+      );
+      const breakevenDays = Math.max(0, totalDaysInRange - winningDays - losingDays);
+      const dayWinRate = totalDaysInRange > 0 ? (winningDays / totalDaysInRange) * 100 : 0;
+      const avgProfitPerDay = winningDays > 0 ? totalProfitDays / winningDays : 0;
+      const avgLossPerDay = losingDays > 0 ? totalLossDays / losingDays : 0;
+
       return {
         totalTrades,
         winningTrades: winningTrades.length,
@@ -430,6 +482,14 @@ export const tradeProcedures = {
         bySymbol,
         bestTrade,
         worstTrade,
+        // Day-level metrics (mirrors Binance's P&L Details screen):
+        winningDays,
+        losingDays,
+        breakevenDays,
+        totalDaysInRange,
+        dayWinRate: parseFloat(dayWinRate.toFixed(2)),
+        avgProfitPerDay: parseFloat(avgProfitPerDay.toFixed(2)),
+        avgLossPerDay: parseFloat(avgLossPerDay.toFixed(2)),
       };
     }),
 };

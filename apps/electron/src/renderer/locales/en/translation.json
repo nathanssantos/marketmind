@@ -1371,6 +1371,9 @@
         "maxDrawdown": "Max Drawdown",
         "largestWin": "Largest Win",
         "largestLoss": "Largest Loss",
+        "dayWinRate": "Day Win Rate",
+        "avgProfitPerDay": "Avg Profit / Day",
+        "avgLossPerDay": "Avg Loss / Day",
         "noData": "No performance data available"
       },
       "setupStats": {
