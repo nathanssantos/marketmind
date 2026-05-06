@@ -3,6 +3,7 @@ import type { IndicatorParamValue } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import { computeMulti, computeSingle } from '@renderer/workers/pineWorkerService';
 import { getNativeEvaluator, type NativeEvaluatorContext } from '@renderer/lib/indicators/nativeEvaluators';
+import type { KlineSource } from '@renderer/hooks/useKlineLiveStream';
 import { useIndicatorStore, type IndicatorInstance } from '@renderer/store/indicatorStore';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { buildChartLiveDataKey, useChartLiveDataStore, type ChartLiveIndicatorEntry } from '@renderer/store/chartLiveDataStore';
@@ -150,6 +151,7 @@ export const useGenericChartIndicators = (
   externalCtx: NativeEvaluatorContext = {},
   managerRef?: MutableRefObject<CanvasManager | null>,
   liveDataTarget?: LiveDataTarget | null,
+  klineSource?: KlineSource,
 ): UseGenericChartIndicatorsResult => {
   perfMonitor.recordComponentRender('useGenericChartIndicators');
   const initialInstances = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
@@ -283,6 +285,24 @@ export const useGenericChartIndicators = (
   useEffect(() => {
     runCompute();
   }, [klinesSignature, ctxSignature, runCompute]);
+
+  // Subscribe to live tick events so `klinesRef.current` reflects the
+  // in-flight bar's close/high/low/volume between candle closes. The
+  // ChartCanvas memoizes on `arePropsStructurallyEqual` (only re-renders
+  // on candle rotation when `klineSource` is provided) to keep the chart
+  // ~free of intra-candle React work — but that also blocks the
+  // indicator hook from seeing the live bar through the `klines` prop.
+  // The subscription updates the ref imperatively (no React re-render)
+  // and the `TICK_POLL_MS` polling below picks up the o/h/l/c change to
+  // trigger `runCompute()` at most once per 500ms. `pendingRef` then
+  // ensures only one compute is in-flight, so a hot tick stream still
+  // produces ≤2 worker invocations/sec.
+  useEffect(() => {
+    if (!klineSource) return;
+    return klineSource.subscribe(() => {
+      klinesRef.current = klineSource.klinesRef.current;
+    });
+  }, [klineSource]);
 
   const lastTickKeyRef = useRef<string>('');
   useEffect(() => {
