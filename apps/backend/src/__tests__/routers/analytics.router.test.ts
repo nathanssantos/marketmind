@@ -584,17 +584,15 @@ describe('Analytics Router', () => {
       expect(todayBucket?.wins).toBe(1);
     });
 
-    it('prefers Binance income-event aggregate over local trade-level pnl when incomeSum is non-zero', async () => {
-      // Binance's "Today's Realized PnL" widget pulls from REALIZED_PNL
-      // + COMMISSION + FUNDING_FEE income events — the same source as
-      // our `incomeSum`. Locally-computed `tradeExecutions.pnl` can drift
-      // from Binance reality when fees were over-aggregated by an old
-      // bug (`getAllTradeFeesForPosition` summing same-side trades by
-      // time window) or when the local pnl recomputation hasn't
-      // converged. Trusting incomeSum as the primary source keeps our
-      // widget aligned with what the user sees in the Binance app.
-      // Trade-level data is the fallback only when incomeSum is zero
-      // (sync lag — covered by the next test).
+    it('uses trade-level pnl on days with closed trades — counts only effectivated trades', async () => {
+      // The widget should reflect ONLY effectivated trades (positions
+      // our system tracked through to a clean exit), not phantom
+      // realized PnL events from the reverse-roll bug. tradeExecutions
+      // rows exist only for tracked closes; in-flight reverse legs that
+      // closed-and-re-opened the same direction don't create rows here,
+      // so this sum naturally excludes them. incomeSum (REALIZED_PNL
+      // + COMMISSION + FUNDING_FEE from Binance's ledger) would
+      // over-count by including those phantom events.
       const { user, session } = await createAuthenticatedUser();
       const wallet = await createTestWallet({
         userId: user.id,
@@ -619,7 +617,9 @@ describe('Analytics Router', () => {
         pnl: '50', openedAt: today, closedAt: today,
       });
 
-      // Binance income-event truth: 2 REALIZED_PNL events totaling 40.
+      // Binance income-event aggregate (with phantom reverse events):
+      // 2 REALIZED_PNL events totaling 40 — these would over-count if
+      // we used incomeSum as the source.
       await db.insert(incomeEvents).values([
         {
           userId: user.id, walletId: wallet.id, binanceTranId: 1,
@@ -643,10 +643,8 @@ describe('Analytics Router', () => {
       const todayKey = fmt.format(today);
       const todayBucket = result.find((d) => d.date === todayKey);
       expect(todayBucket?.tradesCount).toBe(3);
-      // The widget shows Binance ground truth (40), not the local
-      // trade-pnl sum (90). Once the 3rd trade syncs to incomeEvents,
-      // the value catches up automatically.
-      expect(todayBucket?.pnl).toBeCloseTo(40, 0);
+      // Trade-level wins: 20 + 20 + 50 = 90, all effectivated trades.
+      expect(todayBucket?.pnl).toBeCloseTo(90, 0);
     });
 
     it('falls back to incomeSum on days with NO closed trades (funding-only days)', async () => {

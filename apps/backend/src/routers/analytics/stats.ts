@@ -205,28 +205,24 @@ export const statsProcedures = {
         const stats = tradeStatsByDay.get(date) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
 
         // Daily PnL source resolution:
-        //   - `incomeSum` comes from `incomeEvents` (REALIZED_PNL +
-        //     COMMISSION + FUNDING_FEE on the Binance side) and is THE
-        //     authoritative source — it's exactly what Binance shows in
-        //     its own "Today's PnL" widget. The lag is the periodic
-        //     income-sync cadence (~1 min).
-        //   - `tradeRealizedNet` is the sum of `tradeExecutions.pnl` for
-        //     trades closed this day. It updates synchronously the moment
-        //     a trade is closed, but its fees were sometimes inflated by
-        //     the time-window aggregation bug (fixed elsewhere) so the
-        //     numbers don't always match Binance exactly.
-        //   - Rule: prefer `incomeSum` whenever it's non-zero — that's
-        //     Binance ground truth and matches what the user sees in the
-        //     Binance app. Fall through to `tradeRealizedNet` only when
-        //     incomeSum is zero AND there are closed trades on the day:
-        //     this is the sync-lag window (a trade just closed but
-        //     COMMISSION/REALIZED_PNL events haven't been pulled yet).
-        //     Without the trade-level fallback, fresh closes wouldn't
-        //     appear in the widget for ~1 min after they happen.
+        //   - `tradeRealizedNet` = sum of `tradeExecutions.pnl` for
+        //     trades closed this day. Counts ONLY effectivated trades
+        //     — i.e. positions our system tracked through to a clean
+        //     exit. Roll-over events from the (now-fixed) reverse bug
+        //     that closed and immediately re-opened the same direction
+        //     never created `tradeExecution` rows for the in-flight
+        //     leg, so they don't pollute this sum. This is what Binance
+        //     shows as "Today's Realized PnL".
+        //   - `incomeSum` = REALIZED_PNL + COMMISSION + FUNDING_FEE
+        //     events from Binance's ledger. Includes EVERY realized
+        //     event, including phantom ones from reverse-rolls — over-
+        //     counts what the user perceives as "today's PnL".
+        //   - Rule: when the day has any closed trades, use trade-level
+        //     pnl (effectivated only). On days without closed trades
+        //     (just funding rolling on a flat day), fall through to
+        //     `incomeSum` so the funding delta still shows.
         const tradeRealizedNet = stats.grossProfit - stats.grossLoss;
-        const dailyPnl = incomeSum !== 0
-          ? incomeSum
-          : (stats.closedPositions > 0 ? tradeRealizedNet : 0);
+        const dailyPnl = stats.closedPositions > 0 ? tradeRealizedNet : incomeSum;
 
         results.push({
           date,
