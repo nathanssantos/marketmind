@@ -33,8 +33,13 @@ const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h', '1d'] as const;
 
 // Thresholds — RSI 2 gets tight extremes (7/93) because it's fast and noisy
 // without them; the tight bound is what makes the high weight usable across
-// TFs. RSI 14 and Stoch 14 use `undefined` so the evaluator falls back to the
-// catalog default (20/80 of valueRange — classic 20/80 on the 0-100 scale).
+// TFs. Stoch 14 uses `undefined` so the evaluator falls back to the catalog
+// default (20/80 of valueRange — classic 20/80 on the 0-100 scale).
+//
+// RSI 14 was dropped from the default seed in v1.13.x — the validated
+// strategy treats RSI 14 as redundant alongside the faster RSI 2 (same
+// indicator family, different periods). Users who want it can still add
+// it manually via the checklist editor.
 type IndicatorSpec = {
   seedLabel: string;
   base: number;
@@ -42,7 +47,6 @@ type IndicatorSpec = {
   overbought?: number;
 };
 const INDICATORS: IndicatorSpec[] = [
-  { seedLabel: 'RSI 14', base: 1.0 },
   { seedLabel: 'RSI 2', base: 2.0, oversold: 7, overbought: 93 },
   { seedLabel: 'Stoch 14', base: 1.0 },
 ];

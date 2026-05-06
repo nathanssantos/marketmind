@@ -84,14 +84,15 @@ const INITIAL_DIALOG: NameDialogState = {
 
 const TEMPLATE_LABELS: Record<LayoutTemplateKey, string> = {
   empty: 'Empty',
-  tradingScalp: 'Trading 1m / 5m / 15m',
-  tradingDay: 'Trading 5m / 15m / 1h',
-  tradingSwing: 'Trading 15m / 1h / 4h',
-  tradingMidterm: 'Trading 1h / 4h / 1d',
-  tradingPosition: 'Trading 4h / 1d / 1w',
-  tradingLong: 'Trading 1d / 1w / 1M',
+  tradingScalp: '1m / 5m / 15m',
+  tradingDay: '5m / 15m / 1h',
+  tradingSwing: '15m / 1h / 4h',
+  tradingMidterm: '1h / 4h / 1d',
+  tradingPosition: '4h / 1d / 1w',
+  tradingLong: '1d / 1w / 1M',
   autoTrading: 'Auto-Trading',
   autoScalping: 'Auto-Scalping',
+  marketIndicators: 'Market Indicators',
 };
 
 export const LayoutTabBar = memo(() => {

@@ -32,16 +32,17 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     expect(new Set(orders).size).toBe(orders.length);
   });
 
-  it('covers RSI 2, RSI 14, and Stoch 14 across the full 1m..1d ladder', () => {
+  it('covers RSI 2 and Stoch 14 across the full 1m..1d ladder', () => {
     const seedLabels = DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.seedLabel);
     expect(seedLabels).toContain('RSI 2');
-    expect(seedLabels).toContain('RSI 14');
     expect(seedLabels).toContain('Stoch 14');
+    // RSI 14 was dropped from the seed in v1.13.x — see checklistDefaults.ts
+    expect(seedLabels).not.toContain('RSI 14');
 
     const timeframes = new Set(DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.timeframe));
     expect(timeframes).toEqual(new Set(['1m', '5m', '15m', '1h', '4h', '1d']));
 
-    for (const seedLabel of ['RSI 14', 'RSI 2', 'Stoch 14']) {
+    for (const seedLabel of ['RSI 2', 'Stoch 14']) {
       const tfs = new Set(
         DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === seedLabel).map((e) => e.timeframe),
       );
@@ -56,7 +57,7 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
   });
 
   it('weights scale strictly monotonically, +0.5 per TF step, with 1m as the floor', () => {
-    for (const seedLabel of ['RSI 14', 'RSI 2', 'Stoch 14']) {
+    for (const seedLabel of ['RSI 2', 'Stoch 14']) {
       const entries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === seedLabel && e.side === 'LONG');
       const tfOrder: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5 };
       const sorted = [...entries].sort((a, b) => tfOrder[a.timeframe]! - tfOrder[b.timeframe]!);
@@ -68,19 +69,19 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
       const expectedBase = seedLabel === 'RSI 2' ? 2.0 : 1.0;
       expect(w('1m')).toBe(expectedBase);
     }
-    // RSI 2 premium-weighted over RSI 14 at every timeframe
+    // RSI 2 premium-weighted over Stoch 14 at every timeframe
     for (const tf of ['1m', '5m', '15m', '1h', '4h', '1d']) {
-      const rsi14 = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'RSI 14' && e.timeframe === tf && e.side === 'LONG')!.weight;
+      const stoch = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'Stoch 14' && e.timeframe === tf && e.side === 'LONG')!.weight;
       const rsi2 = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'RSI 2' && e.timeframe === tf && e.side === 'LONG')!.weight;
-      expect(rsi2).toBeGreaterThan(rsi14);
+      expect(rsi2).toBeGreaterThan(stoch);
     }
   });
 
-  it('contains 36 entries (3 indicators × 6 timeframes × 2 sides)', () => {
-    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(36);
+  it('contains 24 entries (2 indicators × 6 timeframes × 2 sides)', () => {
+    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(24);
   });
 
-  it('RSI 2 ships tight thresholds (7 oversold / 93 overbought) — RSI 14 and Stoch 14 use evaluator defaults', () => {
+  it('RSI 2 ships tight thresholds (7 oversold / 93 overbought) — Stoch 14 uses evaluator defaults', () => {
     for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
       if (entry.seedLabel === 'RSI 2') {
         expect(entry.threshold).toBe(entry.op === 'oversold' ? 7 : 93);
@@ -90,13 +91,13 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     }
   });
 
-  it('orders are logically grouped: RSI 14 block → RSI 2 block → Stoch 14 block, TFs ascending within each', () => {
+  it('orders are logically grouped: RSI 2 block → Stoch 14 block, TFs ascending within each', () => {
     const sorted = [...DEFAULT_CHECKLIST_TEMPLATE].sort((a, b) => a.order - b.order);
     const blocks = sorted.reduce<string[]>((acc, e) => {
       if (acc[acc.length - 1] !== e.seedLabel) acc.push(e.seedLabel);
       return acc;
     }, []);
-    expect(blocks).toEqual(['RSI 14', 'RSI 2', 'Stoch 14']);
+    expect(blocks).toEqual(['RSI 2', 'Stoch 14']);
 
     const tfOrder: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5 };
     for (const seedLabel of blocks) {

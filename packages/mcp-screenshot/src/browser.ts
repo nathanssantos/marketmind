@@ -5,7 +5,19 @@ const DEFAULT_BASE_URL = process.env.MM_MCP_BASE_URL ?? 'http://localhost:5174';
 const RESTART_AFTER_CAPTURES = 50;
 const IDLE_RESTART_MS = 30 * 60 * 1000;
 const FIXTURES_ENABLED = process.env.MM_MCP_FIXTURES !== 'false';
-const DEVICE_SCALE_FACTOR = Number.parseFloat(process.env.MM_MCP_SCALE ?? '1');
+
+// Default to 1920×1080 with DPR 2 → 3840×2160 (4K) screenshots, suitable for
+// marketing / docs use. Override via MM_MCP_VIEWPORT (e.g. "2560x1440") and
+// MM_MCP_SCALE (DPR). For visual-diff tests, set MM_MCP_VIEWPORT=1440x900
+// MM_MCP_SCALE=1 to keep file sizes/test deltas stable.
+const DEVICE_SCALE_FACTOR = Number.parseFloat(process.env.MM_MCP_SCALE ?? '2');
+const parseViewport = (raw: string | undefined): { width: number; height: number } => {
+  if (!raw) return { width: 1920, height: 1080 };
+  const m = raw.match(/^(\d+)x(\d+)$/);
+  if (!m) return { width: 1920, height: 1080 };
+  return { width: Number(m[1]), height: Number(m[2]) };
+};
+const VIEWPORT = parseViewport(process.env.MM_MCP_VIEWPORT);
 
 interface BrowserHandle {
   browser: Browser;
@@ -24,7 +36,7 @@ const shouldRestart = (h: BrowserHandle): boolean =>
 const launch = async (): Promise<BrowserHandle> => {
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext({
-    viewport: { width: 1440, height: 900 },
+    viewport: VIEWPORT,
     deviceScaleFactor: DEVICE_SCALE_FACTOR,
   });
   if (FIXTURES_ENABLED) {
