@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-05-06
+
+### Fixed — chart panel indicators frozen between candle closes (#469)
+RSI, Stochastic, MACD, BB, ATR and the rest of the lower-pane chart indicators were only re-computing on candle close — mid-candle the user saw a frozen indicator line that lagged the price action by minutes.
+
+Root cause: `ChartCanvas` is wrapped in `React.memo(arePropsStructurallyEqual)`. When `klineSource` is provided, the comparator returns `true` for any change that doesn't rotate the last bar's `openTime` — i.e. intra-candle ticks DON'T re-render the component. This is the perf optimization that lets live ticks flow imperatively through `klineSource.subscribe()` → `manager.setKlines(latest)` → `manager.markDirty('klines')` without burning React work every tick.
+
+But `useGenericChartIndicators(klines, ...)` was reading the `klines` prop. With re-renders blocked, `klines` stayed stale; `klinesRef.current` stayed stale; the existing 500ms `TICK_POLL_MS` polling read the same last bar over and over → no recompute fired.
+
+Fix: subscribe to `klineSource` inside the indicator hook. On each tick callback, point `klinesRef.current` at `klineSource.klinesRef.current` (the always-fresh array). Ref assignment only — NO React re-render, so the perf optimization is preserved. The existing 500ms polling now correctly observes the last bar's `close:high:low:volume` change and triggers `runCompute()`. Existing `pendingRef` guard ensures only one compute is in flight at a time.
+
+Performance budget after the fix:
+- Pine indicators (RSI/Stoch/MACD/BB) run in worker, concurrency-capped at 2-6 by `hardwareConcurrency`. Worst case ~2 worker invocations/sec for the in-flight bar.
+- Native indicators (SMA/EMA) run on main thread. RSI for 500 candles is ~50 µs per call → 2 calls/sec ≈ free.
+- `manager.markDirty('overlays')` after each compute is the same marker the chart already fires on every drawing edit — no new overlay paint cost.
+
 ## [1.13.0] - 2026-05-06
 
 ### Fixed — income sync 30-day backfill cap (#462)

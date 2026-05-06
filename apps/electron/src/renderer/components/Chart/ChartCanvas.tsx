@@ -360,6 +360,7 @@ const ChartCanvasInternal = ({
     },
     managerRef,
     liveDataTarget,
+    klineSource,
   );
 
   const volumeHeightRatio = advancedConfig?.volumeHeightRatio;
