@@ -35,11 +35,11 @@ export const startOfDayInTz = (instant: Date, tz: string): Date => {
     month: '2-digit',
     day: '2-digit',
   }).format(instant);
-  const [y, m, d] = dayKey.split('-').map(Number);
+  const [y = 0, m = 0, d = 0] = dayKey.split('-').map(Number);
 
   // Probe noon UTC on (y, m, d) — read the wall-clock hour/minute in tz
   // to derive the offset for that calendar day (DST-safe).
-  const probeUtc = Date.UTC(y!, m! - 1, d!, 12, 0, 0);
+  const probeUtc = Date.UTC(y, m - 1, d, 12, 0, 0);
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: tz,
     hour12: false,
@@ -56,7 +56,7 @@ export const startOfDayInTz = (instant: Date, tz: string): Date => {
 
   // UTC instant of midnight on the calendar day (year, month, day) in tz
   // = UTC midnight of the same calendar day MINUS the tz offset.
-  return new Date(Date.UTC(y!, m! - 1, d!) - offsetMin * MS_PER_MIN);
+  return new Date(Date.UTC(y, m - 1, d) - offsetMin * MS_PER_MIN);
 };
 
 /**
@@ -80,9 +80,9 @@ export const startOfMonthInTz = (instant: Date, tz: string): Date => {
     month: '2-digit',
     day: '2-digit',
   }).format(instant);
-  const [y, m] = dayKey.split('-').map(Number);
+  const [y = 0, m = 0] = dayKey.split('-').map(Number);
   // Same offset trick — anchor at noon UTC on day 1 of the month.
-  const probeUtc = Date.UTC(y!, m! - 1, 1, 12, 0, 0);
+  const probeUtc = Date.UTC(y, m - 1, 1, 12, 0, 0);
   const parts = new Intl.DateTimeFormat('en-GB', {
     timeZone: tz,
     hour12: false,
@@ -92,7 +92,7 @@ export const startOfMonthInTz = (instant: Date, tz: string): Date => {
   const tzHour = parseInt(parts.find((p) => p.type === 'hour')!.value, 10) % 24;
   const tzMin = parseInt(parts.find((p) => p.type === 'minute')!.value, 10);
   const offsetMin = tzHour * 60 + tzMin - 720;
-  return new Date(Date.UTC(y!, m! - 1, 1) - offsetMin * MS_PER_MIN);
+  return new Date(Date.UTC(y, m - 1, 1) - offsetMin * MS_PER_MIN);
 };
 
 /**
@@ -107,8 +107,8 @@ export const startOfMonthAgoInTz = (monthsAgo: number, tz: string, now = new Dat
     month: '2-digit',
     day: '2-digit',
   }).format(now);
-  const [y, m] = dayKey.split('-').map(Number);
+  const [y = 0, m = 0] = dayKey.split('-').map(Number);
   // Calendar arithmetic in tz space: subtract months, then anchor.
-  const target = new Date(y!, m! - 1 - monthsAgo, 1);
+  const target = new Date(y, m - 1 - monthsAgo, 1);
   return startOfMonthInTz(target, tz);
 };
