@@ -10,13 +10,11 @@ import {
   drawInfoTag,
   drawInfoTagFlash,
   drawPercentBadge,
-  drawSlTpButtons,
   setStandardFont,
 } from './orderLineDrawing';
 import type { GroupedPosition } from './orderLineTypes';
-import { PRICE_TAG_WIDTH, SLTP_BUTTON } from './orderLineTypes';
+import { PRICE_TAG_WIDTH } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
-import { getDirectionArrow } from './utils/directionArrow';
 
 export const groupActivePositions = (
   activeOrdersList: Order[],
@@ -118,16 +116,15 @@ const renderPositionEntry = (
   const percentSign = percentChange >= 0 ? '+' : '';
   const percentText = `${percentSign}${percentChange.toFixed(2)}%`;
 
-  const leveragePrefix = position.leverage > 1 ? `${position.leverage}x ` : '';
-  const directionSymbol = getDirectionArrow(isLong, manager.isFlipped());
+  const direction: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
+  const typeLabel = isLong ? 'L' : 'S';
 
   let infoText: string;
   if (isHovered && position.orders.length > 1) {
     const quantityPrefix = `(${position.orders.length}x) `;
-    const typeLabel = isLong ? 'L' : 'S';
     infoText = `${quantityPrefix}${typeLabel} (${absQuantity})`;
   } else {
-    infoText = `${leveragePrefix}${directionSymbol} (${absQuantity})`;
+    infoText = `${typeLabel} (${absQuantity})`;
   }
 
   const hasAutoTrade = position.orders.some(o => o.isAutoTrade);
@@ -141,7 +138,28 @@ const renderPositionEntry = (
   }
 
   const closeButtonRef = { x: 0, y: 0, size: 14 };
-  const infoTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, hasAutoTrade ? 'bot' : null, posLoading, rc.now);
+  const hasStopLoss = position.orders.some(o => o.stopLoss);
+  const hasTakeProfit = position.orders.some(o => o.takeProfit);
+  const showSl = !hasStopLoss;
+  const showTp = !hasTakeProfit;
+  const slButtonRef = showSl ? { x: 0, y: 0, width: 0, height: 0 } : null;
+  const tpButtonRef = showTp ? { x: 0, y: 0, width: 0, height: 0 } : null;
+
+  const infoTagSize = drawInfoTag(
+    ctx,
+    infoText,
+    y,
+    lineColor,
+    rc.infoTagBg,
+    rc.infoTagText,
+    true,
+    closeButtonRef,
+    hasAutoTrade ? 'bot' : null,
+    posLoading,
+    rc.now,
+    (showSl || showTp) ? { showSl, showTp, slButtonRef, tpButtonRef } : null,
+    direction,
+  );
 
   if (!isHovered) {
     drawInfoTagFlash(ctx, infoTagSize, y, posFlash);
@@ -174,46 +192,38 @@ const renderPositionEntry = (
     });
   });
 
+  const primaryOrderId = position.orderIds[0] ?? '';
+  if (slButtonRef) {
+    rc.slTpButtonHitboxes.push({
+      executionId: primaryOrderId,
+      type: 'stopLoss',
+      x: slButtonRef.x,
+      y: slButtonRef.y,
+      width: slButtonRef.width,
+      height: slButtonRef.height,
+    });
+  }
+  if (tpButtonRef) {
+    rc.slTpButtonHitboxes.push({
+      executionId: primaryOrderId,
+      type: 'takeProfit',
+      x: tpButtonRef.x,
+      y: tpButtonRef.y,
+      width: tpButtonRef.width,
+      height: tpButtonRef.height,
+    });
+  }
+
   const badgeX = infoTagSize.width + 6;
   drawPercentBadge(ctx, percentText, badgeX, y, percentChange >= 0);
 
   const percentBadgeWidth = ctx.measureText(percentText).width + 8;
   const pnl = position.totalPnL;
   const pnlText = pnl === 0
-    ? 'USD 0.00'
-    : `${pnl >= 0 ? '+' : '-'}USD ${Math.abs(pnl).toFixed(2)}`;
+    ? '0.00'
+    : `${pnl >= 0 ? '+' : '-'}${Math.abs(pnl).toFixed(2)}`;
   const pnlBadgeX = badgeX + percentBadgeWidth + 4;
   drawPercentBadge(ctx, pnlText, pnlBadgeX, y, pnl >= 0);
-
-  const pnlBadgeWidth = ctx.measureText(pnlText).width + 8;
-  const buttonsX = pnlBadgeX + pnlBadgeWidth + 6;
-  const hasStopLoss = position.orders.some(o => o.stopLoss);
-  const hasTakeProfit = position.orders.some(o => o.takeProfit);
-
-  if (!hasStopLoss || !hasTakeProfit) {
-    const { slButton, tpButton } = drawSlTpButtons(ctx, buttonsX, y, hasStopLoss, hasTakeProfit);
-    const primaryOrderId = position.orderIds[0] ?? '';
-    if (slButton) {
-      rc.slTpButtonHitboxes.push({
-        executionId: primaryOrderId,
-        type: 'stopLoss',
-        x: slButton.x,
-        y: slButton.y,
-        width: SLTP_BUTTON.WIDTH,
-        height: SLTP_BUTTON.HEIGHT,
-      });
-    }
-    if (tpButton) {
-      rc.slTpButtonHitboxes.push({
-        executionId: primaryOrderId,
-        type: 'takeProfit',
-        x: tpButton.x,
-        y: tpButton.y,
-        width: SLTP_BUTTON.WIDTH,
-        height: SLTP_BUTTON.HEIGHT,
-      });
-    }
-  }
 
   ctx.restore();
 };

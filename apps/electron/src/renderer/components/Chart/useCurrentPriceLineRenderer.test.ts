@@ -16,6 +16,7 @@ describe('useCurrentPriceLineRenderer', () => {
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
+      arcTo: vi.fn(),
       stroke: vi.fn(),
       fill: vi.fn(),
       fillText: vi.fn(),
@@ -252,7 +253,7 @@ describe('useCurrentPriceLineRenderer', () => {
 
       result.current.renderLabel();
 
-      expect(mockCtx.fillText).toHaveBeenCalledWith(expect.any(String), 736, expect.any(Number));
+      expect(mockCtx.fillText).toHaveBeenCalledWith(expect.any(String), 728 + 5, expect.any(Number));
     });
   });
 

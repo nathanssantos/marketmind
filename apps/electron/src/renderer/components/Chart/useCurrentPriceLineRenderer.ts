@@ -7,8 +7,9 @@ import {
 } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
-import { getKlineClose, getKlineOpen } from '@shared/utils';
+import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
+import { isKlineBullishInclusive } from './utils/klineColor';
 
 type LineStyle = 'solid' | 'dashed' | 'dotted';
 
@@ -52,9 +53,7 @@ export const useCurrentPriceLineRenderer = ({
     if (!lastKline) return;
 
     const currentPrice = getKlineClose(lastKline);
-    const openPrice = getKlineOpen(lastKline);
-    const isBullish = currentPrice >= openPrice;
-    const candleColor = isBullish ? colors.bullish : colors.bearish;
+    const candleColor = isKlineBullishInclusive(lastKline) ? colors.bullish : colors.bearish;
 
     const { chartWidth, chartHeight } = dimensions;
     const y = manager.priceToY(currentPrice);
@@ -89,9 +88,7 @@ export const useCurrentPriceLineRenderer = ({
     if (!lastKline) return;
 
     const currentPrice = getKlineClose(lastKline);
-    const openPrice = getKlineOpen(lastKline);
-    const isBullish = currentPrice >= openPrice;
-    const bgColor = isBullish ? colors.bullish : colors.bearish;
+    const bgColor = isKlineBullishInclusive(lastKline) ? colors.bullish : colors.bearish;
 
     const { chartWidth, chartHeight } = dimensions;
     const y = manager.priceToY(currentPrice);
@@ -110,7 +107,6 @@ export const useCurrentPriceLineRenderer = ({
       y,
       chartWidth,
       bgColor,
-      colors.axisLine,
       CHART_CONFIG.CANVAS_PADDING_RIGHT,
       INDICATOR_COLORS.LABEL_TEXT
     );

@@ -30,7 +30,7 @@ interface AltcoinSeasonSectionProps {
 
 export const AltcoinSeasonSection = ({ altcoinSeason, isLoading, hasWidth }: AltcoinSeasonSectionProps) => {
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>Altcoin Season Index</SectionTitle>
       {altcoinSeason && (
         <Flex align="center" gap={2} mb={2} flexWrap="wrap">
@@ -98,7 +98,7 @@ interface AdxSectionProps {
 
 export const AdxSection = ({ adxTrendStrength, isLoading, hasWidth }: AdxSectionProps) => {
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>ADX Trend Strength (BTC)</SectionTitle>
       {adxTrendStrength && (
         <Flex align="center" gap={2} mb={2} flexWrap="wrap">
@@ -160,7 +160,7 @@ interface OrderBookSectionProps {
 
 export const OrderBookSection = ({ orderBook, isLoading }: OrderBookSectionProps) => {
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>Order Book (BTC)</SectionTitle>
       {isLoading ? (
         <Skeleton height="60px" />
@@ -201,7 +201,7 @@ interface FundingRatesSectionProps {
 export const FundingRatesSection = ({ fundingRates, isLoading }: FundingRatesSectionProps) => {
   const { t } = useTranslation();
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>{t('marketSidebar.indicators.fundingRates')}</SectionTitle>
       {isLoading ? (
         <Stack gap={2}>

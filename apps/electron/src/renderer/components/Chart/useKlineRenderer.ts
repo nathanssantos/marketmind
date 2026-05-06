@@ -6,6 +6,7 @@ import { ACTIVITY_COLORS, CHART_CONFIG, INDICATOR_COLORS } from '@shared/constan
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineTrades, getKlineVolume } from '@shared/utils';
 import type { MutableRefObject } from 'react';
 import { useCallback, useRef } from 'react';
+import { isKlineBullishInclusive } from './utils/klineColor';
 
 interface AvgCache {
   klines: Kline[];
@@ -131,7 +132,7 @@ export const useKlineRenderer = ({
       const closeY = manager.priceToY(close);
       const highY = manager.priceToY(getKlineHigh(kline));
       const lowY = manager.priceToY(getKlineLow(kline));
-      const isBullish = close >= open;
+      const isBullish = isKlineBullishInclusive(kline);
       const visualTopY = Math.min(highY, lowY);
 
       const highlighted = highlightedIndicesMap?.get(actualIndex);

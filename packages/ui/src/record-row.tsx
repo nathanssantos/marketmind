@@ -10,13 +10,17 @@ interface RecordRowProps {
    */
   density?: 'compact' | 'card';
   /**
-   * Background tone. `default` (transparent) for inline list rows in a
-   * panel; `muted` (`bg.muted`) for highlighted stat / chart cards (e.g.
-   * MarketIndicators dashboard cards); `panel` (`bg.panel`) for
-   * panel-on-panel content (chart legends, secondary info blocks).
-   * Defaults to `default`.
+   * Background tone. `surface` (`bg.surface`, the **default**) is the
+   * shared elevated card surface used by stat / chart cards across
+   * Analytics, MarketIndicators, BestWorstTrade etc. — slightly
+   * lighter than the parent panel, with `border.muted`. `muted`
+   * (`bg.muted`) is the legacy lighter surface (kept for callers
+   * that still want the higher-contrast tone). `panel` (`bg.panel`)
+   * matches the parent panel — used for chart-overlay legends so the
+   * legend blends with the panel beneath. `transparent` opts out of
+   * the bg entirely (rows nested inside another tinted card).
    */
-  tone?: 'default' | 'muted' | 'panel';
+  tone?: 'surface' | 'muted' | 'panel' | 'transparent';
   /**
    * Click handler. When provided, the row gets `cursor="pointer"` and a
    * `_hover={{ bg: 'bg.subtle' }}` affordance — turns the primitive into
@@ -39,11 +43,17 @@ interface RecordRowProps {
 export const RecordRow = ({
   children,
   density = 'compact',
-  tone = 'default',
+  tone = 'surface',
   onClick,
   'data-testid': dataTestId,
 }: RecordRowProps) => {
-  const bg = tone === 'muted' ? 'bg.muted' : tone === 'panel' ? 'bg.panel' : undefined;
+  const bg = tone === 'muted'
+    ? 'bg.muted'
+    : tone === 'panel'
+      ? 'bg.panel'
+      : tone === 'transparent'
+        ? undefined
+        : 'bg.surface';
   const interactive = onClick != null;
   const padding = density === 'card' ? { p: 3 } : { px: 2.5, py: 2 };
   return (

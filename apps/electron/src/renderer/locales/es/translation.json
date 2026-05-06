@@ -948,6 +948,8 @@
       "grid": "Cuadrícula",
       "currentPrice": "Precio Actual",
       "crosshair": "Cruz",
+      "stackPriceTags": "Apilar etiquetas de precio superpuestas",
+      "stackPriceTagsHelper": "Cuando dos etiquetas de la escala de precio se superponen, las desplaza verticalmente para que ambas sigan siendo legibles.",
       "flipVertical": "Invertir Verticalmente",
       "flipVerticalHelper": "Invierte el eje de precio para que las operaciones en corto suban visualmente.",
       "profitLossAreas": "Áreas de Ganancia/Pérdida",

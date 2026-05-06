@@ -62,7 +62,7 @@ export function FuturesPositionInfo({ position, currentPrice, currency = DEFAULT
   const formatPnl = (pnl: number): string => formatWalletCurrencyWithSign(pnl, currency);
 
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <VStack gap={3} align="stretch">
         <Flex justify="space-between" align="center">
           <Flex align="center" gap={2}>

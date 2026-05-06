@@ -1,5 +1,5 @@
 import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
-import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { queuePriceTag } from '../../utils/priceTagBuffer';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import type { GenericRenderer, IndicatorValueSeries } from './types';
 import { getInstanceParam } from './types';
@@ -99,14 +99,12 @@ export const renderOverlayBands: GenericRenderer = (ctx, input) => {
     if (value === null) return;
     const y = manager.priceToY(value);
     if (y < 0 || y > dimensions.chartHeight) return;
-    drawPriceTag(
-      canvasCtx,
-      formatChartPrice(value),
+    queuePriceTag(manager, {
+      priceText: formatChartPrice(value),
       y,
-      dimensions.chartWidth,
-      baseColor,
-      CHART_CONFIG.CANVAS_PADDING_RIGHT,
-    );
+      fillColor: baseColor,
+      width: CHART_CONFIG.CANVAS_PADDING_RIGHT,
+    });
   };
   drawBoundTag(upperSeries);
   drawBoundTag(lowerSeries);

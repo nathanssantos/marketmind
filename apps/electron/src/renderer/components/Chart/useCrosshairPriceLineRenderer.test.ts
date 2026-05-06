@@ -18,6 +18,7 @@ describe('useCrosshairPriceLineRenderer', () => {
       beginPath: vi.fn(),
       moveTo: vi.fn(),
       lineTo: vi.fn(),
+      arcTo: vi.fn(),
       stroke: vi.fn(),
       fill: vi.fn(),
       fillText: vi.fn(),

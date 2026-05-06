@@ -32,6 +32,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
   const [showGrid, setShowGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine, setShowCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair, setShowCrosshair] = useChartPref('showCrosshair', true);
+  const [stackPriceTags, setStackPriceTags] = useChartPref<boolean>('stackPriceTags', true);
   const [chartFlipped, setChartFlipped] = useChartPref<boolean>('chartFlipped', false);
   const [liquidityColorMode, setLiquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
@@ -103,6 +104,18 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             size="sm"
             aria-label={t('chart.controls.crosshair')}
             data-testid="chart-show-crosshair"
+          />
+        </FormRow>
+        <FormRow
+          label={t('chart.controls.stackPriceTags')}
+          helper={t('chart.controls.stackPriceTagsHelper')}
+        >
+          <Switch
+            checked={stackPriceTags}
+            onCheckedChange={setStackPriceTags}
+            size="sm"
+            aria-label={t('chart.controls.stackPriceTags')}
+            data-testid="chart-stack-price-tags"
           />
         </FormRow>
         <FormRow

@@ -1,5 +1,5 @@
 import { CHART_CONFIG } from '@shared/constants/chartConfig';
-import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
+import { queuePriceTag } from '../../utils/priceTagBuffer';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
@@ -134,7 +134,12 @@ export const renderIchimoku: GenericRenderer = (ctx, input) => {
     if (value === null) return;
     const y = manager.priceToY(value);
     if (y < 0 || y > chartHeight) return;
-    drawPriceTag(canvasCtx, formatChartPrice(value), y, chartWidth, color, CHART_CONFIG.CANVAS_PADDING_RIGHT);
+    queuePriceTag(manager, {
+      priceText: formatChartPrice(value),
+      y,
+      fillColor: color,
+      width: CHART_CONFIG.CANVAS_PADDING_RIGHT,
+    });
   };
   drawLineTag(tenkan, tenkanColor);
   drawLineTag(kijun, kijunColor);

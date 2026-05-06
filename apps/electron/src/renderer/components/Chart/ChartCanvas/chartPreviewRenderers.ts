@@ -1,7 +1,7 @@
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import { drawShieldIcon } from '@renderer/utils/canvas/canvasIcons';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { ORDER_LINE_COLORS } from '@shared/constants';
+import { drawInfoTag } from '../orderLineDrawing';
 import { getOrderPrice, isOrderLong, isOrderPending } from '@shared/utils';
 import type { Order } from '@marketmind/types';
 import type { MutableRefObject } from 'react';
@@ -13,6 +13,8 @@ export const renderDragPreview = (
   manager: CanvasManager,
   orderDragHandler: ReturnType<typeof useOrderDragHandler>,
   _t: (key: string) => string,
+  infoTagBg: string,
+  infoTagText: string,
 ): void => {
   const currentDragPreviewPrice = orderDragHandler.getPreviewPrice();
   if (!orderDragHandler.isDragging || !orderDragHandler.draggedOrder || currentDragPreviewPrice === null) return;
@@ -27,10 +29,12 @@ export const renderDragPreview = (
 
   let color: string;
   let label: string;
+  let direction: 'up' | 'down' | null = null;
 
   if (dragType === 'entry' && isOrderPending(draggedOrder)) {
     const isLong = isOrderLong(draggedOrder);
-    color = isLong ? ORDER_LINE_COLORS.PENDING_LONG_LINE : ORDER_LINE_COLORS.PENDING_SHORT_LINE;
+    color = isLong ? ORDER_LINE_COLORS.POSITION_LONG_LINE : ORDER_LINE_COLORS.POSITION_SHORT_LINE;
+    direction = (isLong !== manager.isFlipped()) ? 'up' : 'down';
     label = `${isLong ? 'L' : 'S'} ${previewPrice.toFixed(2)}`;
   } else {
     const isStopLoss = dragType === 'stopLoss';
@@ -54,37 +58,16 @@ export const renderDragPreview = (
   ctx.globalAlpha = 0.8;
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
-
   ctx.beginPath();
   ctx.moveTo(0, y);
   ctx.lineTo(dimensions.chartWidth, y);
   ctx.stroke();
 
   ctx.globalAlpha = 1;
-  ctx.fillStyle = color;
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-
-  const labelPadding = 8;
-  const textMetrics = ctx.measureText(label);
-  const textWidth = textMetrics.width;
-  const labelHeight = 18;
-  const arrowWidth = 6;
-  const labelWidth = textWidth + labelPadding * 2;
-
-  ctx.beginPath();
-  ctx.moveTo(labelWidth + arrowWidth, y);
-  ctx.lineTo(labelWidth, y - labelHeight / 2);
-  ctx.lineTo(0, y - labelHeight / 2);
-  ctx.lineTo(0, y + labelHeight / 2);
-  ctx.lineTo(labelWidth, y + labelHeight / 2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-  ctx.fillText(label, labelPadding, y);
-
+  drawInfoTag(ctx, label, y, color, infoTagBg, infoTagText, false, null, null, false, 0, null, direction);
   ctx.restore();
 };
 
@@ -92,6 +75,8 @@ export const renderSlTpPreview = (
   manager: CanvasManager,
   slTpPlacement: ReturnType<typeof useSlTpPlacementMode>,
   allExecutions: BackendExecution[],
+  infoTagBg: string,
+  infoTagText: string,
 ): void => {
   if (!slTpPlacement.active || slTpPlacement.previewPriceRef.current === null) return;
 
@@ -136,28 +121,10 @@ export const renderSlTpPreview = (
   ctx.setLineDash([]);
 
   ctx.globalAlpha = 1;
-  ctx.fillStyle = color;
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-
-  const labelPadding = 8;
-  const textWidth = ctx.measureText(label).width;
-  const labelHeight = 18;
-  const arrowWidth = 6;
-  const labelWidth = textWidth + labelPadding * 2;
-
-  ctx.beginPath();
-  ctx.moveTo(labelWidth + arrowWidth, y);
-  ctx.lineTo(labelWidth, y - labelHeight / 2);
-  ctx.lineTo(0, y - labelHeight / 2);
-  ctx.lineTo(0, y + labelHeight / 2);
-  ctx.lineTo(labelWidth, y + labelHeight / 2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-  ctx.fillText(label, labelPadding, y);
+  drawInfoTag(ctx, label, y, color, infoTagBg, infoTagText, false, null, null, false, 0, null, null);
   ctx.restore();
 };
 
@@ -165,6 +132,8 @@ export const renderTsPreview = (
   manager: CanvasManager,
   tsPlacementActive: boolean,
   tsPlacementPreviewPrice: number | null,
+  infoTagBg: string,
+  infoTagText: string,
 ): void => {
   if (!tsPlacementActive || tsPlacementPreviewPrice === null) return;
 
@@ -174,7 +143,6 @@ export const renderTsPreview = (
 
   const y = manager.priceToY(tsPlacementPreviewPrice);
   const color = ORDER_LINE_COLORS.TRAILING_STOP_LINE;
-  const fillColor = ORDER_LINE_COLORS.TRAILING_STOP_FILL;
   const label = `TS ${formatChartPrice(tsPlacementPreviewPrice)}`;
 
   ctx.save();
@@ -189,38 +157,19 @@ export const renderTsPreview = (
   ctx.setLineDash([]);
 
   ctx.globalAlpha = 1;
-  ctx.fillStyle = fillColor;
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-
-  const iconSize = 12;
-  const iconPadding = 4;
-  const labelPadding = 8;
-  const textWidth = ctx.measureText(label).width;
-  const labelHeight = 18;
-  const arrowWidth = 6;
-  const totalLabelWidth = iconSize + iconPadding + textWidth + labelPadding * 2;
-
-  ctx.beginPath();
-  ctx.moveTo(totalLabelWidth + arrowWidth, y);
-  ctx.lineTo(totalLabelWidth, y - labelHeight / 2);
-  ctx.lineTo(0, y - labelHeight / 2);
-  ctx.lineTo(0, y + labelHeight / 2);
-  ctx.lineTo(totalLabelWidth, y + labelHeight / 2);
-  ctx.closePath();
-  ctx.fill();
-
-  drawShieldIcon(ctx, labelPadding, y - iconSize / 2, iconSize, ORDER_LINE_COLORS.TRAILING_STOP_ICON_STROKE);
-  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-  ctx.fillText(label, labelPadding + iconSize + iconPadding, y);
+  drawInfoTag(ctx, label, y, color, infoTagBg, infoTagText, false, null, 'shield', false, 0, null, null);
   ctx.restore();
 };
 
 export const renderOrderPreview = (
   manager: CanvasManager,
   orderPreviewRef: MutableRefObject<{ price: number; type: 'long' | 'short' } | null>,
-  t: (key: string) => string,
+  _t: (key: string) => string,
+  infoTagBg: string,
+  infoTagText: string,
 ): void => {
   const orderPreviewValue = orderPreviewRef.current;
   if (!orderPreviewValue) return;
@@ -232,46 +181,24 @@ export const renderOrderPreview = (
   const y = manager.priceToY(orderPreviewValue.price);
   const isLong = orderPreviewValue.type === 'long';
 
-  const willBeActive = false;
-
-  const color = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
-  const opacity = willBeActive ? 0.8 : 0.5; ctx.save();
-  ctx.globalAlpha = opacity;
-  ctx.strokeStyle = color;
+  const lineColor = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
-
   ctx.beginPath();
   ctx.moveTo(0, y);
   ctx.lineTo(dimensions.chartWidth, y);
   ctx.stroke();
 
   ctx.globalAlpha = 1;
-  ctx.fillStyle = color;
   ctx.font = '11px monospace';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
 
-  const statusLabel = willBeActive ? t('trading.active') : t('trading.pending');
-  const directionSymbol = isLong ? '\u2191' : '\u2193';
-  const label = `${directionSymbol} @ ${orderPreviewValue.price.toFixed(2)} [${statusLabel}]`;
-  const labelPadding = 8;
-  const textMetrics = ctx.measureText(label);
-  const textWidth = textMetrics.width;
-  const labelHeight = 18;
-  const arrowWidth = 6;
-  const labelWidth = textWidth + labelPadding * 2;
-
-  ctx.beginPath();
-  ctx.moveTo(labelWidth + arrowWidth, y);
-  ctx.lineTo(labelWidth, y - labelHeight / 2);
-  ctx.lineTo(0, y - labelHeight / 2);
-  ctx.lineTo(0, y + labelHeight / 2);
-  ctx.lineTo(labelWidth, y + labelHeight / 2);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = ORDER_LINE_COLORS.TEXT_WHITE;
-  ctx.fillText(label, labelPadding, y);
+  const direction: 'up' | 'down' = isLong !== manager.isFlipped() ? 'up' : 'down';
+  const label = orderPreviewValue.price.toFixed(2);
+  drawInfoTag(ctx, label, y, lineColor, infoTagBg, infoTagText, false, null, null, false, 0, null, direction);
 
   ctx.restore();
 };
