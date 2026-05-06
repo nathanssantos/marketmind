@@ -2,9 +2,9 @@ import type { Kline, Viewport } from '@marketmind/types';
 import type { IndicatorDefinition } from '@marketmind/trading-core';
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { renderOverlayBands } from './renderOverlayBands';
+import { clearPriceTagBuffer, drainPriceTagBuffer } from '../../utils/priceTagBuffer';
 import type { GenericRendererInput, IndicatorValueSeries } from './types';
 
 const baseKline = (i: number, close: number): Kline => ({
@@ -115,6 +115,7 @@ describe('renderOverlayBands', () => {
     manager = new CanvasManager(canvas, viewport, 40);
     ctx2d = canvas.getContext('2d')!;
     ctx2d.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    clearPriceTagBuffer(manager);
   });
 
   afterEach(() => {
@@ -255,7 +256,7 @@ describe('renderOverlayBands', () => {
     expect(redHits, 'red dominates along the upper line y').toBeGreaterThan(3);
   });
 
-  test('paints right-axis price tags for upper + lower at the last valid value', () => {
+  test('queues right-axis price tags for upper + lower at the last valid value', () => {
     manager.setKlines(klines());
     renderOverlayBands(
       { manager, colors: {} as ChartThemeColors },
@@ -265,13 +266,11 @@ describe('renderOverlayBands', () => {
       }),
     );
 
-    const dims = manager.getDimensions()!;
-    const upperY = manager.priceToY(115);
-    const lowerY = manager.priceToY(95);
-    const upperTag = scanAlpha(ctx2d, dims.chartWidth, upperY, CHART_CONFIG.CANVAS_PADDING_RIGHT, 3);
-    const lowerTag = scanAlpha(ctx2d, dims.chartWidth, lowerY, CHART_CONFIG.CANVAS_PADDING_RIGHT, 3);
-    expect(upperTag, 'upper price tag should paint pixels').toBeGreaterThan(0);
-    expect(lowerTag, 'lower price tag should paint pixels').toBeGreaterThan(0);
+    const queued = drainPriceTagBuffer(manager);
+    expect(queued).toHaveLength(2);
+    const ys = queued.map((t) => t.y).sort((a, b) => a - b);
+    expect(ys[0]).toBe(manager.priceToY(115));
+    expect(ys[1]).toBe(manager.priceToY(95));
   });
 
   test('honours alternate output keys (top/bottom)', () => {

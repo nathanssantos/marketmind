@@ -2,22 +2,8 @@ import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Kline, MarketType } from '@marketmind/types';
 
-let visibilityCallback: ((state: any) => void) | undefined;
-
 vi.mock('../useBackendKlines', () => ({
   useKlineStream: vi.fn(),
-}));
-
-vi.mock('../useVisibilityChange', () => ({
-  useVisibilityChange: vi.fn((options?: { onBecameVisible?: (state: any) => void }) => {
-    visibilityCallback = options?.onBecameVisible;
-    return {
-      isVisible: true,
-      needsRefresh: false,
-      clearRefreshNeeded: vi.fn(),
-      lastVisibleTime: Date.now(),
-    };
-  }),
 }));
 
 import { useKlineLiveStream } from '../useKlineLiveStream';
@@ -51,7 +37,6 @@ describe('useKlineLiveStream', () => {
     vi.clearAllMocks();
     vi.useFakeTimers({ shouldAdvanceTime: true });
     mockRefetch = vi.fn().mockResolvedValue(undefined);
-    visibilityCallback = undefined;
     klineUpdateHandler = undefined;
 
     (useKlineStream as ReturnType<typeof vi.fn>).mockImplementation(
@@ -66,7 +51,7 @@ describe('useKlineLiveStream', () => {
     vi.useRealTimers();
   });
 
-  const renderLiveStream = (overrides = {}) => {
+  const _renderLiveStream = (overrides = {}) => {
     const baseKlines = makeBaseKlines(10);
     return renderHook(() =>
       useKlineLiveStream({
@@ -268,40 +253,6 @@ describe('useKlineLiveStream', () => {
     rerender({ symbol: 'ETHUSDT' });
 
     expect(result.current.displayKlines).toBe(baseKlines);
-  });
-
-  it('should trigger refetch on visibility restore after 5+ seconds', async () => {
-    renderLiveStream();
-
-    expect(visibilityCallback).toBeDefined();
-
-    await act(async () => {
-      visibilityCallback?.({
-        isVisible: true,
-        wasHidden: true,
-        hiddenDuration: 10_000,
-        lastVisibleTime: Date.now(),
-      });
-      await vi.runAllTimersAsync();
-    });
-
-    expect(mockRefetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('should NOT trigger refetch on visibility restore after < 5 seconds', async () => {
-    renderLiveStream();
-
-    await act(async () => {
-      visibilityCallback?.({
-        isVisible: true,
-        wasHidden: true,
-        hiddenDuration: 3_000,
-        lastVisibleTime: Date.now(),
-      });
-      await vi.runAllTimersAsync();
-    });
-
-    expect(mockRefetch).not.toHaveBeenCalled();
   });
 
   it('should trigger refetch when gap is detected', async () => {

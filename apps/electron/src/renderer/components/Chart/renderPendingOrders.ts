@@ -44,10 +44,10 @@ const renderSLTPForPendingOrder = (
       ? ((order.stopLoss - entryPrice) / entryPrice) * 100
       : ((entryPrice - order.stopLoss) / entryPrice) * 100;
     const slSign = slResultPercent >= 0 ? '+' : '';
-    const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%) [PENDING]`;
+    const slInfoText = `SL (${slSign}${slResultPercent.toFixed(2)}%)`;
 
     if (isHoveredOnly) {
-      drawInfoTag(ctx, slInfoText, stopY, slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL, true, null);
+      drawInfoTag(ctx, slInfoText, stopY, slIsProfit ? ORDER_LINE_COLORS.SL_PROFIT_FILL : ORDER_LINE_COLORS.SL_LOSS_FILL, rc.infoTagBg, rc.infoTagText, true, null);
     } else {
       const slFlashAlphaVal = rc.getFlashAlpha(`${orderId}-sl`);
       rc.priceTags.push({ priceText: formatChartPrice(order.stopLoss), y: stopY, fillColor: slTagColor, flashAlpha: slFlashAlphaVal });
@@ -55,7 +55,7 @@ const renderSLTPForPendingOrder = (
       const slCloseButtonRef = { x: 0, y: 0, size: 14 };
       const slLoading = rc.isOrderLoading(orderId);
       if (slLoading) rc.needsAnimation = true;
-      const slTagSize = drawInfoTag(ctx, slInfoText, stopY, slTagColor, true, slCloseButtonRef, null, slLoading, rc.now);
+      const slTagSize = drawInfoTag(ctx, slInfoText, stopY, slTagColor, rc.infoTagBg, rc.infoTagText, true, slCloseButtonRef, null, slLoading, rc.now);
       drawInfoTagFlash(ctx, slTagSize, stopY, slFlashAlphaVal);
 
       rc.sltpHitboxes.push({
@@ -97,10 +97,10 @@ const renderSLTPForPendingOrder = (
     const tpProfitPercent = isLong
       ? ((order.takeProfit - entryPrice) / entryPrice) * 100
       : ((entryPrice - order.takeProfit) / entryPrice) * 100;
-    const tpInfoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%) [PENDING]`;
+    const tpInfoText = `TP (${tpProfitPercent >= 0 ? '+' : ''}${tpProfitPercent.toFixed(2)}%)`;
 
     if (isHoveredOnly) {
-      drawInfoTag(ctx, tpInfoText, tpY, ORDER_LINE_COLORS.TP_FILL, true, null);
+      drawInfoTag(ctx, tpInfoText, tpY, ORDER_LINE_COLORS.TP_FILL, rc.infoTagBg, rc.infoTagText, true, null);
     } else {
       const tpFillColor = ORDER_LINE_COLORS.TP_FILL;
       const tpFlashAlphaVal = rc.getFlashAlpha(`${orderId}-tp`);
@@ -109,7 +109,7 @@ const renderSLTPForPendingOrder = (
       const tpCloseButtonRef = { x: 0, y: 0, size: 14 };
       const tpLoading = rc.isOrderLoading(orderId);
       if (tpLoading) rc.needsAnimation = true;
-      const tpTagSize = drawInfoTag(ctx, tpInfoText, tpY, tpFillColor, true, tpCloseButtonRef, null, tpLoading, rc.now);
+      const tpTagSize = drawInfoTag(ctx, tpInfoText, tpY, tpFillColor, rc.infoTagBg, rc.infoTagText, true, tpCloseButtonRef, null, tpLoading, rc.now);
       drawInfoTagFlash(ctx, tpTagSize, tpY, tpFlashAlphaVal);
 
       rc.sltpHitboxes.push({
@@ -154,12 +154,13 @@ export const renderPendingOrders = (
     ctx.save();
     setStandardFont(ctx);
 
-    const lineColor = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
-    const fillColor = isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+    const lineColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_LINE : ORDER_LINE_COLORS.POSITION_SHORT_LINE;
+    const fillColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_FILL : ORDER_LINE_COLORS.POSITION_SHORT_FILL;
 
     drawHorizontalLine(ctx, y, chartWidth, lineColor);
 
     const typeLabel = isLong ? 'L' : 'S';
+    const direction: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
     const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
 
     const orderId = getOrderId(order);
@@ -169,7 +170,7 @@ export const renderPendingOrders = (
     rc.priceTags.push({ priceText: formatChartPrice(getOrderPrice(order)), y, fillColor, flashAlpha });
 
     const closeButtonRef = { x: 0, y: 0, size: 14 };
-    const entryTagSize = drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, rc.now);
+    const entryTagSize = drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, rc.now, null, direction);
     drawInfoTagFlash(ctx, entryTagSize, y, flashAlpha);
 
     rc.orderHitboxes.push({
@@ -227,8 +228,8 @@ export const renderHoveredPendingOrder = (
   ctx.save();
   setStandardFont(ctx);
 
-  const lineColor = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
-  const fillColor = isLong ? ORDER_LINE_COLORS.LONG_FILL : ORDER_LINE_COLORS.SHORT_FILL;
+  const lineColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_LINE : ORDER_LINE_COLORS.POSITION_SHORT_LINE;
+  const fillColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_FILL : ORDER_LINE_COLORS.POSITION_SHORT_FILL;
 
   const priceText = formatChartPrice(getOrderPrice(order));
   drawPriceTag(ctx, priceText, y, chartWidth, fillColor, PRICE_TAG_WIDTH);
@@ -236,13 +237,14 @@ export const renderHoveredPendingOrder = (
   drawHorizontalLine(ctx, y, chartWidth, lineColor);
 
   const typeLabel = isLong ? 'L' : 'S';
+  const direction: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
   const infoText = `${typeLabel} (${getOrderQuantity(order)})`;
 
   const hoveredOrderId = getOrderId(order);
   const hoveredLoading = rc.isOrderLoading(hoveredOrderId);
   if (hoveredLoading) rc.needsAnimation = true;
   const closeButtonRef = { x: 0, y: 0, size: 14 };
-  drawInfoTag(ctx, infoText, y, fillColor, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, rc.now);
+  drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, rc.now, null, direction);
 
   rc.orderHitboxes.push({
     orderId: hoveredOrderId,

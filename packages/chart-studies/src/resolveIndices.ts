@@ -41,7 +41,16 @@ export const resolveDrawingIndices = (drawing: Drawing, klines: KlineWithTime[])
   if (FREEFORM_TYPES.has(drawing.type)) {
     const d = drawing as PencilDrawing | HighlighterDrawing;
     if (!d.points.some(p => p.time !== undefined)) return drawing;
-    return { ...d, points: d.points.map(p => ({ ...p, index: timeToIdx(p.time, p.index) })) };
+    return {
+      ...d,
+      points: d.points.map(p => {
+        if (p.time === undefined) return p;
+        const intPart = Math.floor(p.index);
+        const frac = p.index - intPart;
+        const baseIdx = timeToIdx(p.time, intPart);
+        return { ...p, index: baseIdx + frac };
+      }),
+    };
   }
 
   if (SINGLE_POINT_TYPES.has(drawing.type)) {

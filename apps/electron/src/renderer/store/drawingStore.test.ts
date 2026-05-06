@@ -132,4 +132,76 @@ describe('drawingStore', () => {
       expect(state.selectedDrawingId).toBeNull();
     });
   });
+
+  describe('undo / redo', () => {
+    beforeEach(() => {
+      useDrawingStore.getState().clearHistory();
+      useDrawingStore.setState({ drawingsByKey: {} });
+    });
+
+    it('undoes an addDrawing', () => {
+      const s = useDrawingStore.getState();
+      const d = createTestDrawing({ id: 'u-1' });
+      s.addDrawing(d);
+      expect(s.getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(1);
+      expect(s.canUndo('BTCUSDT', '1h')).toBe(true);
+
+      const ok = s.undo('BTCUSDT', '1h');
+      expect(ok).toBe(true);
+      expect(s.getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(0);
+      expect(s.canRedo('BTCUSDT', '1h')).toBe(true);
+    });
+
+    it('redoes an undone add', () => {
+      const s = useDrawingStore.getState();
+      const d = createTestDrawing({ id: 'u-2' });
+      s.addDrawing(d);
+      s.undo('BTCUSDT', '1h');
+      const ok = s.redo('BTCUSDT', '1h');
+      expect(ok).toBe(true);
+      expect(s.getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(1);
+      expect(s.getDrawingsForSymbol('BTCUSDT', '1h')[0]?.id).toBe('u-2');
+    });
+
+    it('undoes an updateDrawing back to the previous shape', () => {
+      const s = useDrawingStore.getState();
+      const d = createTestDrawing({ id: 'u-3', endPrice: 200 });
+      s.addDrawing(d);
+      s.updateDrawing('u-3', { endPrice: 999 } as Partial<LineDrawing>);
+      const updated = s.getDrawingsForSymbol('BTCUSDT', '1h')[0] as LineDrawing;
+      expect(updated.endPrice).toBe(999);
+
+      s.undo('BTCUSDT', '1h');
+      const reverted = s.getDrawingsForSymbol('BTCUSDT', '1h')[0] as LineDrawing;
+      expect(reverted.endPrice).toBe(200);
+    });
+
+    it('undoes a deleteDrawing', () => {
+      const s = useDrawingStore.getState();
+      const d = createTestDrawing({ id: 'u-4' });
+      s.addDrawing(d);
+      s.deleteDrawing('u-4', 'BTCUSDT', '1h');
+      expect(s.getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(0);
+
+      s.undo('BTCUSDT', '1h');
+      expect(s.getDrawingsForSymbol('BTCUSDT', '1h')).toHaveLength(1);
+      expect(s.getDrawingsForSymbol('BTCUSDT', '1h')[0]?.id).toBe('u-4');
+    });
+
+    it('returns false when stacks are empty', () => {
+      const s = useDrawingStore.getState();
+      expect(s.undo('BTCUSDT', '1h')).toBe(false);
+      expect(s.redo('BTCUSDT', '1h')).toBe(false);
+    });
+
+    it('clears redo stack on a new action', () => {
+      const s = useDrawingStore.getState();
+      s.addDrawing(createTestDrawing({ id: 'u-5' }));
+      s.undo('BTCUSDT', '1h');
+      expect(s.canRedo('BTCUSDT', '1h')).toBe(true);
+
+      s.addDrawing(createTestDrawing({ id: 'u-6' }));
+      expect(s.canRedo('BTCUSDT', '1h')).toBe(false);
+    });
+  });
 });

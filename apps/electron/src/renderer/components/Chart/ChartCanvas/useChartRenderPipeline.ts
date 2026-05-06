@@ -8,6 +8,7 @@ import type { useSlTpPlacementMode } from '@renderer/hooks/useSlTpPlacementMode'
 import type { UseChartBaseRenderersResult } from './useChartBaseRenderers';
 import type { UseGenericChartIndicatorRenderersResult } from './useGenericChartIndicatorRenderers';
 import type { ChartColors } from '@renderer/hooks/useChartColors';
+import { clearPriceTagBuffer } from '../utils/priceTagBuffer';
 import { renderDragPreview, renderSlTpPreview, renderTsPreview, renderOrderPreview } from './chartPreviewRenderers';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 
@@ -113,6 +114,7 @@ export const useChartRenderPipeline = ({
       const g = r.generic;
 
       timed('clear', () => manager.clear());
+      clearPriceTagBuffer(manager);
       timed('watermark', b.renderWatermark);
       timed('grid', b.renderGrid);
       timed('customIndicators', g.renderAllCustomIndicators);
@@ -136,15 +138,15 @@ export const useChartRenderPipeline = ({
       timed('gridPreview', r.renderGridPreview);
 
       timed('previews', () => {
-        renderDragPreview(manager, r.orderDragHandler, r.t);
-        renderSlTpPreview(manager, r.slTpPlacement, r.allExecutions);
-        renderTsPreview(manager, r.tsPlacementActive, r.tsPlacementPreviewPrice);
+        renderDragPreview(manager, r.orderDragHandler, r.t, _colors.background, _colors.text);
+        renderSlTpPreview(manager, r.slTpPlacement, r.allExecutions, _colors.background, _colors.text);
+        renderTsPreview(manager, r.tsPlacementActive, r.tsPlacementPreviewPrice, _colors.background, _colors.text);
       });
 
       timed('currentPriceLabel', b.renderCurrentPriceLine_Label);
       timed('crosshair', b.renderCrosshairPriceLine);
 
-      timed('orderPreview', () => renderOrderPreview(manager, r.orderPreviewRef, r.t));
+      timed('orderPreview', () => renderOrderPreview(manager, r.orderPreviewRef, r.t, _colors.background, _colors.text));
     };
 
     const renderWithDirtyFlagCleanup = (): void => {

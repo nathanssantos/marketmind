@@ -22,9 +22,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { ChartNavigation } from './ChartNavigation';
 import { ChartPerfOverlay } from './ChartPerfOverlay';
-import { ChartTooltipOverlay } from './ChartCanvas/ChartTooltipOverlay';
 import { exposeCanvasManagerForE2E, exposeIsPanningForE2E } from '@renderer/utils/e2eBridge';
-import { tooltipStore } from './ChartCanvas/tooltipStore';
 import { useChartCanvas } from './useChartCanvas';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import type { BackendExecution } from './useOrderLinesRenderer';
@@ -33,6 +31,7 @@ import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
+import { useDrawingHistoryShortcuts } from './drawings/useDrawingHistoryShortcuts';
 import {
   useChartState,
   useCursorManager,
@@ -51,8 +50,6 @@ import {
   useChartPlacementHandlers,
   ChartCloseDialog,
 } from './ChartCanvas/index';
-
-const TOOLTIP_DEBOUNCE_MS = 150;
 
 export interface ChartCanvasProps {
   klines: Kline[];
@@ -96,8 +93,8 @@ const ChartCanvasInternal = ({
   const [showGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
   const [showCrosshair] = useChartPref('showCrosshair', true);
+  const [stackPriceTags] = useChartPref<boolean>('stackPriceTags', true);
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
-  const [showTooltip] = useChartPref('showTooltip', false);
   const [showEventRow] = useChartPref('showEventRow', false);
   const [showActivityIndicator] = useChartPref<boolean>('showActivityIndicator', true);
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
@@ -118,6 +115,8 @@ const ChartCanvasInternal = ({
 
   const drawingKey = compositeKey(symbol ?? '', timeframe);
   const hasDrawings = useDrawingStore((s) => (s.drawingsByKey[drawingKey]?.length ?? 0) > 0);
+
+  useDrawingHistoryShortcuts({ symbol: symbol ?? '', interval: timeframe, enabled: !!symbol });
 
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
   useEffect(() => {
@@ -204,37 +203,41 @@ const ChartCanvasInternal = ({
   const { state: chartState, actions: chartActions, refs: chartRefs } = useChartState({ klines: effectiveKlines });
   const { orderToClose } = chartState;
 
-  const hoveredKlineIndexRef = useRef<number | undefined>(tooltipStore.getSnapshot().klineIndex);
-  useEffect(() => {
-    const unsubscribe = tooltipStore.subscribeHoveredKlineIndex((index) => {
-      perfMonitor.recordStoreWake('tooltipStore', 'klineIndex');
-      if (hoveredKlineIndexRef.current === index) return;
-      hoveredKlineIndexRef.current = index;
-      managerRef.current?.markDirty('overlays');
-    });
-    return unsubscribe;
-  }, []);
-
+  const hoveredKlineIndexRef = useRef<number | undefined>(undefined);
+  const chartKey = makeChartKey(symbol, timeframe);
   const setHoveredKlineGlobal = useChartHoverStore((s) => s.setHoveredKline);
+  const setCurrentKlineGlobal = useChartHoverStore((s) => s.setCurrentKline);
+  const clearChartHover = useChartHoverStore((s) => s.clearChart);
+
+  const setHoveredKline = useCallback((kline: Kline | null, klineIndex?: number): void => {
+    const nextIndex = kline ? klineIndex : undefined;
+    if (hoveredKlineIndexRef.current !== nextIndex) {
+      hoveredKlineIndexRef.current = nextIndex;
+      managerRef.current?.markDirty('overlays');
+    }
+    setHoveredKlineGlobal(chartKey, kline);
+  }, [chartKey, setHoveredKlineGlobal]);
+
   useEffect(() => {
-    const chartKey = makeChartKey(symbol, timeframe);
-    let lastVisible = false;
-    let lastKline = tooltipStore.getSnapshot().kline;
-    const unsubscribe = tooltipStore.subscribe(() => {
-      perfMonitor.recordStoreWake('tooltipStore', 'full');
-      const snap = tooltipStore.getSnapshot();
-      if (snap.visible === lastVisible && snap.kline === lastKline) return;
-      lastVisible = snap.visible;
-      lastKline = snap.kline;
-      setHoveredKlineGlobal(chartKey, snap.visible ? snap.kline : null);
+    return () => clearChartHover(chartKey);
+  }, [chartKey, clearChartHover]);
+
+  useEffect(() => {
+    const latest = effectiveKlines.length > 0 ? effectiveKlines[effectiveKlines.length - 1]! : null;
+    setCurrentKlineGlobal(chartKey, latest);
+  }, [effectiveKlines, chartKey, setCurrentKlineGlobal]);
+
+  useEffect(() => {
+    if (!klineSource) return;
+    return klineSource.subscribe(() => {
+      const arr = klineSource.klinesRef.current;
+      const latest = arr.length > 0 ? arr[arr.length - 1]! : null;
+      setCurrentKlineGlobal(chartKey, latest);
     });
-    return () => {
-      unsubscribe();
-      setHoveredKlineGlobal(chartKey, null);
-    };
-  }, [symbol, timeframe, setHoveredKlineGlobal]);
-  const { setTooltip: setTooltipData, setOrderToClose } = chartActions;
-  const { mousePosition: mousePositionRef, orderPreview: orderPreviewRef, hoveredMAIndex: hoveredMAIndexRef, hoveredOrderId: hoveredOrderIdRef, lastHoveredOrder: lastHoveredOrderRef, lastTooltipOrder: lastTooltipOrderRef, tooltipEnabled: tooltipEnabledRef, tooltipDebounce: tooltipDebounceRef } = chartRefs;
+  }, [klineSource, chartKey, setCurrentKlineGlobal]);
+
+  const { setOrderToClose } = chartActions;
+  const { mousePosition: mousePositionRef, orderPreview: orderPreviewRef, hoveredMAIndex: hoveredMAIndexRef, hoveredOrderId: hoveredOrderIdRef, lastHoveredOrder: lastHoveredOrderRef } = chartRefs;
 
   const setGridModeActive = useGridOrderStore((s) => s.setGridModeActive);
 
@@ -334,15 +337,8 @@ const ChartCanvasInternal = ({
   });
 
   useEffect(() => {
-    if (isPanning) {
-      tooltipEnabledRef.current = false;
-      if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current);
-      setTooltipData({ kline: null, x: 0, y: 0, visible: false });
-    } else {
-      tooltipDebounceRef.current = setTimeout(() => { tooltipEnabledRef.current = true; }, TOOLTIP_DEBOUNCE_MS);
-    }
-    return () => { if (tooltipDebounceRef.current) clearTimeout(tooltipDebounceRef.current); };
-  }, [isPanning]);
+    if (isPanning) setHoveredKline(null);
+  }, [isPanning, setHoveredKline]);
 
   const { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark } = useChartBaseRenderers({
     manager, colors, chartType, advancedConfig,
@@ -381,7 +377,7 @@ const ChartCanvasInternal = ({
     external,
   });
 
-  const { render: renderEventScale, getEventAtPosition } = useEventScaleRenderer({
+  const { render: renderEventScale } = useEventScaleRenderer({
     manager,
     events: marketEvents,
     colors,
@@ -390,7 +386,7 @@ const ChartCanvasInternal = ({
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef);
+  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags);
 
   const auxiliarySetup = useChartAuxiliarySetup({
     manager, klines, symbol: symbol ?? '', timeframe, colors, hasTradingEnabled,
@@ -406,11 +402,11 @@ const ChartCanvasInternal = ({
 
   const { handleCanvasMouseMove, handleCanvasMouseDown, handleCanvasMouseUp, handleCanvasMouseLeave, handleWheel } = useChartInteraction({
     manager, canvasRef, klines, advancedConfig,
-    showVolume, showEventRow, isPanning, shiftPressed, altPressed,
-    tooltipEnabledRef, mousePositionRef, orderPreviewRef, hoveredMAIndexRef,
-    hoveredOrderIdRef, lastHoveredOrderRef, lastTooltipOrderRef,
-    setTooltipData, setOrderToClose: handleOrderCloseRequest,
-    getHoveredOrder, getEventAtPosition, getClickedOrderId, getSLTPAtPosition,
+    showVolume, isPanning, shiftPressed, altPressed,
+    mousePositionRef, orderPreviewRef, hoveredMAIndexRef,
+    hoveredOrderIdRef, lastHoveredOrderRef,
+    setHoveredKline, setOrderToClose: handleOrderCloseRequest,
+    getHoveredOrder, getClickedOrderId, getSLTPAtPosition,
     onLongEntry: (price: number) => { void handleLongEntry(price); },
     onShortEntry: (price: number) => { void handleShortEntry(price); },
     orderDragHandler, gridInteraction: isGridModeActive ? gridInteraction : undefined,
@@ -501,7 +497,6 @@ const ChartCanvasInternal = ({
         <TextEditOverlay manager={manager} symbol={symbol ?? ''} interval={timeframe} />
         <ChartNavigation onResetView={handleResetView} onNextKline={handleNextKline} totalPanelHeight={manager?.getTotalPanelHeight() ?? 0} />
         <ChartPerfOverlay />
-        <ChartTooltipOverlay enabled={showTooltip} />
       </Box>
       </ChartContextMenuManager>
     </>

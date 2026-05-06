@@ -161,4 +161,13 @@ export interface CoordinateMapper {
   indexToX: (index: number) => number;
   xToIndex: (x: number) => number;
   indexToCenterX: (index: number) => number;
+  /**
+   * Resolves a stored kline timestamp (`drawing.startTime` /
+   * `drawing.endTime` / `drawing.time`) to its current array index.
+   * Drawing renderers should prefer this over the stored `*Index`
+   * field so that pagination prepends, kline reloads, or any other
+   * array-shifting events don't cause drawings to drift on the time
+   * axis. Returns -1 if the manager has no klines loaded yet.
+   */
+  timeToIndex: (timestamp: number) => number;
 }

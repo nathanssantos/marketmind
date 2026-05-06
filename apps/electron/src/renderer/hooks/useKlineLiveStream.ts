@@ -3,8 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
 import { INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS } from '../constants/defaults';
 import { useKlineStream } from './useBackendKlines';
-import type { VisibilityState } from './useVisibilityChange';
-import { useVisibilityChange } from './useVisibilityChange';
 
 interface KlineStreamUpdate {
   symbol: string;
@@ -52,7 +50,6 @@ interface UseKlineLiveStreamReturn {
 }
 
 const MIN_REFETCH_INTERVAL_MS = 30_000;
-const VISIBILITY_REFRESH_THRESHOLD_MS = 5_000;
 
 export const useKlineLiveStream = ({
   symbol,
@@ -180,21 +177,6 @@ export const useKlineLiveStream = ({
     enabled,
     marketType,
   );
-
-  const handleBecameVisible = useCallback((state: VisibilityState) => {
-    if (state.hiddenDuration < VISIBILITY_REFRESH_THRESHOLD_MS) return;
-
-    const now = Date.now();
-    if (now - lastRefetchRef.current < MIN_REFETCH_INTERVAL_MS) return;
-    lastRefetchRef.current = now;
-
-    void refetchKlines();
-  }, [refetchKlines]);
-
-  useVisibilityChange({
-    onBecameVisible: handleBecameVisible,
-    minHiddenDurationForRefresh: VISIBILITY_REFRESH_THRESHOLD_MS,
-  });
 
   useEffect(() => {
     if (!baseKlines || baseKlines.length === 0 || liveKlines.length === 0) return;

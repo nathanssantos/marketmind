@@ -7,7 +7,6 @@ import Fastify from 'fastify';
 import { STARTUP_CONFIG } from './constants';
 import { db } from './db/client';
 import { env } from './env';
-import { initializeKlineMaintenance } from './services/kline-maintenance';
 import { initializeWebSocket } from './services/websocket';
 import { createContext, setWebSocketService } from './trpc/context';
 import { appRouter } from './trpc/router';
@@ -143,15 +142,17 @@ const start = async (): Promise<void> => {
     binanceFuturesKlineStreamService.start();
 
     if (env.DEMO_MODE) {
-      const klineMaintenance = initializeKlineMaintenance();
-      await klineMaintenance.start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS });
+      // Kline maintenance scheduler disabled — was a workaround for chart
+      // candle corruption that turned out to be a frontend rendering issue
+      // (backgroundThrottling + stale canvas snapshot). With those fixed,
+      // the periodic gap/corruption sweep is no longer needed. Manual
+      // repair via Settings → Data still works through the tRPC route.
 
       fastify.log.info(`> Backend server running on http://localhost:${port} [DEMO MODE]`);
       fastify.log.info(`> tRPC endpoint: http://localhost:${port}/trpc`);
       fastify.log.info(`> WebSocket server initialized`);
       fastify.log.info(`> Binance price stream service started`);
       fastify.log.info(`> Binance kline stream service started (SPOT + FUTURES)`);
-      fastify.log.info(`> Kline maintenance service started`);
       fastify.log.info(`> Trading services SKIPPED (demo mode)`);
     } else {
       const [
@@ -190,8 +191,7 @@ const start = async (): Promise<void> => {
       const { fundingRateService } = await import('./services/funding-rate-service');
       fundingRateService.start();
 
-      const klineMaintenance = initializeKlineMaintenance();
-      await klineMaintenance.start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS });
+      // Kline maintenance scheduler disabled — see DEMO_MODE branch above.
 
       const { orderSyncService } = await import('./services/order-sync');
       await orderSyncService.start({ autoCancelOrphans: false, autoFixMismatches: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });
@@ -250,7 +250,6 @@ const start = async (): Promise<void> => {
       fastify.log.info(`> Binance price stream service started`);
       fastify.log.info(`> Binance kline stream service started (SPOT + FUTURES)`);
       fastify.log.info(`> Binance user stream service started (SPOT + FUTURES)`);
-      fastify.log.info(`> Kline maintenance service started (delayed ${STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS / 1000}s)`);
       fastify.log.info(`> Indicator scheduler started (snapshots every 30min)`);
     }
   } catch (err) {

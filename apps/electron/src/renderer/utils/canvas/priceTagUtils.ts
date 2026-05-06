@@ -1,5 +1,116 @@
 import { ORDER_LINE_LAYOUT } from '@shared/constants';
 
+type ArrowSide = 'left' | 'right' | 'none' | 'flat-left' | 'flat-right';
+
+/**
+ * Shared rounded-pill path used by every price-scale tag and on-canvas
+ * info tag. The arrow can point LEFT (price-scale tags pointing into the
+ * chart from the right edge) or RIGHT (on-canvas labels pointing to the
+ * right-side price line). When `arrowSide === 'none'` the path is a
+ * plain rounded rect used by the inline PnL/percent badges.
+ *
+ * `x`/`y`/`width`/`height` describe the body rectangle (excluding the
+ * arrow tip — the arrow extends `ARROW_WIDTH` beyond the body on the
+ * arrow side).
+ */
+const drawPillPath = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+  arrowSide: ArrowSide,
+): void => {
+  const arrowW = ORDER_LINE_LAYOUT.ARROW_WIDTH;
+  const r = Math.min(radius, height / 2);
+  const right = x + width;
+  const bottom = y + height;
+  const midY = y + height / 2;
+
+  ctx.beginPath();
+  if (arrowSide === 'left') {
+    ctx.moveTo(x - arrowW, midY);
+    ctx.lineTo(x, y);
+    ctx.lineTo(right - r, y);
+    ctx.arcTo(right, y, right, y + r, r);
+    ctx.lineTo(right, bottom - r);
+    ctx.arcTo(right, bottom, right - r, bottom, r);
+    ctx.lineTo(x, bottom);
+    ctx.closePath();
+    return;
+  }
+  if (arrowSide === 'right') {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(right, y);
+    ctx.lineTo(right + arrowW, midY);
+    ctx.lineTo(right, bottom);
+    ctx.lineTo(x + r, bottom);
+    ctx.arcTo(x, bottom, x, bottom - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+    return;
+  }
+  if (arrowSide === 'flat-left') {
+    ctx.moveTo(x, y);
+    ctx.lineTo(right - r, y);
+    ctx.arcTo(right, y, right, y + r, r);
+    ctx.lineTo(right, bottom - r);
+    ctx.arcTo(right, bottom, right - r, bottom, r);
+    ctx.lineTo(x, bottom);
+    ctx.closePath();
+    return;
+  }
+  if (arrowSide === 'flat-right') {
+    ctx.moveTo(right, y);
+    ctx.lineTo(x + r, y);
+    ctx.arcTo(x, y, x, y + r, r);
+    ctx.lineTo(x, bottom - r);
+    ctx.arcTo(x, bottom, x + r, bottom, r);
+    ctx.lineTo(right, bottom);
+    ctx.closePath();
+    return;
+  }
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(right - r, y);
+  ctx.arcTo(right, y, right, y + r, r);
+  ctx.lineTo(right, bottom - r);
+  ctx.arcTo(right, bottom, right - r, bottom, r);
+  ctx.lineTo(x + r, bottom);
+  ctx.arcTo(x, bottom, x, bottom - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+};
+
+/**
+ * Stroke path for `flat-left` shape — only top edge → top-right curve →
+ * right edge → bottom-right curve → bottom edge. Skips the left vertical
+ * line so the tag visually exits the canvas without a closing border.
+ */
+export const drawFlatLeftStrokePath = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void => {
+  const r = Math.min(radius, height / 2);
+  const right = x + width;
+  const bottom = y + height;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(right - r, y);
+  ctx.arcTo(right, y, right, y + r, r);
+  ctx.lineTo(right, bottom - r);
+  ctx.arcTo(right, bottom, right - r, bottom, r);
+  ctx.lineTo(x, bottom);
+};
+
+export { drawPillPath };
+
 /**
  * Parses a CSS color string into RGB components in 0..255. Supports
  * `#rrggbb` / `#rgb` / `rgb()` / `rgba()`. Falls back to mid-gray when
@@ -66,9 +177,7 @@ export const drawPriceTag = (
   textColor?: string
 ): { width: number; height: number } => {
   const resolvedTextColor = textColor ?? getReadableTextColor(fillColor);
-  const labelPadding = 8;
-  const labelHeight = 18;
-  const arrowWidth = 6;
+  const labelHeight = ORDER_LINE_LAYOUT.LABEL_HEIGHT;
 
   ctx.save();
   ctx.font = '11px monospace';
@@ -76,25 +185,27 @@ export const drawPriceTag = (
   ctx.textBaseline = 'middle';
   ctx.fillStyle = fillColor;
 
-  const endX = x + fixedWidth;
-  ctx.beginPath();
-  ctx.moveTo(x - arrowWidth, y);
-  ctx.lineTo(x, y - labelHeight / 2);
-  ctx.lineTo(endX, y - labelHeight / 2);
-  ctx.lineTo(endX, y + labelHeight / 2);
-  ctx.lineTo(x, y + labelHeight / 2);
-  ctx.closePath();
+  drawPillPath(
+    ctx,
+    x,
+    y - labelHeight / 2,
+    fixedWidth,
+    labelHeight,
+    ORDER_LINE_LAYOUT.LABEL_BORDER_RADIUS,
+    'flat-right',
+  );
   ctx.fill();
 
   ctx.fillStyle = resolvedTextColor;
-  ctx.fillText(priceText, x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
+  ctx.fillText(priceText, x + ORDER_LINE_LAYOUT.LABEL_PADDING, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
   ctx.restore();
 
-  return { width: fixedWidth + arrowWidth, height: labelHeight };
+  return { width: fixedWidth, height: labelHeight };
 };
 
-// Unified current-price tag: one arrow shape covering the price row and optionally
-// a timer row below. The arrow tip always aligns with the price line (y).
+// Unified current-price tag: rounded pill (no border) covering the price
+// row and optionally a timer row below. Both rows share the same 11px
+// font and the timer sits flush against the price (TIMER_GAP = 0).
 export const drawCurrentPriceTag = (
   ctx: CanvasRenderingContext2D,
   priceText: string,
@@ -102,20 +213,16 @@ export const drawCurrentPriceTag = (
   y: number,
   x: number,
   fillColor: string,
-  borderColor: string,
   fixedWidth: number = 64,
   textColor?: string
 ): void => {
   const resolvedTextColor = textColor ?? getReadableTextColor(fillColor);
-  const labelPadding = 8;
-  const arrowWidth = 6;
-  const priceHeight = 18;
-  const timerHeight = 13;
-  const timerGap = 1;
+  const priceHeight = ORDER_LINE_LAYOUT.LABEL_HEIGHT;
+  const timerHeight = ORDER_LINE_LAYOUT.TIMER_HEIGHT;
+  const timerGap = ORDER_LINE_LAYOUT.TIMER_GAP;
 
+  const totalHeight = timerText ? priceHeight + timerGap + timerHeight : priceHeight;
   const topY = y - priceHeight / 2;
-  const bottomY = timerText ? y + priceHeight / 2 + timerGap + timerHeight : y + priceHeight / 2;
-  const endX = x + fixedWidth;
 
   ctx.save();
   ctx.font = '11px monospace';
@@ -123,25 +230,26 @@ export const drawCurrentPriceTag = (
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = fillColor;
-  ctx.beginPath();
-  ctx.moveTo(x - arrowWidth, y);
-  ctx.lineTo(x, topY);
-  ctx.lineTo(endX, topY);
-  ctx.lineTo(endX, bottomY);
-  ctx.lineTo(x, bottomY);
-  ctx.closePath();
+  drawPillPath(
+    ctx,
+    x,
+    topY,
+    fixedWidth,
+    totalHeight,
+    ORDER_LINE_LAYOUT.LABEL_BORDER_RADIUS,
+    'flat-right',
+  );
   ctx.fill();
 
-  ctx.strokeStyle = borderColor;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
   ctx.fillStyle = resolvedTextColor;
-  ctx.fillText(priceText, x + labelPadding, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
+  ctx.fillText(priceText, x + ORDER_LINE_LAYOUT.LABEL_PADDING, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
 
   if (timerText) {
-    ctx.font = '9px monospace';
-    ctx.fillText(timerText, x + labelPadding, y + priceHeight / 2 + timerGap + timerHeight / 2 + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
+    ctx.fillText(
+      timerText,
+      x + ORDER_LINE_LAYOUT.LABEL_PADDING,
+      y + priceHeight / 2 + timerGap + timerHeight / 2 + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET,
+    );
   }
 
   ctx.restore();

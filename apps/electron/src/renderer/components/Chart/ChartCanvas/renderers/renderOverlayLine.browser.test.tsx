@@ -2,9 +2,9 @@ import type { Kline, Viewport } from '@marketmind/types';
 import type { IndicatorDefinition } from '@marketmind/trading-core';
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
-import { CHART_CONFIG } from '@shared/constants/chartConfig';
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 import { renderOverlayLine } from './renderOverlayLine';
+import { clearPriceTagBuffer, drainPriceTagBuffer } from '../../utils/priceTagBuffer';
 import type { GenericRendererInput } from './types';
 
 const baseKline = (
@@ -46,22 +46,6 @@ const makeInput = (
   values: { value: values },
 });
 
-const scanRowAlpha = (
-  ctx: CanvasRenderingContext2D,
-  y: number,
-  xStart: number,
-  xEnd: number,
-): number => {
-  const yInt = Math.max(0, Math.floor(y));
-  const w = Math.max(1, Math.floor(xEnd - xStart));
-  const img = ctx.getImageData(Math.floor(xStart), yInt, w, 3).data;
-  let count = 0;
-  for (let i = 3; i < img.length; i += 4) {
-    if (img[i]! > 0) count += 1;
-  }
-  return count;
-};
-
 describe('renderOverlayLine — right-axis price tag', () => {
   let canvas: HTMLCanvasElement;
   let manager: CanvasManager;
@@ -91,6 +75,7 @@ describe('renderOverlayLine — right-axis price tag', () => {
     manager = new CanvasManager(canvas, viewport, 40);
     ctx2d = canvas.getContext('2d')!;
     ctx2d.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    clearPriceTagBuffer(manager);
   });
 
   afterEach(() => {
@@ -98,7 +83,7 @@ describe('renderOverlayLine — right-axis price tag', () => {
     if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
   });
 
-  test('paints a price tag in the right-axis strip when series has values', () => {
+  test('queues a price tag for the last valid value', () => {
     const klines: Kline[] = Array.from({ length: 10 }, (_, i) => baseKline(i, 100 + i));
     manager.setKlines(klines);
 
@@ -108,16 +93,13 @@ describe('renderOverlayLine — right-axis price tag', () => {
       makeInput(values, 'rgb(0, 220, 0)'),
     );
 
-    // Tag rectangle is drawn from chartWidth to chartWidth + CANVAS_PADDING_RIGHT
-    // at y = priceToY(lastValue=109). The tag's body is colored fill, so any
-    // row inside the price-scale strip near that y should have non-zero alpha.
-    const lastY = manager.priceToY(109);
-    const dims = manager.getDimensions()!;
-    const tagAlpha = scanRowAlpha(ctx2d, lastY, dims.chartWidth, dims.chartWidth + CHART_CONFIG.CANVAS_PADDING_RIGHT);
-    expect(tagAlpha, 'tag should paint pixels in the price-scale strip').toBeGreaterThan(0);
+    const queued = drainPriceTagBuffer(manager);
+    expect(queued).toHaveLength(1);
+    expect(queued[0]!.priceText).toBe('109.00');
+    expect(queued[0]!.y).toBe(manager.priceToY(109));
   });
 
-  test('paints no tag when series is all-null', () => {
+  test('queues no tag when series is all-null', () => {
     const klines: Kline[] = Array.from({ length: 10 }, (_, i) => baseKline(i, 105));
     manager.setKlines(klines);
 
@@ -126,16 +108,10 @@ describe('renderOverlayLine — right-axis price tag', () => {
       makeInput([null, null, null, null, null, null, null, null, null, null], 'rgb(0, 0, 200)'),
     );
 
-    // No values → no line, no tag. The price-scale strip should be untouched.
-    const dims = manager.getDimensions()!;
-    let totalAlpha = 0;
-    for (let y = 0; y < CANVAS_H; y += 20) {
-      totalAlpha += scanRowAlpha(ctx2d, y, dims.chartWidth, dims.chartWidth + CHART_CONFIG.CANVAS_PADDING_RIGHT);
-    }
-    expect(totalAlpha, 'no tag when series is empty').toBe(0);
+    expect(drainPriceTagBuffer(manager)).toHaveLength(0);
   });
 
-  test('tag color matches the indicator color', () => {
+  test('queued tag uses the indicator color', () => {
     const klines: Kline[] = Array.from({ length: 10 }, (_, i) => baseKline(i, 100 + i));
     manager.setKlines(klines);
 
@@ -145,13 +121,11 @@ describe('renderOverlayLine — right-axis price tag', () => {
       makeInput(klines.map((_, i) => 100 + i), RED),
     );
 
-    const lastY = manager.priceToY(109);
-    const dims = manager.getDimensions()!;
-    // Sample the middle of the price-scale strip at the tag's y
-    const sampleX = dims.chartWidth + 20;
-    const yInt = Math.max(0, Math.floor(lastY));
-    const pixel = ctx2d.getImageData(sampleX, yInt, 1, 1).data;
-    expect(pixel[0]!, 'tag fills with red channel dominant').toBeGreaterThan(pixel[1]!);
-    expect(pixel[0]!).toBeGreaterThan(pixel[2]!);
+    const queued = drainPriceTagBuffer(manager);
+    expect(queued).toHaveLength(1);
+    expect(queued[0]!.fillColor).toBe(RED);
+    // ctx2d is referenced to keep the canvas alive; pixel sampling is no
+    // longer needed because the tag is queued, not drawn directly here.
+    expect(ctx2d).toBeDefined();
   });
 });

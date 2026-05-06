@@ -1,10 +1,9 @@
 import { Box } from '@chakra-ui/react';
 import type { Kline, Order } from '@marketmind/types';
 import { useChartColors } from '@renderer/hooks/useChartColors';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { AdvancedControlsConfig } from '../AdvancedControls';
 import { ChartControls } from '../ChartControls';
-import { ChartTooltip } from '../ChartTooltip';
 import { useChartData } from '../hooks/useChartData';
 import { useChartInteraction } from '../hooks/useChartInteraction';
 import { useChartLayers } from '../hooks/useChartLayers';
@@ -49,7 +48,6 @@ export const FullChart = ({
     const colors = useChartColors();
     const containerRef = useRef<HTMLDivElement>(null);
     const { setManager } = useLayerManager();
-    const [hoveredKline, setHoveredKline] = useState<Kline | null>(null);
 
     const [showVolumeState, setShowVolumeState] = useState(showVolume);
     const [showGridState, setShowGridState] = useState(showGrid);
@@ -119,22 +117,6 @@ export const FullChart = ({
         mousePosition,
     });
 
-    useEffect(() => {
-        if (!mousePosition || !visibleData.length) {
-            setHoveredKline(null);
-            return;
-        }
-
-        const klineIndex = Math.floor(mousePosition.klineIndex);
-        const kline = visibleData[klineIndex];
-
-        if (kline) {
-            setHoveredKline(kline);
-        } else {
-            setHoveredKline(null);
-        }
-    }, [mousePosition, visibleData]);
-
     return (
         <Box position="relative" width={width} height={height} ref={containerRef}>
             <LayeredCanvas
@@ -144,16 +126,6 @@ export const FullChart = ({
                 layers={layers}
                 onLayerManagerReady={setManager}
             />
-
-            {/* Tooltip overlay */}
-            {hoveredKline && mousePosition && (
-                <ChartTooltip
-                    kline={hoveredKline}
-                    x={mousePosition.x}
-                    y={mousePosition.y}
-                    visible={true}
-                />
-            )}
 
             {/* Chart controls */}
             <ChartControls

@@ -1,5 +1,5 @@
 import {
-  Badge, Button, Callout, ConfirmationDialog, EmptyState, FormSection, Input, Slider,
+  Badge, Button, Callout, ConfirmationDialog, EmptyState, FormRow, FormSection, Input, Slider, Switch,
 } from '@renderer/components/ui';
 import { MM } from '@marketmind/tokens';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
@@ -185,6 +185,11 @@ export const DataTab = () => {
 
   const { data: cooldowns } = trpc.kline.getCooldowns.useQuery();
   const { data: statusEntries, refetch: refetchStatus } = trpc.kline.getMaintenanceStatus.useQuery();
+  const { data: periodicData, refetch: refetchPeriodic } = trpc.kline.isPeriodicEnabled.useQuery();
+  const periodicEnabled = periodicData?.enabled ?? false;
+  const setPeriodicMutation = trpc.kline.setPeriodicEnabled.useMutation({
+    onSuccess: () => { void refetchPeriodic(); },
+  });
 
   const [gapCheckHours, setGapCheckHours] = useState(DEFAULT_COOLDOWN_HOURS);
   const [corruptionCheckHours, setCorruptionCheckHours] = useState(DEFAULT_COOLDOWN_HOURS);
@@ -252,6 +257,18 @@ export const DataTab = () => {
         title={t('settings.data.maintenance.title')}
         description={t('settings.data.maintenance.description')}
       >
+        <FormRow
+          label={t('settings.data.maintenance.periodicEnabled')}
+          helper={t('settings.data.maintenance.periodicEnabledHelper')}
+        >
+          <Switch
+            checked={periodicEnabled}
+            onCheckedChange={(enabled) => setPeriodicMutation.mutate({ enabled })}
+            size="sm"
+            aria-label={t('settings.data.maintenance.periodicEnabled')}
+            data-testid="data-maintenance-periodic"
+          />
+        </FormRow>
         <Box>
           <Button
             variant="outline"

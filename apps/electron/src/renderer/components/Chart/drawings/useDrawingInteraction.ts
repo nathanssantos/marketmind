@@ -77,6 +77,7 @@ const applyDragUpdate = (
   newPrice: number,
   newTime: number | undefined,
   timeAt: (idx: number) => number | undefined,
+  timeAtFloor: (idx: number) => number | undefined,
 ): void => {
   if (handleType === 'body' || handleType === null) {
     if (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork') {
@@ -139,10 +140,16 @@ const applyDragUpdate = (
     }
 
     if (originalDrawing.type === 'pencil' || originalDrawing.type === 'highlighter') {
+      // Freehand uses `timeAtFloor` instead of the rounded `timeAt`:
+      // `resolveDrawingIndices` rebuilds freehand point indices as
+      // `floor(stored.index) + frac` and looks up time off `floor`. If we
+      // saved time at the rounded kline, the resolved index would jump by 1
+      // whenever frac >= 0.5 — the same stair-step bug we fixed at
+      // creation time.
       store.updateDrawing(originalDrawing.id, {
         points: originalDrawing.points.map(p => {
           const ni = p.index + deltaIndex;
-          return { index: ni, price: p.price + deltaPrice, time: timeAt(ni) };
+          return { index: ni, price: p.price + deltaPrice, time: timeAtFloor(ni) };
         }),
       });
     }
@@ -226,6 +233,32 @@ export const useDrawingInteraction = ({
     return { index: idx, price: result.snappedPrice, time };
   }, [manager, snap, klines]);
 
+  /**
+   * Freehand variant for pencil / highlighter — keeps the index as a
+   * float so the rendered line follows the cursor smoothly instead of
+   * stair-stepping on integer kline boundaries (the OHLC magnet's
+   * `Math.round(rawIndex)` is bypassed entirely). Time is interpolated
+   * to the nearest kline so pagination prepends still re-anchor the
+   * stroke correctly.
+   */
+  const getFreehandIndexAndPrice = useCallback((x: number, y: number): { index: number; price: number; time?: number } => {
+    if (!manager) return { index: 0, price: 0 };
+    const dimensions = manager.getDimensions();
+    const viewport = manager.getViewport();
+    if (!dimensions || !viewport) return { index: 0, price: 0 };
+    const rawIndex = viewport.start + (x / dimensions.chartWidth) * (viewport.end - viewport.start);
+    const price = manager.yToPrice(y);
+    // CRITICAL: time must reference floor(rawIndex), not round(rawIndex).
+    // `resolveDrawingIndices` (chart-studies) reconstructs the saved index
+    // as `floor(intPart) + frac` and looks up time against `floor` — if we
+    // stored time off the rounded kline, the resolved index would jump by
+    // one whenever the fractional part crossed 0.5, producing the
+    // grid-aligned scalloped pattern in freehand strokes after mouseup.
+    const flooredIdx = Math.floor(rawIndex);
+    const time = flooredIdx >= 0 && flooredIdx < klines.length ? klines[flooredIdx]?.openTime : undefined;
+    return { index: rawIndex, price, time };
+  }, [manager, klines]);
+
   const handleMouseDown = useCallback((x: number, y: number): boolean => {
     if (!manager) return false;
 
@@ -278,10 +311,11 @@ export const useDrawingInteraction = ({
     const { index, price, time } = getIndexAndPrice(x, y);
 
     if (activeTool === 'pencil' || activeTool === 'highlighter') {
+      const fh = getFreehandIndexAndPrice(x, y);
       const drawing: Drawing = {
         id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),
-        points: [{ index, price, time }],
+        points: [{ index: fh.index, price: fh.price, time: fh.time }],
       };
       pendingDrawingRef.current = drawing;
       phaseRef.current = 'drawing-freeform';
@@ -296,6 +330,8 @@ export const useDrawingInteraction = ({
         text: '', fontSize: DEFAULT_FONT_SIZE, fontWeight: 'normal', textDecoration: 'none', color: INDICATOR_COLORS.LABEL_TEXT,
       };
       store.addDrawing(drawing);
+      // Text needs to enter edit mode immediately after placing — keep
+      // the auto-select / tool-clear behavior here only.
       store.selectDrawing(drawing.id);
       manager?.markDirty('overlays');
       return true;
@@ -308,7 +344,6 @@ export const useDrawingInteraction = ({
         index, price, time,
       };
       store.addDrawing(drawing);
-      store.selectDrawing(drawing.id);
       manager?.markDirty('overlays');
       return true;
     }
@@ -438,7 +473,7 @@ export const useDrawingInteraction = ({
         const dy = y - ly;
         if (dx * dx + dy * dy < 9) return true;
       }
-      const { index, price, time } = getIndexAndPrice(x, y);
+      const { index, price, time } = getFreehandIndexAndPrice(x, y);
       pendingDrawingRef.current = {
         ...pending,
         points: [...pending.points, { index, price, time }],
@@ -461,8 +496,13 @@ export const useDrawingInteraction = ({
         if (rounded < 0 || rounded >= klines.length) return undefined;
         return klines[rounded]?.openTime;
       };
+      const timeAtFloor = (idx: number) => {
+        const floored = Math.floor(idx);
+        if (floored < 0 || floored >= klines.length) return undefined;
+        return klines[floored]?.openTime;
+      };
 
-      applyDragUpdate(store, originalDrawing, handleType, deltaIndex, deltaPrice, newIndex, newPrice, newTime, timeAt);
+      applyDragUpdate(store, originalDrawing, handleType, deltaIndex, deltaPrice, newIndex, newPrice, newTime, timeAt, timeAtFloor);
 
       manager.markDirty('overlays');
       return true;
@@ -517,7 +557,6 @@ export const useDrawingInteraction = ({
       const finalDrawing = { ...drawing, stopLossPrice: price, takeProfitPrice: tp } as Drawing;
 
       store.addDrawing(finalDrawing);
-      store.selectDrawing(finalDrawing.id);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');
@@ -564,7 +603,6 @@ export const useDrawingInteraction = ({
       }
 
       store.addDrawing(drawing);
-      store.selectDrawing(drawing.id);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');
@@ -575,7 +613,6 @@ export const useDrawingInteraction = ({
       const drawing = pendingDrawingRef.current;
       const store = useDrawingStore.getState();
       store.addDrawing(drawing);
-      store.selectDrawing(drawing.id);
       pendingDrawingRef.current = null;
       phaseRef.current = 'idle';
       manager?.markDirty('overlays');

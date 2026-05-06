@@ -33,7 +33,9 @@
     "drawing": {
       "delete": "Supprimer le dessin sélectionné",
       "copy": "Copier le dessin sélectionné",
-      "paste": "Coller le dessin"
+      "paste": "Coller le dessin",
+      "undo": "Annuler la dernière modification",
+      "redo": "Rétablir la dernière modification annulée"
     },
     "trading": {
       "cancelSlTpPlacement": "Annuler le placement de SL/TP",
@@ -434,6 +436,8 @@
       "maintenance": {
         "title": "Maintenance des Klines",
         "description": "Détecter et réparer les bougies manquantes ou corrompues sur toutes les paires actives",
+        "periodicEnabled": "Maintenance périodique",
+        "periodicEnabledHelper": "Lance les vérifications de gaps et de corruption automatiquement toutes les 2 heures. Désactivée par défaut — utilisez le bouton manuel ci-dessous si nécessaire.",
         "repairAll": "Réparer Tous les Gaps",
         "repairing": "Réparation...",
         "pairsChecked": "{{count}} paires vérifiées",
@@ -937,13 +941,14 @@
       "grid": "Grille",
       "currentPrice": "Prix Actuel",
       "crosshair": "Réticule",
+      "stackPriceTags": "Empiler les étiquettes de prix superposées",
+      "stackPriceTagsHelper": "Quand deux étiquettes de l'échelle de prix se chevauchent, elles sont décalées verticalement pour rester lisibles.",
       "flipVertical": "Inverser Verticalement",
       "flipVerticalHelper": "Inverse l'axe des prix pour que les positions courtes montent visuellement.",
       "profitLossAreas": "Zones de Profit/Perte",
       "fibonacciProjection": "Projection de Fibonacci",
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
-      "tooltip": "Info-bulle",
       "activityIndicator": "Indicateur d'Activité",
       "marketEvents": "Événements du Marché",
       "openingRange": "Opening Range",

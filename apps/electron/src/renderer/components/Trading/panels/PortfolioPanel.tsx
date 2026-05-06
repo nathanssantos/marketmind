@@ -8,7 +8,7 @@ import { Portfolio } from '../Portfolio';
  * Ticket lives in its own `ticket` panel).
  */
 export const PortfolioPanel = () => (
-  <Box h="100%" overflowY="auto" p={1.5}>
+  <Box h="100%" overflowY="auto" p={1.5} display="flex" flexDirection="column">
     <Portfolio />
   </Box>
 );

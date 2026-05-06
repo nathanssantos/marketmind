@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-05-06
+
+### Added — chart price tag rebrand + collision system (#456)
+- Tag-based chart annotation system with collision avoidance — order line tags, current price tag, MA labels, drawing labels, watermarks, fib level labels — all share a single canvas-painted "tag" primitive with proper z-ordering, collision rejection, and tone-aware fills (`tag.surface`, `tag.profit`, `tag.loss`, `tag.warn`, `tag.info`). Replaces the previous mishmash of inline-styled rounded boxes scattered across renderers.
+- `RecordRow` surface default — list rows in panels (Portfolio/Orders/Positions) standardize on a single tonal background that respects active/hover state without needing per-callsite `bg=` props.
+
+### Fixed — chart resilience: drawings drift + canvas survives background (#457)
+Two chronic bugs the user wanted **finally** fixed:
+
+- **Malformed candles after the chart loses focus.** Chrome throttles rAF to ~1 Hz on hidden BrowserWindows, so candle geometry painted while the canvas was hidden could land mid-frame, with stale `offscreenValid` snapshots the OS may have reclaimed (macOS GPU surface loss). Set `backgroundThrottling: false` on both BrowserWindows. The dirty-flag system in `CanvasManager.scheduleRender()` already throttles to 16ms when nothing is dirty, so idle CPU stays near zero. Plus three guards in `CanvasManager`: zero-size guard in the rAF callback, dimension-mismatch check in `restoreBaseLayer()`, and `markDirty('all')` on first-openTime change in `setKlines()` (forces a full re-snapshot on prepend / symbol-or-tf swap).
+- **Drawings drift on the time axis.** Pencil/highlighter freehand strokes scalloped against the kline grid because the rendered indices fell out of sync with the stored ones across pagination prepends, timeframe switches, and background returns. `resolveDrawingIndices` now reconstructs freehand point indices as `floor(stored.index) + frac` and looks up time off `floor` consistently — both at creation time and during drag (separate `timeAtFloor` callback in `applyDragUpdate`'s pencil/highlighter branch).
+- **Removed the prior failed "fix on visibility return" attempts.** Deleted `useVisibilityChange.ts` (only consumer was `useKlineLiveStream`) and the visibility-driven `refetchKlines` block. The renderer now keeps its frame loop alive in background and stale state is structurally impossible.
+
+### Removed — periodic kline maintenance from boot (#457)
+Was a workaround for backend candle corruption. Backend stores were the actual culprit, fixed upstream. The maintenance service is now opt-in via Settings → Data (dev-only tab — flagged `devOnly: true`, hidden in production). Manual repair button retained.
+
+### Added — drawings undo/redo (#457)
+Cmd/Ctrl+Z (undo), Cmd/Ctrl+Shift+Z + Cmd/Ctrl+Y (redo). Per-(symbol, interval) operation history with 100-op cap, module-level stacks, `isApplyingHistory` flag prevents recording during replay. Tools also stay active after each commit (was: deselected immediately) so the user can keep drawing the same shape without re-clicking the toolbar.
+
+### Removed — chart tooltip overlay (#459)
+The candle tooltip overlay was redundant with the panel header (which now carries timestamp + OHLC + change% + Vol + QVol + Trades + buy/sell ratio) and was the source of a cross-chart hover propagation bug. Three problems fixed in one removal:
+
+1. **Cross-chart hover propagation.** `tooltipStore` was a module-level singleton; every `ChartCanvas` subscribed to its global snapshot and bridged it into its own `chartHoverStore[chartKey]` slot. So hovering panel A wrote panel A's kline into panel B's and panel C's slots too — all three headers showed identical OHLC. Now each `ChartCanvas` owns its hover state via a per-chart `setHoveredKline` callback that writes only to its own chartKey. No global bridge.
+2. **Header empty when not hovering.** `chartHoverStore` gained `currentKlineByChart`; `ChartCanvas` writes `klines[length-1]` on every kline change AND on every `klineSource` live tick. `ChartGridPanel` reads `hoveredKline ?? currentKline`, so the header tracks the live last candle in real time when no hover is active.
+3. **Surface area cleanup.** Deleted `ChartTooltip/*` (Kline, Order, Measurement, MovingAverage, Setup, MarketEvent, TooltipContainer, useTooltipPosition), `ChartTooltipOverlay`, `tooltipStore`, plus the toolbar tooltip toggle and i18n keys. `tooltipHitTest` renamed to `klineHoverHitTest` and stripped of all non-kline branches — single callback `setHoveredKline(kline | null, klineIndex?)`.
+
+### Notes
+- 2451 renderer unit tests + 108 browser tests + 207 type-check + lint clean across all 3 PRs.
+- Visual regression baselines will need a refresh — chart-tag-rebrand and tooltip removal both shifted painted output.
+
 ## [1.11.9] - 2026-05-05
 
 ### Fixed — checklist L/S score chart staleness

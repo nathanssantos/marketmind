@@ -1,5 +1,5 @@
 import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
-import { DialogShell, Tabs } from '@renderer/components/ui';
+import { Badge, DialogShell, Tabs } from '@renderer/components/ui';
 import { useDialogMount } from '@renderer/hooks/useDialogMount';
 import { MM } from '@marketmind/tokens';
 import type { DialogControlProps } from '@marketmind/types';
@@ -52,9 +52,10 @@ export const SettingsDialog = ({
   }, [isOpen, initialTab]);
 
   const groupedTabs = useMemo(() => {
+    const isDev = import.meta.env.DEV;
     return SETTINGS_GROUPS.map((group) => ({
       group,
-      tabs: SETTINGS_TAB_DEFS.filter((d) => d.group === group),
+      tabs: SETTINGS_TAB_DEFS.filter((d) => d.group === group && (!d.devOnly || isDev)),
     }));
   }, []);
 
@@ -105,7 +106,7 @@ export const SettingsDialog = ({
                           {t(SETTINGS_GROUP_LABEL_KEYS[group])}
                         </Text>
                         <Tabs.List border="none" gap={0.5} display="flex" flexDirection="column">
-                          {tabs.map(({ id, icon: Icon, labelKey }) => (
+                          {tabs.map(({ id, icon: Icon, labelKey, devOnly }) => (
                             <Tabs.Trigger
                               key={id}
                               value={id}
@@ -126,6 +127,11 @@ export const SettingsDialog = ({
                             >
                               <Icon />
                               <Text>{t(labelKey)}</Text>
+                              {devOnly && (
+                                <Badge size="xs" px={1.5} colorPalette="orange" ml="auto">
+                                  DEV
+                                </Badge>
+                              )}
                             </Tabs.Trigger>
                           ))}
                         </Tabs.List>

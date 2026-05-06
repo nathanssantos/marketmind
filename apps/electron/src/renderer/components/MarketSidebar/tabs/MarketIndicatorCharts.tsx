@@ -67,7 +67,7 @@ interface FearGreedSectionProps {
 export const FearGreedSection = ({ fearGreed, isLoading, hasWidth }: FearGreedSectionProps) => {
   const { t } = useTranslation();
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>{t('marketSidebar.indicators.fearGreed')}</SectionTitle>
       {fearGreed?.current && (
         <Flex gap={2} mb={2}>
@@ -129,7 +129,7 @@ interface BtcDominanceSectionProps {
 export const BtcDominanceSection = ({ btcDominance, isLoading, hasWidth }: BtcDominanceSectionProps) => {
   const { t } = useTranslation();
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>{t('marketSidebar.indicators.btcDominance')}</SectionTitle>
       {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined, narrowing fails inside JSX block */}
       {btcDominance && btcDominance.current !== null && (
@@ -170,7 +170,7 @@ interface MvrvSectionProps {
 export const MvrvSection = ({ mvrv, isLoading, hasWidth }: MvrvSectionProps) => {
   const { t } = useTranslation();
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>{t('marketSidebar.indicators.mvrv')}</SectionTitle>
       {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
       {mvrv && mvrv.current !== null && (
@@ -211,7 +211,7 @@ interface ProductionCostSectionProps {
 export const ProductionCostSection = ({ btcProductionCost, isLoading, hasWidth }: ProductionCostSectionProps) => {
   const { t } = useTranslation();
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>{t('marketSidebar.indicators.btcProductionCost')}</SectionTitle>
       {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
       {btcProductionCost && btcProductionCost.currentCost !== null && btcProductionCost.currentPrice !== null && (
@@ -257,7 +257,7 @@ interface OpenInterestSectionProps {
 }
 
 export const OpenInterestSection = ({ openInterest, isLoading, hasWidth }: OpenInterestSectionProps) => (
-  <RecordRow density="card" tone="muted">
+  <RecordRow density="card">
     <SectionTitle>Open Interest (BTC)</SectionTitle>
     {/* eslint-disable-next-line @typescript-eslint/prefer-optional-chain -- explicit guard required: x?.foo !== null is true when x is undefined */}
     {openInterest && openInterest.current !== null && (
@@ -296,7 +296,7 @@ interface LongShortSectionProps {
 export const LongShortSection = ({ longShortRatio, isLoading, hasWidth }: LongShortSectionProps) => {
   const { t } = useTranslation();
   return (
-    <RecordRow density="card" tone="muted">
+    <RecordRow density="card">
       <SectionTitle>{t('marketSidebar.indicators.longShortRatio')} (BTC)</SectionTitle>
       {longShortRatio?.global && (
         <Flex align="center" gap={2} mb={2}>

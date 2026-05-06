@@ -33,7 +33,9 @@
     "drawing": {
       "delete": "Excluir desenho selecionado",
       "copy": "Copiar desenho selecionado",
-      "paste": "Colar desenho"
+      "paste": "Colar desenho",
+      "undo": "Desfazer última alteração",
+      "redo": "Refazer última alteração desfeita"
     },
     "trading": {
       "cancelSlTpPlacement": "Cancelar colocação de SL/TP",
@@ -434,6 +436,8 @@
       "maintenance": {
         "title": "Manutenção de Klines",
         "description": "Detectar e reparar candles ausentes ou corrompidos em todos os pares ativos",
+        "periodicEnabled": "Manutenção periódica",
+        "periodicEnabledHelper": "Roda verificações de gaps e corrupção automaticamente a cada 2 horas. Desligada por padrão — use o botão abaixo manualmente se precisar.",
         "repairAll": "Reparar Todos os Gaps",
         "repairing": "Reparando...",
         "pairsChecked": "{{count}} pares verificados",
@@ -918,13 +922,14 @@
       "grid": "Grade",
       "currentPrice": "Preço Atual",
       "crosshair": "Mira",
+      "stackPriceTags": "Empilhar tags de preço sobrepostas",
+      "stackPriceTagsHelper": "Quando duas tags da escala de preço se sobrepõem, empurra elas verticalmente para ambas permanecerem legíveis.",
       "flipVertical": "Inverter Verticalmente",
       "flipVerticalHelper": "Inverte o eixo de preço para que operações vendidas subam visualmente.",
       "profitLossAreas": "Áreas de Lucro/Prejuízo",
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",
       "measurementArea": "Área de Medição",
-      "tooltip": "Dica",
       "activityIndicator": "Indicador de Atividade",
       "marketEvents": "Eventos de Mercado",
       "openingRange": "Opening Range",
