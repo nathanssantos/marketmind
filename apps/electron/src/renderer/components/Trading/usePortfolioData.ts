@@ -41,12 +41,23 @@ export const usePortfolioData = () => {
   const { orphanOrders } = useOrphanOrders(activeWalletId ?? '', tradeExecutions);
   const { success: toastSuccess, error: toastError } = useToast();
 
+  // Binance Futures uses UTC for its "Today's Realized PnL" daily
+  // bucket reset (00:00 UTC), so we anchor to UTC here too. Using
+  // `now.getFullYear()` / `getMonth()` would resolve in local time and
+  // drift across the day boundary for non-UTC users (e.g. a BRT user
+  // at 22:00 BRT = 01:00 UTC next day would query the previous month
+  // for a few hours every month-end). Building year/month from the UTC
+  // ISO string keeps the request aligned with the backend's UTC
+  // bucketing and with what Binance shows.
   const now = new Date();
+  const utcIso = now.toISOString();
+  const utcYear = parseInt(utcIso.slice(0, 4), 10);
+  const utcMonth = parseInt(utcIso.slice(5, 7), 10);
+  const todayKey = utcIso.slice(0, 10);
   const { data: dailyPerformance } = trpc.analytics.getDailyPerformance.useQuery(
-    { walletId: activeWalletId ?? '', year: now.getFullYear(), month: now.getMonth() + 1 },
+    { walletId: activeWalletId ?? '', year: utcYear, month: utcMonth, tz: 'UTC' },
     { enabled: !!activeWalletId, staleTime: QUERY_CONFIG.STALE_TIME.FAST, refetchInterval: pollingInterval }
   );
-  const todayKey = now.toISOString().slice(0, 10);
   const todayPnl = dailyPerformance?.find((d) => d.date === todayKey);
 
   const {

@@ -131,8 +131,12 @@ export const statsProcedures = {
         parseFloat(wallet.totalDeposits ?? '0') -
         parseFloat(wallet.totalWithdrawals ?? '0');
 
-      const monthStart = new Date(input.year, input.month - 1, 1);
-      const monthEnd = new Date(input.year, input.month, 1);
+      // Use Date.UTC instead of `new Date(y, m, 1)` so the month
+      // boundaries are explicit UTC midnights regardless of the server's
+      // local TZ. Frontend always passes the UTC year/month + tz='UTC'
+      // to align with Binance's daily reset (00:00 UTC).
+      const monthStart = new Date(Date.UTC(input.year, input.month - 1, 1));
+      const monthEnd = new Date(Date.UTC(input.year, input.month, 1));
 
       const priorDailySum = await getDailyIncomeSum({
         walletId: input.walletId,
@@ -202,26 +206,27 @@ export const statsProcedures = {
 
         // Daily PnL source resolution:
         //   - `incomeSum` comes from `incomeEvents` (REALIZED_PNL +
-        //     COMMISSION + FUNDING_FEE on the Binance side) and is the
-        //     authoritative end-of-day source — but it's lagged behind
-        //     the periodic income-sync cadence (~1 min).
+        //     COMMISSION + FUNDING_FEE on the Binance side) and is THE
+        //     authoritative source — it's exactly what Binance shows in
+        //     its own "Today's PnL" widget. The lag is the periodic
+        //     income-sync cadence (~1 min).
         //   - `tradeRealizedNet` is the sum of `tradeExecutions.pnl` for
         //     trades closed this day. It updates synchronously the moment
-        //     a trade is closed, so it's the only source that reflects
-        //     "I just closed an operation right now".
-        //   - Rule: when the day has any closed trades, ALWAYS prefer
-        //     trade-level data — that gives an instant update on close
-        //     and stays consistent with the wins/losses count above
-        //     (which is also computed from `tradeStatsByDay`). On days
-        //     without closed trades, fall through to `incomeSum` so
-        //     funding-only days (holding through funding intervals on a
-        //     flat day) still show.
-        //   - The previous version of this fix only fell back when
-        //     `incomeSum === 0`, which broke the moment a day already
-        //     had at least one synced trade: a second trade closing on
-        //     the same day would not appear until the next income sync.
+        //     a trade is closed, but its fees were sometimes inflated by
+        //     the time-window aggregation bug (fixed elsewhere) so the
+        //     numbers don't always match Binance exactly.
+        //   - Rule: prefer `incomeSum` whenever it's non-zero — that's
+        //     Binance ground truth and matches what the user sees in the
+        //     Binance app. Fall through to `tradeRealizedNet` only when
+        //     incomeSum is zero AND there are closed trades on the day:
+        //     this is the sync-lag window (a trade just closed but
+        //     COMMISSION/REALIZED_PNL events haven't been pulled yet).
+        //     Without the trade-level fallback, fresh closes wouldn't
+        //     appear in the widget for ~1 min after they happen.
         const tradeRealizedNet = stats.grossProfit - stats.grossLoss;
-        const dailyPnl = stats.closedPositions > 0 ? tradeRealizedNet : incomeSum;
+        const dailyPnl = incomeSum !== 0
+          ? incomeSum
+          : (stats.closedPositions > 0 ? tradeRealizedNet : 0);
 
         results.push({
           date,
