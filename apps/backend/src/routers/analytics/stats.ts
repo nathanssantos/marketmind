@@ -8,6 +8,19 @@ import {
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
 import type { IncomeType } from '../../constants/income-types';
+import { startOfDayAgoInTz } from '../../utils/tz-bucket';
+
+// Mirrors trades.ts — keep the period semantics in sync across procedures.
+const setupPeriodStart = (period: 'day' | 'week' | 'month', tz: string, now = new Date()): Date => {
+  switch (period) {
+    case 'day':
+      return startOfDayAgoInTz(0, tz, now);
+    case 'week':
+      return startOfDayAgoInTz(6, tz, now);
+    case 'month':
+      return startOfDayAgoInTz(29, tz, now);
+  }
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -28,6 +41,7 @@ export const statsProcedures = {
       z.object({
         walletId: z.string(),
         period: z.enum(['day', 'week', 'month', 'all']).default('all'),
+        tz: z.string().default('UTC'),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -38,22 +52,7 @@ export const statsProcedures = {
       ];
 
       if (input.period !== 'all') {
-        const now = new Date();
-        const startDate = new Date();
-
-        switch (input.period) {
-          case 'day':
-            startDate.setDate(now.getDate() - 1);
-            break;
-          case 'week':
-            startDate.setDate(now.getDate() - 7);
-            break;
-          case 'month':
-            startDate.setMonth(now.getMonth() - 1);
-            break;
-        }
-
-        whereConditions.push(gte(tradeExecutions.closedAt, startDate));
+        whereConditions.push(gte(tradeExecutions.closedAt, setupPeriodStart(input.period, input.tz)));
       }
 
       const trades = await ctx.db
