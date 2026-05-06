@@ -6,6 +6,7 @@
  * auto-trading config) — Phase 6 needs the screens to look like a real user
  * day, not a fresh install.
  */
+import LAYOUT_FIXTURE from './layoutFixture.json' with { type: 'json' };
 
 const NOW = '2026-04-27T19:00:00.000Z';
 
@@ -687,7 +688,13 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   { path: 'preferences.getByCategory', value: [] },
   { path: 'preferences.getAll', value: [] },
   { path: 'drawing.list', value: [] },
-  { path: 'layout.get', value: null },
+  // The user's full saved layouts (9 presets: 6 trading multi-tf
+   // variants + Auto-Trading + Auto-Scalping + Market Indicators).
+   // Cloned from local DB; lets the marketing-screenshots script switch
+   // between presets via `setActiveLayout(tabId, presetId)`. The
+   // `layout.get` router parses `data` server-side and returns the
+   // already-unwrapped state — fixture mirrors that.
+  { path: 'layout.get', value: LAYOUT_FIXTURE },
   { path: 'screener.getPresets', value: [] },
   { path: 'screener.getSavedScreeners', value: [] },
   { path: 'fees.getUserFees', value: null },
