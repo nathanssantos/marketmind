@@ -33,7 +33,9 @@
     "drawing": {
       "delete": "Delete selected drawing",
       "copy": "Copy selected drawing",
-      "paste": "Paste drawing"
+      "paste": "Paste drawing",
+      "undo": "Undo last drawing change",
+      "redo": "Redo last undone drawing change"
     },
     "trading": {
       "cancelSlTpPlacement": "Cancel SL/TP placement",
@@ -410,6 +412,8 @@
       "maintenance": {
         "title": "Kline Maintenance",
         "description": "Detect and repair missing or corrupted candles across all active pairs",
+        "periodicEnabled": "Periodic Maintenance",
+        "periodicEnabledHelper": "Run gap and corruption checks automatically every 2 hours. Off by default — use the manual button below if needed.",
         "repairAll": "Repair All Gaps",
         "repairing": "Repairing...",
         "pairsChecked": "{{count}} pairs checked",

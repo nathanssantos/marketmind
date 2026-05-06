@@ -99,6 +99,10 @@ class KlineMaintenance {
     }
   }
 
+  isPeriodicScheduled(): boolean {
+    return this.checkInterval !== null;
+  }
+
   private async checkAllStoredPairs(logBuffer?: MaintenanceLogBuffer): Promise<{ pairsChecked: number }> {
     try {
       const activePairs = await getActivePairsWithSubscriptions();

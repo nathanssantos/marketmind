@@ -33,6 +33,7 @@ import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
+import { useDrawingHistoryShortcuts } from './drawings/useDrawingHistoryShortcuts';
 import {
   useChartState,
   useCursorManager,
@@ -119,6 +120,8 @@ const ChartCanvasInternal = ({
 
   const drawingKey = compositeKey(symbol ?? '', timeframe);
   const hasDrawings = useDrawingStore((s) => (s.drawingsByKey[drawingKey]?.length ?? 0) > 0);
+
+  useDrawingHistoryShortcuts({ symbol: symbol ?? '', interval: timeframe, enabled: !!symbol });
 
   const highlightedCandlesRef = useRef(useStrategyVisualizationStore.getState().highlightedCandles);
   useEffect(() => {

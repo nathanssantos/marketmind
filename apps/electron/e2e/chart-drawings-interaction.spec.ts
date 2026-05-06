@@ -71,8 +71,10 @@ test.describe('Chart drawings — single-click two-point creation (line, ray, ar
       const last = await lastDrawing(page);
       expect(last?.type).toBe(tool);
 
-      // Tool resets to null after the drawing was committed.
-      expect(await activeTool(page)).toBeNull();
+      // Tool stays active after committing a drawing — the user can keep
+      // drawing the same shape without re-selecting it from the toolbar.
+      // ESC or another toolbar click is what now deselects.
+      expect(await activeTool(page)).toBe(tool);
     });
 
     test(`zero-length click on ${tool} does NOT add a degenerate drawing`, async ({ page }) => {

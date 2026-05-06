@@ -33,7 +33,9 @@
     "drawing": {
       "delete": "Supprimer le dessin sélectionné",
       "copy": "Copier le dessin sélectionné",
-      "paste": "Coller le dessin"
+      "paste": "Coller le dessin",
+      "undo": "Annuler la dernière modification",
+      "redo": "Rétablir la dernière modification annulée"
     },
     "trading": {
       "cancelSlTpPlacement": "Annuler le placement de SL/TP",
@@ -434,6 +436,8 @@
       "maintenance": {
         "title": "Maintenance des Klines",
         "description": "Détecter et réparer les bougies manquantes ou corrompues sur toutes les paires actives",
+        "periodicEnabled": "Maintenance périodique",
+        "periodicEnabledHelper": "Lance les vérifications de gaps et de corruption automatiquement toutes les 2 heures. Désactivée par défaut — utilisez le bouton manuel ci-dessous si nécessaire.",
         "repairAll": "Réparer Tous les Gaps",
         "repairing": "Réparation...",
         "pairsChecked": "{{count}} paires vérifiées",

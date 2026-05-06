@@ -7,6 +7,25 @@ export const compositeKey = (symbol: string, interval: string) => `${symbol}:${i
 const hydratedKeys = new Set<string>();
 const backendIdMaps = new Map<string, Map<string, number>>();
 
+type DrawingOp =
+  | { kind: 'add'; key: string; drawing: Drawing }
+  | { kind: 'update'; key: string; before: Drawing; after: Drawing }
+  | { kind: 'delete'; key: string; drawing: Drawing };
+
+const HISTORY_LIMIT = 100;
+const undoStacks = new Map<string, DrawingOp[]>();
+const redoStacks = new Map<string, DrawingOp[]>();
+let isApplyingHistory = false;
+
+const recordOp = (op: DrawingOp): void => {
+  if (isApplyingHistory) return;
+  const stack = undoStacks.get(op.key) ?? [];
+  stack.push(op);
+  if (stack.length > HISTORY_LIMIT) stack.shift();
+  undoStacks.set(op.key, stack);
+  redoStacks.delete(op.key);
+};
+
 let clipboardDrawing: Drawing | null = null;
 
 export const setDrawingClipboard = (drawing: Drawing | null): void => {
@@ -41,6 +60,12 @@ interface DrawingState {
   getBackendId: (frontendId: string, symbol: string, interval: string) => number | undefined;
   setBackendId: (frontendId: string, symbol: string, interval: string, backendId: number) => void;
   removeBackendId: (frontendId: string, symbol: string, interval: string) => void;
+
+  undo: (symbol: string, interval: string) => boolean;
+  redo: (symbol: string, interval: string) => boolean;
+  canUndo: (symbol: string, interval: string) => boolean;
+  canRedo: (symbol: string, interval: string) => boolean;
+  clearHistory: (symbol?: string, interval?: string) => void;
 }
 
 export const useDrawingStore = create<DrawingState>((set, get) => ({
@@ -58,40 +83,51 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
 
   setMagnetEnabled: (enabled) => set({ magnetEnabled: enabled }),
 
-  addDrawing: (drawing) => set((state) => {
+  addDrawing: (drawing) => {
     const key = compositeKey(drawing.symbol, drawing.interval);
-    const existing = state.drawingsByKey[key] ?? [];
-    return {
-      drawingsByKey: {
-        ...state.drawingsByKey,
-        [key]: [...existing, drawing],
-      },
-    };
-  }),
+    recordOp({ kind: 'add', key, drawing });
+    set((state) => {
+      const existing = state.drawingsByKey[key] ?? [];
+      return {
+        drawingsByKey: {
+          ...state.drawingsByKey,
+          [key]: [...existing, drawing],
+        },
+      };
+    });
+  },
 
-  updateDrawing: (id, updates) => set((state) => {
+  updateDrawing: (id, updates) => {
+    const state = get();
     for (const [key, drawings] of Object.entries(state.drawingsByKey)) {
       const idx = drawings.findIndex(d => d.id === id);
       if (idx === -1) continue;
+      const before = drawings[idx]!;
+      const after = { ...before, ...updates, updatedAt: Date.now() } as Drawing;
+      recordOp({ kind: 'update', key, before, after });
       const updated = [...drawings];
-      updated[idx] = { ...drawings[idx]!, ...updates, updatedAt: Date.now() } as Drawing;
-      return { drawingsByKey: { ...state.drawingsByKey, [key]: updated } };
+      updated[idx] = after;
+      set({ drawingsByKey: { ...state.drawingsByKey, [key]: updated } });
+      return;
     }
-    return state;
-  }),
+  },
 
-  deleteDrawing: (id, symbol, interval) => set((state) => {
+  deleteDrawing: (id, symbol, interval) => {
     const key = compositeKey(symbol, interval);
+    const state = get();
     const drawings = state.drawingsByKey[key];
-    if (!drawings) return state;
-    return {
+    if (!drawings) return;
+    const target = drawings.find(d => d.id === id);
+    if (!target) return;
+    recordOp({ kind: 'delete', key, drawing: target });
+    set({
       drawingsByKey: {
         ...state.drawingsByKey,
         [key]: drawings.filter(d => d.id !== id),
       },
       selectedDrawingId: state.selectedDrawingId === id ? null : state.selectedDrawingId,
-    };
-  }),
+    });
+  },
 
   duplicateDrawing: (source, options) => {
     const clone = duplicateDrawing(source, options);
@@ -146,5 +182,73 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
 
   removeBackendId: (frontendId, symbol, interval) => {
     backendIdMaps.get(compositeKey(symbol, interval))?.delete(frontendId);
+  },
+
+  undo: (symbol, interval) => {
+    const key = compositeKey(symbol, interval);
+    const stack = undoStacks.get(key);
+    if (!stack || stack.length === 0) return false;
+    const op = stack.pop()!;
+    undoStacks.set(key, stack);
+
+    isApplyingHistory = true;
+    try {
+      const actions = get();
+      if (op.kind === 'add') {
+        actions.deleteDrawing(op.drawing.id, op.drawing.symbol, op.drawing.interval);
+      } else if (op.kind === 'delete') {
+        actions.addDrawing(op.drawing);
+      } else {
+        actions.updateDrawing(op.before.id, op.before);
+      }
+    } finally {
+      isApplyingHistory = false;
+    }
+
+    const redo = redoStacks.get(key) ?? [];
+    redo.push(op);
+    redoStacks.set(key, redo);
+    return true;
+  },
+
+  redo: (symbol, interval) => {
+    const key = compositeKey(symbol, interval);
+    const stack = redoStacks.get(key);
+    if (!stack || stack.length === 0) return false;
+    const op = stack.pop()!;
+    redoStacks.set(key, stack);
+
+    isApplyingHistory = true;
+    try {
+      const actions = get();
+      if (op.kind === 'add') {
+        actions.addDrawing(op.drawing);
+      } else if (op.kind === 'delete') {
+        actions.deleteDrawing(op.drawing.id, op.drawing.symbol, op.drawing.interval);
+      } else {
+        actions.updateDrawing(op.after.id, op.after);
+      }
+    } finally {
+      isApplyingHistory = false;
+    }
+
+    const undo = undoStacks.get(key) ?? [];
+    undo.push(op);
+    undoStacks.set(key, undo);
+    return true;
+  },
+
+  canUndo: (symbol, interval) => (undoStacks.get(compositeKey(symbol, interval))?.length ?? 0) > 0,
+  canRedo: (symbol, interval) => (redoStacks.get(compositeKey(symbol, interval))?.length ?? 0) > 0,
+
+  clearHistory: (symbol, interval) => {
+    if (symbol === undefined || interval === undefined) {
+      undoStacks.clear();
+      redoStacks.clear();
+      return;
+    }
+    const key = compositeKey(symbol, interval);
+    undoStacks.delete(key);
+    redoStacks.delete(key);
   },
 }));

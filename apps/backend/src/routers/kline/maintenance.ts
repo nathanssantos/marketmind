@@ -96,6 +96,22 @@ export const maintenanceProcedures = {
       return { success: true };
     }),
 
+  setPeriodicEnabled: protectedProcedure
+    .input(z.object({ enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      const maintenance = getKlineMaintenance();
+      if (input.enabled) {
+        await maintenance.start({ skipStartupSync: true });
+      } else {
+        maintenance.stop();
+      }
+      return { success: true, enabled: input.enabled };
+    }),
+
+  isPeriodicEnabled: protectedProcedure.query(() => {
+    return { enabled: getKlineMaintenance().isPeriodicScheduled() };
+  }),
+
   getDbSize: protectedProcedure.query(async () => {
     const result = await db.execute(
       sql`SELECT pg_total_relation_size('klines') as bytes`

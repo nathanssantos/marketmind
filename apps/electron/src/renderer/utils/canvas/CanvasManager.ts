@@ -137,6 +137,17 @@ export class CanvasManager {
         return;
       }
 
+      // Bail on a zero-size canvas (macOS hands us this during display
+      // reconfiguration / Space switch). Drawing into it loses GPU state
+      // and the next valid frame restores from a corrupted snapshot.
+      // Keep dirty flags so the next rAF retries once dimensions return.
+      if (!this.canvas.width || !this.canvas.height) {
+        this.isAnimating = false;
+        this.animationFrameId = null;
+        if (this.isDirty()) this.scheduleRender();
+        return;
+      }
+
       if (this.renderCallback && this.isDirty()) {
         this.renderCallback();
         this.lastRenderTime = now;
@@ -207,6 +218,16 @@ export class CanvasManager {
 
   public restoreBaseLayer(): boolean {
     if (!this.ctx || !this.offscreen || !this.offscreenValid) return false;
+    // Snapshot can become stale dimensionally if the canvas resized
+    // while the window was hidden / on another Space (offscreen still
+    // holds the previous size). Drawing it produces a stretched/skewed
+    // base that overlays paint on top of, surfacing as malformed
+    // candles. Treat dimension drift as no-snapshot to force a clean
+    // full re-render that frame.
+    if (this.offscreen.width !== this.canvas.width || this.offscreen.height !== this.canvas.height) {
+      this.offscreenValid = false;
+      return false;
+    }
     this.ctx.save();
     this.ctx.setTransform(1, 0, 0, 1, 0, 0);
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -250,7 +271,9 @@ export class CanvasManager {
   }
 
   public setKlines(klines: Kline[]): void {
+    const oldFirst = this.klines[0];
     const oldLast = this.klines[this.klines.length - 1];
+    const newFirst = klines[0];
     const newLast = klines[klines.length - 1];
 
     const changed =
@@ -258,13 +281,22 @@ export class CanvasManager {
       oldLast.high !== newLast.high || oldLast.low !== newLast.low ||
       oldLast.close !== newLast.close || oldLast.volume !== newLast.volume;
 
+    // First-openTime change = pagination prepend, symbol swap, or
+    // timeframe swap. Force a full re-snapshot so the offscreen base
+    // layer doesn't keep stale candle geometry around.
+    const firstChanged = (oldFirst?.openTime ?? 0) !== (newFirst?.openTime ?? 0);
+
     if (changed) {
       this.boundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
     }
 
     this.klines = klines;
     this.updateBounds();
-    if (changed) this.markDirty('klines');
+    if (firstChanged) {
+      this.markDirty('all');
+    } else if (changed) {
+      this.markDirty('klines');
+    }
   }
 
   public getKlines(): Kline[] { return this.klines; }
