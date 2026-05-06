@@ -146,11 +146,58 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   });
 
   const reversePositionMutation = trpc.futuresTrading.reversePosition.useMutation({
+    onMutate: ({ positionId }) => {
+      // Same trick as cancelAllOrders: a reverse always cancels every
+      // pending entry/SL/TP for the symbol, so wipe the open-orders
+      // caches the moment the user confirms. This kills the lingering
+      // order lines on the chart in the same render frame as the click,
+      // instead of waiting for the 200–500ms refetch round-trip.
+      const emptyArray = (data: unknown): unknown => (Array.isArray(data) ? [] : data);
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },
+        emptyArray,
+      );
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders) },
+        emptyArray,
+      );
+      // Optimistically mark the source position as 'closed' so the
+      // FuturesPositionsPanel hides the old card immediately. The
+      // refetched server state below will reconcile with the new
+      // flipped position once Binance / the DB confirm.
+      if (positionId) {
+        const closeOldPosition = (data: unknown): unknown => {
+          if (!Array.isArray(data)) return data;
+          return (data as Array<{ id?: string; status?: string }>).map((p) =>
+            p.id === positionId ? { ...p, status: 'closed' } : p,
+          );
+        };
+        queryClient.setQueriesData(
+          { queryKey: getQueryKey(trpc.futuresTrading.getPositions) },
+          closeOldPosition,
+        );
+      }
+    },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
+      // A reverse touches every cache that close + cancelAll + create
+      // would touch combined. Invalidate the union so nothing lags:
+      //   positions:        old closed, new opened
+      //   openOrders / Algo / DbOrderIds: cancelled (handled optimistically above)
+      //   trading.getOrders: order rows transitioned to CANCELED (paper)
+      //   trading.getTradeExecutions / autoTrading.getActiveExecutions: handled by fanOut
+      //   analytics.getPerformance + getDailyPerformance: realized PnL hits the books
+      //   wallet.list: paper currentBalance shifts; live margin/balance shift too
       void utils.futuresTrading.getPositions.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
+      void utils.trading.getOrders.invalidate();
+      void utils.trading.getTradeExecutions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
+      void utils.analytics.getDailyPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 

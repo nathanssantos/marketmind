@@ -265,6 +265,22 @@ export const positionMutationsRouter = router({
           const dataService = getBinanceFuturesDataService();
           const markPriceData = await dataService.getMarkPrice(input.symbol);
 
+          // Mirror closePositionAndCancelOrders: any pending NEW orders
+          // for this wallet+symbol (limit entries, SL/TP brackets) are
+          // tied to the OLD direction and must not survive the flip. The
+          // new position is inserted with stopLoss/takeProfit NULL so it
+          // starts clean; the user re-attaches SL/TP if they want them.
+          await ctx.db
+            .update(orders)
+            .set({ status: 'CANCELED', updateTime: Date.now() })
+            .where(
+              and(
+                eq(orders.walletId, input.walletId),
+                eq(orders.symbol, input.symbol),
+                eq(orders.status, 'NEW')
+              )
+            );
+
           const reversed = await ctx.db.transaction(async (tx) => {
             // FOR UPDATE locks the row so concurrent reverse / close calls
             // serialize. Without this, two simultaneous clicks would both
