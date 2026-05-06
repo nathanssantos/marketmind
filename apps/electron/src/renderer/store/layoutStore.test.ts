@@ -109,12 +109,13 @@ describe('layoutStore — addLayout', () => {
     expect(charts.map((c) => c.timeframe)).toEqual(['1m']);
   });
 
-  it('LAYOUT_TEMPLATES exports the full set (empty + 6 trading variants + auto-trading + auto-scalping)', () => {
+  it('LAYOUT_TEMPLATES exports the full set (empty + 6 trading variants + auto-trading + auto-scalping + market-indicators)', () => {
     const keys = LAYOUT_TEMPLATES.map((t) => t.key).sort();
     expect(keys).toEqual([
       'autoScalping',
       'autoTrading',
       'empty',
+      'marketIndicators',
       'tradingDay',
       'tradingLong',
       'tradingMidterm',

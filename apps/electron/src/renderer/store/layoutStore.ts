@@ -80,7 +80,8 @@ export type LayoutTemplateKey =
   | 'tradingPosition'
   | 'tradingLong'
   | 'autoTrading'
-  | 'autoScalping';
+  | 'autoScalping'
+  | 'marketIndicators';
 
 interface LayoutTemplate {
   key: LayoutTemplateKey;
@@ -113,32 +114,32 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
   },
   {
     key: 'tradingScalp',
-    defaultName: 'Trading 1m / 5m / 15m',
+    defaultName: '1m / 5m / 15m',
     buildGrid: () => buildTradingGrid('1m', '5m', '15m'),
   },
   {
     key: 'tradingDay',
-    defaultName: 'Trading 5m / 15m / 1h',
+    defaultName: '5m / 15m / 1h',
     buildGrid: () => buildTradingGrid('5m', '15m', '1h'),
   },
   {
     key: 'tradingSwing',
-    defaultName: 'Trading 15m / 1h / 4h',
+    defaultName: '15m / 1h / 4h',
     buildGrid: () => buildTradingGrid('15m', '1h', '4h'),
   },
   {
     key: 'tradingMidterm',
-    defaultName: 'Trading 1h / 4h / 1d',
+    defaultName: '1h / 4h / 1d',
     buildGrid: () => buildTradingGrid('1h', '4h', '1d'),
   },
   {
     key: 'tradingPosition',
-    defaultName: 'Trading 4h / 1d / 1w',
+    defaultName: '4h / 1d / 1w',
     buildGrid: () => buildTradingGrid('4h', '1d', '1w'),
   },
   {
     key: 'tradingLong',
-    defaultName: 'Trading 1d / 1w / 1M',
+    defaultName: '1d / 1w / 1M',
     buildGrid: () => buildTradingGrid('1d', '1w', '1M'),
   },
   {
@@ -167,6 +168,19 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
       createNamedPanel('orders', { x: 96, y: 81, w: 96, h: 32 }),
     ],
   },
+  {
+    key: 'marketIndicators',
+    defaultName: 'Market Indicators',
+    buildGrid: () => [
+      createNamedPanel('marketIndicators', { x: 0, y: 0, w: 192, h: 63 }),
+      createNamedPanel('marketFearGreed', { x: 0, y: 63, w: 64, h: 41 }),
+      createNamedPanel('marketBtcDominance', { x: 64, y: 63, w: 64, h: 41 }),
+      createNamedPanel('marketMvrv', { x: 128, y: 63, w: 64, h: 41 }),
+      createNamedPanel('marketProductionCost', { x: 0, y: 104, w: 64, h: 41 }),
+      createNamedPanel('marketOpenInterest', { x: 64, y: 104, w: 64, h: 41 }),
+      createNamedPanel('marketLongShort', { x: 128, y: 104, w: 64, h: 41 }),
+    ],
+  },
 ];
 
 const getTemplate = (key: LayoutTemplateKey): LayoutTemplate => {
@@ -178,13 +192,15 @@ const getTemplate = (key: LayoutTemplateKey): LayoutTemplate => {
 // Three layouts seeded for new users. Stable IDs (`trading` /
 // `autotrading` / `scalping`) match the backend `isDefaultLayoutData`
 // guard so the overwrite-protection still detects untouched-default
-// state. The "Trading" seed uses the swing variant (15m / 1h / 4h) as
-// the most generally useful timeframe set; the other 5 trading variants
-// are available via the New Layout dialog.
+// state — adding a 4th seed here would trip the guard and treat the
+// new defaults as user-customized. The "Trading" seed uses the swing
+// variant (15m / 1h / 4h) as the most generally useful timeframe set;
+// the other 5 trading variants + Market Indicators are available via
+// the New Layout dialog.
 const DEFAULT_LAYOUTS: LayoutPreset[] = [
   {
     id: 'trading',
-    name: 'Trading 15m / 1h / 4h',
+    name: '15m / 1h / 4h',
     grid: getTemplate('tradingSwing').buildGrid(),
     order: 0,
   },
