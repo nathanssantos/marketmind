@@ -343,7 +343,12 @@ export const orderMutationsRouter = router({
           }
         }
 
-        return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions };
+        // Cancel releases locked margin on a pending LIMIT/STOP order —
+        // available balance shifts. Sync so the frontend's max-position-
+        // size sizer doesn't undercount margin on the next click.
+        const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
+
+        return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions, walletSnapshot };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
       }
