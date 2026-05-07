@@ -5,6 +5,7 @@ import { useConnectionStore } from '../store/connectionStore';
 import { useDrawingStore } from '../store/drawingStore';
 import { useIndicatorStore } from '../store/indicatorStore';
 import { useLayoutStore } from '../store/layoutStore';
+import { usePanActivityStore } from '../store/panActivityStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { usePriceStore } from '../store/priceStore';
 import { useScreenerStore } from '../store/screenerStore';
@@ -38,6 +39,7 @@ declare global {
     __uiStore?: typeof useUIStore;
     __backtestDialogStore?: typeof useBacktestDialogStore;
     __screenerStore?: typeof useScreenerStore;
+    __panActivityStore?: typeof usePanActivityStore;
     __canvasManager?: CanvasManager | null;
     __isPanning?: boolean;
     __socket?: Socket | null;
@@ -59,6 +61,7 @@ export const installE2EBridge = (): void => {
   window.__uiStore = useUIStore;
   window.__backtestDialogStore = useBacktestDialogStore;
   window.__screenerStore = useScreenerStore;
+  window.__panActivityStore = usePanActivityStore;
 };
 
 export const exposeCanvasManagerForE2E = (manager: CanvasManager | null): void => {
