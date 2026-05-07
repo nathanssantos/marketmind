@@ -1,11 +1,11 @@
 import type { ScreenerConfig, TimeInterval } from '@marketmind/types';
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { SCREENER } from '../constants/screener';
 import { userPreferences } from '../db/schema';
 import { getScreenerService, getIndicatorCatalog, getPresets, getPresetById } from '../services/screener';
 import { protectedProcedure, router } from '../trpc';
+import { notFound, preconditionFailed } from '../utils/trpc-errors';
 
 const screenerIndicatorIdSchema = z.enum([
   'RSI', 'ADX', 'EMA', 'SMA', 'MACD_HISTOGRAM', 'MACD_SIGNAL',
@@ -72,7 +72,7 @@ export const screenerRouter = router({
     }))
     .query(async ({ input }) => {
       const preset = getPresetById(input.presetId);
-      if (!preset) throw new TRPCError({ code: 'NOT_FOUND', message: 'Preset not found' });
+      if (!preset) throw notFound('Preset');
 
       const config: ScreenerConfig = {
         ...preset.config,
@@ -109,10 +109,7 @@ export const screenerRouter = router({
       });
 
       if (existing.length >= SCREENER.SAVED_SCREENER_MAX) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: `Maximum ${SCREENER.SAVED_SCREENER_MAX} saved screeners allowed`,
-        });
+        throw preconditionFailed(`Maximum ${SCREENER.SAVED_SCREENER_MAX} saved screeners allowed`);
       }
 
       const id = `saved_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

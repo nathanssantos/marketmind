@@ -31,6 +31,9 @@ export const forbidden = (reason = 'Forbidden', cause?: unknown): TRPCError =>
 export const preconditionFailed = (reason: string, cause?: unknown): TRPCError =>
   new TRPCError({ code: 'PRECONDITION_FAILED', message: reason, cause });
 
+export const tooManyRequests = (reason: string, cause?: unknown): TRPCError =>
+  new TRPCError({ code: 'TOO_MANY_REQUESTS', message: reason, cause });
+
 export const payloadTooLarge = (reason: string, cause?: unknown): TRPCError =>
   new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: reason, cause });
 
