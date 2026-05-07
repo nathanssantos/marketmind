@@ -3,6 +3,7 @@ import { calculateLiquidationPrice } from '@marketmind/types';
 import { calculatePnl } from '@marketmind/utils';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
+import { badRequest, conflict, internalServerError, notFound } from '../../utils/trpc-errors';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
 import { orders, positions, tradeExecutions, wallets } from '../../db/schema';
@@ -73,19 +74,15 @@ export const positionMutationsRouter = router({
         }
 
         if (risk <= 0) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT',
-          });
+          throw badRequest('Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT');
         }
 
         const riskRewardRatio = reward / risk;
 
         if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
-          });
+          throw badRequest(
+            `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
+          );
         }
 
         logger.info({
@@ -149,7 +146,7 @@ export const positionMutationsRouter = router({
             .limit(1);
 
           if (!position) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
+            throw notFound('Position');
           }
 
           const dataService = getBinanceFuturesDataService();
@@ -236,7 +233,7 @@ export const positionMutationsRouter = router({
         const position = await getPosition(client, input.symbol);
 
         if (!position) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
+          throw notFound('Open position for this symbol');
         }
 
         const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
@@ -284,7 +281,7 @@ export const positionMutationsRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          if (!input.positionId) throw new TRPCError({ code: 'BAD_REQUEST', message: 'positionId is required for paper wallets' });
+          if (!input.positionId) throw badRequest('positionId is required for paper wallets');
 
           const dataService = getBinanceFuturesDataService();
           const markPriceData = await dataService.getMarkPrice(input.symbol);
@@ -324,7 +321,7 @@ export const positionMutationsRouter = router({
               .for('update')
               .limit(1);
 
-            if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
+            if (!position) throw notFound('Position');
 
             const exitPrice = markPriceData ? markPriceData.markPrice : parseFloat(position.currentPrice ?? position.entryPrice);
             const entryPrice = parseFloat(position.entryPrice);
@@ -432,10 +429,7 @@ export const positionMutationsRouter = router({
 
         const lockKey = `${input.walletId}:${input.symbol}`;
         if (liveReverseInFlight.has(lockKey)) {
-          throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'A reverse for this position is already in progress',
-          });
+          throw conflict('A reverse for this position is already in progress');
         }
         liveReverseInFlight.add(lockKey);
 
@@ -443,7 +437,7 @@ export const positionMutationsRouter = router({
           const client = createBinanceFuturesClient(wallet);
           const position = await getPosition(client, input.symbol);
 
-          if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
+          if (!position) throw notFound('Open position for this symbol');
 
           const symbolFilters = await getMinNotionalFilterService().getSymbolFilters('FUTURES');
           const stepSize = symbolFilters.get(input.symbol)?.stepSize?.toString();
@@ -507,10 +501,9 @@ export const positionMutationsRouter = router({
               closeOrderId: closeResult.orderId,
               error: reason,
             }, 'Reverse: close filled but reopen failed');
-            throw new TRPCError({
-              code: 'INTERNAL_SERVER_ERROR',
-              message: `Position closed (orderId ${closeResult.orderId}) but reopen failed: ${reason}`,
-            });
+            throw internalServerError(
+              `Position closed (orderId ${closeResult.orderId}) but reopen failed: ${reason}`,
+            );
           }
 
           logger.info({
@@ -592,7 +585,7 @@ export const positionMutationsRouter = router({
             )
             .limit(1);
 
-          if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'Position not found' });
+          if (!position) throw notFound('Position');
 
           const dataService = getBinanceFuturesDataService();
           const markPriceData = await dataService.getMarkPrice(position.symbol);
@@ -653,7 +646,7 @@ export const positionMutationsRouter = router({
         const client = createBinanceFuturesClient(wallet);
         const position = await getPosition(client, input.symbol);
 
-        if (!position) throw new TRPCError({ code: 'NOT_FOUND', message: 'No open position for this symbol' });
+        if (!position) throw notFound('Open position for this symbol');
 
         await cancelAllSymbolOrders(client, input.symbol);
 

@@ -1,6 +1,6 @@
 import type { PositionSide } from '@marketmind/types';
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
+import { badRequest } from '../../utils/trpc-errors';
 import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
 import type { DatabaseType } from '../../db/client';
 import { orders, tradeExecutions } from '../../db/schema';
@@ -36,10 +36,7 @@ export const handleConditionalOrder = async (
   actualLeverage: number,
 ) => {
   if (!input.stopPrice) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: 'stopPrice is required for STOP_MARKET / TAKE_PROFIT_MARKET orders',
-    });
+    throw badRequest('stopPrice is required for STOP_MARKET / TAKE_PROFIT_MARKET orders');
   }
 
   const triggerPrice = formatPriceForBinance(parseFloat(input.stopPrice), tickSize);

@@ -1,5 +1,5 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { preconditionFailed } from '../../utils/trpc-errors';
 import { binanceApiCache, guardBinanceCall } from '../../services/binance-api-cache';
 import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
@@ -38,10 +38,9 @@ export const accountConfigRouter = router({
           (p) => p.symbol === input.symbol && Math.abs(parseFloat(String(p.positionAmt))) > 0
         );
         if (hasOpenPosition) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: `Cannot change leverage while ${input.symbol} has an open position. Close the position first.`,
-          });
+          throw preconditionFailed(
+            `Cannot change leverage while ${input.symbol} has an open position. Close the position first.`,
+          );
         }
 
         const result = await setLeverage(client, input.symbol, input.leverage);
@@ -99,10 +98,7 @@ export const accountConfigRouter = router({
         return result;
       } catch (error) {
         if (error instanceof LeverageUnavailableError) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: error.message,
-          });
+          throw preconditionFailed(error.message, error);
         }
         throw mapBinanceErrorToTRPC(error);
       }
