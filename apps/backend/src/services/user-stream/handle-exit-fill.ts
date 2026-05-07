@@ -191,7 +191,7 @@ export async function handleExitFill(
     const feeConnection = ctx.connections.get(walletId);
     if (feeConnection) {
       const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
-      const allFees = await getAllTradeFeesForPosition(feeConnection.apiClient, symbol, execution.side, openedAt);
+      const allFees = await getAllTradeFeesForPosition(feeConnection.apiClient, symbol, execution.side, openedAt, undefined, execution.entryOrderId, execution.exitOrderId);
       if (allFees) {
         if (allFees.exitFee > 0) actualExitFee = allFees.exitFee;
         if (allFees.entryFee > 0) actualEntryFee = allFees.entryFee;

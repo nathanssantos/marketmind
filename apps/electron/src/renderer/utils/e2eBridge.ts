@@ -5,15 +5,24 @@ import { useConnectionStore } from '../store/connectionStore';
 import { useDrawingStore } from '../store/drawingStore';
 import { useIndicatorStore } from '../store/indicatorStore';
 import { useLayoutStore } from '../store/layoutStore';
+import { usePanActivityStore } from '../store/panActivityStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { usePriceStore } from '../store/priceStore';
 import { useScreenerStore } from '../store/screenerStore';
 import { useUIStore } from '../store/uiStore';
+import { socketBus } from '../services/socketBus';
 import type { CanvasManager } from './canvas/CanvasManager';
 
 interface SocketTestBridge {
   emit: (event: string, payload: unknown) => void;
   getListenerCount: (event: string) => number;
+  /** Hook-level subscriber count from the bus (not the underlying
+   *  socket.io listener, which is always at most 1). Use to validate
+   *  that pauseWhenIdle actually releases when panels unmount. */
+  getBusListenerCount: (event: string) => number;
+  /** Number of distinct subscribed rooms (per (kind, symbol) pair).
+   *  0 = nobody is subscribed → server gets no traffic. */
+  getActiveRoomCount: () => number;
   listEvents: () => string[];
 }
 
@@ -38,6 +47,7 @@ declare global {
     __uiStore?: typeof useUIStore;
     __backtestDialogStore?: typeof useBacktestDialogStore;
     __screenerStore?: typeof useScreenerStore;
+    __panActivityStore?: typeof usePanActivityStore;
     __canvasManager?: CanvasManager | null;
     __isPanning?: boolean;
     __socket?: Socket | null;
@@ -59,6 +69,7 @@ export const installE2EBridge = (): void => {
   window.__uiStore = useUIStore;
   window.__backtestDialogStore = useBacktestDialogStore;
   window.__screenerStore = useScreenerStore;
+  window.__panActivityStore = usePanActivityStore;
 };
 
 export const exposeCanvasManagerForE2E = (manager: CanvasManager | null): void => {
@@ -102,6 +113,9 @@ export const exposeSocketForE2E = (socket: Socket | null): void => {
         }
       },
       getListenerCount: (event: string): number => socket.listeners(event).length,
+      getBusListenerCount: (event: string): number =>
+        socketBus.getBusListenerCount(event as Parameters<typeof socketBus.getBusListenerCount>[0]),
+      getActiveRoomCount: (): number => socketBus.getActiveRoomCount(),
       listEvents: (): string[] => {
         const anySocket = socket as unknown as { _callbacks?: Record<string, unknown> };
         const callbacks = anySocket._callbacks ?? {};

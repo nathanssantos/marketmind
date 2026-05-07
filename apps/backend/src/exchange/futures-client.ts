@@ -169,7 +169,9 @@ export interface IExchangeFuturesClient {
     symbol: string,
     side: PositionSide,
     openedAt: number,
-    closedAt?: number
+    closedAt?: number,
+    entryOrderId?: string | null,
+    exitOrderId?: string | null,
   ): Promise<AllTradeFeesResult | null>;
   getOrderEntryFee(symbol: string, orderId: string): Promise<OrderEntryFeeResult | null>;
 

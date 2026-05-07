@@ -49,15 +49,22 @@ export const NamedPanelRenderer = memo(({ panelConfig, layoutId, isSinglePanel }
       onFocus={handleFocus}
       onClose={handleClose}
     >
-      <Suspense
-        fallback={
-          <Flex justify="center" align="center" h="100%" py={MM.spinner.panel.py}>
-            <Spinner size={MM.spinner.panel.size} />
-          </Flex>
-        }
-      >
-        <Body panelId={panelConfig.id} />
-      </Suspense>
+      {/* The data-panel-kind attribute lets E2E tests wait for a
+          specific panel kind to be present, and helps debugging by
+          making the DOM structure self-describing. Suspense fallback
+          intentionally lives outside the marker so the marker only
+          appears once the body is mounted. */}
+      <div data-panel-kind={panelConfig.kind} style={{ height: '100%', width: '100%' }}>
+        <Suspense
+          fallback={
+            <Flex justify="center" align="center" h="100%" py={MM.spinner.panel.py}>
+              <Spinner size={MM.spinner.panel.size} />
+            </Flex>
+          }
+        >
+          <Body panelId={panelConfig.id} />
+        </Suspense>
+      </div>
     </GridPanel>
   );
 });

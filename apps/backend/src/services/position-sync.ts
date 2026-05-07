@@ -174,7 +174,13 @@ export class PositionSyncService {
 
           try {
             const openedAt = dbPosition.openedAt?.getTime() || dbPosition.createdAt?.getTime() || Date.now();
-            const realFees = await getAllTradeFeesForPosition(client, dbPosition.symbol, dbPosition.side, openedAt).catch(() => null);
+            // Pass entryOrderId so the fee lookup scopes only to trades
+            // belonging to THIS position's entry order — not every same-
+            // side trade in the multi-hour window. Without this an
+            // orphaned 2h SHORT was summing every unrelated SELL the
+            // user did in that window (other reverses, scalps, manual
+            // entries) and inflating the fees ~2.5×.
+            const realFees = await getAllTradeFeesForPosition(client, dbPosition.symbol, dbPosition.side, openedAt, undefined, dbPosition.entryOrderId, dbPosition.exitOrderId).catch(() => null);
 
             if (realFees && realFees.exitPrice > 0) {
               exitPrice = realFees.exitPrice;

@@ -4,34 +4,37 @@ import { usePollingInterval } from './usePollingInterval';
 
 export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 
-const getBrowserTimezone = (): string => {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  } catch {
-    return 'UTC';
-  }
-};
+// Binance Futures uses UTC (00:00 UTC) for all daily PnL bucketing —
+// Today's Realized PnL, daily settlements, funding intervals. Anchoring
+// our analytics to UTC too keeps numbers aligned across:
+//   - Sidebar "Today's P&L" widget
+//   - Analytics modal performance period (day/week/month)
+//   - Performance calendar buckets
+//   - Equity curve daily points
+// Previously this used `Intl.DateTimeFormat().resolvedOptions().timeZone`
+// (browser local TZ), which made non-UTC users (e.g. BRT) see different
+// "today" boundaries from the Binance app and from the sidebar widget.
+const BINANCE_TZ = 'UTC';
 
 export const useBackendAnalytics = (walletId: string, period: AnalyticsPeriod = 'all') => {
   const performancePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.SLOW);
   const statsPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.NORMAL);
-  const tz = getBrowserTimezone();
 
   const { data: performance, isLoading: isLoadingPerformance } =
     trpc.analytics.getPerformance.useQuery(
-      { walletId, period, tz },
+      { walletId, period, tz: BINANCE_TZ },
       { enabled: !!walletId, refetchInterval: performancePolling, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM, refetchOnMount: true }
     );
 
   const { data: setupStats, isLoading: isLoadingSetupStats } =
     trpc.analytics.getSetupStats.useQuery(
-      { walletId, period, tz },
+      { walletId, period, tz: BINANCE_TZ },
       { enabled: !!walletId, refetchInterval: statsPolling }
     );
 
   const { data: equityCurve, isLoading: isLoadingEquityCurve } =
     trpc.analytics.getEquityCurve.useQuery(
-      { walletId, interval: '1d' },
+      { walletId, interval: '1d', tz: BINANCE_TZ },
       { enabled: !!walletId, refetchInterval: performancePolling }
     );
 

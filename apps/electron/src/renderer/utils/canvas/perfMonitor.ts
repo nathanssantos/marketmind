@@ -38,6 +38,18 @@ export interface SocketDispatchStat {
   handlersPerSec: number;
 }
 
+export interface LiveStreamStat {
+  event: string;
+  /** Updates that were published to React state. */
+  flushedPerSec: number;
+  /** Raw payloads received. `(received - flushed)` is what throttling
+   *  + coalescing dropped — directly tells you how much CPU `useLiveStream`
+   *  saved compared to passing every payload through. */
+  receivedPerSec: number;
+  totalFlushed: number;
+  totalReceived: number;
+}
+
 export interface LongSectionEntry {
   name: string;
   ms: number;
@@ -62,6 +74,7 @@ export interface PerfSnapshot {
   componentRenders: ComponentRenderStat[];
   storeWakes: StoreWakeStat[];
   socketDispatches: SocketDispatchStat[];
+  liveStreams: LiveStreamStat[];
   dialogMounts: DialogMountStat[];
 }
 
@@ -90,6 +103,14 @@ interface SocketDispatchState {
   windowStart: number;
 }
 
+interface LiveStreamState {
+  receivedCount: number;
+  flushedCount: number;
+  totalReceived: number;
+  totalFlushed: number;
+  windowStart: number;
+}
+
 interface DialogMountState {
   opens: number;
   lastMs: number;
@@ -107,6 +128,7 @@ const EMPTY_SNAPSHOT: PerfSnapshot = {
   componentRenders: [],
   storeWakes: [],
   socketDispatches: [],
+  liveStreams: [],
   dialogMounts: [],
 };
 
@@ -123,6 +145,7 @@ class PerfMonitor {
   private componentRenders: Map<string, ComponentState> = new Map();
   private storeWakes: Map<string, StoreWakeState> = new Map();
   private socketDispatches: Map<string, SocketDispatchState> = new Map();
+  private liveStreams: Map<string, LiveStreamState> = new Map();
   private dialogMounts: Map<string, DialogMountState> = new Map();
   private subscribers: Set<() => void> = new Set();
   private lastNotify: number = 0;
@@ -172,6 +195,13 @@ class PerfMonitor {
         if (now - state.windowStart >= SAMPLE_WINDOW_MS) {
           state.count = 0;
           state.handlerCount = 0;
+          state.windowStart = now;
+        }
+      }
+      for (const [, state] of this.liveStreams) {
+        if (now - state.windowStart >= SAMPLE_WINDOW_MS) {
+          state.receivedCount = 0;
+          state.flushedCount = 0;
           state.windowStart = now;
         }
       }
@@ -246,6 +276,26 @@ class PerfMonitor {
     if (mountMs > state.maxMs) state.maxMs = mountMs;
     this.dialogMounts.set(name, state);
     this.snapshotDirty = true;
+  }
+
+  recordLiveStreamReceived(event: string): void {
+    if (!this.enabled) return;
+    const state = this.liveStreams.get(event) ?? {
+      receivedCount: 0, flushedCount: 0, totalReceived: 0, totalFlushed: 0, windowStart: performance.now(),
+    };
+    state.receivedCount += 1;
+    state.totalReceived += 1;
+    this.liveStreams.set(event, state);
+  }
+
+  recordLiveStreamFlushed(event: string): void {
+    if (!this.enabled) return;
+    const state = this.liveStreams.get(event) ?? {
+      receivedCount: 0, flushedCount: 0, totalReceived: 0, totalFlushed: 0, windowStart: performance.now(),
+    };
+    state.flushedCount += 1;
+    state.totalFlushed += 1;
+    this.liveStreams.set(event, state);
   }
 
   recordSocketDispatch(event: string, handlerCount: number): void {
@@ -333,6 +383,19 @@ class PerfMonitor {
     }
     socketDispatches.sort((a, b) => b.handlersPerSec - a.handlersPerSec);
 
+    const liveStreams: LiveStreamStat[] = [];
+    for (const [event, state] of this.liveStreams) {
+      const elapsed = Math.max(1, now - state.windowStart);
+      liveStreams.push({
+        event,
+        flushedPerSec: (state.flushedCount * 1000) / elapsed,
+        receivedPerSec: (state.receivedCount * 1000) / elapsed,
+        totalFlushed: state.totalFlushed,
+        totalReceived: state.totalReceived,
+      });
+    }
+    liveStreams.sort((a, b) => b.receivedPerSec - a.receivedPerSec);
+
     const dialogMounts: DialogMountStat[] = [];
     for (const [name, state] of this.dialogMounts) {
       dialogMounts.push({
@@ -365,6 +428,7 @@ class PerfMonitor {
       componentRenders,
       storeWakes,
       socketDispatches,
+      liveStreams,
       dialogMounts,
     };
     this.cachedSnapshot = snap;

@@ -39,10 +39,17 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
                     const duration = parseBanDuration(msg);
                     useApiBanStore.getState().setBan(Date.now() + duration);
                 }
-                console.error('[QueryCache] Query error:', {
-                    queryKey: query.queryKey,
-                    error: msg,
-                });
+                // The renderer's stdout pipe stringifies objects via
+                // toString() which gives "[object Object]" — losing the
+                // diagnostic value entirely. Print as a flat string so
+                // both the DevTools console AND the captured terminal
+                // log carry the real query path + error message.
+                const keyStr = Array.isArray(query.queryKey)
+                    ? query.queryKey
+                        .map((k) => (typeof k === 'string' ? k : JSON.stringify(k)))
+                        .join('.')
+                    : String(query.queryKey);
+                console.error(`[QueryCache] ${keyStr} → ${msg}`);
             },
         }),
         defaultOptions: {

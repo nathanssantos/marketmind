@@ -226,6 +226,24 @@ class SocketBus {
   getSocket(): Socket | null {
     return this.socket;
   }
+
+  /**
+   * Number of hook-level subscribers (NOT raw socket.io listeners) for
+   * `event`. The bus only attaches one `socket.on(event, ...)` handler
+   * regardless of how many `bus.on(event, ...)` callers exist, so the
+   * raw socket listener count would always be 0 or 1. This getter
+   * returns the count of distinct callers — useful for E2E tests
+   * validating pauseWhenIdle behavior. Idle = 0.
+   */
+  getBusListenerCount(event: ServerEvent): number {
+    return this.listeners.get(event)?.size ?? 0;
+  }
+
+  /** Number of active rooms (per dedupKey). For E2E asserting that
+   *  the server stops receiving subscribe messages once panels close. */
+  getActiveRoomCount(): number {
+    return this.rooms.size;
+  }
 }
 
 export const socketBus = new SocketBus();

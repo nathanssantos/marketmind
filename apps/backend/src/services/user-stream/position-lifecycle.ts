@@ -239,7 +239,7 @@ export async function closeResidualPosition(
         const firstOrphan = otherOpen[0]!;
         const side = firstOrphan.side === 'LONG' ? 'LONG' : 'SHORT';
         const openedAt = firstOrphan.createdAt ? new Date(firstOrphan.createdAt).getTime() : Date.now() - 86_400_000;
-        const fees = await getAllTradeFeesForPosition(apiClient, symbol, side, openedAt);
+        const fees = await getAllTradeFeesForPosition(apiClient, symbol, side, openedAt, undefined, firstOrphan.entryOrderId, firstOrphan.exitOrderId);
         if (fees && fees.exitPrice > 0) actualExitPrice = fees.exitPrice;
       } catch (feeErr) {
         logger.warn({ walletId, symbol, error: serializeError(feeErr) }, '[FuturesUserStream] Failed to fetch trade fees for orphaned siblings');
