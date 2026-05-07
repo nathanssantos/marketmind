@@ -13,7 +13,7 @@ import { logger } from '../../services/logger';
 import { cancelAllProtectionOrders } from '../../services/protection-orders';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
-import { getWebSocketService } from '../../services/websocket';
+import { emitPositionClosedEvents } from '../../services/wallet-broadcast';
 import { cancelFuturesExecutionOrders, cancelSpotExecutionOrders } from './cancel-execution-helpers';
 
 export const executionsRouter = router({
@@ -134,14 +134,13 @@ export const executionsRouter = router({
           })
           .where(eq(tradeExecutions.id, input.id));
 
-        const wsService = getWebSocketService();
-        wsService?.emitPositionClosed(execution.walletId, {
-          positionId: execution.id,
-          symbol: execution.symbol,
-          side: execution.side,
-          exitReason: 'MANUAL_CANCEL',
+        emitPositionClosedEvents({
+          walletId: execution.walletId,
+          execution,
+          exitPrice: parseFloat(execution.entryPrice ?? '0'),
           pnl: 0,
           pnlPercent: 0,
+          exitReason: 'MANUAL_CANCEL',
         });
 
         const openExecutionsAfterCancel = await ctx.db
@@ -363,7 +362,6 @@ export const executionsRouter = router({
         });
       }
 
-      const wsService = getWebSocketService();
       for (const exec of allExecutionsToClose) {
         const execPnl = calculatePnl({
           entryPrice: parseFloat(exec.entryPrice),
@@ -373,13 +371,13 @@ export const executionsRouter = router({
           marketType,
           leverage: exec.leverage ?? 1,
         });
-        wsService?.emitPositionClosed(execution.walletId, {
-          positionId: exec.id,
-          symbol: exec.symbol,
-          side: exec.side,
-          exitReason: 'MANUAL_CLOSE',
+        emitPositionClosedEvents({
+          walletId: execution.walletId,
+          execution: exec,
+          exitPrice,
           pnl: execPnl.netPnl,
           pnlPercent: execPnl.pnlPercent,
+          exitReason: 'MANUAL_CLOSE',
         });
       }
 

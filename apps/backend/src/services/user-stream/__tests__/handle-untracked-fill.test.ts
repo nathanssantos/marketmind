@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockDbUpdate = vi.fn().mockReturnValue({
   set: vi.fn().mockReturnValue({
-    where: vi.fn().mockResolvedValue(undefined),
+    where: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue([
+        { currentBalance: '1000', totalWalletBalance: '1000' },
+      ]),
+      then: (resolve: (value: undefined) => unknown) => resolve(undefined),
+    }),
   }),
 });
 
@@ -55,11 +60,13 @@ vi.mock('../../binance-price-stream', () => ({
 const mockEmitPositionUpdate = vi.fn();
 const mockEmitPositionClosed = vi.fn();
 const mockEmitOrderUpdate = vi.fn();
+const mockEmitWalletUpdate = vi.fn();
 vi.mock('../../websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
     emitPositionClosed: mockEmitPositionClosed,
     emitOrderUpdate: mockEmitOrderUpdate,
+    emitWalletUpdate: mockEmitWalletUpdate,
     emitTradeNotification: vi.fn(),
   })),
 }));
@@ -121,7 +128,12 @@ describe('handleUntrackedReduceFill', () => {
     });
     mockDbUpdate.mockReturnValue({
       set: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(undefined),
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([
+            { currentBalance: '1000', totalWalletBalance: '1000' },
+          ]),
+          then: (resolve: (value: undefined) => unknown) => resolve(undefined),
+        }),
       }),
     });
     mockDbInsert.mockReturnValue({

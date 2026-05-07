@@ -1,7 +1,7 @@
 import type { PositionSide } from '@marketmind/types';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
-import { tradeExecutions, wallets, orders } from '../../db/schema';
+import { tradeExecutions, orders } from '../../db/schema';
 import { getConfiguredLeverage, getPosition } from '../binance-futures-client';
 import { generateEntityId } from '../../utils/id';
 import { logger } from '../logger';
@@ -10,6 +10,7 @@ import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
 import { emitPositionClosedToast, emitPositionOpenedToast } from './emit-position-toast';
+import { emitPositionClosedEvents, incrementWalletBalanceAndBroadcast } from '../wallet-broadcast';
 
 export async function handleUntrackedReduceFill(
   ctx: UserStreamContext,
@@ -85,13 +86,7 @@ export async function handleUntrackedReduceFill(
       })
       .where(eq(tradeExecutions.id, oppositeExec.id));
 
-    await db
-      .update(wallets)
-      .set({
-        currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(wallets.id, walletId));
+    await incrementWalletBalanceAndBroadcast(walletId, partialPnl);
 
     logger.info(
       { executionId: oppositeExec.id, symbol, closedQty, remainingQty, partialPnl: partialPnl.toFixed(4) },
@@ -135,13 +130,7 @@ export async function handleUntrackedReduceFill(
       })
       .where(and(eq(tradeExecutions.id, oppositeExec.id), eq(tradeExecutions.status, 'open')));
 
-    await db
-      .update(wallets)
-      .set({
-        currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(wallets.id, walletId));
+    await incrementWalletBalanceAndBroadcast(walletId, partialPnl);
 
     logger.info(
       { executionId: oppositeExec.id, symbol, totalPnl: totalPnl.toFixed(4), exitPrice },
@@ -150,24 +139,18 @@ export async function handleUntrackedReduceFill(
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
 
+    emitPositionClosedEvents({
+      walletId,
+      execution: oppositeExec,
+      symbol,
+      exitPrice,
+      pnl: totalPnl,
+      pnlPercent: 0,
+      exitReason: 'REDUCE_ORDER',
+    });
+
     const wsService = getWebSocketService();
     if (wsService) {
-      wsService.emitPositionUpdate(walletId, {
-        ...oppositeExec,
-        status: 'closed',
-        exitPrice: exitPrice.toString(),
-        pnl: totalPnl.toString(),
-      });
-
-      wsService.emitPositionClosed(walletId, {
-        positionId: oppositeExec.id,
-        symbol,
-        side: oppositeExec.side,
-        exitReason: 'REDUCE_ORDER',
-        pnl: totalPnl,
-        pnlPercent: 0,
-      });
-
       emitPositionClosedToast(wsService, walletId, {
         executionId: oppositeExec.id,
         symbol,

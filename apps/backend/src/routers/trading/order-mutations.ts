@@ -573,6 +573,18 @@ export const orderMutationsRouter = router({
             })
             .where(eq(orders.orderId, input.orderId));
 
+          const paperCancelledExecs = await ctx.db
+            .update(tradeExecutions)
+            .set({ status: 'cancelled', updatedAt: new Date() })
+            .where(
+              and(
+                eq(tradeExecutions.walletId, input.walletId),
+                eq(tradeExecutions.entryOrderId, input.orderId),
+                eq(tradeExecutions.status, 'pending')
+              )
+            )
+            .returning();
+
           const paperOpenExecs = await ctx.db.select().from(tradeExecutions)
             .where(and(
               eq(tradeExecutions.walletId, input.walletId),
@@ -583,6 +595,10 @@ export const orderMutationsRouter = router({
           const wsService = getWebSocketService();
           if (wsService) {
             wsService.emitOrderCancelled(input.walletId, input.orderId);
+            for (const exec of paperCancelledExecs) {
+              wsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
+              wsService.emitPositionUpdate(input.walletId, exec);
+            }
           }
 
           return {

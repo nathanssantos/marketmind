@@ -11,6 +11,7 @@ import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
 import { type SyncResult, createEmptySyncResult, createFailedSyncResult, processIntentOrderForAdoptedPosition } from './position-sync-helpers';
+import { incrementWalletBalanceAndBroadcast } from './wallet-broadcast';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -210,17 +211,7 @@ export class PositionSyncService {
               pnlPercent = pnlResult.pnlPercent;
               totalFees = pnlResult.totalFees;
 
-              const currentBalance = parseFloat(wallet.currentBalance ?? '0');
-              const newBalance = currentBalance + pnl;
-
-              await db
-                .update(wallets)
-                .set({
-                  currentBalance: newBalance.toString(),
-                  updatedAt: new Date(),
-                })
-                .where(eq(wallets.id, wallet.id));
-
+              await incrementWalletBalanceAndBroadcast(wallet.id, pnl);
               result.changes.balanceUpdated = true;
             }
           } catch (error) {

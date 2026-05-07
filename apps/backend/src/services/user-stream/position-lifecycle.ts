@@ -1,5 +1,5 @@
 import type { PositionSide } from '@marketmind/types';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions, wallets } from '../../db/schema';
 import { calculatePnl } from '@marketmind/utils';
@@ -10,6 +10,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
+import { emitPositionClosedEvents, incrementWalletBalanceAndBroadcast } from '../wallet-broadcast';
 import { emitPositionClosedToast } from './emit-position-toast';
 
 export async function verifyAlgoFillProcessed(
@@ -118,46 +119,22 @@ export async function verifyAlgoFillProcessed(
       return;
     }
 
-    await db
-      .update(wallets)
-      .set({
-        currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnlResult.netPnl}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(wallets.id, walletId));
+    await incrementWalletBalanceAndBroadcast(walletId, pnlResult.netPnl);
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
 
+    emitPositionClosedEvents({
+      walletId,
+      execution,
+      symbol,
+      exitPrice,
+      pnl,
+      pnlPercent,
+      exitReason: exitReason ?? 'STOP_LOSS',
+    });
+
     const wsService = getWebSocketService();
     if (wsService) {
-      wsService.emitPositionUpdate(walletId, {
-        ...execution,
-        status: 'closed',
-        exitPrice: exitPrice.toString(),
-        pnl: pnl.toString(),
-        pnlPercent: pnlPercent.toString(),
-        exitReason,
-      });
-
-      wsService.emitOrderUpdate(walletId, {
-        id: execution.id,
-        symbol,
-        status: 'closed',
-        exitPrice: exitPrice.toString(),
-        pnl: pnl.toString(),
-        pnlPercent: pnlPercent.toString(),
-        exitReason,
-      });
-
-      wsService.emitPositionClosed(walletId, {
-        positionId: execution.id,
-        symbol,
-        side: execution.side,
-        exitReason: exitReason ?? 'STOP_LOSS',
-        pnl,
-        pnlPercent,
-      });
-
       emitPositionClosedToast(wsService, walletId, {
         executionId: execution.id,
         symbol,
@@ -293,36 +270,23 @@ export async function closeResidualPosition(
           if (closeResult.length === 0) continue;
 
           if (wallet) {
-            await db
-              .update(wallets)
-              .set({
-                currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnl}`,
-                updatedAt: new Date(),
-              })
-              .where(eq(wallets.id, walletId));
+            await incrementWalletBalanceAndBroadcast(walletId, pnl);
           }
 
           binancePriceStreamService.invalidateExecutionCache(symbol);
 
+          emitPositionClosedEvents({
+            walletId,
+            execution: orphan,
+            symbol,
+            exitPrice,
+            pnl,
+            pnlPercent: pnlResult.pnlPercent,
+            exitReason: 'STOP_LOSS',
+          });
+
           const wsService = getWebSocketService();
           if (wsService) {
-            wsService.emitPositionUpdate(walletId, {
-              ...orphan,
-              status: 'closed',
-              exitPrice: exitPrice.toString(),
-              pnl: pnl.toString(),
-              pnlPercent: pnlResult.pnlPercent.toString(),
-            });
-
-            wsService.emitPositionClosed(walletId, {
-              positionId: orphan.id,
-              symbol,
-              side: orphan.side,
-              exitReason: 'STOP_LOSS',
-              pnl,
-              pnlPercent: pnlResult.pnlPercent,
-            });
-
             emitPositionClosedToast(wsService, walletId, {
               executionId: orphan.id,
               symbol,

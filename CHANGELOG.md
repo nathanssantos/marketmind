@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — centralized wallet/position broadcasts close remaining loose ends
+
+Follow-up to v1.14.1 (#484, #485). The wallet-snapshot pattern there covered the *user-initiated* mutations (createOrder / cancelOrder / closePosition / reversePosition). This patch closes the *server-initiated* paths — anywhere the backend mutates `wallet.currentBalance` or transitions a position to closed without a user click directly causing it.
+
+**New helpers — `apps/backend/src/services/wallet-broadcast.ts`**
+
+- `incrementWalletBalanceAndBroadcast(walletId, delta)` — atomic `UPDATE wallets SET currentBalance += delta RETURNING …` + `wsService.emitWalletUpdate({ currentBalance, totalWalletBalance })`. Single call, no second SELECT, no risk of forgetting the broadcast. The flat `{currentBalance, totalWalletBalance}` patch is what `mergeWalletBalanceUpdate` already consumes.
+- `emitPositionClosedEvents({ walletId, execution, exitPrice, pnl, pnlPercent, exitReason })` — bundles the trio that always fires together when a position closes: `position:update` (status: closed) + `order:update` (status: closed) + `position:closed` (drives the optimistic close-line animation + wallet invalidation schedule).
+
+**Migrated sites (5 files, 9 mutation points)** — every place that updated `wallets.currentBalance` for P&L attribution or margin top-up:
+
+- `services/user-stream/handle-exit-fill.ts` — SL/TP fill credit + close trio. Was the original symptom: SL/TP filled, balance updated in DB, but no `wallet:update` socket event ever fired, so the renderer waited for the ~250ms-debounced cache invalidation + tRPC round-trip before showing the freed capital.
+- `services/user-stream/position-lifecycle.ts` — `verifyAlgoFillProcessed` (10s post-algo verification) + `closeResidualPosition` orphan-cleanup loop.
+- `services/user-stream/handle-untracked-fill.ts` — partial-close + full-close branches when a fill arrives without a tracked execution. Full-close branch additionally now emits `order:update` (was missing before — only `position:update` + `position:closed` fired).
+- `services/position-sync.ts` — orphan-position cleanup during the 30-second sync interval.
+- `services/opportunity-cost-manager.ts` — STALE_TRADE close path.
+- `services/margin-manager.ts` — auto-margin top-up. The previous code emitted `wallet:update` with a non-standard `{reason, newBalance}` shape that `mergeWalletBalanceUpdate` ignored, so the renderer's wallet card stayed stale until next refetch. Now uses the standard flat shape.
+
+**Trio completion in router-side close paths** — `routers/trading/executions.ts` cancel + manual-close were emitting `position:closed` only, no `position:update` or `order:update`. The renderer's RealtimeTradingSyncContext listens for the trio together; missing two of three left the chart's "closing position" indicator visible for ~300ms after the socket arrived. Both paths now use `emitPositionClosedEvents`.
+
+**Paper-cancel symmetry** — `routers/trading/order-mutations.ts` paper branch was setting `orders.status='CANCELED'` but leaving the matching `tradeExecutions.status='pending'` rows untouched, and only firing `emitOrderCancelled`. Live branch had been doing the right thing (cancel pending execs + emit `order:update` + `position:update` per cancelled exec); paper now mirrors that. Paper LIMIT/STOP cancels no longer leave a phantom pending entry-line on the chart for ~250ms.
+
+**Why this matters for scalps** — every elapsed millisecond between an SL/TP fill and the renderer's available-capital widget reflecting the freed margin is a millisecond where the user can mis-size the next entry. The audit found 9 paths that updated capital server-side without broadcasting; closing them removes the entire "wallet feels stale after fill" complaint vector.
+
 ## [1.14.1] - 2026-05-07
 
 ### Fixed — wallet snapshot pattern across all position/order mutations (#484, #485)
