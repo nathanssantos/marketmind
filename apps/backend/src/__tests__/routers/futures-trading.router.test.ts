@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { setupTestDatabase, teardownTestDatabase, getTestDatabase, cleanupTables } from '../helpers/test-db';
 import { createTestWallet, createAuthenticatedUser } from '../helpers/test-fixtures';
 import { createAuthenticatedCaller, createUnauthenticatedCaller } from '../helpers/test-caller';
@@ -826,6 +826,50 @@ describe('Futures Trading Router', () => {
           symbol: 'BTCUSDT',
         })
       ).rejects.toThrow('positionId is required');
+    });
+
+    it('should serialize concurrent reverses on the same position (FOR UPDATE)', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const positionId = generateEntityId();
+      await db.insert(schema.positions).values({
+        id: positionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '48000',
+        entryQty: '0.1',
+        currentPrice: '50000',
+        status: 'open',
+        marketType: 'FUTURES',
+        leverage: 10,
+        marginType: 'CROSSED',
+        accumulatedFunding: '0',
+      });
+
+      const args = { walletId: wallet.id, symbol: 'BTCUSDT', positionId } as const;
+      const [first, second] = await Promise.allSettled([
+        caller.futuresTrading.reversePosition(args),
+        caller.futuresTrading.reversePosition(args),
+      ]);
+
+      const fulfilled = [first, second].filter((r) => r.status === 'fulfilled');
+      const rejected = [first, second].filter((r) => r.status === 'rejected');
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0] as PromiseRejectedResult).reason.message).toMatch(/Position not found/);
+
+      // Original position closed exactly once; exactly one new SHORT exists.
+      const allPositions = await db
+        .select()
+        .from(schema.positions)
+        .where(and(eq(schema.positions.userId, user.id), eq(schema.positions.walletId, wallet.id)));
+      expect(allPositions).toHaveLength(2);
+      expect(allPositions.filter((p) => p.status === 'closed')).toHaveLength(1);
+      expect(allPositions.filter((p) => p.status === 'open' && p.side === 'SHORT')).toHaveLength(1);
     });
   });
 });

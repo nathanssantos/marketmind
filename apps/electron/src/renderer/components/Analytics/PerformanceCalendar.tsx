@@ -18,30 +18,31 @@ const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: PerformanceCalendarProps) => {
   const { t } = useTranslation();
+  // UTC-anchored everywhere — same TZ Binance uses for daily PnL
+  // bucketing. Local-time math (`getFullYear`, `getMonth`, `new Date(y,m,1)`)
+  // would drift the calendar/widget by a day for non-UTC users near
+  // midnight UTC, causing "today" in this calendar to disagree with the
+  // sidebar "Today's P&L" widget.
   const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getUTCFullYear());
+  const [month, setMonth] = useState(now.getUTCMonth() + 1);
 
   const usdtBrlRate = useCurrencyStore((s) => s.usdtBrlRate);
   const showBrlValues = useCurrencyStore((s) => s.showBrlValues);
 
-  const tz = (() => {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    } catch {
-      return 'UTC';
-    }
-  })();
-
   const { data, isLoading } = trpc.analytics.getDailyPerformance.useQuery(
-    { walletId, year, month, tz },
+    { walletId, year, month, tz: 'UTC' },
     { enabled: !!walletId, staleTime: QUERY_CONFIG.STALE_TIME.MEDIUM }
   );
 
   const dailyMap = new Map((data ?? []).map((d) => [d.date, d]));
 
-  const firstDayOfMonth = new Date(year, month - 1, 1).getDay();
-  const daysInMonth = new Date(year, month, 0).getDate();
+  // UTC-anchored boundaries: `new Date(year, month-1, 1)` is local time
+  // and would shift the calendar grid for non-UTC users. Date.UTC builds
+  // the timestamp at UTC midnight; reading `getUTCDay()` gives the right
+  // weekday regardless of where the browser is.
+  const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 
   const goToPrev = () => {
     if (month === 1) {
@@ -53,8 +54,8 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
   };
 
   const goToNext = () => {
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth() + 1;
     if (year === currentYear && month === currentMonth) return;
     if (month === 12) {
       setYear((y) => y + 1);
@@ -64,7 +65,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
     }
   };
 
-  const isNextDisabled = year === now.getFullYear() && month === now.getMonth() + 1;
+  const isNextDisabled = year === now.getUTCFullYear() && month === now.getUTCMonth() + 1;
 
   const allCells: (number | null)[] = [
     ...Array<null>(firstDayOfMonth).fill(null),

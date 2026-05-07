@@ -1,10 +1,11 @@
 import { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { usePriceStore } from '@renderer/store/priceStore';
+import { usePanActivityStore } from '@renderer/store/panActivityStore';
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { Kline, Viewport } from '@marketmind/types';
 import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 const VIEWPORT_UPDATE_THROTTLE_MS = 50;
 const SIGNIFICANT_CHANGE_THRESHOLD = 0.5;
@@ -339,6 +340,12 @@ export const useChartCanvas = ({
     };
   }, [updateViewport, klines.length]);
 
+  // Stable per-mount id used as the key in the global pan-activity
+  // store. Multiple charts can be panning independently — the store
+  // tracks them as a Set so streams stay throttled until the LAST
+  // chart releases its pan.
+  const panSessionId = useId();
+
   const handleMouseDown = useCallback((event: React.MouseEvent<HTMLCanvasElement>): void => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -346,17 +353,21 @@ export const useChartCanvas = ({
     const rect = canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const dimensions = managerRef.current?.getDimensions();
-    
+
     if (dimensions) {
       const priceScaleLeft = dimensions.width - CHART_CONFIG.CANVAS_PADDING_RIGHT;
       const isOverPriceScale = mouseX >= priceScaleLeft;
-      
+
       setIsPanningOnScale(isOverPriceScale);
     }
-    
+
     setIsPanning(true);
     lastMousePosRef.current = { x: event.clientX, y: event.clientY };
-  }, []);
+    // Tell the live-stream registry to back off — bookTicker / depth /
+    // scalpingMetrics widen their throttle window by `panMultiplier`
+    // until `endPan` fires below.
+    usePanActivityStore.getState().beginPan(panSessionId);
+  }, [panSessionId]);
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<HTMLCanvasElement>): void => {
@@ -404,7 +415,8 @@ export const useChartCanvas = ({
     setIsPanning(false);
     setIsPanningOnScale(false);
     lastMousePosRef.current = null;
-  }, [updateViewport]);
+    usePanActivityStore.getState().endPan(panSessionId);
+  }, [updateViewport, panSessionId]);
 
   const handleMouseLeave = useCallback((): void => {
     if (managerRef.current) {
@@ -415,7 +427,17 @@ export const useChartCanvas = ({
     setIsPanning(false);
     setIsPanningOnScale(false);
     lastMousePosRef.current = null;
-  }, [updateViewport]);
+    usePanActivityStore.getState().endPan(panSessionId);
+  }, [updateViewport, panSessionId]);
+
+  // Safety net: if the chart unmounts mid-pan (panel closed, layout
+  // switch, route change), release the pan flag so the registry
+  // doesn't stay throttled forever.
+  useEffect(() => {
+    return () => {
+      usePanActivityStore.getState().endPan(panSessionId);
+    };
+  }, [panSessionId]);
 
   return {
     canvasRef,

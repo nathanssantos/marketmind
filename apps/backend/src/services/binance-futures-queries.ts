@@ -143,7 +143,16 @@ export async function getAllTradeFeesForPosition(
   symbol: string,
   side: PositionSide,
   openedAt: number,
-  closedAt?: number
+  closedAt?: number,
+  // Entry order id is the position's anchor — when present, we filter
+  // entry trades to ONLY those that matched this orderId, instead of
+  // summing every same-side trade in the time window. Without this,
+  // a 2-hour orphaned-SHORT window swept up unrelated SELL trades
+  // (other reverses, scalps, pyramiding, manual entries) and inflated
+  // the entry fee to ~0.1% (looks like spot rate) when Binance was
+  // actually charging 0.04% per trade. Same logic for exit_order_id.
+  entryOrderId?: string | null,
+  exitOrderId?: string | null,
 ): Promise<AllTradeFeesResult | null> {
   try {
     const endTime = closedAt ?? Date.now();
@@ -166,22 +175,35 @@ export async function getAllTradeFeesForPosition(
     let exitWeightedPrice = 0;
     let exitTotalQty = 0;
     let totalRealizedPnl = 0;
+    let scopedByEntryOrderId = 0;
+    let scopedByExitOrderId = 0;
 
     for (const trade of trades) {
       const qty = parseFloat(String(trade.qty));
       const price = parseFloat(String(trade.price));
       const commission = parseFloat(String(trade.commission));
       const realizedPnl = parseFloat(String(trade.realizedPnl));
+      const tradeOrderId = String(trade.orderId);
 
       if (trade.side === entrySide) {
+        // If we know the entry orderId, only count trades from THAT
+        // specific order. Otherwise fall back to the legacy behaviour
+        // (sum all same-side trades in the window) — this still
+        // over-aggregates for any execution older than this fix that
+        // doesn't have a tracked entryOrderId, but new positions are
+        // safe.
+        if (entryOrderId && tradeOrderId !== entryOrderId) continue;
         entryFee += commission;
         entryWeightedPrice += price * qty;
         entryTotalQty += qty;
+        if (entryOrderId) scopedByEntryOrderId++;
       } else if (trade.side === closingSide) {
+        if (exitOrderId && tradeOrderId !== exitOrderId) continue;
         exitFee += commission;
         exitWeightedPrice += price * qty;
         exitTotalQty += qty;
         totalRealizedPnl += realizedPnl;
+        if (exitOrderId) scopedByExitOrderId++;
       }
     }
 
@@ -198,6 +220,10 @@ export async function getAllTradeFeesForPosition(
       exitPrice: avgExitPrice,
       realizedPnl: totalRealizedPnl,
       tradesFound: trades.length,
+      entryOrderIdScoped: !!entryOrderId,
+      exitOrderIdScoped: !!exitOrderId,
+      scopedEntryTrades: scopedByEntryOrderId,
+      scopedExitTrades: scopedByExitOrderId,
     }, '[Futures] Fetched all trade fees for position');
 
     return {

@@ -584,14 +584,15 @@ describe('Analytics Router', () => {
       expect(todayBucket?.wins).toBe(1);
     });
 
-    it('always prefers trade-level pnl on days with closed trades — even when incomeEvents already has prior trades for the day (regression: third trade on same day)', async () => {
-      // The user's reproduction: today already had 2 closed trades that
-      // had been picked up by an earlier income-sync pass — so
-      // `incomeSum != 0` and the previous fallback (only-when-zero) did
-      // nothing. They closed a 3rd trade and the sidebar's "Today's P&L"
-      // stayed at the old +40.66 / 2 trades value because the new trade
-      // hadn't been synced yet but the daily was reading from incomeSum
-      // (frozen at the pre-3rd-trade total).
+    it('uses trade-level pnl on days with closed trades — counts only effectivated trades', async () => {
+      // The widget should reflect ONLY effectivated trades (positions
+      // our system tracked through to a clean exit), not phantom
+      // realized PnL events from the reverse-roll bug. tradeExecutions
+      // rows exist only for tracked closes; in-flight reverse legs that
+      // closed-and-re-opened the same direction don't create rows here,
+      // so this sum naturally excludes them. incomeSum (REALIZED_PNL
+      // + COMMISSION + FUNDING_FEE from Binance's ledger) would
+      // over-count by including those phantom events.
       const { user, session } = await createAuthenticatedUser();
       const wallet = await createTestWallet({
         userId: user.id,
@@ -602,7 +603,7 @@ describe('Analytics Router', () => {
       const db = getTestDatabase();
 
       const today = new Date();
-      // Two earlier trades for today, already synced: pnl 20 + 20 = 40.
+      // 3 closed trades with locally-computed pnl summing to 90.
       await createTestTradeExecution({
         userId: user.id, walletId: wallet.id, status: 'closed',
         pnl: '20', openedAt: today, closedAt: today,
@@ -611,6 +612,14 @@ describe('Analytics Router', () => {
         userId: user.id, walletId: wallet.id, status: 'closed',
         pnl: '20', openedAt: today, closedAt: today,
       });
+      await createTestTradeExecution({
+        userId: user.id, walletId: wallet.id, status: 'closed',
+        pnl: '50', openedAt: today, closedAt: today,
+      });
+
+      // Binance income-event aggregate (with phantom reverse events):
+      // 2 REALIZED_PNL events totaling 40 — these would over-count if
+      // we used incomeSum as the source.
       await db.insert(incomeEvents).values([
         {
           userId: user.id, walletId: wallet.id, binanceTranId: 1,
@@ -624,27 +633,17 @@ describe('Analytics Router', () => {
         },
       ]);
 
-      // The 3rd trade just closed — pnl 50 — but the income sync hasn't
-      // picked it up yet. This is the gap the old fallback couldn't bridge
-      // because incomeSum was already 40 (non-zero) from the first two.
-      await createTestTradeExecution({
-        userId: user.id, walletId: wallet.id, status: 'closed',
-        pnl: '50', openedAt: today, closedAt: today,
-      });
-
       const result = await caller.analytics.getDailyPerformance({
         walletId: wallet.id,
-        year: today.getFullYear(),
-        month: today.getMonth() + 1,
+        year: today.getUTCFullYear(),
+        month: today.getUTCMonth() + 1,
       });
 
-      const fmt = new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+      const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' });
       const todayKey = fmt.format(today);
       const todayBucket = result.find((d) => d.date === todayKey);
       expect(todayBucket?.tradesCount).toBe(3);
-      // The new rule: with closed trades on the day, use trade-level pnl.
-      // 20 + 20 + 50 = 90 — reflects all 3 trades immediately, not the
-      // stale incomeSum=40.
+      // Trade-level wins: 20 + 20 + 50 = 90, all effectivated trades.
       expect(todayBucket?.pnl).toBeCloseTo(90, 0);
     });
 

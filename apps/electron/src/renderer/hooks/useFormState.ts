@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { shallowEqual } from '../utils/equality';
 
 export interface UseFormStateOptions<T> {
   initial: T;
@@ -83,10 +84,3 @@ export const useFormState = <T extends object>(options: UseFormStateOptions<T>):
   return { values, set, patch, replace, reset, isDirty };
 };
 
-const shallowEqual = <T extends object>(a: T, b: T): boolean => {
-  const aKeys = Object.keys(a) as Array<keyof T>;
-  const bKeys = Object.keys(b) as Array<keyof T>;
-  if (aKeys.length !== bKeys.length) return false;
-  for (const k of aKeys) if (a[k] !== b[k]) return false;
-  return true;
-};

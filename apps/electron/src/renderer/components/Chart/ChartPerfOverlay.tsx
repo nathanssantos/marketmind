@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useSyncExternalStore } from 'react';
 import { perfMonitor, type PerfSnapshot } from '@renderer/utils/canvas/perfMonitor';
+import { usePanActivityStore } from '@renderer/store/panActivityStore';
 
 const emptySnapshot: PerfSnapshot = {
   enabled: false,
@@ -12,6 +13,7 @@ const emptySnapshot: PerfSnapshot = {
   componentRenders: [],
   storeWakes: [],
   socketDispatches: [],
+  liveStreams: [],
   dialogMounts: [],
 };
 
@@ -22,6 +24,9 @@ const fmtMs = (n: number): string => (n >= 10 ? n.toFixed(0) : n.toFixed(2));
 
 export const ChartPerfOverlay = (): ReactElement | null => {
   const snap = useSyncExternalStore(subscribe, getSnapshot, () => emptySnapshot);
+  // Pan flag is its own store so the overlay updates the moment a pan
+  // starts/ends — independent of the perfMonitor snapshot cadence.
+  const isPanning = usePanActivityStore((s) => s.isPanning);
   if (!snap.enabled) return null;
 
   const fpsColor = snap.fps >= 55 ? '#4ade80' : snap.fps >= 30 ? '#facc15' : '#f87171';
@@ -47,7 +52,25 @@ export const ChartPerfOverlay = (): ReactElement | null => {
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ color: '#9ca3af' }}>chart.perf</span>
+        <span style={{ color: '#9ca3af' }}>
+          chart.perf
+          {isPanning && (
+            <span
+              style={{
+                marginLeft: 6,
+                padding: '0 5px',
+                borderRadius: 3,
+                background: '#fbbf24',
+                color: '#000',
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: 0.5,
+              }}
+            >
+              PAN
+            </span>
+          )}
+        </span>
         <span style={{ color: fpsColor, fontWeight: 600 }}>{snap.fps} fps</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -126,6 +149,26 @@ export const ChartPerfOverlay = (): ReactElement | null => {
               </span>
             </div>
           ))}
+        </>
+      )}
+      {snap.liveStreams.length > 0 && (
+        <>
+          <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>live streams (recv/flush per s)</div>
+          {snap.liveStreams.slice(0, 6).map((s) => {
+            const ratio = s.receivedPerSec > 0 ? s.flushedPerSec / s.receivedPerSec : 0;
+            const savedPct = ((1 - ratio) * 100).toFixed(0);
+            return (
+              <div key={s.event} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>{s.event}</span>
+                <span>
+                  {s.receivedPerSec.toFixed(1)}
+                  <span style={{ color: '#6b7280' }}>→</span>
+                  {s.flushedPerSec.toFixed(1)}
+                  <span style={{ color: '#4ade80' }}> -{savedPct}%</span>
+                </span>
+              </div>
+            );
+          })}
         </>
       )}
       {snap.dialogMounts.length > 0 && (
