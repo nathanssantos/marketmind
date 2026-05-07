@@ -43,7 +43,10 @@ import { toaster } from '../utils/toaster';
  * Now we just accumulate keys into the existing pending set, leaving
  * the original timer intact.
  */
-const INVALIDATION_FLUSH_MS = 500;
+const HOT_FLUSH_MS = 500;
+const COLD_FLUSH_MS = 2000;
+
+const COLD_KEYS = new Set(['setupStats', 'equityCurve']);
 
 interface RealtimeTradingSyncProviderProps {
   walletId: string | undefined;
@@ -55,21 +58,22 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
   const hasDisconnectedRef = useRef<boolean>(false);
-  const pendingInvalidations = useRef(new Set<string>());
-  const flushTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingHot = useRef(new Set<string>());
+  const pendingCold = useRef(new Set<string>());
+  const hotTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const coldTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const flushInvalidations = useCallback(() => {
+  const flushHot = useCallback(() => {
     if (!walletId) return;
-    const keys = pendingInvalidations.current;
-    pendingInvalidations.current = new Set();
-    flushTimeoutRef.current = null;
+    const keys = pendingHot.current;
+    pendingHot.current = new Set();
+    hotTimeoutRef.current = null;
 
     // Patches via setQueriesData (executionCacheSync.patchExecutionInAllCaches)
     // already cover trading.getTradeExecutions and autoTrading.getActiveExecutions
     // in the same render frame as the socket event. Invalidating them here
-    // would just trigger a redundant refetch of identical data — every close
-    // / fill / partial cost ~1 round-trip extra. Drop those; keep
-    // getPositions (separate query, server-side aggregations) and
+    // would just trigger a redundant refetch of identical data. Drop those;
+    // keep getPositions (separate query, server-side aggregations) and
     // getExecutionHistory (paginated, not patched).
     if (keys.has('positions')) {
       void utils.trading.getPositions.invalidate();
@@ -84,18 +88,38 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
     }
+  }, [walletId, utils]);
+
+  const flushCold = useCallback(() => {
+    if (!walletId) return;
+    const keys = pendingCold.current;
+    pendingCold.current = new Set();
+    coldTimeoutRef.current = null;
+
     if (keys.has('setupStats')) void utils.analytics.getSetupStats.invalidate();
     if (keys.has('equityCurve')) void utils.analytics.getEquityCurve.invalidate();
   }, [walletId, utils]);
 
   const scheduleInvalidation = useCallback((...keys: string[]) => {
-    for (const key of keys) pendingInvalidations.current.add(key);
-    // Don't reset the timer if one is already armed — accumulating keys
-    // into the existing window keeps the safety net firing on a stable
-    // schedule even under bursty events. See INVALIDATION_FLUSH_MS doc.
-    if (flushTimeoutRef.current) return;
-    flushTimeoutRef.current = setTimeout(flushInvalidations, INVALIDATION_FLUSH_MS);
-  }, [flushInvalidations]);
+    // Two-tier flush: hot keys (positions/orders/wallet → drives the
+    // ticket sizing widget + chart lines) flush in 500 ms; cold keys
+    // (setupStats / equityCurve → historical analytics, not in the
+    // scalping hot path) flush in 2000 ms. Bursts of close events
+    // collapse multiple equityCurve refetches into one without affecting
+    // the responsive UI surfaces. Timers are NOT reset on later calls —
+    // accumulate into the existing window for a stable cadence under
+    // bursty events.
+    for (const key of keys) {
+      if (COLD_KEYS.has(key)) pendingCold.current.add(key);
+      else pendingHot.current.add(key);
+    }
+    if (!hotTimeoutRef.current && pendingHot.current.size > 0) {
+      hotTimeoutRef.current = setTimeout(flushHot, HOT_FLUSH_MS);
+    }
+    if (!coldTimeoutRef.current && pendingCold.current.size > 0) {
+      coldTimeoutRef.current = setTimeout(flushCold, COLD_FLUSH_MS);
+    }
+  }, [flushHot, flushCold]);
 
   const scheduleRef = useRef(scheduleInvalidation);
   useEffect(() => {
@@ -170,8 +194,15 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   }, [walletId, queryClient]);
 
   useSocketEvent('position:update', (raw) => {
-    const payload = raw as { id?: string; [k: string]: unknown };
-    if (payload?.id) patchExecutionCaches(payload as { id: string });
+    const payload = raw as { id?: string; status?: string; [k: string]: unknown };
+    // Skip the patch when the trio's first emit (position:update with
+    // status='closed' from emitPositionClosedEvents) arrives. The
+    // following position:closed event runs markExecutionClosedInAllCaches
+    // which writes the canonical close shape to the same caches.
+    // Letting both run wastes a setQueriesData iteration per close.
+    if (payload?.id && payload.status !== 'closed') {
+      patchExecutionCaches(payload as { id: string });
+    }
     // No 'wallet' here: position updates that genuinely move the wallet
     // balance (fills, liquidations) ALWAYS pair with a wallet:update
     // event from Binance's user-stream — that one patches wallet.list
