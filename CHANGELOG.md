@@ -7,6 +7,66 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-05-07
+
+### Fixed — reverse position correctness + atomicity (#481)
+
+Multiple critical bugs in the futures `reversePosition` mutation surfaced and fixed in this release.
+
+- **Live reverse opened in the SAME direction (was inverted)**: the close + open legs were sent as opposite sides (`closeSide=BUY` then `openSide=SELL` for a SHORT) instead of both in the flip direction. User clicked reverse on a SHORT, expected LONG, got another SHORT. Collapsed `closeSide`/`openSide` into a single `flipSide`.
+- **Live close `reduceOnly:true`**: the close leg is now `reduceOnly:true`. Previously a non-reduce-only MARKET could open fresh exposure if a concurrent order had already flipped the position to flat or the other side.
+- **Live close-fills-but-reopen-fails**: catch the open error, refresh the wallet snapshot from Binance immediately, and throw a structured `TRPCError` naming the close `orderId` and the reopen reason. Previously surfaced as a generic Binance error and stranded the wallet snapshot at pre-close.
+- **Live mutex per `(walletId, symbol)`**: in-memory `Set<string>` rejects concurrent reverses on the same live wallet+symbol with `CONFLICT`. Without this, two parallel calls would each snapshot `getPosition`, both close (one no-ops via reduceOnly), and both then OPEN — leaving the user 2× sized in the flipped direction.
+- **Paper non-atomic UPDATE+INSERT**: wrapped in `ctx.db.transaction` with `SELECT … FOR UPDATE` on the source position. Two concurrent reverses on the same paper positionId now serialize cleanly: one wins, the other rejects with `Position not found`.
+- **Paper reverse never updated wallet**: `closePosition` paper path adds realized netPnl to `wallet.currentBalance`; `reversePosition` forgot. A +$200 paper trade reverted left the wallet untouched until manual refresh. Now updates inside the transaction.
+- **Frontend `[object Object]` toast on reverse failure**: the open-leg catch used `instanceof Error ? .message : String(...)` which fell to `String(obj)` for Binance SDK errors (plain `{ code, msg }` objects), producing `[object Object]` in the toast. Switched to `serializeError`, which now also recognizes the Binance `msg` field and axios-style nested `error.message`.
+- **Frontend per-positionId pending state**: replaces the singleton `isReversingPosition` with local `Set<string>` keyed by positionId. Previously every `FuturesPositionCard` lit up its spinner whenever any position was in flight.
+- **Frontend wallet snapshot in mutation response**: the mutation now returns `walletSnapshot` so the frontend can `setQueryData` on `wallet.list` immediately — no refetch round-trip. `useOrderQuantity`'s sizing math sees the new capital on the very next click.
+- **Frontend `onSettled` invalidation**: invalidates wallet/positions/orders/executions on BOTH success and error paths. Previously the open-failed reverse skipped the existing onSuccess invalidation list, leaving the cache stale until the user-stream WS event landed.
+- **Live SL/TP cancellation on reverse**: paper now cancels pending NEW orders for the symbol (mirrors `closePositionAndCancelOrders`); live was already covered via `cancelAllSymbolOrders`.
+
+### Fixed — fee aggregation over-counting (#481)
+
+`getAllTradeFeesForPosition` was summing every same-side trade in a wide time window, not just trades belonging to the position being closed. For an orphan position that lived 2 hours, the function swept up unrelated reverses, scalps, and pyramiding trades — inflating the fee total by 2-3×. The user observed PnL of `-$74` on a position whose gross PnL was `+$64` because the over-aggregation pushed fees to ~0.10% instead of Binance's actual 0.04% taker rate.
+
+Threaded `entryOrderId` and `exitOrderId` from the caller down into the trade aggregation. When the caller knows the anchor order(s), only trades with matching `orderId` are counted for that side. Trades without a known order id fall back to the legacy time-window match (preserves behaviour for legacy executions never tracked with order ids).
+
+### Added — `reconcile-wallet-balance` maintenance script (#481)
+
+One-shot reconciliation: for each live wallet, sets `currentBalance` to Binance's `totalWalletBalance`, then re-computes pnl + fees for orphan-closed executions using the new orderId-scoped logic. Run via `pnpm exec tsx scripts/maintenance/reconcile-wallet-balance.ts`. Idempotent.
+
+### Added — Today's PnL widget aligns with Binance (#481)
+
+- **Source-of-truth flip**: `getDailyPerformance` reverts to preferring `tradeRealizedNet` (sum of `tradeExecutions.pnl` for trades closed today) when there are any closed trades. `incomeSum` (REALIZED_PNL + COMMISSION + FUNDING_FEE from Binance income events) over-counted because it includes phantom realized events from the buggy reverse's in-flight close+reopen pairs.
+- **TZ unified to UTC**: Binance Futures uses 00:00 UTC for daily bucketing. All four analytics queries (sidebar Today's PnL, performance period, performance calendar, equity curve) now pass `tz: 'UTC'` explicitly. Backend `monthStart`/`monthEnd` switched to `Date.UTC(...)` so server-local TZ doesn't drift the boundary.
+- **% basis fix**: Today's PnL widget now computes `pnlPercent` against `activeWallet.walletBalance` (the current Binance wallet balance) instead of using the backend's `pnlPercent` field, which used `effectiveCapital + sum(prior daily pnl)` as the denominator. For a typical wallet this gave 4.57% vs Binance's 14.37% on the same number — the sidebar now matches.
+
+### Added — chart performance overhaul (#481)
+
+A multi-pass overhaul to make the chart pan completely smooth, including in multi-chart layouts with all panels open and live streams firing.
+
+- **`useKlineLiveStream` ref-only intra-minute updates**: state only changes on minute boundary (length grows). Within a minute, ticks update a ref + notify imperative subscribers, never triggering React re-renders. Net: `ChartPanelContent` re-renders once per minute on a 1m chart instead of every tick (~8/sec → ~1/min).
+- **`ChartPanelHeader` extraction**: pulled the `useChartHoverStore` subscription out of `ChartGridPanel` so per-tick header updates don't reconcile the whole panel + canvas subtree.
+- **Centralized live-stream registry**: new `useLiveStream<E>(event, options)` hook with built-in throttle, coalesce, and pan-aware backpressure. Single declarative `LIVE_STREAM_POLICIES` table tunes every stream at once. Migrated `useBookTicker` (was unthrottled), `useDepth` (was unthrottled), `useScalpingMetrics` (was unthrottled). Net effect in multi-chart sessions: ~50–80 React re-renders/sec dropped to ~12 idle / ~3 during pan.
+- **Pan-aware throttling everywhere**: `usePanActivityStore` flips a global flag while any chart is being dragged. The registry stretches throttle windows by `panMultiplier` (4× default) for non-critical visual streams. `priceStore`'s ad-hoc throttles (sidebar prices, daily change badges) are also pan-aware via `isPanActive()`. Mouse handler in `useChartCanvas` registers/releases the flag.
+- **`pauseWhenIdle` already worked**: confirmed via E2E that minimizing a panel unmounts its hooks → `useSymbolStreamSubscription` cleanup releases the bus listener → `subscribeRoom`'s ref-counter emits `unsubscribe:depth/bookTicker/etc` to the server. Documented with regression tests so future layout refactors can't silently break the WS bandwidth contract.
+- **`perfMonitor` instrumentation**: per-event `recordLiveStreamReceived` / `recordLiveStreamFlushed` counters expose recv/flush rates in the `chart.perf` overlay so you can see at a glance how much each stream's throttle saved (90%+ on bookTicker idle, 95%+ on depth).
+- **PAN badge in overlay**: instant visual indicator that the multiplier is active.
+
+### Added — extensive E2E coverage (#481)
+
+- 5 unit tests for `useLiveStream` (cold-start, burst coalesce, shallow dedup, pan multiplier, enabled=false)
+- 5 e2e for the registry isolated (synthetic subscriber)
+- 5 e2e realistic-pan: 5 different layout shapes (minimal, multi-chart, order-flow heavy, auto-trading, kitchen sink with all 15 panel kinds), each with all 5 hot streams firing at realistic Hz during a 3s real mouse-driven pan. Asserts FPS ≥ 30, drop frames < 30, throttle savings > 75%.
+- 2 e2e for pauseWhenIdle: orderBook minimize releases depth listener; multi-consumer ref-counting.
+- New helpers: `realPanScenario.ts`, `panActivityStore`, `data-panel-kind` markers in `NamedPanelRenderer`.
+
+### Changed — code quality
+
+- Consolidated `shallowEqual` from `useFormState` and `useLiveStream` into shared `utils/equality.ts`.
+- Exported `DEFAULT_PAN_MULTIPLIER` from `LIVE_STREAM_POLICIES`; `priceStore`'s pan multiplier no longer duplicates the constant.
+- Better `serializeError`: now extracts message from common API error shapes (`message`, `msg`, `error.message`, `error_message`) before falling back to JSON.
+
 ## [1.13.4] - 2026-05-06
 
 ### Changed — default checklist + layouts cloned from maintainer's setup (#477)
