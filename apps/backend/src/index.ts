@@ -37,11 +37,22 @@ const start = async (): Promise<void> => {
     await fastify.register(rateLimit, {
       max: parseInt(process.env['RATE_LIMIT_MAX'] ?? '1000', 10),
       timeWindow: parseInt(process.env['RATE_LIMIT_WINDOW'] ?? '60000', 10),
-      errorResponseBuilder: () => ({
-        statusCode: 429,
-        error: 'Too Many Requests',
-        message: 'Rate limit exceeded. Please try again later.',
-      }),
+      allowList: env.NODE_ENV === 'development' ? ['127.0.0.1', '::1', '::ffff:127.0.0.1'] : [],
+      errorResponseBuilder: (request, context) => {
+        const message = `Rate limit exceeded. Try again in ${Math.ceil(context.ttl / 1000)}s.`;
+        if (request.url.startsWith('/trpc/')) {
+          return {
+            error: {
+              json: {
+                message,
+                code: -32004,
+                data: { code: 'TOO_MANY_REQUESTS', httpStatus: 429 },
+              },
+            },
+          };
+        }
+        return { statusCode: 429, error: 'Too Many Requests', message };
+      },
     });
 
     await fastify.register(cors, {
