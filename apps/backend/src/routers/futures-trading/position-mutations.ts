@@ -11,7 +11,6 @@ import {
   cancelAllSymbolOrders,
   closePosition as closeExchangePosition,
   createBinanceFuturesClient,
-  getAccountInfo,
   getPosition,
   isPaperWallet,
   submitFuturesOrder,
@@ -20,47 +19,10 @@ import { getBinanceFuturesDataService } from '../../services/binance-futures-dat
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger, serializeError } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
+import { syncLiveWalletSnapshot } from '../../services/wallet-snapshot';
 import { protectedProcedure, router } from '../../trpc';
 import { formatQuantityForBinance } from '../../utils/formatters';
 import { generateEntityId } from '../../utils/id';
-
-/**
- * Refresh the local wallet snapshot from Binance immediately after an
- * order/position change. Used by the position mutations so the
- * frontend's wallet.list cache reflects realtime margin/capital after
- * a fill, instead of waiting for the user-stream WS to catch up
- * (typically 200-500ms; sometimes seconds during reconnect storms).
- *
- * Returns the updated wallet record for inline use in mutation responses
- * — the frontend can `setQueryData` from the response without an extra
- * refetch round-trip. Errors are swallowed and logged: if Binance
- * doesn't answer, the user-stream's eventual update is still authoritative.
- */
-const syncLiveWalletSnapshot = async (
-  ctx: { db: typeof import('../../db').db },
-  wallet: { id: string; userId: string; totalWalletBalance?: string | null; currentBalance?: string | null },
-  client: import('binance').USDMClient,
-): Promise<{ totalWalletBalance: string; currentBalance: string } | null> => {
-  try {
-    const account = await getAccountInfo(client);
-    const totalWalletBalance = account.totalWalletBalance;
-    // currentBalance kept in sync with totalWalletBalance — both fields
-    // are read by the frontend (`portfolio.walletBalance ?? .balance`)
-    // and tests reconcile via `totalWalletBalance` first.
-    const currentBalance = totalWalletBalance;
-    await ctx.db
-      .update(wallets)
-      .set({ totalWalletBalance, currentBalance, updatedAt: new Date() })
-      .where(eq(wallets.id, wallet.id));
-    return { totalWalletBalance, currentBalance };
-  } catch (err) {
-    logger.warn(
-      { walletId: wallet.id, error: serializeError(err) },
-      '[position-mutations] Failed to refresh live wallet snapshot — relying on user-stream',
-    );
-    return null;
-  }
-};
 
 // In-flight reverse-position calls keyed by `${walletId}:${symbol}`.
 // Two parallel reverses on the same live wallet+symbol would otherwise
@@ -209,17 +171,32 @@ export const positionMutationsRouter = router({
             accumulatedFunding,
           });
 
-          await ctx.db
-            .update(positions)
-            .set({
-              status: 'closed',
-              closedAt: new Date(),
-              updatedAt: new Date(),
-              currentPrice: exitPrice.toString(),
-              pnl: netPnl.toString(),
-              pnlPercent: pnlPercent.toString(),
-            })
-            .where(eq(positions.id, input.positionId));
+          // Wrap position close + wallet update in a single transaction
+          // so a crash mid-close can't leave the position closed with
+          // the realized PnL never reflected in the wallet snapshot.
+          // Same pattern as `reversePosition` paper path.
+          const walletSnapshot = await ctx.db.transaction(async (tx) => {
+            await tx
+              .update(positions)
+              .set({
+                status: 'closed',
+                closedAt: new Date(),
+                updatedAt: new Date(),
+                currentPrice: exitPrice.toString(),
+                pnl: netPnl.toString(),
+                pnlPercent: pnlPercent.toString(),
+              })
+              .where(eq(positions.id, input.positionId!));
+
+            const currentBalance = parseFloat(wallet.currentBalance ?? '0');
+            const newBalance = (currentBalance + netPnl).toString();
+            await tx
+              .update(wallets)
+              .set({ currentBalance: newBalance, totalWalletBalance: newBalance, updatedAt: new Date() })
+              .where(eq(wallets.id, wallet.id));
+
+            return { currentBalance: newBalance, totalWalletBalance: newBalance };
+          });
 
           logger.info({
             positionId: input.positionId,
@@ -251,6 +228,7 @@ export const positionMutationsRouter = router({
             accumulatedFunding,
             walletId: input.walletId,
             openExecutions: paperOpenExecutions,
+            walletSnapshot,
           };
         }
 
@@ -273,6 +251,13 @@ export const positionMutationsRouter = router({
           quantity: result.origQty,
         }, 'Futures position closed');
 
+        // Pull the post-close account state immediately. The user-stream
+        // event will eventually deliver the same data, but a synchronous
+        // refresh here makes `wallet.list` accurate before the mutation
+        // resolves — `useOrderQuantity`'s sizing math reflects the new
+        // capital on the very next click.
+        const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
+
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
             eq(tradeExecutions.walletId, input.walletId),
@@ -280,7 +265,7 @@ export const positionMutationsRouter = router({
             eq(tradeExecutions.status, 'open'),
           ));
 
-        return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions };
+        return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions, walletSnapshot };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
       }
@@ -628,17 +613,30 @@ export const positionMutationsRouter = router({
             accumulatedFunding,
           });
 
-          await ctx.db
-            .update(positions)
-            .set({
-              status: 'closed',
-              closedAt: new Date(),
-              updatedAt: new Date(),
-              currentPrice: exitPrice.toString(),
-              pnl: netPnl.toString(),
-              pnlPercent: pnlPercent.toString(),
-            })
-            .where(eq(positions.id, input.positionId));
+          // Atomic close + wallet update — same pattern as
+          // `closePosition` / `reversePosition` paper paths.
+          const walletSnapshot = await ctx.db.transaction(async (tx) => {
+            await tx
+              .update(positions)
+              .set({
+                status: 'closed',
+                closedAt: new Date(),
+                updatedAt: new Date(),
+                currentPrice: exitPrice.toString(),
+                pnl: netPnl.toString(),
+                pnlPercent: pnlPercent.toString(),
+              })
+              .where(eq(positions.id, input.positionId!));
+
+            const currentBalance = parseFloat(wallet.currentBalance ?? '0');
+            const newBalance = (currentBalance + netPnl).toString();
+            await tx
+              .update(wallets)
+              .set({ currentBalance: newBalance, totalWalletBalance: newBalance, updatedAt: new Date() })
+              .where(eq(wallets.id, wallet.id));
+
+            return { currentBalance: newBalance, totalWalletBalance: newBalance };
+          });
 
           logger.info({ positionId: input.positionId, symbol: input.symbol, netPnl: netPnl.toFixed(4) }, 'Paper position closed and orders cancelled');
 
@@ -649,7 +647,7 @@ export const positionMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
-          return { success: true, pnl: netPnl, pnlPercent, walletId: input.walletId, openExecutions: paperOpenExecutions };
+          return { success: true, pnl: netPnl, pnlPercent, walletId: input.walletId, openExecutions: paperOpenExecutions, walletSnapshot };
         }
 
         const client = createBinanceFuturesClient(wallet);
@@ -669,6 +667,11 @@ export const positionMutationsRouter = router({
           orderId: result.orderId,
         }, 'Position closed and all orders cancelled');
 
+        // Synchronous wallet refresh — same rationale as `closePosition`
+        // and `reversePosition` live paths. Without this, the frontend
+        // sees stale capital until the user-stream WS catches up.
+        const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
+
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
             eq(tradeExecutions.walletId, input.walletId),
@@ -676,7 +679,7 @@ export const positionMutationsRouter = router({
             eq(tradeExecutions.status, 'open'),
           ));
 
-        return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions };
+        return { success: true, orderId: result.orderId, walletId: input.walletId, openExecutions, walletSnapshot };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
       }
