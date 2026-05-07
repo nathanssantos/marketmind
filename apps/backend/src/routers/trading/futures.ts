@@ -1,10 +1,10 @@
-import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { autoTradingService } from '../../services/auto-trading';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient } from '../../exchange';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure, router } from '../../trpc';
+import { internalServerError } from '../../utils/trpc-errors';
 
 export const futuresConfigRouter = router({
   setFuturesLeverage: protectedProcedure
@@ -22,11 +22,10 @@ export const futuresConfigRouter = router({
         await autoTradingService.setFuturesLeverage(wallet, input.symbol, input.leverage);
         return { success: true, leverage: input.leverage };
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to set leverage',
-          cause: error,
-        });
+        throw internalServerError(
+          error instanceof Error ? error.message : 'Failed to set leverage',
+          error,
+        );
       }
     }),
 
@@ -45,11 +44,10 @@ export const futuresConfigRouter = router({
         await autoTradingService.setFuturesMarginType(wallet, input.symbol, input.marginType);
         return { success: true, marginType: input.marginType };
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to set margin type',
-          cause: error,
-        });
+        throw internalServerError(
+          error instanceof Error ? error.message : 'Failed to set margin type',
+          error,
+        );
       }
     }),
 
@@ -67,11 +65,10 @@ export const futuresConfigRouter = router({
         await autoTradingService.setFuturesPositionMode(wallet, input.dualSidePosition);
         return { success: true, dualSidePosition: input.dualSidePosition };
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to set position mode',
-          cause: error,
-        });
+        throw internalServerError(
+          error instanceof Error ? error.message : 'Failed to set position mode',
+          error,
+        );
       }
     }),
 
@@ -112,11 +109,10 @@ export const futuresConfigRouter = router({
             })),
         };
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to get futures account info',
-          cause: error,
-        });
+        throw internalServerError(
+          error instanceof Error ? error.message : 'Failed to get futures account info',
+          error,
+        );
       }
     }),
 });
