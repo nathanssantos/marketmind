@@ -1,5 +1,5 @@
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
+import { badRequest, conflict } from '../../utils/trpc-errors';
 import { z } from 'zod';
 import { orders, tradeExecutions } from '../../db/schema';
 import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
@@ -50,15 +50,10 @@ export const orderMutationsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
-      if (!wallet.isActive) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Wallet is inactive' });
-      }
+      if (!wallet.isActive) throw badRequest('Wallet is inactive');
 
       if (!input.reduceOnly && getScalpingScheduler().isSymbolBeingScalped(input.walletId, input.symbol)) {
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: `Cannot trade ${input.symbol}: scalping is active on this symbol. Stop scalping first.`,
-        });
+        throw conflict(`Cannot trade ${input.symbol}: scalping is active on this symbol. Stop scalping first.`);
       }
 
       try {
