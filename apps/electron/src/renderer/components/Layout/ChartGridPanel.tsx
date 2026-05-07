@@ -1,10 +1,6 @@
-import { HStack, Text } from '@chakra-ui/react';
-import { KlineOHLCRow } from '@renderer/components/Chart/ChartCanvas/KlineOHLCRow';
-import { StreamHealthDot } from '@renderer/components/Chart/ChartCanvas/StreamHealthDot';
+import { ChartPanelHeader } from '@renderer/components/Chart/ChartCanvas/ChartPanelHeader';
 import { GridWindow } from '@renderer/components/ui';
 import { useLayoutStore } from '@renderer/store/layoutStore';
-import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStore';
-import { useStreamHealth } from '@renderer/hooks/useStreamHealth';
 import type { ChartPanelConfig } from '@shared/types/layout';
 import type { MarketType } from '@marketmind/types';
 import { memo, useCallback, useMemo } from 'react';
@@ -30,27 +26,23 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
   const handleRestore = useCallback((id: string) => setPanelWindowState(layoutId, id, 'normal'), [setPanelWindowState, layoutId]);
   const handleClose = useCallback((id: string) => removePanel(layoutId, id), [removePanel, layoutId]);
 
-  const hoverKey = makeChartKey(symbol, panelConfig.timeframe);
-  const hoveredKline = useChartHoverStore((s) => s.hoveredKlineByChart[hoverKey] ?? null);
-  const currentKline = useChartHoverStore((s) => s.currentKlineByChart[hoverKey] ?? null);
-  const headerKline = hoveredKline ?? currentKline;
-
-  const streamHealth = useStreamHealth({
-    symbol,
-    interval: panelConfig.timeframe,
-    marketType,
-    enabled: !!symbol,
-  });
-
+  // Header is its own memo'd component that subscribes to the per-tick
+  // hover store + stream health internally. Keeping that wiring here
+  // would re-render the whole ChartGridPanel (and feed a new `header`
+  // ReactElement into GridWindow) on every kline tick, defeating the
+  // `<ChartPanelContent>` memo's whole point. Stable props here →
+  // GridWindow's memo skips reconciliation when only the header
+  // updates.
   const header = useMemo(
     () => (
-      <HStack gap={2} align="center" overflow="hidden" minW={0} flexWrap="nowrap" whiteSpace="nowrap">
-        <StreamHealthDot status={streamHealth.status} />
-        <Text fontSize="xs" color="fg.muted" flexShrink={0}>{panelConfig.timeframe} {panelConfig.chartType}</Text>
-        {headerKline && <KlineOHLCRow kline={headerKline} compact />}
-      </HStack>
+      <ChartPanelHeader
+        symbol={symbol}
+        timeframe={panelConfig.timeframe}
+        chartType={panelConfig.chartType}
+        marketType={marketType}
+      />
     ),
-    [streamHealth.status, panelConfig.timeframe, panelConfig.chartType, headerKline],
+    [symbol, panelConfig.timeframe, panelConfig.chartType, marketType],
   );
 
   return (
