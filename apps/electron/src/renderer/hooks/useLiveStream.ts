@@ -2,6 +2,7 @@ import type { ServerToClientEvents } from '@marketmind/types';
 import { useEffect, useRef, useState } from 'react';
 import { isPanActive } from '../store/panActivityStore';
 import { getPolicyFor, type LiveStreamEvent, type LiveStreamPolicy } from '../services/liveStreamPolicies';
+import { perfMonitor } from '../utils/canvas/perfMonitor';
 import { useSocketEvent } from './socket';
 
 export interface UseLiveStreamOptions<E extends LiveStreamEvent> {
@@ -60,7 +61,11 @@ export const useLiveStream = <E extends LiveStreamEvent>(
   const lastPublishedRef = useRef<Payload | null>(initialValue);
   const pendingPayloadRef = useRef<Payload | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastFlushAtRef = useRef<number>(0);
+  // `null` = "never flushed yet" — distinguishes the cold-start path
+  // (always publish first payload immediately) from the steady-state
+  // throttle-window check. Using a numeric 0 as the sentinel is unsafe
+  // when `performance.now()` itself starts near zero (fake-timer envs).
+  const lastFlushAtRef = useRef<number | null>(null);
 
   // Reset published value when the event changes (rare — but keeps the
   // contract clean: a fresh subscription starts from initialValue).
@@ -72,7 +77,7 @@ export const useLiveStream = <E extends LiveStreamEvent>(
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    lastFlushAtRef.current = 0;
+    lastFlushAtRef.current = null;
     // initialValue is intentionally excluded: changing initialValue
     // shouldn't reset a live subscription.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,6 +86,7 @@ export const useLiveStream = <E extends LiveStreamEvent>(
   useSocketEvent(
     event,
     ((payload: Payload) => {
+      perfMonitor.recordLiveStreamReceived(event);
       pendingPayloadRef.current = payload;
 
       const { throttleMs, panMultiplier = 1 } = policy.current;
@@ -96,12 +102,19 @@ export const useLiveStream = <E extends LiveStreamEvent>(
         return;
       }
 
+      // Cold-start: never flushed before → publish synchronously so the
+      // very first payload of an idle stream paints without waiting a
+      // `throttleMs` window. After this, the steady-state throttle takes
+      // over.
+      if (lastFlushAtRef.current === null) {
+        flush();
+        return;
+      }
+
       const now = performance.now();
       const sinceLastFlush = now - lastFlushAtRef.current;
       if (sinceLastFlush >= effectiveThrottle && timerRef.current === null) {
-        // Past the window AND no flush queued — publish immediately so
-        // the user sees the very first update of an idle stream
-        // without waiting `throttleMs` for the first paint.
+        // Past the window AND no flush queued — publish immediately.
         flush();
         return;
       }
@@ -138,6 +151,7 @@ export const useLiveStream = <E extends LiveStreamEvent>(
 
     lastPublishedRef.current = next;
     lastFlushAtRef.current = performance.now();
+    perfMonitor.recordLiveStreamFlushed(event);
     setValue(next);
   }
 

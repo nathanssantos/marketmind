@@ -12,6 +12,7 @@ const emptySnapshot: PerfSnapshot = {
   componentRenders: [],
   storeWakes: [],
   socketDispatches: [],
+  liveStreams: [],
   dialogMounts: [],
 };
 
@@ -126,6 +127,26 @@ export const ChartPerfOverlay = (): ReactElement | null => {
               </span>
             </div>
           ))}
+        </>
+      )}
+      {snap.liveStreams.length > 0 && (
+        <>
+          <div style={{ color: '#9ca3af', marginTop: 6, marginBottom: 2 }}>live streams (recv/flush per s)</div>
+          {snap.liveStreams.slice(0, 6).map((s) => {
+            const ratio = s.receivedPerSec > 0 ? s.flushedPerSec / s.receivedPerSec : 0;
+            const savedPct = ((1 - ratio) * 100).toFixed(0);
+            return (
+              <div key={s.event} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>{s.event}</span>
+                <span>
+                  {s.receivedPerSec.toFixed(1)}
+                  <span style={{ color: '#6b7280' }}>→</span>
+                  {s.flushedPerSec.toFixed(1)}
+                  <span style={{ color: '#4ade80' }}> -{savedPct}%</span>
+                </span>
+              </div>
+            );
+          })}
         </>
       )}
       {snap.dialogMounts.length > 0 && (

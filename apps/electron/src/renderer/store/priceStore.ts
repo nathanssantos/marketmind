@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { MarketType } from '@marketmind/types';
+import { isPanActive } from './panActivityStore';
 
 interface PriceEntry {
   price: number;
@@ -232,7 +233,7 @@ export const useDailyChangePct = (symbol: string, marketType: MarketType): numbe
     const schedule = (): void => {
       if (pending) return;
       pending = true;
-      timer = setTimeout(run, DAILY_CHANGE_THROTTLE_MS);
+      timer = setTimeout(run, getEffectiveThrottle(DAILY_CHANGE_THROTTLE_MS));
     };
 
     run();
@@ -248,6 +249,15 @@ export const useDailyChangePct = (symbol: string, marketType: MarketType): numbe
 };
 
 const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
+const PAN_THROTTLE_MULTIPLIER = 4;
+
+// Stretch the throttle window when any chart is mid-pan. Same idea as
+// `LIVE_STREAM_POLICIES.panMultiplier` — keeping the React tree quiet
+// while the user is actively dragging the canvas. Imperative read
+// (no subscription) so this lookup is cheap inside the per-tick
+// throttle decision.
+const getEffectiveThrottle = (baseMs: number): number =>
+  isPanActive() ? baseMs * PAN_THROTTLE_MULTIPLIER : baseMs;
 
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');
@@ -306,7 +316,7 @@ export const usePricesForSymbols = (symbols: string[]): Record<string, number> =
       if (pendingUpdate) return;
       pendingUpdate = true;
       if (throttleTimeout) clearTimeout(throttleTimeout);
-      throttleTimeout = setTimeout(processUpdate, SIDEBAR_PRICE_UPDATE_THROTTLE_MS);
+      throttleTimeout = setTimeout(processUpdate, getEffectiveThrottle(SIDEBAR_PRICE_UPDATE_THROTTLE_MS));
     };
 
     const unsubs = currentSymbols.map((sym) => subscribeToPrice(sym, schedule));
