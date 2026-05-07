@@ -49,12 +49,14 @@ vi.mock('../../binance-price-stream', () => ({
 const mockEmitPositionUpdate = vi.fn();
 const mockEmitOrderUpdate = vi.fn();
 const mockEmitPositionClosed = vi.fn();
+const mockEmitWalletUpdate = vi.fn();
 
 vi.mock('../../websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
     emitOrderUpdate: mockEmitOrderUpdate,
     emitPositionClosed: mockEmitPositionClosed,
+    emitWalletUpdate: mockEmitWalletUpdate,
     emitTradeNotification: vi.fn(),
   })),
 }));

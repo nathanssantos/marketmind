@@ -5,6 +5,7 @@ import { autoTradingConfig, tradeExecutions, wallets, type Wallet } from '../db/
 import { getFuturesClient } from '../exchange';
 import { isPaperWallet } from './binance-client';
 import { logger, serializeError } from './logger';
+import { incrementWalletBalanceAndBroadcast } from './wallet-broadcast';
 import { getWebSocketService } from './websocket';
 
 interface MarginTopUpConfig {
@@ -234,14 +235,8 @@ export class MarginManagerService {
             })
             .where(eq(tradeExecutions.id, execution.id));
 
+          await incrementWalletBalanceAndBroadcast(wallet.id, -topUpAmount);
           const newBalance = walletBalance - topUpAmount;
-          await db
-            .update(wallets)
-            .set({
-              currentBalance: newBalance.toString(),
-              updatedAt: new Date(),
-            })
-            .where(eq(wallets.id, wallet.id));
 
           const wsService = getWebSocketService();
           if (wsService) {
@@ -258,11 +253,6 @@ export class MarginManagerService {
                 marginRatio: marginRatio * 100,
               },
               timestamp: Date.now(),
-            });
-
-            wsService.emitWalletUpdate(wallet.id, {
-              reason: 'MARGIN_TOP_UP',
-              newBalance,
             });
           }
 

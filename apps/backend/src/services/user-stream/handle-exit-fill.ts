@@ -1,10 +1,11 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
-import { tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions } from '../../db/schema';
 import { calculatePnl } from '@marketmind/utils';
 import { getOrderEntryFee, getAllTradeFeesForPosition, getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logger, serializeError } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
+import { emitPositionClosedEvents, incrementWalletBalanceAndBroadcast } from '../wallet-broadcast';
 import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
@@ -127,13 +128,7 @@ export async function handleExitFill(
             })
             .where(eq(tradeExecutions.id, execution.id));
 
-          await db
-            .update(wallets)
-            .set({
-              currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
-              updatedAt: new Date(),
-            })
-            .where(eq(wallets.id, walletId));
+          await incrementWalletBalanceAndBroadcast(walletId, partialPnl);
 
           logger.info(
             {
@@ -272,13 +267,14 @@ export async function handleExitFill(
     return;
   }
 
-  await db
-    .update(wallets)
-    .set({
-      currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnlResult.netPnl}`,
-      updatedAt: new Date(),
-    })
-    .where(eq(wallets.id, walletId));
+  // Atomic increment + RETURNING + WS broadcast in one call — closes
+  // the gap between the order-trade-update event arriving and the
+  // renderer's wallet.list cache reflecting the freed capital.
+  // Without this broadcast, the renderer waits for the
+  // position:closed-driven 250ms invalidation + tRPC round-trip
+  // (≈ 400-600ms total) before the ticket can size against the new
+  // base.
+  await incrementWalletBalanceAndBroadcast(walletId, pnlResult.netPnl);
 
   logger.info(
     { walletId, pnl: pnl.toFixed(2), partialClosePnl: partialClosePnl.toFixed(2) },
@@ -287,35 +283,18 @@ export async function handleExitFill(
 
   binancePriceStreamService.invalidateExecutionCache(symbol);
 
+  emitPositionClosedEvents({
+    walletId,
+    execution,
+    symbol,
+    exitPrice,
+    pnl,
+    pnlPercent,
+    exitReason: determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT'),
+  });
+
   const wsService = getWebSocketService();
   if (wsService) {
-    wsService.emitPositionUpdate(walletId, {
-      ...execution,
-      status: 'closed',
-      exitPrice: exitPrice.toString(),
-      pnl: pnl.toString(),
-      pnlPercent: pnlPercent.toString(),
-    });
-
-    wsService.emitOrderUpdate(walletId, {
-      id: execution.id,
-      symbol,
-      status: 'closed',
-      exitPrice: exitPrice.toString(),
-      pnl: pnl.toString(),
-      pnlPercent: pnlPercent.toString(),
-      exitReason: isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT',
-    });
-
-    wsService.emitPositionClosed(walletId, {
-      positionId: execution.id,
-      symbol,
-      side: execution.side,
-      exitReason: determinedExitReason ?? (isSLOrder ? 'STOP_LOSS' : 'TAKE_PROFIT'),
-      pnl,
-      pnlPercent,
-    });
-
     // v1.6 Track F.4 — toast feedback for SL/TP fills. Without this,
     // the user gets zero notification when a position closes via the
     // exchange (only the chart line disappears). The renderer's

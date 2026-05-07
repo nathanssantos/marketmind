@@ -1,6 +1,6 @@
 import type { MarketType } from '@marketmind/types';
 import { OPPORTUNITY_COST_CONFIG } from '@marketmind/types';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import type { TradeExecution } from '../db/schema';
 import { autoTradingConfig, tradeExecutions, wallets } from '../db/schema';
@@ -9,6 +9,7 @@ import { serializeError } from '../utils/errors';
 import { emitPositionClose } from './income-events';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
+import { incrementWalletBalanceAndBroadcast } from './wallet-broadcast';
 import { getWebSocketService } from './websocket';
 import {
   type OpportunityCostConfig,
@@ -277,13 +278,7 @@ export class OpportunityCostManagerService {
           })
           .where(eq(tradeExecutions.id, execution.id));
 
-        await db
-          .update(wallets)
-          .set({
-            currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${pnlResult.netPnl}`,
-            updatedAt: new Date(),
-          })
-          .where(eq(wallets.id, execution.walletId));
+        await incrementWalletBalanceAndBroadcast(execution.walletId, pnlResult.netPnl);
 
         const [closedWallet] = await db
           .select()
