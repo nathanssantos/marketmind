@@ -1,4 +1,4 @@
-import type { DepthLevel, DepthUpdate } from '@marketmind/types';
+import type { DepthLevel } from '@marketmind/types';
 import { useLiveStream } from './useLiveStream';
 import { useSymbolStreamSubscription } from './socket';
 
@@ -12,7 +12,7 @@ export const useDepth = (symbol: string | null, enabled = true): { bids: DepthLe
 
   const data = useLiveStream('depth:update', {
     enabled: enabled && !!symbol,
-  }) as DepthUpdate | null;
+  });
 
   const matches = data && (!symbol || data.symbol === symbol) ? data : null;
 

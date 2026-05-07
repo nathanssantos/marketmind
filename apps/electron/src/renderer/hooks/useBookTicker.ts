@@ -1,4 +1,3 @@
-import type { BookTickerUpdate } from '@marketmind/types';
 import { useLiveStream } from './useLiveStream';
 import { useSymbolStreamSubscription } from './socket';
 
@@ -12,7 +11,7 @@ export const useBookTicker = (symbol: string | null, enabled = true) => {
 
   const data = useLiveStream('bookTicker:update', {
     enabled: enabled && !!symbol,
-  }) as BookTickerUpdate | null;
+  });
 
   // Only surface payloads for the requested symbol — the bus is shared,
   // so a different ticket in another panel watching ETHUSDT could

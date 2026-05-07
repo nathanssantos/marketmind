@@ -133,7 +133,7 @@ export const useLiveStream = <E extends LiveStreamEvent>(
         const delay = Math.max(0, effectiveThrottle - sinceLastFlush);
         timerRef.current = setTimeout(flush, delay);
       }
-    }) as ServerToClientEvents[E],
+    }),
     enabled,
   );
 

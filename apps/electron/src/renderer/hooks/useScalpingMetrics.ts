@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { ScalpingMetrics } from '@marketmind/types';
 import { useLiveStream } from './useLiveStream';
 import { useSymbolStreamSubscription } from './socket';
 
@@ -36,7 +35,7 @@ export const useScalpingMetrics = (symbol: string | null, enabled = true) => {
 
   useSymbolStreamSubscription('scalpingMetrics', enabled && symbol ? symbol : undefined);
 
-  const recordHistory = useCallback((data: ScalpingMetrics) => {
+  const recordHistory = useCallback((data: { cvd: number; imbalanceRatio: number }) => {
     const history = historyRef.current;
     history.push({
       cvd: data.cvd,
@@ -49,7 +48,7 @@ export const useScalpingMetrics = (symbol: string | null, enabled = true) => {
   const metrics = useLiveStream('scalpingMetrics:update', {
     enabled: enabled && !!symbol,
     onRawTick: recordHistory,
-  }) as ScalpingMetrics | null;
+  });
 
   const getHistory = useCallback(() => historyRef.current, []);
 
