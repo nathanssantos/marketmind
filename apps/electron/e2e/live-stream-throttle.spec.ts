@@ -192,6 +192,109 @@ test.describe('Live-stream registry — pan-aware throttling', () => {
     expect(await page.evaluate(() => window.__panActivityStore!.getState().isPanning)).toBe(false);
   });
 
+  test('real chart pan flips the global flag (mouse down → up)', async ({ page }) => {
+    const isPanning = (): Promise<boolean> =>
+      page.evaluate(() => window.__panActivityStore!.getState().isPanning);
+
+    expect(await isPanning()).toBe(false);
+
+    // Drag the chart canvas. mousedown alone should set the flag — we
+    // wired `usePanActivityStore.beginPan` into `handleMouseDown`.
+    const canvas = await page.locator('canvas').first();
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas has no bounding box');
+
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+    expect(await isPanning()).toBe(true);
+
+    // Drag a bit — the flag stays set the whole time.
+    await page.mouse.move(cx - 50, cy);
+    expect(await isPanning()).toBe(true);
+    await page.mouse.move(cx - 100, cy);
+    expect(await isPanning()).toBe(true);
+
+    await page.mouse.up();
+    expect(await isPanning()).toBe(false);
+  });
+
+  test('long pan with continuous emits: flushes stay rare for the whole duration', async ({ page }) => {
+    // Reset, then take a baseline cold-start flush so we are in
+    // steady-state when the pan starts.
+    await page.evaluate(() => {
+      window.__mmTestSubscriber!.reset();
+      window.__mmTestSubscriber!.simulate({ value: 0 });
+    });
+    await sleep(150);
+    const before = await readCounts(page);
+    expect(before.flushed).toBe(1);
+
+    // Start a real chart pan via mouse — same path the user takes.
+    const canvas = page.locator('canvas').first();
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error('canvas has no bounding box');
+
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    await page.mouse.move(cx, cy);
+    await page.mouse.down();
+
+    expect(await page.evaluate(() => window.__panActivityStore!.getState().isPanning)).toBe(true);
+
+    // Drive a 2-second pan with two streams of updates running
+    // in parallel:
+    //   - mouse moves at ~120Hz (the user wiggling the chart)
+    //   - bookTicker payloads at ~50Hz (the WS fire hose)
+    // Throttle policy is 100ms (= 400ms during pan), so the trailing
+    // flush should fire ~5 times in 2s, not 100+.
+    const PAN_DURATION_MS = 2000;
+    const startedAt = Date.now();
+    let dx = 0;
+    let payloadIdx = 0;
+    while (Date.now() - startedAt < PAN_DURATION_MS) {
+      // Pan motion.
+      dx -= 5;
+      await page.mouse.move(cx + dx, cy);
+      // Two simulated bookTicker payloads per pan step. We flush via
+      // page.evaluate batched to keep test loop overhead down.
+      payloadIdx += 1;
+      await page.evaluate((i) => {
+        window.__mmTestSubscriber!.simulate({ value: i, ts: Date.now() });
+        window.__mmTestSubscriber!.simulate({ value: i + 1, ts: Date.now() + 1 });
+      }, payloadIdx * 2);
+      await sleep(10);
+    }
+
+    await page.mouse.up();
+    expect(await page.evaluate(() => window.__panActivityStore!.getState().isPanning)).toBe(false);
+
+    // Allow the trailing flush to settle.
+    await sleep(500);
+
+    const after = await readCounts(page);
+    const burstReceived = after.received - before.received;
+    const flushedDuringPan = after.flushed - before.flushed;
+
+    // We sent ~hundreds of payloads (2s / ~10ms per pair × 2 = ~400).
+    // Sanity: at least 50 reached the subscriber.
+    expect(burstReceived).toBeGreaterThanOrEqual(50);
+    // Stretched throttle is 400ms during pan; with ~2s of pan + 500ms
+    // settle, the expected flush ceiling is roughly:
+    //   (PAN_DURATION_MS + 500ms post-mouseup) / 400ms ≈ 6-7
+    // plus 1-2 boundary flushes (the moment pan ends and the multiplier
+    // collapses, a queued flush at the smaller idle window can fire).
+    // Cap at 12 to absorb timing jitter on slow CI without losing the
+    // signal — a regression that breaks the throttle would produce
+    // dozens or hundreds of flushes here.
+    expect(flushedDuringPan).toBeLessThanOrEqual(12);
+    // Concrete win: the savings ratio should be 90%+.
+    const savingsRatio = 1 - flushedDuringPan / burstReceived;
+    expect(savingsRatio).toBeGreaterThan(0.9);
+  });
+
   test('panActivityStore correctly handles multiple concurrent panners (set semantics)', async ({ page }) => {
     const isPanning = (): Promise<boolean> =>
       page.evaluate(() => window.__panActivityStore!.getState().isPanning);

@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { useSyncExternalStore } from 'react';
 import { perfMonitor, type PerfSnapshot } from '@renderer/utils/canvas/perfMonitor';
+import { usePanActivityStore } from '@renderer/store/panActivityStore';
 
 const emptySnapshot: PerfSnapshot = {
   enabled: false,
@@ -23,6 +24,9 @@ const fmtMs = (n: number): string => (n >= 10 ? n.toFixed(0) : n.toFixed(2));
 
 export const ChartPerfOverlay = (): ReactElement | null => {
   const snap = useSyncExternalStore(subscribe, getSnapshot, () => emptySnapshot);
+  // Pan flag is its own store so the overlay updates the moment a pan
+  // starts/ends — independent of the perfMonitor snapshot cadence.
+  const isPanning = usePanActivityStore((s) => s.isPanning);
   if (!snap.enabled) return null;
 
   const fpsColor = snap.fps >= 55 ? '#4ade80' : snap.fps >= 30 ? '#facc15' : '#f87171';
@@ -48,7 +52,25 @@ export const ChartPerfOverlay = (): ReactElement | null => {
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-        <span style={{ color: '#9ca3af' }}>chart.perf</span>
+        <span style={{ color: '#9ca3af' }}>
+          chart.perf
+          {isPanning && (
+            <span
+              style={{
+                marginLeft: 6,
+                padding: '0 5px',
+                borderRadius: 3,
+                background: '#fbbf24',
+                color: '#000',
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: 0.5,
+              }}
+            >
+              PAN
+            </span>
+          )}
+        </span>
         <span style={{ color: fpsColor, fontWeight: 600 }}>{snap.fps} fps</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
