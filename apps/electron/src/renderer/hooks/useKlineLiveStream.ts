@@ -51,6 +51,26 @@ interface UseKlineLiveStreamReturn {
 
 const MIN_REFETCH_INTERVAL_MS = 30_000;
 
+// Merge baseKlines + liveKlines into the array consumers see. Pulled
+// out of the displayKlines useMemo so we can also call it imperatively
+// inside processUpdate (where there is no React render to trigger the
+// memo). Pure — same logic as before, just hoisted.
+const mergeKlines = (base: Kline[] | undefined, live: Kline[]): Kline[] => {
+  if (!base || base.length === 0) return [];
+  if (live.length === 0) return base;
+  const lastBase = base[base.length - 1];
+  if (!lastBase) return base;
+  const lastBaseOpenTime = lastBase.openTime;
+  const filtered = live.filter((k) => k.openTime >= lastBaseOpenTime);
+  if (filtered.length === 0) return base;
+  const first = filtered[0];
+  if (!first) return base;
+  if (first.openTime === lastBaseOpenTime) {
+    return [...base.slice(0, -1), ...filtered];
+  }
+  return [...base, ...filtered];
+};
+
 export const useKlineLiveStream = ({
   symbol,
   timeframe,
@@ -59,7 +79,16 @@ export const useKlineLiveStream = ({
   enabled,
   refetchKlines,
 }: UseKlineLiveStreamOptions): UseKlineLiveStreamReturn => {
+  // `liveKlines` STATE only changes when the array LENGTH changes (new
+  // minute / new symbol / initial). Intra-minute price updates flow
+  // through `liveKlinesRef` + tick subscribers without setting state —
+  // that keeps `ChartPanelContent` and `App` from re-rendering on every
+  // tick (the canvas paint and pan handler want full main-thread time).
+  // The canvas consumes the freshest array via `klineSource.klinesRef`,
+  // so the displayed chart never lags despite the state-update gating.
   const [liveKlines, setLiveKlines] = useState<Kline[]>([]);
+  const liveKlinesRef = useRef<Kline[]>([]);
+  const baseKlinesRef = useRef<Kline[] | undefined>(baseKlines);
   const pendingUpdateRef = useRef<{ kline: Kline; isFinal: boolean } | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -71,6 +100,7 @@ export const useKlineLiveStream = ({
 
   useEffect(() => {
     setLiveKlines([]);
+    liveKlinesRef.current = [];
     if (rafIdRef.current !== null) {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
@@ -84,6 +114,18 @@ export const useKlineLiveStream = ({
     lastUpdateRef.current = 0;
   }, [symbol, timeframe, marketType]);
 
+  const tickSubscribersRef = useRef<Set<() => void>>(new Set());
+  const klinesRef = useRef<Kline[]>([]);
+
+  // Imperative ref-based update path. Updates `liveKlinesRef`,
+  // recomputes the merged `klinesRef` (= base + live), and notifies
+  // tick subscribers (the canvas redraws via `manager.markDirty`
+  // through this). React state (`setLiveKlines`) is only set when the
+  // length CHANGES — i.e. a new minute closed and the next opened, or
+  // the very first kline arrived. That prevents `ChartPanelContent` /
+  // `App` from re-rendering on every intra-minute tick. The chart still
+  // paints every tick because the imperative `klineSource.subscribe`
+  // path is decoupled from React.
   const processUpdate = useCallback(() => {
     const update = pendingUpdateRef.current;
     if (!update) return;
@@ -91,24 +133,52 @@ export const useKlineLiveStream = ({
     const { kline: latestKline } = update;
     lastUpdateRef.current = Date.now();
 
-    setLiveKlines(prev => {
-      if (prev.length === 0) return [latestKline];
+    const prev = liveKlinesRef.current;
+    const lastKline = prev[prev.length - 1];
 
-      const lastKline = prev[prev.length - 1];
-      if (!lastKline) return [latestKline];
+    let next: Kline[];
+    let lengthChanged = false;
 
-      if (latestKline.openTime === lastKline.openTime) {
-        if (getKlineClose(latestKline) === getKlineClose(lastKline) &&
-          getKlineHigh(latestKline) === getKlineHigh(lastKline) &&
-          getKlineLow(latestKline) === getKlineLow(lastKline) &&
-          getKlineVolume(latestKline) === getKlineVolume(lastKline)) return prev;
-        return [...prev.slice(0, -1), latestKline];
+    if (prev.length === 0 || !lastKline) {
+      next = [latestKline];
+      lengthChanged = true;
+    } else if (latestKline.openTime === lastKline.openTime) {
+      // Intra-minute update: same candle, possibly new OHLCV values.
+      if (
+        getKlineClose(latestKline) === getKlineClose(lastKline) &&
+        getKlineHigh(latestKline) === getKlineHigh(lastKline) &&
+        getKlineLow(latestKline) === getKlineLow(lastKline) &&
+        getKlineVolume(latestKline) === getKlineVolume(lastKline)
+      ) {
+        rafIdRef.current = null;
+        pendingUpdateRef.current = null;
+        return;
       }
+      next = [...prev.slice(0, -1), latestKline];
+    } else if (latestKline.openTime > lastKline.openTime) {
+      // New minute closed — array length grows.
+      next = [...prev, latestKline];
+      lengthChanged = true;
+    } else {
+      // Out-of-order (older than current head) — ignore.
+      rafIdRef.current = null;
+      pendingUpdateRef.current = null;
+      return;
+    }
 
-      if (latestKline.openTime > lastKline.openTime) return [...prev, latestKline];
+    liveKlinesRef.current = next;
+    klinesRef.current = mergeKlines(baseKlinesRef.current, next);
 
-      return prev;
-    });
+    // Notify imperative subscribers — the canvas updates here without
+    // React reconciling.
+    for (const cb of tickSubscribersRef.current) {
+      try { cb(); } catch { /* best-effort */ }
+    }
+
+    // React state update only on length change. Within a minute the
+    // ref-based path keeps everything in sync without re-rendering the
+    // host component.
+    if (lengthChanged) setLiveKlines(next);
 
     rafIdRef.current = null;
     pendingUpdateRef.current = null;
@@ -205,32 +275,35 @@ export const useKlineLiveStream = ({
     };
   }, []);
 
-  const displayKlines = useMemo(() => {
-    if (!baseKlines || baseKlines.length === 0) return [];
-    if (liveKlines.length === 0) return baseKlines;
+  // displayKlines only changes when:
+  //   - baseKlines reference changes (initial load, pagination prepend,
+  //     symbol change, refetch), OR
+  //   - liveKlines state changes (which now only happens on minute
+  //     boundary or first kline — see processUpdate above).
+  // Inside a minute the array reference is stable; the canvas pulls
+  // intra-minute values from `klineSource.klinesRef` instead.
+  const displayKlines = useMemo(
+    () => mergeKlines(baseKlines, liveKlines),
+    [baseKlines, liveKlines],
+  );
 
-    const lastBaseKline = baseKlines[baseKlines.length - 1];
-    if (!lastBaseKline) return baseKlines;
-
-    const lastBaseOpenTime = lastBaseKline.openTime;
-    const filteredLiveKlines = liveKlines.filter(k => k.openTime >= lastBaseOpenTime);
-
-    if (filteredLiveKlines.length === 0) return baseKlines;
-
-    const firstFiltered = filteredLiveKlines[0];
-    if (!firstFiltered) return baseKlines;
-
-    if (firstFiltered.openTime === lastBaseOpenTime) {
-      return [...baseKlines.slice(0, -1), ...filteredLiveKlines];
+  // Sync baseKlines into the ref so processUpdate's mergeKlines call
+  // sees the freshest base. Also rebuild klinesRef when base changes
+  // (e.g. pagination prepend) and notify subscribers so the canvas
+  // picks up the new history.
+  useEffect(() => {
+    baseKlinesRef.current = baseKlines;
+    klinesRef.current = mergeKlines(baseKlines, liveKlinesRef.current);
+    for (const cb of tickSubscribersRef.current) {
+      try { cb(); } catch { /* best-effort */ }
     }
+  }, [baseKlines]);
 
-    return [...baseKlines, ...filteredLiveKlines];
-  }, [baseKlines, liveKlines]);
-
-  const klinesRef = useRef<Kline[]>(displayKlines);
+  // Keep klinesRef in sync with displayKlines on the React-render path
+  // too — covers the case where liveKlines state updated (length
+  // change) without going through processUpdate (e.g. reset). Cheap
+  // assignment, no extra render cost.
   klinesRef.current = displayKlines;
-
-  const tickSubscribersRef = useRef<Set<() => void>>(new Set());
 
   const klineSource = useMemo<KlineSource>(() => ({
     klinesRef,
@@ -239,12 +312,6 @@ export const useKlineLiveStream = ({
       return () => { tickSubscribersRef.current.delete(cb); };
     },
   }), []);
-
-  useEffect(() => {
-    for (const cb of tickSubscribersRef.current) {
-      try { cb(); } catch { /* best-effort */ }
-    }
-  }, [displayKlines]);
 
   return { displayKlines, klineSource };
 };
