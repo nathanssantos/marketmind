@@ -147,10 +147,14 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
+      applyWalletSnapshot(data);
+    },
+    onSettled: () => {
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenDbOrderIds.invalidate();
       void utils.trading.getOrders.invalidate();
       void utils.analytics.getPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
