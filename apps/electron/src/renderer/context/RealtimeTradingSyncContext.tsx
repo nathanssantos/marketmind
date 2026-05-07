@@ -43,7 +43,7 @@ import { toaster } from '../utils/toaster';
  * Now we just accumulate keys into the existing pending set, leaving
  * the original timer intact.
  */
-const INVALIDATION_FLUSH_MS = 250;
+const INVALIDATION_FLUSH_MS = 500;
 
 interface RealtimeTradingSyncProviderProps {
   walletId: string | undefined;
@@ -64,15 +64,23 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     pendingInvalidations.current = new Set();
     flushTimeoutRef.current = null;
 
+    // Patches via setQueriesData (executionCacheSync.patchExecutionInAllCaches)
+    // already cover trading.getTradeExecutions and autoTrading.getActiveExecutions
+    // in the same render frame as the socket event. Invalidating them here
+    // would just trigger a redundant refetch of identical data — every close
+    // / fill / partial cost ~1 round-trip extra. Drop those; keep
+    // getPositions (separate query, server-side aggregations) and
+    // getExecutionHistory (paginated, not patched).
     if (keys.has('positions')) {
-      void utils.trading.getTradeExecutions.invalidate();
       void utils.trading.getPositions.invalidate();
-      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.autoTrading.getExecutionHistory.invalidate();
     }
     if (keys.has('orders')) void utils.trading.getOrders.invalidate();
+    // wallet.list is patched optimistically by mergeWalletBalanceUpdate
+    // with the authoritative post-mutation balance from the DB UPDATE
+    // RETURNING — no refetch needed. Analytics still need invalidation
+    // because they compute aggregates the patch can't derive.
     if (keys.has('wallet')) {
-      void utils.wallet.list.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
     }
