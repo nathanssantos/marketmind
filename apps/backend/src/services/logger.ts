@@ -27,8 +27,24 @@ export const serializeError = (error: unknown): string => {
   }
   if (error && typeof error === 'object') {
     const obj = error as Record<string, unknown>;
-    if ('message' in obj && typeof obj['message'] === 'string') {
-      return truncate(obj['message']);
+    // Try common error-message field names in priority order:
+    //   - `message`        (most JS errors)
+    //   - `msg`            (Binance API responses, some legacy SDKs)
+    //   - `error.message`  (axios-style nested)
+    //   - `error_message`  (snake_case APIs)
+    // This matters for catch blocks that don't get a thrown `Error`
+    // — e.g. the Binance SDK wraps API errors in a plain object
+    // `{ code: -2019, msg: "Margin is insufficient." }`. Without this
+    // check, the caller falls through to JSON.stringify which produces
+    // `{"code":-2019,"msg":"Margin is insufficient."}` — readable but
+    // not as nice as just the message.
+    for (const key of ['message', 'msg', 'error_message'] as const) {
+      const v = obj[key];
+      if (typeof v === 'string') return truncate(v);
+    }
+    if (obj['error'] && typeof obj['error'] === 'object') {
+      const nested = (obj['error'] as Record<string, unknown>)['message'];
+      if (typeof nested === 'string') return truncate(nested);
     }
     try {
       return truncate(JSON.stringify(error));

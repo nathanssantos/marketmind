@@ -11,7 +11,7 @@ import {
   submitFuturesAlgoOrder,
 } from '../../services/binance-futures-client';
 import type { walletQueries } from '../../services/database/walletQueries';
-import { logger } from '../../services/logger';
+import { logger, serializeError } from '../../services/logger';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { generateEntityId } from '../../utils/id';
 
@@ -169,14 +169,14 @@ export const handleMarketOrderProtection = async (
     try {
       slResult = await autoTradingService.createStopLossOrder(wallet, input.symbol, quantity, parseFloat(input.stopLoss), orderDirection, 'FUTURES');
     } catch (slError) {
-      logger.error({ error: slError instanceof Error ? slError.message : String(slError), symbol: input.symbol }, '[createOrder] Failed to place MARKET SL order');
+      logger.error({ error: serializeError(slError), symbol: input.symbol }, '[createOrder] Failed to place MARKET SL order');
     }
   }
   if (input.takeProfit) {
     try {
       tpResult = await autoTradingService.createTakeProfitOrder(wallet, input.symbol, quantity, parseFloat(input.takeProfit), orderDirection, 'FUTURES');
     } catch (tpError) {
-      logger.error({ error: tpError instanceof Error ? tpError.message : String(tpError), symbol: input.symbol }, '[createOrder] Failed to place MARKET TP order');
+      logger.error({ error: serializeError(tpError), symbol: input.symbol }, '[createOrder] Failed to place MARKET TP order');
     }
   }
 

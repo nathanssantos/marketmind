@@ -17,7 +17,7 @@ import {
 } from '../../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../../services/binance-futures-data';
 import { walletQueries } from '../../services/database/walletQueries';
-import { logger } from '../../services/logger';
+import { logger, serializeError } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { protectedProcedure, router } from '../../trpc';
 import { formatQuantityForBinance } from '../../utils/formatters';
@@ -444,7 +444,14 @@ export const positionMutationsRouter = router({
             // the user knows their position was closed but the reverse leg
             // didn't go through (typical causes: insufficient margin after
             // realizing the close PnL, exchange-side reject, network blip).
-            const reason = openError instanceof Error ? openError.message : String(openError);
+            // `serializeError` handles every shape (Error, plain object
+            // with `message`, raw object → JSON, primitive). The previous
+            // `instanceof Error ? .message : String(...)` fell to
+            // `String(obj)` for non-Error wrappers, producing the
+            // unhelpful "[object Object]" message in the user-facing
+            // toast — observed when a Binance "Margin is insufficient"
+            // error came back as a wrapped object literal.
+            const reason = serializeError(openError);
             logger.error({
               walletId: input.walletId,
               symbol: input.symbol,
