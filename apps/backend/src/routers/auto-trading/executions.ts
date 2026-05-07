@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
@@ -8,6 +7,7 @@ import { walletQueries } from '../../services/database/walletQueries';
 import { riskManagerService } from '../../services/risk-manager';
 import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
+import { badRequest, notFound } from '../../utils/trpc-errors';
 import { calculatePnl } from '@marketmind/utils';
 import { parseEnabledSetupTypes } from '../../utils/profile-transformers';
 import { log } from './utils';
@@ -37,10 +37,7 @@ export const executionsRouter = router({
 
       if (!setup) {
         log('✗ Setup not found', { setupId: input.setupId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Setup not found',
-        });
+        throw notFound('Setup');
       }
 
       log('> Setup found', {
@@ -66,27 +63,18 @@ export const executionsRouter = router({
 
       if (!config) {
         log('✗ Auto-trading config not found', { walletId: input.walletId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Auto-trading config not found',
-        });
+        throw notFound('Auto-trading config');
       }
 
       if (!config.isEnabled) {
         log('! Auto-trading is disabled', { walletId: input.walletId });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Auto-trading is not enabled for this wallet',
-        });
+        throw badRequest('Auto-trading is not enabled for this wallet');
       }
 
       const enabledSetupTypes = parseEnabledSetupTypes(config.enabledSetupTypes);
       if (!enabledSetupTypes.includes(setup.setupType)) {
         log('! Setup type not enabled', { setupType: setup.setupType, enabledTypes: enabledSetupTypes });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Setup type ${setup.setupType} is not enabled`,
-        });
+        throw badRequest(`Setup type ${setup.setupType} is not enabled`);
       }
 
       const openPositions = await ctx.db
@@ -111,19 +99,13 @@ export const executionsRouter = router({
 
       if (openPositions.length >= effectiveMaxPositions) {
         log('! Max concurrent positions reached', { current: openPositions.length, max: effectiveMaxPositions });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Maximum concurrent positions (${effectiveMaxPositions}) reached`,
-        });
+        throw badRequest(`Maximum concurrent positions (${effectiveMaxPositions}) reached`);
       }
 
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (wallet.marketType && wallet.marketType !== input.marketType) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot execute ${input.marketType} setup on ${wallet.marketType} wallet`,
-        });
+        throw badRequest(`Cannot execute ${input.marketType} setup on ${wallet.marketType} wallet`);
       }
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
@@ -156,10 +138,7 @@ export const executionsRouter = router({
 
       if (!riskValidation.isValid) {
         log('! Risk validation failed', { reason: riskValidation.reason });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Risk validation failed: ${riskValidation.reason}`,
-        });
+        throw badRequest(`Risk validation failed: ${riskValidation.reason}`);
       }
 
       log('✓ Risk validation passed');
@@ -187,10 +166,7 @@ export const executionsRouter = router({
             entryPrice,
             stopLoss,
           });
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT',
-          });
+          throw badRequest('Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT');
         }
 
         const riskRewardRatio = reward / risk;
@@ -205,10 +181,9 @@ export const executionsRouter = router({
             riskRewardRatio: riskRewardRatio.toFixed(2),
             minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
           });
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
-          });
+          throw badRequest(
+            `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
+          );
         }
 
         log('✓ Risk/Reward ratio validated', {
@@ -219,10 +194,7 @@ export const executionsRouter = router({
         log('✗ Missing stop loss', {
           setupType: setup.setupType,
         });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Stop loss is required for trade execution',
-        });
+        throw badRequest('Stop loss is required for trade execution');
       } else {
         log('· Setup without take profit - skipping R:R validation', {
           setupType: setup.setupType,
@@ -291,18 +263,12 @@ export const executionsRouter = router({
 
       if (!execution) {
         log('✗ Execution not found', { executionId: input.executionId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Execution not found',
-        });
+        throw notFound('Execution');
       }
 
       if (execution.status !== 'open') {
         log('! Cannot cancel - execution not open', { executionId: input.executionId, status: execution.status });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Can only cancel open executions',
-        });
+        throw badRequest('Can only cancel open executions');
       }
 
       await ctx.db
@@ -414,18 +380,12 @@ export const executionsRouter = router({
 
       if (!execution) {
         log('✗ Execution not found', { executionId: input.executionId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Execution not found',
-        });
+        throw notFound('Execution');
       }
 
       if (execution.status !== 'open') {
         log('! Cannot close - execution not open', { executionId: input.executionId, status: execution.status });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Execution is not open',
-        });
+        throw badRequest('Execution is not open');
       }
 
       const entryPrice = parseFloat(execution.entryPrice);
