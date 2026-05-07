@@ -8,6 +8,7 @@ import { encryptApiKey } from '../../services/encryption';
 import { getWebSocketService } from '../../services/websocket';
 import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
+import { badRequest, notFound } from '../../utils/trpc-errors';
 import { WALLET_SAFE_COLUMNS } from './shared';
 
 export const walletCrudRouter = router({
@@ -29,12 +30,7 @@ export const walletCrudRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      if (!wallet) throw notFound('Wallet');
 
       return wallet;
     }),
@@ -106,12 +102,7 @@ export const walletCrudRouter = router({
           });
           const accountInfo = await client.getAccountInformationV3();
 
-          if (!accountInfo) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'Invalid Binance Futures API credentials',
-            });
-          }
+          if (!accountInfo) throw badRequest('Invalid Binance Futures API credentials');
 
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
           initialBalance = usdtAsset?.marginBalance ? parseFloat(String(usdtAsset.marginBalance)) : 0;
@@ -124,12 +115,7 @@ export const walletCrudRouter = router({
           });
           const accountInfo = await client.getAccountInformation();
 
-          if (!accountInfo) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'Invalid Binance API credentials',
-            });
-          }
+          if (!accountInfo) throw badRequest('Invalid Binance API credentials');
 
           const usdtBalance = accountInfo.balances?.find((b) => b.asset === 'USDT');
           initialBalance = usdtBalance?.free ? parseFloat(usdtBalance.free.toString()) : 0;
@@ -167,11 +153,10 @@ export const walletCrudRouter = router({
         if (error instanceof TRPCError) throw error;
 
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Failed to connect to Binance ${input.marketType} ${input.walletType}: ${errorMessage}`,
-          cause: error,
-        });
+        throw badRequest(
+          `Failed to connect to Binance ${input.marketType} ${input.walletType}: ${errorMessage}`,
+          error,
+        );
       }
     }),
 
@@ -191,12 +176,7 @@ export const walletCrudRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!existing) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      if (!existing) throw notFound('Wallet');
 
       const updateData: Partial<typeof wallets.$inferInsert> = {
         updatedAt: new Date(),
@@ -238,12 +218,7 @@ export const walletCrudRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!existing) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      if (!existing) throw notFound('Wallet');
 
       await ctx.db.delete(orders).where(eq(orders.walletId, input.id));
       await ctx.db.delete(positions).where(eq(positions.walletId, input.id));
