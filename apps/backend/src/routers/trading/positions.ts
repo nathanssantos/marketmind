@@ -1,5 +1,4 @@
 import { calculatePnl } from '@marketmind/utils';
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
@@ -11,6 +10,7 @@ import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
+import { badRequest, internalServerError, notFound } from '../../utils/trpc-errors';
 import { generateEntityId } from '../../utils/id';
 
 export const positionsRouter = router({
@@ -75,19 +75,15 @@ export const positionsRouter = router({
         }
 
         if (risk <= 0) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT',
-          });
+          throw badRequest('Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT');
         }
 
         const riskRewardRatio = reward / risk;
 
         if (riskRewardRatio < TRADING_CONFIG.MIN_RISK_REWARD_RATIO) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
-          });
+          throw badRequest(
+            `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
+          );
         }
 
         logger.info({
@@ -131,19 +127,9 @@ export const positionsRouter = router({
         .where(and(eq(positions.id, input.id), eq(positions.userId, ctx.user.id)))
         .limit(1);
 
-      if (!position) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Position not found',
-        });
-      }
+      if (!position) throw notFound('Position');
 
-      if (position.status !== 'open') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Position is not open',
-        });
-      }
+      if (position.status !== 'open') throw badRequest('Position is not open');
 
       const wallet = await walletQueries.getById(position.walletId);
 
@@ -208,18 +194,13 @@ export const positionsRouter = router({
             error: serializeError(error),
           }, 'Failed to execute Binance exit order for position');
 
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error instanceof Error ? error.message : 'Failed to execute exit order on Binance',
-          });
+          throw internalServerError(
+            error instanceof Error ? error.message : 'Failed to execute exit order on Binance',
+            error,
+          );
         }
       } else {
-        if (!input.exitPrice) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Exit price is required for paper trading',
-          });
-        }
+        if (!input.exitPrice) throw badRequest('Exit price is required for paper trading');
         logger.info({
           positionId: position.id,
           walletType: wallet.walletType,

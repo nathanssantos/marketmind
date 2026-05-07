@@ -1,5 +1,4 @@
 import type { MarketType } from '@marketmind/types';
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
@@ -14,6 +13,7 @@ import { clearProtectionOrderIds } from '../../services/execution-manager';
 import { cancelProtectionOrder, updateStopLossOrder, updateTakeProfitOrder } from '../../services/protection-orders';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
+import { badRequest, internalServerError, notFound } from '../../utils/trpc-errors';
 
 export const executionUpdatesRouter = router({
   updateTradeExecutionSLTP: protectedProcedure
@@ -26,10 +26,7 @@ export const executionUpdatesRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       if (input.stopLoss === undefined && input.takeProfit === undefined) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'At least one of stopLoss or takeProfit must be provided',
-        });
+        throw badRequest('At least one of stopLoss or takeProfit must be provided');
       }
 
       const [execution] = await ctx.db
@@ -38,18 +35,10 @@ export const executionUpdatesRouter = router({
         .where(and(eq(tradeExecutions.id, input.id), eq(tradeExecutions.userId, ctx.user.id)))
         .limit(1);
 
-      if (!execution) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Trade execution not found',
-        });
-      }
+      if (!execution) throw notFound('Trade execution');
 
       if (execution.status !== 'open' && execution.status !== 'pending') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Trade execution is not open or pending',
-        });
+        throw badRequest('Trade execution is not open or pending');
       }
 
       const wallet = await walletQueries.getById(execution.walletId);
@@ -110,10 +99,10 @@ export const executionUpdatesRouter = router({
             error: serializeError(error),
           }, 'Failed to update SL/TP orders on Binance');
 
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error instanceof Error ? error.message : 'Failed to update orders on Binance',
-          });
+          throw internalServerError(
+            error instanceof Error ? error.message : 'Failed to update orders on Binance',
+            error,
+          );
         }
       }
 
@@ -203,18 +192,10 @@ export const executionUpdatesRouter = router({
         )
         .limit(1);
 
-      if (!execution) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Pending trade execution not found',
-        });
-      }
+      if (!execution) throw notFound('Pending trade execution');
 
       if (execution.marketType !== 'FUTURES') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Only FUTURES pending orders can be moved',
-        });
+        throw badRequest('Only FUTURES pending orders can be moved');
       }
 
       const wallet = await walletQueries.getById(execution.walletId);
@@ -335,10 +316,10 @@ export const executionUpdatesRouter = router({
           symbol: execution.symbol,
           error: serializeError(error),
         }, 'Failed to create new entry order for pending entry move');
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to create new entry order',
-        });
+        throw internalServerError(
+          error instanceof Error ? error.message : 'Failed to create new entry order',
+          error,
+        );
       }
 
       await ctx.db
