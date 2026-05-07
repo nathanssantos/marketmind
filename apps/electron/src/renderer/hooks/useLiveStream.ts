@@ -13,6 +13,18 @@ export interface UseLiveStreamOptions<E extends LiveStreamEvent> {
   /** Optional override of the registry policy. Useful for tests or
    *  one-off panels that need a different cadence. */
   policyOverride?: Partial<LiveStreamPolicy>;
+  /**
+   * Imperative tap fired on EVERY raw payload — before throttle and
+   * coalesce decisions. Use for ref-only side effects that must capture
+   * every event (e.g. a metrics history buffer that's polled separately
+   * from the React render path). Returning a value is ignored.
+   *
+   * The hook still publishes to React state on its throttled cadence.
+   * If you only need ref-only access to every payload (no React state
+   * at all), prefer `useSocketEvent` directly — `onRawTick` is for
+   * the hybrid case where you want both.
+   */
+  onRawTick?: (payload: Parameters<ServerToClientEvents[E]>[0]) => void;
 }
 
 const shallowEqual = <T>(a: T, b: T): boolean => {
@@ -51,7 +63,9 @@ export const useLiveStream = <E extends LiveStreamEvent>(
   event: E,
   options: UseLiveStreamOptions<E> = {},
 ): Parameters<ServerToClientEvents[E]>[0] | null => {
-  const { enabled = true, initialValue = null, policyOverride } = options;
+  const { enabled = true, initialValue = null, policyOverride, onRawTick } = options;
+  const onRawTickRef = useRef(onRawTick);
+  onRawTickRef.current = onRawTick;
 
   const policy = useRef<LiveStreamPolicy>({ ...getPolicyFor(event), ...policyOverride });
   policy.current = { ...getPolicyFor(event), ...policyOverride };
@@ -87,6 +101,11 @@ export const useLiveStream = <E extends LiveStreamEvent>(
     event,
     ((payload: Payload) => {
       perfMonitor.recordLiveStreamReceived(event);
+      // Imperative side effect (e.g. ref-only history buffer) BEFORE
+      // throttle decisions. Errors here don't abort the throttle path.
+      if (onRawTickRef.current) {
+        try { onRawTickRef.current(payload); } catch { /* best-effort */ }
+      }
       pendingPayloadRef.current = payload;
 
       const { throttleMs, panMultiplier = 1 } = policy.current;
