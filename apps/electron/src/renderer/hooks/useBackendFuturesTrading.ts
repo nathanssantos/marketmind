@@ -35,6 +35,27 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     );
   };
 
+  // Apply a server-returned wallet snapshot directly to wallet.list
+  // cache. Used by every position mutation that returns a fresh
+  // balance — the `setQueryData` propagates immediately, before
+  // any refetch, so `useOrderQuantity`'s sizing math reflects the
+  // new capital on the very next click.
+  const applyWalletSnapshot = (data: unknown): void => {
+    if (!data || typeof data !== 'object') return;
+    const snapshot = (data as { walletSnapshot?: { currentBalance: string; totalWalletBalance: string } | null }).walletSnapshot;
+    const walletId = (data as { walletId?: string }).walletId;
+    if (!snapshot || !walletId) return;
+    const apply = (cache: unknown): unknown => {
+      if (!Array.isArray(cache)) return cache;
+      return (cache as Array<{ id?: string; currentBalance?: string; totalWalletBalance?: string | null }>).map((w) =>
+        w.id === walletId
+          ? { ...w, currentBalance: snapshot.currentBalance, totalWalletBalance: snapshot.totalWalletBalance }
+          : w,
+      );
+    };
+    queryClient.setQueriesData({ queryKey: getQueryKey(trpc.wallet.list) }, apply);
+  };
+
   // Fans out the authoritative open-executions snapshot across both
   // execution-cache procedures (chart's autoTrading.getActiveExecutions
   // included) for every input variant — see executionCacheSync.ts.
@@ -106,10 +127,17 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       // sibling charts at other timeframes update in the same render
       // frame as the click.
       fanOutOpenExecutions(data);
+      // Wallet/margin shifted with the order — apply the server-returned
+      // snapshot to wallet.list immediately so the size sizer is
+      // correct on the very next click.
+      applyWalletSnapshot(data);
+    },
+    onSettled: () => {
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenDbOrderIds.invalidate();
       void utils.futuresTrading.getPositions.invalidate();
       void utils.analytics.getPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
@@ -119,10 +147,14 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
+      applyWalletSnapshot(data);
+    },
+    onSettled: () => {
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenDbOrderIds.invalidate();
       void utils.trading.getOrders.invalidate();
       void utils.analytics.getPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
@@ -139,9 +171,13 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const closePositionMutation = trpc.futuresTrading.closePosition.useMutation({
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
+      applyWalletSnapshot(data);
+    },
+    onSettled: () => {
       void utils.futuresTrading.getPositions.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 
@@ -187,19 +223,7 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       // balance in the response. This drives `useOrderQuantity`'s
       // max-position-size math, so panel sizing is correct on the
       // very next click.
-      const snapshot = (data as { walletSnapshot?: { currentBalance: string; totalWalletBalance: string } | null }).walletSnapshot;
-      const walletId = (data as { walletId?: string }).walletId;
-      if (snapshot && walletId) {
-        const apply = (data: unknown): unknown => {
-          if (!Array.isArray(data)) return data;
-          return (data as Array<{ id?: string; currentBalance?: string; totalWalletBalance?: string | null }>).map((w) =>
-            w.id === walletId
-              ? { ...w, currentBalance: snapshot.currentBalance, totalWalletBalance: snapshot.totalWalletBalance }
-              : w,
-          );
-        };
-        queryClient.setQueriesData({ queryKey: getQueryKey(trpc.wallet.list) }, apply);
-      }
+      applyWalletSnapshot(data);
     },
     // onSettled fires for BOTH success and error. The reverse open
     // can fail AFTER the close already filled (insufficient margin
@@ -323,10 +347,14 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const closePositionAndCancelOrdersMutation = trpc.futuresTrading.closePositionAndCancelOrders.useMutation({
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
+      applyWalletSnapshot(data);
+    },
+    onSettled: () => {
       void utils.futuresTrading.getPositions.invalidate();
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
+      void utils.wallet.list.invalidate();
     },
   });
 

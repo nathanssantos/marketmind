@@ -55,6 +55,12 @@ export const LIVE_STREAM_POLICIES: Partial<Record<LiveStreamEvent, LiveStreamPol
   'scalpingMetrics:update':    { throttleMs: 200, panMultiplier: DEFAULT_PAN_MULTIPLIER, coalesce: 'shallow' },
   'liquidityHeatmap:bucket':   { throttleMs: 250, panMultiplier: DEFAULT_PAN_MULTIPLIER, coalesce: 'shallow' },
   'aggTrade:update':           { throttleMs: 100, panMultiplier: DEFAULT_PAN_MULTIPLIER, coalesce: 'shallow' },
+  // 250ms is fast enough to feel realtime in the activity log while
+  // collapsing burst windows (active auto-trading sessions can fire 10+
+  // log entries/sec when watchers all evaluate at once). The hook
+  // accumulates EVERY entry via `onRawTick` — only the React state
+  // setLogs call is throttled.
+  'autoTrading:log':           { throttleMs: 250, panMultiplier: DEFAULT_PAN_MULTIPLIER, coalesce: 'off' },
   // Events left out of this table fall back to no-throttle, no-coalesce
   // — that's the right default for action-driven events.
 };

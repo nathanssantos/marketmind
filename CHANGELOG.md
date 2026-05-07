@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-05-07
+
+### Fixed — wallet snapshot pattern across all position/order mutations (#484, #485)
+
+Follow-up to #481. The reverse-position path got the wallet snapshot treatment in v1.14.0; this patch extends it to every futures mutation that affects margin or capital.
+
+- **Pre-existing paper bug**: `closePosition` paper path never updated `wallet.currentBalance` (same bug as the reverse path before v1.14.0). Closing a +$200 paper trade left the wallet untouched until manual refresh. Fixed.
+- **Live `closePosition` / `closePositionAndCancelOrders`**: synchronous `syncLiveWalletSnapshot` after the close fills, returns the snapshot in the response. Frontend `applyWalletSnapshot` writes it directly to `wallet.list` cache — no refetch round-trip.
+- **Live `createOrder`**: snapshot after the order submit. MARKET fills move balance/margin immediately; LIMIT/STOP locks margin too. Fresh capital available before the next click.
+- **Live `cancelOrder`**: cancelling a pending LIMIT/STOP releases locked margin → available balance shifts. Now synced.
+- **Frontend `onSettled` invalidation**: all four mutations switched from `onSuccess`-only invalidations to `onSettled` so error paths still refresh wallet/positions/orders. Previously a Binance reject that partially filled stranded the cache stale until the user-stream tick.
+- **Shared service**: extracted `syncLiveWalletSnapshot` to `services/wallet-snapshot.ts`. Single home for the (Binance `getAccountInfo` → DB write → return snapshot) pattern instead of inline copies.
+
+### Added — `autoTrading:log` stream throttling (#486)
+
+Last hot consumer migrated to the central live-stream registry. During active auto-trading sessions watchers across N symbols evaluate together — `autoTrading:log` can burst at 10+ entries/sec, each firing `setLogs([...prev, entry])`. The activity-log panel re-rendered ~10×/sec. Now uses `useLiveStream` with `onRawTick`:
+
+- **`logsRef`** — ref-only buffer captures EVERY entry. Trimmed to MAX_LOGS. Zero React cost.
+- **`logs` state** — flushed on the policy's window (250ms idle / 1000ms during pan). Snapshot copy from the ref at each window edge.
+
+Net: list renders at most 4×/sec under load, 1×/sec during pan. History buffer still captures every entry.
+
 ## [1.14.0] - 2026-05-07
 
 ### Fixed — reverse position correctness + atomicity (#481)

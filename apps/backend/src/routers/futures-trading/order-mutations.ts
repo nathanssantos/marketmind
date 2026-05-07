@@ -20,6 +20,7 @@ import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { getScalpingScheduler } from '../../services/scalping/scalping-scheduler';
+import { syncLiveWalletSnapshot } from '../../services/wallet-snapshot';
 import { getWebSocketService } from '../../services/websocket';
 import { protectedProcedure, router } from '../../trpc';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
@@ -242,6 +243,12 @@ export const orderMutationsRouter = router({
         const wsService = getWebSocketService();
         if (wsService) wsService.emitOrderCreated(input.walletId, orderResult);
 
+        // Synchronous wallet refresh — MARKET fills move balance/margin
+        // immediately; LIMIT/STOP locks/unlocks margin too. Either way
+        // the frontend's max-position-size sizer needs the fresh
+        // capital before the user clicks again.
+        const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
+
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
             eq(tradeExecutions.walletId, input.walletId),
@@ -249,7 +256,7 @@ export const orderMutationsRouter = router({
             eq(tradeExecutions.status, 'open'),
           ));
 
-        return { ...orderResult, openExecutions };
+        return { ...orderResult, openExecutions, walletSnapshot };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
       }
@@ -336,7 +343,12 @@ export const orderMutationsRouter = router({
           }
         }
 
-        return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions };
+        // Cancel releases locked margin on a pending LIMIT/STOP order —
+        // available balance shifts. Sync so the frontend's max-position-
+        // size sizer doesn't undercount margin on the next click.
+        const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
+
+        return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions, walletSnapshot };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
       }
