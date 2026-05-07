@@ -5,12 +5,13 @@ import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
-import { orders, positions, tradeExecutions } from '../../db/schema';
+import { orders, positions, tradeExecutions, wallets } from '../../db/schema';
 import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   cancelAllSymbolOrders,
   closePosition as closeExchangePosition,
   createBinanceFuturesClient,
+  getAccountInfo,
   getPosition,
   isPaperWallet,
   submitFuturesOrder,
@@ -22,6 +23,44 @@ import { getMinNotionalFilterService } from '../../services/min-notional-filter'
 import { protectedProcedure, router } from '../../trpc';
 import { formatQuantityForBinance } from '../../utils/formatters';
 import { generateEntityId } from '../../utils/id';
+
+/**
+ * Refresh the local wallet snapshot from Binance immediately after an
+ * order/position change. Used by the position mutations so the
+ * frontend's wallet.list cache reflects realtime margin/capital after
+ * a fill, instead of waiting for the user-stream WS to catch up
+ * (typically 200-500ms; sometimes seconds during reconnect storms).
+ *
+ * Returns the updated wallet record for inline use in mutation responses
+ * — the frontend can `setQueryData` from the response without an extra
+ * refetch round-trip. Errors are swallowed and logged: if Binance
+ * doesn't answer, the user-stream's eventual update is still authoritative.
+ */
+const syncLiveWalletSnapshot = async (
+  ctx: { db: typeof import('../../db').db },
+  wallet: { id: string; userId: string; totalWalletBalance?: string | null; currentBalance?: string | null },
+  client: import('binance').USDMClient,
+): Promise<{ totalWalletBalance: string; currentBalance: string } | null> => {
+  try {
+    const account = await getAccountInfo(client);
+    const totalWalletBalance = account.totalWalletBalance;
+    // currentBalance kept in sync with totalWalletBalance — both fields
+    // are read by the frontend (`portfolio.walletBalance ?? .balance`)
+    // and tests reconcile via `totalWalletBalance` first.
+    const currentBalance = totalWalletBalance;
+    await ctx.db
+      .update(wallets)
+      .set({ totalWalletBalance, currentBalance, updatedAt: new Date() })
+      .where(eq(wallets.id, wallet.id));
+    return { totalWalletBalance, currentBalance };
+  } catch (err) {
+    logger.warn(
+      { walletId: wallet.id, error: serializeError(err) },
+      '[position-mutations] Failed to refresh live wallet snapshot — relying on user-stream',
+    );
+    return null;
+  }
+};
 
 // In-flight reverse-position calls keyed by `${walletId}:${symbol}`.
 // Two parallel reverses on the same live wallet+symbol would otherwise
@@ -351,6 +390,22 @@ export const positionMutationsRouter = router({
               accumulatedFunding: '0',
             });
 
+            // Roll the realized PnL into wallet.currentBalance so the
+            // frontend's max-position-size calculation (driven by
+            // `useOrderQuantity`'s `parseFloat(activeWallet.currentBalance)`)
+            // sees the updated capital before the next click. Mirrors
+            // what `closePosition` already does on the paper path —
+            // the absence of this update was a pre-existing bug:
+            // closing a +$200 paper trade left the wallet untouched
+            // until a manual refresh.
+            const currentBalance = parseFloat(wallet.currentBalance ?? '0');
+            const newBalance = currentBalance + netPnl;
+            const newBalanceStr = newBalance.toString();
+            await tx
+              .update(wallets)
+              .set({ currentBalance: newBalanceStr, totalWalletBalance: newBalanceStr, updatedAt: new Date() })
+              .where(eq(wallets.id, wallet.id));
+
             return {
               newPositionId,
               newSide,
@@ -358,6 +413,7 @@ export const positionMutationsRouter = router({
               symbol: position.symbol,
               oldSide: position.side,
               exitPrice,
+              walletSnapshot: { currentBalance: newBalanceStr, totalWalletBalance: newBalanceStr },
             };
           });
 
@@ -385,6 +441,7 @@ export const positionMutationsRouter = router({
             newSide: reversed.newSide,
             walletId: input.walletId,
             openExecutions: paperOpenExecutions,
+            walletSnapshot: reversed.walletSnapshot,
           };
         }
 
@@ -452,6 +509,13 @@ export const positionMutationsRouter = router({
             // toast — observed when a Binance "Margin is insufficient"
             // error came back as a wrapped object literal.
             const reason = serializeError(openError);
+            // Refresh the local wallet snapshot before throwing so the
+            // user sees the post-close balance even though the open
+            // failed — they're flat now, capital reflects the realized
+            // PnL of the close leg. Without this, the frontend's
+            // `wallet.list` cache stays at the pre-close balance until
+            // the user-stream WS event lands.
+            await syncLiveWalletSnapshot(ctx, wallet, client);
             logger.error({
               walletId: input.walletId,
               symbol: input.symbol,
@@ -473,6 +537,12 @@ export const positionMutationsRouter = router({
             quantity: formattedQty,
           }, 'Position reversed: cancel orders → close → open');
 
+          // Pull the post-orders account state immediately. Both close
+          // and open changed margin/balance — the frontend's max-order
+          // sizer reads `wallet.currentBalance` and would otherwise
+          // see stale capital until the next user-stream event.
+          const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
+
           const openExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
               eq(tradeExecutions.walletId, input.walletId),
@@ -487,6 +557,7 @@ export const positionMutationsRouter = router({
             newSide: positionAmt > 0 ? 'SHORT' : 'LONG',
             walletId: input.walletId,
             openExecutions,
+            walletSnapshot,
           };
         } finally {
           liveReverseInFlight.delete(lockKey);

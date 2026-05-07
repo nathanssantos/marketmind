@@ -180,12 +180,43 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
     },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
+      // Use the wallet snapshot returned by the mutation to update
+      // `wallet.list` IMMEDIATELY — no waiting for the round-trip. The
+      // backend now refreshes from Binance (live) or computes from
+      // realized PnL (paper) inside the mutation and includes the new
+      // balance in the response. This drives `useOrderQuantity`'s
+      // max-position-size math, so panel sizing is correct on the
+      // very next click.
+      const snapshot = (data as { walletSnapshot?: { currentBalance: string; totalWalletBalance: string } | null }).walletSnapshot;
+      const walletId = (data as { walletId?: string }).walletId;
+      if (snapshot && walletId) {
+        const apply = (data: unknown): unknown => {
+          if (!Array.isArray(data)) return data;
+          return (data as Array<{ id?: string; currentBalance?: string; totalWalletBalance?: string | null }>).map((w) =>
+            w.id === walletId
+              ? { ...w, currentBalance: snapshot.currentBalance, totalWalletBalance: snapshot.totalWalletBalance }
+              : w,
+          );
+        };
+        queryClient.setQueriesData({ queryKey: getQueryKey(trpc.wallet.list) }, apply);
+      }
+    },
+    // onSettled fires for BOTH success and error. The reverse open
+    // can fail AFTER the close already filled (insufficient margin
+    // post-loss is the textbook case) — at that point the wallet
+    // balance HAS changed even though the mutation rejected. Without
+    // this fallback the frontend's wallet.list stays at the pre-close
+    // balance until the user-stream event arrives, leaving the user
+    // sizing the next click against a phantom capital number. Same
+    // logic for positions: the close fired even if the open didn't,
+    // so the position list needs a refresh either way.
+    onSettled: () => {
       // A reverse touches every cache that close + cancelAll + create
       // would touch combined. Invalidate the union so nothing lags:
       //   positions:        old closed, new opened
-      //   openOrders / Algo / DbOrderIds: cancelled (handled optimistically above)
+      //   openOrders / Algo / DbOrderIds: cancelled (handled optimistically in onMutate)
       //   trading.getOrders: order rows transitioned to CANCELED (paper)
-      //   trading.getTradeExecutions / autoTrading.getActiveExecutions: handled by fanOut
+      //   trading.getTradeExecutions / autoTrading.getActiveExecutions: handled by fanOut on success
       //   analytics.getPerformance + getDailyPerformance: realized PnL hits the books
       //   wallet.list: paper currentBalance shifts; live margin/balance shift too
       void utils.futuresTrading.getPositions.invalidate();
