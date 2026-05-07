@@ -64,7 +64,7 @@ export const mergePositionUpdate = <T extends ExecutionLike>(
  */
 export const mergePositionClosed = <T extends ExecutionLike>(
   prev: T[] | undefined,
-  payload: { positionId: string; pnl?: number; pnlPercent?: number; exitReason?: string },
+  payload: { positionId: string; pnl?: number; pnlPercent?: number; exitReason?: string; exitPrice?: number },
 ): T[] => {
   if (!prev) return [];
   const idx = prev.findIndex((e) => e.id === payload.positionId);
@@ -78,6 +78,7 @@ export const mergePositionClosed = <T extends ExecutionLike>(
     ...(payload.pnl !== undefined ? { pnl: String(payload.pnl) } : {}),
     ...(payload.pnlPercent !== undefined ? { pnlPercent: String(payload.pnlPercent) } : {}),
     ...(payload.exitReason !== undefined ? { exitReason: payload.exitReason } : {}),
+    ...(payload.exitPrice !== undefined ? { exitPrice: String(payload.exitPrice) } : {}),
   };
   return next;
 };
