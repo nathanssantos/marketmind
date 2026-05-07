@@ -1,8 +1,9 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, or } from 'drizzle-orm';
 import { db } from '../db';
-import { autoTradingConfig, tradeExecutions, wallets, type Wallet } from '../db/schema';
+import { autoTradingConfig, orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, getOpenAlgoOrders, getPositions, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
+import { getOpenOrders as getBinanceOpenOrders } from './binance-futures-orders';
 import { clearProtectionOrderIds, syncProtectionOrderIdFromExchange } from './execution-manager';
 import { logger, serializeError } from './logger';
 import { cancelProtectionOrder } from './protection-orders';
@@ -126,7 +127,7 @@ export class OrderSyncService {
 
       const client = createBinanceFuturesClient(wallet);
 
-      const [dbOpenPositions, exchangeOrders, exchangePositions] = await Promise.all([
+      const [dbOpenPositions, exchangeOrders, exchangePositions, exchangeRegularOrders] = await Promise.all([
         db
           .select()
           .from(tradeExecutions)
@@ -139,7 +140,10 @@ export class OrderSyncService {
           ),
         getOpenAlgoOrders(client),
         getPositions(client),
+        getBinanceOpenOrders(client),
       ]);
+
+      await this.reconcileOrdersTable(wallet.id, exchangeRegularOrders, exchangeOrders);
 
       const symbolsWithPositionOnExchange = new Set(
         exchangePositions.filter(p => parseFloat(p.positionAmt) !== 0).map(p => p.symbol)
@@ -473,6 +477,54 @@ export class OrderSyncService {
     }
 
     return result;
+  }
+
+  /**
+   * Mark DB orders that no longer exist on Binance as EXPIRED.
+   * Without this, orders accumulate forever in NEW status whenever the
+   * user-stream loses an ORDER_TRADE_UPDATE event (reconnect gap, ban
+   * window, server restart). 11k+ stale rows had built up in one wallet
+   * by 2026-05-07. Runs as part of the normal periodic sync — covers
+   * regular orders + algo (STOP_MARKET / TAKE_PROFIT_MARKET) orders.
+   */
+  private async reconcileOrdersTable(
+    walletId: string,
+    binanceOpenOrders: ReadonlyArray<{ orderId: number | string }>,
+    binanceOpenAlgos: ReadonlyArray<FuturesAlgoOrder>,
+  ): Promise<void> {
+    const liveIds = new Set<string>([
+      ...binanceOpenOrders.map((o) => String(o.orderId)),
+      ...binanceOpenAlgos.map((a) => String(a.algoId)),
+    ]);
+
+    const dbActiveOrders = await db
+      .select({ orderId: orders.orderId })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.walletId, walletId),
+          or(eq(orders.status, 'NEW'), eq(orders.status, 'PARTIALLY_FILLED')),
+        ),
+      );
+
+    const staleIds = dbActiveOrders.map((r) => r.orderId).filter((id) => !liveIds.has(id));
+    if (staleIds.length === 0) return;
+
+    await db
+      .update(orders)
+      .set({ status: 'EXPIRED', updateTime: Date.now() })
+      .where(
+        and(
+          eq(orders.walletId, walletId),
+          inArray(orders.orderId, staleIds),
+          or(eq(orders.status, 'NEW'), eq(orders.status, 'PARTIALLY_FILLED')),
+        ),
+      );
+
+    logger.info(
+      { walletId, count: staleIds.length },
+      '[OrderSync] Reconciled stale orders → EXPIRED',
+    );
   }
 
   async runOnce(options?: { autoCancelOrphans?: boolean; autoFixMismatches?: boolean }): Promise<OrderSyncResult[]> {
