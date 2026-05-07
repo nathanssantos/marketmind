@@ -28,5 +28,8 @@ export const unauthorized = (reason = 'Unauthorized', cause?: unknown): TRPCErro
 export const forbidden = (reason = 'Forbidden', cause?: unknown): TRPCError =>
   new TRPCError({ code: 'FORBIDDEN', message: reason, cause });
 
+export const payloadTooLarge = (reason: string, cause?: unknown): TRPCError =>
+  new TRPCError({ code: 'PAYLOAD_TOO_LARGE', message: reason, cause });
+
 export const internalServerError = (reason: string, cause?: unknown): TRPCError =>
   new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: reason, cause });

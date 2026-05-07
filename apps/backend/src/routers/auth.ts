@@ -1,5 +1,4 @@
 import { verify } from '@node-rs/argon2';
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { validatePassword } from '@marketmind/utils';
@@ -56,6 +55,7 @@ import {
   SecurityEvent,
 } from '../services/security';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
+import { badRequest, conflict, notFound, payloadTooLarge, unauthorized } from '../utils/trpc-errors';
 
 interface CookieReply {
   setCookie(name: string, value: string, options: {
@@ -110,10 +110,7 @@ export const authRouter = router({
           email: input.email,
           reason: 'email_already_registered',
         });
-        throw new TRPCError({
-          code: 'CONFLICT',
-          message: 'Email already registered',
-        });
+        throw conflict('Email already registered');
       }
 
       const userId = await createUser(input.email, input.password);
@@ -174,10 +171,7 @@ export const authRouter = router({
           email: input.email,
           reason: 'user_not_found',
         });
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Invalid credentials',
-        });
+        throw unauthorized('Invalid credentials');
       }
 
       const validPassword = await verify(user.passwordHash, input.password);
@@ -189,10 +183,7 @@ export const authRouter = router({
           email: input.email,
           reason: 'invalid_password',
         });
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Invalid credentials',
-        });
+        throw unauthorized('Invalid credentials');
       }
 
       recordLoginAttempt(ip, input.email, true);
@@ -255,10 +246,7 @@ export const authRouter = router({
           ...metadata,
           reason: 'invalid_code',
         });
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Invalid or expired code',
-        });
+        throw unauthorized('Invalid or expired code');
       }
 
       recordTwoFactorAttempt(input.userId, true);
@@ -289,7 +277,7 @@ export const authRouter = router({
         .where(eq(users.id, input.userId))
         .limit(1);
 
-      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      if (!user) throw notFound('User');
 
       const code = await createTwoFactorCode(user.id);
       await sendTwoFactorCode(user.email, code);
@@ -300,12 +288,7 @@ export const authRouter = router({
     }),
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
-    if (!ctx.sessionId) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Not authenticated',
-      });
-    }
+    if (!ctx.sessionId) throw unauthorized('Not authenticated');
 
     const req = ctx.req;
     const metadata = extractRequestMetadata(req);
@@ -375,10 +358,7 @@ export const authRouter = router({
           ...metadata,
           reason: 'invalid_current_password',
         });
-        throw new TRPCError({
-          code: 'UNAUTHORIZED',
-          message: 'Current password is incorrect',
-        });
+        throw unauthorized('Current password is incorrect');
       }
 
       await updateUserPassword(user.id, input.newPassword);
@@ -401,16 +381,12 @@ export const authRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       if (!AVATAR_LIMITS.ALLOWED_MIME_TYPES.includes(input.mimeType as typeof AVATAR_LIMITS.ALLOWED_MIME_TYPES[number])) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Unsupported image type. Allowed: ${AVATAR_LIMITS.ALLOWED_MIME_TYPES.join(', ')}`,
-        });
+        throw badRequest(`Unsupported image type. Allowed: ${AVATAR_LIMITS.ALLOWED_MIME_TYPES.join(', ')}`);
       }
       if (input.data.length > AVATAR_LIMITS.MAX_DATA_BYTES) {
-        throw new TRPCError({
-          code: 'PAYLOAD_TOO_LARGE',
-          message: `Avatar exceeds maximum size of ${Math.round(AVATAR_LIMITS.MAX_DATA_BYTES / 1024)}KB`,
-        });
+        throw payloadTooLarge(
+          `Avatar exceeds maximum size of ${Math.round(AVATAR_LIMITS.MAX_DATA_BYTES / 1024)}KB`,
+        );
       }
 
       await setUserAvatar(ctx.user.id, input.data, input.mimeType);
@@ -442,10 +418,7 @@ export const authRouter = router({
     .input(z.object({ sessionId: z.string() }))
     .mutation(async ({ input, ctx }) => {
       if (input.sessionId === ctx.sessionId) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Use logout to revoke the current session',
-        });
+        throw badRequest('Use logout to revoke the current session');
       }
       await ctx.db
         .delete(sessions)
@@ -454,9 +427,7 @@ export const authRouter = router({
     }),
 
   revokeAllOtherSessions: protectedProcedure.mutation(async ({ ctx }) => {
-    if (!ctx.sessionId) {
-      throw new TRPCError({ code: 'UNAUTHORIZED' });
-    }
+    if (!ctx.sessionId) throw unauthorized();
     await invalidateOtherUserSessions(ctx.user.id, ctx.sessionId);
     return { success: true };
   }),
@@ -515,10 +486,7 @@ export const authRouter = router({
           ...metadata,
           reason: 'invalid_or_expired_token',
         });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Invalid or expired reset token',
-        });
+        throw badRequest('Invalid or expired reset token');
       }
 
       await updateUserPassword(tokenResult.userId, input.password);
@@ -538,12 +506,7 @@ export const authRouter = router({
 
       const result = await verifyEmailToken(input.token);
 
-      if (!result) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Invalid or expired verification link',
-        });
-      }
+      if (!result) throw badRequest('Invalid or expired verification link');
 
       logSecurityEvent(SecurityEvent.EMAIL_VERIFICATION_SUCCESS, result.userId, metadata);
 
@@ -555,12 +518,7 @@ export const authRouter = router({
     const metadata = extractRequestMetadata(req);
     const user = ctx.user;
 
-    if (user.emailVerified) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Email already verified',
-      });
-    }
+    if (user.emailVerified) throw badRequest('Email already verified');
 
     checkEmailVerificationRateLimit(user.email, metadata);
 
@@ -584,10 +542,7 @@ export const authRouter = router({
       const user = ctx.user;
 
       if (input.enabled && !user.emailVerified) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Email must be verified before enabling two-factor authentication',
-        });
+        throw badRequest('Email must be verified before enabling two-factor authentication');
       }
 
       await toggleTwoFactor(user.id, input.enabled);
