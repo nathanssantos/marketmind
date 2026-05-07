@@ -1,5 +1,4 @@
 import { DEFAULT_CURRENCY } from '@marketmind/types';
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { wallets, tradeExecutions } from '../../db/schema';
@@ -9,6 +8,7 @@ import { createBinanceFuturesClient, getPositions as getFuturesPositions } from 
 import { getWebSocketService } from '../../services/websocket';
 import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
+import { internalServerError, notFound } from '../../utils/trpc-errors';
 
 export const walletSyncRouter = router({
   syncBalance: protectedProcedure
@@ -20,12 +20,7 @@ export const walletSyncRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      if (!wallet) throw notFound('Wallet');
 
       if (isPaperWallet(wallet)) {
         return {
@@ -130,11 +125,10 @@ export const walletSyncRouter = router({
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to sync balance from Binance ${wallet.walletType}: ${errorMessage}`,
-          cause: error,
-        });
+        throw internalServerError(
+          `Failed to sync balance from Binance ${wallet.walletType}: ${errorMessage}`,
+          error,
+        );
       }
     }),
 
@@ -147,12 +141,7 @@ export const walletSyncRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      if (!wallet) throw notFound('Wallet');
 
       if (isPaperWallet(wallet)) {
         return {
@@ -184,11 +173,7 @@ export const walletSyncRouter = router({
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to sync transfers: ${errorMessage}`,
-          cause: error,
-        });
+        throw internalServerError(`Failed to sync transfers: ${errorMessage}`, error);
       }
     }),
 
@@ -206,9 +191,7 @@ export const walletSyncRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
-      }
+      if (!wallet) throw notFound('Wallet');
 
       if (isPaperWallet(wallet)) {
         return { success: true, fetched: 0, inserted: 0, message: 'Paper wallet — no income to sync' };
@@ -228,11 +211,7 @@ export const walletSyncRouter = router({
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to backfill income: ${errorMessage}`,
-          cause: error,
-        });
+        throw internalServerError(`Failed to backfill income: ${errorMessage}`, error);
       }
     }),
 });

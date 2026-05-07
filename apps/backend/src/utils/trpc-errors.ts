@@ -13,20 +13,20 @@ import { TRPCError } from '@trpc/server';
  *   if (qty <= 0) throw badRequest('quantity must be positive');
  */
 
-export const notFound = (resource: string): TRPCError =>
-  new TRPCError({ code: 'NOT_FOUND', message: `${resource} not found` });
+export const notFound = (resource: string, cause?: unknown): TRPCError =>
+  new TRPCError({ code: 'NOT_FOUND', message: `${resource} not found`, cause });
 
-export const badRequest = (reason: string): TRPCError =>
-  new TRPCError({ code: 'BAD_REQUEST', message: reason });
+export const badRequest = (reason: string, cause?: unknown): TRPCError =>
+  new TRPCError({ code: 'BAD_REQUEST', message: reason, cause });
 
-export const conflict = (reason: string): TRPCError =>
-  new TRPCError({ code: 'CONFLICT', message: reason });
+export const conflict = (reason: string, cause?: unknown): TRPCError =>
+  new TRPCError({ code: 'CONFLICT', message: reason, cause });
 
-export const unauthorized = (reason = 'Unauthorized'): TRPCError =>
-  new TRPCError({ code: 'UNAUTHORIZED', message: reason });
+export const unauthorized = (reason = 'Unauthorized', cause?: unknown): TRPCError =>
+  new TRPCError({ code: 'UNAUTHORIZED', message: reason, cause });
 
-export const forbidden = (reason = 'Forbidden'): TRPCError =>
-  new TRPCError({ code: 'FORBIDDEN', message: reason });
+export const forbidden = (reason = 'Forbidden', cause?: unknown): TRPCError =>
+  new TRPCError({ code: 'FORBIDDEN', message: reason, cause });
 
 export const internalServerError = (reason: string, cause?: unknown): TRPCError =>
   new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: reason, cause });
