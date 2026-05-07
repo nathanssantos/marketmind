@@ -65,6 +65,14 @@ export const TrpcProvider = ({ children }: { children: React.ReactNode }) => {
                     if (errMsg.includes('UNAUTHORIZED')) return false;
                     if (errMsg.includes('NOT_FOUND')) return false;
                     if (errMsg.includes('TOO_MANY_REQUESTS')) return false;
+                    // Binance IP bans last 5+ minutes; retrying just hammers
+                    // them while we're already on the naughty list and risks
+                    // extending the ban penalty. The ban store already
+                    // disables polling — for one-shot queries we just give
+                    // up and let the user-driven refetch try again after
+                    // the ban window clears.
+                    if (errMsg.includes('IP banned')) return false;
+                    if (errMsg.includes('BinanceIpBannedError')) return false;
                     return failureCount < 2;
                 },
                 retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),

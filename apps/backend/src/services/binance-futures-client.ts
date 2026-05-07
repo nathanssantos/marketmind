@@ -56,12 +56,22 @@ export async function setMarginType(
   try {
     await guardBinanceCall(() => client.setMarginType({ symbol, marginType }));
   } catch (error: unknown) {
+    // Binance returns the same "wrong" status (-4046 / -4067) regardless of
+    // whether the symbol's margin type already matches the request. The
+    // message can land on .msg (raw Binance SDK error object) OR .message
+    // (Error instance) depending on the call path — extract via serializeError
+    // so both shapes match. Earlier code only checked Error.message and
+    // missed the SDK's `{ code, msg }` form, producing a noisy ERROR log
+    // every time createOrder pre-emptively normalized margin type.
     const errorCode = (error as { code?: number })?.code;
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    if (errorMsg.includes('No need to change margin type') || errorCode === -4067) {
-      return;
-    }
-    logger.error({ error: serializeError(error), symbol, marginType }, 'Failed to set margin type');
+    const errorMsg = serializeError(error);
+    const benign =
+      errorCode === -4046 ||
+      errorCode === -4067 ||
+      errorMsg.includes('No need to change margin type') ||
+      errorMsg.includes('Margin type cannot be changed');
+    if (benign) return;
+    logger.error({ error: errorMsg, symbol, marginType }, 'Failed to set margin type');
     throw error;
   }
 }
