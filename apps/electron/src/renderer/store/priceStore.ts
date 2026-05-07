@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import type { MarketType } from '@marketmind/types';
+import { DEFAULT_PAN_MULTIPLIER } from '../services/liveStreamPolicies';
 import { isPanActive } from './panActivityStore';
 
 interface PriceEntry {
@@ -249,15 +250,14 @@ export const useDailyChangePct = (symbol: string, marketType: MarketType): numbe
 };
 
 const SIDEBAR_PRICE_UPDATE_THROTTLE_MS = 250;
-const PAN_THROTTLE_MULTIPLIER = 4;
 
 // Stretch the throttle window when any chart is mid-pan. Same idea as
 // `LIVE_STREAM_POLICIES.panMultiplier` — keeping the React tree quiet
 // while the user is actively dragging the canvas. Imperative read
 // (no subscription) so this lookup is cheap inside the per-tick
-// throttle decision.
+// throttle decision. Multiplier shared with the registry's default.
 const getEffectiveThrottle = (baseMs: number): number =>
-  isPanActive() ? baseMs * PAN_THROTTLE_MULTIPLIER : baseMs;
+  isPanActive() ? baseMs * DEFAULT_PAN_MULTIPLIER : baseMs;
 
 export const usePricesForSymbols = (symbols: string[]): Record<string, number> => {
   const joinedSymbols = symbols.join(',');

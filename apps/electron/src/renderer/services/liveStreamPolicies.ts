@@ -24,7 +24,14 @@ export interface LiveStreamPolicy {
   coalesce?: 'off' | 'shallow' | 'deep';
 }
 
-const DEFAULT_PAN_MULTIPLIER = 4;
+/**
+ * Default factor by which all stream throttle windows stretch while a
+ * chart is panning. Exported so non-`useLiveStream` throttle paths
+ * (`priceStore`'s own per-store timers) can apply the same multiplier
+ * — keeping perf behavior consistent across all live data, not just
+ * the registry-managed streams.
+ */
+export const DEFAULT_PAN_MULTIPLIER = 4;
 
 // Single source of truth for live-stream pacing. Tweak here to globally
 // tune perf — every consumer that uses `useLiveStream` inherits the

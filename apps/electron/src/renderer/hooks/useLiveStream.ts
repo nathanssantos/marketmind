@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isPanActive } from '../store/panActivityStore';
 import { getPolicyFor, type LiveStreamEvent, type LiveStreamPolicy } from '../services/liveStreamPolicies';
 import { perfMonitor } from '../utils/canvas/perfMonitor';
+import { shallowEqual } from '../utils/equality';
 import { useSocketEvent } from './socket';
 
 export interface UseLiveStreamOptions<E extends LiveStreamEvent> {
@@ -26,18 +27,6 @@ export interface UseLiveStreamOptions<E extends LiveStreamEvent> {
    */
   onRawTick?: (payload: Parameters<ServerToClientEvents[E]>[0]) => void;
 }
-
-const shallowEqual = <T>(a: T, b: T): boolean => {
-  if (a === b) return true;
-  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
-  const ka = Object.keys(a as object);
-  const kb = Object.keys(b as object);
-  if (ka.length !== kb.length) return false;
-  for (const k of ka) {
-    if ((a as Record<string, unknown>)[k] !== (b as Record<string, unknown>)[k]) return false;
-  }
-  return true;
-};
 
 /**
  * Subscribe to a typed server event with built-in throttling, coalescing,
