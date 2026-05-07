@@ -91,21 +91,22 @@ interface PositionClosedEventOptions {
 }
 
 /**
- * Single-call broadcast of the three WS events that always fire
- * together when a position closes:
+ * Single-call broadcast of the WS events that fire together when a
+ * position closes:
  *
- *   - `position:update` (status: closed)  — generic patch path
- *   - `order:update`    (status: closed)  — keeps order tables in sync
- *   - `position:closed`                   — drives optimistic
- *                                            close-line animations
- *                                            and the `wallet`
- *                                            invalidation schedule
+ *   - `order:update`     (status: closed)  — keeps order tables in sync
+ *   - `position:closed`                    — drives the close cascade
+ *                                             (markExecutionClosedInAllCaches +
+ *                                             wallet/setupStats/equityCurve
+ *                                             invalidation schedule)
  *
- * Was duplicated across `handle-exit-fill`, `handle-untracked-fill`,
- * `position-lifecycle` (twice), `position-sync`, and a couple of
- * scalping paths — every site producing a slightly different subset
- * of fields with the same intent. Centralized so future close paths
- * don't silently forget to emit one of the three.
+ * The earlier shape also emitted `position:update` with status='closed'
+ * but the renderer's position:update handler short-circuits when
+ * status='closed' (PR #492) since position:closed runs the canonical
+ * mark-closed path. The renderer-side cache merge for position:closed
+ * now writes exitPrice too, so the position:update emit is pure
+ * waste — one extra socket frame per close, multiplied by N siblings
+ * on DCA close-all paths.
  */
 export const emitPositionClosedEvents = (opts: PositionClosedEventOptions): void => {
   const wsService = getWebSocketService();
@@ -115,15 +116,6 @@ export const emitPositionClosedEvents = (opts: PositionClosedEventOptions): void
   const exitPriceStr = opts.exitPrice.toString();
   const pnlStr = opts.pnl.toString();
   const pnlPercentStr = opts.pnlPercent.toString();
-
-  wsService.emitPositionUpdate(opts.walletId, {
-    ...opts.execution,
-    status: 'closed',
-    exitPrice: exitPriceStr,
-    pnl: pnlStr,
-    pnlPercent: pnlPercentStr,
-    exitReason: opts.exitReason,
-  });
 
   wsService.emitOrderUpdate(opts.walletId, {
     id: opts.execution.id,
@@ -142,5 +134,6 @@ export const emitPositionClosedEvents = (opts: PositionClosedEventOptions): void
     exitReason: opts.exitReason ?? 'UNKNOWN',
     pnl: opts.pnl,
     pnlPercent: opts.pnlPercent,
+    exitPrice: opts.exitPrice,
   });
 };

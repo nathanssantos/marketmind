@@ -192,6 +192,7 @@ export interface PositionClosedPayload {
   exitReason: string;
   pnl: number;
   pnlPercent: number;
+  exitPrice?: number;
 }
 
 export interface DailyLossLimitPayload {
