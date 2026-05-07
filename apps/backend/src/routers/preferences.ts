@@ -1,8 +1,8 @@
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { userPreferences } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+import { internalServerError } from '../utils/trpc-errors';
 
 const categorySchema = z.enum(['trading', 'ui', 'chart', 'notifications', 'recent', 'layout']);
 
@@ -92,12 +92,7 @@ export const preferencesRouter = router({
         })
         .returning();
 
-      if (!pref) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to save preference',
-        });
-      }
+      if (!pref) throw internalServerError('Failed to save preference');
 
       return { success: true, id: pref.id };
     }),

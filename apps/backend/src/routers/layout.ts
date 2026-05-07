@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { userLayouts, userLayoutsAudit, userLayoutsHistory } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+import { notFound, preconditionFailed } from '../utils/trpc-errors';
 
 const SNAPSHOT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const HISTORY_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -65,10 +65,9 @@ export const layoutRouter = router({
       });
 
       if (existing && !isDefaultLayoutData(existing.data) && isDefaultLayoutData(input.data)) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: 'Refusing to overwrite a non-default layout with the default state. This typically indicates a hydration race; reload the app and try again.',
-        });
+        throw preconditionFailed(
+          'Refusing to overwrite a non-default layout with the default state. This typically indicates a hydration race; reload the app and try again.',
+        );
       }
 
       if (existing) {
@@ -135,9 +134,7 @@ export const layoutRouter = router({
         ),
       });
 
-      if (!snapshot) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Snapshot not found' });
-      }
+      if (!snapshot) throw notFound('Snapshot');
 
       const existing = await ctx.db.query.userLayouts.findFirst({
         where: eq(userLayouts.userId, ctx.user.id),

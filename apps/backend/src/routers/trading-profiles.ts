@@ -1,9 +1,9 @@
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
 import { activeWatchers, tradingProfiles } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+import { notFound } from '../utils/trpc-errors';
 import type { NewTradingProfileRow } from '../db/schema';
 import { generateEntityId } from '../utils/id';
 import {
@@ -268,9 +268,7 @@ export const tradingProfilesRouter = router({
         .where(and(eq(activeWatchers.id, input.watcherId), eq(activeWatchers.userId, ctx.user.id)))
         .limit(1);
 
-      if (!watcher) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Watcher not found' });
-      }
+      if (!watcher) throw notFound('Watcher');
 
       if (input.profileId) {
         await tradingProfileQueries.getByIdAndUser(input.profileId, ctx.user.id);
