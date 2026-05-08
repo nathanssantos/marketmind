@@ -388,6 +388,31 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
         );
       }
 
+      // Order-table reconciliation. Position sync covers position
+      // state but doesn't touch the orders table. If an entry / SL /
+      // TP / partial-close fill arrived during the gap, the orders
+      // row may still be stuck at NEW. orderSyncService.syncWallet
+      // calls reconcileOrdersTable which queries Binance per-stale
+      // orderId for the real final status (FILLED / CANCELED / EXPIRED)
+      // and emits the matching WS events so the renderer's chart line
+      // disappears immediately. Without this, the user has to wait
+      // up to 30s for the next periodic sweep.
+      try {
+        const { orderSyncService } = await import('./order-sync');
+        const orderResult = await orderSyncService.syncWallet(wallet);
+        if (orderResult.synced) {
+          logger.info(
+            { walletId, orphanOrders: orderResult.orphanOrders.length, fixedOrders: orderResult.fixedOrders.length },
+            '[FuturesUserStream] Post-forced-reconnect order sync completed',
+          );
+        }
+      } catch (orderSyncError) {
+        logger.error(
+          { walletId, error: serializeError(orderSyncError) },
+          '[FuturesUserStream] Post-forced-reconnect order sync failed',
+        );
+      }
+
       // Position sync covers position state, but income events
       // (FUNDING_FEE / COMMISSION / REALIZED_PNL) flow on a separate
       // Binance channel and may have been missed during the gap. Pull
@@ -530,6 +555,27 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
                 },
                 '[FuturesUserStream] Post-reconnect sync completed'
               );
+
+              // Order-table reconciliation. Same as forceReconnectWallet —
+              // see that path for full rationale. Without this, fills /
+              // cancellations that arrived during the disconnect leave
+              // orders rows stuck at NEW until the next 30s periodic
+              // sweep, and the chart's pending lines stay visible.
+              try {
+                const { orderSyncService } = await import('./order-sync');
+                const orderResult = await orderSyncService.syncWallet(currentWallet);
+                if (orderResult.synced) {
+                  logger.info(
+                    { walletId: wallet.id, orphanOrders: orderResult.orphanOrders.length, fixedOrders: orderResult.fixedOrders.length },
+                    '[FuturesUserStream] Post-reconnect order sync completed',
+                  );
+                }
+              } catch (orderSyncError) {
+                logger.error(
+                  { walletId: wallet.id, error: serializeError(orderSyncError) },
+                  '[FuturesUserStream] Post-reconnect order sync failed',
+                );
+              }
 
               // Same income-event recovery as forceReconnectWallet —
               // funding / commission / realized-pnl events flow on a
