@@ -190,3 +190,114 @@ describe('handleOrderUpdate — PARTIALLY_FILLED branch', () => {
     expect(mockEmitPositionUpdate).not.toHaveBeenCalled();
   });
 });
+
+// Regression test for incident 2026-05-08 (exec FuxZ3Mhqq4a):
+// MARKET order with attached SL/TP was inserted into DB at order-creation
+// time using `submitNewOrder.avgPrice` (or fallback `input.price`). When
+// Binance's response had an empty/zero avgPrice — and the chart's
+// reference price was used as fallback — the DB stored an entry_price
+// that was up to 200+ dollars off the actual fill avg. Subsequently
+// orphan-close PnL was computed against the wrong entry_price, hiding
+// real losses.
+//
+// Fix: when an entry-fill ORDER_TRADE_UPDATE arrives for an already-
+// tracked exec (matching entryOrderId), update entry_price + entry_fee
+// from the WS event's avgPrice/commission instead of skipping. The WS
+// payload is authoritative for the order's final avg.
+describe('handleOrderUpdate — entry fill correction for tracked exec', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const trackedExec = (overrides: Record<string, unknown> = {}) => ({
+    id: 'exec-tracked',
+    walletId: 'wallet-1',
+    symbol: 'BTCUSDT',
+    side: 'SHORT',
+    status: 'open',
+    entryOrderId: '1006569617293',
+    entryPrice: '79623.00',  // placeholder from input.price fallback
+    entryFee: null,
+    quantity: '1.063',
+    marketType: 'FUTURES',
+    ...overrides,
+  });
+
+  it('overwrites stale entry_price when WS avgPrice differs by > 0.01%', async () => {
+    let selectCall = 0;
+    // The handler chains .select().from().where() WITHOUT limit for
+    // openExecutions, but WITH limit for the pending exec lookup. Mock
+    // both shapes by exposing each as a thenable resolver.
+    mockDbSelect.mockImplementation(() => {
+      const isPendingLookup = selectCall === 0;
+      selectCall++;
+      const data = isPendingLookup ? [] : [trackedExec()];
+      const limitFn = vi.fn().mockResolvedValue(data);
+      const whereFn = vi.fn().mockImplementation(() => ({
+        limit: limitFn,
+        then: (resolve: (value: unknown[]) => unknown) => resolve(data),
+      }));
+      return { from: vi.fn().mockReturnValue({ where: whereFn }) };
+    });
+    const setMock = vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+    mockDbUpdate.mockReturnValue({ set: setMock });
+
+    const event = makeEvent({
+      X: 'FILLED',
+      x: 'TRADE',
+      i: 1006569617293,
+      S: 'SELL',
+      ap: '79408.55',  // authoritative avg from Binance fills
+      L: '79408',
+      z: '1.063',
+      ap_real: undefined,
+      rp: '0',
+      n: '34.21',
+    });
+
+    await handleOrderUpdate(createMockCtx(), 'wallet-1', event);
+
+    expect(setMock).toHaveBeenCalledWith(expect.objectContaining({
+      entryPrice: '79408.55',
+      entryFee: '34.21',
+    }));
+  });
+
+  it('skips update when WS avgPrice matches DB within tolerance', async () => {
+    let selectCall = 0;
+    mockDbSelect.mockImplementation(() => {
+      const isPendingLookup = selectCall === 0;
+      selectCall++;
+      const data = isPendingLookup ? [] : [trackedExec({ entryPrice: '79408.55' })];
+      const limitFn = vi.fn().mockResolvedValue(data);
+      const whereFn = vi.fn().mockImplementation(() => ({
+        limit: limitFn,
+        then: (resolve: (value: unknown[]) => unknown) => resolve(data),
+      }));
+      return { from: vi.fn().mockReturnValue({ where: whereFn }) };
+    });
+    const setMock = vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    });
+    mockDbUpdate.mockReturnValue({ set: setMock });
+
+    const event = makeEvent({
+      X: 'FILLED',
+      x: 'TRADE',
+      i: 1006569617293,
+      S: 'SELL',
+      ap: '79408.55',
+      L: '79408',
+      z: '1.063',
+      rp: '0',
+      n: '34.21',
+    });
+
+    await handleOrderUpdate(createMockCtx(), 'wallet-1', event);
+
+    // No update call — values within tolerance.
+    expect(setMock).not.toHaveBeenCalled();
+  });
+});
