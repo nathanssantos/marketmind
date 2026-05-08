@@ -31,7 +31,7 @@ const OrdersListComponent = () => {
     cancelOrder: cancelBackendOrder,
     closeExecution,
     cancelExecution,
-  } = useBackendTrading(activeWalletId ?? '', undefined);
+  } = useBackendTrading(activeWalletId ?? '', undefined, 'FUTURES', { skipPrices: true });
 
   const orders: Order[] = useMemo(() => {
     const ordersFromApi = backendOrdersData.map((o): Order => ({
