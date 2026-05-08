@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.1] - 2026-05-08
+
+### Fixed — DB ↔ Binance state divergence under rapid scalping
+
+Three follow-on issues from v1.15.0's incident, all rooted in race conditions / silent event loss when the user fires close → open in <13s.
+
+- **MARKET order entry-price recovery** (#511). When `submitNewOrder` returns `avgPrice='0'` (volatile fill scenarios), `handleMarketOrderProtection` was falling back to the chart's reference price (`input.price`) — verified to drift up to $215/BTC vs the real fill avg. Now: queries Binance via `getOrderEntryFee()` for the authoritative weighted avg from userTrades; only falls back to `input.price` if both fail. Companion fix in `handle-order-update.ts:215` — when entry-fill WS event arrives for an already-tracked exec, compares `wsAvgPrice` vs DB `entryPrice` and overwrites if drift > 0.01% (was silently skipping).
+- **Per-(walletId, symbol) write mutex** (#512). Concurrent close + create on the same key were submitting to Binance in parallel, each observing pre-other-mutation DB state. Result: pyramid lost, close never marked closed, new opposite-side exec never inserted (DB had LONG, Binance had SHORT). New `services/write-op-mutex.ts` exposes `withWriteLock(walletId, symbol, fn)` that queues operations FIFO behind any in-flight one for the same key. Adopted in `closeTradeExecution` and `createOrder` (futures). Reverse keeps its existing reject-if-pending semantic.
+- **`reconcileOrdersTable` uses real Binance status** (#514). Was bulk-marking any DB order missing from Binance's open list as `EXPIRED`. But three real scenarios collapse to that: `FILLED` (most common — WS event lost), `CANCELED`, `EXPIRED`. User had a filled order recorded as expired, with a misleading "order expired" toast. Now: per stale orderId, calls `client.getOrder({symbol, orderId})` for the real final status; `FILLED` writes `avgPrice` + `executedQty` and emits `order:update` so the chart line disappears immediately.
+
+### Performance — rapid reaction to Binance state changes
+
+- **Order-sync cadence 5min → 30s** (#514). Reduces worst-case "WS event lost, reconcile sweeps it up" latency from ~5min to ~30s. 3 weights per sync per wallet — comfortably under Binance's 1200/min limit.
+- **Order-sync triggered on WS reconnect** (#515). Both reconnect paths (forced via watchdog + auto via SDK 'reconnected' event) already triggered `position-sync` + income recovery. Now also triggers `order-sync` so any fill / cancel / partial-close that arrived during the disconnect is reconciled in ~1-2s after reconnect, not at the next 30s sweep.
+- **Live-scenario perf test + price-subscription dedupe** (#506, #507). New `live-scenario.spec.ts` reproduces the user's actual pan conditions (open position with SL/TP + 5 indicators + 10-symbol tick storm + 240-frame pan). Found two avoidable subscription chains: `usePortfolioData` was double-subscribing to prices via `tickerPrices` + `centralizedPrices` (Portfolio dropped 2.7/s → 1.4/s). Added `skipPrices` opt-out to `useBackendTrading` so consumers that don't read prices (OrdersList, useOrderNotifications) opt out cleanly (OrdersList dropped 1.5/s → 0/s).
+- **Indicator tick-poll cadence 500ms → 150ms** (#508). User reported EMA / Stoch lines visibly lagging behind candle movement. The `pendingRef` + cancellation-token guard in `runCompute()` already coalesces in-flight work, so faster polling doesn't multiply worker load.
+
+### Tests added
+
+- `services/__tests__/write-op-mutex.test.ts` — 5 unit tests: serialize, FIFO across 10 enqueues, release-on-throw, cross-key parallelism, cleanup-stale guard.
+- `__tests__/routers/trading.router.test.ts > closeTradeExecution` — 2 integration tests against testcontainers PG: concurrent close + close on same exec → mutex serializes; cross-(walletId, symbol) closes run in parallel.
+- `services/user-stream/__tests__/handle-order-update.emits.test.ts` — entry-fill correction tests: overwrites stale `entry_price` when WS `avgPrice` differs > 0.01%; skips update when within tolerance.
+
 ## [1.15.0] - 2026-05-08
 
 ### Fixed — Binance desync, IP-ban handling, and DB drift recovery
