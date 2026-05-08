@@ -534,8 +534,9 @@ export class OrderSyncService {
     let expired = 0;
     const wsService = getWebSocketService();
 
+    let skippedStillLive = 0;
     for (const row of staleRows) {
-      let realStatus: 'FILLED' | 'CANCELED' | 'EXPIRED' = 'EXPIRED';
+      let realStatus: 'FILLED' | 'CANCELED' | 'EXPIRED' | 'STILL_LIVE' = 'EXPIRED';
       let avgPrice = '0';
       let executedQty = '0';
       try {
@@ -549,10 +550,29 @@ export class OrderSyncService {
         } else if (binanceStatus === 'CANCELED') {
           realStatus = 'CANCELED';
           canceled++;
-        } else {
-          // EXPIRED, REJECTED, NEW (rare race) — mark expired by default
+        } else if (binanceStatus === 'NEW' || binanceStatus === 'PARTIALLY_FILLED') {
+          // The order was placed AFTER `binanceOpenOrders` was fetched
+          // — i.e. the snapshot for `liveIds` is stale by a few hundred
+          // ms. Binance still considers the order live; we must NOT
+          // mark it EXPIRED. Skip and let the next reconcile cycle
+          // pick it up cleanly. Without this guard, every fresh order
+          // created on the chart was being EXPIRED ~30s after creation
+          // because the periodic reconcile races user submission.
+          realStatus = 'STILL_LIVE';
+          skippedStillLive++;
+        } else if (binanceStatus === 'EXPIRED' || binanceStatus === 'REJECTED') {
           realStatus = 'EXPIRED';
           expired++;
+        } else {
+          // Unknown Binance status — be conservative and don't mark
+          // EXPIRED, since misclassifying a still-live order has worse
+          // UX than leaving it for the next cycle.
+          logger.warn(
+            { walletId, orderId: row.orderId, symbol: row.symbol, binanceStatus },
+            '[OrderSync] Unknown Binance status for stale orderId — skipping',
+          );
+          realStatus = 'STILL_LIVE';
+          skippedStillLive++;
         }
       } catch (err) {
         // getOrder can fail if the order is older than Binance's retention
@@ -564,6 +584,8 @@ export class OrderSyncService {
         );
         expired++;
       }
+
+      if (realStatus === 'STILL_LIVE') continue;
 
       const updateValues: { status: string; updateTime: number; avgPrice?: string; executedQty?: string } = {
         status: realStatus,
@@ -638,7 +660,7 @@ export class OrderSyncService {
     }
 
     logger.info(
-      { walletId, fixed, filled, canceled, expired },
+      { walletId, fixed, filled, canceled, expired, skippedStillLive },
       '[OrderSync] Reconciled stale orders with real Binance status',
     );
   }
