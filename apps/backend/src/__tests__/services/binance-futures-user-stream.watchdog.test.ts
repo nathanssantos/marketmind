@@ -116,8 +116,11 @@ describe('BinanceFuturesUserStreamService — watchdog', () => {
     const initialClient = getMockWsClients()[0];
     expect(initialClient).toBeDefined();
 
-    // Advance past 60s + watchdog tick (15s)
-    await vi.advanceTimersByTimeAsync(61_000);
+    // Advance past STALE_THRESHOLD_MS (10min in production) + watchdog tick (15s).
+    // STALE_THRESHOLD_MS was raised from 60s to 600s because the user-data
+    // stream is event-driven (no heartbeat) — 60s false-positive'd reconnect
+    // every minute on idle wallets. See binance-futures-user-stream.ts.
+    await vi.advanceTimersByTimeAsync(601_000);
     await vi.advanceTimersByTimeAsync(15_500);
 
     // Allow microtasks from the forceReconnectWallet chain to settle

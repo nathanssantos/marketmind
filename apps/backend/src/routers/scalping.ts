@@ -1,17 +1,17 @@
 import { z } from 'zod';
 import { eq, and, asc, gte, lte } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import { TRPCError } from '@trpc/server';
 import { protectedProcedure, router } from '../trpc';
 import { db } from '../db';
 import { scalpingConfig, aggTrades as aggTradesTable, wallets } from '../db/schema';
 import { getScalpingScheduler } from '../services/scalping/scalping-scheduler';
+import { notFound } from '../utils/trpc-errors';
 
 const verifyWalletOwnership = async (walletId: string, userId: string): Promise<void> => {
   const wallet = await db.query.wallets.findFirst({
     where: and(eq(wallets.id, walletId), eq(wallets.userId, userId)),
   });
-  if (!wallet) throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+  if (!wallet) throw notFound('Wallet');
 };
 
 const scalpingConfigSchema = z.object({

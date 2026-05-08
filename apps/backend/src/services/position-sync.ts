@@ -7,10 +7,10 @@ import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { calculatePnl } from '@marketmind/utils';
 import { BinanceIpBannedError } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition, getAllTradeFeesForPosition } from './binance-futures-client';
-import { getBinanceFuturesDataService } from './binance-futures-data';
 import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
 import { type SyncResult, createEmptySyncResult, createFailedSyncResult, processIntentOrderForAdoptedPosition } from './position-sync-helpers';
+import { incrementWalletBalanceAndBroadcast } from './wallet-broadcast';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -187,8 +187,21 @@ export class PositionSyncService {
               if (realFees.entryFee > 0) actualEntryFee = realFees.entryFee;
               if (realFees.exitFee > 0) actualExitFee = realFees.exitFee;
             } else {
-              const markPriceData = await getBinanceFuturesDataService().getMarkPrice(dbPosition.symbol);
-              if (markPriceData) exitPrice = markPriceData.markPrice;
+              // Previous behaviour fell back to the CURRENT mark price as
+              // the orphan's exit price. That's catastrophic for stop-loss
+              // / take-profit fills: the price spikes briefly to trigger
+              // the order, fills the position, then mean-reverts within
+              // seconds. By the time position-sync runs (every 30s), mark
+              // price is already back near entry — so a $200 LOSS got
+              // booked as a $179 PROFIT (incident 2026-05-07T23:38).
+              //
+              // Better to leave exitPrice / pnl null and book the exec as
+              // 'SYNC_INCOMPLETE'; the reconcile-execs-with-binance.ts
+              // maintenance script can backfill from real fills later.
+              logger.warn(
+                { walletId: wallet.id, symbol: dbPosition.symbol, executionId: dbPosition.id, entryOrderId: dbPosition.entryOrderId, exitOrderId: dbPosition.exitOrderId },
+                '[PositionSync] Could not derive exit price from Binance trades — leaving exec SYNC_INCOMPLETE (run reconcile script to backfill)',
+              );
             }
 
             if (exitPrice > 0) {
@@ -210,17 +223,7 @@ export class PositionSyncService {
               pnlPercent = pnlResult.pnlPercent;
               totalFees = pnlResult.totalFees;
 
-              const currentBalance = parseFloat(wallet.currentBalance ?? '0');
-              const newBalance = currentBalance + pnl;
-
-              await db
-                .update(wallets)
-                .set({
-                  currentBalance: newBalance.toString(),
-                  updatedAt: new Date(),
-                })
-                .where(eq(wallets.id, wallet.id));
-
+              await incrementWalletBalanceAndBroadcast(wallet.id, pnl);
               result.changes.balanceUpdated = true;
             }
           } catch (error) {
@@ -268,7 +271,11 @@ export class PositionSyncService {
             .set({
               status: 'closed',
               exitSource: 'SYNC',
-              exitReason: 'ORPHANED_POSITION',
+              // SYNC_INCOMPLETE = sync detected orphan but couldn't
+              // derive a reliable exit price from Binance fills. Avoids
+              // booking phantom PnL; reconcile-execs-with-binance.ts
+              // backfills these later from authoritative trades.
+              exitReason: exitPrice > 0 ? 'ORPHANED_POSITION' : 'SYNC_INCOMPLETE',
               exitPrice: exitPrice > 0 ? exitPrice.toString() : null,
               pnl: pnl !== 0 ? pnl.toString() : null,
               pnlPercent: pnlPercent !== 0 ? pnlPercent.toString() : null,

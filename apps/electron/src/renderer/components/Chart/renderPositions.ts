@@ -138,12 +138,14 @@ const renderPositionEntry = (
   }
 
   const closeButtonRef = { x: 0, y: 0, size: 14 };
-  const hasStopLoss = position.orders.some(o => o.stopLoss);
-  const hasTakeProfit = position.orders.some(o => o.takeProfit);
-  const showSl = !hasStopLoss;
-  const showTp = !hasTakeProfit;
-  const slButtonRef = showSl ? { x: 0, y: 0, width: 0, height: 0 } : null;
-  const tpButtonRef = showTp ? { x: 0, y: 0, width: 0, height: 0 } : null;
+  // SL/TP buttons stay on the order line ALWAYS — even when an SL/TP
+  // order already exists. Lets the user grab the button to drag-
+  // reposition the existing SL/TP without having to scroll/search for
+  // it off-screen during a fast scalp.
+  const showSl = true;
+  const showTp = true;
+  const slButtonRef = { x: 0, y: 0, width: 0, height: 0 };
+  const tpButtonRef = { x: 0, y: 0, width: 0, height: 0 };
 
   const infoTagSize = drawInfoTag(
     ctx,
@@ -157,7 +159,7 @@ const renderPositionEntry = (
     hasAutoTrade ? 'bot' : null,
     posLoading,
     rc.now,
-    (showSl || showTp) ? { showSl, showTp, slButtonRef, tpButtonRef } : null,
+    { showSl, showTp, slButtonRef, tpButtonRef },
     direction,
   );
 

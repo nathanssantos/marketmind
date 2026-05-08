@@ -49,7 +49,16 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
   private static readonly PYRAMID_LOCK_TIMEOUT_MS = 30_000;
   private static readonly WALLET_CACHE_TTL_MS = 60_000;
   private static readonly HEALTH_CHECK_INTERVAL_MS = 15_000;
-  private static readonly STALE_THRESHOLD_MS = 60_000;
+  // Binance's user-data stream is event-driven, NOT a heartbeat — it
+  // only emits when account state changes. WS pings/pongs keep the
+  // socket alive but don't update lastMessageAt (we'd need to wire a
+  // separate ping listener to count those, which the current SDK
+  // wrapper doesn't expose). 60s was producing false positives every
+  // ~73s on idle wallets, forcing reconnect every minute and losing
+  // events in the gap. 10min is conservative — long enough to clear
+  // any normal idle stretch, short enough that a genuinely-dead
+  // connection still recovers within a reasonable window.
+  private static readonly STALE_THRESHOLD_MS = 600_000;
   private static readonly FORCED_RECONNECT_COOLDOWN_MS = 120_000;
 
   async getCachedWallet(walletId: string): Promise<Wallet | null> {

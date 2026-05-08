@@ -61,13 +61,22 @@ export const useBackendTradingMutations = () => {
     replaceOpenExecutionsInAllCaches(queryClient, wId, data.openExecutions as never);
   };
 
+  // Single source for the analytics invalidation cascade triggered by
+  // any trading mutation. closeExecution-style flows additionally need
+  // getDailyPerformance (one row materializes for the close); pass
+  // { daily: true } for those.
+  const invalidateTradingAnalytics = (opts: { daily?: boolean } = {}) => {
+    void utils.analytics.getPerformance.invalidate();
+    if (opts.daily) void utils.analytics.getDailyPerformance.invalidate();
+  };
+
   const createOrderMutation = trpc.trading.createOrder.useMutation({
     onSuccess: (data) => {
       // Backend returns authoritative open-executions list. Fan it out
       // to every cache variant so charts/Portfolio/dialogs all reflect
       // the new entry in the same render frame.
       fanOutOpenExecutions(data);
-      void utils.analytics.getPerformance.invalidate();
+      invalidateTradingAnalytics();
     },
   });
 
@@ -82,22 +91,21 @@ export const useBackendTradingMutations = () => {
     },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
-      void utils.analytics.getPerformance.invalidate();
+      invalidateTradingAnalytics();
     },
   });
 
   const closeExecutionMutation = trpc.trading.closeTradeExecution.useMutation({
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
-      void utils.analytics.getPerformance.invalidate();
-      void utils.analytics.getDailyPerformance.invalidate();
+      invalidateTradingAnalytics({ daily: true });
     },
   });
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
-      void utils.analytics.getPerformance.invalidate();
+      invalidateTradingAnalytics();
     },
   });
 

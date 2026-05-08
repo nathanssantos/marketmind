@@ -1,8 +1,8 @@
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { mcpTradingAudit, wallets } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+import { forbidden, notFound, tooManyRequests } from '../utils/trpc-errors';
 
 const auditStatusSchema = z.enum(['success', 'failure', 'denied', 'rate_limited']);
 
@@ -42,7 +42,7 @@ export const mcpRouter = router({
           ),
         });
         if (!owned) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+          throw notFound('Wallet');
         }
       }
 
@@ -95,7 +95,7 @@ export const mcpRouter = router({
         where: and(eq(wallets.id, input.walletId), eq(wallets.userId, ctx.user.id)),
       });
       if (!wallet) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Wallet not found' });
+        throw notFound('Wallet');
       }
       if (!wallet.agentTradingEnabled) {
         await ctx.db.insert(mcpTradingAudit).values({
@@ -105,10 +105,7 @@ export const mcpRouter = router({
           status: 'denied',
           errorMessage: 'agent trading is disabled for this wallet',
         });
-        throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'agent trading is disabled for this wallet',
-        });
+        throw forbidden('agent trading is disabled for this wallet');
       }
 
       // Rate limit: at most MCP_WRITES_PER_HOUR successful writes in
@@ -136,10 +133,9 @@ export const mcpRouter = router({
           status: 'rate_limited',
           errorMessage: `rate limit exceeded (${MCP_WRITES_PER_HOUR}/hour)`,
         });
-        throw new TRPCError({
-          code: 'TOO_MANY_REQUESTS',
-          message: `rate limit exceeded (${MCP_WRITES_PER_HOUR}/hour for this wallet); try again later`,
-        });
+        throw tooManyRequests(
+          `rate limit exceeded (${MCP_WRITES_PER_HOUR}/hour for this wallet); try again later`,
+        );
       }
 
       return { ok: true as const };

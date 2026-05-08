@@ -530,6 +530,11 @@ describe('PositionSyncService', () => {
       updatedAt: new Date(),
     };
 
+    // PR #503 dropped the markPrice fallback (it booked phantom PnL on
+    // stop/TP fills where price spikes briefly then mean-reverts). Orphan
+    // PnL now relies exclusively on getAllTradeFeesForPosition which reads
+    // authoritative fills from Binance userTrades. These tests provide a
+    // mock fee result with the expected exit price.
     it('should calculate positive PnL for profitable LONG position', async () => {
       mockDbSelect.mockReturnValue({
         from: vi.fn().mockReturnThis(),
@@ -546,7 +551,7 @@ describe('PositionSyncService', () => {
       } as never);
 
       mockGetPositions.mockResolvedValue([]);
-      mockGetMarkPrice.mockResolvedValue({ markPrice: 55000 });
+      mockGetAllTradeFeesForPosition.mockResolvedValue({ exitPrice: 55000, entryFee: 0, exitFee: 0 });
 
       const result = await service.syncWallet(mockWallet as never);
 
@@ -573,7 +578,7 @@ describe('PositionSyncService', () => {
       } as never);
 
       mockGetPositions.mockResolvedValue([]);
-      mockGetMarkPrice.mockResolvedValue({ markPrice: 45000 });
+      mockGetAllTradeFeesForPosition.mockResolvedValue({ exitPrice: 45000, entryFee: 0, exitFee: 0 });
 
       const result = await service.syncWallet(mockWallet as never);
 
@@ -598,7 +603,7 @@ describe('PositionSyncService', () => {
       } as never);
 
       mockGetPositions.mockResolvedValue([]);
-      mockGetMarkPrice.mockResolvedValue({ markPrice: 45000 });
+      mockGetAllTradeFeesForPosition.mockResolvedValue({ exitPrice: 45000, entryFee: 0, exitFee: 0 });
 
       const result = await service.syncWallet(mockWallet as never);
 
@@ -623,7 +628,7 @@ describe('PositionSyncService', () => {
       } as never);
 
       mockGetPositions.mockResolvedValue([]);
-      mockGetMarkPrice.mockResolvedValue({ markPrice: 55000 });
+      mockGetAllTradeFeesForPosition.mockResolvedValue({ exitPrice: 55000, entryFee: 0, exitFee: 0 });
 
       const result = await service.syncWallet(mockWallet as never);
 
@@ -648,7 +653,7 @@ describe('PositionSyncService', () => {
       } as never);
 
       mockGetPositions.mockResolvedValue([]);
-      mockGetMarkPrice.mockResolvedValue({ markPrice: 55000 });
+      mockGetAllTradeFeesForPosition.mockResolvedValue({ exitPrice: 55000, entryFee: 0, exitFee: 0 });
 
       const result = await service.syncWallet(mockWallet as never);
 
@@ -656,7 +661,7 @@ describe('PositionSyncService', () => {
       expect(orphaned?.pnlPercent).toBe(100);
     });
 
-    it('should handle mark price fetch failure gracefully', async () => {
+    it('should leave PnL at 0 when fee lookup returns null (no markPrice fallback after PR #503)', async () => {
       mockDbSelect.mockReturnValue({
         from: vi.fn().mockReturnThis(),
         where: vi.fn().mockResolvedValue([
@@ -672,13 +677,17 @@ describe('PositionSyncService', () => {
       } as never);
 
       mockGetPositions.mockResolvedValue([]);
-      mockGetMarkPrice.mockRejectedValue(new Error('API Error'));
+      // Fees lookup unable to resolve exit price (e.g. IP banned, no trades found,
+      // or stale entryOrderId). Must NOT fall back to mark price (which mean-
+      // reverts after stop-loss spikes and historically produced phantom PnL).
+      mockGetAllTradeFeesForPosition.mockResolvedValue(null);
 
       const result = await service.syncWallet(mockWallet as never);
 
       expect(result.changes.orphanedPositions).toContain('exec-1');
       expect(result.detailedOrphaned).toHaveLength(1);
       expect(result.detailedOrphaned![0]?.pnl).toBe(0);
+      expect(result.detailedOrphaned![0]?.exitPrice).toBe(0);
     });
   });
 

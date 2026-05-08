@@ -181,7 +181,12 @@ export const renderOrderPreview = (
   const y = manager.priceToY(orderPreviewValue.price);
   const isLong = orderPreviewValue.type === 'long';
 
-  const lineColor = isLong ? ORDER_LINE_COLORS.LONG_LINE : ORDER_LINE_COLORS.SHORT_LINE;
+  // Match the open-position line palette (blue=LONG, purple=SHORT) so
+  // shift/cmd preview previewing where a new order will land uses the
+  // same direction colors as live positions on the chart. Previously
+  // used SIGNAL_COLORS (green/red) which clashed visually with the
+  // long/short line scheme.
+  const lineColor = isLong ? ORDER_LINE_COLORS.POSITION_LONG_LINE : ORDER_LINE_COLORS.POSITION_SHORT_LINE;
   ctx.save();
   ctx.globalAlpha = 0.5;
   ctx.strokeStyle = lineColor;

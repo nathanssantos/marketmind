@@ -15,6 +15,7 @@ import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/for
 import { calculateQtyFromPercent } from '../../services/trading/order-quantity';
 import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
+import { badRequest, internalServerError } from '../../utils/trpc-errors';
 
 let paperOrderCounter = 0;
 const generatePaperOrderId = (): string => {
@@ -58,18 +59,10 @@ export const orderMutationsRouter = router({
     .mutation(async ({ input: rawInput, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(rawInput.walletId, ctx.user.id);
 
-      if (!wallet.isActive) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Wallet is inactive',
-        });
-      }
+      if (!wallet.isActive) throw badRequest('Wallet is inactive');
 
       if (wallet.marketType && wallet.marketType !== rawInput.marketType) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot create ${rawInput.marketType} order on ${wallet.marketType} wallet`,
-        });
+        throw badRequest(`Cannot create ${rawInput.marketType} order on ${wallet.marketType} wallet`);
       }
 
       let resolvedQuantity = rawInput.quantity;
@@ -79,10 +72,7 @@ export const orderMutationsRouter = router({
           (rawInput.price ? parseFloat(rawInput.price) : 0) ??
           (rawInput.stopPrice ? parseFloat(rawInput.stopPrice) : 0);
         if (!refPrice || refPrice <= 0) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'referencePrice (or price/stopPrice) is required when percent is provided',
-          });
+          throw badRequest('referencePrice (or price/stopPrice) is required when percent is provided');
         }
         const computed = await calculateQtyFromPercent({
           wallet,
@@ -95,9 +85,7 @@ export const orderMutationsRouter = router({
         logger.info({ walletId: wallet.id, symbol: rawInput.symbol, percent: rawInput.percent, leverage: computed.leverage, balance: computed.balance, notional: computed.notional, quantity: resolvedQuantity }, 'Computed quantity from percent (server-side)');
       }
 
-      if (!resolvedQuantity) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Quantity resolution failed' });
-      }
+      if (!resolvedQuantity) throw badRequest('Quantity resolution failed');
 
       const input = { ...rawInput, quantity: resolvedQuantity };
 
@@ -226,10 +214,7 @@ export const orderMutationsRouter = router({
               : undefined;
 
           if (!triggerPrice) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: 'stopPrice is required for STOP_MARKET / TAKE_PROFIT_MARKET orders',
-            });
+            throw badRequest('stopPrice is required for STOP_MARKET / TAKE_PROFIT_MARKET orders');
           }
 
           const triggerPriceNum = parseFloat(triggerPrice);
@@ -237,10 +222,9 @@ export const orderMutationsRouter = router({
           const notional = requestedQty * triggerPriceNum;
           const minNotional = filters?.minNotional ?? 5;
           if (notional < minNotional) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${orderInput.symbol}. Increase your position size % or deposit more funds.`,
-            });
+            throw badRequest(
+              `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${orderInput.symbol}. Increase your position size % or deposit more funds.`,
+            );
           }
 
           const futuresClient = getFuturesClient(wallet);
@@ -340,10 +324,9 @@ export const orderMutationsRouter = router({
           const notional = orderQty * orderPrice;
           const minNotional = filters?.minNotional ?? 5;
           if (notional < minNotional) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${orderInput.symbol}. Increase your position size % or deposit more funds.`,
-            });
+            throw badRequest(
+              `Order notional ($${notional.toFixed(2)}) is below the minimum of $${minNotional} for ${orderInput.symbol}. Increase your position size % or deposit more funds.`,
+            );
           }
         }
 
@@ -557,10 +540,7 @@ export const orderMutationsRouter = router({
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (wallet.marketType && wallet.marketType !== input.marketType) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot cancel ${input.marketType} order on ${wallet.marketType} wallet`,
-        });
+        throw badRequest(`Cannot cancel ${input.marketType} order on ${wallet.marketType} wallet`);
       }
 
       try {
@@ -573,6 +553,18 @@ export const orderMutationsRouter = router({
             })
             .where(eq(orders.orderId, input.orderId));
 
+          const paperCancelledExecs = await ctx.db
+            .update(tradeExecutions)
+            .set({ status: 'cancelled', updatedAt: new Date() })
+            .where(
+              and(
+                eq(tradeExecutions.walletId, input.walletId),
+                eq(tradeExecutions.entryOrderId, input.orderId),
+                eq(tradeExecutions.status, 'pending')
+              )
+            )
+            .returning();
+
           const paperOpenExecs = await ctx.db.select().from(tradeExecutions)
             .where(and(
               eq(tradeExecutions.walletId, input.walletId),
@@ -583,6 +575,10 @@ export const orderMutationsRouter = router({
           const wsService = getWebSocketService();
           if (wsService) {
             wsService.emitOrderCancelled(input.walletId, input.orderId);
+            for (const exec of paperCancelledExecs) {
+              wsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
+              wsService.emitPositionUpdate(input.walletId, exec);
+            }
           }
 
           return {
@@ -660,11 +656,10 @@ export const orderMutationsRouter = router({
           openExecutions,
         };
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to cancel order',
-          cause: error,
-        });
+        throw internalServerError(
+          error instanceof Error ? error.message : 'Failed to cancel order',
+          error,
+        );
       }
     }),
 });

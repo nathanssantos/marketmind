@@ -1,9 +1,9 @@
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
 import { signalSuggestions } from '../db/schema';
 import { protectedProcedure, router } from '../trpc';
+import { badRequest, notFound } from '../utils/trpc-errors';
 
 export const signalSuggestionsRouter = router({
   list: protectedProcedure
@@ -48,11 +48,11 @@ export const signalSuggestionsRouter = router({
         .limit(1);
 
       if (!suggestion) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Suggestion not found' });
+        throw notFound('Suggestion');
       }
 
       if (suggestion.status !== 'pending') {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: `Suggestion is already ${suggestion.status}` });
+        throw badRequest(`Suggestion is already ${suggestion.status}`);
       }
 
       if (suggestion.expiresAt && suggestion.expiresAt < new Date()) {
@@ -60,7 +60,7 @@ export const signalSuggestionsRouter = router({
           .update(signalSuggestions)
           .set({ status: 'expired', updatedAt: new Date() })
           .where(eq(signalSuggestions.id, input.id));
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Suggestion has expired' });
+        throw badRequest('Suggestion has expired');
       }
 
       await db
@@ -94,11 +94,11 @@ export const signalSuggestionsRouter = router({
         .limit(1);
 
       if (!suggestion) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Suggestion not found' });
+        throw notFound('Suggestion');
       }
 
       if (suggestion.status !== 'pending') {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: `Suggestion is already ${suggestion.status}` });
+        throw badRequest(`Suggestion is already ${suggestion.status}`);
       }
 
       await db

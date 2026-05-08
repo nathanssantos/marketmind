@@ -3,8 +3,8 @@ import { colorize } from '@marketmind/logger';
 import { calculateCapitalLimits } from '@marketmind/risk';
 import type { ExchangeId, MarketType, TimeInterval } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, INTERVAL_MS, TRADING_DEFAULTS } from '@marketmind/types';
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
+import { badRequest, notFound } from '../utils/trpc-errors';
 import { z } from 'zod';
 import { DEFAULT_ENABLED_SETUPS, PROTECTION_CONFIG, TRADING_CONFIG } from '../constants';
 import {
@@ -248,10 +248,7 @@ export const autoTradingRouter = router({
 
       if (!config) {
         log('✗ Config not found for wallet', { walletId: input.walletId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Auto-trading config not found. Please get config first.',
-        });
+        throw notFound('Auto-trading config (please call get-config first)');
       }
 
       const updateData: Partial<typeof autoTradingConfig.$inferInsert> = {
@@ -302,10 +299,7 @@ export const autoTradingRouter = router({
 
       if (!setup) {
         log('✗ Setup not found', { setupId: input.setupId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Setup not found',
-        });
+        throw notFound('Setup');
       }
 
       log('> Setup found', {
@@ -331,27 +325,18 @@ export const autoTradingRouter = router({
 
       if (!config) {
         log('✗ Auto-trading config not found', { walletId: input.walletId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Auto-trading config not found',
-        });
+        throw notFound('Auto-trading config');
       }
 
       if (!config.isEnabled) {
         log('! Auto-trading is disabled', { walletId: input.walletId });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Auto-trading is not enabled for this wallet',
-        });
+        throw badRequest('Auto-trading is not enabled for this wallet');
       }
 
       const enabledSetupTypes = parseEnabledSetupTypes(config.enabledSetupTypes);
       if (!enabledSetupTypes.includes(setup.setupType)) {
         log('! Setup type not enabled', { setupType: setup.setupType, enabledTypes: enabledSetupTypes });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Setup type ${setup.setupType} is not enabled`,
-        });
+        throw badRequest(`Setup type ${setup.setupType} is not enabled`);
       }
 
       const openPositions = await ctx.db
@@ -376,19 +361,13 @@ export const autoTradingRouter = router({
 
       if (openPositions.length >= effectiveMaxPositions) {
         log('! Max concurrent positions reached', { current: openPositions.length, max: effectiveMaxPositions });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Maximum concurrent positions (${effectiveMaxPositions}) reached`,
-        });
+        throw badRequest(`Maximum concurrent positions (${effectiveMaxPositions}) reached`);
       }
 
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (wallet.marketType && wallet.marketType !== input.marketType) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot execute ${input.marketType} setup on ${wallet.marketType} wallet`,
-        });
+        throw badRequest(`Cannot execute ${input.marketType} setup on ${wallet.marketType} wallet`);
       }
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
@@ -421,10 +400,7 @@ export const autoTradingRouter = router({
 
       if (!riskValidation.isValid) {
         log('! Risk validation failed', { reason: riskValidation.reason });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Risk validation failed: ${riskValidation.reason}`,
-        });
+        throw badRequest(`Risk validation failed: ${riskValidation.reason}`);
       }
 
       log('✓ Risk validation passed');
@@ -452,10 +428,7 @@ export const autoTradingRouter = router({
             entryPrice,
             stopLoss,
           });
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT',
-          });
+          throw badRequest('Invalid stop loss - stop loss must be below entry for LONG or above entry for SHORT');
         }
 
         const riskRewardRatio = reward / risk;
@@ -470,10 +443,9 @@ export const autoTradingRouter = router({
             riskRewardRatio: riskRewardRatio.toFixed(2),
             minRequired: TRADING_CONFIG.MIN_RISK_REWARD_RATIO,
           });
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
-          });
+          throw badRequest(
+            `Risk/reward ratio (${riskRewardRatio.toFixed(2)}:1) is below minimum required (${TRADING_CONFIG.MIN_RISK_REWARD_RATIO}:1)`,
+          );
         }
 
         log('✓ Risk/Reward ratio validated', {
@@ -484,10 +456,7 @@ export const autoTradingRouter = router({
         log('✗ Missing stop loss', {
           setupType: setup.setupType,
         });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Stop loss is required for trade execution',
-        });
+        throw badRequest('Stop loss is required for trade execution');
       } else {
         log('· Setup without take profit - skipping R:R validation', {
           setupType: setup.setupType,
@@ -556,18 +525,12 @@ export const autoTradingRouter = router({
 
       if (!execution) {
         log('✗ Execution not found', { executionId: input.executionId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Execution not found',
-        });
+        throw notFound('Execution');
       }
 
       if (execution.status !== 'open') {
         log('! Cannot cancel - execution not open', { executionId: input.executionId, status: execution.status });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Can only cancel open executions',
-        });
+        throw badRequest('Can only cancel open executions');
       }
 
       await ctx.db
@@ -679,18 +642,12 @@ export const autoTradingRouter = router({
 
       if (!execution) {
         log('✗ Execution not found', { executionId: input.executionId });
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Execution not found',
-        });
+        throw notFound('Execution');
       }
 
       if (execution.status !== 'open') {
         log('! Cannot close - execution not open', { executionId: input.executionId, status: execution.status });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Execution is not open',
-        });
+        throw badRequest('Execution is not open');
       }
 
       const entryPrice = parseFloat(execution.entryPrice);
@@ -760,10 +717,7 @@ export const autoTradingRouter = router({
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (wallet.marketType && wallet.marketType !== input.marketType) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot start ${input.marketType} watcher on ${wallet.marketType} wallet`,
-        });
+        throw badRequest(`Cannot start ${input.marketType} watcher on ${wallet.marketType} wallet`);
       }
 
       const klineCheck = await checkKlineAvailability(input.symbol, input.interval, input.marketType);
@@ -777,10 +731,9 @@ export const autoTradingRouter = router({
           required: klineCheck.required,
           apiExhausted: klineCheck.apiExhausted,
         });
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Symbol ${input.symbol} has insufficient historical data: ${klineCheck.totalAvailable}/${klineCheck.required} klines available`,
-        });
+        throw badRequest(
+          `Symbol ${input.symbol} has insufficient historical data: ${klineCheck.totalAvailable}/${klineCheck.required} klines available`,
+        );
       }
 
       await ctx.db
@@ -923,10 +876,7 @@ export const autoTradingRouter = router({
       const walletExchange = (wallet.exchange as ExchangeId) ?? 'BINANCE';
 
       if (wallet.marketType && wallet.marketType !== input.marketType) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot start ${input.marketType} watchers on ${wallet.marketType} wallet`,
-        });
+        throw badRequest(`Cannot start ${input.marketType} watchers on ${wallet.marketType} wallet`);
       }
 
       const [config] = await ctx.db
@@ -1441,32 +1391,19 @@ export const autoTradingRouter = router({
         )
         .limit(1);
 
-      if (!config) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Auto-trading config not found',
-        });
-      }
+      if (!config) throw notFound('Auto-trading config');
 
       const transformedConfig = transformAutoTradingConfig(config);
 
       if (!transformedConfig.useDynamicSymbolSelection) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Dynamic symbol selection is not enabled',
-        });
+        throw badRequest('Dynamic symbol selection is not enabled');
       }
 
       const activeCount = autoTradingScheduler.getDynamicWatcherCount(input.walletId);
       const targetCount = activeCount > 0 ? activeCount : AUTO_TRADING_CONFIG.TARGET_COUNT.DEFAULT;
 
       const rotationConfig = autoTradingScheduler.getRotationConfig(input.walletId);
-      if (!rotationConfig) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'No active rotation found. Start watchers first.',
-        });
-      }
+      if (!rotationConfig) throw badRequest('No active rotation found. Start watchers first.');
 
       const result = await autoTradingScheduler.triggerManualRotation(
         input.walletId,
@@ -1896,12 +1833,12 @@ export const autoTradingRouter = router({
 
       if (!execution) {
         log('✗ Execution not found or not open', { executionId: input.executionId });
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Open execution not found' });
+        throw notFound('Open execution');
       }
 
       if (execution.stopLoss) {
         log('! Execution already has stop loss', { executionId: input.executionId, stopLoss: execution.stopLoss });
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Execution already has a stop loss' });
+        throw badRequest('Execution already has a stop loss');
       }
 
       const wallet = await walletQueries.getByIdAndUser(execution.walletId, ctx.user.id);

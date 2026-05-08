@@ -130,7 +130,7 @@ export const patchExecutionInAllCaches = (
 export const markExecutionClosedInAllCaches = (
   qc: QueryClient,
   walletId: string,
-  payload: { positionId: string; pnl?: number; pnlPercent?: number; exitReason?: string },
+  payload: { positionId: string; pnl?: number; pnlPercent?: number; exitReason?: string; exitPrice?: number },
 ): void => {
   if (!walletId) return;
   for (const queryKey of executionQueryKeys()) {

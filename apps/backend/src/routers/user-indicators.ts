@@ -1,7 +1,7 @@
 import { INDICATOR_CATALOG, sanitizeIndicatorParams } from '@marketmind/trading-core';
 import type { IndicatorParamValue } from '@marketmind/trading-core';
-import { TRPCError } from '@trpc/server';
 import { and, asc, eq } from 'drizzle-orm';
+import { badRequest, notFound } from '../utils/trpc-errors';
 import { z } from 'zod';
 import { db } from '../db';
 import { userIndicators } from '../db/schema';
@@ -13,12 +13,7 @@ import { parseIndicatorParams, stringifyIndicatorParams } from '../utils/profile
 const rawParamsSchema = z.record(z.string(), z.unknown());
 
 const assertCatalogType = (catalogType: string): void => {
-  if (!INDICATOR_CATALOG[catalogType]) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Unknown indicator type: ${catalogType}`,
-    });
-  }
+  if (!INDICATOR_CATALOG[catalogType]) throw badRequest(`Unknown indicator type: ${catalogType}`);
 };
 
 const validateParams = (
@@ -28,10 +23,7 @@ const validateParams = (
   const { params, errors } = sanitizeIndicatorParams(catalogType, raw ?? {});
   const blocking = errors.filter((e) => !e.message.startsWith('Unknown param'));
   if (blocking.length > 0) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: `Invalid params: ${blocking.map((e) => `${e.field}: ${e.message}`).join('; ')}`,
-    });
+    throw badRequest(`Invalid params: ${blocking.map((e) => `${e.field}: ${e.message}`).join('; ')}`);
   }
   return params;
 };
@@ -110,7 +102,7 @@ export const userIndicatorsRouter = router({
           .where(and(eq(userIndicators.id, id), eq(userIndicators.userId, ctx.user.id)))
           .limit(1);
         if (!existing) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Indicator not found' });
+          throw notFound('Indicator');
         }
         updates.params = stringifyIndicatorParams(validateParams(existing.catalogType, params));
       }
@@ -122,7 +114,7 @@ export const userIndicatorsRouter = router({
         .returning();
 
       if (!row) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Indicator not found' });
+        throw notFound('Indicator');
       }
 
       return parseIndicator(row);
@@ -137,7 +129,7 @@ export const userIndicatorsRouter = router({
         .returning({ id: userIndicators.id });
 
       if (!row) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Indicator not found' });
+        throw notFound('Indicator');
       }
 
       return { id: row.id };
@@ -153,7 +145,7 @@ export const userIndicatorsRouter = router({
         .limit(1);
 
       if (!source) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Indicator not found' });
+        throw notFound('Indicator');
       }
 
       const now = new Date();

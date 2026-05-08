@@ -4,7 +4,32 @@ import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
 import { usePollingInterval } from './usePollingInterval';
-export const useBackendTrading = (walletId: string, symbol?: string, _marketType: MarketType = 'FUTURES') => {
+
+const EMPTY_SYMBOLS: string[] = [];
+export interface UseBackendTradingOptions {
+  /**
+   * Skip the live-price subscription. Set to `true` from components
+   * that consume orders/executions/mutations but never read
+   * `tickerPrices` — without this opt-out the hook re-runs on every
+   * throttled price tick, which forces every consumer (OrdersList,
+   * etc.) to re-render at the price-store cadence even though their
+   * visible state didn't change. PR #506 found this dupe drove
+   * Portfolio re-renders ~2x; same shape applies to OrdersList.
+   *
+   * When `skipPrices` is true, the returned `tickerPrices` is the
+   * stable empty object (same identity every render).
+   */
+  skipPrices?: boolean;
+}
+
+const EMPTY_TICKER_PRICES: Record<string, number> = Object.freeze({});
+
+export const useBackendTrading = (
+  walletId: string,
+  symbol?: string,
+  _marketType: MarketType = 'FUTURES',
+  options: UseBackendTradingOptions = {},
+) => {
   const utils = trpc.useUtils();
   const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
 
@@ -29,7 +54,12 @@ export const useBackendTrading = (walletId: string, symbol?: string, _marketType
   // Live prices for open positions come from the priceStore (fed by socket
   // price:update events via socketBus). The legacy ticker REST polling has been
   // removed — socket is canonical, REST snapshots are unnecessary churn.
-  const tickerPrices = usePricesForSymbols(openPositionSymbols);
+  // Hook order is fixed: usePricesForSymbols ALWAYS runs to honor React's
+  // rules-of-hooks. The skipPrices option swaps in an empty symbol list so
+  // it never sets up subscriptions or fires setState.
+  const subscribedSymbols = options.skipPrices ? EMPTY_SYMBOLS : openPositionSymbols;
+  const livePrices = usePricesForSymbols(subscribedSymbols);
+  const tickerPrices = options.skipPrices ? EMPTY_TICKER_PRICES : livePrices;
   const isLoadingPrices = false;
 
   const createOrderMutation = trpc.trading.createOrder.useMutation({

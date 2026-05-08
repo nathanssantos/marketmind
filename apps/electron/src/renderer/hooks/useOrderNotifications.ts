@@ -15,7 +15,7 @@ export const useOrderNotifications = () => {
 
   const { wallets } = useBackendWallet();
   const activeWalletId = wallets[0]?.id;
-  const { orders } = useBackendTrading(activeWalletId ?? '', undefined);
+  const { orders } = useBackendTrading(activeWalletId ?? '', undefined, 'FUTURES', { skipPrices: true });
 
   const orderStatusMap = useMemo(
     () => new Map(orders.map(o => [o.orderId.toString(), { status: o.status as OrderStatus, order: o }])),

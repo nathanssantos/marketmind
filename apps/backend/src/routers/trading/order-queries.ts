@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { and, count, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, tradeExecutions } from '../../db/schema';
@@ -6,6 +5,7 @@ import { isPaperWallet } from '../../services/binance-client';
 import { createMarketClient } from '../../services/market-client-factory';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure, router } from '../../trpc';
+import { badRequest, internalServerError, notFound } from '../../utils/trpc-errors';
 
 export const orderQueriesRouter = router({
   getOrders: protectedProcedure
@@ -75,12 +75,7 @@ export const orderQueriesRouter = router({
         )
         .limit(1);
 
-      if (!order) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Order not found',
-        });
-      }
+      if (!order) throw notFound('Order');
 
       return order;
     }),
@@ -97,10 +92,7 @@ export const orderQueriesRouter = router({
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (wallet.marketType && wallet.marketType !== input.marketType) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: `Cannot sync ${input.marketType} orders on ${wallet.marketType} wallet`,
-        });
+        throw badRequest(`Cannot sync ${input.marketType} orders on ${wallet.marketType} wallet`);
       }
 
       try {
@@ -150,11 +142,10 @@ export const orderQueriesRouter = router({
 
         return { synced: binanceOrders.length };
       } catch (error) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error instanceof Error ? error.message : 'Failed to sync orders',
-          cause: error,
-        });
+        throw internalServerError(
+          error instanceof Error ? error.message : 'Failed to sync orders',
+          error,
+        );
       }
     }),
 });

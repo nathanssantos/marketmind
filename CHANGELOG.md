@@ -7,6 +7,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-05-08
+
+### Fixed — Binance desync, IP-ban handling, and DB drift recovery
+
+A live-trading session exposed a chain of three bugs that compounded into a major DB ↔ Binance desync (one wallet showed +$179 phantom profit while reality was −$200 loss; 11,851 stale `NEW` orders accumulated; futures user-stream reconnecting every 73s on idle). All three are now fixed at the root.
+
+- **User-stream watchdog: `STALE_THRESHOLD_MS` 60s → 600s** (#495). The Binance user-data stream is event-driven, NOT a heartbeat — Binance only emits when account state changes, and WS pings/pongs don't update `lastMessageAt`. The 60-second threshold false-positive'd every minute on idle wallets, forcing reconnect and losing `ORDER_TRADE_UPDATE` events in the gap. Bumped to 10 minutes (still recovers a genuinely-dead connection within reason).
+- **`order-sync` now reconciles the orders table** (#495). Added `reconcileOrdersTable()` that fetches live order IDs from Binance and marks any DB row in `NEW` / `PARTIALLY_FILLED` that's not on the live list as `EXPIRED`. Runs every 5min on the existing sync cadence. Without this, orders stay at `NEW` forever whenever an `ORDER_TRADE_UPDATE` is lost.
+- **`position-sync` no longer falls back to `markPrice` on orphan close** (#503). The fallback was catastrophic for stop-loss / take-profit fills: price spikes briefly to trigger the order, fills the position, then mean-reverts within seconds — by the time sync runs, mark price is already back near entry. A SHORT entered at 79858 was booked closing at 79700 (+$179 profit) when the real fill was at 79950 (−$200 loss). Now: if real fills can't be derived, leave `exit_price`/`pnl` null and mark `exit_reason = SYNC_INCOMPLETE`. The reconcile maintenance script backfills authoritative values from `userTrades`.
+- **Position-flip detection in `handleUntrackedReduceFill`** (#504). When a SELL larger than a LONG fills without `reduceOnly`, Binance closes the LONG and opens a SHORT with the excess (one-way mode). Previously `Math.abs(positionAmt)` stripped the sign before the partial-vs-full decision — DB kept `side='LONG'` while Binance had SHORT. Sign-aware logic + comprehensive flip tests added.
+- **Stop hammering during IP ban** (#494). React Query retried every "IP banned" failure 2× more (only `TOO_MANY_REQUESTS` was in the skip list). Tripled request rate against an already-banned IP and risked extending the penalty. Added `IP banned` / `BinanceIpBannedError` to the retry-skip patterns.
+- **`setMarginType` benign-response detection** (#494). The "No need to change margin type" return (-4046 / -4067) was being logged as ERROR because the early-return guard used `error.message` which falls to `[object Object]` for raw Binance SDK errors. Switched to `serializeError` + check codes directly.
+- **Dev-only allowList for Fastify rate-limit + tRPC envelope on 429** (#490). The global 1000/min cap saturated in dev and returned plain Fastify JSON `{statusCode:429,...}` — every renderer query failed with the cryptic "Unable to transform response from server". Added localhost allowList in dev + proper tRPC envelope shape on 429 responses in prod.
+
+### Added — three reconciliation maintenance scripts
+
+`apps/backend/scripts/maintenance/` (#496):
+- `inspect-position.ts` — dump DB exec state vs live Binance position state
+- `audit-orders.ts` — list DB orders not on Binance (stale)
+- `reconcile-execs-with-binance.ts` — replay closed execs against `userTrades`, replace `pnl/fees/exit_price` with authoritative values
+
+Used to recover from the 2026-05-07 incident; kept for future drift events.
+
+### Performance — pan + tick-storm fluidity
+
+Series of perf wins targeting the user-reported pan stutter while a futures position is open with live PnL flickering.
+
+- **Wallet/position broadcasts centralized** (#489). New `services/wallet-broadcast.ts` exposes `incrementWalletBalanceAndBroadcast(walletId, delta)` (atomic UPDATE + WS broadcast) and `emitPositionClosedEvents()` (fires the position:update / order:update / position:closed trio). 9 mutation points across 5 services migrated. Closes the "wallet feels stale after SL/TP fill" complaint vector — every server-side capital change now broadcasts within the same render frame as the renderer's optimistic patch.
+- **Drop redundant invalidates covered by optimistic patches** (#491). `wallet.list`, `trading.getTradeExecutions`, `autoTrading.getActiveExecutions` are now patched optimistically by `mergeWalletBalanceUpdate` / `patchExecutionInAllCaches` — the corresponding `invalidate()` calls were forcing duplicate refetches of identical data. Bumped flush window 250ms → 500ms.
+- **Two-tier flush window + analytics helper + position:update short-circuit** (#492 / #493). Hot keys (positions / orders / wallet) flush at 500ms; cold keys (setupStats / equityCurve) at 2000ms. `position:update` short-circuits when `status='closed'` (the trio's third event handles canonical close). Added `invalidateTradingAnalytics` helper. Added `exitPrice` to `PositionClosedPayload` and dropped the redundant `position:update` emit from `emitPositionClosedEvents` — one fewer socket frame per close × N siblings.
+- **Drop duplicate price subscription in Portfolio** (#506). `usePortfolioData` was calling `usePricesForSymbols` twice with the same symbol set. Each had its own throttle timer → 2× re-renders during pan + tick storm. Cut to one subscription. Portfolio: 2.7 renders/s → **1.4/s**.
+- **`skipPrices` opt-out in `useBackendTrading`** (#507). `OrdersList` was rendering 1.5/s during pan even though it never reads `tickerPrices` — the host hook re-runs on every throttled price tick, dragging all consumers along. New option opts out of the price subscription. OrdersList: 1.5/s → **0/s**, FPS 85 → 88.
+- **Indicator tick-poll cadence 500ms → 150ms** (#508). User reported EMA / Stoch lines visibly lagging behind candle movement during live ticks. The `pendingRef` + cancellation token in `runCompute()` already coalesces in-flight work, so faster polling doesn't multiply worker load — each tick just shrinks worst-case visual latency.
+- **New `live-scenario.spec.ts` perf test** (#506). Reproduces the user's actual conditions (open position with SL/TP + 5 indicators + 10-symbol tick storm + 240-frame pan). The existing `sibling-renders.spec.ts` was clean (0/s) because no position fixture, hiding this class of regression. Caps: Portfolio/OrdersList/QuickTradeToolbar ≤10/s; FPS ≥20; ChartCanvas 0 renders during pan.
+
+### Refactor — centralized TRPCError factory across all routers
+
+`apps/backend/src/utils/trpc-errors.ts` (#497–#502): `notFound / badRequest / conflict / unauthorized / forbidden / preconditionFailed / payloadTooLarge / tooManyRequests / internalServerError`. ~110 throws migrated across trading, wallet, auth, futures-trading, auto-trading, scalping, mcp, signal-suggestions, custom-symbol, user-indicators, screener, preferences, layout, trading-profiles. One place to add observability / metrics later.
+
+### Added — UX polish on chart order line
+
+#505:
+- SL/TP buttons stay anchored to the open-position line ALWAYS — even when an SL or TP order already exists. Drag from button reuses the existing placement flow (no need to scroll off-screen to find the line).
+- SL + TP render as a joined button group: no gap, inner edges flat, outer edges round.
+- Order-placement preview lines (shift/cmd hover) use `POSITION_LONG_LINE` (blue) / `POSITION_SHORT_LINE` (purple) — matches the live-position palette instead of the green/red signal palette.
+
+### Notes
+
+The 2026-05-07 incident also required direct DB intervention (manual `psql` UPDATEs) to recover the user mid-trade: flipped exec `_LAvjVJvco5HGznKHjjmZ` from LONG → SHORT, bulk-marked 11,851 orders → EXPIRED, reconciled 10 closed execs with their actual Binance fills (+$12.36 net adjustment). The fixes in this release prevent the same shape of drift from accumulating going forward.
+
+## [1.14.1] - 2026-05-07
+
+### Fixed — centralized wallet/position broadcasts close remaining loose ends
+
+Follow-up to v1.14.1 (#484, #485). The wallet-snapshot pattern there covered the *user-initiated* mutations (createOrder / cancelOrder / closePosition / reversePosition). This patch closes the *server-initiated* paths — anywhere the backend mutates `wallet.currentBalance` or transitions a position to closed without a user click directly causing it.
+
+**New helpers — `apps/backend/src/services/wallet-broadcast.ts`**
+
+- `incrementWalletBalanceAndBroadcast(walletId, delta)` — atomic `UPDATE wallets SET currentBalance += delta RETURNING …` + `wsService.emitWalletUpdate({ currentBalance, totalWalletBalance })`. Single call, no second SELECT, no risk of forgetting the broadcast. The flat `{currentBalance, totalWalletBalance}` patch is what `mergeWalletBalanceUpdate` already consumes.
+- `emitPositionClosedEvents({ walletId, execution, exitPrice, pnl, pnlPercent, exitReason })` — bundles the trio that always fires together when a position closes: `position:update` (status: closed) + `order:update` (status: closed) + `position:closed` (drives the optimistic close-line animation + wallet invalidation schedule).
+
+**Migrated sites (5 files, 9 mutation points)** — every place that updated `wallets.currentBalance` for P&L attribution or margin top-up:
+
+- `services/user-stream/handle-exit-fill.ts` — SL/TP fill credit + close trio. Was the original symptom: SL/TP filled, balance updated in DB, but no `wallet:update` socket event ever fired, so the renderer waited for the ~250ms-debounced cache invalidation + tRPC round-trip before showing the freed capital.
+- `services/user-stream/position-lifecycle.ts` — `verifyAlgoFillProcessed` (10s post-algo verification) + `closeResidualPosition` orphan-cleanup loop.
+- `services/user-stream/handle-untracked-fill.ts` — partial-close + full-close branches when a fill arrives without a tracked execution. Full-close branch additionally now emits `order:update` (was missing before — only `position:update` + `position:closed` fired).
+- `services/position-sync.ts` — orphan-position cleanup during the 30-second sync interval.
+- `services/opportunity-cost-manager.ts` — STALE_TRADE close path.
+- `services/margin-manager.ts` — auto-margin top-up. The previous code emitted `wallet:update` with a non-standard `{reason, newBalance}` shape that `mergeWalletBalanceUpdate` ignored, so the renderer's wallet card stayed stale until next refetch. Now uses the standard flat shape.
+
+**Trio completion in router-side close paths** — `routers/trading/executions.ts` cancel + manual-close were emitting `position:closed` only, no `position:update` or `order:update`. The renderer's RealtimeTradingSyncContext listens for the trio together; missing two of three left the chart's "closing position" indicator visible for ~300ms after the socket arrived. Both paths now use `emitPositionClosedEvents`.
+
+**Paper-cancel symmetry** — `routers/trading/order-mutations.ts` paper branch was setting `orders.status='CANCELED'` but leaving the matching `tradeExecutions.status='pending'` rows untouched, and only firing `emitOrderCancelled`. Live branch had been doing the right thing (cancel pending execs + emit `order:update` + `position:update` per cancelled exec); paper now mirrors that. Paper LIMIT/STOP cancels no longer leave a phantom pending entry-line on the chart for ~250ms.
+
+**Why this matters for scalps** — every elapsed millisecond between an SL/TP fill and the renderer's available-capital widget reflecting the freed margin is a millisecond where the user can mis-size the next entry. The audit found 9 paths that updated capital server-side without broadcasting; closing them removes the entire "wallet feels stale after fill" complaint vector.
+
 ## [1.14.1] - 2026-05-07
 
 ### Fixed — wallet snapshot pattern across all position/order mutations (#484, #485)

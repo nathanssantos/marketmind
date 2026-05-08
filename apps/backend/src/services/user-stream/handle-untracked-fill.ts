@@ -1,7 +1,7 @@
 import type { PositionSide } from '@marketmind/types';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
-import { tradeExecutions, wallets, orders } from '../../db/schema';
+import { tradeExecutions, orders } from '../../db/schema';
 import { getConfiguredLeverage, getPosition } from '../binance-futures-client';
 import { generateEntityId } from '../../utils/id';
 import { logger } from '../logger';
@@ -10,6 +10,7 @@ import { getWebSocketService } from '../websocket';
 import { getPositionEventBus } from '../scalping/position-event-bus';
 import type { UserStreamContext } from './types';
 import { emitPositionClosedToast, emitPositionOpenedToast } from './emit-position-toast';
+import { emitPositionClosedEvents, incrementWalletBalanceAndBroadcast } from '../wallet-broadcast';
 
 export async function handleUntrackedReduceFill(
   ctx: UserStreamContext,
@@ -51,19 +52,32 @@ export async function handleUntrackedReduceFill(
   const entryPrice = parseFloat(oppositeExec.entryPrice);
   const execQty = parseFloat(oppositeExec.quantity);
 
+  // PnL on the closed portion. When the order's executedQty exceeds
+  // the position size (flip case), only the position-size portion
+  // realizes PnL; the excess opens a new opposite-side position with
+  // realizedPnl=0 on its leg. Use min(closedQty, execQty) so we don't
+  // over-attribute PnL on a flip.
+  const closedAgainstPosition = Math.min(closedQty, execQty);
   const partialPnl = oppositeExec.side === 'LONG'
-    ? (exitPrice - entryPrice) * closedQty
-    : (entryPrice - exitPrice) * closedQty;
+    ? (exitPrice - entryPrice) * closedAgainstPosition
+    : (entryPrice - exitPrice) * closedAgainstPosition;
 
   const connection = ctx.connections.get(walletId);
   let remainingQty = execQty - closedQty;
   let exchangeEntryPrice = entryPrice;
+  // Sign-aware: positive = LONG, negative = SHORT, 0 = flat. Without
+  // this we lost track of position direction on flips — the handler
+  // would update the DB exec's quantity to 0.5 while keeping
+  // side='LONG' even when Binance had already flipped to SHORT 0.5
+  // (this caused phantom-PnL incidents like 2026-05-07T23:38).
+  let exchangePositionAmt = oppositeExec.side === 'LONG' ? execQty : -execQty;
 
   if (connection) {
     try {
       const exchangePos = await getPosition(connection.apiClient, symbol);
       if (exchangePos) {
-        remainingQty = Math.abs(parseFloat(exchangePos.positionAmt));
+        exchangePositionAmt = parseFloat(exchangePos.positionAmt);
+        remainingQty = Math.abs(exchangePositionAmt);
         exchangeEntryPrice = parseFloat(exchangePos.entryPrice) || entryPrice;
       }
     } catch (_e) {
@@ -71,7 +85,24 @@ export async function handleUntrackedReduceFill(
     }
   }
 
-  if (remainingQty > 0 && remainingQty < execQty) {
+  // Flip detection: Binance's positionAmt sign disagrees with our
+  // tracked exec's side. The position closed and re-opened in the
+  // opposite direction within the same fill (one-way mode + non-
+  // reduceOnly order). Treat as a full close of the existing exec;
+  // the new opposite-side position gets picked up by handleManualOrderFill
+  // on the next ORDER_TRADE_UPDATE or by position-sync's reconciliation.
+  const expectedSign = oppositeExec.side === 'LONG' ? 1 : -1;
+  const actualSign = exchangePositionAmt > 0 ? 1 : exchangePositionAmt < 0 ? -1 : 0;
+  const flipped = actualSign !== 0 && actualSign !== expectedSign;
+
+  if (flipped) {
+    logger.warn(
+      { walletId, symbol, executionId: oppositeExec.id, oldSide: oppositeExec.side, exchangeAmt: exchangePositionAmt, closedQty },
+      '[FuturesUserStream] Flip detected on untracked reduce fill — closing original exec fully; new opposite-side exec will be created by next ORDER_TRADE_UPDATE / position-sync',
+    );
+  }
+
+  if (!flipped && remainingQty > 0 && remainingQty < execQty) {
     const existingPartialPnl = parseFloat(oppositeExec.partialClosePnl ?? '0');
     const newPartialClosePnl = existingPartialPnl + partialPnl;
 
@@ -85,13 +116,7 @@ export async function handleUntrackedReduceFill(
       })
       .where(eq(tradeExecutions.id, oppositeExec.id));
 
-    await db
-      .update(wallets)
-      .set({
-        currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(wallets.id, walletId));
+    await incrementWalletBalanceAndBroadcast(walletId, partialPnl);
 
     logger.info(
       { executionId: oppositeExec.id, symbol, closedQty, remainingQty, partialPnl: partialPnl.toFixed(4) },
@@ -135,13 +160,7 @@ export async function handleUntrackedReduceFill(
       })
       .where(and(eq(tradeExecutions.id, oppositeExec.id), eq(tradeExecutions.status, 'open')));
 
-    await db
-      .update(wallets)
-      .set({
-        currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${partialPnl}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(wallets.id, walletId));
+    await incrementWalletBalanceAndBroadcast(walletId, partialPnl);
 
     logger.info(
       { executionId: oppositeExec.id, symbol, totalPnl: totalPnl.toFixed(4), exitPrice },
@@ -150,24 +169,18 @@ export async function handleUntrackedReduceFill(
 
     binancePriceStreamService.invalidateExecutionCache(symbol);
 
+    emitPositionClosedEvents({
+      walletId,
+      execution: oppositeExec,
+      symbol,
+      exitPrice,
+      pnl: totalPnl,
+      pnlPercent: 0,
+      exitReason: 'REDUCE_ORDER',
+    });
+
     const wsService = getWebSocketService();
     if (wsService) {
-      wsService.emitPositionUpdate(walletId, {
-        ...oppositeExec,
-        status: 'closed',
-        exitPrice: exitPrice.toString(),
-        pnl: totalPnl.toString(),
-      });
-
-      wsService.emitPositionClosed(walletId, {
-        positionId: oppositeExec.id,
-        symbol,
-        side: oppositeExec.side,
-        exitReason: 'REDUCE_ORDER',
-        pnl: totalPnl,
-        pnlPercent: 0,
-      });
-
       emitPositionClosedToast(wsService, walletId, {
         executionId: oppositeExec.id,
         symbol,

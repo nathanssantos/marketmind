@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { MainClient, USDMClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -8,6 +7,7 @@ import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
+import { internalServerError } from '../../utils/trpc-errors';
 
 export const marketDataRouter = router({
   getTickerPrices: protectedProcedure
@@ -84,11 +84,7 @@ export const marketDataRouter = router({
           symbols: input.symbols,
           marketType: input.marketType,
         }, 'Failed to fetch ticker prices from Binance after retries');
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to fetch ticker prices: ${errorMessage}`,
-          cause: error,
-        });
+        throw internalServerError(`Failed to fetch ticker prices: ${errorMessage}`, error);
       }
     }),
 

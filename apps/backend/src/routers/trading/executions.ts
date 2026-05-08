@@ -1,6 +1,5 @@
 import type { MarketType } from '@marketmind/types';
 import { calculatePnl } from '@marketmind/utils';
-import { TRPCError } from '@trpc/server';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 import { tradeExecutions, wallets } from '../../db/schema';
@@ -13,7 +12,8 @@ import { logger } from '../../services/logger';
 import { cancelAllProtectionOrders } from '../../services/protection-orders';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
-import { getWebSocketService } from '../../services/websocket';
+import { badRequest, internalServerError, notFound } from '../../utils/trpc-errors';
+import { emitPositionClosedEvents } from '../../services/wallet-broadcast';
 import { cancelFuturesExecutionOrders, cancelSpotExecutionOrders } from './cancel-execution-helpers';
 
 export const executionsRouter = router({
@@ -63,18 +63,10 @@ export const executionsRouter = router({
         .where(and(eq(tradeExecutions.id, input.id), eq(tradeExecutions.userId, ctx.user.id)))
         .limit(1);
 
-      if (!execution) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Trade execution not found',
-        });
-      }
+      if (!execution) throw notFound('Trade execution');
 
       if (execution.status !== 'open' && execution.status !== 'pending') {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'Trade execution is not open or pending',
-        });
+        throw badRequest('Trade execution is not open or pending');
       }
 
       const wallet = await walletQueries.getById(execution.walletId);
@@ -134,14 +126,13 @@ export const executionsRouter = router({
           })
           .where(eq(tradeExecutions.id, input.id));
 
-        const wsService = getWebSocketService();
-        wsService?.emitPositionClosed(execution.walletId, {
-          positionId: execution.id,
-          symbol: execution.symbol,
-          side: execution.side,
-          exitReason: 'MANUAL_CANCEL',
+        emitPositionClosedEvents({
+          walletId: execution.walletId,
+          execution,
+          exitPrice: parseFloat(execution.entryPrice ?? '0'),
           pnl: 0,
           pnlPercent: 0,
+          exitReason: 'MANUAL_CANCEL',
         });
 
         const openExecutionsAfterCancel = await ctx.db
@@ -257,17 +248,14 @@ export const executionsRouter = router({
             error: serializeError(error),
           }, 'Failed to execute Binance exit order');
 
-          throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: error instanceof Error ? error.message : 'Failed to execute exit order on Binance',
-          });
+          throw internalServerError(
+            error instanceof Error ? error.message : 'Failed to execute exit order on Binance',
+            error,
+          );
         }
       } else {
         if (!input.exitPrice) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Exit price is required for paper trading',
-          });
+          throw badRequest('Exit price is required for paper trading');
         }
         logger.info({
           executionId: execution.id,
@@ -363,7 +351,6 @@ export const executionsRouter = router({
         });
       }
 
-      const wsService = getWebSocketService();
       for (const exec of allExecutionsToClose) {
         const execPnl = calculatePnl({
           entryPrice: parseFloat(exec.entryPrice),
@@ -373,13 +360,13 @@ export const executionsRouter = router({
           marketType,
           leverage: exec.leverage ?? 1,
         });
-        wsService?.emitPositionClosed(execution.walletId, {
-          positionId: exec.id,
-          symbol: exec.symbol,
-          side: exec.side,
-          exitReason: 'MANUAL_CLOSE',
+        emitPositionClosedEvents({
+          walletId: execution.walletId,
+          execution: exec,
+          exitPrice,
           pnl: execPnl.netPnl,
           pnlPercent: execPnl.pnlPercent,
+          exitReason: 'MANUAL_CLOSE',
         });
       }
 
@@ -423,12 +410,7 @@ export const executionsRouter = router({
         .where(and(eq(tradeExecutions.id, input.id), eq(tradeExecutions.userId, ctx.user.id)))
         .limit(1);
 
-      if (!execution) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Trade execution not found',
-        });
-      }
+      if (!execution) throw notFound('Trade execution');
 
       const wallet = await walletQueries.findById(execution.walletId);
 

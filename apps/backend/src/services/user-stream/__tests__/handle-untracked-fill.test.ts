@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockDbUpdate = vi.fn().mockReturnValue({
   set: vi.fn().mockReturnValue({
-    where: vi.fn().mockResolvedValue(undefined),
+    where: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue([
+        { currentBalance: '1000', totalWalletBalance: '1000' },
+      ]),
+      then: (resolve: (value: undefined) => unknown) => resolve(undefined),
+    }),
   }),
 });
 
@@ -55,11 +60,13 @@ vi.mock('../../binance-price-stream', () => ({
 const mockEmitPositionUpdate = vi.fn();
 const mockEmitPositionClosed = vi.fn();
 const mockEmitOrderUpdate = vi.fn();
+const mockEmitWalletUpdate = vi.fn();
 vi.mock('../../websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
     emitPositionClosed: mockEmitPositionClosed,
     emitOrderUpdate: mockEmitOrderUpdate,
+    emitWalletUpdate: mockEmitWalletUpdate,
     emitTradeNotification: vi.fn(),
   })),
 }));
@@ -121,7 +128,12 @@ describe('handleUntrackedReduceFill', () => {
     });
     mockDbUpdate.mockReturnValue({
       set: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(undefined),
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([
+            { currentBalance: '1000', totalWalletBalance: '1000' },
+          ]),
+          then: (resolve: (value: undefined) => unknown) => resolve(undefined),
+        }),
       }),
     });
     mockDbInsert.mockReturnValue({
@@ -260,6 +272,133 @@ describe('handleUntrackedReduceFill', () => {
       exitSource: 'MANUAL',
       exitReason: 'REDUCE_ORDER',
     }));
+  });
+
+  // ----- REDUCE-ONLY SCENARIOS -----
+  // When the order is reduceOnly:true, Binance caps executedQty at the
+  // current position size. The position never flips. handleUntrackedReduceFill
+  // sees positionAmt=0 (or sign matching the original side) and treats
+  // the fill as a normal partial/full close. Sign-aware logic must NOT
+  // trip the flip path for these cases.
+  describe('reduce-only behavior (no flip)', () => {
+    it('treats SELL on LONG with positionAmt=0 as a normal full close (not flip)', async () => {
+      const oppositeExec = createMockExecution({ side: 'LONG', quantity: '1.0', entryPrice: '50000' });
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([oppositeExec]),
+          }),
+        }),
+      });
+      mockGetPosition.mockResolvedValueOnce({ positionAmt: '0', entryPrice: '0' });
+
+      const ctx = createMockCtx();
+      await handleUntrackedReduceFill(
+        ctx, 'wallet-1', 'BTCUSDT', 'SELL', 100, '51000', '51000', '1.0', '1000', '0.5',
+      );
+
+      // Full close path — emits position:closed with the original side.
+      expect(mockEmitPositionClosed).toHaveBeenCalledWith(
+        'wallet-1',
+        expect.objectContaining({ side: 'LONG', exitReason: 'REDUCE_ORDER' }),
+      );
+    });
+
+    it('treats SELL on LONG with smaller remaining LONG (still positive amt) as partial close', async () => {
+      const oppositeExec = createMockExecution({ side: 'LONG', quantity: '1.0', entryPrice: '50000' });
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([oppositeExec]),
+          }),
+        }),
+      });
+      // Reduce-only SELL of 0.4 BTC; LONG goes from 1.0 → 0.6 (still LONG)
+      mockGetPosition.mockResolvedValueOnce({ positionAmt: '0.6', entryPrice: '50000' });
+
+      const ctx = createMockCtx();
+      await handleUntrackedReduceFill(
+        ctx, 'wallet-1', 'BTCUSDT', 'SELL', 100, '51000', '51000', '0.4', '400', '0.2',
+      );
+
+      const setCall = mockDbUpdate.mock.results[0]?.value.set;
+      const setArgs = setCall?.mock?.calls?.[0]?.[0] as Record<string, unknown> | undefined;
+      // Partial close — quantity reduced, status stays open.
+      expect(setArgs?.['status']).toBeUndefined();
+      expect(setArgs?.['quantity']).toBe('0.6');
+    });
+  });
+
+  // ----- POSITION FLIP SCENARIOS -----
+  // User is LONG and places a SELL bigger than the position without
+  // reduceOnly. Binance closes the LONG and opens a SHORT with the
+  // excess in one fill (one-way mode). The DB must:
+  //   1. Mark the LONG exec as 'closed' with the LONG-portion PnL
+  //   2. NOT keep the LONG exec open with reduced quantity (the bug
+  //      that caused the 2026-05-07T23:38 phantom-PnL incident)
+  //   3. Optionally insert a SHORT exec for the excess (or rely on
+  //      handleManualOrderFill on the next ORDER_TRADE_UPDATE — either
+  //      is acceptable as long as side='LONG' is NOT preserved when
+  //      Binance shows the position flipped).
+  describe('position flip: SELL exceeds LONG without reduceOnly', () => {
+    it('should fully close the LONG when Binance reports negative positionAmt (flipped to SHORT)', async () => {
+      const oppositeExec = createMockExecution({ side: 'LONG', quantity: '1.0', entryPrice: '79858' });
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([oppositeExec]),
+          }),
+        }),
+      });
+      // Binance flipped — position is now SHORT 0.5 (negative amt)
+      mockGetPosition.mockResolvedValueOnce({
+        positionAmt: '-0.5',
+        entryPrice: '79950',
+      });
+
+      const ctx = createMockCtx();
+      await handleUntrackedReduceFill(
+        ctx, 'wallet-1', 'BTCUSDT', 'SELL', 100, '79950', '79950', '1.5', '92', '0.6',
+      );
+
+      // The LONG exec MUST be closed. It must NOT be left open with side=LONG
+      // and a reduced quantity matching the now-SHORT position size — that
+      // would mismatch reality on the exchange.
+      const setCall = mockDbUpdate.mock.results[0]?.value.set;
+      const setArgs = setCall?.mock?.calls?.[0]?.[0] as Record<string, unknown> | undefined;
+
+      // Bug check: if the handler did `quantity: '0.5'` while preserving
+      // side: 'LONG', this assertion fails. The fix should either:
+      //  (a) close the exec entirely, OR
+      //  (b) close + insert a new SHORT exec
+      expect(setArgs?.['status']).toBe('closed');
+      expect(setArgs?.['side']).not.toBe('LONG');
+    });
+
+    it('should fully close the SHORT when Binance reports positive positionAmt (flipped to LONG)', async () => {
+      const oppositeExec = createMockExecution({ side: 'SHORT', quantity: '1.0', entryPrice: '80000' });
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([oppositeExec]),
+          }),
+        }),
+      });
+      mockGetPosition.mockResolvedValueOnce({
+        positionAmt: '0.3',
+        entryPrice: '79500',
+      });
+
+      const ctx = createMockCtx();
+      await handleUntrackedReduceFill(
+        ctx, 'wallet-1', 'BTCUSDT', 'BUY', 200, '79500', '79500', '1.3', '40', '0.5',
+      );
+
+      const setCall = mockDbUpdate.mock.results[0]?.value.set;
+      const setArgs = setCall?.mock?.calls?.[0]?.[0] as Record<string, unknown> | undefined;
+      expect(setArgs?.['status']).toBe('closed');
+      expect(setArgs?.['side']).not.toBe('SHORT');
+    });
   });
 });
 

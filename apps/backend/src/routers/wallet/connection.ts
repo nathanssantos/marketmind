@@ -1,4 +1,3 @@
-import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { STABLECOINS } from '../../constants';
@@ -6,6 +5,7 @@ import { wallets } from '../../db/schema';
 import { createBinanceClient, createBinanceFuturesClient, isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient } from '../../exchange';
 import { protectedProcedure, router } from '../../trpc';
+import { internalServerError, notFound } from '../../utils/trpc-errors';
 
 export const walletConnectionRouter = router({
   testConnection: protectedProcedure
@@ -17,12 +17,7 @@ export const walletConnectionRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      if (!wallet) throw notFound('Wallet');
 
       if (isPaperWallet(wallet)) {
         return {
@@ -90,12 +85,7 @@ export const walletConnectionRouter = router({
         .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
         .limit(1);
 
-      if (!wallet) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'Wallet not found',
-        });
-      }
+      if (!wallet) throw notFound('Wallet');
 
       if (isPaperWallet(wallet)) {
         return {
@@ -223,11 +213,10 @@ export const walletConnectionRouter = router({
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to fetch portfolio from Binance ${wallet.walletType} ${wallet.marketType}: ${errorMessage}`,
-          cause: error,
-        });
+        throw internalServerError(
+          `Failed to fetch portfolio from Binance ${wallet.walletType} ${wallet.marketType}: ${errorMessage}`,
+          error,
+        );
       }
     }),
 });

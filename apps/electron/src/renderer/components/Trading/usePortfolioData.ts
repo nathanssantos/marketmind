@@ -1,7 +1,6 @@
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
-import { usePricesForSymbols } from '@renderer/store/priceStore';
 import { trpc } from '@renderer/utils/trpc';
 import { QUERY_CONFIG } from '@shared/constants';
 import { usePollingInterval } from '@renderer/hooks/usePollingInterval';
@@ -76,15 +75,15 @@ export const usePortfolioData = () => {
     setViewMode: s.setPortfolioViewMode,
   })));
 
-  const openExecutionSymbols = useMemo(
-    () => [...new Set(tradeExecutions.filter((e) => e.status === 'open').map((e) => e.symbol))],
-    [tradeExecutions]
-  );
-  const centralizedPrices = usePricesForSymbols(openExecutionSymbols);
-
+  // Single price source: useBackendTrading already calls
+  // usePricesForSymbols on the same set of open-execution symbols.
+  // Subscribing a second time here doubled the throttled re-render
+  // rate during pan + tick storm (each subscription has its own
+  // throttle timer, both can fire within the same window). Deduped
+  // to one subscription via tickerPrices.
   const positions: PortfolioPosition[] = useMemo(
-    () => buildPortfolioPositions(tradeExecutions, centralizedPrices, tickerPrices),
-    [tradeExecutions, tickerPrices, centralizedPrices],
+    () => buildPortfolioPositions(tradeExecutions, tickerPrices, tickerPrices),
+    [tradeExecutions, tickerPrices],
   );
 
   const wallets = backendWallets.map((w) => ({

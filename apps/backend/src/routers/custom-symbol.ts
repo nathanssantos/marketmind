@@ -11,6 +11,7 @@ import {
 } from '../services/custom-symbol-service';
 import { logger } from '../services/logger';
 import { protectedProcedure, router } from '../trpc';
+import { conflict, internalServerError, notFound, preconditionFailed } from '../utils/trpc-errors';
 
 const weightingMethodSchema = z.enum(['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL']);
 const categorySchema = z.enum(['politics', 'defi', 'gaming', 'ai', 'other']);
@@ -108,7 +109,7 @@ export const customSymbolRouter = router({
       const existing = await db.query.customSymbols.findFirst({
         where: eq(customSymbols.symbol, input.symbol),
       });
-      if (existing) throw new TRPCError({ code: 'CONFLICT', message: `Symbol ${input.symbol} already exists` });
+      if (existing) throw conflict(`Symbol ${input.symbol} already exists`);
 
       const weights = await resolveWeights(input.weightingMethod, input.components, input.capPercent);
 
@@ -134,7 +135,7 @@ export const customSymbolRouter = router({
         lastRebalancedAt: new Date(),
       }).returning();
 
-      if (!created) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create custom symbol' });
+      if (!created) throw internalServerError('Failed to create custom symbol');
 
       await db.insert(customSymbolComponents).values(
         input.components.map((c, i) => ({
@@ -180,7 +181,7 @@ export const customSymbolRouter = router({
         .where(eq(customSymbols.id, id))
         .returning();
 
-      if (!updated) throw new TRPCError({ code: 'NOT_FOUND', message: 'Custom symbol not found' });
+      if (!updated) throw notFound('Custom symbol');
 
       if (components) {
         const existingComponents = await db.query.customSymbolComponents.findMany({
@@ -221,7 +222,7 @@ export const customSymbolRouter = router({
         .where(eq(customSymbols.id, input.id))
         .returning();
 
-      if (!deleted) throw new TRPCError({ code: 'NOT_FOUND', message: 'Custom symbol not found' });
+      if (!deleted) throw notFound('Custom symbol');
 
       await getCustomSymbolService()?.remove(deleted.symbol);
       return { success: true };
@@ -231,14 +232,16 @@ export const customSymbolRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       const service = getCustomSymbolService();
-      if (!service) throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Custom symbol service not available' });
+      if (!service) throw preconditionFailed('Custom symbol service not available');
 
       const cs = await db.query.customSymbols.findFirst({
         where: eq(customSymbols.id, input.id),
       });
-      if (!cs) throw new TRPCError({ code: 'NOT_FOUND', message: 'Custom symbol not found' });
+      if (!cs) throw notFound('Custom symbol');
 
       const state = service.getDefinition(cs.symbol);
+      // Custom rare case: service-side state missing despite the DB row existing.
+      // Keep raw TRPCError because the message doesn't fit the "X not found" template.
       if (!state) throw new TRPCError({ code: 'NOT_FOUND', message: 'Custom symbol not loaded' });
 
       await service.rebalanceSymbol(state);
