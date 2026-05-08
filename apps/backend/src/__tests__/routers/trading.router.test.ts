@@ -682,6 +682,79 @@ describe('Trading Router', () => {
         caller.trading.closeTradeExecution({ id: execution.id, exitPrice: '50000' })
       ).rejects.toThrow('not open');
     });
+
+    // Regression: 2026-05-08 incident — user did "close LONG, open
+    // SHORT" in <13s; both mutations submitted to Binance in parallel,
+    // each observing pre-other-mutation state. Pyramid lost, close
+    // never marked closed, new SHORT never inserted (DB had LONG,
+    // Binance had SHORT). PR #512 added per-(walletId,symbol) write
+    // mutex that queues the second op behind the first.
+    it('serializes concurrent close + close on same exec (mutex)', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const exec = await createTestTradeExecution({
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '48000',
+        quantity: '0.1',
+        status: 'open',
+      });
+
+      // Fire two close mutations in parallel for the same exec.
+      // Without the mutex these would race the DB read+write; with the
+      // mutex the second one observes status='closed' and rejects.
+      const [first, second] = await Promise.allSettled([
+        caller.trading.closeTradeExecution({ id: exec.id, exitPrice: '50000' }),
+        caller.trading.closeTradeExecution({ id: exec.id, exitPrice: '50000' }),
+      ]);
+
+      // Exactly one fulfills; the other rejects with "not open"
+      // because the first run already marked the exec closed.
+      const fulfilled = [first, second].filter((r) => r.status === 'fulfilled');
+      const rejected = [first, second].filter((r) => r.status === 'rejected');
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      expect((rejected[0] as PromiseRejectedResult).reason.message).toMatch(/not open/);
+
+      // DB ends in a single closed state — no torn writes.
+      const [row] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, exec.id))
+        .limit(1);
+      expect(row!.status).toBe('closed');
+    });
+
+    it('serializes close + close on different walletId+symbol pairs in parallel', async () => {
+      // Cross-key parallelism: ops on DIFFERENT (walletId, symbol)
+      // must NOT block each other — only same-key ops serialize.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet1 = await createTestWallet({ userId: user.id, walletType: 'paper', name: 'W1' });
+      const wallet2 = await createTestWallet({ userId: user.id, walletType: 'paper', name: 'W2' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const e1 = await createTestTradeExecution({
+        userId: user.id, walletId: wallet1.id, symbol: 'BTCUSDT',
+        side: 'LONG', entryPrice: '48000', quantity: '0.1', status: 'open',
+      });
+      const e2 = await createTestTradeExecution({
+        userId: user.id, walletId: wallet2.id, symbol: 'ETHUSDT',
+        side: 'SHORT', entryPrice: '3500', quantity: '0.5', status: 'open',
+      });
+
+      const [r1, r2] = await Promise.all([
+        caller.trading.closeTradeExecution({ id: e1.id, exitPrice: '50000' }),
+        caller.trading.closeTradeExecution({ id: e2.id, exitPrice: '3400' }),
+      ]);
+
+      expect(r1.exitPrice).toBe('50000');
+      expect(r2.exitPrice).toBe('3400');
+    });
   });
 
   describe('cancelTradeExecution', () => {

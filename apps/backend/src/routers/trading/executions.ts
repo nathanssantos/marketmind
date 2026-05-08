@@ -14,6 +14,7 @@ import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
 import { badRequest, internalServerError, notFound } from '../../utils/trpc-errors';
 import { emitPositionClosedEvents } from '../../services/wallet-broadcast';
+import { withWriteLock } from '../../services/write-op-mutex';
 import { cancelFuturesExecutionOrders, cancelSpotExecutionOrders } from './cancel-execution-helpers';
 
 export const executionsRouter = router({
@@ -64,6 +65,15 @@ export const executionsRouter = router({
         .limit(1);
 
       if (!execution) throw notFound('Trade execution');
+
+      // Serialize close+create+reverse on the same (walletId, symbol)
+      // so a rapid "close LONG, open SHORT" sequence doesn't race
+      // against itself. The mutex queues the second operation until
+      // the first has finished its full DB write path. Closes the
+      // 2026-05-08 incident: user did close+open in <13s, neither
+      // hit the user-stream cleanly, DB stayed on the first op's
+      // partial state.
+      return withWriteLock(execution.walletId, execution.symbol, async () => {
 
       if (execution.status !== 'open' && execution.status !== 'pending') {
         throw badRequest('Trade execution is not open or pending');
@@ -395,6 +405,7 @@ export const executionsRouter = router({
         walletId: execution.walletId,
         openExecutions: openExecutionsAfterClose,
       };
+      });
     }),
 
   cancelTradeExecution: protectedProcedure
