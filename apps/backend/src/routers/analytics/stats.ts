@@ -1,4 +1,4 @@
-import { and, eq, gte, lt } from 'drizzle-orm';
+import { and, eq, gte, isNotNull, lt } from 'drizzle-orm';
 import { z } from 'zod';
 import { tradeExecutions } from '../../db/schema';
 import {
@@ -49,6 +49,8 @@ export const statsProcedures = {
         eq(tradeExecutions.walletId, input.walletId),
         eq(tradeExecutions.userId, ctx.user.id),
         eq(tradeExecutions.status, 'closed'),
+        // Same orphan filter as getDailyPerformance — see comment there.
+        isNotNull(tradeExecutions.exitPrice),
       ];
 
       if (input.period !== 'all') {
@@ -156,6 +158,11 @@ export const statsProcedures = {
         tz: input.tz,
       });
 
+      // exit_price IS NOT NULL filters out corruptible execs:
+      // position-sync orphans book themselves as closed with
+      // exit_reason='SYNC_INCOMPLETE' / exit_price=null when Binance
+      // trades aren't yet visible. Including them here would surface
+      // their pre-fix phantom pnl values in the daily widget.
       const monthClosedTrades = await ctx.db
         .select({
           closedAt: tradeExecutions.closedAt,
@@ -167,6 +174,7 @@ export const statsProcedures = {
             eq(tradeExecutions.walletId, input.walletId),
             eq(tradeExecutions.userId, ctx.user.id),
             eq(tradeExecutions.status, 'closed'),
+            isNotNull(tradeExecutions.exitPrice),
             gte(tradeExecutions.closedAt, monthStart),
             lt(tradeExecutions.closedAt, monthEnd),
           ),
@@ -206,21 +214,23 @@ export const statsProcedures = {
 
         // Daily PnL source resolution:
         //   - `tradeRealizedNet` = sum of `tradeExecutions.pnl` for
-        //     trades closed this day. Counts ONLY effectivated trades
-        //     — i.e. positions our system tracked through to a clean
-        //     exit. Roll-over events from the (now-fixed) reverse bug
-        //     that closed and immediately re-opened the same direction
-        //     never created `tradeExecution` rows for the in-flight
-        //     leg, so they don't pollute this sum. This is what Binance
-        //     shows as "Today's Realized PnL".
+        //     trades closed cleanly this day (must have `exit_price`).
+        //     Counts effectivated trades only — i.e. positions our
+        //     system tracked through to a clean exit. Roll-over events
+        //     from the (now-fixed) reverse bug never created rows here
+        //     so they don't pollute. This is what Binance shows as
+        //     "Today's Realized PnL" and updates immediately on close.
         //   - `incomeSum` = REALIZED_PNL + COMMISSION + FUNDING_FEE
-        //     events from Binance's ledger. Includes EVERY realized
-        //     event, including phantom ones from reverse-rolls — over-
-        //     counts what the user perceives as "today's PnL".
-        //   - Rule: when the day has any closed trades, use trade-level
-        //     pnl (effectivated only). On days without closed trades
-        //     (just funding rolling on a flat day), fall through to
-        //     `incomeSum` so the funding delta still shows.
+        //     events from Binance's ledger. Authoritative but lags by
+        //     ~30s (income sync cadence).
+        //   - Execs with NULL `exit_price` are excluded from the DB
+        //     sum because they're the corruptible ones: position-sync
+        //     orphans (`exit_reason='SYNC_INCOMPLETE'`) whose pnl was
+        //     historically miscomputed against exit_price=0, producing
+        //     four-figure phantoms (incident 2026-05-08T17:09).
+        //   - Rule: when the day has any cleanly-closed trade, use DB
+        //     pnl (immediate post-close UX). Else fall through to
+        //     `incomeSum` so funding/holding days still show the delta.
         const tradeRealizedNet = stats.grossProfit - stats.grossLoss;
         const dailyPnl = stats.closedPositions > 0 ? tradeRealizedNet : incomeSum;
 

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
 import { incomeEvents, tradeExecutions } from '../../db/schema';
@@ -139,6 +139,10 @@ export const tradeProcedures = {
         eq(tradeExecutions.walletId, input.walletId),
         eq(tradeExecutions.userId, ctx.user.id),
         eq(tradeExecutions.status, 'closed'),
+        // Exclude orphan execs (exit_price IS NULL) — these are
+        // SYNC_INCOMPLETE rows from position-sync that may carry
+        // historically-miscomputed pnl. Same filter as analytics/stats.ts.
+        isNotNull(tradeExecutions.exitPrice),
       ];
 
       if (input.period !== 'all') {
