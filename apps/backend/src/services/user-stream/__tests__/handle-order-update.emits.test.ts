@@ -129,6 +129,32 @@ describe('handleOrderUpdate — CANCELED branch', () => {
     expect(mockEmitOrderUpdate).not.toHaveBeenCalled();
     expect(mockEmitPositionUpdate).not.toHaveBeenCalled();
   });
+
+  // Regression: 2026-05-08T17:12 — STOP_MARKET algo BUY at 79727.90
+  // expired in 29s on Binance. Previously only X='CANCELED' was
+  // handled, so the matching pending tradeExecution stayed pending
+  // and the chart's order line stayed visible until the user
+  // manually clicked X.
+  it.each([
+    ['EXPIRED', 'EXPIRED'],
+    ['REJECTED', 'REJECTED'],
+  ])('cascades %s order to pending exec → cancelled, emits expected events', async (status, execType) => {
+    const cancelledRow = { id: 'exec-77', walletId: 'wallet-1', entryOrderId: '77', status: 'cancelled' };
+    mockDbUpdate.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([cancelledRow]),
+        }),
+      }),
+    });
+
+    const event = makeEvent({ X: status as never, x: execType as never, i: 77 });
+    await handleOrderUpdate(createMockCtx(), 'wallet-1', event);
+
+    expect(mockEmitOrderCancelled).toHaveBeenCalledWith('wallet-1', '77');
+    expect(mockEmitOrderUpdate).toHaveBeenCalledWith('wallet-1', { id: 'exec-77', status: 'cancelled' });
+    expect(mockEmitPositionUpdate).toHaveBeenCalledWith('wallet-1', cancelledRow);
+  });
 });
 
 describe('handleOrderUpdate — PARTIALLY_FILLED branch', () => {

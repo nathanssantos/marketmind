@@ -585,6 +585,32 @@ export class OrderSyncService {
           ),
         );
 
+      // Cascade to any matching pending tradeExecution. Without this,
+      // an EXPIRED / CANCELED order leaves its tradeExecution stuck at
+      // 'pending' — and the renderer keeps showing the order line on
+      // the chart. The handle-order-update WS path (CANCELED/EXPIRED/
+      // REJECTED branch) does the same cascade for live events; this
+      // covers the fallback path when WS missed the event.
+      if (realStatus === 'CANCELED' || realStatus === 'EXPIRED') {
+        const cancelledExecs = await db
+          .update(tradeExecutions)
+          .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
+          .where(
+            and(
+              eq(tradeExecutions.walletId, walletId),
+              eq(tradeExecutions.status, 'pending'),
+              eq(tradeExecutions.entryOrderId, row.orderId),
+            ),
+          )
+          .returning();
+        if (cancelledExecs.length > 0 && wsService) {
+          for (const exec of cancelledExecs) {
+            wsService.emitOrderUpdate(walletId, { id: exec.id, status: 'cancelled' });
+            wsService.emitPositionUpdate(walletId, exec);
+          }
+        }
+      }
+
       // Emit so the renderer's optimistic cache patches the row to
       // its real final status WITHOUT waiting for a query refetch.
       // For FILLED specifically, this is what the user wants: the

@@ -50,7 +50,16 @@ export async function handleOrderUpdate(
       '[FuturesUserStream] Order update received'
     );
 
-    if (status === 'CANCELED') {
+    // EXPIRED / REJECTED have the same effect on the DB as CANCELED:
+    // the order is dead, no fills will arrive. Previously only CANCELED
+    // was handled, which left a pending tradeExecution + a phantom
+    // order line on the chart whenever a STOP_MARKET / LIMIT order
+    // expired (e.g. STOP-trigger price crossed before placement, GTX
+    // post-only rejected, time-in-force expired). The renderer only
+    // saw the eventual order:update with status=EXPIRED from
+    // reconcileOrdersTable 30s later — but that didn't cascade to
+    // the tradeExecution, so the chart line stayed visible.
+    if (status === 'CANCELED' || status === 'EXPIRED' || status === 'REJECTED') {
       const cancelled = await db
         .update(tradeExecutions)
         .set({ status: 'cancelled', pnl: '0', pnlPercent: '0', fees: '0', entryFee: '0', exitFee: '0', updatedAt: new Date() })
