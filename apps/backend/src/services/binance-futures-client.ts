@@ -64,7 +64,12 @@ export async function setMarginType(
     // missed the SDK's `{ code, msg }` form, producing a noisy ERROR log
     // every time createOrder pre-emptively normalized margin type.
     const errorCode = (error as { code?: number })?.code;
-    const errorMsg = serializeError(error);
+    // Some test mocks return non-string from serializeError; coerce
+    // defensively so we never throw on .includes checks below.
+    const rawMsg = serializeError(error);
+    const errorMsg = typeof rawMsg === 'string'
+      ? rawMsg
+      : (error instanceof Error ? error.message : String(rawMsg ?? error));
     const benign =
       errorCode === -4046 ||
       errorCode === -4067 ||

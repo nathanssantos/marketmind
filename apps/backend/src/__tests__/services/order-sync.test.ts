@@ -4,13 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 let mockWalletsData: unknown[] = [];
 let mockExecutionsData: unknown[] = [];
 let mockAutoTradingConfigData: unknown[] = [];
+let mockOrdersData: unknown[] = [];
 
 vi.mock('../../db', () => ({
   db: {
-    select: () => ({
+    select: (..._args: unknown[]) => ({
       from: (table: Record<string, unknown>) => {
-        const isWalletsTable = table && 'id' in table && !('walletId' in table);
+        const isOrdersTable = table && 'orderId' in table;
+        const isWalletsTable = table && 'id' in table && !('walletId' in table) && !('orderId' in table);
         const isAutoTradingConfigTable = table && 'autoCancelOrphans' in table;
+        if (isOrdersTable) {
+          // reconcileOrdersTable() — return mockOrdersData under .where()
+          return {
+            where: () => Promise.resolve(mockOrdersData),
+          };
+        }
         if (isWalletsTable) {
           const result = Promise.resolve(mockWalletsData);
           return result;
@@ -27,6 +35,14 @@ vi.mock('../../db', () => ({
         };
       },
     }),
+    // reconcileOrdersTable() updates the orders table when stale rows
+    // are detected. Test mock returns a no-op chain so syncWallet
+    // doesn't blow up; specific tests can override.
+    update: (..._args: unknown[]) => ({
+      set: (..._setArgs: unknown[]) => ({
+        where: () => Promise.resolve(undefined),
+      }),
+    }),
   },
 }));
 
@@ -41,24 +57,39 @@ vi.mock('../../db/schema', () => ({
     status: 'tradeExecutions.status',
     marketType: 'tradeExecutions.marketType',
   },
+  orders: {
+    orderId: 'orders.orderId',
+    walletId: 'orders.walletId',
+    status: 'orders.status',
+  },
 }));
 
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((...args: unknown[]) => ({ type: 'eq', args })),
   and: vi.fn((...args: unknown[]) => ({ type: 'and', args })),
   desc: vi.fn((...args: unknown[]) => ({ type: 'desc', args })),
+  inArray: vi.fn((...args: unknown[]) => ({ type: 'inArray', args })),
+  or: vi.fn((...args: unknown[]) => ({ type: 'or', args })),
 }));
 
 const mockCreateBinanceFuturesClient = vi.fn();
 const mockGetOpenAlgoOrders = vi.fn();
 const mockGetPositions = vi.fn();
 const mockIsPaperWallet = vi.fn();
+const mockGetBinanceOpenOrders = vi.fn();
 
 vi.mock('../../services/binance-futures-client', () => ({
   createBinanceFuturesClient: (...args: unknown[]) => mockCreateBinanceFuturesClient(...args),
   getOpenAlgoOrders: (...args: unknown[]) => mockGetOpenAlgoOrders(...args),
   getPositions: (...args: unknown[]) => mockGetPositions(...args),
   isPaperWallet: (...args: unknown[]) => mockIsPaperWallet(...args),
+}));
+
+// PR #495 added the regular-orders fetch + reconcileOrdersTable() to
+// detect stale `NEW` rows in the orders table. Mock returns empty by
+// default so existing tests don't see phantom orphan reconciliation.
+vi.mock('../../services/binance-futures-orders', () => ({
+  getOpenOrders: (...args: unknown[]) => mockGetBinanceOpenOrders(...args),
 }));
 
 const mockClearProtectionOrderIds = vi.fn();
@@ -195,10 +226,12 @@ describe('OrderSyncService', () => {
     mockWalletsData = [];
     mockExecutionsData = [];
     mockAutoTradingConfigData = [];
+    mockOrdersData = [];
 
     mockCreateBinanceFuturesClient.mockReturnValue({});
     mockGetOpenAlgoOrders.mockResolvedValue([]);
     mockGetPositions.mockResolvedValue([]);
+    mockGetBinanceOpenOrders.mockResolvedValue([]);
     mockIsPaperWallet.mockReturnValue(false);
     mockGetWebSocketService.mockReturnValue({
       emitRiskAlert: mockEmitRiskAlert,
