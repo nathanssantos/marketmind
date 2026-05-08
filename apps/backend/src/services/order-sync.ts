@@ -1,4 +1,4 @@
-import { and, eq, inArray, or } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import { db } from '../db';
 import { autoTradingConfig, orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { BinanceIpBannedError } from './binance-api-cache';
@@ -23,9 +23,14 @@ export class OrderSyncService {
     this.autoCancelOrphans = options?.autoCancelOrphans ?? false;
     this.autoFixMismatches = options?.autoFixMismatches ?? false;
 
+    // 30s — was 5min. Faster reconciliation when the user-stream WS
+    // loses an ORDER_TRADE_UPDATE event (reconnect gap, IP ban, etc.).
+    // Each sync hits Binance for getOpenOrders + getOpenAlgoOrders +
+    // getPositions per wallet (3 weights). 30s × 3 weights × N wallets
+    // is well under the 1200/min Binance limit for typical use.
     this.syncInterval = setInterval(() => {
       void this.syncAllWallets();
-    }, 5 * 60 * 1000);
+    }, 30 * 1000);
 
     if (options?.delayFirstSync) {
       setTimeout(() => void this.syncAllWallets(), options.delayFirstSync);
@@ -143,7 +148,7 @@ export class OrderSyncService {
         getBinanceOpenOrders(client),
       ]);
 
-      await this.reconcileOrdersTable(wallet.id, exchangeRegularOrders, exchangeOrders);
+      await this.reconcileOrdersTable(wallet.id, wallet, exchangeRegularOrders, exchangeOrders);
 
       const symbolsWithPositionOnExchange = new Set(
         exchangePositions.filter(p => parseFloat(p.positionAmt) !== 0).map(p => p.symbol)
@@ -489,6 +494,7 @@ export class OrderSyncService {
    */
   private async reconcileOrdersTable(
     walletId: string,
+    wallet: Wallet,
     binanceOpenOrders: ReadonlyArray<{ orderId: number | string }>,
     binanceOpenAlgos: ReadonlyArray<FuturesAlgoOrder>,
   ): Promise<void> {
@@ -498,7 +504,7 @@ export class OrderSyncService {
     ]);
 
     const dbActiveOrders = await db
-      .select({ orderId: orders.orderId })
+      .select({ orderId: orders.orderId, symbol: orders.symbol })
       .from(orders)
       .where(
         and(
@@ -507,23 +513,107 @@ export class OrderSyncService {
         ),
       );
 
-    const staleIds = dbActiveOrders.map((r) => r.orderId).filter((id) => !liveIds.has(id));
-    if (staleIds.length === 0) return;
+    const staleRows = dbActiveOrders.filter((r) => !liveIds.has(r.orderId));
+    if (staleRows.length === 0) return;
 
-    await db
-      .update(orders)
-      .set({ status: 'EXPIRED', updateTime: Date.now() })
-      .where(
-        and(
-          eq(orders.walletId, walletId),
-          inArray(orders.orderId, staleIds),
-          or(eq(orders.status, 'NEW'), eq(orders.status, 'PARTIALLY_FILLED')),
-        ),
-      );
+    // For each stale order, query Binance for the actual final status.
+    // Earlier this just bulk-set everything to EXPIRED — but a stale
+    // DB row can mean three different things in reality:
+    //   FILLED   — order executed (the user-stream event was lost)
+    //   CANCELED — user cancelled
+    //   EXPIRED  — GTC time-in-force timeout
+    // Marking a FILLED order as EXPIRED produced misleading toasts
+    // ("order expired" when it was actually executed) and left
+    // tradeExecution rows in a stale state. Now we resolve each
+    // staleId individually via getOrder → real status. Bounded by
+    // current backlog; in practice 0–3 stale orders per wallet.
+    const client = createBinanceFuturesClient(wallet);
+    let fixed = 0;
+    let filled = 0;
+    let canceled = 0;
+    let expired = 0;
+    const wsService = getWebSocketService();
+
+    for (const row of staleRows) {
+      let realStatus: 'FILLED' | 'CANCELED' | 'EXPIRED' = 'EXPIRED';
+      let avgPrice = '0';
+      let executedQty = '0';
+      try {
+        const order = await client.getOrder({ symbol: row.symbol, orderId: Number(row.orderId) });
+        const binanceStatus = String(order.status ?? '').toUpperCase();
+        if (binanceStatus === 'FILLED') {
+          realStatus = 'FILLED';
+          avgPrice = String(order.avgPrice ?? '0');
+          executedQty = String(order.executedQty ?? '0');
+          filled++;
+        } else if (binanceStatus === 'CANCELED') {
+          realStatus = 'CANCELED';
+          canceled++;
+        } else {
+          // EXPIRED, REJECTED, NEW (rare race) — mark expired by default
+          realStatus = 'EXPIRED';
+          expired++;
+        }
+      } catch (err) {
+        // getOrder can fail if the order is older than Binance's retention
+        // window or if the symbol changed — fall back to EXPIRED so the
+        // stale row doesn't keep blocking the renderer's pending list.
+        logger.warn(
+          { walletId, orderId: row.orderId, symbol: row.symbol, error: serializeError(err) },
+          '[OrderSync] getOrder failed for stale orderId — falling back to EXPIRED',
+        );
+        expired++;
+      }
+
+      const updateValues: { status: string; updateTime: number; avgPrice?: string; executedQty?: string } = {
+        status: realStatus,
+        updateTime: Date.now(),
+      };
+      if (realStatus === 'FILLED') {
+        updateValues.avgPrice = avgPrice;
+        updateValues.executedQty = executedQty;
+      }
+
+      await db
+        .update(orders)
+        .set(updateValues)
+        .where(
+          and(
+            eq(orders.walletId, walletId),
+            eq(orders.orderId, row.orderId),
+            or(eq(orders.status, 'NEW'), eq(orders.status, 'PARTIALLY_FILLED')),
+          ),
+        );
+
+      // Emit so the renderer's optimistic cache patches the row to
+      // its real final status WITHOUT waiting for a query refetch.
+      // For FILLED specifically, this is what the user wants: the
+      // chart line disappears immediately as the order completes.
+      if (wsService) {
+        if (realStatus === 'FILLED') {
+          wsService.emitOrderUpdate(walletId, {
+            orderId: row.orderId,
+            symbol: row.symbol,
+            status: 'FILLED',
+            executedQty,
+            avgPrice,
+          });
+        } else if (realStatus === 'CANCELED') {
+          wsService.emitOrderCancelled(walletId, row.orderId);
+        } else {
+          wsService.emitOrderUpdate(walletId, {
+            orderId: row.orderId,
+            symbol: row.symbol,
+            status: 'EXPIRED',
+          });
+        }
+      }
+      fixed++;
+    }
 
     logger.info(
-      { walletId, count: staleIds.length },
-      '[OrderSync] Reconciled stale orders → EXPIRED',
+      { walletId, fixed, filled, canceled, expired },
+      '[OrderSync] Reconciled stale orders with real Binance status',
     );
   }
 
