@@ -42,7 +42,16 @@ export const MULTI_PINE_SCRIPTS = new Set(['bb', 'macd', 'stoch', 'kc', 'supertr
 
 export const COSMETIC_PARAM_KEYS = new Set(['color', 'lineWidth']);
 
-const TICK_POLL_MS = 500;
+// Indicator recompute cadence between candle closes. Lowered from 500ms
+// to 150ms so EMA / Stoch / etc. visibly track candle movement during a
+// live tick stream — the previous setting made indicators noticeably lag
+// the candle. The pendingRef + cancellation-token guard in runCompute()
+// already coalesces in-flight work, so faster polling doesn't multiply
+// worker load — at most one compute is mid-flight at any moment, with
+// the most-recent token winning. Pan-aware skip below (`isRecentlyPanning`)
+// keeps indicators frozen during the gesture so the budget stays under
+// control.
+const TICK_POLL_MS = 150;
 const PINE_CONCURRENCY_CAP = 6;
 const PINE_CONCURRENCY_MIN = 2;
 const PINE_CONCURRENCY_FALLBACK = 4;
