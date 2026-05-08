@@ -252,7 +252,6 @@ describe('handleOrderUpdate — entry fill correction for tracked exec', () => {
       ap: '79408.55',  // authoritative avg from Binance fills
       L: '79408',
       z: '1.063',
-      ap_real: undefined,
       rp: '0',
       n: '34.21',
     });

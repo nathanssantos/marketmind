@@ -25,6 +25,7 @@ import { getWebSocketService } from '../../services/websocket';
 import { protectedProcedure, router } from '../../trpc';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { generateEntityId } from '../../utils/id';
+import { withWriteLock } from '../../services/write-op-mutex';
 import { handleConditionalOrder, handleMarketOrderProtection } from './order-helpers';
 
 export const orderMutationsRouter = router({
@@ -55,6 +56,13 @@ export const orderMutationsRouter = router({
       if (!input.reduceOnly && getScalpingScheduler().isSymbolBeingScalped(input.walletId, input.symbol)) {
         throw conflict(`Cannot trade ${input.symbol}: scalping is active on this symbol. Stop scalping first.`);
       }
+
+      // Serialize this createOrder against any concurrent close/cancel/
+      // reverse on the same (walletId, symbol). Without this, "close
+      // LONG, immediately open SHORT" can race — both mutations submit
+      // to Binance in parallel, observe pre-other-mutation state, and
+      // the DB ends up in a torn state.
+      return withWriteLock(input.walletId, input.symbol, async () => {
 
       try {
         if (isPaperWallet(wallet)) {
@@ -255,6 +263,8 @@ export const orderMutationsRouter = router({
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
       }
+
+      });
     }),
 
   cancelOrder: protectedProcedure
