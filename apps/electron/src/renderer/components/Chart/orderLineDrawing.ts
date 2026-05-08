@@ -148,9 +148,16 @@ export const drawInfoTag = (
   const closeButtonSpace = hasCloseButton ? CLOSE_BUTTON_SIZE + CLOSE_BUTTON_MARGIN : 0;
   const iconSpace = icon ? ICON_SIZE + ICON_MARGIN : 0;
   const directionSpace = direction ? DIRECTION_TRIANGLE_SIZE + DIRECTION_TRIANGLE_GAP : 0;
-  const inlineSlSpace = inlineSlTp?.showSl ? SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP : 0;
-  const inlineTpSpace = inlineSlTp?.showTp ? SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP : 0;
-  const totalContentWidth = closeButtonSpace + iconSpace + directionSpace + textWidth + inlineSlSpace + inlineTpSpace;
+  // SL + TP render as a joined button group (no gap between them).
+  // Only the OUTER edges have border radius; the inner edges where
+  // the two buttons meet are flat. So the per-button width contribution
+  // is just SLTP_BUTTON.WIDTH; the GAP only applies once — before the
+  // first button (separating it from the price text).
+  const groupHasButtons = inlineSlTp?.showSl || inlineSlTp?.showTp;
+  const inlineSlSpace = inlineSlTp?.showSl ? SLTP_BUTTON.WIDTH : 0;
+  const inlineTpSpace = inlineSlTp?.showTp ? SLTP_BUTTON.WIDTH : 0;
+  const inlineGroupGap = groupHasButtons ? SLTP_BUTTON.GAP : 0;
+  const totalContentWidth = closeButtonSpace + iconSpace + directionSpace + textWidth + inlineGroupGap + inlineSlSpace + inlineTpSpace;
   const rightPadding = inlineSlTp ? 1 : LABEL_PADDING;
   const tagWidth = totalContentWidth + LABEL_PADDING + rightPadding;
 
@@ -213,6 +220,19 @@ export const drawInfoTag = (
   if (inlineSlTp) {
     let inlineX = currentX + textWidth + SLTP_BUTTON.GAP;
     const btnY = y - SLTP_BUTTON.HEIGHT / 2;
+    const r = SLTP_BUTTON.BORDER_RADIUS;
+    // Joined button-group: SL on the left rounded only on the LEFT
+    // edge, TP on the right rounded only on the RIGHT edge. Inner
+    // edges where they meet are flat (radius 0). When only one of
+    // the two is rendered, that single button keeps full radii.
+    const bothShown = inlineSlTp.showSl && inlineSlTp.showTp;
+    const slRadii: [number, number, number, number] = bothShown
+      ? [r, 0, 0, r]   // top-left, top-right, bottom-right, bottom-left
+      : [r, r, r, r];
+    const tpRadii: [number, number, number, number] = bothShown
+      ? [0, r, r, 0]
+      : [r, r, r, r];
+
     ctx.save();
     ctx.font = `${SLTP_BUTTON.FONT_SIZE}px monospace`;
     ctx.textAlign = 'center';
@@ -221,7 +241,7 @@ export const drawInfoTag = (
     if (inlineSlTp.showSl) {
       ctx.fillStyle = SLTP_BUTTON.SL_BG;
       ctx.beginPath();
-      ctx.roundRect(inlineX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, SLTP_BUTTON.BORDER_RADIUS);
+      ctx.roundRect(inlineX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, slRadii);
       ctx.fill();
       ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
       ctx.fillText('SL', inlineX + SLTP_BUTTON.WIDTH / 2, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
@@ -231,12 +251,13 @@ export const drawInfoTag = (
         inlineSlTp.slButtonRef.width = SLTP_BUTTON.WIDTH;
         inlineSlTp.slButtonRef.height = SLTP_BUTTON.HEIGHT;
       }
-      inlineX += SLTP_BUTTON.WIDTH + SLTP_BUTTON.GAP;
+      // No GAP between SL and TP — joined edges.
+      inlineX += SLTP_BUTTON.WIDTH;
     }
     if (inlineSlTp.showTp) {
       ctx.fillStyle = SLTP_BUTTON.TP_BG;
       ctx.beginPath();
-      ctx.roundRect(inlineX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, SLTP_BUTTON.BORDER_RADIUS);
+      ctx.roundRect(inlineX, btnY, SLTP_BUTTON.WIDTH, SLTP_BUTTON.HEIGHT, tpRadii);
       ctx.fill();
       ctx.fillStyle = SLTP_BUTTON.TEXT_COLOR;
       ctx.fillText('TP', inlineX + SLTP_BUTTON.WIDTH / 2, y + ORDER_LINE_LAYOUT.TEXT_BASELINE_OFFSET);
