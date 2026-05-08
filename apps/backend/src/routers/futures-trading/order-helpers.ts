@@ -5,9 +5,9 @@ import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
 import type { DatabaseType } from '../../db/client';
 import { orders, tradeExecutions } from '../../db/schema';
 import { autoTradingService } from '../../services/auto-trading';
-import type {
-  createBinanceFuturesClient} from '../../services/binance-futures-client';
 import {
+  createBinanceFuturesClient,
+  getOrderEntryFee,
   submitFuturesAlgoOrder,
 } from '../../services/binance-futures-client';
 import type { walletQueries } from '../../services/database/walletQueries';
@@ -178,7 +178,46 @@ export const handleMarketOrderProtection = async (
   }
 
   if (slResult || tpResult) {
-    const fillPrice = parseFloat(((futuresOrder as { avgPrice?: string }).avgPrice ?? futuresOrder.price) || '0');
+    // Determine the actual fill price. submitNewOrder's avgPrice is
+    // the response from Binance with newOrderRespType='RESULT' — for
+    // MARKET orders this SHOULD reflect the fill avg, but in practice
+    // we've seen it return 0 / empty under load (slippage events,
+    // partial fills not yet aggregated). Previously we fell back to
+    // `input.price` (the chart's reference price at click time), which
+    // produced phantom entry_price up to $200+ off the actual avg
+    // during volatile fills (incident 2026-05-08 exec FuxZ3Mhqq4a:
+    // chart was at 79623, real avg fill was 79408 → DB stored 79623
+    // → orphan-close PnL was understated by $215).
+    //
+    // Instead: query Binance for the order's actual trade fills via
+    // getOrderEntryFee. That endpoint returns the true weighted avg
+    // from the userTrades log, which is always authoritative. If the
+    // query also fails (IP banned, network issue), only then fall back
+    // to input.price as a placeholder — the next ORDER_TRADE_UPDATE
+    // WS event will overwrite it with the real avg (handler at
+    // handle-order-update.ts:215 was changed to update instead of
+    // skip when entry fills arrive for tracked execs).
+    let fillPrice = parseFloat(((futuresOrder as { avgPrice?: string }).avgPrice) || '0');
+    let entryFee = 0;
+    if (fillPrice <= 0) {
+      try {
+        const client = createBinanceFuturesClient(wallet);
+        const orderFees = await getOrderEntryFee(client, input.symbol, futuresOrder.orderId);
+        if (orderFees && orderFees.avgPrice > 0) {
+          fillPrice = orderFees.avgPrice;
+          entryFee = orderFees.entryFee;
+          logger.info(
+            { symbol: input.symbol, orderId: futuresOrder.orderId, fillPrice, entryFee },
+            '[createOrder] Recovered MARKET fill price via getOrderEntryFee (avgPrice was missing from submit response)',
+          );
+        }
+      } catch (recoverError) {
+        logger.warn(
+          { error: serializeError(recoverError), symbol: input.symbol, orderId: futuresOrder.orderId },
+          '[createOrder] Could not recover MARKET fill price — using input.price as placeholder; next ORDER_TRADE_UPDATE will correct it',
+        );
+      }
+    }
     await ctx.db.insert(tradeExecutions).values({
       id: generateEntityId(),
       userId: ctx.user.id,
@@ -187,6 +226,7 @@ export const handleMarketOrderProtection = async (
       side: orderDirection,
       entryOrderId: futuresOrder.orderId,
       entryPrice: fillPrice > 0 ? fillPrice.toString() : (input.price ?? '0'),
+      entryFee: entryFee > 0 ? entryFee.toString() : null,
       quantity: input.quantity,
       stopLoss: input.stopLoss,
       takeProfit: input.takeProfit,
@@ -202,6 +242,6 @@ export const handleMarketOrderProtection = async (
       marketType: 'FUTURES',
       leverage: actualLeverage,
     });
-    logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId }, '[createOrder] Created tradeExecution for manual MARKET order with SL/TP');
+    logger.info({ symbol: input.symbol, orderId: futuresOrder.orderId, fillPrice }, '[createOrder] Created tradeExecution for manual MARKET order with SL/TP');
   }
 };

@@ -213,7 +213,32 @@ export async function handleOrderUpdate(
           const isEntryFill = !isClosingOrder && rpValue === 0;
 
           if (isEntryFill && execution.entryOrderId && execution.entryOrderId === orderIdStr) {
-            logger.info({ executionId: execution.id, orderId }, '[FuturesUserStream] Entry fill for already-tracked manual execution - skipping');
+            // Previously this branch returned without doing anything,
+            // but createOrder may have inserted the exec with a
+            // placeholder entry_price (when Binance's submit response
+            // had avgPrice=0). The WS ORDER_TRADE_UPDATE that arrives
+            // here carries the AUTHORITATIVE avgPrice + cumulative
+            // commission for the order. Use it to overwrite the
+            // placeholder so position-sync / orphan-close downstream
+            // computes correct PnL.
+            const wsAvgPrice = parseFloat(avgPrice || lastFilledPrice || '0');
+            const wsCommission = parseFloat(commission || '0');
+            const dbEntryPrice = parseFloat(execution.entryPrice ?? '0');
+            const priceDelta = Math.abs(wsAvgPrice - dbEntryPrice);
+            const needsCorrection = wsAvgPrice > 0 && (dbEntryPrice <= 0 || priceDelta / dbEntryPrice > 0.0001);
+            if (needsCorrection) {
+              await db.update(tradeExecutions).set({
+                entryPrice: wsAvgPrice.toString(),
+                entryFee: wsCommission > 0 ? wsCommission.toString() : execution.entryFee,
+                updatedAt: new Date(),
+              }).where(eq(tradeExecutions.id, execution.id));
+              logger.info(
+                { executionId: execution.id, orderId, oldEntry: dbEntryPrice, newEntry: wsAvgPrice, deltaPct: ((priceDelta / dbEntryPrice) * 100).toFixed(3) },
+                '[FuturesUserStream] Corrected entry price for tracked exec from WS avgPrice',
+              );
+            } else {
+              logger.info({ executionId: execution.id, orderId }, '[FuturesUserStream] Entry fill for already-tracked manual execution - within tolerance, skipping');
+            }
             return;
           }
 
