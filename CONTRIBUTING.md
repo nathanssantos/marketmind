@@ -90,9 +90,10 @@ Before committing, ensure:
 - [ ] **No `any` types** (use proper types)
 - [ ] **CHANGELOG.md updated** (if applicable)
 - [ ] **Tests cover new code**
+- [ ] **No flaky tests** — re-run any new/touched suite at least twice locally; if it ever fails, fix the test (not retried, not skipped)
 - [ ] **User-facing text internationalized** (no hardcoded strings)
 
-**🔴 CRITICAL: Never commit with failing tests!**
+**🔴 CRITICAL: Never commit with failing tests! No flaky tests allowed — a test that sometimes passes is broken. Fix the test, never retry/skip/timeout-pad past it.**
 
 ### Submitting Changes
 
