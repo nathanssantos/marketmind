@@ -12,7 +12,6 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 const AccountTab = lazy(() => import('./AccountTab').then((m) => ({ default: m.AccountTab })));
 const SecurityTab = lazy(() => import('./SecurityTab').then((m) => ({ default: m.SecurityTab })));
 const NotificationsTab = lazy(() => import('./NotificationsTab').then((m) => ({ default: m.NotificationsTab })));
-const GeneralTab = lazy(() => import('./GeneralTab').then((m) => ({ default: m.GeneralTab })));
 const ChartSettingsTab = lazy(() => import('./ChartSettingsTab').then((m) => ({ default: m.ChartSettingsTab })));
 const AutoTradingTab = lazy(() => import('./AutoTradingTab').then((m) => ({ default: m.AutoTradingTab })));
 const IndicatorsTab = lazy(() => import('./IndicatorsTab').then((m) => ({ default: m.IndicatorsTab })));
@@ -159,9 +158,6 @@ export const SettingsDialog = ({
                       </Tabs.Content>
                       <Tabs.Content value="notifications" pt={0} w="100%">
                         {activeTab === 'notifications' && <NotificationsTab />}
-                      </Tabs.Content>
-                      <Tabs.Content value="general" pt={0} w="100%">
-                        {activeTab === 'general' && <GeneralTab />}
                       </Tabs.Content>
                       <Tabs.Content value="chart" pt={0} w="100%">
                         {activeTab === 'chart' && (

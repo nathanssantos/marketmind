@@ -4,12 +4,14 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LuChartBar,
+  LuSettings,
   LuSquareArrowOutUpRight,
   LuFlaskConical,
   LuScanLine,
   LuZoomIn,
   LuZoomOut,
 } from 'react-icons/lu';
+import { useGlobalActionsOptional } from '../../context/GlobalActionsContext';
 import { AddPanelMenu } from './AddPanelMenu';
 import { OrganizeGridMenu } from './OrganizeGridMenu';
 import { useShallow } from 'zustand/react/shallow';
@@ -75,6 +77,7 @@ export const Toolbar = memo(({
   const { t } = useTranslation();
   const { openChartWindow } = useChartWindows();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
+  const globalActions = useGlobalActionsOptional();
 
   const { isAnalyticsOpen, toggleAnalytics } = useUIStore(
     useShallow((state) => ({
@@ -265,6 +268,18 @@ export const Toolbar = memo(({
 
       {showSidebarButtons && (
         <HStack gap={1} flexShrink={0}>
+          <TooltipWrapper label={t('settings.title')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('settings.title')}
+              onClick={() => globalActions?.openSettings()}
+              variant="ghost"
+              color="fg.muted"
+              data-testid="toolbar-settings-button"
+            >
+              <LuSettings />
+            </IconButton>
+          </TooltipWrapper>
           <WalletSelector />
           <UserAvatar />
         </HStack>

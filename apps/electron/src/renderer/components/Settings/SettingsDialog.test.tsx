@@ -13,7 +13,6 @@ vi.mock('react-i18next', () => ({
 vi.mock('./AccountTab', () => ({ AccountTab: () => <div>AccountTab Content</div> }));
 vi.mock('./SecurityTab', () => ({ SecurityTab: () => <div>SecurityTab Content</div> }));
 vi.mock('./NotificationsTab', () => ({ NotificationsTab: () => <div>NotificationsTab Content</div> }));
-vi.mock('./GeneralTab', () => ({ GeneralTab: () => <div>GeneralTab Content</div> }));
 vi.mock('./ChartSettingsTab', () => ({ ChartSettingsTab: () => <div>ChartSettingsTab Content</div> }));
 vi.mock('./AboutTab', () => ({ AboutTab: () => <div>AboutTab Content</div> }));
 vi.mock('./DataTab', () => ({ DataTab: () => <div>DataTab Content</div> }));
@@ -146,7 +145,7 @@ describe('SettingsDialog', () => {
     );
     const tabsToCheck = [
       'account', 'security', 'notifications',
-      'general', 'chart',
+      'chart',
       'autoTrading', 'indicators',
       'data', 'about',
     ];

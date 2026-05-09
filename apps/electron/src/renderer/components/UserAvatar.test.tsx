@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
-const mockOpenSettings = vi.fn();
 const mockLogout = vi.fn().mockResolvedValue(undefined);
 
 let currentUserMock: {
@@ -25,12 +24,12 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-vi.mock('@/renderer/context/GlobalActionsContext', () => ({
-  useGlobalActionsOptional: () => ({
-    openSettings: mockOpenSettings,
-    openSymbolSelector: vi.fn(),
-    navigateToSymbol: vi.fn(),
-  }),
+vi.mock('./Settings/LanguageSelector', () => ({
+  LanguageSelector: () => <div data-testid="lang-selector-mock" />,
+}));
+
+vi.mock('./Settings/ThemeSelector', () => ({
+  ThemeSelector: () => <div data-testid="theme-selector-mock" />,
 }));
 
 vi.mock('../hooks/useBackendAuth', () => ({
