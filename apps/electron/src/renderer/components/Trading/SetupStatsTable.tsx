@@ -36,9 +36,9 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
   };
 
   const getWinRateColor = (winRate: number) => {
-    if (winRate >= 60) return 'green.fg';
+    if (winRate >= 60) return 'trading.profit';
     if (winRate >= 50) return 'yellow.fg';
-    return 'red.fg';
+    return 'trading.loss';
   };
 
   const periods: { value: AnalyticsPeriod; labelKey: string }[] = [

@@ -141,8 +141,8 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
   };
 
   const getDayBg = (value: number) => {
-    if (value > 0) return 'green.subtle';
-    if (value < 0) return 'red.subtle';
+    if (value > 0) return 'trading.profit/20';
+    if (value < 0) return 'trading.loss/20';
     return 'bg.muted';
   };
 
