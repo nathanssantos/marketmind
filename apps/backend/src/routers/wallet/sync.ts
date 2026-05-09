@@ -214,4 +214,64 @@ export const walletSyncRouter = router({
         throw internalServerError(`Failed to backfill income: ${errorMessage}`, error);
       }
     }),
+
+  /**
+   * Comprehensive Binance reconciliation. Single mutation the user
+   * can trigger from the wallet card to bring everything 100% in
+   * sync with Binance:
+   *
+   *   1. `syncWalletIncome({ startTime: 0 })` — full income backfill,
+   *      catches REALIZED_PNL / COMMISSION / FUNDING / TRANSFER rows
+   *      that the dedup key may have dropped before v1.5's
+   *      `(wallet_id, binance_tran_id, income_type)` widening.
+   *   2. `runStartupAudit({ walletId })` — runs the same five checks
+   *      that fire at server boot: positions reconcile, pending
+   *      orphan cleanup, protection-order ID alignment, fee/pnl
+   *      correction, balance sync. Each check writes its own
+   *      row-level fixes; `summary.fixed` aggregates the count.
+   *
+   * Returns a single summary the renderer can show in a toast.
+   */
+  runFullAudit: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const [wallet] = await ctx.db
+        .select()
+        .from(wallets)
+        .where(and(eq(wallets.id, input.id), eq(wallets.userId, ctx.user.id)))
+        .limit(1);
+
+      if (!wallet) throw notFound('Wallet');
+
+      if (isPaperWallet(wallet)) {
+        return {
+          success: true,
+          incomeFetched: 0,
+          incomeInserted: 0,
+          auditFixed: 0,
+          auditWarnings: [] as string[],
+          message: 'Paper wallet — nothing to reconcile',
+        };
+      }
+
+      try {
+        const { syncWalletIncome } = await import('../../services/income-events');
+        const incomeResult = await syncWalletIncome(wallet, { startTime: 0 });
+
+        const { runStartupAudit } = await import('../../services/startup-audit');
+        const auditSummaries = await runStartupAudit({ walletId: wallet.id });
+        const auditSummary = auditSummaries[0];
+
+        return {
+          success: true,
+          incomeFetched: incomeResult.fetched,
+          incomeInserted: incomeResult.inserted,
+          auditFixed: auditSummary?.fixed ?? 0,
+          auditWarnings: auditSummary?.warnings ?? [],
+        };
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw internalServerError(`Full audit failed: ${errorMessage}`, error);
+      }
+    }),
 });

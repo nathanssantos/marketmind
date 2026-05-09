@@ -65,6 +65,20 @@ export const useBackendWallet = () => {
     },
   });
 
+  // v1.5 — Comprehensive Binance reconciliation: backfills every
+  // missing income event, then runs the full startup audit (positions
+  // / pending / protection / fees / balance). One click brings the
+  // wallet 100% in sync with Binance.
+  const runFullAuditMutation = trpc.wallet.runFullAudit.useMutation({
+    onSuccess: () => {
+      void utils.wallet.list.invalidate();
+      void utils.analytics.getPerformance.invalidate();
+      void utils.analytics.getEquityCurve.invalidate();
+      void utils.analytics.getDailyPerformance.invalidate();
+      void utils.trading.getTradeExecutions.invalidate();
+    },
+  });
+
   const createWallet = useCallback(
     async (data: { name: string; apiKey: string; apiSecret: string; walletType: 'testnet' | 'live' }) => {
       return createMutation.mutateAsync(data);
@@ -114,6 +128,13 @@ export const useBackendWallet = () => {
     [fullResyncIncomeMutation]
   );
 
+  const runFullAudit = useCallback(
+    async (id: string) => {
+      return runFullAuditMutation.mutateAsync({ id });
+    },
+    [runFullAuditMutation]
+  );
+
   const stableWallets = useMemo(() => wallets ?? EMPTY_WALLETS, [wallets]);
 
   return {
@@ -126,6 +147,7 @@ export const useBackendWallet = () => {
     syncBalance,
     syncTransfers,
     fullResyncIncome,
+    runFullAudit,
     isCreating: createMutation.isPending,
     isCreatingPaper: createPaperMutation.isPending,
     isUpdating: updateMutation.isPending,
@@ -133,6 +155,7 @@ export const useBackendWallet = () => {
     isSyncing: syncBalanceMutation.isPending,
     isSyncingTransfers: syncTransfersMutation.isPending,
     isResyncingIncome: fullResyncIncomeMutation.isPending,
+    isRunningAudit: runFullAuditMutation.isPending,
     createError: createMutation.error,
     createPaperError: createPaperMutation.error,
     updateError: updateMutation.error,
@@ -140,5 +163,6 @@ export const useBackendWallet = () => {
     syncError: syncBalanceMutation.error,
     syncTransfersError: syncTransfersMutation.error,
     resyncIncomeError: fullResyncIncomeMutation.error,
+    runFullAuditError: runFullAuditMutation.error,
   };
 };
