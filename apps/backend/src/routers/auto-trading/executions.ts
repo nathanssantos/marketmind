@@ -392,6 +392,7 @@ export const executionsRouter = router({
       const exitPrice = parseFloat(input.exitPrice);
       const qty = parseFloat(execution.quantity);
       const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+      const leverage = execution.leverage ?? 1;
 
       const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
         entryPrice,
@@ -399,6 +400,7 @@ export const executionsRouter = router({
         quantity: qty,
         side: execution.side,
         marketType,
+        leverage,
       });
 
       await ctx.db

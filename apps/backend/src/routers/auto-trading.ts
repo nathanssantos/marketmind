@@ -655,6 +655,7 @@ export const autoTradingRouter = router({
       const exitPrice = parseFloat(input.exitPrice);
       const qty = parseFloat(execution.quantity);
       const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+      const leverage = execution.leverage ?? 1;
 
       const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
         entryPrice,
@@ -662,6 +663,7 @@ export const autoTradingRouter = router({
         quantity: qty,
         side: execution.side,
         marketType,
+        leverage,
       });
 
       await ctx.db
@@ -1635,6 +1637,7 @@ export const autoTradingRouter = router({
               const exitPriceNum = parseFloat(exitPrice);
               const qty = parseFloat(execution.quantity || '0');
               const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+              const leverage = execution.leverage ?? 1;
 
               const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
                 entryPrice,
@@ -1642,6 +1645,7 @@ export const autoTradingRouter = router({
                 quantity: qty,
                 side: execution.side,
                 marketType,
+                leverage,
               });
 
               await closeExecutionAndBroadcast(execution, {
