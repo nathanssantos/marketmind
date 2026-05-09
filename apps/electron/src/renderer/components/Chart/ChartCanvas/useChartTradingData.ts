@@ -82,8 +82,14 @@ export const useChartTradingData = ({
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
 
-  const executionPolling = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
-  const configPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.NORMAL);
+  // WS-backed: position:update / position:closed events from
+  // RealtimeTradingSyncContext patch the execution caches in the same
+  // render frame as the event. Polling only fires while WS is dropped.
+  const executionPolling = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL, { wsBacked: true });
+  // WS-backed via mutation invalidation: trailing-config / autoTrading-
+  // config only change through user mutations (each invalidates on
+  // success). No periodic poll needed while WS is up.
+  const configPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.NORMAL, { wsBacked: true });
 
   const { data: backendExecutions } = trpc.autoTrading.getActiveExecutions.useQuery(
     { walletId: backendWalletId ?? '' },
