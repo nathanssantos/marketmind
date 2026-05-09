@@ -121,18 +121,25 @@ function ChartGridComponent() {
           cursor: 'default',
         },
         '&.grid--edit-mode .react-resizable-handle': {
-          width: '20px',
-          height: '20px',
-          backgroundColor: 'var(--chakra-colors-accent-solid)',
-          opacity: 0.65,
-          borderRadius: '4px',
-          backgroundImage: 'none',
-          zIndex: 3,
-          transition: 'opacity 0.15s, transform 0.15s',
+          width: '24px',
+          height: '24px',
+          padding: '0 4px 4px 0',
+          opacity: 0.7,
+          // White corner-arrow icon — replaces the dim grey default.
+          // RGL applies its own `transform: rotate()` per handle to
+          // point the arrow at the correct edge; we must NOT use
+          // transform on hover or the rotation snaps to 0deg.
+          backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M11 11L11 3L9 3L9 9L3 9L3 11Z' fill='white' opacity='0.95'/></svg>\")",
+          backgroundSize: '12px 12px',
+          backgroundPosition: 'bottom right',
+          backgroundRepeat: 'no-repeat',
+          filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.7))',
+          zIndex: 101,
+          transition: 'opacity 0.15s, filter 0.15s',
         },
         '&.grid--edit-mode .react-resizable-handle:hover': {
           opacity: 1,
-          transform: 'scale(1.15)',
+          filter: 'drop-shadow(0 0 3px rgba(255,255,255,0.6))',
         },
       }}
     >

@@ -66,14 +66,15 @@ function GridWindowComponent({
     <Flex
       direction="column"
       h="100%"
+      position="relative"
       borderWidth="1px"
-      borderColor={isFocused && showFocusBorder ? 'accent.solid' : 'border'}
+      borderColor={isFocused && showFocusBorder && !editMode ? 'accent.solid' : 'border'}
       borderRadius="sm"
       overflow="hidden"
       onMouseDown={handleFocus}
     >
       <Flex
-        className="panel-drag-handle"
+        className={editMode ? undefined : 'panel-drag-handle'}
         align="center"
         justify="space-between"
         h="24px"
@@ -82,7 +83,7 @@ function GridWindowComponent({
         bg="transparent"
         borderBottom="1px solid"
         borderColor="border"
-        cursor="grab"
+        cursor={editMode ? 'default' : 'grab'}
         userSelect="none"
       >
         <Box flex={1} overflow="hidden">
@@ -101,12 +102,12 @@ function GridWindowComponent({
           </TooltipWrapper>
         </HStack>
       </Flex>
-      <Box flex={1} overflow="hidden" position="relative">
+      <Box flex={1} overflow="hidden">
         {children}
-        {editMode && onClose && (
-          <GridEditOverlay panelId={id} onClose={handleOverlayClose} />
-        )}
       </Box>
+      {editMode && onClose && (
+        <GridEditOverlay panelId={id} onClose={handleOverlayClose} />
+      )}
     </Flex>
   );
 }
