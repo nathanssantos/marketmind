@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { LuPlus, LuRefreshCw, LuTrash2, LuX } from 'react-icons/lu';
 import { useBackendCustomSymbols } from '../../hooks/useBackendCustomSymbols';
 import { toaster } from '../../utils/toaster';
-import { Badge, BetaBadge, Button, EmptyState, Field, FormSection, IconButton, Input, RecordRow, Tabs } from '../ui';
+import { Badge, Button, EmptyState, Field, IconButton, Input, RecordRow, Tabs } from '../ui';
 
 const CATEGORIES = ['politics', 'defi', 'gaming', 'ai', 'other'] as const;
 const WEIGHTING_METHODS = ['EQUAL', 'MARKET_CAP', 'CAPPED_MARKET_CAP', 'SQRT_MARKET_CAP', 'MANUAL'] as const;
@@ -104,18 +104,6 @@ export const CustomSymbolsTab = memo(() => {
 
   return (
     <Stack gap={4}>
-      <FormSection
-        title={
-          <Flex align="center" gap={2}>
-            <Text as="span">{t('customSymbols.title')}</Text>
-            <BetaBadge />
-            {(customSymbols.data?.length ?? 0) > 0 && (
-              <Badge size="sm" colorPalette="blue">{customSymbols.data?.length ?? 0}</Badge>
-            )}
-          </Flex>
-        }
-        description={t('customSymbols.description')}
-      />
       <Tabs.Root defaultValue="list" variant="line" size="sm">
       <Tabs.List>
         <Tabs.Trigger value="list" px={3} py={1.5}>
