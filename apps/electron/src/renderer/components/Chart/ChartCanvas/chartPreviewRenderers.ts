@@ -110,15 +110,13 @@ export const renderSlTpPreview = (
   const label = `${isStopLoss ? 'SL' : 'TP'} ${formatChartPrice(previewPrice)} (${pctSign}${pctChange.toFixed(2)}%)`;
 
   ctx.save();
-  ctx.setLineDash([4, 4]);
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2;
   ctx.globalAlpha = 0.8;
   ctx.beginPath();
   ctx.moveTo(0, y);
   ctx.lineTo(dimensions.chartWidth, y);
   ctx.stroke();
-  ctx.setLineDash([]);
 
   ctx.globalAlpha = 1;
   ctx.font = '11px monospace';
@@ -146,15 +144,13 @@ export const renderTsPreview = (
   const label = `TS ${formatChartPrice(tsPlacementPreviewPrice)}`;
 
   ctx.save();
-  ctx.setLineDash([4, 4]);
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 2;
   ctx.globalAlpha = 0.8;
   ctx.beginPath();
   ctx.moveTo(0, y);
   ctx.lineTo(dimensions.chartWidth, y);
   ctx.stroke();
-  ctx.setLineDash([]);
 
   ctx.globalAlpha = 1;
   ctx.font = '11px monospace';
