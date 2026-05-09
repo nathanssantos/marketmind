@@ -77,13 +77,19 @@ export interface SymbolTab {
   id: string;
   symbol: string;
   marketType: MarketType;
-  activeLayoutId: string;
+  /**
+   * Legacy field — left optional for migration of pre-v1.5 persisted
+   * state. New code reads `LayoutState.activeLayoutId` (global) instead.
+   * @deprecated since v1.5; will be dropped after the user-state cycle.
+   */
+  activeLayoutId?: string;
   order: number;
 }
 
 export interface LayoutState {
   symbolTabs: SymbolTab[];
   activeSymbolTabId: string;
+  activeLayoutId: string;
   layoutPresets: LayoutPreset[];
   focusedPanelId: string | null;
 }
