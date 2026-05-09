@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-05-09
+
+### Added — UX restructure (8-PR push)
+
+- **Layers popover** (#545) — new "Layers" button in the header next to Indicators. Per-(symbol, interval) toggles for drawings / indicators / order lines / heatmap on the focused chart. Indicator panes below the candles collapse to height 0 when the toggle is off (no empty space). Persisted with the layout JSON so the state survives reload.
+- **Grid edit mode** (#542, #543) — locked-by-default. Toggle (LuPencil) next to the `+` Add-tab in `SymbolTabBar` flips a session-only `gridEditMode` flag. When ON: every panel gets a translucent scrim (`<GridEditOverlay>`) with a corner X close, the whole panel becomes the drag handle (so you can grab from anywhere — chart bodies included), resize handles enlarge to 24×24 white corner-arrows, focus border is suppressed (irrelevant while editing). When OFF: the 8 `.react-resizable-handle` elements are hidden via scoped CSS, no close button on chart panels, panel content is fully interactive. Bare panels lose the v1.10 right-click context-menu close — close is now consistent across panel kinds.
+- **Avatar popover redesign** (#537) — inline `<LanguageSelector />` and a new reusable `<ThemeSelector />` between the email row and Logout. Account / Settings menu duplicates removed. New Settings gear `IconButton` in the right cluster of the toolbar. The General tab is dropped from the Settings dialog (it only held language + theme, now both live in the popover).
+- **Zoom controls in the footer** (#538) — moved from `Toolbar` (header) to the `+` Add-Layout button in `LayoutTabBar`. Header IconButtons all switched to `variant="outline" color="fg.muted"` for visual parity with the existing Indicators button. Order-line close button rendered without filled background (just the X stroke).
+- **Liquidation-risk toast toggle** (#536) — new `liquidationRiskToastsEnabled` UI pref (default ON) in Settings → Notifications, gating the critical `LIQUIDATION_RISK` toast. Pref read imperatively at toast-fire time so flipping it applies instantly.
+- **Spinner-only loading** (#535, #536) — every panel-fill loading site uses `<LoadingSpinner />` (no text), inline status badges use `<Spinner size="xs" />`. New `<AppLoader />` (logo at the auth gate) and pre-React boot loader unified to logo-only (#541) — no flashbang on cold load.
+- **Decouple `activeLayoutId` from `SymbolTab`** (#540) — layout selection lifted from per-tab to top-level. Switching the symbol tab no longer changes the layout. `setActiveLayout(layoutId)` signature, hydrate path migrates pre-v1.5 persisted state.
+- **Mount `OrdersDialog` in `MainLayout`** (#534) — "View All Orders" button now opens the modal it was already wired to.
+- **P&L breakdown tooltip** (#546) — hovering the Net P&L cell of the orders table shows entry × qty, exit / current price, entry value, gross P&L estimate, implied margin, and implied leverage. Lets the user diagnose a 3000% ROE as a real high-leverage futures trade vs a phantom value at a glance.
+- **"Run full Binance audit" wallet menu item** (#552) — single one-click action that runs `syncWalletIncome({ startTime: 0 })` plus the full `runStartupAudit` (positions / pending / protection / fees / balance). Result toast shows new income events inserted + audit row fixes.
+
+### Fixed — orders / P&L / DB ↔ Binance reconciliation
+
+- **`income_events` dedup widened to (wallet, tranId, type)** (#551, migration 0039). Binance emits multiple income events with the same `tranId` for one trade — typically one `REALIZED_PNL` plus one `COMMISSION` (and optionally `FUNDING_FEE` / `INSURANCE_CLEAR`). The old `(wallet_id, binance_tran_id)` unique index dropped the second-to-arrive event and silently under-counted fees. Today's wallet had **143 commission rows** in DB vs Binance's **358** — \$237.42 of fees missing, calendar showed -\$914 vs Binance -\$1151. Migration drops old index, creates `(wallet_id, binance_tran_id, income_type)`. Full resync backfilled **5,486 events** that had been dropped. DB ↔ Binance now matches to the cent.
+- **`SYNC_INCOMPLETE` phantom P&L removed** (#551). Startup audit's fee-correction path was falling back to `(entry - exit) × qty` when Binance returned `realizedPnl === 0`. With `exit_price = NULL` (parsed as 0), that produced phantom grossPnl in the tens of thousands (incident: BTCUSDT SHORT booked +\$8906 / +3198%). Now trusts Binance's `realizedPnl` unconditionally and zeroes pnlPercent when there's no exit price.
+- **`leverage` passed to `calculatePnl` in 4 close paths** (#548). `auto-trading.ts:closeExecution` / emergency-stop, `auto-trading/executions.ts:close`, `auto-trading/recovery.ts:emergency-stop` were defaulting leverage to 1 — pnlPercent under-reported by the leverage factor for futures. Same execution closed via different paths produced wildly different ROE. Now consistent across paths.
+- **2 manual close mutations routed through `closeExecutionAndBroadcast`** (#549). Were doing direct UPDATE on `tradeExecutions` and skipping the canonical helper, so `wallet:update` + `position:closed` events never fired and the renderer's `wallet.list` stayed stale until the 500ms safety-net invalidate. Now atomic.
+- **Standardize profit/loss color on trading values** (#544). The lighter Chakra `green.fg`/`red.fg` had leaked into TP/SL renderings in `OrderCard`, `PortfolioTable`, `SetupStatsTable`, and `Analytics/PerformanceCalendar`. Migrated to `trading.profit` / `trading.loss` semantic tokens. Status badges keep the lighter shade (intentional).
+- **`reconcile-execs-with-binance` script writes `pnl_percent`** — was leaving stale phantom 3198% values intact even after `pnl` was corrected.
+- **`PortfolioTable` guards NaN P&L render** (#550) — defense-in-depth via `Number.isFinite` check.
+
+### Refactored
+
+- **Extract `ToastShelf` from `App.tsx`** (#547, #552) — 70-line inline `ToastContent` moved to `components/Toast/ToastShelf.tsx`. App.tsx is now a router/composition root, not a UI host. Toast pill backgrounds routed through Chakra v3's `colorPalette` prop instead of hardcoded shade literals — passes the `lint:shades` audit cleanly.
+
+### Notes
+
+- **Migration 0039** (`income_events_dedup_includes_type.sql`) drops `income_events_wallet_tran_idx` and replaces with `income_events_wallet_tran_type_idx` on `(wallet_id, binance_tran_id, income_type)`. After applying, run **Run full Binance audit** on each wallet to backfill events the old dedup had dropped.
+- **`docs: ban flaky tests`** (#539) — new rule 17 across `CLAUDE.md` / `.cursorrules` / `.gemini/instructions.md` / `.github/copilot-instructions.md` / `CONTRIBUTING.md` / `.claude/project-instructions.md`. A test that "sometimes passes" is broken; never retry/skip/timeout-pad past it.
+
 ## [1.15.1] - 2026-05-08
 
 ### Fixed — DB ↔ Binance state divergence under rapid scalping
