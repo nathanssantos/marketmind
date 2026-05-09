@@ -20,6 +20,12 @@ interface GridWindowProps {
   onMaximize: (id: string) => void;
   onRestore: (id: string) => void;
   onClose?: (id: string) => void;
+  /**
+   * v1.5 — when false, suppresses the close button. The header still
+   * shows min/max so the user can still re-arrange the workspace.
+   * Drag is also gated by the parent grid's `gridEditMode` flag.
+   */
+  showClose?: boolean;
 }
 
 function GridWindowComponent({
@@ -34,6 +40,7 @@ function GridWindowComponent({
   onMaximize,
   onRestore,
   onClose,
+  showClose = true,
 }: GridWindowProps) {
   const isMaximized = windowState === 'maximized';
 
@@ -92,7 +99,7 @@ function GridWindowComponent({
               {isMaximized ? <LuMinimize2 /> : <LuMaximize2 />}
             </IconButton>
           </TooltipWrapper>
-          {onClose && (
+          {onClose && showClose && (
             <TooltipWrapper label="Close" showArrow>
               <IconButton aria-label="Close" size="2xs" variant="ghost" onClick={handleClose}>
                 <LuX />

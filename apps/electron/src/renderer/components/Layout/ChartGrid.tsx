@@ -30,6 +30,7 @@ function ChartGridComponent() {
     () => layoutPresets.find(l => l.id === activeLayoutId),
     [activeLayoutId, layoutPresets],
   );
+  const gridEditMode = useLayoutStore(s => s.gridEditMode);
   const updatePanelGridPosition = useLayoutStore(s => s.updatePanelGridPosition);
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const focusedPanelId = useLayoutStore(s => s.focusedPanelId);
@@ -106,11 +107,20 @@ function ChartGridComponent() {
   return (
     <Box
       ref={containerRef}
+      className={gridEditMode ? 'grid--edit-mode' : 'grid--locked'}
       w="100%"
       h="100%"
       overflowX="hidden"
       overflowY={maximizedPanel ? 'hidden' : 'auto'}
       position="relative"
+      css={{
+        '&.grid--locked .react-resizable-handle': {
+          display: 'none',
+        },
+        '&.grid--locked .panel-drag-handle': {
+          cursor: 'default',
+        },
+      }}
     >
       {mounted && containerWidth > 0 && (
         <GridLayout
@@ -123,11 +133,11 @@ function ChartGridComponent() {
             containerPadding: GRID_CONTAINER_PADDING,
           }}
           dragConfig={{
-            enabled: !maximizedPanel,
+            enabled: gridEditMode && !maximizedPanel,
             handle: '.panel-drag-handle',
           }}
           resizeConfig={{
-            enabled: !maximizedPanel,
+            enabled: gridEditMode && !maximizedPanel,
             handles: ['s', 'e', 'se', 'sw', 'w', 'n', 'ne', 'nw'],
           }}
           onLayoutChange={handleLayoutChange}
