@@ -14,26 +14,32 @@ interface ToastLike {
   meta?: unknown;
 }
 
+// Status palette for toast pills. Routed through Chakra v3's
+// `colorPalette` prop instead of hardcoded `red.500` literals so the
+// theme system controls the actual hex (and the shade-literal audit
+// stays green). `colorPalette.solid` resolves to the canonical bold
+// fill of the palette in either theme.
+const TOAST_PALETTE: Record<string, string> = {
+  error: 'red',
+  success: 'green',
+  warning: 'orange',
+  info: 'blue',
+};
+
 const ToastContent = ({ toast }: { toast: ToastLike }): ReactElement => {
   const { t } = useTranslation();
   const symbol = (toast.meta as Record<string, unknown> | undefined)?.['symbol'] as string | undefined;
   const marketType = (toast.meta as Record<string, unknown> | undefined)?.['marketType'] as MarketType | undefined;
   const navigate = getToasterNavigateToSymbol();
   const canNavigate = !!symbol && !!navigate;
+  const palette = TOAST_PALETTE[toast.type ?? 'info'] ?? TOAST_PALETTE['info'];
 
   return (
     <Box
       key={toast.id}
       p={4}
-      bg={
-        toast.type === 'error'
-          ? 'red.500'
-          : toast.type === 'success'
-            ? 'green.500'
-            : toast.type === 'warning'
-              ? 'orange.500'
-              : 'blue.500'
-      }
+      colorPalette={palette}
+      bg="colorPalette.solid"
       color="white"
       borderRadius="md"
       boxShadow="lg"
