@@ -10,6 +10,17 @@ interface GridEditOverlayProps {
   onClose: (panelId: string) => void;
 }
 
+/**
+ * v1.5 — translucent scrim rendered over each panel while the grid
+ * edit mode is on. The whole overlay carries the `panel-drag-handle`
+ * class, so react-grid-layout treats a click anywhere on the panel
+ * surface as a drag start. The corner X stops mousedown from
+ * propagating so its click doesn't kick off a drag.
+ *
+ * The overlay sits at zIndex 100 to clear any inner panel chrome
+ * (chart-panel pagination buttons, header min/max, etc.) — the user
+ * is editing the grid, not the panel content.
+ */
 export const GridEditOverlay = memo(({ panelId, onClose }: GridEditOverlayProps) => {
   const { t } = useTranslation();
 
@@ -21,20 +32,21 @@ export const GridEditOverlay = memo(({ panelId, onClose }: GridEditOverlayProps)
     [onClose, panelId],
   );
 
-  const handleSwallowMouseDown = useCallback((e: ReactMouseEvent) => {
+  const stopMouseDown = useCallback((e: ReactMouseEvent) => {
     e.stopPropagation();
   }, []);
 
   return (
     <Box
+      className="panel-drag-handle"
       position="absolute"
       inset={0}
-      bg="blackAlpha.500"
+      bg="blackAlpha.600"
       backdropFilter="auto"
       backdropBlur="2px"
-      zIndex={2}
-      pointerEvents="auto"
-      onMouseDown={handleSwallowMouseDown}
+      zIndex={100}
+      cursor="grab"
+      _active={{ cursor: 'grabbing' }}
       data-testid={`grid-edit-overlay-${panelId}`}
     >
       <TooltipWrapper label={t('common.close')} showArrow>
@@ -46,6 +58,7 @@ export const GridEditOverlay = memo(({ panelId, onClose }: GridEditOverlayProps)
           variant="solid"
           colorPalette="red"
           aria-label={t('common.close')}
+          onMouseDown={stopMouseDown}
           onClick={handleClose}
           data-testid={`grid-edit-close-${panelId}`}
         >

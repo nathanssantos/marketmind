@@ -109,6 +109,7 @@ export const GridPanel = memo((props: GridPanelProps) => {
     <Flex
       direction="column"
       h="100%"
+      position="relative"
       bg="bg.panel"
       borderWidth="1px"
       borderColor="border"
@@ -120,7 +121,7 @@ export const GridPanel = memo((props: GridPanelProps) => {
     >
       {mode === 'chart' && (
         <Flex
-          className="panel-drag-handle"
+          className={editMode ? undefined : 'panel-drag-handle'}
           align="center"
           justify="space-between"
           h="24px"
@@ -129,7 +130,7 @@ export const GridPanel = memo((props: GridPanelProps) => {
           bg="transparent"
           borderBottom="1px solid"
           borderColor="border"
-          cursor="grab"
+          cursor={editMode ? 'default' : 'grab'}
           userSelect="none"
         >
           <Box flex={1} overflow="hidden">
@@ -170,15 +171,14 @@ export const GridPanel = memo((props: GridPanelProps) => {
       <Box
         flex={1}
         overflow="hidden"
-        position="relative"
-        className={mode === 'bare' ? 'panel-drag-handle' : undefined}
-        cursor={mode === 'bare' ? 'grab' : undefined}
+        className={mode === 'bare' && !editMode ? 'panel-drag-handle' : undefined}
+        cursor={mode === 'bare' && !editMode ? 'grab' : undefined}
       >
         {children}
-        {editMode && onClose && (
-          <GridEditOverlay panelId={id} onClose={handleOverlayClose} />
-        )}
       </Box>
+      {editMode && onClose && (
+        <GridEditOverlay panelId={id} onClose={handleOverlayClose} />
+      )}
     </Flex>
   );
 
