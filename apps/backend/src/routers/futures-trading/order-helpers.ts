@@ -197,7 +197,7 @@ export const handleMarketOrderProtection = async (
     // WS event will overwrite it with the real avg (handler at
     // handle-order-update.ts:215 was changed to update instead of
     // skip when entry fills arrive for tracked execs).
-    let fillPrice = parseFloat(((futuresOrder as { avgPrice?: string }).avgPrice) || '0');
+    let fillPrice = parseFloat((futuresOrder as { avgPrice?: string }).avgPrice ?? '0');
     let entryFee = 0;
     if (fillPrice <= 0) {
       try {
