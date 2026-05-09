@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, EmptyState, IconButton, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
+import { Badge, Button, Callout, CryptoIcon, DirectionModeSelector, EmptyState, IconButton, LoadingSpinner, Select, Separator, Slider, TooltipWrapper, type DirectionMode } from '@renderer/components/ui';
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { MM } from '@marketmind/tokens';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
@@ -127,7 +127,7 @@ const WatchersTabComponent = () => {
           {t('trading.portfolio.noWallet')}
         </Callout>
       ) : isLoadingWatcherStatus ? (
-        <EmptyState size="sm" title={t('common.loading')} />
+        <LoadingSpinner />
       ) : activeWatchers.length === 0 ? (
         <EmptyState
           size="sm"

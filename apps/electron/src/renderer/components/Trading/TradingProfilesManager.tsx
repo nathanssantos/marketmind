@@ -1,4 +1,4 @@
-import { Badge, CreateActionButton, EmptyState, FormSection, IconButton } from '@renderer/components/ui';
+import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, LoadingSpinner } from '@renderer/components/ui';
 import { Box, Flex, Grid, Portal, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { TradingProfile } from '@marketmind/types';
@@ -62,7 +62,7 @@ export const TradingProfilesManager = () => {
       />
 
       {isLoadingProfiles ? (
-        <EmptyState size="sm" title={t('common.loading')} />
+        <LoadingSpinner />
       ) : profiles.length === 0 ? (
         <EmptyState
           dashed

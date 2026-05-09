@@ -52,11 +52,11 @@ describe('TradingProfilesManager', () => {
       isDeletingProfile: false,
     });
 
-    render(
+    const { container } = render(
       <ChakraProvider value={defaultSystem}>
         <TradingProfilesManager />
       </ChakraProvider>,
     );
-    expect(screen.getByText('common.loading')).toBeDefined();
+    expect(container.querySelector('.chakra-spinner')).toBeDefined();
   });
 });

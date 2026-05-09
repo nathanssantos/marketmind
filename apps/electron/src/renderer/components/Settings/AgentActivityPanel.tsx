@@ -1,5 +1,5 @@
 import { Box, Text } from '@chakra-ui/react';
-import { Badge, FormSection, MetaText, Table } from '@renderer/components/ui';
+import { Badge, FormSection, LoadingSpinner, MetaText, Table } from '@renderer/components/ui';
 import { trpc } from '@renderer/utils/trpc';
 import { useTranslation } from 'react-i18next';
 
@@ -32,7 +32,7 @@ export const AgentActivityPanel = () => {
       description={t('settings.security.agentActivity.description')}
     >
       {auditQuery.isLoading ? (
-        <MetaText>{t('settings.security.agentActivity.loading')}</MetaText>
+        <LoadingSpinner />
       ) : rows.length === 0 ? (
         <MetaText>{t('settings.security.agentActivity.empty')}</MetaText>
       ) : (
