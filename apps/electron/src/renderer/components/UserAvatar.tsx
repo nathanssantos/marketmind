@@ -1,10 +1,11 @@
-import { useGlobalActionsOptional } from '@/renderer/context/GlobalActionsContext';
-import { Box, Portal, Text } from '@chakra-ui/react';
+import { Box, Portal, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
-import { LuLogOut, LuSettings, LuUser } from 'react-icons/lu';
+import { LuLogOut } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import { useBackendAuth } from '../hooks/useBackendAuth';
 import { trpc } from '../utils/trpc';
+import { LanguageSelector } from './Settings/LanguageSelector';
+import { ThemeSelector } from './Settings/ThemeSelector';
 import { Menu } from './ui';
 
 const getInitials = (name?: string | null, email?: string): string => {
@@ -19,7 +20,6 @@ const getInitials = (name?: string | null, email?: string): string => {
 export const UserAvatar = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const globalActions = useGlobalActionsOptional();
   const { currentUser, logout } = useBackendAuth();
 
   const avatarQuery = trpc.auth.getAvatar.useQuery(undefined, {
@@ -78,14 +78,10 @@ export const UserAvatar = () => {
               </Text>
             </Box>
             <Menu.Separator />
-            <Menu.Item value="account" onClick={() => globalActions?.openSettings('account')}>
-              <LuUser />
-              {t('account.title')}
-            </Menu.Item>
-            <Menu.Item value="settings" onClick={() => globalActions?.openSettings()}>
-              <LuSettings />
-              {t('account.settings')}
-            </Menu.Item>
+            <Stack px={3} py={2} gap={3}>
+              <LanguageSelector />
+              <ThemeSelector />
+            </Stack>
             <Menu.Separator />
             <Menu.Item value="logout" onClick={() => { void handleLogout(); }} color="red.fg">
               <LuLogOut />
