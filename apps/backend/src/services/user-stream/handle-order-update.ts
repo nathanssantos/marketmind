@@ -166,11 +166,20 @@ export async function handleOrderUpdate(
         );
 
       const orderIdStr = String(orderId);
+      // CRITICAL: use `||` not `??`. The previous chain `(field && field === id) ?? next`
+      // was buggy: when `field` is set but doesn't match, the expression evaluates to
+      // `false`, which `??` treats as "non-nullish" and short-circuits — never checking
+      // the remaining fields. Real-world impact: a position with BOTH stopLossOrderId
+      // (e.g. "100") AND takeProfitOrderId (e.g. "200") set — when TP fills with
+      // orderId="200", the SL check returned false, the chain stopped, and the TP match
+      // was never tested. Position stayed open in the DB even though Binance had closed it.
+      // Direct equality with `||` chains correctly: null === "200" is false (skip), and
+      // we don't need the `field &&` guard since equality with null/undefined is always false.
       const executionByOrderId = openExecutions.find(e =>
-        (e.stopLossOrderId && e.stopLossOrderId === orderIdStr) ??
-        (e.stopLossAlgoId && e.stopLossAlgoId === orderIdStr) ??
-        (e.takeProfitOrderId && e.takeProfitOrderId === orderIdStr) ??
-        (e.takeProfitAlgoId && e.takeProfitAlgoId === orderIdStr)
+        e.stopLossOrderId === orderIdStr ||
+        e.stopLossAlgoId === orderIdStr ||
+        e.takeProfitOrderId === orderIdStr ||
+        e.takeProfitAlgoId === orderIdStr
       );
 
       const executionByExitReason = !executionByOrderId
@@ -187,10 +196,14 @@ export async function handleOrderUpdate(
         return;
       }
 
-      let isSLOrder = (execution.stopLossOrderId && execution.stopLossOrderId === orderIdStr) ??
-        (execution.stopLossAlgoId && execution.stopLossAlgoId === orderIdStr);
-      let isTPOrder = (execution.takeProfitOrderId && execution.takeProfitOrderId === orderIdStr) ??
-        (execution.takeProfitAlgoId && execution.takeProfitAlgoId === orderIdStr);
+      // Same `||` reasoning as above — `??` here would let a SL match wrongly suppress
+      // a TP check (or vice versa) on positions with both legs set.
+      let isSLOrder =
+        execution.stopLossOrderId === orderIdStr ||
+        execution.stopLossAlgoId === orderIdStr;
+      let isTPOrder =
+        execution.takeProfitOrderId === orderIdStr ||
+        execution.takeProfitAlgoId === orderIdStr;
       const isAlgoTriggerFill = !isSLOrder && !isTPOrder && execution.exitReason;
 
       if (!isSLOrder && !isTPOrder && !isAlgoTriggerFill) {
