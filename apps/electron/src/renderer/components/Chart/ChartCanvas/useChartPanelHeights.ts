@@ -9,6 +9,12 @@ export interface UseChartPanelHeightsProps {
   manager: CanvasManager | null;
   showEventRow: boolean;
   advancedConfig?: AdvancedControlsConfig;
+  /**
+   * v1.5 — when false, collapse every indicator pane to 0 height
+   * (Layers popover indicators toggle). Default true so existing
+   * callers behave unchanged.
+   */
+  indicatorsEnabled?: boolean;
 }
 
 const isPaneKind = (kind: string): boolean => kind.startsWith('pane-');
@@ -30,6 +36,7 @@ export const useChartPanelHeights = ({
   manager,
   showEventRow,
   advancedConfig,
+  indicatorsEnabled = true,
 }: UseChartPanelHeightsProps): void => {
   const previousPaneIdsRef = useRef<Set<string>>(new Set());
   const instancesRef = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
@@ -43,7 +50,9 @@ export const useChartPanelHeights = ({
 
   const applyPanelHeights = useCallback(() => {
     if (!manager) return;
-    const activePaneIds = computeActivePaneIds(instancesRef.current);
+    const activePaneIds = indicatorsEnabled
+      ? computeActivePaneIds(instancesRef.current)
+      : new Set<string>();
     const previous = previousPaneIdsRef.current;
 
     for (const paneId of activePaneIds) {
@@ -56,7 +65,7 @@ export const useChartPanelHeights = ({
     }
 
     previousPaneIdsRef.current = activePaneIds;
-  }, [manager]);
+  }, [manager, indicatorsEnabled]);
 
   useEffect(() => {
     if (!manager) return;

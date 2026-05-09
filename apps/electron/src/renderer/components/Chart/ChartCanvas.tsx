@@ -28,6 +28,7 @@ import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
+import { useChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
@@ -373,7 +374,7 @@ const ChartCanvasInternal = ({
     ...(volumeHeightRatio !== undefined && { volumeHeightRatio }),
   }), [marketEvents, heatmapDataRef, liquidityColorMode, timeframe, hoveredKlineIndexRef, volumeHeightRatio]);
 
-  const genericRenderers = useGenericChartIndicatorRenderers({
+  const rawGenericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, outputsRef: genericOutputsRef,
     external,
   });
@@ -387,7 +388,7 @@ const ChartCanvasInternal = ({
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
-  const { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags);
+  const { renderOrderLines: rawRenderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags);
 
   const auxiliarySetup = useChartAuxiliarySetup({
     manager, klines, symbol: symbol ?? '', timeframe, colors, hasTradingEnabled,
@@ -396,7 +397,36 @@ const ChartCanvasInternal = ({
     getOrderAtPosition, draggedOrderIdRef,
   });
 
-  const { orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, tsPlacementDeactivate, tsPlacementSetPreview, isGridModeActive, gridInteraction, renderGridPreview, drawingInteraction, renderDrawings } = auxiliarySetup;
+  const { orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, tsPlacementDeactivate, tsPlacementSetPreview, isGridModeActive, gridInteraction, renderGridPreview, drawingInteraction, renderDrawings: rawRenderDrawings } = auxiliarySetup;
+
+  // v1.5 — Layers popover gates: when the user toggles a layer off,
+  // skip its render call so the canvas re-paints without it. Flags
+  // are session-only, per (symbol, interval).
+  const layerFlags = useChartLayerFlags(symbol ?? '', timeframe);
+  const renderOrderLines = useCallback<typeof rawRenderOrderLines>(
+    (...args) => {
+      if (!layerFlags.orderLines) return false;
+      return rawRenderOrderLines(...args);
+    },
+    [rawRenderOrderLines, layerFlags.orderLines],
+  );
+  const renderDrawings = useCallback<typeof rawRenderDrawings>(
+    (...args) => {
+      if (!layerFlags.drawings) return;
+      return rawRenderDrawings(...args);
+    },
+    [rawRenderDrawings, layerFlags.drawings],
+  );
+  const genericRenderers = useMemo(() => {
+    if (layerFlags.indicators) return rawGenericRenderers;
+    const noop = () => undefined;
+    return {
+      renderAllOverlayIndicators: noop,
+      renderAllPanelIndicators: noop,
+      renderAllCustomIndicators: noop,
+      renderInstance: noop,
+    };
+  }, [rawGenericRenderers, layerFlags.indicators]);
 
   // Keep the ESC-handler bridge ref pointed at the latest drawingInteraction.
   drawingInteractionRef.current = drawingInteraction;
@@ -427,7 +457,7 @@ const ChartCanvasInternal = ({
 
   useChartOverlayEffects({ manager, allExecutions, orderLoadingMapRef, orderFlashMapRef, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders });
 
-  useChartPanelHeights({ manager, showEventRow, advancedConfig });
+  useChartPanelHeights({ manager, showEventRow, advancedConfig, indicatorsEnabled: layerFlags.indicators });
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;

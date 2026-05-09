@@ -16,6 +16,7 @@ import type { MarketType } from '@marketmind/types';
 import { getPanelDef } from '@renderer/grid/panel-registry';
 import { usePreferencesStore } from './preferencesStore';
 import { trpc } from '@renderer/services/trpc';
+import { useChartLayersStore } from './chartLayersStore';
 
 const generateId = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -493,12 +494,14 @@ const persistLayout = (): void => {
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
     const { symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets } = useLayoutStore.getState();
-    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets, gridVersion: GRID_VERSION });
+    const chartLayers = useChartLayersStore.getState().flagsByKey;
+    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets, chartLayers, gridVersion: GRID_VERSION });
     trpc.layout.save.mutate({ data }).catch(() => {});
   }, 500);
 };
 
 useLayoutStore.subscribe(persistLayout);
+useChartLayersStore.subscribe(persistLayout);
 
 export const scalePosition = (pos: GridPosition, fx: number, fy: number): GridPosition => ({
   x: Math.round(pos.x * fx),
@@ -558,6 +561,12 @@ export const hydrateLayoutStore = async (): Promise<void> => {
         ...(persistedActiveLayoutId && { activeLayoutId: persistedActiveLayoutId }),
         ...(migratedPresets && { layoutPresets: migratedPresets }),
       });
+
+      const persistedChartLayers = (saved as { chartLayers?: Record<string, unknown> }).chartLayers;
+      if (persistedChartLayers && typeof persistedChartLayers === 'object') {
+        useChartLayersStore.setState({ flagsByKey: persistedChartLayers as ReturnType<typeof useChartLayersStore.getState>['flagsByKey'] });
+      }
+
       isHydrated = true;
       return;
     }
