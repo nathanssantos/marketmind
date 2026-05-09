@@ -456,14 +456,33 @@ export class CustomSymbolService {
     const existing = await db.query.customSymbols.findFirst({
       where: eq(customSymbols.symbol, 'POLITIFI'),
     });
-    if (existing) return;
+    if (existing) {
+      // One-shot migration: existing rows were seeded with marketType=SPOT
+      // before all 5 components were listed on Binance Futures. Switch
+      // any SPOT row to FUTURES so the kline pipeline pulls from
+      // /fapi instead of /api (tighter spreads, aligned with renderer).
+      await db
+        .update(customSymbolComponents)
+        .set({ marketType: 'FUTURES' })
+        .where(
+          and(
+            eq(customSymbolComponents.customSymbolId, existing.id),
+            eq(customSymbolComponents.marketType, 'SPOT'),
+          ),
+        );
+      return;
+    }
 
+    // All 5 components are listed on Binance Futures (verified
+    // 2026-05-09 via /fapi/v1/exchangeInfo). Using FUTURES gives us
+    // tighter spreads, more granular kline data, and aligns with the
+    // marketType the renderer passes for custom symbols.
     const componentDefs = [
-      { symbol: 'WLFIUSDT', marketType: 'SPOT' as const, coingeckoId: 'world-liberty-financial' },
-      { symbol: 'TRUMPUSDT', marketType: 'SPOT' as const, coingeckoId: 'official-trump' },
-      { symbol: 'MELANIAUSDT', marketType: 'SPOT' as const, coingeckoId: 'official-melania-meme' },
-      { symbol: 'PEOPLEUSDT', marketType: 'SPOT' as const, coingeckoId: 'constitutiondao' },
-      { symbol: 'PNUTUSDT', marketType: 'SPOT' as const, coingeckoId: 'peanut-the-squirrel' },
+      { symbol: 'WLFIUSDT', marketType: 'FUTURES' as const, coingeckoId: 'world-liberty-financial' },
+      { symbol: 'TRUMPUSDT', marketType: 'FUTURES' as const, coingeckoId: 'official-trump' },
+      { symbol: 'MELANIAUSDT', marketType: 'FUTURES' as const, coingeckoId: 'official-melania-meme' },
+      { symbol: 'PEOPLEUSDT', marketType: 'FUTURES' as const, coingeckoId: 'constitutiondao' },
+      { symbol: 'PNUTUSDT', marketType: 'FUTURES' as const, coingeckoId: 'peanut-the-squirrel' },
     ];
 
     let weights: number[];
