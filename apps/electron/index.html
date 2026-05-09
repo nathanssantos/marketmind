@@ -55,24 +55,22 @@
         height: 100vh;
       }
 
-      @keyframes mm-pre-react-spin {
-        to {
-          transform: rotate(360deg);
-        }
+      .mm-pre-react-logo {
+        width: 64px;
+        height: 64px;
+        position: relative;
       }
 
-      .mm-pre-react-spinner {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        border: 2px solid rgba(255, 255, 255, 0.15);
-        border-top-color: #4a90d9;
-        animation: mm-pre-react-spin 0.7s linear infinite;
+      .mm-pre-react-logo svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
       }
 
-      html.light .mm-pre-react-spinner {
-        border-color: rgba(0, 0, 0, 0.12);
-        border-top-color: #4a90d9;
+      .mm-pre-react-logo .mm-logo-secondary {
+        opacity: 0.85;
       }
     </style>
   </head>
