@@ -290,6 +290,78 @@ describe('handleOrderUpdate — entry fill correction for tracked exec', () => {
     }));
   });
 
+  it('routes a TP fill to handleExitFill when both SL and TP order ids are set on the exec (regression: ?? bug stopped the OR chain at first non-match)', async () => {
+    // 2026-05-09 user report: SL/TP hit on Binance, position closed
+    // there, but stayed open in the app. Root cause: the OR chain
+    // matching the order's id against {stopLossOrderId, stopLossAlgoId,
+    // takeProfitOrderId, takeProfitAlgoId} used `??` instead of `||`.
+    // When stopLossOrderId was set (e.g. "100") but didn't match the
+    // incoming TP fill id ("200"), the expression evaluated to `false`,
+    // which `??` treats as non-nullish — short-circuiting and never
+    // checking takeProfitOrderId. Fixed by switching to direct
+    // equality + `||`.
+    const { handleExitFill } = await import('../handle-exit-fill');
+    const exec = {
+      id: 'exec-with-both-sltp',
+      walletId: 'wallet-1',
+      symbol: 'BTCUSDT',
+      side: 'LONG',
+      status: 'open',
+      entryOrderId: '50',
+      entryPrice: '80320',
+      quantity: '0.1',
+      marketType: 'FUTURES',
+      stopLossOrderId: '100',
+      stopLossAlgoId: null,
+      takeProfitOrderId: '200',
+      takeProfitAlgoId: null,
+      stopLossIsAlgo: false,
+      takeProfitIsAlgo: false,
+      exitReason: null,
+      leverage: 1,
+    };
+
+    let selectCall = 0;
+    mockDbSelect.mockImplementation(() => {
+      const isPendingLookup = selectCall === 0;
+      selectCall++;
+      const data = isPendingLookup ? [] : [exec];
+      const limitFn = vi.fn().mockResolvedValue(data);
+      const whereFn = vi.fn().mockImplementation(() => ({
+        limit: limitFn,
+        then: (resolve: (value: unknown[]) => unknown) => resolve(data),
+      }));
+      return { from: vi.fn().mockReturnValue({ where: whereFn }) };
+    });
+    mockDbUpdate.mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }) });
+
+    // TP fill arrives — orderId 200 matches takeProfitOrderId.
+    const event = makeEvent({
+      X: 'FILLED',
+      x: 'TRADE',
+      i: 200,
+      S: 'SELL',
+      ap: '80800',
+      L: '80800',
+      z: '0.1',
+      rp: '48',  // realized profit signals closing fill
+      n: '0.4',
+    });
+
+    await handleOrderUpdate(createMockCtx(), 'wallet-1', event);
+
+    expect(handleExitFill).toHaveBeenCalledTimes(1);
+    const callArgs = (handleExitFill as ReturnType<typeof vi.fn>).mock.calls[0]!;
+    // Args are positional: ctx, walletId, execution, symbol, orderId,
+    // avgPrice, lastFilledPrice, executedQty, commission, isSL, isTP, isAlgo, isLiq
+    const passedExecution = callArgs[2];
+    const isSLOrder = callArgs[9];
+    const isTPOrder = callArgs[10];
+    expect(passedExecution.id).toBe('exec-with-both-sltp');
+    expect(isSLOrder).toBe(false);
+    expect(isTPOrder).toBe(true);
+  });
+
   it('skips update when WS avgPrice matches DB within tolerance', async () => {
     let selectCall = 0;
     mockDbSelect.mockImplementation(() => {
