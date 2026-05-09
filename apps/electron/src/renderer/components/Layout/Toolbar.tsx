@@ -1,4 +1,4 @@
-import { Box, Flex, HStack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack } from '@chakra-ui/react';
 import { IconButton, Logo, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,8 +8,6 @@ import {
   LuSquareArrowOutUpRight,
   LuFlaskConical,
   LuScanLine,
-  LuZoomIn,
-  LuZoomOut,
 } from 'react-icons/lu';
 import { useGlobalActionsOptional } from '../../context/GlobalActionsContext';
 import { AddPanelMenu } from './AddPanelMenu';
@@ -20,8 +18,6 @@ import { useBacktestDialogStore } from '../../store/backtestDialogStore';
 import { useScreenerStore } from '../../store/screenerStore';
 import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
-import { useUIZoom } from '../../hooks/useUIZoom';
-import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 import type { MarketType } from '@marketmind/types';
@@ -38,7 +34,7 @@ const ToolbarLayoutActions = memo(({ showNewWindowButton, onOpenNewWindow }: { s
       <OrganizeGridMenu />
       {showNewWindowButton && (
         <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
-          <IconButton size="2xs" aria-label={t('chart.controls.newWindow')} onClick={onOpenNewWindow} variant="ghost" color="fg.muted">
+          <IconButton size="2xs" aria-label={t('chart.controls.newWindow')} onClick={onOpenNewWindow} variant="outline" color="fg.muted">
             <LuSquareArrowOutUpRight />
           </IconButton>
         </TooltipWrapper>
@@ -56,7 +52,6 @@ export interface ToolbarProps {
   timeframe: Timeframe;
   showNewWindowButton?: boolean;
   showSidebarButtons?: boolean;
-  showZoomControls?: boolean;
   rightExtra?: React.ReactNode;
   onSymbolChange: (symbol: string, marketType?: MarketType) => void;
   onTimeframeChange: (timeframe: Timeframe) => void;
@@ -69,14 +64,12 @@ export const Toolbar = memo(({
   timeframe,
   showNewWindowButton = true,
   showSidebarButtons = true,
-  showZoomControls = true,
   rightExtra,
   onSymbolChange,
   onTimeframeChange,
 }: ToolbarProps) => {
   const { t } = useTranslation();
   const { openChartWindow } = useChartWindows();
-  const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
   const globalActions = useGlobalActionsOptional();
 
   const { isAnalyticsOpen, toggleAnalytics } = useUIStore(
@@ -229,41 +222,6 @@ export const Toolbar = memo(({
           </HStack>
         )}
 
-        {showZoomControls && (
-          <>
-            {showSidebarButtons && <Box w="1px" h="22px" bg="border" flexShrink={0} />}
-            <HStack gap={1} flexShrink={0}>
-              <TooltipWrapper label={t('header.zoomOut')} showArrow>
-                <IconButton
-                  size="2xs"
-                  aria-label={t('header.zoomOut')}
-                  onClick={zoomOut}
-                  variant="outline"
-                  color="fg.muted"
-                  disabled={zoomLevel <= ZOOM_MIN}
-                >
-                  <LuZoomOut />
-                </IconButton>
-              </TooltipWrapper>
-              <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="center" userSelect="none">
-                {zoomLevel}%
-              </Text>
-              <TooltipWrapper label={t('header.zoomIn')} showArrow>
-                <IconButton
-                  size="2xs"
-                  aria-label={t('header.zoomIn')}
-                  onClick={zoomIn}
-                  variant="outline"
-                  color="fg.muted"
-                  disabled={zoomLevel >= ZOOM_MAX}
-                >
-                  <LuZoomIn />
-                </IconButton>
-              </TooltipWrapper>
-            </HStack>
-          </>
-        )}
-
       </Flex>
 
       {showSidebarButtons && (
@@ -273,7 +231,7 @@ export const Toolbar = memo(({
               size="2xs"
               aria-label={t('settings.title')}
               onClick={() => globalActions?.openSettings()}
-              variant="ghost"
+              variant="outline"
               color="fg.muted"
               data-testid="toolbar-settings-button"
             >

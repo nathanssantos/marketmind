@@ -141,7 +141,7 @@ export const SymbolTabBar = memo(() => {
         ))}
       </Flex>
       <TooltipWrapper label="New tab" showArrow>
-        <IconButton aria-label="Add tab" size="2xs" variant="ghost" mx={1} onClick={handleAdd}>
+        <IconButton aria-label="Add tab" size="2xs" variant="outline" color="fg.muted" mx={1} onClick={handleAdd}>
           <LuPlus />
         </IconButton>
       </TooltipWrapper>

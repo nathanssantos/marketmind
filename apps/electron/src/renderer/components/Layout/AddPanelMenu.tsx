@@ -53,7 +53,7 @@ export const AddPanelMenu = memo(() => {
             <IconButton
               size="2xs"
               aria-label={t('panels.addPanel')}
-              variant="ghost"
+              variant="outline"
               color="fg.muted"
               data-testid="add-panel-button"
             >

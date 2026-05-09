@@ -54,7 +54,7 @@ export const OrganizeGridMenu = memo(() => {
               <IconButton
                 size="2xs"
                 aria-label={t('panels.organize')}
-                variant="ghost"
+                variant="outline"
                 color="fg.muted"
                 data-testid="organize-grid-button"
               >
