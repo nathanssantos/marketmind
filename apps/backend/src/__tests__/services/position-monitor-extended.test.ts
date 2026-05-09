@@ -59,6 +59,8 @@ vi.mock('../../services/strategy-performance', () => ({
 vi.mock('../../services/websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
+    emitPositionClosed: vi.fn(),
+    emitOrderUpdate: vi.fn(),
     emitTradeNotification: mockEmitTradeNotification,
     emitWalletUpdate: vi.fn(),
     emitRiskAlert: mockEmitRiskAlert,
@@ -899,14 +901,15 @@ describe('PositionMonitorService - Extended Coverage', () => {
         })
       );
 
-      expect(mockEmitPositionUpdate).toHaveBeenCalledWith(
-        wallet.id,
-        expect.objectContaining({
-          id: execution!.id,
-          status: 'closed',
-          exitReason: 'TAKE_PROFIT',
-        })
-      );
+      // The close trio (order:update + position:closed) is now fired
+      // by closeExecutionAndBroadcast, not by an inline emitPositionUpdate.
+      // Assert the DB row reached the closed state with the expected fields.
+      const [closed] = await db
+        .select()
+        .from(schema.tradeExecutions)
+        .where(eq(schema.tradeExecutions.id, execution!.id));
+      expect(closed?.status).toBe('closed');
+      expect(closed?.exitReason).toBe('TAKE_PROFIT');
     });
 
     it('should send critical urgency notification on stop loss with loss', async () => {
@@ -1801,6 +1804,8 @@ describe('PositionMonitorService - Extended Coverage', () => {
       const localEmitRiskAlert = vi.fn();
       vi.mocked(getWebSocketService).mockReturnValue({
         emitPositionUpdate: vi.fn(),
+        emitPositionClosed: vi.fn(),
+        emitOrderUpdate: vi.fn(),
         emitTradeNotification: vi.fn(),
         emitWalletUpdate: vi.fn(),
         emitRiskAlert: localEmitRiskAlert,
@@ -1921,6 +1926,8 @@ describe('PositionMonitorService - Extended Coverage', () => {
       const localEmitRiskAlert = vi.fn();
       vi.mocked(getWebSocketService).mockReturnValue({
         emitPositionUpdate: vi.fn(),
+        emitPositionClosed: vi.fn(),
+        emitOrderUpdate: vi.fn(),
         emitTradeNotification: vi.fn(),
         emitWalletUpdate: vi.fn(),
         emitRiskAlert: localEmitRiskAlert,
@@ -1958,6 +1965,8 @@ describe('PositionMonitorService - Extended Coverage', () => {
       const localEmitRiskAlert = vi.fn();
       vi.mocked(getWebSocketService).mockReturnValue({
         emitPositionUpdate: vi.fn(),
+        emitPositionClosed: vi.fn(),
+        emitOrderUpdate: vi.fn(),
         emitTradeNotification: vi.fn(),
         emitWalletUpdate: vi.fn(),
         emitRiskAlert: localEmitRiskAlert,

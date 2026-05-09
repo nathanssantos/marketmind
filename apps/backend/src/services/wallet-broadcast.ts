@@ -1,5 +1,5 @@
-import { eq, sql } from 'drizzle-orm';
-import type { tradeExecutions as tradeExecutionsTable } from '../db/schema';
+import { and, eq, sql } from 'drizzle-orm';
+import { tradeExecutions, type tradeExecutions as tradeExecutionsTable } from '../db/schema';
 import { wallets } from '../db/schema';
 import { db } from '../db';
 import { logger } from './logger';
@@ -136,4 +136,138 @@ export const emitPositionClosedEvents = (opts: PositionClosedEventOptions): void
     pnlPercent: opts.pnlPercent,
     exitPrice: opts.exitPrice,
   });
+};
+
+interface CloseExecutionPatch {
+  exitPrice: number | null;
+  exitReason: string;
+  // Free-form by design — the schema column is varchar(50) and we use
+  // multiple narrative tags (ALGORITHM, MANUAL, SYNC, EXCHANGE_SYNC,
+  // OPPORTUNITY_COST, ALGO_VERIFICATION). Each call site picks the
+  // value that best describes what triggered the close.
+  exitSource: string;
+  pnl: number;
+  pnlPercent: number;
+  fees?: number;
+  entryFee?: number;
+  exitFee?: number;
+  exitOrderId?: string | null;
+  partialClosePnl?: number;
+}
+
+interface CloseExecutionResult {
+  /** True when the exec was newly closed by this call. False on race-loss. */
+  closed: boolean;
+  /** Authoritative wallet balance after the increment, when broadcast fired. */
+  walletBalance: WalletBroadcastResult | null;
+}
+
+/**
+ * Single canonical "close a tradeExecution" operation.
+ *
+ * Every site that wants to mark an exec as closed MUST go through this
+ * helper. It consolidates the three-step ritual that was duplicated
+ * across position-monitor, auto-trading emergency stop, manual close
+ * mutations, paper close, etc. — and which silently dropped one or
+ * more emits in 5 of the 6 sites we audited:
+ *
+ *   1. UPDATE tradeExecutions SET status='closed', ... WHERE id=? AND status='open'
+ *      (status guard makes concurrent closes safe — only one wins)
+ *   2. If we won the race, increment wallet balance + emit `wallet:update`
+ *      (skipped when delta is 0 — see incrementWalletBalanceAndBroadcast)
+ *   3. Emit `order:update` (status=closed) + `position:closed` so the
+ *      renderer cascade fires (close in-cache + invalidate analytics)
+ *
+ * Returns `{ closed: false }` when another process already closed the
+ * exec (e.g. position-sync raced the user-stream handler). Callers
+ * should branch on this — log/skip downstream side effects like
+ * cancelling protection orders that the winner already handled.
+ *
+ * Toasts (`emitTradeNotification`) are deliberately NOT included here
+ * because they have UX-specific copy that varies by exit source. Call
+ * the toast helper inline AFTER `closeExecutionAndBroadcast` returns
+ * `closed: true`.
+ */
+export const closeExecutionAndBroadcast = async (
+  execution: ExecutionRow,
+  patch: CloseExecutionPatch,
+): Promise<CloseExecutionResult> => {
+  const closeResult = await db
+    .update(tradeExecutions)
+    .set({
+      status: 'closed',
+      exitPrice: patch.exitPrice !== null ? patch.exitPrice.toString() : null,
+      exitReason: patch.exitReason,
+      exitSource: patch.exitSource,
+      pnl: patch.pnl.toString(),
+      pnlPercent: patch.pnlPercent.toString(),
+      ...(patch.fees !== undefined ? { fees: patch.fees.toString() } : {}),
+      ...(patch.entryFee !== undefined ? { entryFee: patch.entryFee.toString() } : {}),
+      ...(patch.exitFee !== undefined ? { exitFee: patch.exitFee.toString() } : {}),
+      ...(patch.exitOrderId !== undefined ? { exitOrderId: patch.exitOrderId } : {}),
+      ...(patch.partialClosePnl !== undefined
+        ? { partialClosePnl: patch.partialClosePnl.toString() }
+        : {}),
+      stopLossAlgoId: null,
+      stopLossOrderId: null,
+      takeProfitAlgoId: null,
+      takeProfitOrderId: null,
+      closedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(tradeExecutions.id, execution.id),
+        eq(tradeExecutions.status, 'open'),
+      ),
+    )
+    .returning({ id: tradeExecutions.id });
+
+  if (closeResult.length === 0) {
+    logger.info(
+      { executionId: execution.id, symbol: execution.symbol, exitSource: patch.exitSource },
+      '[closeExecutionAndBroadcast] Already closed by another process — skipping wallet broadcast and emit',
+    );
+    return { closed: false, walletBalance: null };
+  }
+
+  // Audit log — every successful close passes through here. After
+  // shipping this helper, grep'ing this line confirms no silent paths
+  // remain in production. See plan: "monitor for absence of this log
+  // entry on a close path; spike means a regression."
+  logger.info(
+    {
+      executionId: execution.id,
+      walletId: execution.walletId,
+      symbol: execution.symbol,
+      exitSource: patch.exitSource,
+      exitReason: patch.exitReason,
+      pnl: patch.pnl,
+    },
+    '[closeExecutionAndBroadcast] Closed exec',
+  );
+
+  // Wallet broadcast: fires `wallet:update` so the renderer patches
+  // wallet.list in the same render frame. The helper itself is a no-op
+  // when delta is 0, returning null — that's fine for SYNC_INCOMPLETE-
+  // style closes that don't move balance.
+  const walletBalance = patch.pnl !== 0
+    ? await incrementWalletBalanceAndBroadcast(execution.walletId, patch.pnl)
+    : null;
+
+  // Close trio: order:update (status=closed) + position:closed. Drives
+  // markExecutionClosedInAllCaches on the renderer, which patches both
+  // getTradeExecutions and getActiveExecutions caches in the same frame
+  // and schedules wallet/setupStats/equityCurve invalidation.
+  emitPositionClosedEvents({
+    walletId: execution.walletId,
+    execution,
+    symbol: execution.symbol,
+    exitPrice: patch.exitPrice ?? 0,
+    pnl: patch.pnl,
+    pnlPercent: patch.pnlPercent,
+    exitReason: patch.exitReason,
+  });
+
+  return { closed: true, walletBalance };
 };
