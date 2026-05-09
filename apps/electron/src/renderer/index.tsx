@@ -67,7 +67,7 @@ const Root = () => {
   if (!adapter) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: PRE_REACT_COLORS.bg.loading }}>
-        <div style={{ color: PRE_REACT_COLORS.fg.default, fontFamily: 'system-ui' }}>Loading...</div>
+        <div className="mm-pre-react-spinner" />
       </div>
     );
   }

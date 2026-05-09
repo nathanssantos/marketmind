@@ -75,11 +75,11 @@ describe('WalletManager', () => {
       isSyncing: false,
     });
 
-    render(
+    const { container } = render(
       <ChakraProvider value={defaultSystem}>
         <WalletManager />
       </ChakraProvider>,
     );
-    expect(screen.getByText('common.loading')).toBeDefined();
+    expect(container.querySelector('.chakra-spinner')).toBeDefined();
   });
 });

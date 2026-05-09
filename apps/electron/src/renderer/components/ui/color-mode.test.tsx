@@ -28,6 +28,11 @@ describe('ColorModeProvider', () => {
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.style.colorScheme = '';
+    try {
+      localStorage.removeItem('chakra-ui-color-mode');
+    } catch {
+      /* localStorage may be a partial mock in some environments */
+    }
   });
 
   it('should render children', () => {

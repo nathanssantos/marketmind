@@ -355,7 +355,9 @@
         "orderUpdates": "Order updates",
         "orderUpdatesHelper": "Toasts when orders are filled, cancelled or modified.",
         "setupDetected": "Detected setups",
-        "setupDetectedHelper": "Toasts when watchers detect a new trade setup."
+        "setupDetectedHelper": "Toasts when watchers detect a new trade setup.",
+        "liquidationRisk": "Liquidation risk",
+        "liquidationRiskHelper": "Toasts when an open position approaches its liquidation price."
       },
       "sound": {
         "title": "Sound",

@@ -1,4 +1,4 @@
-import { Badge, Checkbox, CollapsibleSection, Input } from '@renderer/components/ui';
+import { Badge, Checkbox, CollapsibleSection, Input, LoadingSpinner } from '@renderer/components/ui';
 import { Box, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import type { StrategyDefinition } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -122,10 +122,8 @@ export const SetupToggleSection = memo(() => {
         )}
 
         {isLoading ? (
-          <Box p={4} textAlign="center">
-            <Text fontSize="sm" color="fg.muted">
-              {t('common.loading')}
-            </Text>
+          <Box p={4}>
+            <LoadingSpinner />
           </Box>
         ) : filteredSetups.length === 0 ? (
           <Box p={4} textAlign="center">

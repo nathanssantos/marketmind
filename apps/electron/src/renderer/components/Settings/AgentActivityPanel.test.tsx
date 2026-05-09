@@ -57,8 +57,8 @@ describe('AgentActivityPanel', () => {
 
   it('shows a loading state while fetching', () => {
     auditLoading = true;
-    renderPanel();
-    expect(screen.getByText('settings.security.agentActivity.loading')).toBeInTheDocument();
+    const { container } = renderPanel();
+    expect(container.querySelector('.chakra-spinner')).toBeInTheDocument();
   });
 
   it('renders rows with tool, wallet name, status label, and duration', () => {

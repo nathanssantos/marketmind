@@ -1,4 +1,4 @@
-import { Checkbox, Popover, TooltipWrapper } from '@renderer/components/ui';
+import { Checkbox, LoadingSpinner, Popover, TooltipWrapper } from '@renderer/components/ui';
 import {
     Box,
     Flex,
@@ -129,9 +129,9 @@ export const SetupTogglePopover = memo(() => {
 
                     <Stack gap={2} maxH="400px" overflowY="auto">
                         {isLoading ? (
-                            <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
-                                {t('common.loading')}
-                            </Text>
+                            <Box py={4}>
+                                <LoadingSpinner />
+                            </Box>
                         ) : setupList.length === 0 ? (
                             <Text fontSize="sm" color="fg.muted" textAlign="center" py={4}>
                                 {t('setupConfig.noStrategiesAvailable')}

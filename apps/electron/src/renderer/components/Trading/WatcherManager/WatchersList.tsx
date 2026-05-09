@@ -1,6 +1,6 @@
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack } from '@chakra-ui/react';
 import type { MarketType, TradingProfile } from '@marketmind/types';
-import { Badge, Button, DirectionModeSelector, EmptyState, FormSection } from '@renderer/components/ui';
+import { Badge, Button, DirectionModeSelector, EmptyState, FormSection, LoadingSpinner } from '@renderer/components/ui';
 import type { DirectionMode } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { LuPause, LuPlus } from 'react-icons/lu';
@@ -82,10 +82,8 @@ export const WatchersList = ({
         </Flex>
 
         {isLoading ? (
-          <Box p={4} textAlign="center">
-            <Text fontSize="sm" color="fg.muted">
-              {t('common.loading')}
-            </Text>
+          <Box p={4}>
+            <LoadingSpinner />
           </Box>
         ) : activeWatchers.length === 0 && persistedWatchers === 0 ? (
           <EmptyState

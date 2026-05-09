@@ -1,7 +1,7 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, LoadingSpinner, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -147,7 +147,7 @@ export const WalletManager = () => {
       />
 
       {isLoading ? (
-        <EmptyState size="sm" title={t('common.loading')} />
+        <LoadingSpinner />
       ) : wallets.length === 0 ? (
         <EmptyState size="sm" title={t('trading.wallets.emptyReal')} />
       ) : (

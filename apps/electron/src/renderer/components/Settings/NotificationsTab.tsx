@@ -8,6 +8,7 @@ export const NotificationsTab = () => {
 
   const [orderToastsEnabled, setOrderToastsEnabled] = useUIPref<boolean>('orderToastsEnabled', true);
   const [setupToastsEnabled, setSetupToastsEnabled] = useUIPref<boolean>('setupToastsEnabled', true);
+  const [liquidationRiskToastsEnabled, setLiquidationRiskToastsEnabled] = useUIPref<boolean>('liquidationRiskToastsEnabled', true);
   const [soundEnabled, setSoundEnabled] = useUIPref<boolean>('notificationSoundEnabled', false);
 
   return (
@@ -36,6 +37,17 @@ export const NotificationsTab = () => {
             onCheckedChange={setSetupToastsEnabled}
             aria-label={t('settings.notifications.toasts.setupDetected')}
             data-testid="notifications-setup-toasts"
+          />
+        </FormRow>
+        <FormRow
+          label={t('settings.notifications.toasts.liquidationRisk')}
+          helper={t('settings.notifications.toasts.liquidationRiskHelper')}
+        >
+          <Switch
+            checked={liquidationRiskToastsEnabled}
+            onCheckedChange={setLiquidationRiskToastsEnabled}
+            aria-label={t('settings.notifications.toasts.liquidationRisk')}
+            data-testid="notifications-liquidation-risk-toasts"
           />
         </FormRow>
       </FormSection>

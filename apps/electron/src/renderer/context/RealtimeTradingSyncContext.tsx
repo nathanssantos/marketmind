@@ -23,6 +23,7 @@ import {
 } from '../services/executionCacheSync';
 import { trpc } from '../utils/trpc';
 import { usePriceStore } from '../store/priceStore';
+import { usePreferencesStore } from '../store/preferencesStore';
 import { toaster } from '../utils/toaster';
 
 /**
@@ -324,6 +325,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
   useSocketEvent('risk:alert', (alert: RiskAlertPayload) => {
     if (alert.type !== 'LIQUIDATION_RISK' || alert.level !== 'critical') return;
+    if (usePreferencesStore.getState().ui['liquidationRiskToastsEnabled'] === false) return;
     const dedupKey = `${alert.type}:${alert.symbol ?? ''}:${alert.message}`;
     const lastShown = recentAlertsRef.current.get(dedupKey) ?? 0;
     const COOLDOWN_MS = 5 * 60 * 1000;
