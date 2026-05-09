@@ -18,8 +18,6 @@ interface GridPanelBaseProps {
    * whichever chart the user clicked last.
    */
   isFocused: boolean;
-  /** @deprecated Kept for prop compatibility; the focus border is no longer drawn. */
-  showFocusBorder?: boolean;
   /** Window state for chart panels (min/max/normal). Bare panels stay 'normal'. */
   windowState?: GridPanelWindowState;
   onFocus: (id: string) => void;

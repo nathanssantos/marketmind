@@ -18,7 +18,10 @@ export const useOrphanOrders = (
   backendExecutions: ExecutionWithOrderIds[],
   symbol?: string
 ) => {
-  const polling = usePollingInterval(ORPHAN_POLLING_MS);
+  // WS-backed: order:update / order:created / order:cancelled events
+  // from RealtimeTradingSyncContext patch the underlying caches the
+  // moment Binance reports them. Polling only fires while WS is dropped.
+  const polling = usePollingInterval(ORPHAN_POLLING_MS, { wsBacked: true });
   const enabled = !!walletId;
 
   const openOrdersInput = symbol ? { walletId, symbol } : { walletId };
