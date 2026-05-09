@@ -33,6 +33,7 @@ export const NamedPanelRenderer = memo(({ panelConfig, layoutId }: NamedPanelRen
   const isFocused = useLayoutStore((s) => s.focusedPanelId === panelConfig.id);
   const setFocusedPanel = useLayoutStore((s) => s.setFocusedPanel);
   const removePanel = useLayoutStore((s) => s.removePanel);
+  const gridEditMode = useLayoutStore((s) => s.gridEditMode);
 
   const handleFocus = useCallback((id: string) => setFocusedPanel(id), [setFocusedPanel]);
   const handleClose = useCallback((id: string) => removePanel(layoutId, id), [removePanel, layoutId]);
@@ -46,6 +47,7 @@ export const NamedPanelRenderer = memo(({ panelConfig, layoutId }: NamedPanelRen
       isFocused={isFocused}
       onFocus={handleFocus}
       onClose={handleClose}
+      editMode={gridEditMode}
     >
       {/* The data-panel-kind attribute lets E2E tests wait for a
           specific panel kind to be present, and helps debugging by

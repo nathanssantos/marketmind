@@ -120,6 +120,20 @@ function ChartGridComponent() {
         '&.grid--locked .panel-drag-handle': {
           cursor: 'default',
         },
+        '&.grid--edit-mode .react-resizable-handle': {
+          width: '20px',
+          height: '20px',
+          backgroundColor: 'var(--chakra-colors-accent-solid)',
+          opacity: 0.65,
+          borderRadius: '4px',
+          backgroundImage: 'none',
+          zIndex: 3,
+          transition: 'opacity 0.15s, transform 0.15s',
+        },
+        '&.grid--edit-mode .react-resizable-handle:hover': {
+          opacity: 1,
+          transform: 'scale(1.15)',
+        },
       }}
     >
       {mounted && containerWidth > 0 && (

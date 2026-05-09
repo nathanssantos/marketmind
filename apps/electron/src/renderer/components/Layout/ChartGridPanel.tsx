@@ -58,7 +58,7 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
       onMaximize={handleMaximize}
       onRestore={handleRestore}
       onClose={handleClose}
-      showClose={gridEditMode}
+      editMode={gridEditMode}
     >
       <ChartPanelContent
         symbol={symbol}

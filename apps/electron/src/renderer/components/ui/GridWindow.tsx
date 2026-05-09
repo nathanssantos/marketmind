@@ -1,8 +1,9 @@
 import { Box, Flex, HStack } from '@chakra-ui/react';
 import { IconButton } from '@marketmind/ui';
+import { GridEditOverlay } from './GridEditOverlay';
 import { TooltipWrapper } from './Tooltip';
 import { memo, useCallback, type ReactNode } from 'react';
-import { LuMaximize2, LuMinimize2, LuMinus, LuX } from 'react-icons/lu';
+import { LuMaximize2, LuMinimize2, LuMinus } from 'react-icons/lu';
 
 export type GridWindowState = 'normal' | 'minimized' | 'maximized';
 
@@ -21,11 +22,13 @@ interface GridWindowProps {
   onRestore: (id: string) => void;
   onClose?: (id: string) => void;
   /**
-   * v1.5 — when false, suppresses the close button. The header still
-   * shows min/max so the user can still re-arrange the workspace.
-   * Drag is also gated by the parent grid's `gridEditMode` flag.
+   * v1.5 — when true, the panel body is overlaid with a translucent
+   * scrim + a corner X close button. The header still shows min/max
+   * (non-destructive), but the in-header close goes away — close is
+   * the overlay's responsibility now. Drag is also gated by the
+   * parent grid's `gridEditMode` flag.
    */
-  showClose?: boolean;
+  editMode?: boolean;
 }
 
 function GridWindowComponent({
@@ -40,7 +43,7 @@ function GridWindowComponent({
   onMaximize,
   onRestore,
   onClose,
-  showClose = true,
+  editMode = false,
 }: GridWindowProps) {
   const isMaximized = windowState === 'maximized';
 
@@ -57,10 +60,7 @@ function GridWindowComponent({
     else onMaximize(id);
   }, [onMaximize, onRestore, id, isMaximized]);
 
-  const handleClose = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClose?.(id);
-  }, [onClose, id]);
+  const handleOverlayClose = useCallback((closeId: string) => onClose?.(closeId), [onClose]);
 
   return (
     <Flex
@@ -99,17 +99,13 @@ function GridWindowComponent({
               {isMaximized ? <LuMinimize2 /> : <LuMaximize2 />}
             </IconButton>
           </TooltipWrapper>
-          {onClose && showClose && (
-            <TooltipWrapper label="Close" showArrow>
-              <IconButton aria-label="Close" size="2xs" variant="ghost" onClick={handleClose}>
-                <LuX />
-              </IconButton>
-            </TooltipWrapper>
-          )}
         </HStack>
       </Flex>
-      <Box flex={1} overflow="hidden">
+      <Box flex={1} overflow="hidden" position="relative">
         {children}
+        {editMode && onClose && (
+          <GridEditOverlay panelId={id} onClose={handleOverlayClose} />
+        )}
       </Box>
     </Flex>
   );
