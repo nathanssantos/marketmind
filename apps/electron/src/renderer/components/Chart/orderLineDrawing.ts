@@ -180,11 +180,6 @@ export const drawInfoTag = (
     const closeButtonX = LABEL_PADDING;
     const closeButtonY = y - CLOSE_BUTTON_SIZE / 2;
 
-    ctx.fillStyle = ORDER_LINE_COLORS.CLOSE_BUTTON_BG;
-    ctx.beginPath();
-    ctx.roundRect(closeButtonX, closeButtonY, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE, 2);
-    ctx.fill();
-
     if (isLoading) {
       drawSpinner(ctx, closeButtonX + CLOSE_BUTTON_SIZE / 2, y, CLOSE_BUTTON_SIZE / 2 - 2, timestamp);
     } else {
