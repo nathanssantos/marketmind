@@ -146,7 +146,28 @@ describe('drawingUtils', () => {
       const wickWidth = 1;
 
       drawKline(ctx, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000');
-      
+
+      expect(ctx.stroke).toHaveBeenCalled();
+    });
+
+    it('renders near-doji bodies (sub-pixel delta) as a wick-thick line, not an invisible sliver', () => {
+      // open ≈ close, with a 0.4px delta — fillRect at 0.4px height
+      // is rounded to either 0 or 1 device pixel and visually disappears.
+      // Behavior should match true-doji: draw a horizontal line at the
+      // body's mid Y with thickness = wickWidth.
+      const x = 100;
+      const openY = 175;
+      const closeY = 175.4;
+      const highY = 150;
+      const lowY = 200;
+      const width = 10;
+      const wickWidth = 2;
+
+      drawKline(ctx, x, openY, closeY, highY, lowY, width, wickWidth, '#00ff00', '#ff0000');
+
+      // Body must NOT be drawn as a 0.4px-tall fillRect.
+      expect(ctx.fillRect).not.toHaveBeenCalledWith(x, expect.any(Number), width, 0.4);
+      // The fallback path uses stroke for the body line.
       expect(ctx.stroke).toHaveBeenCalled();
     });
 
