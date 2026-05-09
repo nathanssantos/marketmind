@@ -36,6 +36,7 @@
 14. **Single-line blocks** — `if (cond) return val;` when lint-compliant
 15. **🔴 All tests must pass** — never commit with failing tests. Run `pnpm test` first. Zero tolerance.
 16. **Handler object over switch** — switch statements mapping >3 enum/type cases to handlers should become `Record<Type, Handler>` objects (real examples: `IndicatorEngine.indicatorComputeHandlers`, `AnnotationLayer.markerStyleHandlers`, `AIService.providerFactories`)
+17. **🔴 No flaky tests** — a test that "sometimes passes" is broken. If a test fails on CI but passes locally (or vice-versa), or fails intermittently when re-run, the test is **wrong** — not the code under test. Diagnose the root cause (test pollution between runs, leaked global state, missing cleanup, race conditions, time-dependent assertions, network/IO without isolation, hard-coded ports/dates) and fix the test so it is deterministic. **Do not** retry, mark `.skip`, add `--retry`, raise timeouts, or paper over with `setTimeout` until "it passes." Re-running until green hides real bugs and trains the team to ignore CI red. If the underlying behavior is genuinely non-deterministic (websocket timing, animation frames), the test must wait on the deterministic signal that proves the work happened (event, store value, DOM mutation), not on a wall clock.
 
 ### UI Component Standards (`@renderer/components/ui`)
 
@@ -99,6 +100,7 @@ gh pr create           # PR to develop
 - [ ] `pnpm --filter @marketmind/backend type-check` — no TS errors (backend)
 - [ ] `pnpm --filter @marketmind/electron lint` — no lint errors
 - [ ] Tests cover new/changed code
+- [ ] No flaky tests — re-run any new/touched suite at least twice locally; if it ever fails, fix the test before commit (not retried, not skipped)
 - [ ] No `console.log` / debug code
 - [ ] No code comments (READMEs/JSDoc on public APIs only)
 - [ ] User-facing text internationalized (no hardcoded strings)
@@ -406,6 +408,7 @@ docker run -d --name marketmind-postgres \
 6. 🔴 UI components from `@renderer/components/ui` only — never raw Chakra interactive primitives
 7. 🔴 No watch-mode commands — always run-once
 8. 🔴 No hardcoded color shades or `_dark={{}}` overrides — semantic tokens only
+9. 🔴 No flaky tests — fix the test, never retry/skip/timeout-pad your way past it
 
 ---
 
