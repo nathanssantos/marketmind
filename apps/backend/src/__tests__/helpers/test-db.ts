@@ -746,7 +746,7 @@ CREATE TABLE IF NOT EXISTS income_events (
   income_time TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE UNIQUE INDEX IF NOT EXISTS income_events_wallet_tran_idx ON income_events (wallet_id, binance_tran_id);
+CREATE UNIQUE INDEX IF NOT EXISTS income_events_wallet_tran_type_idx ON income_events (wallet_id, binance_tran_id, income_type);
 CREATE INDEX IF NOT EXISTS income_events_wallet_time_idx ON income_events (wallet_id, income_time);
 CREATE INDEX IF NOT EXISTS income_events_wallet_type_time_idx ON income_events (wallet_id, income_type, income_time);
 CREATE INDEX IF NOT EXISTS income_events_execution_idx ON income_events (execution_id);
