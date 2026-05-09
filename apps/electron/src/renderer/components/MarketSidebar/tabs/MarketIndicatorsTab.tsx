@@ -30,14 +30,21 @@ const MarketIndicatorsTabComponent = () => {
   const { t } = useTranslation();
   const { ref: containerRef, hasWidth } = useContainerWidth();
 
+  // The minimum watcher interval only changes when the user starts /
+  // stops a watcher (mutation invalidates via auto-trading hooks).
+  // Polling here was wasted bandwidth — the value never drifts on its
+  // own. Long staleTime + no periodic refetch.
   const { data: watcherInterval } = trpc.autoTrading.getMinActiveWatcherInterval.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000,
   });
 
   const halfIntervalMs = watcherInterval?.halfIntervalMs ?? DEFAULT_HALF_INTERVAL;
   const REFRESH_INTERVALS = getRefreshIntervals(halfIntervalMs);
 
+  // Funding rates / ADX / order-book analysis are backend computations;
+  // altcoin season is an external API (alternative.me / glassnode).
+  // None has a socket counterpart yet — keep polling at the slower
+  // refresh cadence (≥5 minutes typically).
   const { data: fundingRates, isLoading: isFundingLoading } = trpc.autoTrading.getBatchFundingRates.useQuery(
     { symbols: POPULAR_FUNDING_SYMBOLS },
     { staleTime: REFRESH_INTERVALS.fundingRates, refetchInterval: REFRESH_INTERVALS.fundingRates }

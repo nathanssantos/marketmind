@@ -18,7 +18,6 @@ export { useToast } from './useToast';
 export { useAutoTrading } from './useAutoTrading';
 export { useAutoUpdate } from './useAutoUpdate';
 export { useChartWindows } from './useChartWindows';
-export { useExecutionNotifications } from './useExecutionNotifications';
 
 export { useNotification } from './useNotification';
 export { useOrderNotifications } from './useOrderNotifications';

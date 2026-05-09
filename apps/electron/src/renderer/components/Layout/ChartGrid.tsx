@@ -145,7 +145,6 @@ function ChartGridComponent() {
                 <NamedPanelRenderer
                   panelConfig={panel}
                   layoutId={activeLayout.id}
-                  isSinglePanel={isSinglePanel}
                 />
               )}
             </Box>
