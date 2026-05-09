@@ -102,11 +102,7 @@ export const LayoutTabBar = memo(() => {
   const { t } = useTranslation();
   const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
   const layoutPresets = useLayoutStore((s) => s.layoutPresets);
-  const activeSymbolTabId = useLayoutStore((s) => s.activeSymbolTabId);
-  const activeLayoutId = useLayoutStore((s) => {
-    const tab = s.symbolTabs.find(t => t.id === s.activeSymbolTabId);
-    return tab?.activeLayoutId;
-  });
+  const activeLayoutId = useLayoutStore((s) => s.activeLayoutId);
   const setActiveLayout = useLayoutStore((s) => s.setActiveLayout);
   const addLayout = useLayoutStore((s) => s.addLayout);
   const duplicateLayout = useLayoutStore((s) => s.duplicateLayout);
@@ -121,8 +117,8 @@ export const LayoutTabBar = memo(() => {
   );
 
   const handleActivate = useCallback(
-    (layoutId: string) => setActiveLayout(activeSymbolTabId, layoutId),
-    [setActiveLayout, activeSymbolTabId],
+    (layoutId: string) => setActiveLayout(layoutId),
+    [setActiveLayout],
   );
 
   const handleDelete = useCallback(

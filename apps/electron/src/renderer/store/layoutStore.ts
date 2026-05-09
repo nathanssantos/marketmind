@@ -228,7 +228,12 @@ interface LayoutActions {
   addLayout: (name: string, templateKey?: LayoutTemplateKey) => void;
   duplicateLayout: (layoutId: string, newName?: string) => void;
   removeLayout: (layoutId: string) => void;
-  setActiveLayout: (tabId: string, layoutId: string) => void;
+  /**
+   * v1.5 — global layout state. Switching a layout applies to every
+   * symbol tab (decoupled from `SymbolTab.activeLayoutId`). Old
+   * `(tabId, layoutId)` callsites updated.
+   */
+  setActiveLayout: (layoutId: string) => void;
   renameLayout: (layoutId: string, name: string) => void;
   updateGridLayout: (layoutId: string, panels: GridPanelConfig[]) => void;
 
@@ -258,10 +263,10 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
     id: 'default',
     symbol: 'BTCUSDT',
     marketType: 'FUTURES',
-    activeLayoutId: 'trading',
     order: 0,
   }],
   activeSymbolTabId: 'default',
+  activeLayoutId: 'trading',
   layoutPresets: DEFAULT_LAYOUTS,
   focusedPanelId: null,
 
@@ -271,7 +276,6 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
       id,
       symbol,
       marketType,
-      activeLayoutId: state.layoutPresets[0]?.id ?? 'single',
       order: state.symbolTabs.length,
     };
     return { symbolTabs: [...state.symbolTabs, newTab], activeSymbolTabId: id };
@@ -329,21 +333,16 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
 
   removeLayout: (layoutId) => set(state => {
     if (state.layoutPresets.length <= 1) return state;
+    const remainingPresets = state.layoutPresets.filter(l => l.id !== layoutId);
     return {
-      layoutPresets: state.layoutPresets.filter(l => l.id !== layoutId),
-      symbolTabs: state.symbolTabs.map(t =>
-        t.activeLayoutId === layoutId
-          ? { ...t, activeLayoutId: state.layoutPresets.find(l => l.id !== layoutId)?.id ?? '' }
-          : t
-      ),
+      layoutPresets: remainingPresets,
+      activeLayoutId: state.activeLayoutId === layoutId
+        ? remainingPresets[0]?.id ?? ''
+        : state.activeLayoutId,
     };
   }),
 
-  setActiveLayout: (tabId, layoutId) => set(state => ({
-    symbolTabs: state.symbolTabs.map(t =>
-      t.id === tabId ? { ...t, activeLayoutId: layoutId } : t
-    ),
-  })),
+  setActiveLayout: (layoutId) => set({ activeLayoutId: layoutId }),
 
   renameLayout: (layoutId, name) => set(state => ({
     layoutPresets: state.layoutPresets.map(l =>
@@ -468,9 +467,7 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
 
   getActiveLayout: () => {
     const state = get();
-    const tab = state.symbolTabs.find(t => t.id === state.activeSymbolTabId);
-    if (!tab) return undefined;
-    return state.layoutPresets.find(l => l.id === tab.activeLayoutId);
+    return state.layoutPresets.find(l => l.id === state.activeLayoutId);
   },
 
   getFocusedPanel: () => {
@@ -488,8 +485,8 @@ const persistLayout = (): void => {
   if (!isHydrated) return;
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
-    const { symbolTabs, activeSymbolTabId, layoutPresets } = useLayoutStore.getState();
-    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, layoutPresets, gridVersion: GRID_VERSION });
+    const { symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets } = useLayoutStore.getState();
+    const data = JSON.stringify({ symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets, gridVersion: GRID_VERSION });
     trpc.layout.save.mutate({ data }).catch(() => {});
   }, 500);
 };
@@ -538,9 +535,20 @@ export const hydrateLayoutStore = async (): Promise<void> => {
         ? migrateGridGranularity(saved.layoutPresets, savedVersion)
         : undefined;
 
+      // v1.5 — `activeLayoutId` lifted from per-tab to top-level. If
+      // the persisted state is from before the lift, fall back to the
+      // active tab's old `activeLayoutId` so the user's last-seen
+      // layout survives the upgrade.
+      const persistedActiveLayoutId =
+        (saved as { activeLayoutId?: string }).activeLayoutId
+        ?? saved.symbolTabs?.find(
+          (t: SymbolTab) => t.id === saved.activeSymbolTabId,
+        )?.activeLayoutId;
+
       useLayoutStore.getState().hydrate({
         ...(saved.symbolTabs && { symbolTabs: saved.symbolTabs }),
         ...(saved.activeSymbolTabId && { activeSymbolTabId: saved.activeSymbolTabId }),
+        ...(persistedActiveLayoutId && { activeLayoutId: persistedActiveLayoutId }),
         ...(migratedPresets && { layoutPresets: migratedPresets }),
       });
       isHydrated = true;
