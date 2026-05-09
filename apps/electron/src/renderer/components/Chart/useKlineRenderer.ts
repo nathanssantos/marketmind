@@ -186,7 +186,11 @@ export const useKlineRenderer = ({
       if (list.length === 0) return;
       ctx.fillStyle = color;
       for (const d of list) {
-        if (d.bodyHeight > 0) {
+        // Near-doji bodies (open ≈ close, with a sub-pixel delta)
+        // render as an invisible sliver if drawn at their true height.
+        // Force a minimum thickness equal to the wick width so the
+        // body remains perceptible at the user's pixel density.
+        if (d.bodyHeight >= scaledWickWidth) {
           ctx.fillRect(d.klineX, d.bodyTop, klineWidth, d.bodyHeight);
         } else {
           ctx.fillRect(d.klineX, d.bodyY - scaledWickWidth / 2, klineWidth, scaledWickWidth);
@@ -217,7 +221,7 @@ export const useKlineRenderer = ({
       }
       ctx.stroke();
       ctx.fillStyle = color;
-      if (d.bodyHeight > 0) {
+      if (d.bodyHeight >= scaledWickWidth) {
         ctx.fillRect(d.klineX, d.bodyTop, klineWidth, d.bodyHeight);
       } else {
         ctx.fillRect(d.klineX, d.bodyY - scaledWickWidth / 2, klineWidth, scaledWickWidth);

@@ -104,7 +104,11 @@ export const drawKline = (
     ctx.shadowBlur = 8;
   }
 
-  if (bodyHeight > 0) {
+  // Near-doji bodies (open ≈ close, sub-pixel delta) become an
+  // invisible sliver if drawn at their true height. Render any body
+  // thinner than the wick as a wick-thick line so the candle's body
+  // remains perceptible — matches TradingView/Binance doji rendering.
+  if (bodyHeight >= wickWidth) {
     drawRect(ctx, x, bodyTop, width, bodyHeight, color);
   } else {
     drawLine(ctx, x, openY, x + width, openY, color, wickWidth);
