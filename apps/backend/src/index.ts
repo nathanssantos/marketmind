@@ -222,11 +222,13 @@ const start = async (): Promise<void> => {
       await indicatorSchedulerService.start();
 
       const { binanceBookTickerStreamService } = await import('./services/binance-book-ticker-stream');
+      const { binanceMarkPriceStreamService } = await import('./services/binance-mark-price-stream');
       const { binanceAggTradeStreamService } = await import('./services/binance-agg-trade-stream');
       const { binanceDepthStreamService } = await import('./services/binance-depth-stream');
       const { createBinanceClientForPrices } = await import('./services/binance-client');
 
       binanceBookTickerStreamService.start();
+      binanceMarkPriceStreamService.start();
       binanceAggTradeStreamService.start();
       binanceDepthStreamService.start(createBinanceClientForPrices());
 

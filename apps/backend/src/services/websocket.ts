@@ -28,8 +28,9 @@ import {
 import { binancePriceStreamService } from './binance-price-stream';
 import { binanceAggTradeStreamService } from './binance-agg-trade-stream';
 import { binanceBookTickerStreamService } from './binance-book-ticker-stream';
+import { binanceMarkPriceStreamService } from './binance-mark-price-stream';
 import { binanceDepthStreamService } from './binance-depth-stream';
-import type { AggTrade, BookTickerUpdate, DepthUpdate, LiquidityHeatmapBucket, ScalpingMetrics, ScalpingSignal } from '@marketmind/types';
+import type { AggTrade, BookTickerUpdate, DepthUpdate, LiquidityHeatmapBucket, MarkPriceUpdate, ScalpingMetrics, ScalpingSignal } from '@marketmind/types';
 
 let _getCustomSymbolService: (() => { isCustomSymbolSync: (s: string) => boolean } | null) | null = null;
 let _importPromise: Promise<void> | null = null;
@@ -127,6 +128,12 @@ const ROOM_HANDLERS: Array<RoomHandler<keyof ClientToServerEvents>> = [
     unsubscribe: CLIENT_TO_SERVER_EVENTS.unsubscribeBookTicker,
     room: (symbol) => ROOMS.bookTicker(symbol as string),
     onJoin: (symbol) => skipCustomSymbol(symbol as string, () => binanceBookTickerStreamService.subscribe(symbol as string)),
+  },
+  {
+    subscribe: CLIENT_TO_SERVER_EVENTS.subscribeMarkPrice,
+    unsubscribe: CLIENT_TO_SERVER_EVENTS.unsubscribeMarkPrice,
+    room: (symbol) => ROOMS.markPrice(symbol as string),
+    onJoin: (symbol) => skipCustomSymbol(symbol as string, () => binanceMarkPriceStreamService.subscribe(symbol as string)),
   },
   {
     subscribe: CLIENT_TO_SERVER_EVENTS.subscribeAggTrades,
@@ -312,6 +319,10 @@ export class WebSocketService {
 
   public emitBookTickerUpdate(symbol: string, update: BookTickerUpdate): void {
     this.io.to(ROOMS.bookTicker(symbol)).emit(SERVER_TO_CLIENT_EVENTS.bookTickerUpdate, update);
+  }
+
+  public emitMarkPriceUpdate(symbol: string, update: MarkPriceUpdate): void {
+    this.io.to(ROOMS.markPrice(symbol)).emit(SERVER_TO_CLIENT_EVENTS.markPriceUpdate, update);
   }
 
   public emitAggTradeUpdate(symbol: string, trade: AggTrade, isLargeTrade: boolean): void {

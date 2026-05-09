@@ -86,12 +86,28 @@ export const getCurrentFundingRate = async (
   nextFundingTime: number;
   markPrice: number;
 } | null> => {
+  // Prefer the live `<symbol>@markPrice@1s` stream cache. Saves a REST
+  // round-trip per call, and the cached funding rate is at most 1s
+  // stale (vs. the previous 5-minute polling cadence of any caller).
+  const { binanceMarkPriceStreamService } = await import('./binance-mark-price-stream');
+  const cached = binanceMarkPriceStreamService.getCached(symbol);
+  if (cached) {
+    return {
+      rate: cached.fundingRate * 100,
+      nextFundingTime: cached.nextFundingTime,
+      markPrice: cached.markPrice,
+    };
+  }
+
   try {
     const premiumResponse = await fetchWithRetry(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${symbol}`);
 
     if (!premiumResponse.ok) return null;
 
     const premiumData = await premiumResponse.json();
+
+    // Lazy subscribe so subsequent calls hit the stream cache.
+    binanceMarkPriceStreamService.subscribe(symbol);
 
     return {
       rate: parseFloat(premiumData.lastFundingRate) * 100,

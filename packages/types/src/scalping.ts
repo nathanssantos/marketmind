@@ -23,6 +23,26 @@ export interface BookTickerUpdate {
   timestamp: number;
 }
 
+/**
+ * Binance Futures `<symbol>@markPrice@1s` payload.
+ * One message per second per symbol with mark / index / settle prices,
+ * the live funding rate (`r`) and the next funding timestamp (`T`).
+ *
+ * Replaces three REST polls:
+ *  - `getMarkPrice` (on-demand RPC during order/position mutations)
+ *  - `fundingRateService` (5min `setInterval` on /fapi/v1/premiumIndex)
+ *  - any dashboard polling for the funding-rate widget
+ */
+export interface MarkPriceUpdate {
+  symbol: string;
+  markPrice: number;
+  indexPrice: number;
+  estimatedSettlePrice: number;
+  fundingRate: number;
+  nextFundingTime: number;
+  timestamp: number;
+}
+
 export interface DepthLevel {
   price: number;
   quantity: number;
