@@ -2,7 +2,8 @@ import { Progress as ChakraProgress } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 
 interface ProgressRootProps {
-  value: number;
+  /** Pass `null` for an indeterminate (animated) bar. */
+  value: number | null;
   max?: number;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   colorPalette?: string;

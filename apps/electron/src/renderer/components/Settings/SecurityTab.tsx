@@ -1,8 +1,7 @@
-import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import {
-  Badge, Button, Callout, ConfirmationDialog, EmptyState, Field, FormRow, FormSection, PasswordInput, PasswordStrengthMeter, Switch,
+  Badge, Button, Callout, ConfirmationDialog, EmptyState, Field, FormRow, FormSection, LoadingSpinner, PasswordInput, PasswordStrengthMeter, Switch,
 } from '@renderer/components/ui';
-import { MM } from '@marketmind/tokens';
 import { validatePassword } from '@marketmind/utils';
 import { useBackendAuth } from '@renderer/hooks/useBackendAuth';
 import { useToast } from '@renderer/hooks/useToast';
@@ -203,9 +202,7 @@ export const SecurityTab = () => {
         }
       >
         {sessionsQuery.isLoading ? (
-          <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-            <Spinner size={MM.spinner.panel.size} />
-          </Flex>
+          <LoadingSpinner />
         ) : (sessionsQuery.data?.length ?? 0) === 0 ? (
           <EmptyState title={t('settings.security.sessions.empty')} />
         ) : (
@@ -264,9 +261,7 @@ export const SecurityTab = () => {
           {t('settings.security.agentTrading.warning')}
         </Callout>
         {walletsQuery.isLoading ? (
-          <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-            <Spinner size={MM.spinner.panel.size} />
-          </Flex>
+          <LoadingSpinner />
         ) : (walletsQuery.data ?? []).length === 0 ? (
           <EmptyState title={t('settings.security.agentTrading.noWallets')} />
         ) : (

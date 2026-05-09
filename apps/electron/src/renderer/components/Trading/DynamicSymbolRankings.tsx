@@ -1,5 +1,4 @@
-import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
-import { MM } from '@marketmind/tokens';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import type { MarketType } from '@marketmind/types';
 import {
   Badge,
@@ -7,6 +6,7 @@ import {
   CryptoIcon,
   DialogShell,
   EmptyState,
+  LoadingSpinner,
 } from '@renderer/components/ui';
 import {
   useBackendAutoTrading,
@@ -123,9 +123,7 @@ interface RankingsTabProps {
 const RankingsTab = ({ symbolScores, isLoading, activeSymbols, t }: RankingsTabProps) => {
   if (isLoading) {
     return (
-      <Flex justify="center" py={MM.spinner.panel.py}>
-        <Spinner size={MM.spinner.panel.size} />
-      </Flex>
+      <LoadingSpinner />
     );
   }
 
@@ -231,9 +229,7 @@ interface HistoryTabProps {
 const HistoryTab = ({ rotationHistory, isLoading, t }: HistoryTabProps) => {
   if (isLoading) {
     return (
-      <Flex justify="center" py={MM.spinner.panel.py}>
-        <Spinner size={MM.spinner.panel.size} />
-      </Flex>
+      <LoadingSpinner />
     );
   }
 

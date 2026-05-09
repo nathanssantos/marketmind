@@ -111,6 +111,7 @@ export { GridPanel } from './GridPanel';
 export type { GridPanelMode, GridPanelProps, GridPanelWindowState } from './GridPanel';
 export { GridWindow } from './GridWindow';
 export type { GridWindowState } from './GridWindow';
+export { AppLoader } from './AppLoader';
 export { LoadingSpinner } from './LoadingSpinner';
 export { MetricCard } from './MetricCard';
 export { PasswordStrengthMeter } from './PasswordStrengthMeter';
