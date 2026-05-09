@@ -5,9 +5,15 @@ import { cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { cancelAllProtectionOrders } from '../protection-orders';
 import { clearProtectionOrderIds, type ProtectionOrderField } from '../execution-manager';
 import { logger, serializeError } from '../logger';
+import { closeExecutionAndBroadcast } from '../wallet-broadcast';
 import { getWebSocketService } from '../websocket';
 import { applyTransferDelta } from '../wallet-balance';
 import { isTransferReason } from '../../constants/income-types';
+
+// Tolerance for considering a Binance position-update to be a real
+// change vs noise. Same thresholds position-sync uses.
+const QTY_TOLERANCE = 0.00001;
+const PRICE_TOLERANCE = 0.01;
 import type {
   UserStreamContext,
   FuturesAccountUpdate,
@@ -75,6 +81,17 @@ export async function handleAccountUpdate(
     if (wsService) {
       wsService.emitWalletUpdate(walletId, { reason, balances, positions: positionUpdates });
     }
+
+    // Position drift sync: ACCOUNT_UPDATE carries the live qty/entryPrice
+    // for every position that changed. Loop and reconcile against our
+    // tradeExecutions table — covers manual pyramid / manual close /
+    // reduce-only fills done outside MarketMind that handleOrderUpdate
+    // can't classify (those don't get an ORDER_TRADE_UPDATE). Without
+    // this sync, DB drifts and only resolves on the periodic
+    // positionSyncService run (30s).
+    if (positionUpdates.length > 0 && !!ctx.connections.get(walletId)) {
+      await syncPositionsFromAccountUpdate(walletId, positionUpdates);
+    }
   } catch (error) {
     logger.error(
       {
@@ -83,6 +100,144 @@ export async function handleAccountUpdate(
       },
       '[FuturesUserStream] Error handling account update'
     );
+  }
+}
+
+/**
+ * Reconcile open tradeExecutions against the live position state from
+ * a Binance ACCOUNT_UPDATE event. For each Binance position:
+ *
+ *   - `pa === 0` (flat) AND we have an open exec for the symbol →
+ *     route through `closeExecutionAndBroadcast` so the renderer's
+ *     close cascade fires. Without this, manual closes done via
+ *     Binance's UI leave the exec open in our DB until the periodic
+ *     position-sync run picks them up.
+ *
+ *   - `pa` or `ep` drift beyond tolerance → patch the exec quantity /
+ *     entryPrice and emit `position:update`. Catches manual pyramid,
+ *     reduce-only fills outside MarketMind.
+ *
+ * The function is idempotent — concurrent ACCOUNT_UPDATEs within ms of
+ * each other reach the same end state because the close path uses a
+ * status-guarded UPDATE and the patch path applies tolerances.
+ */
+async function syncPositionsFromAccountUpdate(
+  walletId: string,
+  positionUpdates: FuturesAccountUpdate['a']['P'],
+): Promise<void> {
+  const wsService = getWebSocketService();
+
+  for (const pos of positionUpdates) {
+    try {
+      const symbol = pos.s;
+      const exchangeQty = parseFloat(pos.pa);
+      const exchangeAbsQty = Math.abs(exchangeQty);
+      const exchangeEntryPrice = parseFloat(pos.ep);
+
+      // Determine the side we'd be looking up for this symbol's open
+      // exec. Binance's one-way mode reports ps='BOTH'; hedge mode
+      // reports 'LONG' / 'SHORT'. We support one-way mode primarily,
+      // so use the sign of `pa` as the canonical side. If the exec
+      // is flat (pa=0), we don't know which side closed — query for
+      // ANY open exec on this symbol.
+      const closingSide = exchangeQty === 0
+        ? null
+        : (exchangeQty > 0 ? 'LONG' : 'SHORT');
+
+      const openExecs = await db
+        .select()
+        .from(tradeExecutions)
+        .where(
+          and(
+            eq(tradeExecutions.walletId, walletId),
+            eq(tradeExecutions.symbol, symbol),
+            eq(tradeExecutions.status, 'open'),
+            eq(tradeExecutions.marketType, 'FUTURES'),
+          ),
+        );
+
+      if (openExecs.length === 0) {
+        // No DB exec to reconcile. If exchange has a position we
+        // didn't track, position-sync's "unknownPositions" path will
+        // handle it on the next run — out of scope here.
+        continue;
+      }
+
+      // Flat on exchange → close every matching open exec. Use the
+      // side filter when we have a previous side hint; otherwise
+      // close all open execs on this symbol (rare; happens when our
+      // ACCOUNT_UPDATE arrives after a flip + close in quick
+      // succession).
+      if (exchangeAbsQty === 0) {
+        for (const exec of openExecs) {
+          // We don't know exit_price from ACCOUNT_UPDATE alone;
+          // pnl=0 is a placeholder. The handleExitFill path that
+          // arrives in the same event burst computes the real PnL.
+          // The status-guarded UPDATE in closeExecutionAndBroadcast
+          // means whichever path wins, the OTHER one becomes a
+          // no-op (closed: false return).
+          await closeExecutionAndBroadcast(exec, {
+            exitPrice: null,
+            exitReason: 'EXCHANGE_FLAT',
+            exitSource: 'EXCHANGE_SYNC',
+            pnl: 0,
+            pnlPercent: 0,
+          });
+        }
+        continue;
+      }
+
+      // Non-zero on exchange — find the open exec matching the side
+      // and reconcile qty/entryPrice if drift exceeds tolerance.
+      const matchingExec = openExecs.find((e) => e.side === closingSide);
+      if (!matchingExec) continue;
+
+      const dbQty = parseFloat(matchingExec.quantity);
+      const dbEntryPrice = parseFloat(matchingExec.entryPrice);
+      const qtyChanged = Math.abs(dbQty - exchangeAbsQty) > QTY_TOLERANCE;
+      const priceChanged = Math.abs(dbEntryPrice - exchangeEntryPrice) > PRICE_TOLERANCE;
+
+      if (!qtyChanged && !priceChanged) continue;
+
+      const updated = await db
+        .update(tradeExecutions)
+        .set({
+          ...(qtyChanged ? { quantity: exchangeAbsQty.toString() } : {}),
+          ...(priceChanged ? { entryPrice: exchangeEntryPrice.toString() } : {}),
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(tradeExecutions.id, matchingExec.id),
+            eq(tradeExecutions.status, 'open'),
+          ),
+        )
+        .returning();
+
+      logger.info(
+        {
+          walletId,
+          symbol,
+          executionId: matchingExec.id,
+          dbQty,
+          exchangeQty: exchangeAbsQty,
+          dbEntryPrice,
+          exchangeEntryPrice,
+          qtyChanged,
+          priceChanged,
+        },
+        '[FuturesUserStream] Reconciled exec qty/entryPrice from ACCOUNT_UPDATE',
+      );
+
+      if (wsService && updated[0]) {
+        wsService.emitPositionUpdate(walletId, updated[0]);
+      }
+    } catch (err) {
+      logger.error(
+        { walletId, symbol: pos.s, error: serializeError(err) },
+        '[FuturesUserStream] Failed to sync position from ACCOUNT_UPDATE',
+      );
+    }
   }
 }
 

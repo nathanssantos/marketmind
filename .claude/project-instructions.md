@@ -63,6 +63,7 @@
 13. **No Watch Mode:** Never use watch mode commands (`npm test`, `vitest`, etc. without `--run`). Always use run-once commands (`npm test -- --run`, `npm run build`, etc.) to avoid blocking the terminal
 14. **Single-Line Blocks:** Simplify code blocks with only one statement to single-line format when correct and compliant with linting rules (e.g., `if (condition) return value;` instead of multi-line blocks)
 15. **🔴 CRITICAL - All Tests Must Pass:** NEVER commit code with failing tests. ALWAYS run `npm run test:run` before committing. If tests fail, FIX THEM FIRST. Breaking tests is NEVER acceptable. Zero tolerance for broken tests in commits.
+16. **🔴 CRITICAL - No Flaky Tests:** A test that "sometimes passes" is broken. If a test fails on CI but passes locally (or vice-versa), or fails intermittently when re-run, the **test is wrong** — not the code under test. Diagnose the root cause (test pollution between runs, leaked global state, missing cleanup, race conditions, time-dependent assertions, network/IO without isolation, hard-coded ports/dates) and fix the test so it is deterministic. NEVER retry, mark `.skip`, add `--retry`, raise timeouts, or paper over with `setTimeout` until "it passes." Re-running until green hides real bugs and trains the team to ignore CI red. If the underlying behavior is genuinely non-deterministic (websocket timing, animation frames), the test must wait on the deterministic signal that proves the work happened (event, store value, DOM mutation), not on a wall clock.
 
 ### Git Workflow
 

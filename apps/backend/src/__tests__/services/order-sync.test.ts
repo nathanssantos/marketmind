@@ -5,6 +5,7 @@ let mockWalletsData: unknown[] = [];
 let mockExecutionsData: unknown[] = [];
 let mockAutoTradingConfigData: unknown[] = [];
 let mockOrdersData: unknown[] = [];
+let mockUpdateSetCalls: Array<{ status: string }> = [];
 
 vi.mock('../../db', () => ({
   db: {
@@ -37,11 +38,22 @@ vi.mock('../../db', () => ({
     }),
     // reconcileOrdersTable() updates the orders table when stale rows
     // are detected. Test mock returns a no-op chain so syncWallet
-    // doesn't blow up; specific tests can override.
+    // doesn't blow up; specific tests can override. The full chain
+    // includes .returning() since the cascade-EXPIRED-to-exec path
+    // uses it; resolves to [] so cascade emits nothing by default.
     update: (..._args: unknown[]) => ({
-      set: (..._setArgs: unknown[]) => ({
-        where: () => Promise.resolve(undefined),
-      }),
+      set: (values: { status?: string }) => {
+        if (values?.status) mockUpdateSetCalls.push({ status: values.status });
+        return {
+          where: () => {
+            const promise = Promise.resolve([]) as unknown as Promise<unknown[]> & {
+              returning: () => Promise<unknown[]>;
+            };
+            promise.returning = () => Promise.resolve([]);
+            return promise;
+          },
+        };
+      },
     }),
   },
 }));
@@ -1270,6 +1282,71 @@ describe('OrderSyncService', () => {
       const result = await service.syncWallet(wallet);
 
       expect(result.mismatchedOrders).toHaveLength(0);
+    });
+  });
+
+  describe('reconcileOrdersTable() — race-aware status resolution', () => {
+    // 2026-05-08 user report: every order created on the chart was
+    // being marked EXPIRED ~30s after submission. Cause: the periodic
+    // reconcile fetched `binanceOpenOrders` BEFORE the user submitted,
+    // so the fresh order didn't appear in `liveIds` and was treated
+    // as stale. The pre-fix code marked any non-FILLED, non-CANCELED
+    // status as EXPIRED — which falsely caught NEW (still-live) orders.
+    beforeEach(() => {
+      mockUpdateSetCalls = [];
+    });
+
+    it('does NOT mark stale-snapshot orders as EXPIRED when Binance still says NEW', async () => {
+      const wallet = createTestWallet();
+      const getOrderMock = vi.fn().mockResolvedValue({ status: 'NEW' });
+      mockCreateBinanceFuturesClient.mockReturnValue({ getOrder: getOrderMock });
+      mockOrdersData = [{ orderId: '999', symbol: 'BTCUSDT' }];
+
+      await service.syncWallet(wallet);
+
+      expect(getOrderMock).toHaveBeenCalledWith({ symbol: 'BTCUSDT', orderId: 999 });
+      const expiredWrites = mockUpdateSetCalls.filter((v) => v.status === 'EXPIRED');
+      expect(expiredWrites).toHaveLength(0);
+    });
+
+    it('does NOT mark stale-snapshot orders as EXPIRED when Binance says PARTIALLY_FILLED', async () => {
+      const wallet = createTestWallet();
+      const getOrderMock = vi.fn().mockResolvedValue({ status: 'PARTIALLY_FILLED' });
+      mockCreateBinanceFuturesClient.mockReturnValue({ getOrder: getOrderMock });
+      mockOrdersData = [{ orderId: '888', symbol: 'BTCUSDT' }];
+
+      await service.syncWallet(wallet);
+
+      const expiredWrites = mockUpdateSetCalls.filter((v) => v.status === 'EXPIRED');
+      expect(expiredWrites).toHaveLength(0);
+    });
+
+    it('still marks orders as EXPIRED when Binance confirms EXPIRED', async () => {
+      const wallet = createTestWallet();
+      const getOrderMock = vi.fn().mockResolvedValue({ status: 'EXPIRED' });
+      mockCreateBinanceFuturesClient.mockReturnValue({ getOrder: getOrderMock });
+      mockOrdersData = [{ orderId: '777', symbol: 'BTCUSDT' }];
+
+      await service.syncWallet(wallet);
+
+      const expiredWrites = mockUpdateSetCalls.filter((v) => v.status === 'EXPIRED');
+      expect(expiredWrites.length).toBeGreaterThan(0);
+    });
+
+    it('marks order as FILLED when Binance confirms FILLED (recovers lost user-stream event)', async () => {
+      const wallet = createTestWallet();
+      const getOrderMock = vi.fn().mockResolvedValue({
+        status: 'FILLED',
+        avgPrice: '79826.30',
+        executedQty: '0.01',
+      });
+      mockCreateBinanceFuturesClient.mockReturnValue({ getOrder: getOrderMock });
+      mockOrdersData = [{ orderId: '555', symbol: 'BTCUSDT' }];
+
+      await service.syncWallet(wallet);
+
+      const filledWrites = mockUpdateSetCalls.filter((v) => v.status === 'FILLED');
+      expect(filledWrites.length).toBeGreaterThan(0);
     });
   });
 });

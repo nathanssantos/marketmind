@@ -15,6 +15,7 @@ const INTEGRATION_SERVICE_TESTS = [
   'src/__tests__/services/custom-symbol-service.test.ts',
   'src/__tests__/services/income-events/**/*.test.ts',
   'src/__tests__/services/wallet-balance/**/*.test.ts',
+  'src/__tests__/services/wallet-broadcast.test.ts',
 ];
 
 export default defineConfig({

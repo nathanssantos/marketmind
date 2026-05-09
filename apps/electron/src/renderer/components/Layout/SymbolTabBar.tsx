@@ -1,11 +1,12 @@
 import { Flex, HStack, Text } from '@chakra-ui/react';
-import { CryptoIcon, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { CryptoIcon, IconButton, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
 import { useTabTickers, type TabTickerTarget } from '@renderer/hooks/useTabTickers';
 import { useDailyChangePct } from '@renderer/store/priceStore';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import type { MarketType } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
-import { LuPlus, LuX } from 'react-icons/lu';
+import { useTranslation } from 'react-i18next';
+import { LuPencil, LuPlus, LuX } from 'react-icons/lu';
 
 const DailyChangeBadge = memo(({
   symbol,
@@ -89,11 +90,14 @@ const SymbolTab = memo(({
 });
 
 export const SymbolTabBar = memo(() => {
+  const { t } = useTranslation();
   const symbolTabs = useLayoutStore((s) => s.symbolTabs);
   const activeSymbolTabId = useLayoutStore((s) => s.activeSymbolTabId);
   const setActiveSymbolTab = useLayoutStore((s) => s.setActiveSymbolTab);
   const addSymbolTab = useLayoutStore((s) => s.addSymbolTab);
   const removeSymbolTab = useLayoutStore((s) => s.removeSymbolTab);
+  const gridEditMode = useLayoutStore((s) => s.gridEditMode);
+  const toggleGridEditMode = useLayoutStore((s) => s.toggleGridEditMode);
 
   const tickerTargets = useMemo<TabTickerTarget[]>(() => {
     const uniq = new Map<string, TabTickerTarget>();
@@ -141,9 +145,22 @@ export const SymbolTabBar = memo(() => {
         ))}
       </Flex>
       <TooltipWrapper label="New tab" showArrow>
-        <IconButton aria-label="Add tab" size="2xs" variant="ghost" mx={1} onClick={handleAdd}>
+        <IconButton aria-label="Add tab" size="2xs" variant="outline" color="fg.muted" mx={1} onClick={handleAdd}>
           <LuPlus />
         </IconButton>
+      </TooltipWrapper>
+      <TooltipWrapper label={t('panels.editLayout')} showArrow>
+        <ToggleIconButton
+          active={gridEditMode}
+          size="2xs"
+          aria-label={t('panels.editLayout')}
+          aria-pressed={gridEditMode}
+          onClick={toggleGridEditMode}
+          mr={2}
+          data-testid="toolbar-edit-layout-button"
+        >
+          <LuPencil />
+        </ToggleIconButton>
       </TooltipWrapper>
     </Flex>
   );

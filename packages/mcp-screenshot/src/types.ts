@@ -12,7 +12,6 @@ export type SettingsTabId =
   | 'account'
   | 'security'
   | 'notifications'
-  | 'general'
   | 'chart'
   | 'autoTrading'
   | 'indicators'
@@ -42,7 +41,7 @@ export type Theme = 'light' | 'dark';
 // Match Settings/constants.ts SETTINGS_TABS exactly.
 export const SETTINGS_TABS: SettingsTabId[] = [
   'account', 'security', 'notifications',
-  'general', 'chart',
+  'chart',
   'autoTrading', 'indicators',
   'data', 'about',
 ];

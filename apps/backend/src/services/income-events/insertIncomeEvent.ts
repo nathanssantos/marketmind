@@ -36,7 +36,7 @@ export const insertIncomeEvent = async (input: InsertIncomeEventInput): Promise<
   await db
     .insert(incomeEvents)
     .values(row)
-    .onConflictDoNothing({ target: [incomeEvents.walletId, incomeEvents.binanceTranId] });
+    .onConflictDoNothing({ target: [incomeEvents.walletId, incomeEvents.binanceTranId, incomeEvents.incomeType] });
 };
 
 const INSERT_CHUNK_SIZE = 500;
@@ -65,7 +65,7 @@ export const insertIncomeEventsBatch = async (inputs: InsertIncomeEventInput[]):
     const inserted = await db
       .insert(incomeEvents)
       .values(chunk)
-      .onConflictDoNothing({ target: [incomeEvents.walletId, incomeEvents.binanceTranId] })
+      .onConflictDoNothing({ target: [incomeEvents.walletId, incomeEvents.binanceTranId, incomeEvents.incomeType] })
       .returning({ id: incomeEvents.id });
     totalInserted += inserted.length;
   }

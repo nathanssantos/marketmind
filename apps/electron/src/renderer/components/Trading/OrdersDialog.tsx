@@ -1,5 +1,5 @@
-import { DialogShell, EmptyState, IconButton, Input, Select } from '@renderer/components/ui';
-import { Box, Flex, Group, Spinner, Stack, Text } from '@chakra-ui/react';
+import { DialogShell, EmptyState, IconButton, Input, LoadingSpinner, Select } from '@renderer/components/ui';
+import { Box, Flex, Group, Stack, Text } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { MM } from '@marketmind/tokens';
 import type { Order, OrderStatus, OrderType, TimeInForce, WalletCurrency } from '@marketmind/types';
@@ -221,9 +221,7 @@ const OrdersDialogComponent = () => {
             </Flex>
 
             {isLoading ? (
-              <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-                <Spinner size={MM.spinner.panel.size} />
-              </Flex>
+              <LoadingSpinner />
             ) : filteredOrders.length === 0 ? (
               <EmptyState size="sm" title={t('trading.orders.noResults')} />
             ) : activeWallet ? (

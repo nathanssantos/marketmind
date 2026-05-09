@@ -114,10 +114,14 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
               </Flex>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text fontWeight="medium" color={isProfitable ? 'trading.profit' : 'trading.loss'}>
-                {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
-              </Text>
+              {Number.isFinite(position.pnl) && Number.isFinite(position.pnlPercent) ? (
+                <Text fontWeight="medium" color={isProfitable ? 'trading.profit' : 'trading.loss'}>
+                  {isProfitable ? '+' : ''}{position.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {' '}({isProfitable ? '+' : ''}{position.pnlPercent.toFixed(2)}%)
+                </Text>
+              ) : (
+                <Text color="fg.muted">-</Text>
+              )}
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               <Flex align="center" gap={1} justify="flex-end">
@@ -179,10 +183,10 @@ const PortfolioTableComponent = ({ positions, currency, walletBalance, onNavigat
               <Text fontWeight="medium">{formatPrice(position.currentPrice)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="red.fg">{formatPrice(position.stopLoss)}</Text>
+              <Text color="trading.loss">{formatPrice(position.stopLoss)}</Text>
             </TradingTableCell>
             <TradingTableCell textAlign="right">
-              <Text color="green.fg">{formatPrice(position.takeProfit)}</Text>
+              <Text color="trading.profit">{formatPrice(position.takeProfit)}</Text>
             </TradingTableCell>
             <TradingTableCell>
               {position.isAutoTrade && (

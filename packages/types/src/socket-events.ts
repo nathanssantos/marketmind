@@ -1,5 +1,5 @@
 import type { PositionSide } from './direction';
-import type { AggTrade, BookTickerUpdate, DepthUpdate, ScalpingMetrics, ScalpingSignal } from './scalping';
+import type { AggTrade, BookTickerUpdate, DepthUpdate, MarkPriceUpdate, ScalpingMetrics, ScalpingSignal } from './scalping';
 import type { LiquidityHeatmapBucket, LiquidityHeatmapSnapshot } from './liquidityHeatmap';
 import type { MarketType } from './futures';
 import type { RiskAlertLevel, RiskAlertType } from './trading-config';
@@ -22,6 +22,8 @@ export const CLIENT_TO_SERVER_EVENTS = {
   unsubscribeAutoTradingLogs: 'unsubscribe:autoTradingLogs',
   subscribeBookTicker: 'subscribe:bookTicker',
   unsubscribeBookTicker: 'unsubscribe:bookTicker',
+  subscribeMarkPrice: 'subscribe:markPrice',
+  unsubscribeMarkPrice: 'unsubscribe:markPrice',
   subscribeAggTrades: 'subscribe:aggTrades',
   unsubscribeAggTrades: 'unsubscribe:aggTrades',
   subscribeDepth: 'subscribe:depth',
@@ -55,6 +57,7 @@ export const SERVER_TO_CLIENT_EVENTS = {
   notification: 'notification',
   autoTradingLog: 'autoTrading:log',
   bookTickerUpdate: 'bookTicker:update',
+  markPriceUpdate: 'markPrice:update',
   aggTradeUpdate: 'aggTrade:update',
   depthUpdate: 'depth:update',
   scalpingMetricsUpdate: 'scalpingMetrics:update',
@@ -286,6 +289,8 @@ export type ClientToServerEvents = {
   [CLIENT_TO_SERVER_EVENTS.unsubscribeAutoTradingLogs]: (walletId: string) => void;
   [CLIENT_TO_SERVER_EVENTS.subscribeBookTicker]: (symbol: string) => void;
   [CLIENT_TO_SERVER_EVENTS.unsubscribeBookTicker]: (symbol: string) => void;
+  [CLIENT_TO_SERVER_EVENTS.subscribeMarkPrice]: (symbol: string) => void;
+  [CLIENT_TO_SERVER_EVENTS.unsubscribeMarkPrice]: (symbol: string) => void;
   [CLIENT_TO_SERVER_EVENTS.subscribeAggTrades]: (symbol: string) => void;
   [CLIENT_TO_SERVER_EVENTS.unsubscribeAggTrades]: (symbol: string) => void;
   [CLIENT_TO_SERVER_EVENTS.subscribeDepth]: (symbol: string) => void;
@@ -319,6 +324,7 @@ export type ServerToClientEvents = {
   [SERVER_TO_CLIENT_EVENTS.notification]: (data: AppNotificationPayload) => void;
   [SERVER_TO_CLIENT_EVENTS.autoTradingLog]: (entry: AutoTradingLogEntryPayload) => void;
   [SERVER_TO_CLIENT_EVENTS.bookTickerUpdate]: (data: BookTickerUpdate) => void;
+  [SERVER_TO_CLIENT_EVENTS.markPriceUpdate]: (data: MarkPriceUpdate) => void;
   [SERVER_TO_CLIENT_EVENTS.aggTradeUpdate]: (data: AggTrade & { isLargeTrade?: boolean }) => void;
   [SERVER_TO_CLIENT_EVENTS.depthUpdate]: (data: DepthUpdate) => void;
   [SERVER_TO_CLIENT_EVENTS.scalpingMetricsUpdate]: (data: ScalpingMetrics) => void;
@@ -341,6 +347,7 @@ export const ROOMS = {
   user: (userId: string): string => `user:${userId}`,
   autoTradingLogs: (walletId: string): string => `autoTradingLogs:${walletId}`,
   bookTicker: (symbol: string): string => `bookTicker:${symbol}`,
+  markPrice: (symbol: string): string => `markPrice:${symbol}`,
   aggTrades: (symbol: string): string => `aggTrades:${symbol}`,
   depth: (symbol: string): string => `depth:${symbol}`,
   liquidityHeatmap: (symbol: string): string => `liquidityHeatmap:${symbol}`,

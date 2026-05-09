@@ -199,7 +199,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.stopLoss')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="red.fg">{currency} {order.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="trading.loss">{currency} {order.stopLoss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={order.stopLoss} />
             </Stack>
           </Flex>
@@ -208,7 +208,7 @@ export const OrderCard = memo(({ order, currency, onCancel, onClose, onNavigateT
           <Flex justify="space-between">
             <Text color="fg.muted">{t('trading.orders.takeProfit')}</Text>
             <Stack gap={0} align="flex-end">
-              <Text color="green.fg">{currency} {order.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              <Text color="trading.profit">{currency} {order.takeProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
               <BrlValue usdtValue={order.takeProfit} />
             </Stack>
           </Flex>

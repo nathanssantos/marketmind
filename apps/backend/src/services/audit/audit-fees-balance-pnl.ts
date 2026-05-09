@@ -100,35 +100,32 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
     const quantity = parseFloat(exec.quantity);
     const leverage = exec.leverage ?? 1;
 
-    // Prefer Binance's authoritative realizedPnl (sum of `realizedPnl`
-    // across closing-side trades) over our locally-computed gross when
-    // available. Binance handles weighted average across multiple fills,
-    // partial closes, and post-only fee adjustments correctly. Local
-    // recomputation only kicks in for paper wallets or when the trade
-    // history doesn't return a realizedPnl figure.
-    const grossPnlLocal =
-      exec.side === 'LONG'
-        ? (exitPrice - entryPrice) * quantity
-        : (entryPrice - exitPrice) * quantity;
-    const grossPnl = realFees.realizedPnl !== 0 ? realFees.realizedPnl : grossPnlLocal;
+    // Binance's `realizedPnl` is the source of truth — sum of
+    // `realizedPnl` across closing-side trades, handles weighted
+    // average / partial closes / post-only fee adjustments. Trust
+    // it whenever realFees was fetched (already guaranteed by the
+    // `if (!realFees) continue` guard above).
+    //
+    // Earlier code fell back to a locally-computed grossPnl when
+    // Binance reported `realizedPnl === 0` — but that's exactly the
+    // case where local recomputation goes haywire: a SYNC_INCOMPLETE
+    // exec has `exitPrice = null` (parsed as 0), so `(entry - 0) ×
+    // qty` produces a phantom grossPnl in the tens of thousands
+    // (incident 2026-05-09T17:43, BTCUSDT SHORT, +$8906 phantom).
+    // realizedPnl === 0 should be honoured: the position genuinely
+    // realized nothing yet (no exit fills). Net P&L is just the
+    // entry fee paid.
+    const grossPnl = realFees.realizedPnl;
     const newPnl = grossPnl - newTotalFees + accumulatedFunding;
     const marginValue = (entryPrice * quantity) / leverage;
-    const newPnlPercent = marginValue > 0 ? (newPnl / marginValue) * 100 : 0;
+    // No exit price → no realized return, so pnlPercent is 0 even
+    // when newPnl is non-zero (it's just the fee cost). Surfacing a
+    // ROE % off pure fees is misleading.
+    const newPnlPercent = exitPrice > 0 && marginValue > 0
+      ? (newPnl / marginValue) * 100
+      : 0;
     const oldPnl = parseFloat(exec.pnl ?? '0');
     const pnlDelta = newPnl - oldPnl;
-
-    if (Math.abs(grossPnl - grossPnlLocal) > FEES_DELTA_THRESHOLD) {
-      logger.info(
-        {
-          executionId: exec.id,
-          symbol: exec.symbol,
-          binanceRealizedPnl: grossPnl,
-          localGrossPnl: grossPnlLocal,
-          delta: grossPnl - grossPnlLocal,
-        },
-        '[startup-audit] Binance realizedPnl differs from local grossPnl — using Binance value',
-      );
-    }
 
     if (!dryRun) {
       await db

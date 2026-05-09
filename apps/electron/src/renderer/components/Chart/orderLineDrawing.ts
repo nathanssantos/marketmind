@@ -153,6 +153,10 @@ export const drawInfoTag = (
   // the two buttons meet are flat. So the per-button width contribution
   // is just SLTP_BUTTON.WIDTH; the GAP only applies once — before the
   // first button (separating it from the price text).
+  // `||` not `??`: `showSl` and `showTp` are `boolean | undefined`. The
+  // intent is "true if either button is shown". With `??`, showSl=false
+  // would short-circuit and ignore showTp (false is non-nullish).
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   const groupHasButtons = inlineSlTp?.showSl || inlineSlTp?.showTp;
   const inlineSlSpace = inlineSlTp?.showSl ? SLTP_BUTTON.WIDTH : 0;
   const inlineTpSpace = inlineSlTp?.showTp ? SLTP_BUTTON.WIDTH : 0;
@@ -175,11 +179,6 @@ export const drawInfoTag = (
   if (hasCloseButton && closeButtonRef) {
     const closeButtonX = LABEL_PADDING;
     const closeButtonY = y - CLOSE_BUTTON_SIZE / 2;
-
-    ctx.fillStyle = ORDER_LINE_COLORS.CLOSE_BUTTON_BG;
-    ctx.beginPath();
-    ctx.roundRect(closeButtonX, closeButtonY, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE, 2);
-    ctx.fill();
 
     if (isLoading) {
       drawSpinner(ctx, closeButtonX + CLOSE_BUTTON_SIZE / 2, y, CLOSE_BUTTON_SIZE / 2 - 2, timestamp);

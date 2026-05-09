@@ -20,15 +20,17 @@ const buildLayoutItem = (panel: GridPanelConfig) => ({
 function ChartGridComponent() {
   const symbolTabs = useLayoutStore(s => s.symbolTabs);
   const activeSymbolTabId = useLayoutStore(s => s.activeSymbolTabId);
+  const activeLayoutId = useLayoutStore(s => s.activeLayoutId);
   const layoutPresets = useLayoutStore(s => s.layoutPresets);
   const activeTab = useMemo(
     () => symbolTabs.find(t => t.id === activeSymbolTabId),
     [symbolTabs, activeSymbolTabId],
   );
   const activeLayout = useMemo(
-    () => activeTab ? layoutPresets.find(l => l.id === activeTab.activeLayoutId) : undefined,
-    [activeTab, layoutPresets],
+    () => layoutPresets.find(l => l.id === activeLayoutId),
+    [activeLayoutId, layoutPresets],
   );
+  const gridEditMode = useLayoutStore(s => s.gridEditMode);
   const updatePanelGridPosition = useLayoutStore(s => s.updatePanelGridPosition);
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const focusedPanelId = useLayoutStore(s => s.focusedPanelId);
@@ -105,11 +107,41 @@ function ChartGridComponent() {
   return (
     <Box
       ref={containerRef}
+      className={gridEditMode ? 'grid--edit-mode' : 'grid--locked'}
       w="100%"
       h="100%"
       overflowX="hidden"
       overflowY={maximizedPanel ? 'hidden' : 'auto'}
       position="relative"
+      css={{
+        '&.grid--locked .react-resizable-handle': {
+          display: 'none',
+        },
+        '&.grid--locked .panel-drag-handle': {
+          cursor: 'default',
+        },
+        '&.grid--edit-mode .react-resizable-handle': {
+          width: '24px',
+          height: '24px',
+          padding: '0 4px 4px 0',
+          opacity: 0.7,
+          // White corner-arrow icon — replaces the dim grey default.
+          // RGL applies its own `transform: rotate()` per handle to
+          // point the arrow at the correct edge; we must NOT use
+          // transform on hover or the rotation snaps to 0deg.
+          backgroundImage: "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path d='M11 11L11 3L9 3L9 9L3 9L3 11Z' fill='white' opacity='0.95'/></svg>\")",
+          backgroundSize: '12px 12px',
+          backgroundPosition: 'bottom right',
+          backgroundRepeat: 'no-repeat',
+          filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.7))',
+          zIndex: 101,
+          transition: 'opacity 0.15s, filter 0.15s',
+        },
+        '&.grid--edit-mode .react-resizable-handle:hover': {
+          opacity: 1,
+          filter: 'drop-shadow(0 0 3px rgba(255,255,255,0.6))',
+        },
+      }}
     >
       {mounted && containerWidth > 0 && (
         <GridLayout
@@ -122,11 +154,11 @@ function ChartGridComponent() {
             containerPadding: GRID_CONTAINER_PADDING,
           }}
           dragConfig={{
-            enabled: !maximizedPanel,
+            enabled: gridEditMode && !maximizedPanel,
             handle: '.panel-drag-handle',
           }}
           resizeConfig={{
-            enabled: !maximizedPanel,
+            enabled: gridEditMode && !maximizedPanel,
             handles: ['s', 'e', 'se', 'sw', 'w', 'n', 'ne', 'nw'],
           }}
           onLayoutChange={handleLayoutChange}
@@ -145,7 +177,6 @@ function ChartGridComponent() {
                 <NamedPanelRenderer
                   panelConfig={panel}
                   layoutId={activeLayout.id}
-                  isSinglePanel={isSinglePanel}
                 />
               )}
             </Box>

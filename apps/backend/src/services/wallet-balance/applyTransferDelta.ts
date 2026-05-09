@@ -72,7 +72,7 @@ export const applyTransferDelta = async (input: TransferDeltaInput): Promise<Tra
           source: 'binance',
           incomeTime: eventDate,
         })
-        .onConflictDoNothing({ target: [incomeEvents.walletId, incomeEvents.binanceTranId] });
+        .onConflictDoNothing({ target: [incomeEvents.walletId, incomeEvents.binanceTranId, incomeEvents.incomeType] });
 
       return updated?.currentBalance ? parseFloat(updated.currentBalance) : (newBalance ?? 0);
     });

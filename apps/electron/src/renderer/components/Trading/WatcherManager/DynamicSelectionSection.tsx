@@ -1,4 +1,4 @@
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
 import type { MarketType, TimeInterval } from '@marketmind/types';
 import { Button, Callout, FormRow, FormSection, Switch } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
@@ -130,9 +130,7 @@ export const DynamicSelectionSection = ({
                 {t('tradingProfiles.dynamicSelection.rotationStatus')}
               </Text>
               {isLoadingRotationStatus ? (
-                <Text fontSize="xs" color="fg.muted">
-                  {t('common.loading')}
-                </Text>
+                <Spinner size="xs" />
               ) : rotationStatus?.isActive ? (
                 <Text fontSize="xs" color="green.fg">
                   {t('tradingProfiles.dynamicSelection.nextRotation', {

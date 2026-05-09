@@ -2,7 +2,7 @@ import type { MarketType } from '@marketmind/types';
 import { calculatePnl } from '@marketmind/utils';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
-import { tradeExecutions, wallets } from '../../db/schema';
+import { tradeExecutions } from '../../db/schema';
 import { env } from '../../env';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
@@ -13,7 +13,7 @@ import { cancelAllProtectionOrders } from '../../services/protection-orders';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
 import { badRequest, internalServerError, notFound } from '../../utils/trpc-errors';
-import { emitPositionClosedEvents } from '../../services/wallet-broadcast';
+import { closeExecutionAndBroadcast, emitPositionClosedEvents } from '../../services/wallet-broadcast';
 import { withWriteLock } from '../../services/write-op-mutex';
 import { cancelFuturesExecutionOrders, cancelSpotExecutionOrders } from './cancel-execution-helpers';
 
@@ -289,94 +289,61 @@ export const executionsRouter = router({
         totalFees: number;
       }> = [];
 
-      await ctx.db.transaction(async (tx) => {
-        for (const exec of allExecutionsToClose) {
-          const execEntryPrice = parseFloat(exec.entryPrice);
-          const execQty = parseFloat(exec.quantity);
-          const execLeverage = exec.leverage ?? 1;
+      // Each per-exec close goes through closeExecutionAndBroadcast
+      // which (a) updates the row in DB with the close fields, (b)
+      // increments wallet balance + emits wallet:update with the
+      // authoritative post-increment balance via the helper's RETURNING
+      // clause, and (c) emits the order:update + position:closed pair.
+      // Earlier this used a transaction + manual wallet UPDATE, which
+      // bypassed the wallet:update emit — leaving the renderer's
+      // wallet.list cache stale until the next debounced invalidate.
+      for (const exec of allExecutionsToClose) {
+        const execEntryPrice = parseFloat(exec.entryPrice);
+        const execQty = parseFloat(exec.quantity);
+        const execLeverage = exec.leverage ?? 1;
 
-          const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
-            entryPrice: execEntryPrice,
-            exitPrice,
-            quantity: execQty,
-            side: exec.side,
-            marketType,
-            leverage: execLeverage,
-          });
+        const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
+          entryPrice: execEntryPrice,
+          exitPrice,
+          quantity: execQty,
+          side: exec.side,
+          marketType,
+          leverage: execLeverage,
+        });
 
-          totalNetPnl += netPnl;
-          totalGrossPnl += grossPnl;
-          totalAllFees += totalFees;
+        totalNetPnl += netPnl;
+        totalGrossPnl += grossPnl;
+        totalAllFees += totalFees;
 
-          const existingPartialPnl = parseFloat(exec.partialClosePnl ?? '0');
-          const finalPnl = netPnl + existingPartialPnl;
+        const existingPartialPnl = parseFloat(exec.partialClosePnl ?? '0');
+        const finalPnl = netPnl + existingPartialPnl;
 
-          await tx
-            .update(tradeExecutions)
-            .set({
-              status: 'closed',
-              exitPrice: exitPrice.toString(),
-              exitOrderId,
-              pnl: finalPnl.toString(),
-              pnlPercent: pnlPercent.toString(),
-              fees: totalFees.toString(),
-              exitSource: 'MANUAL',
-              exitReason: 'MANUAL_CLOSE',
-              closedAt: new Date(),
-              updatedAt: new Date(),
-              stopLossAlgoId: null,
-              stopLossOrderId: null,
-              takeProfitAlgoId: null,
-              takeProfitOrderId: null,
-            })
-            .where(eq(tradeExecutions.id, exec.id));
+        await closeExecutionAndBroadcast(exec, {
+          exitPrice,
+          exitOrderId,
+          exitReason: 'MANUAL_CLOSE',
+          exitSource: 'MANUAL',
+          pnl: finalPnl,
+          pnlPercent,
+          fees: totalFees,
+        });
 
-          paperCloseEmits.push({
-            executionId: exec.id,
-            userId: ctx.user.id,
-            symbol: exec.symbol,
-            grossPnl,
-            totalFees,
-          });
-        }
+        paperCloseEmits.push({
+          executionId: exec.id,
+          userId: ctx.user.id,
+          symbol: exec.symbol,
+          grossPnl,
+          totalFees,
+        });
+      }
 
-        const currentBalance = parseFloat(wallet.currentBalance ?? '0');
-        const newBalance = currentBalance + totalNetPnl;
-
-        await tx
-          .update(wallets)
-          .set({
-            currentBalance: newBalance.toString(),
-            updatedAt: new Date(),
-          })
-          .where(eq(wallets.id, wallet.id));
-      });
-
+      // Toast emits — UX-specific, kept inline (not in helper).
       for (const emit of paperCloseEmits) {
         await emitPositionClose({
           wallet,
           execution: { id: emit.executionId, userId: emit.userId, symbol: emit.symbol },
           grossPnl: emit.grossPnl,
           totalFees: emit.totalFees,
-        });
-      }
-
-      for (const exec of allExecutionsToClose) {
-        const execPnl = calculatePnl({
-          entryPrice: parseFloat(exec.entryPrice),
-          exitPrice,
-          quantity: parseFloat(exec.quantity),
-          side: exec.side,
-          marketType,
-          leverage: exec.leverage ?? 1,
-        });
-        emitPositionClosedEvents({
-          walletId: execution.walletId,
-          execution: exec,
-          exitPrice,
-          pnl: execPnl.netPnl,
-          pnlPercent: execPnl.pnlPercent,
-          exitReason: 'MANUAL_CLOSE',
         });
       }
 

@@ -1,7 +1,6 @@
 import {
-  Badge, Button, Callout, ConfirmationDialog, EmptyState, FormRow, FormSection, Input, Slider, Switch,
+  Badge, Button, Callout, ConfirmationDialog, EmptyState, FormRow, FormSection, Input, LoadingSpinner, Slider, Switch,
 } from '@renderer/components/ui';
-import { MM } from '@marketmind/tokens';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useToast } from '@/renderer/hooks/useToast';
 import { hydrateLayoutStore } from '@/renderer/store/layoutStore';
@@ -9,7 +8,7 @@ import { trpc } from '@/renderer/utils/trpc';
 import {
   TradingTable, TradingTableCell, TradingTableRow, type TradingTableColumn,
 } from '@/renderer/components/Trading/TradingTable';
-import { Box, Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuHistory, LuPlus, LuRefreshCw, LuTrash2, LuWrench, LuX } from 'react-icons/lu';
@@ -74,9 +73,7 @@ const LayoutSnapshotsSection = () => {
       description={t('settings.data.layouts.description')}
     >
       {isLoading ? (
-        <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-          <Spinner size={MM.spinner.panel.size} />
-        </Flex>
+        <LoadingSpinner />
       ) : snapshots.length === 0 ? (
         <EmptyState icon={LuHistory} title={t('settings.data.layouts.empty')} />
       ) : (

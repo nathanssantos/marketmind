@@ -50,6 +50,33 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     return { success: true, downloaded: 0, totalInDb: 0, gaps: 0, alreadyComplete: true };
   }
 
+  // Defensive: if the service hasn't started yet (rare — startup races
+  // a renderer that connected before custom-symbol-service finished
+  // loading), check the DB directly. Without this guard, a kline request
+  // for POLITIFI / similar composite symbol falls through to a direct
+  // Binance API call and 400's because the symbol doesn't exist on the
+  // exchange. Service-not-loaded is a transient state; the query is
+  // cheap and only fires before the service is ready.
+  if (!customSymbolService) {
+    const { db } = await import('../db');
+    const { customSymbols } = await import('../db/schema');
+    const { and, eq } = await import('drizzle-orm');
+    const cs = await db.query.customSymbols.findFirst({
+      where: and(eq(customSymbols.symbol, symbol.toUpperCase()), eq(customSymbols.isActive, true)),
+    });
+    if (cs) {
+      if (!silent) log.warn('~ Skipping Binance prefetch — symbol is custom but service not ready yet', { symbol, interval, marketType });
+      return {
+        success: false,
+        downloaded: 0,
+        totalInDb: 0,
+        gaps: 0,
+        alreadyComplete: false,
+        error: 'Custom symbol service not ready — request will succeed on retry',
+      };
+    }
+  }
+
   if (binanceApiCache.isBanned()) {
     const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
     if (!silent) log.warn('~ Skipping prefetch - IP banned', { symbol, interval, marketType, waitSeconds });

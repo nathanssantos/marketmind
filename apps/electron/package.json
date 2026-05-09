@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "1.15.1",
+  "version": "1.16.0",
   "description": "MarketMind Electron Desktop App",
   "keywords": [
     "trading",

@@ -1,1208 +1,415 @@
-# 🤖 AI Assistant Context - MarketMind Project
+# 🤖 AI Assistant Context — MarketMind
 
 ## 📋 Project Overview
 
 **MarketMind** is an Electron-based desktop application for trading cryptocurrencies, stocks, and other tradeable assets, combining advanced financial chart visualization (klines) with strategy-driven setup detection, backtesting, and auto-trading.
 
-**🚀 QUICK START FOR NEW AGENTS:**
-1. Read this file completely
-2. Check `QUICK_START.md` for setup
-3. Review `AI_AGENT_GUIDE.md` for workflow patterns
-4. Run `pnpm test` to verify setup
+**🚀 Quick start for new agents:** read this file → check `QUICK_START.md` → run `pnpm test`.
 
 ### Tech Stack
-
-**Frontend:**
-- **TypeScript** (end-to-end with unified typing)
-- **Electron** (desktop framework)
-- **React 19** (UI framework)
-- **Chakra UI** (component library with light/dark mode)
-- **Canvas API** (high-performance chart rendering)
-- **Vite** (build tool)
-
-**Backend:**
-- **Fastify 5.6.2** (high-performance HTTP server)
-- **tRPC 11.7.2** (type-safe RPC framework)
-- **Drizzle ORM 0.45.1** (TypeScript SQL ORM)
-- **PostgreSQL 17** (relational database)
-- **TimescaleDB 2.23.1** (time-series extension)
-- **Argon2** (password hashing - OWASP compliant)
-- **Binance SDK 3.1.5** (trading integration)
-- **TypeScript 5.9.3**, **Vite 7.2.7**, **Electron 39.2.6**
-
-**Architecture:**
-- **Monorepo** (pnpm workspaces)
-- **Shared Packages** (6 packages): `@marketmind/types`, `@marketmind/chart-studies`, `@marketmind/fibonacci`, `@marketmind/logger`, `@marketmind/trading-core`, `@marketmind/risk`, `@marketmind/utils`
-- **Exchange Abstraction**: Binance (crypto) + Interactive Brokers (US stocks via `@stoqey/ib`)
-- **Real-time API** (tRPC endpoints with React Query)
-- **Session Auth** (secure cookie-based authentication)
-- **Encrypted Storage** (AES-256-CBC for API keys)
-- **Strategy JSON System**: 105 builtin strategies in `apps/backend/strategies/builtin/`
+- **Frontend:** TypeScript, Electron 39.2.6, React 19, Chakra UI, Canvas API, Vite 7.2.7
+- **Backend:** Fastify 5.6.2, tRPC 11.7.2, Drizzle ORM 0.45.1, PostgreSQL 17 + TimescaleDB 2.23.1, Argon2 (OWASP), Binance SDK 3.1.5, TypeScript 5.9.3
+- **Architecture:** pnpm monorepo, 7 shared packages (`@marketmind/types`, `chart-studies`, `fibonacci`, `logger`, `trading-core`, `risk`, `utils`); exchange abstraction over Binance (crypto) + Interactive Brokers (US stocks via `@stoqey/ib`); session auth (HTTP-only cookies); AES-256-CBC for API keys; 105 builtin strategies in `apps/backend/strategies/builtin/`
 
 ### Repository Info
-- **Name:** nathanssantos/marketmind
-- **Visibility:** Private
-- **Main Branch:** `main` (production, protected)
-- **Default Branch:** `develop` (development)
-- **Branch Strategy:** Always create feature/bugfix branches for new work
+- **Repo:** `nathanssantos/marketmind` (private)
+- **Branches:** `main` = production (protected, every release tag cuts from here); `develop` = integration. Always create `feature/*` or `bugfix/*` branches — never commit directly to either.
 
 ---
 
 ## 🎯 Development Guidelines
 
 ### Core Rules
-1. **Latest Versions:** Keep all dependencies updated, check official docs for breaking changes
-2. **Official Documentation:** Always consult library docs before implementing features
-3. **Changelog:** Update CHANGELOG.md with every significant change (Keep a Changelog format)
-4. **No Comments:** Use self-documenting code and README files instead
-5. **No Magic Numbers:** Extract all hardcoded values to constants files
-6. **No `any` Types:** Use proper types, `unknown`, or generics
-7. **Early Returns:** Prefer early returns over nested ifs for better readability
-8. **One-Line Conditionals:** Use ternary operators for simple conditions
-9. **Responsive Design:** Always consider mobile/tablet/desktop viewports
-10. **English Only:** All commits, docs, and code in English
-11. **Branch Workflow:** Create feature/bugfix branches, never commit directly to main/develop
-12. **Implementation Plan:** Follow and evolve IMPLEMENTATION_PLAN.md as the project progresses
-13. **No Watch Mode:** Never use watch mode commands (`npm test`, `vitest`, etc. without `--run`). Always use run-once commands (`npm test -- --run`, `npm run build`, etc.) to avoid blocking the terminal
-14. **Single-Line Blocks:** Simplify code blocks with only one statement to single-line format when correct and compliant with linting rules (e.g., `if (condition) return value;` instead of multi-line blocks)
-15. **🔴 CRITICAL - All Tests Must Pass:** NEVER commit code with failing tests. ALWAYS run `npm run test:run` before committing. If tests fail, FIX THEM FIRST. Breaking tests is NEVER acceptable. Zero tolerance for broken tests in commits.
+1. **Latest versions** — keep deps updated, check official docs for breaking changes
+2. **Official documentation** — consult library docs before implementing
+3. **Changelog** — update `CHANGELOG.md` with every significant change (Keep a Changelog format)
+4. **No comments** — self-documenting code + READMEs instead
+5. **No magic numbers** — extract to constants files
+6. **No `any` types** — use proper types, `unknown`, or generics
+7. **Early returns** — prefer over nested ifs
+8. **One-line conditionals** — ternaries / `if (x) return y;` for simple cases
+9. **Responsive design** — mobile/tablet/desktop viewports
+10. **English only** — commits, docs, code
+11. **Branch workflow** — feature/bugfix branches; never commit to main/develop directly
+12. **Implementation plan** — follow & evolve the active version plan in `docs/V1_X_PLAN.md`
+13. **No watch mode** — always run-once (`pnpm test`, `npm test -- --run`); never `vitest` without `--run`
+14. **Single-line blocks** — `if (cond) return val;` when lint-compliant
+15. **🔴 All tests must pass** — never commit with failing tests. Run `pnpm test` first. Zero tolerance.
+16. **Handler object over switch** — switch statements mapping >3 enum/type cases to handlers should become `Record<Type, Handler>` objects (real examples: `IndicatorEngine.indicatorComputeHandlers`, `AnnotationLayer.markerStyleHandlers`, `AIService.providerFactories`)
+17. **🔴 No flaky tests** — a test that "sometimes passes" is broken. If a test fails on CI but passes locally (or vice-versa), or fails intermittently when re-run, the test is **wrong** — not the code under test. Diagnose the root cause (test pollution between runs, leaked global state, missing cleanup, race conditions, time-dependent assertions, network/IO without isolation, hard-coded ports/dates) and fix the test so it is deterministic. **Do not** retry, mark `.skip`, add `--retry`, raise timeouts, or paper over with `setTimeout` until "it passes." Re-running until green hides real bugs and trains the team to ignore CI red. If the underlying behavior is genuinely non-deterministic (websocket timing, animation frames), the test must wait on the deterministic signal that proves the work happened (event, store value, DOM mutation), not on a wall clock.
 
 ### UI Component Standards (`@renderer/components/ui`)
 
-The `apps/electron/src/renderer/components/ui/` directory is the **single source of truth** for all reusable UI components. It is designed for future extraction into a standalone `@marketmind/ui` package.
+`apps/electron/src/renderer/components/ui/` is the **single source of truth** for reusable UI components, designed for future extraction into a standalone `@marketmind/ui` package.
 
-**🔴 CRITICAL - Before creating ANY new UI component:**
-1. Check `apps/electron/src/renderer/components/ui/index.ts` — the component may already exist
-2. Check `docs/UI_STYLE_GUIDE.md` for the full component catalog
-3. If it doesn't exist, create it as a wrapper in `ui/` first, then use it
+**🔴 Before creating ANY new UI component:**
+1. Check `apps/electron/src/renderer/components/ui/index.ts` — it may already exist
+2. Check `docs/UI_STYLE_GUIDE.md` for the full catalog
+3. If missing, create the wrapper in `ui/` first, then use it
 
 **Import rules (single canonical path):**
 ```tsx
 import { Button, IconButton, Switch, Badge, Tabs } from '@renderer/components/ui';
 ```
-- **ALL** interactive/visual components must come from `@renderer/components/ui` (barrel import via `index.ts`)
-- This includes: `Button`, `IconButton`, `ToggleIconButton`, `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup`, `Field`, `Badge`, `Alert`, `Callout`, `Skeleton`, `Link`, `CloseButton`, `Image`, `Menu`, `Separator`, `Progress`, `Tabs`, `Table`, `Card`, `Stat`, `Dialog`, `FormDialog`, `ConfirmationDialog`, `FormSection`, `FormRow`, `PanelHeader`, `CollapsibleSection`, `Popover`, `TooltipWrapper`, `EmptyState`, `ErrorMessage`, `LoadingSpinner`, `CryptoIcon`, `MetricCard`, `PnLDisplay`, `PageTitle`, `SectionTitle`, `SubsectionTitle`, `SectionDescription`, `FieldHint`, `MetaText`
+- **All** interactive/visual components come from `@renderer/components/ui` via barrel export. Includes: `Button`, `IconButton`, `ToggleIconButton`, `Input`, `NumberInput`, `PasswordInput`, `Textarea`, `Select`, `Slider`, `Switch`, `Checkbox`, `Radio`, `RadioGroup`, `Field`, `Badge`, `Alert`, `Callout`, `Skeleton`, `Link`, `CloseButton`, `Image`, `Menu`, `Separator`, `Progress`, `Tabs`, `Table`, `Card`, `Stat`, `Dialog`, `FormDialog`, `ConfirmationDialog`, `FormSection`, `FormRow`, `PanelHeader`, `CollapsibleSection`, `Popover`, `TooltipWrapper`, `EmptyState`, `ErrorMessage`, `LoadingSpinner`, `CryptoIcon`, `MetricCard`, `PnLDisplay`, `PageTitle`, `SectionTitle`, `SubsectionTitle`, `SectionDescription`, `FieldHint`, `MetaText`
 - **Only layout primitives** come directly from `@chakra-ui/react`: `Box`, `Flex`, `Stack`, `HStack`, `VStack`, `Grid`, `GridItem`, `Text`, `Heading`, `Spinner`, `Portal`, `Group`
-- **NEVER** import `Button`, `IconButton`, `Badge`, `Tabs`, `Table`, `Menu`, `Input`, `Switch`, or any interactive component directly from `@chakra-ui/react` — only the `ui/` wrappers may do that internally
+- **Never** import `Button`, `IconButton`, `Badge`, `Tabs`, `Table`, `Menu`, `Input`, `Switch`, or any interactive component directly from `@chakra-ui/react` — only the `ui/` wrappers may do so internally
 
-**Section / row composition (use these for every dialog and tab — added in v1.0.0+):**
-- `<FormSection title="..." description="..." action={...}>` — standard section block (no border separator). Pairs with `<Field>`, `<FormRow>`, `<Callout>` inside.
-- `<PanelHeader title="..." action={...}>` — **dashboard-style panel header with `borderBottom`** separator. Use in AnalyticsModal panels and any panel where you want the title visually divided from the body. Same title typography as `FormSection` (sm/semibold).
+**Section / row composition (added in v1.0.0+):**
+- `<FormSection title="..." description="..." action={...}>` — standard section block (no border). Pairs with `<Field>`, `<FormRow>`, `<Callout>` inside.
+- `<PanelHeader title="..." action={...}>` — dashboard-style header **with `borderBottom`** separator (use in AnalyticsModal panels and panels where the title should be visually divided from the body). Same title typography as `FormSection` (sm/semibold).
 - `<FormRow label="..." helper="..."><Switch ... /></FormRow>` — left label/helper, right control. Use for switch/select rows.
-- `<Callout tone="info|success|warning|danger|neutral" title="..." compact>...</Callout>` — replaces ad-hoc colored `<Box bg="blue.50" ...>` patterns. Always prefer this over inline colored boxes for inline messages.
-- `<CollapsibleSection variant="static" ...>` — non-accordion mode (no chevron, always-open). Use this in contexts where collapsing is unwanted (e.g. AutoTrading sections).
-- `MM.spinner.panel` (`{ size: 'md', py: 6 }`) — standard panel loading state. Pair with `<Flex justify="center" align="center" py={MM.spinner.panel.py}><Spinner size={MM.spinner.panel.size} /></Flex>`.
-- `MM.buttonSize.nav` (`'2xs'`) — pagination / prev-next nav buttons. Pair with `px={1.5} minW="auto"` for tight icon-only buttons (‹ ›).
+- `<Callout tone="info|success|warning|danger|neutral" title="..." compact>...</Callout>` — replaces ad-hoc colored `<Box bg="blue.50" ...>`. Always prefer over inline colored boxes.
+- `<CollapsibleSection variant="static" ...>` — non-accordion, always-open (no chevron). Use where collapsing is unwanted (e.g. AutoTrading sections).
+- `MM.spinner.panel` (`{ size: 'md', py: 6 }`) — standard panel loading. Pair with `<Flex justify="center" align="center" py={MM.spinner.panel.py}><Spinner size={MM.spinner.panel.size} /></Flex>`.
+- `MM.buttonSize.nav` (`'2xs'`) — pagination / prev-next nav. Pair with `px={1.5} minW="auto"` for tight icon-only buttons (‹ ›).
 
 **Theming rules (mandatory for future multi-theme support):**
-- All colors via **semantic tokens** — never hardcode hex/rgb values
+- All colors via **semantic tokens** — never hardcode hex/rgb
 - Use `colorPalette` prop (not `color="blue.500"`) when Chakra supports it
 - Use theme **recipes** for repeated visual patterns
-- Inline style props only for layout-specific context (spacing, positioning, dimensions)
-- Components in `ui/` must be theme-agnostic: they receive colors from Chakra's token system, never define their own palette
+- Inline style props only for layout (spacing, positioning, dimensions)
+- Components in `ui/` are theme-agnostic — they receive colors from the token system, never define their own palette
 
-**When creating a new wrapper in `ui/`:**
-1. Create the file following the existing pattern (re-export from Chakra with `forwardRef`)
-2. Export it from `ui/index.ts`
-3. Update `docs/UI_STYLE_GUIDE.md` (component catalog)
-4. Update `apps/electron/src/renderer/components/ui/README.md` (usage examples)
-
-**Documentation maintenance:**
-- `docs/UI_STYLE_GUIDE.md` and `ui/README.md` are **living documents** — update whenever components are created, modified, or deprecated
-- When adding new recipes to the theme, document them in the Style Guide
+**Creating a new wrapper in `ui/`:**
+1. Follow the existing pattern (re-export from Chakra with `forwardRef`)
+2. Export from `ui/index.ts`
+3. Update `docs/UI_STYLE_GUIDE.md` (catalog) and `apps/electron/src/renderer/components/ui/README.md` (usage)
+4. New theme recipes → document in the Style Guide
 
 ### Git Workflow
 
 ```bash
-develop                # Never commit directly here
+develop                # never commit directly
   ← feature/chart-rendering
-  ← feature/ai-integration
   ← bugfix/canvas-resize
   ← hotfix/critical-bug
 
-# Always create branches for new work
-git checkout develop
-git pull origin develop
+git checkout develop && git pull
 git checkout -b feature/new-feature
-# ... work and commits ...
-
-# 🔴 MANDATORY: Run tests before EVERY commit
-pnpm test                                      # ALL tests (frontend + backend)
-pnpm --filter @marketmind/electron test        # Frontend tests
-pnpm --filter @marketmind/backend test         # Backend tests (when available)
-
-# Only commit if all tests pass
-git add .
+# ... work ...
+pnpm test              # 🔴 mandatory — must pass
 git commit -m "feat: description"
 git push origin feature/new-feature
-# Open PR to develop
+gh pr create           # PR to develop
 ```
 
 ### 🔴 Pre-Commit Checklist (MANDATORY)
-- [ ] `pnpm test` - ALL tests passing (frontend + backend)
-- [ ] `pnpm --filter @marketmind/electron type-check` - No TypeScript errors (frontend)
-- [ ] `pnpm --filter @marketmind/backend type-check` - No TypeScript errors (backend)
-- [ ] `pnpm --filter @marketmind/electron lint` - No linting errors
+- [ ] `pnpm test` — all tests pass (frontend + backend)
+- [ ] `pnpm --filter @marketmind/electron type-check` — no TS errors (frontend)
+- [ ] `pnpm --filter @marketmind/backend type-check` — no TS errors (backend)
+- [ ] `pnpm --filter @marketmind/electron lint` — no lint errors
 - [ ] Tests cover new/changed code
-- [ ] No console.log or debugging code left
-- [ ] No comments in code (use README files instead)
-- [ ] All user-facing text internationalized (no hardcoded strings)
-- [ ] Code reviewed for DRY principles (no duplication)
-- [ ] Code reviewed for testability (pure functions, dependency injection)
-- [ ] Code reviewed for performance (no unnecessary re-renders, memoization where needed)
-- [ ] CHANGELOG.md updated (if applicable)
-- [ ] NEVER push/commit to main branch - ALWAYS create PR from feature/bugfix branch
+- [ ] No flaky tests — re-run any new/touched suite at least twice locally; if it ever fails, fix the test before commit (not retried, not skipped)
+- [ ] No `console.log` / debug code
+- [ ] No code comments (READMEs/JSDoc on public APIs only)
+- [ ] User-facing text internationalized (no hardcoded strings)
+- [ ] DRY (no duplication), testable (pure functions, DI), performant (no needless re-renders)
+- [ ] `CHANGELOG.md` updated if applicable
+- [ ] On a feature/bugfix branch — never main/develop directly
 
-**NEVER skip this checklist. Broken tests = DO NOT COMMIT. Code comments = DO NOT COMMIT. Hardcoded text = DO NOT COMMIT. Main branch commits = FORBIDDEN.**
+**Broken tests, code comments, hardcoded strings, or main-branch commits = DO NOT COMMIT.**
 
 ### Conventional Commits (English)
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation
-- `refactor:` - Code restructuring
-- `perf:` - Performance improvements
-- `chore:` - Maintenance tasks
-
-### Code Examples
-
-```typescript
-const calculateSMA = (klines: Kline[], period: number): number => {
-  if (klines.length === 0) return 0;
-  const sum = klines.reduce((total, c) => total + c.close, 0);
-  return sum / klines.length;
-};
-
-const backgroundColor = isDarkMode ? '#1e222d' : '#ffffff';
-
-export const CHART_CONFIG = {
-  VOLUME_THRESHOLD: 1_000_000,
-  DEFAULT_MA_PERIODS: [20, 50, 200],
-  CANVAS_PADDING: 20,
-} as const;
-
-import type { Kline } from '@shared/types';
-import { CHART_CONFIG } from '@shared/constants';
-import { calculateSMA } from './utils';
-```
+`feat:` new feature · `fix:` bug fix · `docs:` docs · `refactor:` restructure (use for handler-object refactors) · `perf:` performance · `chore:` maintenance
 
 ---
 
 ## 📁 Project Structure
 
 ```
-marketmind/                        # Monorepo root
+marketmind/                         # monorepo root
 ├── apps/
-│   ├── electron/                  # Electron desktop app
-│   │   ├── src/
-│   │   │   ├── main/             # Electron main process
-│   │   │   ├── renderer/         # React app
-│   │   │   │   ├── components/
-│   │   │   │   ├── services/
-│   │   │   │   ├── hooks/       # Including backend hooks
-│   │   │   │   ├── store/
-│   │   │   │   └── theme/
-│   │   │   └── shared/          # Frontend shared code
-│   │   └── package.json
-│   │
-│   └── backend/                  # Backend server
-│       ├── src/
-│       │   ├── db/              # Database (schema, migrations)
-│       │   ├── exchange/        # Exchange abstraction layer
-│       │   │   ├── binance/     # Binance crypto exchange
-│       │   │   └── interactive-brokers/  # IB stocks (16 modules)
-│       │   ├── routers/         # tRPC routers (health, auth, wallet, trading, analytics, fees, auto-trading)
-│       │   ├── services/        # Business logic (auth, encryption, backtesting, setup-detection)
-│       │   │   └── backtesting/ # BacktestEngine, MultiWatcherBacktestEngine, FilterManager
-│       │   └── trpc/            # tRPC setup (context, router)
-│       ├── strategies/
-│       │   └── builtin/         # 105 strategy JSON files
-│       ├── scripts/
-│       │   └── backtest/        # Backtest CLI scripts
-│       │       ├── rank-strategies.ts          # Rank all 105 strategies
-│       │       ├── rank-strategies-with-filters.ts  # Test strategies × 6 filter presets
-│       │       ├── run-optimization.ts         # 3-stage optimization (Fib params → filters → trailing stop)
-│       │       └── backtest-runner.ts          # CLI runner
-│       └── package.json
-│
-├── packages/                     # 7 shared packages
-│   ├── types/                   # Shared TypeScript types
-│   ├── indicators/              # Technical analysis utilities
-│   ├── fibonacci/               # Fibonacci calculation engine
-│   ├── logger/                  # Logging utilities
-│   ├── trading-core/            # Core trading logic
-│   ├── risk/                    # Risk management
-│   └── utils/                   # General utilities
-│
-├── scripts/                     # Build and utility scripts
-├── docs/                        # Documentation
-│   ├── BACKEND_QUICKSTART.md   # Backend developer guide
-│   └── COMPONENT_MIGRATION.md  # Component migration guide
-├── pnpm-workspace.yaml         # Monorepo configuration
-└── package.json                # Root package
+│   ├── electron/                   # Electron desktop app
+│   │   └── src/{main,renderer,shared}
+│   └── backend/                    # Fastify + tRPC server
+│       ├── src/{db,exchange,routers,services,trpc}
+│       │   ├── exchange/{binance,interactive-brokers}      # 16 IB modules
+│       │   ├── routers/                                     # health, auth, wallet, trading, analytics, fees, auto-trading, mcp
+│       │   └── services/backtesting/                        # BacktestEngine, MultiWatcherBacktestEngine, FilterManager
+│       ├── strategies/builtin/                              # 105 strategy JSON files
+│       └── scripts/backtest/                                # rank-strategies, rank-strategies-with-filters, run-optimization
+├── packages/                       # 7 shared workspaces: types, indicators, fibonacci, logger, trading-core, risk, utils
+├── packages/mcp-*                  # 4 MCP servers (screenshot, app, backend, strategy) + mcp-trading (v1.5)
+├── docs/                           # BACKEND_QUICKSTART, MCP_SERVERS, UI_STYLE_GUIDE, BROWSER_TESTING, RELEASE_PROCESS, V1_X_PLAN
+└── pnpm-workspace.yaml
 ```
 
 ---
 
-## 🚀 Starting a New Chat
+## 💡 Code Patterns
 
-When starting a new chat due to context limits, provide:
+**File naming:** Components `PascalCase.tsx`, utilities/types/constants `camelCase.ts`.
 
-1. **This document** (`copilot-instructions.md`)
-2. **Current phase** from `IMPLEMENTATION_PLAN.md`
-3. **Current branch** and feature being worked on
-4. **Files already created** (list main ones)
-5. **Current task** or issue
-
-Example:
-```
-Working on MarketMind following copilot-instructions.md.
-
-Status:
-- Phase: 3 (Chart Rendering)
-- Branch: feature/chart-rendering
-- Completed: Project setup, type system, Electron base
-- Current: KlineRenderer component
-- Next: Implement zoom/pan for chart canvas
-
-Task: [specific request]
-```
-
----
-
-## 🎨 Project Patterns
-
-### File Naming
-- Components: PascalCase (`ChartCanvas.tsx`)
-- Utilities: camelCase (`drawingUtils.ts`)
-- Types: camelCase (`kline.ts`)
-- Constants: camelCase (`chartConfig.ts`)
-
-### Import Order
+**Import order:**
 ```typescript
+// 1. external
 import React, { useState } from 'react';
 import { Box } from '@chakra-ui/react';
-import type { Kline } from '@shared/types';
+// 2. internal absolute (use `import type` for type-only)
+import type { Kline } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
+// 3. relative
 import { calculateSMA } from './utils';
 ```
 
-### Function Style
+**Style examples:**
 ```typescript
-const utils = (param: Type): ReturnType => { };
-
-function Component({ prop }: Props) { }
-```
-
-### Error Handling
-```typescript
-const fetchData = async (id: string): Promise<Data> => {
-  if (!id) throw new Error('ID is required');
-  
-  try {
-    const response = await api.get(`/data/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch:', error);
-    throw new Error(`Failed to fetch data for ${id}`);
-  }
-};
-```
-
-### React Hooks
-```typescript
-const useData = (id: string) => {
-  const [data, setData] = useState<Data | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const result = await fetchData(id);
-        setData(result);
-        setError(null);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [id]);
-  
-  return { data, loading, error };
-};
-```
-
-### Zustand Store
-```typescript
-import { create } from 'zustand';
-
-interface State {
-  data: Data[];
-  loading: boolean;
-  setData: (data: Data[]) => void;
-  setLoading: (loading: boolean) => void;
-}
-
-export const useStore = create<State>((set) => ({
-  data: [],
-  loading: false,
-  setData: (data) => set({ data }),
-  setLoading: (loading) => set({ loading }),
-}));
-```
-
----
-
-## 🔧 Performance & Optimization
-
-### Canvas Rendering
-```typescript
-const drawVisible = (ctx: CanvasRenderingContext2D) => {
-  const visibleStart = Math.floor(viewport.start);
-  const visibleEnd = Math.ceil(viewport.end);
-  const visible = klines.slice(visibleStart, visibleEnd);
-  visible.forEach(drawKline);
+// arrow utilities; named-export PascalCase components
+const calculateSMA = (klines: Kline[], period: number): number => {
+  if (klines.length === 0) return 0;
+  return klines.reduce((sum, k) => sum + k.close, 0) / klines.length;
 };
 
-const animate = () => {
-  if (!animationNeeded) return;
-  requestAnimationFrame(animate);
-  draw();
-};
+// constants — extract magic numbers
+export const CHART_CONFIG = {
+  VOLUME_THRESHOLD: 1_000_000,
+  DEFAULT_MA_PERIODS: [20, 50, 200],
+  CANVAS_PADDING: 20,
+} as const;
 
-const debouncedResize = useMemo(() => debounce(handleResize, 150), []);
-```
-
-### Memory Cleanup
-```typescript
-useEffect(() => {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  
-  return () => {
-    ctx?.clearRect(0, 0, canvas.width, canvas.height);
-  };
-}, []);
-```
-
----
-
-## 📊 State Management
-
-### Zustand Store Pattern
-
-```typescript
-// ✅ src/renderer/store/chartStore.ts
-import { create } from 'zustand';
-import type { Kline } from '@shared/types';
-
+// Zustand store
 interface ChartState {
   klines: Kline[];
-  loading: boolean;
-  error: Error | null;
-  
-  // Actions
   setKlines: (klines: Kline[]) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: Error | null) => void;
 }
-
 export const useChartStore = create<ChartState>((set) => ({
   klines: [],
-  loading: false,
-  error: null,
-  
   setKlines: (klines) => set({ klines }),
-  setLoading: (loading) => set({ loading }),
-  setError: (error) => set({ error }),
 }));
 ```
+
+### Canvas rendering (chart hot path)
+- Slice klines to viewport before drawing (`klines.slice(visibleStart, visibleEnd)`)
+- Drive animation with `requestAnimationFrame`; flag `animationNeeded` to skip idle frames
+- Debounce resize (~150ms)
+- Decouple chart re-renders from store: imperative `subscribe` + throttle + diff (see memory: `feedback_render_decoupling.md`)
+- Clear canvas in `useEffect` cleanup
+
+---
+
+## 🔌 Backend Integration
+
+### tRPC client (frontend)
+```typescript
+// apps/electron/src/renderer/services/trpc.ts
+export const trpc = createTRPCClient<AppRouter>({
+  links: [httpBatchLink({ url: 'http://localhost:3001/trpc', credentials: 'include' })],
+});
+```
+
+### Backend hook (React Query)
+```typescript
+export const useBackendWallets = () => {
+  const qc = useQueryClient();
+  const wallets = useQuery({ queryKey: ['wallets'], queryFn: () => trpc.wallet.list.query() });
+  const createWallet = useMutation({
+    mutationFn: (data: CreateWalletInput) => trpc.wallet.create.mutate(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['wallets'] }),
+  });
+  return { wallets, createWallet };
+};
+```
+
+### tRPC router (backend)
+```typescript
+export const walletRouter = router({
+  list: protectedProcedure.query(({ ctx }) =>
+    ctx.db.query.wallets.findMany({ where: eq(wallets.userId, ctx.session.userId) })
+  ),
+  create: protectedProcedure
+    .input(createWalletSchema)
+    .mutation(async ({ ctx, input }) => {
+      const [w] = await ctx.db.insert(wallets).values({
+        userId: ctx.session.userId,
+        ...input,
+        apiKey: encrypt(input.apiKey),
+        apiSecret: encrypt(input.apiSecret),
+      }).returning();
+      return w;
+    }),
+});
+```
+
+### Backend utility modules (use these — don't reinvent)
+- **`services/database/walletQueries`** — `getByIdAndUser` (throws NOT_FOUND), `getById`, `findByIdAndUser`, `listByUser`, `listActiveByUser`. Always prefer over inline drizzle queries that need user-scoping.
+- **`utils/profile-transformers`** — `parseEnabledSetupTypes`, `stringifyEnabledSetupTypes`, `transformTradingProfile`, `transformAutoTradingConfig`. Single source of truth for JSON↔type conversions.
+- **`utils/kline-mapper`** — `mapDbKlinesToApi` converts DB rows (Date/string-decimal) to API `Kline` (number/timestamp).
+
+### Auth (Argon2 + sessions)
+Argon2 params: `{ memoryCost: 19456, timeCost: 2, outputLen: 32, parallelism: 1 }`. Session = random token in DB + HTTP-only cookie (30-day TTL). `protectedProcedure` reads cookie, looks up session, attaches `ctx.user` and `ctx.session`. Password policy enforced on `register` / `changePassword` / `resetPassword` (login intentionally still accepts old weak passwords); shared validator in `@marketmind/utils#validatePassword`.
+
+---
+
+## 🔒 Security
+
+- **API keys:** AES-256-CBC encrypt before insert, decrypt on read. Never log raw keys. Electron renderer uses `safeStorage` (platform-native) via IPC `storage:setApiKey` / `storage:getApiKey`; preload exposes only `window.electron.secureStorage`.
+- **Env vars:** `apps/backend/.env` is gitignored. Required: `DATABASE_URL`, `ENCRYPTION_KEY` (32-byte hex), `NODE_ENV`.
+- **IPC:** main process validates inputs; renderer only uses `contextBridge`-exposed surface, never `ipcRenderer` directly.
 
 ---
 
 ## 🤖 MCP Servers (v1.1+)
 
-> **Four Model Context Protocol servers** under `packages/mcp-*` expose 47 tools to any MCP client (Claude Code, ChatGPT desktop, custom agents). Independently installable via `pnpm mcp:install` (auto-detects each `packages/mcp-*` workspace and registers it in `~/.claude.json`).
->
-> - `@marketmind/mcp-screenshot` (6 tools) — visual capture pipeline (Playwright + Chromium against the dev renderer); HTML galleries side-by-side dark/light. **Phase 6 visual verification depends on this.**
-> - `@marketmind/mcp-app` (19 tools) — drives the live dev app: navigation, symbol/timeframe/chart-type, theme, sidebars, allowlisted store dispatch, Playwright escape hatches.
-> - `@marketmind/mcp-backend` (14 tools) — read-only DB layer + tRPC bridge + audit log.
-> - `@marketmind/mcp-strategy` (8 tools) — Pine strategy CRUD + backtest proxies.
->
-> Full docs: [`docs/MCP_SERVERS.md`](docs/MCP_SERVERS.md) (overview + tool tables), [`docs/MCP_AGENT_GUIDE.md`](docs/MCP_AGENT_GUIDE.md) (recipes), [`docs/MCP_SECURITY.md`](docs/MCP_SECURITY.md) (threat model).
->
-> All servers are **dev-only** — they require `VITE_E2E_BYPASS_AUTH=true` (for the Playwright servers) and a local `DATABASE_URL` (for the DB server). Trade execution via MCP (`mcp-trading`) is deferred to v1.2.
+Four Model Context Protocol servers in `packages/mcp-*` expose 47 tools to any MCP client (Claude Code, ChatGPT desktop, custom agents). Install via `pnpm mcp:install` (auto-detects each `packages/mcp-*` workspace and registers it in `~/.claude.json`).
 
-## 🧪 Testing Approach
+- `@marketmind/mcp-screenshot` (6 tools) — visual capture pipeline (Playwright + Chromium against the dev renderer); HTML galleries side-by-side dark/light. **Phase 6 visual verification depends on this.**
+- `@marketmind/mcp-app` (19 tools) — drives the live dev app: navigation, symbol/timeframe/chart-type, theme, sidebars, allowlisted store dispatch, Playwright escape hatches.
+- `@marketmind/mcp-backend` (14 tools) — read-only DB layer + tRPC bridge + audit log.
+- `@marketmind/mcp-strategy` (8 tools) — Pine strategy CRUD + backtest proxies.
+- `@marketmind/mcp-trading` (v1.5) — paper trade execution behind per-wallet `agentTradingEnabled` toggle, hard-gate (`mcp.assertWriteAllowed` → FORBIDDEN + `denied` audit row when off), 30 writes/hour rate limit, surfaced in Settings → Security as "AI Agent Activity".
 
-> **Browser automation for agents:** see [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md). Three layers — Playwright MCP (generic web), chart perf harness (`pnpm --filter @marketmind/electron test:perf`), Electron smoke (`pnpm --filter @marketmind/electron test:e2e:electron`). Renderer-only auth bypass via `VITE_E2E_BYPASS_AUTH=true`.
->
-> **⚠️ Electron e2e — never use `page.route()`:** Playwright's `page.route()` enables CDP request interception that conflicts with Vite's ESM module loader in the Electron renderer; on reload, every `/src/**` and `@vite/client` request fails with `net::ERR_FAILED` and React never mounts (true even when the route pattern matches none of those URLs). Use `installTrpcMockOnContext(ctx)` (addInitScript fetch monkey-patch) instead — see Layer 4 in `docs/BROWSER_TESTING.md`.
+Docs: [`docs/MCP_SERVERS.md`](docs/MCP_SERVERS.md), [`docs/MCP_AGENT_GUIDE.md`](docs/MCP_AGENT_GUIDE.md), [`docs/MCP_SECURITY.md`](docs/MCP_SECURITY.md).
 
-### Unit Tests (Frontend)
-
-```typescript
-// ✅ Test utilities and calculations
-describe('calculateSMA', () => {
-  it('should calculate simple moving average correctly', () => {
-    const klines: Kline[] = [
-      { close: 100, /* ... */ },
-      { close: 110, /* ... */ },
-      { close: 120, /* ... */ },
-    ];
-
-    const result = calculateSMA(klines, 3);
-    expect(result).toBe(110);
-  });
-
-  it('should return 0 for empty array', () => {
-    const result = calculateSMA([], 20);
-    expect(result).toBe(0);
-  });
-});
-```
-
-### Integration Tests (Backend)
-
-Backend integration tests use **testcontainers** with PostgreSQL + TimescaleDB for real database testing.
-
-**Test Helpers Structure:**
-```
-apps/backend/src/__tests__/
-├── helpers/
-│   ├── test-db.ts           # PostgreSQL + TimescaleDB container management
-│   ├── test-context.ts      # tRPC context factory for tests
-│   ├── test-fixtures.ts     # Data factories (users, wallets, profiles)
-│   └── test-caller.ts       # tRPC caller for router tests
-└── routers/
-    ├── auth.router.test.ts
-    ├── wallet.router.test.ts
-    ├── trading-profiles.router.test.ts
-    └── ...
-```
-
-**Test Database Setup:**
-```typescript
-// ✅ apps/backend/src/__tests__/helpers/test-db.ts
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
-
-let container: StartedPostgreSqlContainer;
-
-export const setupTestDatabase = async () => {
-  container = await new PostgreSqlContainer('timescale/timescaledb:latest-pg17')
-    .withDatabase('marketmind_test')
-    .start();
-  // Run migrations and return db instance
-};
-
-export const teardownTestDatabase = async () => {
-  await container?.stop();
-};
-```
-
-**Test Fixtures Pattern:**
-```typescript
-// ✅ apps/backend/src/__tests__/helpers/test-fixtures.ts
-export const createAuthenticatedUser = async (options = {}) => {
-  const { user, password } = await createTestUser(options);
-  const session = await createTestSession({ userId: user.id });
-  return { user, password, session };
-};
-
-export const createTestWallet = async (options: CreateWalletOptions) => {
-  // Creates wallet in test database with defaults
-};
-```
-
-**Router Test Example:**
-```typescript
-// ✅ apps/backend/src/__tests__/routers/wallet.router.test.ts
-describe('Wallet Router', () => {
-  beforeAll(async () => {
-    await setupTestDatabase();
-  });
-
-  afterAll(async () => {
-    await teardownTestDatabase();
-  });
-
-  beforeEach(async () => {
-    await cleanupTables();
-  });
-
-  it('should return only wallets belonging to the user', async () => {
-    const { user, session } = await createAuthenticatedUser();
-    const caller = createAuthenticatedCaller(user, session);
-
-    await caller.wallet.createPaper({ name: 'Test Wallet' });
-    const result = await caller.wallet.list();
-
-    expect(result).toHaveLength(1);
-    expect(result[0]?.name).toBe('Test Wallet');
-  });
-
-  it('should throw NOT_FOUND when wallet belongs to another user', async () => {
-    const { user: user1, session: session1 } = await createAuthenticatedUser({ email: 'user1@test.com' });
-    const { user: user2, session: session2 } = await createAuthenticatedUser({ email: 'user2@test.com' });
-
-    const caller1 = createAuthenticatedCaller(user1, session1);
-    const caller2 = createAuthenticatedCaller(user2, session2);
-
-    const wallet = await caller1.wallet.createPaper({ name: 'User1 Wallet' });
-
-    await expect(caller2.wallet.getById({ id: wallet.id })).rejects.toThrow(
-      expect.objectContaining({ code: 'NOT_FOUND' })
-    );
-  });
-});
-```
+**All MCP servers are dev-only** — require `VITE_E2E_BYPASS_AUTH=true` (renderer-driving servers) and a local `DATABASE_URL`. **Exception:** `mcp-trading` talks pure tRPC over HTTP with a real session cookie (`MM_MCP_SESSION_COOKIE`) — no e2e bypass needed.
 
 ---
 
-## 📚 Key Files Reference
+## 🧪 Testing
 
-### Configuration
-- `IMPLEMENTATION_PLAN.md` - Full implementation roadmap
-- `copilot-instructions.md` - This file
-- `README.md` - Project overview
-- `apps/backend/.env` - Backend environment variables (gitignored)
+**Browser automation:** see [`docs/BROWSER_TESTING.md`](docs/BROWSER_TESTING.md). Three layers — Playwright MCP (generic web), chart perf harness (`pnpm --filter @marketmind/electron test:perf`), Electron smoke (`pnpm --filter @marketmind/electron test:e2e:electron`). Renderer-only auth bypass via `VITE_E2E_BYPASS_AUTH=true`.
 
-### Documentation
-- `docs/GIT_COMMANDS.md` - Git and GitHub CLI reference
-- `docs/BACKEND_QUICKSTART.md` - Backend developer guide
-- `docs/COMPONENT_MIGRATION.md` - Component migration guide
-- `docs/BACKEND_INTEGRATION_STATUS.md` - Backend progress tracker
-- `scripts/README.md` - Available scripts documentation
+**⚠️ Electron e2e — never use `page.route()`:** Playwright's `page.route()` enables CDP request interception that conflicts with Vite's ESM module loader in the Electron renderer; on reload, every `/src/**` and `@vite/client` request fails with `net::ERR_FAILED` and React never mounts (true even when the route pattern matches none of those URLs). Use `installTrpcMockOnContext(ctx)` (addInitScript fetch monkey-patch) instead — see Layer 4 in `docs/BROWSER_TESTING.md`.
 
-### Scripts
-- `scripts/setup-github.sh` - GitHub repository setup
-- `scripts/install-hooks.sh` - Git hooks installation
-- `apps/backend/test-integration.mjs` - Backend integration tests
+### Backend integration tests
+Use **testcontainers** with PostgreSQL + TimescaleDB. Helpers in `apps/backend/src/__tests__/helpers/`:
+
+- **`test-db.ts`** — `setupTestDatabase()` / `teardownTestDatabase()` boot a `timescale/timescaledb:latest-pg17` container and run migrations. Cleanup uses `session_replication_role = 'replica'` to skip RI cascades, so **new child tables must be added to the explicit cleanup list**.
+- **`test-context.ts`** — tRPC context factory.
+- **`test-fixtures.ts`** — `createTestUser`, `createAuthenticatedUser`, `createTestSession`, `createTestWallet`.
+- **`test-caller.ts`** — `createAuthenticatedCaller(user, session)` for router tests.
+
+```typescript
+describe('Wallet Router', () => {
+  beforeAll(setupTestDatabase);
+  afterAll(teardownTestDatabase);
+  beforeEach(cleanupTables);
+
+  it('returns only the user\'s wallets', async () => {
+    const { user, session } = await createAuthenticatedUser();
+    const caller = createAuthenticatedCaller(user, session);
+    await caller.wallet.createPaper({ name: 'Test' });
+    expect(await caller.wallet.list()).toHaveLength(1);
+  });
+});
+```
+
+The `pretest` script in backend runs `bash scripts/ensure-docker.sh` — backend tests need Docker for testcontainers; CI/local without Docker hangs at the pretest hook.
 
 ---
 
 ## 📊 Current Development Phase
 
 **Version:** v1.5.0
-**Current Focus:** v1.5 is the largest feature drop since v1.0 — 28 commits and headlined by a new `@marketmind/mcp-trading` server that lets MCP-connected agents drive paper trades end-to-end behind a per-wallet `agentTradingEnabled` toggle, a hard-gate (`mcp.assertWriteAllowed` → FORBIDDEN + `denied` audit row when off), 30 writes/hour rate limit, and an "AI Agent Activity" audit log panel in Settings → Security. Also: layout durability story closes (snapshot list/restore UI + WAL archiving for PITR), `@marketmind/tokens` extracted into its own package, centralized keyboard registry + `?` help modal, backtest runs persist across backend restart, axe-core dialog regression spec catches a11y regressions in CI. v1.4 + earlier plans archived in `docs/archive/`.
+
+v1.5 is the largest feature drop since v1.0 — 28 commits headlined by `@marketmind/mcp-trading` (paper-trade execution for MCP agents behind a per-wallet toggle, hard-gated with audit log), the layout-durability story closing (snapshot list/restore UI + WAL archiving for PITR), `@marketmind/tokens` extracted into its own package, centralized keyboard registry + `?` help modal, backtest runs persisting across backend restart, and an axe-core dialog regression spec gating CI. v1.4 + earlier plans archived in `docs/archive/`.
 
 ### System Status (v1.5.0)
-- **✅ Backend Infrastructure**: Fastify 5.6.2 + tRPC 11.7.2 operational
-- **✅ Database**: PostgreSQL 17 + TimescaleDB 2.23.1
-- **✅ Authentication**: Argon2 + session management
-- **✅ API Routers**: health, auth, wallet, trading, auto-trading, analytics, fees
-- **✅ Exchange Abstraction**: Binance (crypto) + Interactive Brokers (stocks) with 16 IB modules
-- **✅ Futures Auto-Trading**: User stream, liquidation monitoring, margin manager, max drawdown
-- **✅ Trailing Stop System**: v0.51.0+, volatility-based with ATR multiplier
-- **✅ Risk Management**: Real-time alerts, margin top-up, position sizing
-- **✅ Stream Resilience**: Watchdog + forced reconnect + synthesized klines from `@trade` when `@kline_*` degrades (covers Binance partial-outage scenarios) — `services/binance-kline-stream.ts`, `services/kline-synthesis.ts`
-- **✅ Integration Tests**: testcontainers with PostgreSQL + TimescaleDB
-- **✅ Strategy System**: 105 strategy JSON files in `strategies/builtin/`
-- **✅ Backtesting Infrastructure**: BacktestEngine, MultiWatcherBacktestEngine, 3 optimization scripts
+- ✅ Backend infrastructure (Fastify 5.6.2 + tRPC 11.7.2)
+- ✅ Database (PostgreSQL 17 + TimescaleDB 2.23.1)
+- ✅ Authentication (Argon2 + sessions)
+- ✅ API routers (health, auth, wallet, trading, auto-trading, analytics, fees, mcp)
+- ✅ Exchange abstraction (Binance crypto + IB stocks, 16 IB modules)
+- ✅ Futures auto-trading (user stream, liquidation monitoring, margin manager, max drawdown)
+- ✅ Trailing stop system (v0.51.0+, ATR-multiplier volatility)
+- ✅ Risk management (alerts, margin top-up, position sizing)
+- ✅ Stream resilience (watchdog + forced reconnect + synthesized klines from `@trade` when `@kline_*` degrades — `services/binance-kline-stream.ts`, `services/kline-synthesis.ts`)
+- ✅ Integration tests (testcontainers + PG + Timescale)
+- ✅ Strategy system (105 builtin JSON files)
+- ✅ Backtesting infrastructure (BacktestEngine, MultiWatcherBacktestEngine, 3 optimization scripts)
 
 ### DEFAULT_ENABLED_SETUPS (13 strategies)
 `7day-momentum-crypto`, `breakout-retest`, `bull-trap`, `cumulative-rsi-r3`, `divergence-rsi-macd`, `golden-cross-sma`, `hull-ma-trend`, `liquidity-sweep`, `macd-divergence`, `momentum-breakout-2025`, `nr7-breakout`, `pin-inside-combo`, `triple-ema-confluence`
 
-### Testing Status
-- **~8,400 total tests**
-- **Backend**: 5,416 passing (204 test files) + 40 skipped (IB integration tests requiring Gateway)
-- **Frontend**: 2,239 unit (182 files) + 27 browser
-- **Indicators**: 722 passing (60 files)
-- **Visual regression**: 44-PNG baseline (`apps/electron/screenshots/baseline/`) + CI gate via `.github/workflows/visual-regression.yml` (pixelmatch, `maxDiffPixels=40000` ≈ 3.1%, `threshold=0.2`, tuned empirically to absorb CI noise)
-- **Standardization**: 0 hardcoded shade literals (`color="X.500"`, `bg="X.50"`) and 0 `_dark={{}}` overrides remaining in `apps/electron/src/renderer/components/`. All colors flow through semantic tokens (`X.fg / .subtle / .muted / .solid`, `bg.panel / bg.muted`, `fg.muted`, `trading.profit / .loss`).
+### Testing Status (~8,400 total tests)
+- **Backend:** 5,416 passing across 204 files + 40 skipped (IB integration tests requiring Gateway)
+- **Frontend:** 2,239 unit (182 files) + 27 browser
+- **Indicators:** 722 across 60 files
+- **Visual regression:** 44-PNG baseline (`apps/electron/screenshots/baseline/`) + CI gate (`.github/workflows/visual-regression.yml`, pixelmatch `maxDiffPixels=40000` ≈ 3.1%, `threshold=0.2`)
+- **Standardization:** 0 hardcoded shade literals (`color="X.500"`, `bg="X.50"`) and 0 `_dark={{}}` overrides remaining in `apps/electron/src/renderer/components/`. All colors flow through semantic tokens (`X.fg/.subtle/.muted/.solid`, `bg.panel/.muted`, `fg.muted`, `trading.profit/.loss`).
 
-### Backtesting Scripts
+### Backtesting scripts
 ```bash
-# Rank all 105 strategies (BTC/ETH/SOL, 1h, 3 years)
-node --experimental-vm-modules --loader ts-node/esm scripts/backtest/rank-strategies.ts
-
-# Test each strategy against 6 filter presets
-node --experimental-vm-modules --loader ts-node/esm scripts/backtest/rank-strategies-with-filters.ts
-
-# 3-stage optimization (Fib params → filters → trailing stop)
-node --experimental-vm-modules --loader ts-node/esm scripts/backtest/run-optimization.ts [--quick]
+node --experimental-vm-modules --loader ts-node/esm scripts/backtest/rank-strategies.ts                    # rank all 105 (BTC/ETH/SOL, 1h, 3y)
+node --experimental-vm-modules --loader ts-node/esm scripts/backtest/rank-strategies-with-filters.ts       # × 6 filter presets
+node --experimental-vm-modules --loader ts-node/esm scripts/backtest/run-optimization.ts [--quick]         # 3-stage: Fib params → filters → trailing stop
 ```
 
 ---
 
-## 🔒 Security Best Practices
-
-### API Key Management
-```typescript
-// ✅ NEVER store API keys in code or localStorage directly
-// ✅ Use Electron's secure storage with platform-native encryption
-
-// Main Process - StorageService.ts
-import { safeStorage } from 'electron';
-import Store from 'electron-store';
-
-class StorageService {
-  private store: Store;
-  
-  setApiKey(provider: AIProvider, key: string): void {
-    if (!safeStorage.isEncryptionAvailable()) {
-      throw new Error('Encryption not available');
-    }
-    const encrypted = safeStorage.encryptString(key);
-    this.store.set(`apiKeys.${provider}`, encrypted.toString('base64'));
-  }
-  
-  getApiKey(provider: AIProvider): string | null {
-    const encryptedBase64 = this.store.get(`apiKeys.${provider}`) as string;
-    if (!encryptedBase64) return null;
-    const buffer = Buffer.from(encryptedBase64, 'base64');
-    return safeStorage.decryptString(buffer);
-  }
-}
-```
-
-### IPC Communication Pattern
-```typescript
-// Preload Script - Secure API exposure
-import { contextBridge, ipcRenderer } from 'electron';
-
-contextBridge.exposeInMainWorld('electron', {
-  secureStorage: {
-    setApiKey: (provider: AIProvider, key: string) => 
-      ipcRenderer.invoke('storage:setApiKey', provider, key),
-    getApiKey: (provider: AIProvider) => 
-      ipcRenderer.invoke('storage:getApiKey', provider),
-  }
-});
-
-// Main Process - IPC handlers
-ipcMain.handle('storage:setApiKey', async (_, provider, key) => {
-  try {
-    storageService.setApiKey(provider, key);
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-// Renderer Process - React Hook
-const useSecureStorage = () => {
-  const setApiKey = async (provider: AIProvider, key: string) => {
-    const result = await window.electron.secureStorage.setApiKey(provider, key);
-    if (!result.success) throw new Error(result.error);
-  };
-  
-  return { setApiKey, getApiKey, /* ... */ };
-};
-```
-
-### Migration Pattern
-```typescript
-// ✅ Migrate legacy data to secure storage on startup
-const migrateApiKeys = async () => {
-  const legacy = localStorage.getItem('marketmind-ai-storage');
-  if (!legacy) return;
-  
-  try {
-    const data = JSON.parse(legacy);
-    
-    // Migrate each provider's key
-    if (data.openaiKey) {
-      await window.electron.secureStorage.setApiKey('openai', data.openaiKey);
-    }
-    if (data.anthropicKey) {
-      await window.electron.secureStorage.setApiKey('anthropic', data.anthropicKey);
-    }
-    
-    // Remove legacy storage
-    localStorage.removeItem('marketmind-ai-storage');
-    
-    // Mark migration complete
-    localStorage.setItem('migration-status', JSON.stringify({
-      version: '0.8.0',
-      migratedAt: new Date().toISOString()
-    }));
-  } catch (error) {
-    console.error('Migration failed:', error);
-  }
-};
-
-// Run migration on app startup
-useEffect(() => {
-  const runMigrations = async () => {
-    const status = localStorage.getItem('migration-status');
-    if (!status) await migrateApiKeys();
-  };
-  runMigrations();
-}, []);
-```
-
-### Environment Variables
-```typescript
-// ✅ Use environment variables for development only
-// ✅ NEVER commit .env files to git
-
-// .env (gitignored)
-VITE_OPENAI_API_KEY=sk-...
-VITE_ANTHROPIC_API_KEY=sk-ant-...
-VITE_GEMINI_API_KEY=...
-
-// Access in renderer
-const envKey = import.meta.env.VITE_OPENAI_API_KEY;
-
-// Auto-fill for development convenience
-useEffect(() => {
-  const savedKey = await getApiKey('openai');
-  if (!savedKey && envKey) {
-    setApiKey('openai', envKey); // Store securely
-  }
-}, []);
-```
-
----
-
-## 🔌 Backend Integration
-
-### tRPC Client Setup
-
-```typescript
-// ✅ apps/electron/src/renderer/services/trpc.ts
-import { createTRPCClient, httpBatchLink } from '@trpc/client';
-import type { AppRouter } from '@marketmind/backend';
-
-export const trpc = createTRPCClient<AppRouter>({
-  links: [
-    httpBatchLink({
-      url: 'http://localhost:3001/trpc',
-      credentials: 'include',
-    }),
-  ],
-});
-```
-
-### Backend Hooks Pattern
-
-```typescript
-// ✅ apps/electron/src/renderer/hooks/useBackendWallets.ts
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { trpc } from '../services/trpc';
-import type { CreateWalletInput, UpdateWalletInput } from '@marketmind/types';
-
-export const useBackendWallets = () => {
-  const queryClient = useQueryClient();
-
-  const wallets = useQuery({
-    queryKey: ['wallets'],
-    queryFn: () => trpc.wallet.list.query(),
-  });
-
-  const createWallet = useMutation({
-    mutationFn: (data: CreateWalletInput) => trpc.wallet.create.mutate(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wallets'] }),
-  });
-
-  const updateWallet = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateWalletInput }) =>
-      trpc.wallet.update.mutate({ id, ...data }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['wallets'] }),
-  });
-
-  return { wallets, createWallet, updateWallet };
-};
-```
-
-### Component Migration Example
-
-```typescript
-// ❌ OLD: Using localStorage directly
-const [wallets, setWallets] = useState<Wallet[]>([]);
-
-useEffect(() => {
-  const stored = localStorage.getItem('wallets');
-  if (stored) setWallets(JSON.parse(stored));
-}, []);
-
-const addWallet = (wallet: Wallet) => {
-  const updated = [...wallets, wallet];
-  setWallets(updated);
-  localStorage.setItem('wallets', JSON.stringify(updated));
-};
-
-// ✅ NEW: Using backend hooks
-const { wallets, createWallet } = useBackendWallets();
-
-const addWallet = async (wallet: CreateWalletInput) => {
-  await createWallet.mutateAsync(wallet);
-};
-```
-
-### tRPC Router Pattern
-
-```typescript
-// ✅ apps/backend/src/routers/wallet.ts
-import { router, protectedProcedure } from '../trpc';
-import { z } from 'zod';
-import { createWalletSchema, updateWalletSchema } from '@marketmind/types';
-
-export const walletRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.query.wallets.findMany({
-      where: eq(wallets.userId, ctx.session.userId),
-    });
-  }),
-
-  create: protectedProcedure
-    .input(createWalletSchema)
-    .mutation(async ({ ctx, input }) => {
-      const encryptedApiKey = encrypt(input.apiKey);
-      const encryptedSecret = encrypt(input.apiSecret);
-
-      const [wallet] = await ctx.db.insert(wallets).values({
-        userId: ctx.session.userId,
-        name: input.name,
-        exchange: input.exchange,
-        apiKey: encryptedApiKey,
-        apiSecret: encryptedSecret,
-      }).returning();
-
-      return wallet;
-    }),
-
-  update: protectedProcedure
-    .input(z.object({ id: z.number(), ...updateWalletSchema.shape }))
-    .mutation(async ({ ctx, input }) => {
-      const { id, ...data } = input;
-      
-      const [wallet] = await ctx.db
-        .update(wallets)
-        .set({ ...data, updatedAt: new Date() })
-        .where(and(eq(wallets.id, id), eq(wallets.userId, ctx.session.userId)))
-        .returning();
-
-      if (!wallet) throw new Error('Wallet not found');
-      return wallet;
-    }),
-});
-```
-
-### Database Queries with Drizzle
-
-```typescript
-// ✅ apps/backend/src/db/schema.ts
-import { pgTable, serial, text, timestamp, integer } from 'drizzle-orm/pg-core';
-
-export const wallets = pgTable('wallets', {
-  id: serial('id').primaryKey(),
-  userId: integer('user_id').notNull(),
-  name: text('name').notNull(),
-  exchange: text('exchange').notNull(),
-  apiKey: text('api_key').notNull(),
-  apiSecret: text('api_secret').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
-
-// ✅ Query examples
-import { eq, and, desc } from 'drizzle-orm';
-
-// Find all wallets for a user
-const userWallets = await db.query.wallets.findMany({
-  where: eq(wallets.userId, userId),
-  orderBy: [desc(wallets.createdAt)],
-});
-
-// Find specific wallet
-const wallet = await db.query.wallets.findFirst({
-  where: and(eq(wallets.id, id), eq(wallets.userId, userId)),
-});
-
-// Update wallet
-const [updated] = await db
-  .update(wallets)
-  .set({ name: 'New Name', updatedAt: new Date() })
-  .where(eq(wallets.id, id))
-  .returning();
-```
-
-### Authentication Flow
-
-```typescript
-// ✅ apps/backend/src/routers/auth.ts
-import { router, publicProcedure, protectedProcedure } from '../trpc';
-import { hash, verify } from '@node-rs/argon2';
-import { z } from 'zod';
-
-export const authRouter = router({
-  register: publicProcedure
-    .input(z.object({ email: z.string().email(), password: z.string().min(8) }))
-    .mutation(async ({ ctx, input }) => {
-      const hashedPassword = await hash(input.password, {
-        memoryCost: 19456,
-        timeCost: 2,
-        outputLen: 32,
-        parallelism: 1,
-      });
-
-      const [user] = await ctx.db.insert(users).values({
-        email: input.email,
-        password: hashedPassword,
-      }).returning({ id: users.id, email: users.email });
-
-      const sessionToken = generateToken();
-      await ctx.db.insert(sessions).values({
-        userId: user.id,
-        token: sessionToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      });
-
-      ctx.res.setCookie('session', sessionToken, { httpOnly: true, secure: true });
-      return user;
-    }),
-
-  login: publicProcedure
-    .input(z.object({ email: z.string(), password: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      const user = await ctx.db.query.users.findFirst({
-        where: eq(users.email, input.email),
-      });
-
-      if (!user || !(await verify(user.password, input.password))) {
-        throw new Error('Invalid credentials');
-      }
-
-      const sessionToken = generateToken();
-      await ctx.db.insert(sessions).values({
-        userId: user.id,
-        token: sessionToken,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      });
-
-      ctx.res.setCookie('session', sessionToken, { httpOnly: true, secure: true });
-      return { id: user.id, email: user.email };
-    }),
-
-  me: protectedProcedure.query(({ ctx }) => ctx.user),
-
-  logout: protectedProcedure.mutation(async ({ ctx }) => {
-    await ctx.db.delete(sessions).where(eq(sessions.token, ctx.session.token));
-    ctx.res.clearCookie('session');
-  }),
-});
-```
-
-### Backend Utilities
-
-The backend uses reusable utility modules to avoid code duplication and ensure consistency.
-
-**walletQueries - Database Query Utility:**
-```typescript
-// ✅ apps/backend/src/services/database/walletQueries.ts
-export const walletQueries = {
-  // Returns wallet or throws NOT_FOUND
-  async getByIdAndUser(walletId: string, userId: string): Promise<WalletRecord> {
-    const wallet = await this.findByIdAndUser(walletId, userId, { throwIfNotFound: true });
-    return wallet!;
-  },
-
-  // Returns wallet by ID only (no user check) - use for internal operations
-  async getById(walletId: string): Promise<WalletRecord> {
-    const wallet = await this.findById(walletId, { throwIfNotFound: true });
-    return wallet!;
-  },
-
-  // Returns wallet or null - use when you need to handle not found yourself
-  async findByIdAndUser(walletId: string, userId: string, options = {}): Promise<WalletRecord | null>,
-
-  // List helpers
-  async listByUser(userId: string): Promise<WalletRecord[]>,
-  async listActiveByUser(userId: string): Promise<WalletRecord[]>,
-};
-
-// Usage in routers:
-import { walletQueries } from '../services/database/walletQueries';
-
-// Instead of manual query + throw:
-const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
-```
-
-**profile-transformers - JSON/Type Transformations:**
-```typescript
-// ✅ apps/backend/src/utils/profile-transformers.ts
-export const parseEnabledSetupTypes = (json: string): string[] => JSON.parse(json);
-export const stringifyEnabledSetupTypes = (types: string[]): string => JSON.stringify(types);
-
-export const transformTradingProfile = (profile: RawProfile) => ({
-  ...profile,
-  enabledSetupTypes: parseEnabledSetupTypes(profile.enabledSetupTypes),
-  maxPositionSize: profile.maxPositionSize ? parseFloat(profile.maxPositionSize) : null,
-});
-
-export const transformAutoTradingConfig = (config: RawConfig) => ({
-  ...config,
-  enabledSetupTypes: parseEnabledSetupTypes(config.enabledSetupTypes),
-  // ... other transformations
-});
-```
-
-**kline-mapper - Database to API Transformation:**
-```typescript
-// ✅ apps/backend/src/utils/kline-mapper.ts
-import type { Kline } from '@marketmind/types';
-
-export const mapDbKlinesToApi = (dbKlines: DbKline[]): Kline[] =>
-  dbKlines.map((k) => ({
-    symbol: k.symbol,
-    interval: k.interval,
-    openTime: k.openTime.getTime(),
-    closeTime: k.closeTime.getTime(),
-    open: parseFloat(k.open),
-    high: parseFloat(k.high),
-    low: parseFloat(k.low),
-    close: parseFloat(k.close),
-    volume: parseFloat(k.volume),
-    quoteVolume: parseFloat(k.quoteVolume),
-    trades: k.trades,
-    takerBuyBaseVolume: parseFloat(k.takerBuyBaseVolume),
-    takerBuyQuoteVolume: parseFloat(k.takerBuyQuoteVolume),
-  }));
-```
-
-### Development Commands
+## 🚀 Development Commands
 
 ```bash
-# Start backend server (development with auto-reload)
-cd apps/backend
-pnpm dev
-
-# Start frontend (separate terminal)
-cd apps/electron
-pnpm dev
-
-# Run all tests (monorepo root)
-pnpm test
-
-# Run frontend tests only
-pnpm --filter @marketmind/electron test
-
-# Run backend tests only (when available)
-pnpm --filter @marketmind/backend test
-
-# Database migrations
-cd apps/backend
-pnpm db:generate    # Generate migration from schema changes
-pnpm db:migrate     # Apply migrations
-pnpm db:push        # Push schema to DB (dev only)
-pnpm db:studio      # Open Drizzle Studio GUI
-
-# Type checking
-pnpm --filter @marketmind/electron type-check
-pnpm --filter @marketmind/backend type-check
-
-# Install dependencies (from monorepo root)
+# install
 pnpm install
 
-# Add dependency to specific workspace
+# dev (2 terminals)
+pnpm --filter @marketmind/backend dev          # backend on :3001
+pnpm --filter @marketmind/electron dev         # Electron renderer
+
+# tests (mandatory before commit)
+pnpm test                                      # all tests
+pnpm --filter @marketmind/electron test
+pnpm --filter @marketmind/backend test
+
+# type-check / lint
+pnpm --filter @marketmind/electron type-check
+pnpm --filter @marketmind/backend type-check
+pnpm --filter @marketmind/electron lint
+
+# database (apps/backend)
+pnpm db:generate    # generate migration from schema diff
+pnpm db:migrate     # apply migrations
+pnpm db:push        # push schema (dev only)
+pnpm db:studio      # Drizzle Studio GUI
+
+# add deps
 pnpm --filter @marketmind/backend add fastify
 pnpm --filter @marketmind/electron add react-query
 
-# Clean and rebuild
-pnpm clean          # Clean all build artifacts
-pnpm build          # Build all packages
+# clean / build
+pnpm clean
+pnpm build
 ```
 
-### Backend Environment Setup
-
+**PostgreSQL setup (one-time):**
 ```bash
-# .env (apps/backend/.env) - NEVER commit to git
-DATABASE_URL=postgresql://user:password@localhost:5432/marketmind
-NODE_ENV=development
-ENCRYPTION_KEY=your-32-byte-hex-key
-
-# PostgreSQL with TimescaleDB (Docker)
-docker run -d \
-  --name marketmind-postgres \
-  -e POSTGRES_PASSWORD=your-password \
-  -e POSTGRES_DB=marketmind \
-  -p 5432:5432 \
-  timescale/timescaledb:latest-pg17
-
-# Or using PostgreSQL 17 directly
-brew install postgresql@17
-brew services start postgresql@17
-psql postgres -c "CREATE DATABASE marketmind;"
-psql marketmind -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
+docker run -d --name marketmind-postgres \
+  -e POSTGRES_PASSWORD=your-password -e POSTGRES_DB=marketmind \
+  -p 5432:5432 timescale/timescaledb:latest-pg17
 ```
+`apps/backend/.env`: `DATABASE_URL=postgresql://...`, `ENCRYPTION_KEY=<32-byte hex>`, `NODE_ENV=development`.
 
 ---
 
-## 💡 Quick Reference
+## 📚 Key Files Reference
 
-### File Naming
-- Components: PascalCase (`ChartCanvas.tsx`)
-- Utilities: camelCase (`drawingUtils.ts`)
-- Types: camelCase (`kline.ts`)
-- Constants: camelCase (`chartConfig.ts`)
+**Configuration:** `docs/V1_X_PLAN.md` (active version plan), `README.md`, `apps/backend/.env` (gitignored)
 
-### Import Order
-```typescript
-// 1. External dependencies
-import React, { useState } from 'react';
-import { Box } from '@chakra-ui/react';
+**Documentation:**
+- `docs/BACKEND_QUICKSTART.md` — backend developer guide
+- `docs/MCP_SERVERS.md` / `MCP_AGENT_GUIDE.md` / `MCP_SECURITY.md` — MCP overview, recipes, threat model
+- `docs/UI_STYLE_GUIDE.md` / `UI_DIALOG_PATTERNS.md` / `UI_DESIGN_SYSTEM.md` — UI catalog and patterns
+- `docs/BROWSER_TESTING.md` — Playwright + chart perf + Electron smoke
+- `docs/RELEASE_PROCESS.md` — release checklist (version updated in 6 places)
+- `docs/INFRA_RECOVERY.md` — DB recovery / WAL archiving / PITR runbook
 
-// 2. Internal absolute imports
-import type { Kline } from '@shared/types';
-import { CHART_CONFIG } from '@shared/constants';
-
-// 3. Relative imports
-import { calculateSMA } from './utils';
-import type { ChartProps } from './types';
-```
-
-### Type Exports
-```typescript
-// ✅ Use 'import type' for type-only imports
-import type { Kline } from '@shared/types';
-
-// ✅ Export types alongside implementation
-export interface ChartProps {
-  data: Kline[];
-}
-
-export const Chart = (props: ChartProps) => {
-  // Implementation
-};
-```
+**Scripts:** `scripts/setup-github.sh`, `scripts/install-hooks.sh`, `apps/backend/scripts/backtest/*`
 
 ---
 
-## 🔄 Workflow Checklist
+## 🚨 Critical Reminders
 
-Before committing:
-- [ ] 🔴 **ALL TESTS PASSING** (`npm run test:run` + `npm run test:browser:run`)
-- [ ] 🔴 **No TypeScript errors** (`npm run type-check`)
-- [ ] 🔴 **No linting errors** (`npm run lint`)
-- [ ] Created feature/bugfix branch (never commit to main/develop)
-- [ ] Using latest library versions
-- [ ] Consulted official documentation
-- [ ] Updated CHANGELOG.md
-- [ ] Updated IMPLEMENTATION_PLAN.md progress if applicable
-- [ ] No `any` types
-- [ ] No magic numbers (extracted to constants)
-- [ ] No inline comments (README instead)
-- [ ] Early returns where applicable
-- [ ] One-line conditionals where possible
-- [ ] Responsive design
-- [ ] Commit message in English (conventional format)
-
-**🔴 STOP: If ANY test fails, debug and fix BEFORE committing. No exceptions.**
+1. 🔴 Never commit with failing tests — `pnpm test` first
+2. 🔴 No code comments — self-documenting code + READMEs
+3. 🔴 No magic numbers — extract to constants
+4. 🔴 No `any` types — use proper types or `unknown`
+5. 🔴 Feature/bugfix branches only — never main/develop directly
+6. 🔴 UI components from `@renderer/components/ui` only — never raw Chakra interactive primitives
+7. 🔴 No watch-mode commands — always run-once
+8. 🔴 No hardcoded color shades or `_dark={{}}` overrides — semantic tokens only
+9. 🔴 No flaky tests — fix the test, never retry/skip/timeout-pad your way past it
 
 ---
 
-## 🚀 Release Process
-
-When creating a new release, follow `docs/RELEASE_PROCESS.md`. Key reminder: version must be updated in **6 places** (3 package.json files, README badge, CHANGELOG, and the landing site repo).
-
----
-
-**Last Updated:** May 2026
-**Version:** 1.11
-**Project Version:** 1.5.0
+**Last Updated:** May 2026 · **Doc version:** 2.0 · **Project version:** 1.5.0 · **For:** Claude Code, Cursor, Copilot, Gemini, and other AI assistants

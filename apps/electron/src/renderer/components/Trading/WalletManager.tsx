@@ -1,7 +1,7 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, LoadingSpinner, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -9,8 +9,9 @@ import { useDisclosure } from '@renderer/hooks';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChartBar, LuHistory, LuInfo, LuRefreshCw, LuTrash2 } from 'react-icons/lu';
+import { LuChartBar, LuHistory, LuInfo, LuRefreshCw, LuShieldCheck, LuTrash2 } from 'react-icons/lu';
 import { useUIStore } from '../../store/uiStore';
+import { toaster } from '@renderer/utils/toaster';
 import { CreateWalletDialog } from './CreateWalletDialog';
 
 type WalletType = 'paper' | 'testnet' | 'live' | null;
@@ -31,11 +32,13 @@ export const WalletManager = () => {
     syncBalance,
     syncTransfers,
     fullResyncIncome,
+    runFullAudit,
     isDeleting,
     isCreatingPaper,
     isCreating,
     isSyncing,
     isResyncingIncome,
+    isRunningAudit,
   } = useBackendWallet();
 
   const wallets: ExtendedWallet[] = useMemo(() => {
@@ -123,6 +126,24 @@ export const WalletManager = () => {
     }
   };
 
+  const handleRunFullAudit = async (id: string) => {
+    setSyncingWalletId(id);
+    try {
+      const result = await runFullAudit(id);
+      const summary = result.success
+        ? t('trading.wallets.auditDone', {
+            inserted: result.incomeInserted,
+            fixed: result.auditFixed,
+          })
+        : t('trading.wallets.auditFailed');
+      toaster.create({ type: result.success ? 'success' : 'error', title: summary });
+    } catch {
+      toaster.create({ type: 'error', title: t('trading.wallets.auditFailed') });
+    } finally {
+      setSyncingWalletId(null);
+    }
+  };
+
   const createDialog = useDisclosure();
 
   return (
@@ -147,7 +168,7 @@ export const WalletManager = () => {
       />
 
       {isLoading ? (
-        <EmptyState size="sm" title={t('common.loading')} />
+        <LoadingSpinner />
       ) : wallets.length === 0 ? (
         <EmptyState size="sm" title={t('trading.wallets.emptyReal')} />
       ) : (
@@ -161,8 +182,9 @@ export const WalletManager = () => {
               onViewPerformance={() => useUIStore.getState().setAnalyticsOpen(true)}
               onSync={() => { void handleSyncBalance(wallet.id); }}
               onFullResync={() => { void handleFullResync(wallet.id); }}
+              onRunAudit={() => { void handleRunFullAudit(wallet.id); }}
               isDeleting={isDeleting}
-              isSyncing={syncingWalletId === wallet.id || isSyncing || isResyncingIncome}
+              isSyncing={syncingWalletId === wallet.id || isSyncing || isResyncingIncome || isRunningAudit}
             />
           ))}
         </Stack>
@@ -187,6 +209,7 @@ interface WalletCardProps {
   onViewPerformance: () => void;
   onSync: () => void;
   onFullResync: () => void;
+  onRunAudit: () => void;
   isDeleting?: boolean;
   isSyncing?: boolean;
 }
@@ -205,7 +228,7 @@ const getWalletTypeBadge = (walletType: WalletType) => {
   }
 };
 
-const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onFullResync, isDeleting = false, isSyncing = false }: WalletCardProps) => {
+const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onFullResync, onRunAudit, isDeleting = false, isSyncing = false }: WalletCardProps) => {
   const { t } = useTranslation();
   const { performance } = useBackendAnalytics(wallet.id, 'all');
 
@@ -305,6 +328,19 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onF
                     >
                       <LuHistory />
                       <Text>{t('trading.wallets.backfillHistory')}</Text>
+                    </MenuItem>
+                  )}
+                  {canSync && (
+                    <MenuItem
+                      value="audit"
+                      onClick={onRunAudit}
+                      px={4}
+                      py={2.5}
+                      _hover={{ bg: 'bg.muted' }}
+                      disabled={isSyncing}
+                    >
+                      <LuShieldCheck />
+                      <Text>{t('trading.wallets.runFullAudit')}</Text>
                     </MenuItem>
                   )}
                   <MenuItem

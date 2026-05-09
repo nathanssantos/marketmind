@@ -72,6 +72,10 @@ export class CanvasManager {
   private offscreenCtx: CanvasRenderingContext2D | null = null;
   private offscreenValid: boolean = false;
   private resizeObserver: ResizeObserver | null = null;
+  // Cached canvas bounding rect — populated on init + every ResizeObserver
+  // tick. Read by interaction handlers (wheel, mousedown) so they don't
+  // call getBoundingClientRect during pan/zoom (forced reflow).
+  private cachedRect: DOMRectReadOnly | null = null;
   private paddingTop: number = CHART_CONFIG.CANVAS_PADDING_TOP;
   private paddingBottom: number = CHART_CONFIG.CANVAS_PADDING_BOTTOM;
   private flipped: boolean = false;
@@ -100,6 +104,7 @@ export class CanvasManager {
       this.resizeRafId = requestAnimationFrame(() => {
         this.resizeRafId = null;
         this.ctx = setupCanvas(this.canvas);
+        this.cachedRect = this.canvas.getBoundingClientRect();
         this.updateDimensions();
         this.updateKlineWidth();
         this.offscreenValid = false;
@@ -107,6 +112,22 @@ export class CanvasManager {
       });
     });
     this.resizeObserver.observe(parent);
+  }
+
+  /**
+   * Returns the canvas bounding rect from a ResizeObserver-maintained
+   * cache. Avoids the forced-reflow cost of calling
+   * `getBoundingClientRect()` on every wheel / mousedown event during
+   * pan/zoom interactions. The cache is invalidated and refreshed
+   * whenever ResizeObserver fires.
+   *
+   * Falls back to a live `getBoundingClientRect()` only on the first
+   * call before any resize tick has populated the cache (cold start).
+   */
+  public getCachedRect(): DOMRectReadOnly {
+    if (this.cachedRect) return this.cachedRect;
+    this.cachedRect = this.canvas.getBoundingClientRect();
+    return this.cachedRect;
   }
 
   public setRenderCallback(callback: (() => void) | null): void {
@@ -250,12 +271,15 @@ export class CanvasManager {
 
   private initialize(): void {
     this.ctx = setupCanvas(this.canvas);
+    this.cachedRect = this.canvas.getBoundingClientRect();
     this.updateDimensions();
     this.updateKlineWidth();
   }
 
   private updateDimensions(): void {
-    const rect = this.canvas.getBoundingClientRect();
+    // Read from the ResizeObserver-maintained cache rather than forcing
+    // a fresh `getBoundingClientRect()` on every dirty pass.
+    const rect = this.getCachedRect();
     const totalPanelHeight = this.panelManager.getTotalPanelHeight();
     const chartHeight = rect.height - CHART_CONFIG.CANVAS_PADDING_BOTTOM - totalPanelHeight - this.panelManager.getEventRowHeight();
 

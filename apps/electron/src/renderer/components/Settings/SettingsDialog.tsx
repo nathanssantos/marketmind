@@ -1,7 +1,6 @@
-import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
-import { Badge, DialogShell, Tabs } from '@renderer/components/ui';
+import { Box, Flex, Stack, Text } from '@chakra-ui/react';
+import { Badge, DialogShell, LoadingSpinner, Tabs } from '@renderer/components/ui';
 import { useDialogMount } from '@renderer/hooks/useDialogMount';
-import { MM } from '@marketmind/tokens';
 import type { DialogControlProps } from '@marketmind/types';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -13,7 +12,6 @@ import type { AdvancedControlsConfig } from '../Chart/AdvancedControls';
 const AccountTab = lazy(() => import('./AccountTab').then((m) => ({ default: m.AccountTab })));
 const SecurityTab = lazy(() => import('./SecurityTab').then((m) => ({ default: m.SecurityTab })));
 const NotificationsTab = lazy(() => import('./NotificationsTab').then((m) => ({ default: m.NotificationsTab })));
-const GeneralTab = lazy(() => import('./GeneralTab').then((m) => ({ default: m.GeneralTab })));
 const ChartSettingsTab = lazy(() => import('./ChartSettingsTab').then((m) => ({ default: m.ChartSettingsTab })));
 const AutoTradingTab = lazy(() => import('./AutoTradingTab').then((m) => ({ default: m.AutoTradingTab })));
 const IndicatorsTab = lazy(() => import('./IndicatorsTab').then((m) => ({ default: m.IndicatorsTab })));
@@ -147,9 +145,7 @@ export const SettingsDialog = ({
                       so it scrolls along with the rest. */}
                   <Box px={6} pt={4} pb={10}>
                     <Suspense fallback={
-                      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-                        <Spinner size={MM.spinner.panel.size} />
-                      </Flex>
+                      <LoadingSpinner />
                     }>
                       {/* Tabs.Content wrappers stay so aria-controls on the
                           triggers still resolves to a panel id; lazy-loaded
@@ -162,9 +158,6 @@ export const SettingsDialog = ({
                       </Tabs.Content>
                       <Tabs.Content value="notifications" pt={0} w="100%">
                         {activeTab === 'notifications' && <NotificationsTab />}
-                      </Tabs.Content>
-                      <Tabs.Content value="general" pt={0} w="100%">
-                        {activeTab === 'general' && <GeneralTab />}
                       </Tabs.Content>
                       <Tabs.Content value="chart" pt={0} w="100%">
                         {activeTab === 'chart' && (

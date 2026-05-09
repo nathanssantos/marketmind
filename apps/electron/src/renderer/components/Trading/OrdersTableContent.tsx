@@ -139,10 +139,22 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
             </TradingTableCell>
             <TradingTableCell textAlign="right">
               {pnl !== undefined ? (
-                <Text fontWeight="medium" color={pnl >= 0 ? 'trading.profit' : 'trading.loss'}>
-                  {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
-                  {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : '-'}${Math.abs(pnlPercent).toFixed(2)}%)`}
-                </Text>
+                <TooltipWrapper
+                  showArrow
+                  placement="left"
+                  label={buildPnlBreakdownLabel({
+                    pnl,
+                    pnlPercent,
+                    entryPrice: order.entryPrice ?? getOrderPrice(order),
+                    exitOrCurrentPrice: typeof currentPrice === 'number' ? currentPrice : (order.exitPrice ?? 0),
+                    quantity: getOrderQuantity(order),
+                  })}
+                >
+                  <Text fontWeight="medium" color={pnl >= 0 ? 'trading.profit' : 'trading.loss'} cursor="help">
+                    {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)}
+                    {pnlPercent !== undefined && ` (${pnl >= 0 ? '+' : '-'}${Math.abs(pnlPercent).toFixed(2)}%)`}
+                  </Text>
+                </TooltipWrapper>
               ) : '-'}
             </TradingTableCell>
             <TradingTableCell>
@@ -263,3 +275,46 @@ export const OrdersTableContent = memo(({ orders, currency, onCancel, onClose, o
 });
 
 OrdersTableContent.displayName = 'OrdersTableContent';
+
+interface PnlBreakdownArgs {
+  pnl: number;
+  pnlPercent: number | undefined;
+  entryPrice: number;
+  exitOrCurrentPrice: number;
+  quantity: number;
+}
+
+/**
+ * Render a one-line P&L diagnostic for the orders table tooltip.
+ * Surfaces entryValue + implied margin + implied leverage so a
+ * 3000% return is obviously a high-leverage futures trade and not
+ * a phantom value from corrupted entry data. The backend stores
+ * `pnlPercent` as ROE (netPnl / margin); working backwards gives
+ * implied margin (pnl / (pct/100)) and implied leverage
+ * (entryValue / impliedMargin).
+ */
+const buildPnlBreakdownLabel = ({
+  pnl, pnlPercent, entryPrice, exitOrCurrentPrice, quantity,
+}: PnlBreakdownArgs): string => {
+  const fmt = (v: number) => v.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  const entryValue = entryPrice * quantity;
+  const grossPnlEst = (exitOrCurrentPrice - entryPrice) * quantity;
+  const impliedMargin = pnlPercent && pnlPercent !== 0
+    ? Math.abs(pnl / (pnlPercent / 100))
+    : null;
+  const impliedLeverage = impliedMargin && impliedMargin > 0
+    ? entryValue / impliedMargin
+    : null;
+  const lines = [
+    `Entry × Qty: ${fmt(entryPrice)} × ${quantity}`,
+    `Exit / current: ${fmt(exitOrCurrentPrice)}`,
+    `Entry value: ${fmt(entryValue)}`,
+    `Gross P&L (est.): ${fmt(grossPnlEst)}`,
+  ];
+  if (impliedMargin !== null) lines.push(`Implied margin: ${fmt(impliedMargin)}`);
+  if (impliedLeverage !== null) lines.push(`Implied leverage: ${impliedLeverage.toFixed(1)}×`);
+  return lines.join('\n');
+};

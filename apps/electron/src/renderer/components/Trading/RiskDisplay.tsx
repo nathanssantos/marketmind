@@ -26,7 +26,10 @@ interface RiskMetrics {
 export const RiskDisplay = ({ walletId }: RiskDisplayProps) => {
   const { t } = useTranslation();
   const [metrics, setMetrics] = useState<RiskMetrics | null>(null);
-  const pollingInterval = usePollingInterval(10_000);
+  // WS-backed: config is invalidated on user mutation; activeExecutions
+  // is patched on every position event; watcherStatus changes on
+  // user-driven start/stop. Polling only fires while WS is dropped.
+  const pollingInterval = usePollingInterval(10_000, { wsBacked: true });
 
   const { data: config } = trpc.autoTrading.getConfig.useQuery(
     { walletId },

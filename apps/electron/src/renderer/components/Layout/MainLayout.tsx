@@ -15,6 +15,7 @@ import { AnalyticsDialog } from '../Analytics';
 import { BacktestDialog } from '../Backtest';
 import { ScreenerDialog } from '../Screener';
 import { SettingsDialog } from '../Settings/SettingsDialog';
+import { OrdersDialog } from '../Trading/OrdersDialog';
 import { TradingProfilesDialog } from '../Trading/TradingProfilesDialog';
 import { WalletsDialog } from '../Trading/WalletsDialog';
 import { DEFAULT_SETTINGS_TAB, type SettingsTab } from '../Settings/constants';
@@ -147,6 +148,7 @@ const MainLayoutComponent = ({
         <ScreenerDialog onSymbolClick={onNavigateToSymbol} />
         <BacktestDialog />
         <AnalyticsDialog />
+        <OrdersDialog />
         <WalletsDialog
           isOpen={isWalletsDialogOpen}
           onClose={() => useUIStore.getState().setWalletsDialogOpen(false)}

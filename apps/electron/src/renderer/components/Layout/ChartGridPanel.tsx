@@ -19,6 +19,7 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
   const setFocusedPanel = useLayoutStore(s => s.setFocusedPanel);
   const setPanelWindowState = useLayoutStore(s => s.setPanelWindowState);
   const removePanel = useLayoutStore(s => s.removePanel);
+  const gridEditMode = useLayoutStore(s => s.gridEditMode);
 
   const handleFocus = useCallback((id: string) => setFocusedPanel(id), [setFocusedPanel]);
   const handleMinimize = useCallback((id: string) => setPanelWindowState(layoutId, id, 'minimized'), [setPanelWindowState, layoutId]);
@@ -57,6 +58,7 @@ function ChartGridPanelComponent({ panelConfig, symbol, marketType, layoutId, is
       onMaximize={handleMaximize}
       onRestore={handleRestore}
       onClose={handleClose}
+      editMode={gridEditMode}
     >
       <ChartPanelContent
         symbol={symbol}

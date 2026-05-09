@@ -1,5 +1,6 @@
 import type { MarketType, SavedScreener, ScreenerFilterCondition, ScreenerSortField } from '@marketmind/types';
-import { Flex, HStack, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { LoadingSpinner } from '@renderer/components/ui';
 import { memo, useCallback, useMemo } from 'react';
 import { useDisclosure } from '@renderer/hooks';
 import { useTranslation } from 'react-i18next';
@@ -245,9 +246,7 @@ export const ScreenerDialog = memo(({ onSymbolClick }: { onSymbolClick?: (symbol
                 )}
 
                 {isLoading ? (
-                  <Flex justify="center" py={MM.spinner.panel.py}>
-                    <Spinner size={MM.spinner.panel.size} />
-                  </Flex>
+                  <LoadingSpinner />
                 ) : results ? (
                   <ScreenerResultsTable
                     results={results.results}

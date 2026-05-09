@@ -25,7 +25,9 @@ export const TrailingStopPopover = memo(({ symbol, triggerElement }: TrailingSto
 
   const { activeWallet } = useActiveWallet();
   const walletId = activeWallet?.id ?? '';
-  const pollingInterval = usePollingInterval(10_000);
+  // WS-backed: trailing config only changes through user mutations
+  // which invalidate via trpc.useUtils — no polling needed while WS up.
+  const pollingInterval = usePollingInterval(10_000, { wsBacked: true });
 
   const { data: symbolConfig } = trpc.trading.getSymbolTrailingConfig.useQuery(
     { walletId, symbol },

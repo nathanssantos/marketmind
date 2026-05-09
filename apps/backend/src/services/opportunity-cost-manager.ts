@@ -9,7 +9,7 @@ import { serializeError } from '../utils/errors';
 import { emitPositionClose } from './income-events';
 import { logger } from './logger';
 import { priceCache } from './price-cache';
-import { incrementWalletBalanceAndBroadcast } from './wallet-broadcast';
+import { closeExecutionAndBroadcast } from './wallet-broadcast';
 import { getWebSocketService } from './websocket';
 import {
   type OpportunityCostConfig,
@@ -263,22 +263,14 @@ export class OpportunityCostManagerService {
 
         const finalPnl = pnlResult.netPnl + partialClosePnl;
 
-        await db
-          .update(tradeExecutions)
-          .set({
-            status: 'closed',
-            exitPrice: currentPrice.toString(),
-            exitReason: 'STALE_TRADE',
-            exitSource: 'OPPORTUNITY_COST',
-            pnl: finalPnl.toString(),
-            pnlPercent: pnlResult.pnlPercent.toString(),
-            fees: pnlResult.totalFees.toString(),
-            closedAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .where(eq(tradeExecutions.id, execution.id));
-
-        await incrementWalletBalanceAndBroadcast(execution.walletId, pnlResult.netPnl);
+        await closeExecutionAndBroadcast(execution, {
+          exitPrice: currentPrice,
+          exitReason: 'STALE_TRADE',
+          exitSource: 'OPPORTUNITY_COST',
+          pnl: finalPnl,
+          pnlPercent: pnlResult.pnlPercent,
+          fees: pnlResult.totalFees,
+        });
 
         const [closedWallet] = await db
           .select()

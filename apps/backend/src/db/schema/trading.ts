@@ -320,7 +320,17 @@ export const incomeEvents = pgTable('income_events', {
   incomeTime: timestamp('income_time', { withTimezone: true, mode: 'date' }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
-  walletTranUnique: uniqueIndex('income_events_wallet_tran_idx').on(table.walletId, table.binanceTranId),
+  // Binance emits multiple income events with the same tranId for a
+  // single trade — typically one REALIZED_PNL plus one COMMISSION
+  // (and optionally a FUNDING_FEE / INSURANCE_CLEAR). The dedup key
+  // must include incomeType, otherwise we keep only the first event
+  // we see for that tranId and silently drop the others. Calendar
+  // and analytics widgets then under-count fees by ~50% on active
+  // wallets (incident 2026-05-09: today's COMMISSION sum was -$213.72
+  // in DB vs -$451.14 on Binance because 215 commission rows had
+  // already been inserted as REALIZED_PNL with the same tranId).
+  walletTranTypeUnique: uniqueIndex('income_events_wallet_tran_type_idx')
+    .on(table.walletId, table.binanceTranId, table.incomeType),
   walletTimeIdx: index('income_events_wallet_time_idx').on(table.walletId, table.incomeTime),
   walletTypeTimeIdx: index('income_events_wallet_type_time_idx').on(table.walletId, table.incomeType, table.incomeTime),
   executionIdx: index('income_events_execution_idx').on(table.executionId),

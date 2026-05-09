@@ -1,8 +1,9 @@
 import { Box, Flex, HStack } from '@chakra-ui/react';
 import { IconButton } from '@marketmind/ui';
+import { GridEditOverlay } from './GridEditOverlay';
 import { TooltipWrapper } from './Tooltip';
 import { memo, useCallback, type ReactNode } from 'react';
-import { LuMaximize2, LuMinimize2, LuMinus, LuX } from 'react-icons/lu';
+import { LuMaximize2, LuMinimize2, LuMinus } from 'react-icons/lu';
 
 export type GridWindowState = 'normal' | 'minimized' | 'maximized';
 
@@ -20,6 +21,14 @@ interface GridWindowProps {
   onMaximize: (id: string) => void;
   onRestore: (id: string) => void;
   onClose?: (id: string) => void;
+  /**
+   * v1.5 — when true, the panel body is overlaid with a translucent
+   * scrim + a corner X close button. The header still shows min/max
+   * (non-destructive), but the in-header close goes away — close is
+   * the overlay's responsibility now. Drag is also gated by the
+   * parent grid's `gridEditMode` flag.
+   */
+  editMode?: boolean;
 }
 
 function GridWindowComponent({
@@ -34,6 +43,7 @@ function GridWindowComponent({
   onMaximize,
   onRestore,
   onClose,
+  editMode = false,
 }: GridWindowProps) {
   const isMaximized = windowState === 'maximized';
 
@@ -50,23 +60,21 @@ function GridWindowComponent({
     else onMaximize(id);
   }, [onMaximize, onRestore, id, isMaximized]);
 
-  const handleClose = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onClose?.(id);
-  }, [onClose, id]);
+  const handleOverlayClose = useCallback((closeId: string) => onClose?.(closeId), [onClose]);
 
   return (
     <Flex
       direction="column"
       h="100%"
+      position="relative"
       borderWidth="1px"
-      borderColor={isFocused && showFocusBorder ? 'accent.solid' : 'border'}
+      borderColor={isFocused && showFocusBorder && !editMode ? 'accent.solid' : 'border'}
       borderRadius="sm"
       overflow="hidden"
       onMouseDown={handleFocus}
     >
       <Flex
-        className="panel-drag-handle"
+        className={editMode ? undefined : 'panel-drag-handle'}
         align="center"
         justify="space-between"
         h="24px"
@@ -75,7 +83,7 @@ function GridWindowComponent({
         bg="transparent"
         borderBottom="1px solid"
         borderColor="border"
-        cursor="grab"
+        cursor={editMode ? 'default' : 'grab'}
         userSelect="none"
       >
         <Box flex={1} overflow="hidden">
@@ -92,18 +100,14 @@ function GridWindowComponent({
               {isMaximized ? <LuMinimize2 /> : <LuMaximize2 />}
             </IconButton>
           </TooltipWrapper>
-          {onClose && (
-            <TooltipWrapper label="Close" showArrow>
-              <IconButton aria-label="Close" size="2xs" variant="ghost" onClick={handleClose}>
-                <LuX />
-              </IconButton>
-            </TooltipWrapper>
-          )}
         </HStack>
       </Flex>
       <Box flex={1} overflow="hidden">
         {children}
       </Box>
+      {editMode && onClose && (
+        <GridEditOverlay panelId={id} onClose={handleOverlayClose} />
+      )}
     </Flex>
   );
 }

@@ -15,6 +15,11 @@ interface AvgCache {
   avgVolume: number;
 }
 
+interface HighlightedMapCache {
+  source: HighlightedCandle[];
+  map: Map<number, HighlightedCandle>;
+}
+
 export interface UseKlineRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
@@ -46,6 +51,11 @@ export const useKlineRenderer = ({
   highlightedCandlesRef,
 }: UseKlineRendererProps): UseKlineRendererReturn => {
   const avgCacheRef = useRef<AvgCache | null>(null);
+  // Cache the highlighted-index Map across frames keyed on the source
+  // array's identity. Building `new Map(highlightedCandles.map(...))`
+  // every frame allocated a Map + an intermediate tuple array per pan
+  // tick — pure GC pressure when the highlight set hadn't changed.
+  const highlightedMapCacheRef = useRef<HighlightedMapCache | null>(null);
 
   const render = useCallback((): void => {
     if (!manager || !enabled) return;
@@ -91,9 +101,20 @@ export const useKlineRenderer = ({
     ctx.clip();
 
     const highlightedCandles = highlightedCandlesRef?.current ?? [];
-    const highlightedIndicesMap = highlightedCandles.length > 0
-      ? new Map(highlightedCandles.map((c) => [c.index, c]))
-      : null;
+    let highlightedIndicesMap: Map<number, HighlightedCandle> | null = null;
+    if (highlightedCandles.length > 0) {
+      const cache = highlightedMapCacheRef.current;
+      if (cache?.source === highlightedCandles) {
+        highlightedIndicesMap = cache.map;
+      } else {
+        const map = new Map<number, HighlightedCandle>();
+        for (const c of highlightedCandles) map.set(c.index, c);
+        highlightedMapCacheRef.current = { source: highlightedCandles, map };
+        highlightedIndicesMap = map;
+      }
+    } else {
+      highlightedMapCacheRef.current = null;
+    }
 
     const baseWickWidth = klineWickWidth ?? CHART_CONFIG.KLINE_WICK_WIDTH;
     const scaledWickWidth = klineWidth > 100
@@ -186,7 +207,11 @@ export const useKlineRenderer = ({
       if (list.length === 0) return;
       ctx.fillStyle = color;
       for (const d of list) {
-        if (d.bodyHeight > 0) {
+        // Near-doji bodies (open ≈ close, with a sub-pixel delta)
+        // render as an invisible sliver if drawn at their true height.
+        // Force a minimum thickness equal to the wick width so the
+        // body remains perceptible at the user's pixel density.
+        if (d.bodyHeight >= scaledWickWidth) {
           ctx.fillRect(d.klineX, d.bodyTop, klineWidth, d.bodyHeight);
         } else {
           ctx.fillRect(d.klineX, d.bodyY - scaledWickWidth / 2, klineWidth, scaledWickWidth);
@@ -217,7 +242,7 @@ export const useKlineRenderer = ({
       }
       ctx.stroke();
       ctx.fillStyle = color;
-      if (d.bodyHeight > 0) {
+      if (d.bodyHeight >= scaledWickWidth) {
         ctx.fillRect(d.klineX, d.bodyTop, klineWidth, d.bodyHeight);
       } else {
         ctx.fillRect(d.klineX, d.bodyY - scaledWickWidth / 2, klineWidth, scaledWickWidth);
@@ -233,7 +258,7 @@ export const useKlineRenderer = ({
       const indicatorSize = klineWidth > 0 ? Math.min(klineWidth * 0.3, 3) : 3;
 
       const processDraw = (d: KlineDraw): void => {
-        if (wantsLabels) {
+        if (wantsLabels && highlightedIndicesMap) {
           const highlighted = highlightedIndicesMap.get(d.actualIndex);
           if (highlighted) {
             const labelColor = HIGHLIGHT_LABEL_COLORS[highlighted.role] ?? HIGHLIGHT_LABEL_COLORS.context;

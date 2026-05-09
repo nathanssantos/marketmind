@@ -9,7 +9,6 @@ import { MM } from '@marketmind/tokens';
 interface NamedPanelRendererProps {
   panelConfig: NamedPanelConfig;
   layoutId: string;
-  isSinglePanel?: boolean;
 }
 
 const LazyByKind = new Map<string, ReturnType<typeof lazy>>();
@@ -30,10 +29,11 @@ const getLazyForKind = (kind: NamedPanelConfig['kind']): ReturnType<typeof lazy>
  * `load`. Right-click on the panel body fires `onClose` (handled by the
  * GridPanel primitive) which removes the panel from the active layout.
  */
-export const NamedPanelRenderer = memo(({ panelConfig, layoutId, isSinglePanel }: NamedPanelRendererProps) => {
+export const NamedPanelRenderer = memo(({ panelConfig, layoutId }: NamedPanelRendererProps) => {
   const isFocused = useLayoutStore((s) => s.focusedPanelId === panelConfig.id);
   const setFocusedPanel = useLayoutStore((s) => s.setFocusedPanel);
   const removePanel = useLayoutStore((s) => s.removePanel);
+  const gridEditMode = useLayoutStore((s) => s.gridEditMode);
 
   const handleFocus = useCallback((id: string) => setFocusedPanel(id), [setFocusedPanel]);
   const handleClose = useCallback((id: string) => removePanel(layoutId, id), [removePanel, layoutId]);
@@ -45,9 +45,9 @@ export const NamedPanelRenderer = memo(({ panelConfig, layoutId, isSinglePanel }
       mode="bare"
       id={panelConfig.id}
       isFocused={isFocused}
-      showFocusBorder={!isSinglePanel}
       onFocus={handleFocus}
       onClose={handleClose}
+      editMode={gridEditMode}
     >
       {/* The data-panel-kind attribute lets E2E tests wait for a
           specific panel kind to be present, and helps debugging by

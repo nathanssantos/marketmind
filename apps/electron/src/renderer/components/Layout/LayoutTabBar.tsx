@@ -1,9 +1,12 @@
-import { Flex, Stack, Text, Portal } from '@chakra-ui/react';
+import { Box, Flex, HStack, Stack, Text, Portal } from '@chakra-ui/react';
 import { Field as ChakraField } from '@chakra-ui/react/field';
 import { FormDialog, IconButton, Input, Menu, Select, TooltipWrapper } from '@renderer/components/ui';
 import { LAYOUT_TEMPLATES, useLayoutStore, type LayoutTemplateKey } from '@renderer/store/layoutStore';
 import { memo, useCallback, useMemo, useState } from 'react';
-import { LuCopy, LuPencil, LuPlus, LuTrash2 } from 'react-icons/lu';
+import { useTranslation } from 'react-i18next';
+import { LuCopy, LuPencil, LuPlus, LuTrash2, LuZoomIn, LuZoomOut } from 'react-icons/lu';
+import { useUIZoom } from '../../hooks/useUIZoom';
+import { ZOOM_MIN, ZOOM_MAX } from '../../constants/defaults';
 
 const LayoutTab = memo(({
   id,
@@ -96,12 +99,10 @@ const TEMPLATE_LABELS: Record<LayoutTemplateKey, string> = {
 };
 
 export const LayoutTabBar = memo(() => {
+  const { t } = useTranslation();
+  const { zoomLevel, zoomIn, zoomOut } = useUIZoom();
   const layoutPresets = useLayoutStore((s) => s.layoutPresets);
-  const activeSymbolTabId = useLayoutStore((s) => s.activeSymbolTabId);
-  const activeLayoutId = useLayoutStore((s) => {
-    const tab = s.symbolTabs.find(t => t.id === s.activeSymbolTabId);
-    return tab?.activeLayoutId;
-  });
+  const activeLayoutId = useLayoutStore((s) => s.activeLayoutId);
   const setActiveLayout = useLayoutStore((s) => s.setActiveLayout);
   const addLayout = useLayoutStore((s) => s.addLayout);
   const duplicateLayout = useLayoutStore((s) => s.duplicateLayout);
@@ -116,8 +117,8 @@ export const LayoutTabBar = memo(() => {
   );
 
   const handleActivate = useCallback(
-    (layoutId: string) => setActiveLayout(activeSymbolTabId, layoutId),
-    [setActiveLayout, activeSymbolTabId],
+    (layoutId: string) => setActiveLayout(layoutId),
+    [setActiveLayout],
   );
 
   const handleDelete = useCallback(
@@ -194,10 +195,42 @@ export const LayoutTabBar = memo(() => {
           ))}
         </Flex>
         <TooltipWrapper label="New layout" showArrow>
-          <IconButton aria-label="Add layout" size="2xs" variant="ghost" mx={1} onClick={handleAddClick}>
+          <IconButton aria-label="Add layout" size="2xs" variant="outline" color="fg.muted" mx={1} onClick={handleAddClick}>
             <LuPlus />
           </IconButton>
         </TooltipWrapper>
+
+        <Box w="1px" h="22px" bg="border" flexShrink={0} mx={1} />
+
+        <HStack gap={1} flexShrink={0} pr={2}>
+          <TooltipWrapper label={t('header.zoomOut')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('header.zoomOut')}
+              onClick={zoomOut}
+              variant="outline"
+              color="fg.muted"
+              disabled={zoomLevel <= ZOOM_MIN}
+            >
+              <LuZoomOut />
+            </IconButton>
+          </TooltipWrapper>
+          <Text fontSize="xs" color="fg.muted" minW="36px" textAlign="center" userSelect="none">
+            {zoomLevel}%
+          </Text>
+          <TooltipWrapper label={t('header.zoomIn')} showArrow>
+            <IconButton
+              size="2xs"
+              aria-label={t('header.zoomIn')}
+              onClick={zoomIn}
+              variant="outline"
+              color="fg.muted"
+              disabled={zoomLevel >= ZOOM_MAX}
+            >
+              <LuZoomIn />
+            </IconButton>
+          </TooltipWrapper>
+        </HStack>
       </Flex>
 
       <FormDialog

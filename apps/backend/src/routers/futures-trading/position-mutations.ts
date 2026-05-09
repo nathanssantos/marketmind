@@ -20,6 +20,7 @@ import { getBinanceFuturesDataService } from '../../services/binance-futures-dat
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger, serializeError } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
+import { closeExecutionAndBroadcast, incrementWalletBalanceAndBroadcast } from '../../services/wallet-broadcast';
 import { syncLiveWalletSnapshot } from '../../services/wallet-snapshot';
 import { protectedProcedure, router } from '../../trpc';
 import { formatQuantityForBinance } from '../../utils/formatters';
@@ -168,32 +169,53 @@ export const positionMutationsRouter = router({
             accumulatedFunding,
           });
 
-          // Wrap position close + wallet update in a single transaction
-          // so a crash mid-close can't leave the position closed with
-          // the realized PnL never reflected in the wallet snapshot.
-          // Same pattern as `reversePosition` paper path.
-          const walletSnapshot = await ctx.db.transaction(async (tx) => {
-            await tx
-              .update(positions)
-              .set({
-                status: 'closed',
-                closedAt: new Date(),
-                updatedAt: new Date(),
-                currentPrice: exitPrice.toString(),
-                pnl: netPnl.toString(),
-                pnlPercent: pnlPercent.toString(),
-              })
-              .where(eq(positions.id, input.positionId!));
+          await ctx.db
+            .update(positions)
+            .set({
+              status: 'closed',
+              closedAt: new Date(),
+              updatedAt: new Date(),
+              currentPrice: exitPrice.toString(),
+              pnl: netPnl.toString(),
+              pnlPercent: pnlPercent.toString(),
+            })
+            .where(eq(positions.id, input.positionId));
 
-            const currentBalance = parseFloat(wallet.currentBalance ?? '0');
-            const newBalance = (currentBalance + netPnl).toString();
-            await tx
-              .update(wallets)
-              .set({ currentBalance: newBalance, totalWalletBalance: newBalance, updatedAt: new Date() })
-              .where(eq(wallets.id, wallet.id));
+          // Wallet update via the broadcast helper so wallet:update
+          // fires for the renderer (paper closes had ZERO WS emits before).
+          // The non-tx call is fine: `incrementWalletBalanceAndBroadcast`
+          // does its own atomic UPDATE ... RETURNING.
+          const broadcast = await incrementWalletBalanceAndBroadcast(wallet.id, netPnl);
+          const newBalance = broadcast?.currentBalance ?? wallet.currentBalance ?? '0';
+          const walletSnapshot = {
+            currentBalance: newBalance,
+            totalWalletBalance: broadcast?.totalWalletBalance ?? newBalance,
+          };
 
-            return { currentBalance: newBalance, totalWalletBalance: newBalance };
-          });
+          // Also fire a synthetic position:closed for any tradeExecution
+          // mirror the renderer might be tracking (paper-futures uses
+          // both `positions` and `tradeExecutions`). Find the matching
+          // open exec and run it through the canonical close cascade.
+          const [paperExec] = await ctx.db
+            .select()
+            .from(tradeExecutions)
+            .where(and(
+              eq(tradeExecutions.walletId, input.walletId),
+              eq(tradeExecutions.symbol, position.symbol),
+              eq(tradeExecutions.status, 'open'),
+              eq(tradeExecutions.marketType, 'FUTURES'),
+            ))
+            .limit(1);
+          if (paperExec) {
+            await closeExecutionAndBroadcast(paperExec, {
+              exitPrice,
+              exitReason: 'MANUAL_CLOSE',
+              exitSource: 'MANUAL',
+              pnl: netPnl,
+              pnlPercent,
+              fees: totalFees,
+            });
+          }
 
           logger.info({
             positionId: input.positionId,

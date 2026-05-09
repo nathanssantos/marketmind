@@ -1,8 +1,7 @@
 import type { MarketType } from '@marketmind/types';
-import { MM } from '@marketmind/tokens';
-import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, IconButton, ProgressBar, ProgressRoot, TooltipWrapper, TradingSideCard } from '@renderer/components/ui';
+import { Badge, Button, Callout, ConfirmationDialog, CryptoIcon, IconButton, LoadingSpinner, ProgressBar, ProgressRoot, TooltipWrapper, TradingSideCard } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
-import { Box, Flex, Spinner, Stack, Text, VStack } from '@chakra-ui/react';
+import { Box, Flex, Stack, Text, VStack } from '@chakra-ui/react';
 import { wouldLiquidate } from '@marketmind/types';
 import { useGlobalActionsOptional } from '@renderer/context/GlobalActionsContext';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
@@ -325,9 +324,7 @@ const FuturesPositionsPanelComponent = () => {
 
   if (isLoadingPositions) {
     return (
-      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-        <Spinner size={MM.spinner.panel.size} />
-      </Flex>
+      <LoadingSpinner />
     );
   }
 

@@ -17,8 +17,12 @@ export type AnalyticsPeriod = 'day' | 'week' | 'month' | 'all';
 const BINANCE_TZ = 'UTC';
 
 export const useBackendAnalytics = (walletId: string, period: AnalyticsPeriod = 'all') => {
-  const performancePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.SLOW);
-  const statsPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.NORMAL);
+  // WS-backed: position:closed + wallet:update fan out to the cold-tier
+  // invalidation in RealtimeTradingSyncContext, which already invalidates
+  // analytics queries (getPerformance, getSetupStats, getEquityCurve)
+  // within 2s of the event. Polling here only fires when WS is dropped.
+  const performancePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.SLOW, { wsBacked: true });
+  const statsPolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.NORMAL, { wsBacked: true });
 
   const { data: performance, isLoading: isLoadingPerformance } =
     trpc.analytics.getPerformance.useQuery(

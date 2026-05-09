@@ -18,7 +18,7 @@ describe('serializeError', () => {
 
   it('truncates very long messages and keeps the cause readable', () => {
     const cause = new Error('57P01 connection reset');
-    const top = new Error('Failed query: ' + 'x'.repeat(2000));
+    const top = new Error(`Failed query: ${  'x'.repeat(2000)}`);
     (top as Error & { cause: unknown }).cause = cause;
     const serialized = serializeError(top);
     expect(serialized.startsWith(cause.message)).toBe(true);

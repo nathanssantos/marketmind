@@ -8,6 +8,7 @@ import { autoTradingScheduler } from '../../services/auto-trading-scheduler';
 import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../../services/binance-futures-client';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
+import { closeExecutionAndBroadcast } from '../../services/wallet-broadcast';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { positionMonitorService } from '../../services/position-monitor';
 import { protectedProcedure, router } from '../../trpc';
@@ -120,6 +121,7 @@ export const recoveryRouter = router({
               const exitPriceNum = parseFloat(exitPrice);
               const qty = parseFloat(execution.quantity || '0');
               const marketType = execution.marketType === 'FUTURES' ? 'FUTURES' : 'SPOT';
+              const leverage = execution.leverage ?? 1;
 
               const { grossPnl, totalFees, netPnl, pnlPercent } = calculatePnl({
                 entryPrice,
@@ -127,26 +129,17 @@ export const recoveryRouter = router({
                 quantity: qty,
                 side: execution.side,
                 marketType,
+                leverage,
               });
 
-              await ctx.db
-                .update(tradeExecutions)
-                .set({
-                  status: 'closed',
-                  exitSource: 'MANUAL',
-                  exitReason: 'EMERGENCY_STOP',
-                  exitPrice: exitPrice,
-                  pnl: netPnl.toString(),
-                  pnlPercent: pnlPercent.toString(),
-                  fees: totalFees.toString(),
-                  closedAt: new Date(),
-                  updatedAt: new Date(),
-                  stopLossAlgoId: null,
-                  stopLossOrderId: null,
-                  takeProfitAlgoId: null,
-                  takeProfitOrderId: null,
-                })
-                .where(eq(tradeExecutions.id, execution.id));
+              await closeExecutionAndBroadcast(execution, {
+                exitPrice: exitPriceNum,
+                exitReason: 'EMERGENCY_STOP',
+                exitSource: 'MANUAL',
+                pnl: netPnl,
+                pnlPercent,
+                fees: totalFees,
+              });
 
               log(`> Emergency closed execution`, {
                 executionId: execution.id,
@@ -160,20 +153,13 @@ export const recoveryRouter = router({
                 pnlPercent: pnlPercent.toFixed(2),
               });
             } else {
-              await ctx.db
-                .update(tradeExecutions)
-                .set({
-                  status: 'closed',
-                  exitSource: 'MANUAL',
-                  exitReason: 'EMERGENCY_STOP',
-                  closedAt: new Date(),
-                  updatedAt: new Date(),
-                  stopLossAlgoId: null,
-                  stopLossOrderId: null,
-                  takeProfitAlgoId: null,
-                  takeProfitOrderId: null,
-                })
-                .where(eq(tradeExecutions.id, execution.id));
+              await closeExecutionAndBroadcast(execution, {
+                exitPrice: null,
+                exitReason: 'EMERGENCY_STOP',
+                exitSource: 'MANUAL',
+                pnl: 0,
+                pnlPercent: 0,
+              });
             }
           }
         } catch (error) {
@@ -191,20 +177,13 @@ export const recoveryRouter = router({
         }
 
         for (const execution of openExecutions) {
-          await ctx.db
-            .update(tradeExecutions)
-            .set({
-              status: 'closed',
-              exitSource: 'MANUAL',
-              exitReason: 'EMERGENCY_STOP',
-              closedAt: new Date(),
-              updatedAt: new Date(),
-              stopLossAlgoId: null,
-              stopLossOrderId: null,
-              takeProfitAlgoId: null,
-              takeProfitOrderId: null,
-            })
-            .where(eq(tradeExecutions.id, execution.id));
+          await closeExecutionAndBroadcast(execution, {
+            exitPrice: null,
+            exitReason: 'EMERGENCY_STOP',
+            exitSource: 'MANUAL',
+            pnl: 0,
+            pnlPercent: 0,
+          });
         }
       }
 

@@ -6,7 +6,6 @@ import {
   LuDatabase,
   LuInfo,
   LuChartCandlestick,
-  LuPalette,
   LuShield,
   LuUser,
 } from 'react-icons/lu';
@@ -15,7 +14,6 @@ export const SETTINGS_TABS = [
   'account',
   'security',
   'notifications',
-  'general',
   'chart',
   'autoTrading',
   'indicators',
@@ -48,7 +46,6 @@ export const SETTINGS_TAB_DEFS: readonly SettingsTabDef[] = [
   { id: 'security', group: 'account', icon: LuShield, labelKey: 'settings.tabs.security' },
   { id: 'notifications', group: 'account', icon: LuBell, labelKey: 'settings.tabs.notifications' },
 
-  { id: 'general', group: 'appearance', icon: LuPalette, labelKey: 'settings.tabs.general' },
   { id: 'chart', group: 'appearance', icon: LuChartCandlestick, labelKey: 'settings.tabs.chart' },
 
   { id: 'autoTrading', group: 'trading', icon: LuBot, labelKey: 'settings.tabs.autoTrading' },

@@ -226,7 +226,6 @@
       "account": "Conta",
       "security": "Segurança",
       "notifications": "Notificações",
-      "general": "Geral",
       "chart": "Gráfico",
       "autoTrading": "Auto-Trading",
       "aiTrading": "Auto-Trading IA",
@@ -359,7 +358,9 @@
         "orderUpdates": "Atualizações de ordens",
         "orderUpdatesHelper": "Avisos quando ordens são executadas, canceladas ou modificadas.",
         "setupDetected": "Setups detectados",
-        "setupDetectedHelper": "Avisos quando watchers detectam um novo setup."
+        "setupDetectedHelper": "Avisos quando watchers detectam um novo setup.",
+        "liquidationRisk": "Risco de liquidação",
+        "liquidationRiskHelper": "Avisos quando uma posição aberta se aproxima do preço de liquidação."
       },
       "sound": {
         "title": "Som",

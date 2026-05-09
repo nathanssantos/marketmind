@@ -8,7 +8,9 @@ import { usePollingInterval } from './usePollingInterval';
 
 export const useBackendAutoTrading = (walletId: string) => {
   const utils = trpc.useUtils();
-  const realtimePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.REALTIME);
+  // WS-backed: watcher start/stop are user-driven mutations that
+  // invalidate via onSuccess. Polling only fires while WS is dropped.
+  const realtimePolling = usePollingInterval(QUERY_CONFIG.REFETCH_INTERVAL.REALTIME, { wsBacked: true });
 
   const { data: config, isLoading: isLoadingConfig } = trpc.autoTrading.getConfig.useQuery(
     { walletId },

@@ -306,7 +306,11 @@ export const useChartCanvas = ({
 
       if (!managerRef.current) return;
 
-      const rect = canvas.getBoundingClientRect();
+      // Read rect from the manager's ResizeObserver-maintained cache
+      // instead of calling getBoundingClientRect on every wheel event.
+      // The latter forces a synchronous layout reflow that competes
+      // with the rAF tick during steady-state pan/zoom.
+      const rect = managerRef.current.getCachedRect();
       if (!rect) return;
 
       const mouseX = event.clientX - rect.left;
@@ -350,7 +354,9 @@ export const useChartCanvas = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
+    // Cached rect — see handleWheel above for why we avoid live
+    // getBoundingClientRect during interaction.
+    const rect = managerRef.current?.getCachedRect() ?? canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const dimensions = managerRef.current?.getDimensions();
 

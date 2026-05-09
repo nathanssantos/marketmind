@@ -64,7 +64,18 @@ vi.mock('../watcher-batch-logger', () => ({
 
 const mockEmitPositionUpdate = vi.fn();
 const mockEmitRiskAlert = vi.fn();
-let mockWebSocketService: { emitPositionUpdate: typeof mockEmitPositionUpdate; emitRiskAlert: typeof mockEmitRiskAlert } | null = null;
+// position-sync now routes orphan-close through emitPositionClosedEvents
+// (which fires emitOrderUpdate + emitPositionClosed) and through
+// incrementWalletBalanceAndBroadcast (emits emitWalletUpdate). The mock
+// must include those methods so the helper doesn't TypeError when the
+// orphan path runs in tests.
+let mockWebSocketService: {
+  emitPositionUpdate: typeof mockEmitPositionUpdate;
+  emitPositionClosed: ReturnType<typeof vi.fn>;
+  emitOrderUpdate: ReturnType<typeof vi.fn>;
+  emitWalletUpdate: ReturnType<typeof vi.fn>;
+  emitRiskAlert: typeof mockEmitRiskAlert;
+} | null = null;
 
 vi.mock('../websocket', () => ({
   getWebSocketService: () => mockWebSocketService,
@@ -706,11 +717,16 @@ describe('PositionSyncService', () => {
       updatedAt: new Date(),
     };
 
-    it('should emit position update for orphaned positions when WebSocket available', async () => {
-      mockWebSocketService =({
+    it('should emit position:closed for orphaned positions when WebSocket available', async () => {
+      const emitPositionClosed = vi.fn();
+      const emitOrderUpdate = vi.fn();
+      mockWebSocketService = {
         emitPositionUpdate: mockEmitPositionUpdate,
+        emitPositionClosed,
+        emitOrderUpdate,
+        emitWalletUpdate: vi.fn(),
         emitRiskAlert: mockEmitRiskAlert,
-      });
+      };
 
       mockDbSelect.mockReturnValue({
         from: vi.fn().mockReturnThis(),
@@ -731,20 +747,38 @@ describe('PositionSyncService', () => {
 
       await service.syncWallet(mockWallet as never);
 
-      expect(mockEmitPositionUpdate).toHaveBeenCalledWith(
+      // After PR #528, orphan close routes through emitPositionClosedEvents
+      // which fires position:closed (drives the renderer's close cascade)
+      // and order:update (status=closed). The previous emitPositionUpdate
+      // alone wasn't enough — renderer's position:update handler short-
+      // circuits when status='closed' waiting for position:closed.
+      // Without a getAllTradeFeesForPosition mock, the orphan branch can't
+      // derive an exit price → exitReason is SYNC_INCOMPLETE (the
+      // backfill-later marker). The renderer cascade still fires.
+      expect(emitPositionClosed).toHaveBeenCalledWith(
         'wallet-1',
         expect.objectContaining({
+          positionId: 'exec-1',
+          exitReason: 'SYNC_INCOMPLETE',
+        })
+      );
+      expect(emitOrderUpdate).toHaveBeenCalledWith(
+        'wallet-1',
+        expect.objectContaining({
+          id: 'exec-1',
           status: 'closed',
-          exitReason: 'ORPHANED_POSITION',
         })
       );
     });
 
     it('should adopt unknown positions into DB and emit warning alert', async () => {
-      mockWebSocketService =({
+      mockWebSocketService = {
         emitPositionUpdate: mockEmitPositionUpdate,
+        emitPositionClosed: vi.fn(),
+        emitOrderUpdate: vi.fn(),
+        emitWalletUpdate: vi.fn(),
         emitRiskAlert: mockEmitRiskAlert,
-      });
+      };
 
       // Two .select() chains run: 1) initial dbOpenPositions read,
       // 2) race-guard re-check before insert. Both return [] so the
