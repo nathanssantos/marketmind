@@ -28,7 +28,15 @@ export const usePortfolioData = () => {
 
   const { activeWallet: rawActiveWallet, isIB, wallets: backendWallets } = useActiveWallet();
   const activeWalletId = rawActiveWallet?.id;
-  const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL);
+  // Open executions are patched in real time via position:update /
+  // position:closed events from RealtimeTradingSyncContext. Polling
+  // only fires when WS is dropped — eliminating per-5s React-tree
+  // refreshes that were stuttering the chart pan via shared parents.
+  const pollingInterval = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL, { wsBacked: true });
+  // Daily performance: the analytics aggregate is invalidated on
+  // wallet:update / position:closed via the same context. Polling
+  // here previously fired every 5s in addition to the invalidation.
+  const dailyPerformancePolling = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL, { wsBacked: true });
   const { tickerPrices } = useBackendTrading(activeWalletId ?? '', undefined);
   const { data: openTradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
     { walletId: activeWalletId ?? '', status: 'open', limit: 500 },
@@ -55,7 +63,7 @@ export const usePortfolioData = () => {
   const todayKey = utcIso.slice(0, 10);
   const { data: dailyPerformance } = trpc.analytics.getDailyPerformance.useQuery(
     { walletId: activeWalletId ?? '', year: utcYear, month: utcMonth, tz: 'UTC' },
-    { enabled: !!activeWalletId, staleTime: QUERY_CONFIG.STALE_TIME.FAST, refetchInterval: pollingInterval }
+    { enabled: !!activeWalletId, staleTime: QUERY_CONFIG.STALE_TIME.FAST, refetchInterval: dailyPerformancePolling }
   );
   const todayPnl = dailyPerformance?.find((d) => d.date === todayKey);
 
