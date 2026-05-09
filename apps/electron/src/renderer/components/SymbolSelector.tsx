@@ -451,7 +451,13 @@ export function SymbolSelector({
                       cursor="pointer"
                       bg={value === cs.symbol ? 'bg.muted' : 'transparent'}
                       _hover={{ bg: 'bg.muted' }}
-                      onClick={() => handleSelect(cs.symbol, { marketType: 'SPOT', assetClass: 'CRYPTO' })}
+                      // Custom symbols are computed from constituent klines
+                      // server-side regardless of which marketType is passed
+                      // — the value is metadata only. FUTURES is the more
+                      // common default for trading; the backend resolves
+                      // the symbol via customSymbolService.ensureKlinesBackfilled
+                      // before any direct Binance call would happen.
+                      onClick={() => handleSelect(cs.symbol, { marketType: 'FUTURES', assetClass: 'CRYPTO' })}
                       borderBottomWidth="1px"
                       borderColor="border"
                     >

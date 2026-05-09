@@ -134,6 +134,19 @@ const start = async (): Promise<void> => {
       },
     }));
 
+    // Custom symbol service must be loaded BEFORE we start accepting
+    // tRPC requests. Otherwise the renderer connecting on `fastify.listen`
+    // can fire kline queries for composite symbols (POLITIFI etc.) before
+    // `customSymbolSet` is populated — `isCustomSymbolSync` returns false,
+    // kline-prefetch falls through to direct Binance API and 400's because
+    // the symbol doesn't exist on the exchange. Demo mode skips this since
+    // it doesn't start trading services at all.
+    if (!env.DEMO_MODE) {
+      const { startCustomSymbolService } = await import('./services/custom-symbol-service');
+      await startCustomSymbolService();
+      fastify.log.info('> Custom symbol service started');
+    }
+
     const port = parseInt(env.PORT, 10);
     await fastify.listen({ port, host: '0.0.0.0' });
 
@@ -185,10 +198,6 @@ const start = async (): Promise<void> => {
         binanceFuturesUserStreamService.start(),
         positionSyncService.start(),
       ]);
-
-      const { startCustomSymbolService } = await import('./services/custom-symbol-service');
-      await startCustomSymbolService();
-      fastify.log.info('> Custom symbol service started');
 
       const { autoTradingScheduler } = await import('./services/auto-trading-scheduler');
       await autoTradingScheduler.restoreWatchersFromDb();
