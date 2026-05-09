@@ -153,7 +153,7 @@ export const drawInfoTag = (
   // the two buttons meet are flat. So the per-button width contribution
   // is just SLTP_BUTTON.WIDTH; the GAP only applies once — before the
   // first button (separating it from the price text).
-  const groupHasButtons = inlineSlTp?.showSl || inlineSlTp?.showTp;
+  const groupHasButtons = inlineSlTp?.showSl ?? inlineSlTp?.showTp;
   const inlineSlSpace = inlineSlTp?.showSl ? SLTP_BUTTON.WIDTH : 0;
   const inlineTpSpace = inlineSlTp?.showTp ? SLTP_BUTTON.WIDTH : 0;
   const inlineGroupGap = groupHasButtons ? SLTP_BUTTON.GAP : 0;

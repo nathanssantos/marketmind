@@ -84,7 +84,7 @@ export const withWriteLock = async <T>(
     return result;
   } finally {
     const slot = slots.get(key);
-    if (slot && slot.tail === newTail) {
+    if (slot?.tail === newTail) {
       slot.lastReleasedAt = Date.now();
     }
     release();
