@@ -1,7 +1,7 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
 import type { Wallet } from '@marketmind/types';
-import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, LoadingSpinner, TooltipWrapper } from '@renderer/components/ui';
+import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, LoadingSpinner, Separator, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -9,7 +9,7 @@ import { useDisclosure } from '@renderer/hooks';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BsThreeDotsVertical } from 'react-icons/bs';
-import { LuChartBar, LuHistory, LuInfo, LuRefreshCw, LuShieldCheck, LuTrash2 } from 'react-icons/lu';
+import { LuChartBar, LuHistory, LuRefreshCw, LuShieldCheck, LuTrash2 } from 'react-icons/lu';
 import { useUIStore } from '../../store/uiStore';
 import { toaster } from '@renderer/utils/toaster';
 import { CreateWalletDialog } from './CreateWalletDialog';
@@ -247,6 +247,15 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onF
   const netPnL = performance?.netPnL ?? 0;
   const netPnLPercent = effectiveInitial > 0 ? (netPnL / effectiveInitial) * PERCENT_MULTIPLIER : 0;
   const isProfitable = netPnL >= 0;
+  const totalTrades = performance?.totalTrades ?? 0;
+  const winRate = performance?.winRate ?? 0;
+  const maxDrawdown = performance?.maxDrawdown ?? 0;
+  const profitFactor = performance?.profitFactor ?? 0;
+  const avgTradeDurationHours = performance?.avgTradeDurationHours ?? 0;
+  const hasPnlBreakdown = grossPnL !== 0 || totalFees !== 0 || totalFunding !== 0;
+  const hasTradeStats = totalTrades > 0;
+  const formatSigned = (v: number) =>
+    `${v > 0 ? '+' : ''}${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const badgeInfo = getWalletTypeBadge(wallet.walletType);
   const canSync = wallet.walletType === 'testnet' || wallet.walletType === 'live';
@@ -392,19 +401,73 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onF
             </Stack>
           </Flex>
         )}
+        {hasPnlBreakdown && (
+          <>
+            <Flex justify="space-between">
+              <Text color="fg.muted">{t('trading.analytics.performance.grossPnL')}</Text>
+              <Text color={grossPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
+                {formatSigned(grossPnL)}
+              </Text>
+            </Flex>
+            {totalFees !== 0 && (
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.analytics.performance.fees')}</Text>
+                <Text color="fg">
+                  {totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </Flex>
+            )}
+            {totalFunding !== 0 && (
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.analytics.performance.funding')}</Text>
+                <Text color={totalFunding >= 0 ? 'trading.profit' : 'trading.loss'}>
+                  {formatSigned(totalFunding)}
+                </Text>
+              </Flex>
+            )}
+          </>
+        )}
         <Flex justify="space-between">
           <Text color="fg.muted">{t('trading.wallets.netPnL')}</Text>
-          <TooltipWrapper label={`${t('trading.analytics.performance.grossPnL')}: ${grossPnL >= 0 ? '+' : ''}${grossPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.fees')}: ${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} | ${t('trading.analytics.performance.funding')}: ${totalFunding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} isDisabled={totalFees === 0 && totalFunding === 0}>
-            <Stack gap={0} align="flex-end">
-              <Text color={isProfitable ? 'trading.profit' : 'trading.loss'} fontWeight="medium" cursor={totalFees > 0 || totalFunding !== 0 ? 'help' : 'default'}>
-                {isProfitable ? '+' : ''}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                {' '}({isProfitable ? '+' : ''}{netPnLPercent.toFixed(2)}%)
-                {(totalFees > 0 || totalFunding !== 0) && <LuInfo style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} />}
-              </Text>
-              <BrlValue usdtValue={netPnL} />
-            </Stack>
-          </TooltipWrapper>
+          <Stack gap={0} align="flex-end">
+            <Text color={isProfitable ? 'trading.profit' : 'trading.loss'} fontWeight="medium">
+              {isProfitable ? '+' : ''}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {' '}({isProfitable ? '+' : ''}{netPnLPercent.toFixed(2)}%)
+            </Text>
+            <BrlValue usdtValue={netPnL} />
+          </Stack>
         </Flex>
+        {hasTradeStats && (
+          <>
+            <Separator my={1} />
+            <Flex justify="space-between">
+              <Text color="fg.muted">{t('trading.analytics.performance.totalTrades')}</Text>
+              <Text>{totalTrades.toLocaleString()}</Text>
+            </Flex>
+            <Flex justify="space-between">
+              <Text color="fg.muted">{t('trading.analytics.performance.winRate')}</Text>
+              <Text>{winRate.toFixed(2)}%</Text>
+            </Flex>
+            {maxDrawdown > 0 && (
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.analytics.performance.maxDrawdown')}</Text>
+                <Text color="trading.loss">-{maxDrawdown.toFixed(2)}%</Text>
+              </Flex>
+            )}
+            {profitFactor > 0 && (
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.analytics.performance.profitFactor')}</Text>
+                <Text>{profitFactor.toFixed(2)}</Text>
+              </Flex>
+            )}
+            {avgTradeDurationHours > 0 && (
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('analytics.avgDuration')}</Text>
+                <Text>{avgTradeDurationHours < 1 ? `${(avgTradeDurationHours * 60).toFixed(0)}m` : `${avgTradeDurationHours.toFixed(1)}h`}</Text>
+              </Flex>
+            )}
+          </>
+        )}
       </Stack>
     </Box>
   );
