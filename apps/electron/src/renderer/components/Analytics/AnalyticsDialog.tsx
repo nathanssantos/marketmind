@@ -1,5 +1,5 @@
-import { Flex, Spinner, Stack } from '@chakra-ui/react';
-import { DialogShell, EmptyState } from '@renderer/components/ui';
+import { Stack } from '@chakra-ui/react';
+import { DialogShell, EmptyState, LoadingSpinner } from '@renderer/components/ui';
 import { Suspense, lazy, memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
@@ -7,7 +7,6 @@ import { useActiveWallet } from '../../hooks/useActiveWallet';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { useDialogMount } from '../../hooks/useDialogMount';
 import { useUIStore } from '../../store/uiStore';
-import { MM } from '@marketmind/tokens';
 import { createMockMarginRequirements, MarginInfoPanel } from '../MarginInfoPanel';
 import { PerformancePanel } from '../Trading/PerformancePanel';
 import { PerformanceCalendar } from './PerformanceCalendar';
@@ -99,9 +98,7 @@ export const AnalyticsDialog = memo(() => {
           ) : null}
           <Suspense
             fallback={
-              <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-                <Spinner size={MM.spinner.panel.size} />
-              </Flex>
+              <LoadingSpinner />
             }
           >
             <EquityCurveChart walletId={activeWalletId} currency={activeWalletCurrency} />

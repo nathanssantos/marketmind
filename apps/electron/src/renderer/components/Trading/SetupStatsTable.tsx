@@ -1,6 +1,5 @@
-import { ButtonGroup, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
-import { Button, PanelHeader } from '@renderer/components/ui';
-import { MM } from '@marketmind/tokens';
+import { ButtonGroup, Flex, Stack, Text } from '@chakra-ui/react';
+import { Button, LoadingSpinner, PanelHeader } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
@@ -18,9 +17,7 @@ export const SetupStatsTable = ({ walletId }: SetupStatsTableProps) => {
 
   if (isLoadingSetupStats) {
     return (
-      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-        <Spinner size={MM.spinner.panel.size} />
-      </Flex>
+      <LoadingSpinner />
     );
   }
 

@@ -1,4 +1,5 @@
-import { Box, Flex, Grid, GridItem, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Grid, GridItem, Stack, Text } from '@chakra-ui/react';
+import { LoadingSpinner } from '@renderer/components/ui';
 import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -167,9 +168,7 @@ export const PerformanceCalendar = ({ walletId, currency = DEFAULT_CURRENCY }: P
       />
 
       {isLoading ? (
-        <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-          <Spinner size={MM.spinner.panel.size} />
-        </Flex>
+        <LoadingSpinner />
       ) : (
         <Box>
           <Grid templateColumns="repeat(8, 1fr)" gap={1} mb={1}>

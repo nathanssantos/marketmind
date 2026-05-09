@@ -10,9 +10,20 @@ const DEFAULT_COLOR_MODE: ColorMode = 'dark';
 
 const getInitialColorModeFromDocument = (): ColorMode => {
   if (typeof window === 'undefined') return DEFAULT_COLOR_MODE;
+  // Check the class first (set by the index.html bootstrap script)
+  // so React's initial state matches the pre-mount paint and we avoid
+  // a flicker if React's state and the document class disagree.
   const root = document.documentElement;
   if (root.classList.contains('light')) return 'light';
   if (root.classList.contains('dark')) return 'dark';
+  // Bootstrap script disabled (e.g. unit test) — fall back to
+  // localStorage then default.
+  try {
+    const stored = localStorage.getItem('chakra-ui-color-mode');
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {
+    /* localStorage unavailable */
+  }
   return DEFAULT_COLOR_MODE;
 };
 
@@ -90,6 +101,16 @@ export const ColorModeProvider = ({ children }: ColorModeProviderProps) => {
 
   const setColorModeAndSync = useCallback((newMode: ColorMode) => {
     setColorModeState(newMode);
+    // Persist to localStorage so the next cold load can apply the
+    // class on <html> BEFORE React mounts (see index.html bootstrap
+    // script). Without this, dark-mode users get a white flash on
+    // every reload while waiting for the backend prefs query.
+    try {
+      localStorage.setItem('chakra-ui-color-mode', newMode);
+    } catch {
+      // localStorage unavailable (private mode, etc.) — fall back to
+      // the existing backend-prefs path below.
+    }
     if (isAuthenticated) {
       setMutation.mutate({
         category: 'ui',

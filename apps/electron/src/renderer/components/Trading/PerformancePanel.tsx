@@ -1,16 +1,14 @@
 import {
   Button,
   ButtonGroup,
-  Flex,
   Grid,
   GridItem,
-  Spinner,
   Stack,
   Text,
 } from '@chakra-ui/react';
 import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { useTranslation } from 'react-i18next';
-import { DataCard, PanelHeader } from '../ui';
+import { DataCard, LoadingSpinner, PanelHeader } from '../ui';
 import { useBackendAnalytics } from '../../hooks/useBackendAnalytics';
 import { convertUsdtToBrl, useCurrencyStore } from '../../store/currencyStore';
 import { type AnalyticsPeriod, useUIStore } from '../../store/uiStore';
@@ -32,9 +30,7 @@ export const PerformancePanel = ({ walletId, currency = DEFAULT_CURRENCY }: Perf
 
   if (isLoadingPerformance) {
     return (
-      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-        <Spinner size={MM.spinner.panel.size} />
-      </Flex>
+      <LoadingSpinner />
     );
   }
 

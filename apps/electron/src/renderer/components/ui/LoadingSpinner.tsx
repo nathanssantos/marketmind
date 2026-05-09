@@ -1,36 +1,19 @@
-import { Box, Spinner, Stack, Text } from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
+import { Flex, Spinner } from '@chakra-ui/react';
+import { MM } from '@marketmind/tokens';
 
-interface LoadingSpinnerProps {
-  message?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-}
-
-export const LoadingSpinner = ({ message, size = 'lg' }: LoadingSpinnerProps) => {
-  const { t } = useTranslation();
-  
-  return (
-    <Box
-      position="absolute"
-      top="50%"
-      left="50%"
-      transform="translate(-50%, -50%)"
-      textAlign="center"
-    >
-      <Stack gap={4} alignItems="center">
-        <Spinner
-          size={size}
-          color="blue.fg"
-          borderWidth="4px"
-        />
-        <Text 
-          fontSize="lg" 
-          color="fg.muted"
-          fontWeight="medium"
-        >
-          {message ?? t('common.loading')}
-        </Text>
-      </Stack>
-    </Box>
-  );
-};
+/**
+ * Canonical panel-fill loading spinner. No text, no absolute
+ * positioning. Fills the parent's height (h="100%") and is centered
+ * both axes — drop directly into any panel that wants the standard
+ * "panel is loading" look. Pair with a parent that has bounded
+ * height (Box/Flex with explicit h or flex=1 inside a column).
+ *
+ * Inline button/icon spinners (size="xs", size="sm" inside menus)
+ * keep the raw Chakra <Spinner /> since they need different sizing
+ * rules and DON'T want full-height centering.
+ */
+export const LoadingSpinner = () => (
+  <Flex justify="center" align="center" h="100%" w="100%" minH={MM.spinner.panel.py}>
+    <Spinner size={MM.spinner.panel.size} />
+  </Flex>
+);

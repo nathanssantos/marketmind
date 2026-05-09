@@ -1,6 +1,5 @@
-import { Box, Flex, HStack, Spinner, Stack, Text, useToken } from '@chakra-ui/react';
-import { Callout, PanelHeader, RecordRow } from '@renderer/components/ui';
-import { MM } from '@marketmind/tokens';
+import { Box, HStack, Stack, Text, useToken } from '@chakra-ui/react';
+import { Callout, LoadingSpinner, PanelHeader, RecordRow } from '@renderer/components/ui';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { memo, useMemo, useState } from 'react';
@@ -174,9 +173,7 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
 
   if (isLoadingEquityCurve) {
     return (
-      <Flex justify="center" align="center" py={MM.spinner.panel.py}>
-        <Spinner size={MM.spinner.panel.size} />
-      </Flex>
+      <LoadingSpinner />
     );
   }
 

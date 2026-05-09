@@ -4,11 +4,42 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MarketMind</title>
+    <script>
+      // Resolve the persisted color mode BEFORE React mounts so the
+      // AppLoader (and any first paint) has the correct dark/light bg.
+      // Without this the page flashes white in dark-mode users until
+      // ColorModeProvider's useEffect runs (~50–200ms after mount).
+      // Default 'dark' matches DEFAULT_COLOR_MODE in color-mode.tsx.
+      (function () {
+        try {
+          var stored = localStorage.getItem('chakra-ui-color-mode');
+          var mode = stored === 'light' || stored === 'dark' ? stored : 'dark';
+          var root = document.documentElement;
+          root.classList.add(mode);
+          root.style.colorScheme = mode;
+          root.setAttribute('data-theme', mode);
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <style>
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
+      }
+
+      /* Match the app background BEFORE React paints to prevent a
+         white-flash on cold load. Token-equivalent values for our
+         dark/light theme. ColorModeProvider takes over once mounted. */
+      html.dark,
+      html.dark body {
+        background-color: #0e1219;
+      }
+      html.light,
+      html.light body {
+        background-color: #ffffff;
       }
 
       body {
