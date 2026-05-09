@@ -594,15 +594,18 @@ describe('Analytics Router', () => {
       expect(todayBucket?.wins).toBe(1);
     });
 
-    it('uses trade-level pnl on days with closed trades — counts only effectivated trades', async () => {
-      // The widget should reflect ONLY effectivated trades (positions
-      // our system tracked through to a clean exit), not phantom
-      // realized PnL events from the reverse-roll bug. tradeExecutions
-      // rows exist only for tracked closes; in-flight reverse legs that
-      // closed-and-re-opened the same direction don't create rows here,
-      // so this sum naturally excludes them. incomeSum (REALIZED_PNL
-      // + COMMISSION + FUNDING_FEE from Binance's ledger) would
-      // over-count by including those phantom events.
+    it('prefers Binance income ledger over DB trade pnl when income has synced (matches Binance widget)', async () => {
+      // 2026-05-09 user report: app showed -$750.64 while Binance
+      // showed -$962.99 for the same 4 trades. The $212 gap was funding
+      // payments + fees Binance counts in REALIZED_PNL but our
+      // per-trade `pnl` field excludes (funding sits in
+      // `accumulated_funding`, not folded into `pnl`).
+      //
+      // Fix: prefer `incomeSum` (REALIZED_PNL + COMMISSION + FUNDING_FEE)
+      // whenever Binance has reported any income today. The previous
+      // behavior of preferring DB pnl was meant to filter phantom
+      // reverse-roll income — that bug is fixed and the ledger is
+      // canonical now. tradesCount still comes from DB metadata.
       const { user, session } = await createAuthenticatedUser();
       const wallet = await createTestWallet({
         userId: user.id,
@@ -613,7 +616,7 @@ describe('Analytics Router', () => {
       const db = getTestDatabase();
 
       const today = new Date();
-      // 3 closed trades with locally-computed pnl summing to 90.
+      // 3 closed trades — DB pnl sum 90 (excludes funding/fees).
       await createTestTradeExecution({
         userId: user.id, walletId: wallet.id, status: 'closed',
         pnl: '20', openedAt: today, closedAt: today,
@@ -627,18 +630,23 @@ describe('Analytics Router', () => {
         pnl: '50', openedAt: today, closedAt: today,
       });
 
-      // Binance income-event aggregate (with phantom reverse events):
-      // 2 REALIZED_PNL events totaling 40 — these would over-count if
-      // we used incomeSum as the source.
+      // Binance income aggregate that includes per-trade pnl + funding +
+      // fees — the value the user sees in the Binance widget. 70 here
+      // simulates the same trades net of $20 funding + fees combined.
       await db.insert(incomeEvents).values([
         {
           userId: user.id, walletId: wallet.id, binanceTranId: 1,
-          incomeType: 'REALIZED_PNL', amount: '20', asset: 'USDT',
+          incomeType: 'REALIZED_PNL', amount: '90', asset: 'USDT',
           symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
         },
         {
           userId: user.id, walletId: wallet.id, binanceTranId: 2,
-          incomeType: 'REALIZED_PNL', amount: '20', asset: 'USDT',
+          incomeType: 'COMMISSION', amount: '-15', asset: 'USDT',
+          symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
+        },
+        {
+          userId: user.id, walletId: wallet.id, binanceTranId: 3,
+          incomeType: 'FUNDING_FEE', amount: '-5', asset: 'USDT',
           symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
         },
       ]);
@@ -652,9 +660,11 @@ describe('Analytics Router', () => {
       const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' });
       const todayKey = fmt.format(today);
       const todayBucket = result.find((d) => d.date === todayKey);
+      // tradesCount comes from DB metadata.
       expect(todayBucket?.tradesCount).toBe(3);
-      // Trade-level wins: 20 + 20 + 50 = 90, all effectivated trades.
-      expect(todayBucket?.pnl).toBeCloseTo(90, 0);
+      // pnl comes from incomeSum: 90 - 15 - 5 = 70. NOT 90 (the trade-
+      // level sum, which is what the Binance widget would NOT show).
+      expect(todayBucket?.pnl).toBeCloseTo(70, 0);
     });
 
     it('excludes orphan execs (exit_price=NULL) from the daily DB sum (regression: phantom -$11k loss in widget)', async () => {

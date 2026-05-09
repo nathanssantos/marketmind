@@ -213,26 +213,30 @@ export const statsProcedures = {
         const stats = tradeStatsByDay.get(date) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
 
         // Daily PnL source resolution:
+        //   - `incomeSum` = REALIZED_PNL + COMMISSION + FUNDING_FEE from
+        //     Binance's income ledger. Authoritative — matches what
+        //     Binance shows in its "Today's Realized PnL" widget exactly,
+        //     INCLUDING funding deltas and fees that aren't captured in
+        //     the per-trade `pnl` field.
         //   - `tradeRealizedNet` = sum of `tradeExecutions.pnl` for
-        //     trades closed cleanly this day (must have `exit_price`).
-        //     Counts effectivated trades only — i.e. positions our
-        //     system tracked through to a clean exit. Roll-over events
-        //     from the (now-fixed) reverse bug never created rows here
-        //     so they don't pollute. This is what Binance shows as
-        //     "Today's Realized PnL" and updates immediately on close.
-        //   - `incomeSum` = REALIZED_PNL + COMMISSION + FUNDING_FEE
-        //     events from Binance's ledger. Authoritative but lags by
-        //     ~30s (income sync cadence).
-        //   - Execs with NULL `exit_price` are excluded from the DB
-        //     sum because they're the corruptible ones: position-sync
-        //     orphans (`exit_reason='SYNC_INCOMPLETE'`) whose pnl was
-        //     historically miscomputed against exit_price=0, producing
-        //     four-figure phantoms (incident 2026-05-08T17:09).
-        //   - Rule: when the day has any cleanly-closed trade, use DB
-        //     pnl (immediate post-close UX). Else fall through to
-        //     `incomeSum` so funding/holding days still show the delta.
+        //     cleanly-closed trades today. Misses funding accrued during
+        //     a position's lifetime (stored in `accumulated_funding` but
+        //     not folded into `pnl`) and any post-close fee adjustments.
+        //   - Execs with NULL `exit_price` are filtered upstream — they
+        //     are position-sync orphans (`exit_reason='SYNC_INCOMPLETE'`)
+        //     whose pnl was historically miscomputed against exit_price=0
+        //     (incident 2026-05-08T17:09).
+        //   - Rule: prefer `incomeSum` whenever Binance has reported any
+        //     income event today — that's the authoritative value the
+        //     user wants to see (and the one Binance UI shows). Fall
+        //     back to `tradeRealizedNet` ONLY when income hasn't synced
+        //     yet (incomeSum === 0 but trades were closed locally) so
+        //     the widget updates immediately on close instead of waiting
+        //     for the next income sync tick. Past concern about reverse-
+        //     roll phantoms over-counting incomeSum no longer applies —
+        //     that bug is fixed and Binance's ledger is canonical.
         const tradeRealizedNet = stats.grossProfit - stats.grossLoss;
-        const dailyPnl = stats.closedPositions > 0 ? tradeRealizedNet : incomeSum;
+        const dailyPnl = incomeSum !== 0 ? incomeSum : tradeRealizedNet;
 
         results.push({
           date,
