@@ -249,6 +249,9 @@ interface LayoutActions {
 
   setFocusedPanel: (panelId: string | null) => void;
 
+  setGridEditMode: (enabled: boolean) => void;
+  toggleGridEditMode: () => void;
+
   setPanelTimeframe: (layoutId: string, panelId: string, timeframe: string) => void;
   setPanelChartType: (layoutId: string, panelId: string, chartType: ChartType) => void;
 
@@ -269,6 +272,10 @@ export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => 
   activeLayoutId: 'trading',
   layoutPresets: DEFAULT_LAYOUTS,
   focusedPanelId: null,
+  gridEditMode: false,
+
+  setGridEditMode: (enabled) => set({ gridEditMode: enabled }),
+  toggleGridEditMode: () => set(state => ({ gridEditMode: !state.gridEditMode })),
 
   addSymbolTab: (symbol, marketType) => set(state => {
     const id = generateId();

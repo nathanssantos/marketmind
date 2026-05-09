@@ -1,9 +1,10 @@
-import { Box, Flex, HStack, Portal } from '@chakra-ui/react';
-import { IconButton, Menu } from '@renderer/components/ui';
+import { Box, Flex, HStack } from '@chakra-ui/react';
+import { IconButton } from '@renderer/components/ui';
+import { GridEditOverlay } from './GridEditOverlay';
 import { TooltipWrapper } from './Tooltip';
 import { memo, useCallback, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuMaximize2, LuMinimize2, LuMinus, LuX } from 'react-icons/lu';
+import { LuMaximize2, LuMinimize2, LuMinus } from 'react-icons/lu';
 
 export type GridPanelMode = 'chart' | 'bare';
 export type GridPanelWindowState = 'normal' | 'minimized' | 'maximized';
@@ -26,6 +27,13 @@ interface GridPanelBaseProps {
   onMinimize?: (id: string) => void;
   onMaximize?: (id: string) => void;
   onRestore?: (id: string) => void;
+  /**
+   * v1.5 — when true, the panel body shows a translucent scrim + a
+   * corner X close button (the `<GridEditOverlay>`). For bare panels
+   * this replaces the v1.10 right-click context menu close, so close
+   * is consistent across chart and bare panels.
+   */
+  editMode?: boolean;
   children: ReactNode;
 }
 
@@ -67,6 +75,7 @@ export const GridPanel = memo((props: GridPanelProps) => {
     onMinimize,
     onMaximize,
     onRestore,
+    editMode = false,
     children,
   } = props;
 
@@ -89,15 +98,10 @@ export const GridPanel = memo((props: GridPanelProps) => {
     [onMaximize, onRestore, id, windowState],
   );
 
-  const handleHeaderClose = useCallback(
-    (e: ReactMouseEvent) => {
-      e.stopPropagation();
-      onClose?.(id);
-    },
-    [onClose, id],
+  const handleOverlayClose = useCallback(
+    (closeId: string) => onClose?.(closeId),
+    [onClose],
   );
-
-  const handleContextMenuClose = useCallback(() => onClose?.(id), [onClose, id]);
 
   const isMaximized = windowState === 'maximized';
 
@@ -159,18 +163,6 @@ export const GridPanel = memo((props: GridPanelProps) => {
                 </IconButton>
               </TooltipWrapper>
             )}
-            {onClose && (
-              <TooltipWrapper label={t('common.close')} showArrow>
-                <IconButton
-                  aria-label={t('common.close')}
-                  size="2xs"
-                  variant="ghost"
-                  onClick={handleHeaderClose}
-                >
-                  <LuX />
-                </IconButton>
-              </TooltipWrapper>
-            )}
           </HStack>
         </Flex>
       )}
@@ -178,35 +170,17 @@ export const GridPanel = memo((props: GridPanelProps) => {
       <Box
         flex={1}
         overflow="hidden"
+        position="relative"
         className={mode === 'bare' ? 'panel-drag-handle' : undefined}
         cursor={mode === 'bare' ? 'grab' : undefined}
       >
         {children}
+        {editMode && onClose && (
+          <GridEditOverlay panelId={id} onClose={handleOverlayClose} />
+        )}
       </Box>
     </Flex>
   );
-
-  if (mode === 'bare' && onClose) {
-    return (
-      <Menu.Root>
-        <Menu.ContextTrigger asChild>{shell}</Menu.ContextTrigger>
-        <Portal>
-          <Menu.Positioner>
-            <Menu.Content minW="160px" data-testid={`grid-panel-${id}-context-menu`}>
-              <Menu.Item
-                value="close"
-                onClick={handleContextMenuClose}
-                data-testid={`grid-panel-${id}-close`}
-              >
-                <LuX />
-                {t('common.close')}
-              </Menu.Item>
-            </Menu.Content>
-          </Menu.Positioner>
-        </Portal>
-      </Menu.Root>
-    );
-  }
 
   return shell;
 });

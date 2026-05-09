@@ -2845,6 +2845,7 @@
     },
     "addPanel": "Add panel",
     "alreadyOnGrid": "Already on grid",
+    "editLayout": "Edit layout",
     "organize": "Organize grid",
     "organizeCompact": "Compact",
     "organizeColumns": "By columns",
