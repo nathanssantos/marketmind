@@ -20,6 +20,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
+import { LayersTogglePopover } from './LayersTogglePopover';
 import type { MarketType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
 import { UserAvatar } from '../UserAvatar';
@@ -156,6 +157,8 @@ export const Toolbar = memo(({
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
         <IndicatorTogglePopover triggerVariant="labeled" popoverPlacement="bottom-start" />
+
+        <LayersTogglePopover />
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 

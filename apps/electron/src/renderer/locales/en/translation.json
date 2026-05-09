@@ -816,6 +816,18 @@
       "degradedTitle": "Exchange stream degraded",
       "degradedDescription": "No updates received from the exchange — reconnecting automatically."
     },
+    "layers": {
+      "title": "Layers",
+      "configure": "Configure layers visible on this chart",
+      "drawings": "Drawings",
+      "indicators": "Indicators",
+      "orderLines": "Order lines",
+      "setupMarkers": "Setup markers",
+      "heatmap": "Heatmap / liquidations",
+      "showAll": "Show all",
+      "hideAll": "Hide all",
+      "noFocusedChart": "Focus a chart panel to toggle layers."
+    },
     "tools": {
       "pencil": "Pencil",
       "highlighter": "Highlighter",
