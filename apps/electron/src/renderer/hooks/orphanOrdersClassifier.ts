@@ -37,6 +37,7 @@ export interface ExchangeAlgoRow {
   triggerPrice?: string | number;
   quantity?: string | number;
   createTime?: string | number | null;
+  reduceOnly?: boolean;
 }
 
 /**
@@ -107,6 +108,18 @@ export const classifyExchangeOrders = (
   for (const algo of exchangeAlgoOrders) {
     const aid = algo.algoId;
     if (executionOrderIds.has(aid)) continue;
+    // Skip reduce-only algos. These are TP/SL leftovers (a reduce-only
+    // algo by definition cannot open a new position — it only closes
+    // an existing one). When the user drags a TP/SL on the chart, the
+    // backend cancels the old algo + creates a new one with a fresh
+    // algoId. There's a brief window (Binance state-propagation lag)
+    // where the OLD algoId still appears in `getOpenAlgoOrders` while
+    // the exec already references the NEW algoId — without this skip
+    // the OLD orphan was rendering as a phantom entry order line on
+    // the chart at the OLD trigger price ("L 0.843" in the user's
+    // bug report). A real abandoned reduce-only algo (rare) is still
+    // cancelled by the dedicated orphan-cancel sweeper on the backend.
+    if (algo.reduceOnly) continue;
     const entry: OrphanOrderEntry = {
       id: `exchange-algo-${aid}`,
       exchangeOrderId: aid,

@@ -168,6 +168,39 @@ describe('classifyExchangeOrders — algo orders (STOP_MARKET / TAKE_PROFIT_MARK
     expect(out.orphanOrders[0]?.price).toBe('0');
     expect(out.orphanOrders[0]?.quantity).toBe('0');
   });
+
+  it('skips reduce-only algos from BOTH orphan and tracked buckets — they are TP/SL leftovers, not entry candidates', () => {
+    // Real-world scenario: user drags a TP line on the chart. Backend
+    // cancels the old algo + creates a new one. For a few hundred ms,
+    // Binance's getOpenAlgoOrders still returns the OLD algoId, but
+    // our exec already references the NEW one. Pre-fix, the OLD
+    // appeared as an "orphan" and rendered as a phantom entry order
+    // line on the chart at the OLD trigger price. Fix: reduce-only
+    // algos can never open a position by definition — they're always
+    // leftovers and must be hidden from the entry-line renderer.
+    const out = classifyExchangeOrders(
+      [],
+      [],
+      [
+        algo({ algoId: 'leftover-tp', reduceOnly: true, triggerPrice: '78927.50' }),
+        algo({ algoId: 'real-orphan', reduceOnly: false, triggerPrice: '50000' }),
+      ],
+      [],
+    );
+    expect(out.orphanOrders.map((o) => o.exchangeOrderId)).toEqual(['real-orphan']);
+    expect(out.trackedOrders).toEqual([]);
+  });
+
+  it('skips reduce-only algo even when its id is in DB.orders (still not an entry)', () => {
+    const out = classifyExchangeOrders(
+      [],
+      [],
+      [algo({ algoId: 'reduce-only-tracked', reduceOnly: true })],
+      ['reduce-only-tracked'],
+    );
+    expect(out.orphanOrders).toEqual([]);
+    expect(out.trackedOrders).toEqual([]);
+  });
 });
 
 describe('classifyExchangeOrders — mixed buckets', () => {
