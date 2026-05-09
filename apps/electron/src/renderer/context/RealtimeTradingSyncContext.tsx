@@ -194,14 +194,32 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   }, [walletId, queryClient]);
 
   useSocketEvent('position:update', (raw) => {
-    const payload = raw as { id?: string; status?: string; [k: string]: unknown };
-    // Skip the patch when the trio's first emit (position:update with
-    // status='closed' from emitPositionClosedEvents) arrives. The
-    // following position:closed event runs markExecutionClosedInAllCaches
-    // which writes the canonical close shape to the same caches.
-    // Letting both run wastes a setQueriesData iteration per close.
+    const payload = raw as { id?: string; status?: string; pnl?: string | number; pnlPercent?: string | number; exitReason?: string; exitPrice?: string | number; [k: string]: unknown };
     if (payload?.id && payload.status !== 'closed') {
       patchExecutionCaches(payload as { id: string });
+    }
+    // Defense in depth: if a backend path emits position:update with
+    // status='closed' WITHOUT also firing position:closed (which is
+    // what positionSync's orphan branch used to do — see #PR-after-525),
+    // fall through to the canonical close cascade so the cache patches
+    // the exec to closed. Without this, getTradeExecutions /
+    // getActiveExecutions kept the closed exec in their open lists,
+    // and Total Exposure stayed at the closed-position notional until
+    // the user clicked "Sync balance from Binance". emitPositionClosed
+    // on the well-behaved path (handleExitFill / closeTradeExecution)
+    // still drives the proper trio — this branch is just a safety net.
+    if (payload?.id && payload.status === 'closed') {
+      const toNum = (v: unknown): number | undefined =>
+        typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) : undefined;
+      closeExecutionInCaches({
+        positionId: payload.id,
+        pnl: toNum(payload.pnl) ?? 0,
+        pnlPercent: toNum(payload.pnlPercent) ?? 0,
+        ...(payload.exitReason !== undefined ? { exitReason: payload.exitReason } : {}),
+        ...(toNum(payload.exitPrice) !== undefined ? { exitPrice: toNum(payload.exitPrice)! } : {}),
+      });
+      scheduleRef.current('positions', 'wallet', 'setupStats', 'equityCurve');
+      return;
     }
     // No 'wallet' here: position updates that genuinely move the wallet
     // balance (fills, liquidations) ALWAYS pair with a wallet:update

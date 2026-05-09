@@ -10,7 +10,7 @@ import { createBinanceFuturesClient, isPaperWallet, getPositions, closePosition,
 import { logger, serializeError } from './logger';
 import { cancelAllProtectionOrders } from './protection-orders';
 import { type SyncResult, createEmptySyncResult, createFailedSyncResult, processIntentOrderForAdoptedPosition } from './position-sync-helpers';
-import { incrementWalletBalanceAndBroadcast } from './wallet-broadcast';
+import { emitPositionClosedEvents, incrementWalletBalanceAndBroadcast } from './wallet-broadcast';
 import { outputPositionSyncResults } from './watcher-batch-logger';
 import { getWebSocketService } from './websocket';
 
@@ -291,16 +291,26 @@ export class PositionSyncService {
             })
             .where(eq(tradeExecutions.id, dbPosition.id));
 
-          const wsService = getWebSocketService();
-          if (wsService) {
-            wsService.emitPositionUpdate(wallet.id, {
-              ...dbPosition,
-              status: 'closed',
-              exitReason: 'ORPHANED_POSITION',
-              pnl: pnl.toString(),
-              pnlPercent: pnlPercent.toString(),
-            });
-          }
+          // Emit the FULL close trio (order:update + position:closed)
+          // — not just position:update with status='closed'. The
+          // renderer's position:update handler intentionally short-
+          // circuits on status='closed' (it waits for position:closed
+          // to drive markExecutionClosedInAllCaches). Earlier this site
+          // emitted only position:update, so getTradeExecutions /
+          // getActiveExecutions caches were never patched and the
+          // Portfolio panel kept the closed exec in its open list —
+          // which made Total Exposure stay at the closed-position
+          // notional until the user clicked "Sync balance from
+          // Binance" (a separate REST refetch path).
+          emitPositionClosedEvents({
+            walletId: wallet.id,
+            execution: dbPosition,
+            symbol: dbPosition.symbol,
+            exitPrice: exitPrice > 0 ? exitPrice : 0,
+            pnl,
+            pnlPercent,
+            exitReason: exitPrice > 0 ? 'ORPHANED_POSITION' : 'SYNC_INCOMPLETE',
+          });
         } else {
           if (processedSymbolsForUpdate.has(dbPosition.symbol)) continue;
           processedSymbolsForUpdate.add(dbPosition.symbol);
