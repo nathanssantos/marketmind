@@ -58,7 +58,13 @@ async function main() {
 
   console.log(`Reconciling ${dbClosed.length} closed execs for ${symbol}\n`);
 
-  const fixes: Array<{ id: string; oldPnl: string; newPnl: number; oldFees: string; newFees: number; oldExit: string; newExit: number }> = [];
+  const fixes: Array<{
+    id: string;
+    oldPnl: string; newPnl: number;
+    oldFees: string; newFees: number;
+    oldExit: string; newExit: number;
+    oldPnlPercent: string; newPnlPercent: number;
+  }> = [];
 
   for (const exec of dbClosed) {
     if (exec.symbol !== symbol) continue;
@@ -108,13 +114,29 @@ async function main() {
     console.log(`  Bin says: pnl=${netPnl.toFixed(4)} fees=${totalFees.toFixed(4)} exit=${exitPrice.toFixed(2)}`);
     console.log(`  drift: ${drift.toFixed(4)}`);
 
-    if (Math.abs(drift) > FEE_TOL || Math.abs(totalFees - oldFeesNum) > FEE_TOL || Math.abs(exitPrice - oldExitNum) > 1) {
+    // Recompute pnl_percent on the corrected pnl. Without an exit
+    // price (exitPrice <= 0), there's no realized return, so % is 0.
+    // With an exit price, % = ROE = (netPnl / margin) * 100 where
+    // margin = (entry × qty) / leverage.
+    const leverage = exec.leverage ?? 1;
+    const entryPriceNum = parseFloat(exec.entryPrice);
+    const margin = (entryPriceNum * targetQty) / leverage;
+    const newPnlPercent = exitPrice > 0 && margin > 0 ? (netPnl / margin) * 100 : 0;
+    const oldPnlPercentNum = parseFloat(exec.pnlPercent ?? '0');
+
+    if (
+      Math.abs(drift) > FEE_TOL
+      || Math.abs(totalFees - oldFeesNum) > FEE_TOL
+      || Math.abs(exitPrice - oldExitNum) > 1
+      || Math.abs(newPnlPercent - oldPnlPercentNum) > 0.5
+    ) {
       console.log('  → needs fix');
       fixes.push({
         id: exec.id,
         oldPnl: exec.pnl ?? '0', newPnl: netPnl,
         oldFees: exec.fees ?? '0', newFees: totalFees,
         oldExit: exec.exitPrice ?? '0', newExit: exitPrice,
+        oldPnlPercent: exec.pnlPercent ?? '0', newPnlPercent,
       });
     } else {
       console.log('  ✓ within tolerance');
@@ -134,11 +156,12 @@ async function main() {
   for (const f of fixes) {
     await db.update(tradeExecutions).set({
       pnl: f.newPnl.toString(),
+      pnlPercent: f.newPnlPercent.toString(),
       fees: f.newFees.toString(),
       exitPrice: f.newExit.toString(),
       updatedAt: new Date(),
     }).where(eq(tradeExecutions.id, f.id));
-    console.log(`  fixed ${f.id}`);
+    console.log(`  fixed ${f.id} (pnl=${f.newPnl.toFixed(2)} pct=${f.newPnlPercent.toFixed(2)}%)`);
   }
   console.log('\nDone.');
   process.exit(0);
