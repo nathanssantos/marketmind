@@ -10,6 +10,7 @@ import { generateEntityId } from '../../utils/id';
 import { badRequest, notFound } from '../../utils/trpc-errors';
 import { calculatePnl } from '@marketmind/utils';
 import { parseEnabledSetupTypes } from '../../utils/profile-transformers';
+import { closeExecutionAndBroadcast } from '../../services/wallet-broadcast';
 import { log } from './utils';
 
 export const executionsRouter = router({
@@ -403,23 +404,15 @@ export const executionsRouter = router({
         leverage,
       });
 
-      await ctx.db
-        .update(tradeExecutions)
-        .set({
-          exitPrice: input.exitPrice,
-          exitOrderId: input.exitOrderId,
-          pnl: netPnl.toString(),
-          pnlPercent: pnlPercent.toString(),
-          fees: totalFees.toString(),
-          status: 'closed',
-          closedAt: new Date(),
-          updatedAt: new Date(),
-          stopLossAlgoId: null,
-          stopLossOrderId: null,
-          takeProfitAlgoId: null,
-          takeProfitOrderId: null,
-        })
-        .where(eq(tradeExecutions.id, input.executionId));
+      await closeExecutionAndBroadcast(execution, {
+        exitPrice,
+        exitReason: 'MANUAL',
+        exitSource: 'MANUAL',
+        pnl: netPnl,
+        pnlPercent,
+        fees: totalFees,
+        exitOrderId: input.exitOrderId,
+      });
 
       const isWin = netPnl > 0;
       log(`${isWin ? '✓ WIN' : '✗ LOSS'} Execution closed`, {
