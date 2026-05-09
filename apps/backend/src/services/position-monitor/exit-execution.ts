@@ -1,6 +1,6 @@
 import type { PositionSide, MarketType } from '@marketmind/types';
 import { calculateTotalFees } from '@marketmind/types';
-import { and, eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '../../db';
 import type { TradeExecution, Wallet } from '../../db/schema';
 import { tradeExecutions, wallets } from '../../db/schema';
@@ -14,6 +14,7 @@ import { binancePriceStreamService } from '../binance-price-stream';
 import { cancelAllProtectionOrders } from '../protection-orders';
 import { logger } from '../logger';
 import { strategyPerformanceService } from '../strategy-performance';
+import { closeExecutionAndBroadcast } from '../wallet-broadcast';
 import { getWebSocketService } from '../websocket';
 import { autoTradingScheduler } from '../auto-trading-scheduler';
 import { fetchActualFeesFromExchange, fetchMissingEntryFee } from './fee-reconciliation';
@@ -222,50 +223,24 @@ export const executeExit = async (
 
     const exitSource = positionSyncedFromExchange ? 'EXCHANGE_SYNC' : 'ALGORITHM';
 
-    const closeResult = await db
-      .update(tradeExecutions)
-      .set({
-        exitPrice: actualExitPrice.toString(),
-        exitOrderId,
-        pnl: actualPnl.toString(),
-        pnlPercent: actualPnlPercent.toString(),
-        fees: actualFees.toString(),
-        entryFee: actualEntryFee.toString(),
-        exitFee: actualExitFee.toString(),
-        exitSource,
-        exitReason: reason,
-        status: 'closed',
-        closedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(and(eq(tradeExecutions.id, execution.id), eq(tradeExecutions.status, 'open')))
-      .returning({ id: tradeExecutions.id });
+    const close = await closeExecutionAndBroadcast(execution, {
+      exitPrice: actualExitPrice,
+      exitOrderId,
+      pnl: actualPnl,
+      pnlPercent: actualPnlPercent,
+      fees: actualFees,
+      entryFee: actualEntryFee,
+      exitFee: actualExitFee,
+      exitSource,
+      exitReason: reason,
+    });
 
-    if (closeResult.length === 0) {
-      logger.info({
-        executionId: execution.id,
-        symbol: execution.symbol,
-      }, '[PositionMonitor] Position already closed by another process - skipping balance update and cleanup');
+    if (!close.closed) {
+      // Race-loss — another process (user-stream handler or position-sync)
+      // already closed this exec. Their balance broadcast and emit
+      // covered the renderer; we only skip the downstream cleanup.
       return;
     }
-
-    const currentBalance = parseFloat(wallet.currentBalance ?? '0');
-
-    await db
-      .update(wallets)
-      .set({
-        currentBalance: sql`CAST(${wallets.currentBalance} AS DECIMAL(20,8)) + ${actualPnl}`,
-        updatedAt: new Date(),
-      })
-      .where(eq(wallets.id, wallet.id));
-
-    logger.info({
-      walletId: wallet.id,
-      walletType: wallet.walletType,
-      pnl: actualPnl,
-      previousBalance: currentBalance,
-      expectedNewBalance: currentBalance + actualPnl,
-    }, '[PositionMonitor] Wallet balance updated atomically after position exit');
 
     binancePriceStreamService.invalidateExecutionCache(execution.symbol);
 
@@ -298,7 +273,8 @@ export const executeExit = async (
       }
     }
 
-    const expectedNewBalance = roundToDecimals(currentBalance + pnl, 8);
+    const previousBalance = parseFloat(wallet.currentBalance ?? '0');
+    const expectedNewBalance = roundToDecimals(previousBalance + pnl, 8);
     logger.info({
       executionId: execution.id,
       symbol: execution.symbol,
@@ -334,6 +310,9 @@ export const executeExit = async (
       const pnlSign = pnl >= 0 ? '+' : '';
       const body = `${sideLabel} ${execution.symbol}: ${pnlSign}$${pnl.toFixed(2)} (${pnlSign}${adjustedPnlPercent.toFixed(2)}%)`;
 
+      // Toast lives here (not in the helper) because the copy is
+      // exit-source-specific. closeExecutionAndBroadcast already fired
+      // the order:update + position:closed pair.
       wsService.emitTradeNotification(execution.walletId, {
         type: 'POSITION_CLOSED',
         title,
@@ -349,15 +328,6 @@ export const executeExit = async (
           pnlPercent: adjustedPnlPercent.toString(),
           exitReason: reason,
         },
-      });
-
-      wsService.emitPositionUpdate(execution.walletId, {
-        id: execution.id,
-        status: 'closed',
-        exitPrice: exitPrice.toString(),
-        pnl: pnl.toString(),
-        pnlPercent: adjustedPnlPercent.toString(),
-        exitReason: reason,
       });
     }
 

@@ -51,6 +51,8 @@ vi.mock('../../services/strategy-performance', () => ({
 vi.mock('../../services/websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: vi.fn(),
+    emitPositionClosed: vi.fn(),
+    emitOrderUpdate: vi.fn(),
     emitTradeNotification: vi.fn(),
     emitWalletUpdate: vi.fn(),
   })),

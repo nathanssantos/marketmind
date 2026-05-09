@@ -15,7 +15,10 @@ vi.mock('../../services/price-cache', () => ({
 vi.mock('../../services/websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: vi.fn(),
+    emitPositionClosed: vi.fn(),
+    emitOrderUpdate: vi.fn(),
     emitNotification: vi.fn(),
+    emitWalletUpdate: vi.fn(),
   })),
 }));
 

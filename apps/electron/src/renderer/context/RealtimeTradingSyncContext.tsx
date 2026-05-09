@@ -71,20 +71,28 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
 
     // Patches via setQueriesData (executionCacheSync.patchExecutionInAllCaches)
     // already cover trading.getTradeExecutions and autoTrading.getActiveExecutions
-    // in the same render frame as the socket event. Invalidating them here
-    // would just trigger a redundant refetch of identical data. Drop those;
-    // keep getPositions (separate query, server-side aggregations) and
-    // getExecutionHistory (paginated, not patched).
+    // in the same render frame as the socket event under normal conditions.
+    // We ALSO invalidate them here as a safety net — the patch is a write
+    // that requires the cache entry to already exist. After WS reconnect,
+    // a fresh paper close, or any path that adds an exec the renderer
+    // hasn't queried before, the patch is a no-op and the invalidate is
+    // what gets the new state to the screen. Without these, Total Exposure
+    // stayed at the closed-position notional after a WS gap → reconnect
+    // (the user's "Sync balance from Binance" workaround).
     if (keys.has('positions')) {
       void utils.trading.getPositions.invalidate();
+      void utils.trading.getTradeExecutions.invalidate();
+      void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.autoTrading.getExecutionHistory.invalidate();
     }
     if (keys.has('orders')) void utils.trading.getOrders.invalidate();
     // wallet.list is patched optimistically by mergeWalletBalanceUpdate
     // with the authoritative post-mutation balance from the DB UPDATE
-    // RETURNING — no refetch needed. Analytics still need invalidation
-    // because they compute aggregates the patch can't derive.
+    // RETURNING. Belt-and-suspenders invalidate covers the cold-cache
+    // first-event case. Analytics need invalidation because they
+    // compute aggregates the patch can't derive.
     if (keys.has('wallet')) {
+      void utils.wallet.list.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.analytics.getDailyPerformance.invalidate();
     }
@@ -244,7 +252,13 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
         (prev) => mergeOrderUpdate(prev, payload as never),
       );
     }
-    scheduleRef.current('orders');
+    // Order state changes (incl. partial fills, expirations, cancels)
+    // can move wallet balance through paths Binance doesn't always pair
+    // with an immediate wallet:update event (paper, testnet, lost frame).
+    // Schedule the wallet flush as a safety net — the dedup in flushHot
+    // collapses it with any paired wallet:update arriving in the same
+    // 500ms window.
+    scheduleRef.current('orders', 'wallet');
   }, !!walletId);
 
   useSocketEvent('order:created', (raw) => {
@@ -269,10 +283,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
         (prev) => mergeOrderCancelled(prev, data.orderId),
       );
     }
-    // Cancelling an open (non-filled) order doesn't move balance. If
-    // the cancel frees cross-margin reserve, Binance emits a separate
-    // wallet:update which patches via mergeWalletBalanceUpdate.
-    scheduleRef.current('orders');
+    // Cancelling an open order can free cross-margin reserve; Binance
+    // typically pairs with wallet:update but include the schedule key
+    // here as a safety net.
+    scheduleRef.current('orders', 'wallet');
   }, !!walletId);
 
   useSocketEvent('wallet:update', (raw) => {
