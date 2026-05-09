@@ -243,12 +243,41 @@ export class BinanceFuturesDataService {
     interestRate: number;
     time: number;
   } | null> {
+    // Prefer the live `<symbol>@markPrice@1s` stream cache when fresh.
+    // Saves a 50–200ms REST round-trip on every order/position mutation
+    // path that needs current mark price. Falls back to REST when the
+    // stream hasn't published yet (cold start, symbol not subscribed)
+    // or the cached value is older than 10s. `interestRate` is REST-
+    // only — Binance doesn't include it in the stream — so the cache
+    // path returns 0 for that field. None of the existing call sites
+    // read it, but they would need to be aware if added later.
+    const { binanceMarkPriceStreamService } = await import('./binance-mark-price-stream');
+    const cached = binanceMarkPriceStreamService.getCached(symbol);
+    if (cached) {
+      // Stream returns lastFundingRate as a fraction (0.0001), REST
+      // returns it as percent (0.01). Multiply by 100 to match the
+      // contract callers expect.
+      return {
+        symbol: cached.symbol,
+        markPrice: cached.markPrice,
+        indexPrice: cached.indexPrice,
+        estimatedSettlePrice: cached.estimatedSettlePrice,
+        lastFundingRate: cached.fundingRate * 100,
+        nextFundingTime: cached.nextFundingTime,
+        interestRate: 0,
+        time: cached.timestamp,
+      };
+    }
+
     try {
       const response = await fetchWithRetry(`${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${symbol}`);
 
       if (!response.ok) return null;
 
       const data = await response.json();
+
+      // Lazy subscribe so subsequent calls hit the stream cache.
+      binanceMarkPriceStreamService.subscribe(symbol);
 
       return {
         symbol: data.symbol,
