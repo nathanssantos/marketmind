@@ -828,6 +828,10 @@
       "hideAll": "Hide all",
       "noFocusedChart": "Focus a chart panel to toggle layers."
     },
+    "toolsMenu": {
+      "title": "Tools",
+      "configure": "Open analysis tools"
+    },
     "tools": {
       "pencil": "Pencil",
       "highlighter": "Highlighter",
