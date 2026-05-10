@@ -132,9 +132,6 @@ const renderSingleDrawing = (
     case 'shortPosition':
       renderPosition(ctx, drawing, mapper, isSelected, chartWidth);
       break;
-    case 'anchoredVwap':
-      // Removed in #560. No-op kept so the exhaustiveness check passes.
-      break;
   }
 
   if (isSelected) {

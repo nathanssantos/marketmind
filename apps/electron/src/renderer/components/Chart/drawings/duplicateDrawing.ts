@@ -97,11 +97,6 @@ export const duplicateDrawing = (source: Drawing, options: DuplicateOptions = {}
       clone.entryTime = undefined;
       break;
     }
-    case 'anchoredVwap': {
-      // Removed in #560 — kept here as a no-op so the exhaustiveness check is
-      // satisfied without bringing back the legacy logic.
-      break;
-    }
   }
 
   return clone;
