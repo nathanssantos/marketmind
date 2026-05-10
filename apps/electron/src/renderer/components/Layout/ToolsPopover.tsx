@@ -1,9 +1,8 @@
 import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { Button, FormRow, Popover, Switch, TooltipWrapper } from '@renderer/components/ui';
-import { memo, useState } from 'react';
+import { Button, Popover, TooltipWrapper } from '@renderer/components/ui';
+import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuFlaskConical, LuScanLine, LuWrench } from 'react-icons/lu';
-import { useShallow } from 'zustand/react/shallow';
 import { useBacktestActiveRuns } from '../../hooks/useBacktestActiveRuns';
 import { useBacktestDialogStore } from '../../store/backtestDialogStore';
 import { useScreenerStore } from '../../store/screenerStore';
@@ -13,26 +12,17 @@ export const ToolsPopover = memo(() => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const { isAnalyticsOpen, toggleAnalytics } = useUIStore(
-    useShallow((state) => ({
-      isAnalyticsOpen: state.isAnalyticsOpen,
-      toggleAnalytics: state.toggleAnalytics,
-    })),
-  );
-
-  const { isScreenerOpen, toggleScreener } = useScreenerStore(
-    useShallow((state) => ({
-      isScreenerOpen: state.isScreenerOpen,
-      toggleScreener: state.toggleScreener,
-    })),
-  );
-
+  const toggleAnalytics = useUIStore((s) => s.toggleAnalytics);
+  const toggleScreener = useScreenerStore((s) => s.toggleScreener);
+  const toggleBacktest = useBacktestDialogStore((s) => s.toggleBacktest);
   const { activeRuns: activeBacktests, hasActiveRuns: hasActiveBacktest } = useBacktestActiveRuns();
-  const { isBacktestOpen, toggleBacktest } = useBacktestDialogStore(
-    useShallow((state) => ({
-      isBacktestOpen: state.isBacktestOpen,
-      toggleBacktest: state.toggleBacktest,
-    })),
+
+  const handle = useCallback(
+    (fn: () => void) => () => {
+      fn();
+      setIsOpen(false);
+    },
+    [],
   );
 
   return (
@@ -40,7 +30,7 @@ export const ToolsPopover = memo(() => {
       open={isOpen}
       onOpenChange={(e) => setIsOpen(e.open)}
       showArrow={false}
-      width="320px"
+      width="240px"
       positioning={{ placement: 'bottom-start', offset: { mainAxis: 8 } }}
       trigger={
         <Flex>
@@ -64,79 +54,56 @@ export const ToolsPopover = memo(() => {
         </Flex>
       }
     >
-      <Box p={3}>
-        <Stack gap={3}>
-          <Text fontSize="sm" fontWeight="semibold">
-            {t('chart.toolsMenu.title')}
-          </Text>
-          <Stack gap={2}>
-            <FormRow
-              label={
-                <Flex align="center" gap={2}>
-                  <Box color="fg.muted"><LuScanLine /></Box>
-                  <Text fontSize="xs">{t('screener.title')}</Text>
-                </Flex>
-              }
-            >
-              <Switch
-                checked={isScreenerOpen}
-                onCheckedChange={() => toggleScreener()}
-                aria-label={t('screener.title')}
-                data-testid="tools-toggle-screener"
+      <Box p={2}>
+        <Stack gap={1}>
+          <Button
+            variant="ghost"
+            size="xs"
+            justifyContent="flex-start"
+            onClick={handle(toggleScreener)}
+            data-testid="tools-open-screener"
+          >
+            <LuScanLine />
+            <Text>{t('screener.title')}</Text>
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            justifyContent="flex-start"
+            onClick={handle(toggleBacktest)}
+            data-testid="tools-open-backtest"
+            position="relative"
+          >
+            <LuFlaskConical />
+            <Text>
+              {hasActiveBacktest
+                ? t('backtest.runningTooltip', { count: activeBacktests.length })
+                : t('backtest.title')}
+            </Text>
+            {hasActiveBacktest && (
+              <Box
+                position="absolute"
+                top="6px"
+                right="6px"
+                w="6px"
+                h="6px"
+                borderRadius="full"
+                bg="trading.profit"
+                pointerEvents="none"
+                data-testid="tools-backtest-running-indicator"
               />
-            </FormRow>
-            <FormRow
-              label={
-                <Flex align="center" gap={2}>
-                  <Box color="fg.muted" position="relative">
-                    <LuFlaskConical />
-                    {hasActiveBacktest && (
-                      <Box
-                        position="absolute"
-                        top="-2px"
-                        right="-2px"
-                        w="6px"
-                        h="6px"
-                        borderRadius="full"
-                        bg="trading.profit"
-                        borderWidth="1px"
-                        borderColor="bg.panel"
-                        pointerEvents="none"
-                        data-testid="tools-backtest-running-indicator"
-                      />
-                    )}
-                  </Box>
-                  <Text fontSize="xs">
-                    {hasActiveBacktest
-                      ? t('backtest.runningTooltip', { count: activeBacktests.length })
-                      : t('backtest.title')}
-                  </Text>
-                </Flex>
-              }
-            >
-              <Switch
-                checked={isBacktestOpen}
-                onCheckedChange={() => toggleBacktest()}
-                aria-label={t('backtest.title')}
-                data-testid="tools-toggle-backtest"
-              />
-            </FormRow>
-            <FormRow
-              label={
-                <Flex align="center" gap={2}>
-                  <Box color="fg.muted"><LuChartBar /></Box>
-                  <Text fontSize="xs">{t('trading.tabs.analytics')}</Text>
-                </Flex>
-              }
-            >
-              <Switch
-                checked={isAnalyticsOpen}
-                onCheckedChange={() => toggleAnalytics()}
-                aria-label={t('trading.tabs.analytics')}
-                data-testid="tools-toggle-analytics"
-              />
-            </FormRow>
-          </Stack>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            justifyContent="flex-start"
+            onClick={handle(toggleAnalytics)}
+            data-testid="tools-open-analytics"
+          >
+            <LuChartBar />
+            <Text>{t('trading.tabs.analytics')}</Text>
+          </Button>
         </Stack>
       </Box>
     </Popover>
