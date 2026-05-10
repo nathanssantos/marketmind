@@ -126,8 +126,7 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
       return [{ drawingId: drawing.id, handleType: 'start', x: tx, y: ty }];
     }
     case 'horizontalLine':
-    case 'verticalLine':
-    case 'anchoredVwap': {
+    case 'verticalLine': {
       const hx = mapper.indexToCenterX(drawing.index);
       const hy = mapper.priceToY(drawing.price);
       return [{ drawingId: drawing.id, handleType: 'start', x: hx, y: hy }];
@@ -285,13 +284,6 @@ export const hitTestDrawing = (
       const vx = mapper.indexToCenterX(drawing.index);
       const dist = Math.abs(px - vx);
       if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
-      break;
-    }
-    case 'anchoredVwap': {
-      const ax = mapper.indexToCenterX(drawing.index);
-      const ay = mapper.priceToY(drawing.price);
-      const dist = Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
-      if (dist <= HIT_THRESHOLD * 2) return { drawingId: drawing.id, handleType: null, distance: dist };
       break;
     }
     case 'channel': {

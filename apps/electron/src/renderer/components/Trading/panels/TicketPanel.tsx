@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import { QuickTradeActions } from '@renderer/components/Layout/QuickTradeToolbar';
+import { TradeTicketActions } from '@renderer/components/Layout/TradeTicket';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 
 export const TicketPanel = () => {
@@ -8,7 +8,7 @@ export const TicketPanel = () => {
 
   return (
     <Box h="100%" overflowY="auto" p={1.5}>
-      <QuickTradeActions symbol={symbol} marketType={marketType} />
+      <TradeTicketActions symbol={symbol} marketType={marketType} />
     </Box>
   );
 };

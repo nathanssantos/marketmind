@@ -8,7 +8,6 @@ import { logger } from './logger';
 import { priceCache } from './price-cache';
 import { getWebSocketService } from './websocket';
 import { ReconnectionGuard, parseKlineMessage, persistKline } from './kline-stream-persistence';
-import { klineSynthesisService } from './kline-synthesis';
 
 export interface KlineUpdate {
   symbol: string;
@@ -117,7 +116,6 @@ export class BinanceKlineStreamService {
           marketType: 'SPOT',
         }, 'Kline stream silent — marking degraded');
         this.emitHealth(sub);
-        klineSynthesisService.enable(sub.symbol, sub.interval, 'SPOT');
       } else if (silenceMs <= STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'degraded') {
         sub.healthStatus = 'healthy';
         logger.info({
@@ -126,7 +124,6 @@ export class BinanceKlineStreamService {
           marketType: 'SPOT',
         }, 'Kline stream recovered');
         this.emitHealth(sub);
-        klineSynthesisService.disable(sub.symbol, sub.interval, 'SPOT');
       }
     }
 
@@ -222,7 +219,6 @@ export class BinanceKlineStreamService {
       if (inheritDegraded) {
         logger.info({ symbol, interval, marketType: 'SPOT' }, 'New subscription inherits degraded state from existing market');
         this.emitHealth(newSub);
-        klineSynthesisService.enable(symbol, interval, 'SPOT');
       }
 
     } catch (error) {
@@ -262,7 +258,6 @@ export class BinanceKlineStreamService {
         }
       }
       this.subscriptions.delete(key);
-      klineSynthesisService.disable(symbol, interval, 'SPOT');
     } else {
       logger.trace({
         count: existing.clientCount,
@@ -307,7 +302,6 @@ export class BinanceKlineStreamService {
       sub.healthStatus = 'healthy';
       logger.info({ symbol, interval, marketType: 'SPOT' }, 'Kline stream recovered on message receipt');
       this.emitHealth(sub);
-      klineSynthesisService.disable(symbol, interval, 'SPOT');
     }
   }
 
@@ -413,7 +407,6 @@ export class BinanceFuturesKlineStreamService {
           marketType: 'FUTURES',
         }, 'Futures kline stream silent — marking degraded');
         this.emitHealth(sub);
-        klineSynthesisService.enable(sub.symbol, sub.interval, 'FUTURES');
       } else if (silenceMs <= STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'degraded') {
         sub.healthStatus = 'healthy';
         logger.info({
@@ -422,7 +415,6 @@ export class BinanceFuturesKlineStreamService {
           marketType: 'FUTURES',
         }, 'Futures kline stream recovered');
         this.emitHealth(sub);
-        klineSynthesisService.disable(sub.symbol, sub.interval, 'FUTURES');
       }
     }
 
@@ -493,7 +485,6 @@ export class BinanceFuturesKlineStreamService {
       sub.healthStatus = 'healthy';
       logger.info({ symbol, interval, marketType: 'FUTURES' }, 'Futures kline stream recovered on message receipt');
       this.emitHealth(sub);
-      klineSynthesisService.disable(symbol, interval, 'FUTURES');
     }
   }
 
@@ -538,7 +529,6 @@ export class BinanceFuturesKlineStreamService {
       if (inheritDegraded) {
         logger.info({ symbol, interval, marketType: 'FUTURES' }, 'New subscription inherits degraded state from existing market');
         this.emitHealth(newSub);
-        klineSynthesisService.enable(symbol, interval, 'FUTURES');
       }
 
     } catch (error) {
@@ -578,7 +568,6 @@ export class BinanceFuturesKlineStreamService {
         }
       }
       this.subscriptions.delete(key);
-      klineSynthesisService.disable(symbol, interval, 'FUTURES');
     }
   }
 

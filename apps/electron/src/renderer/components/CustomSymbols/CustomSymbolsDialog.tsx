@@ -1,4 +1,5 @@
-import { DialogShell } from '@renderer/components/ui';
+import { Flex } from '@chakra-ui/react';
+import { BetaBadge, DialogShell } from '@renderer/components/ui';
 import type { DialogControlProps } from '@marketmind/types';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,7 +23,12 @@ export const CustomSymbolsDialog = memo(({ isOpen, onClose }: CustomSymbolsDialo
       isOpen={isOpen}
       onClose={onClose}
       size="xl"
-      title={t('customSymbols.title')}
+      title={
+        <Flex align="center" gap={2}>
+          <span>{t('customSymbols.title')}</span>
+          <BetaBadge />
+        </Flex>
+      }
       description={t('customSymbols.dialogDescription')}
       hideFooter
     >

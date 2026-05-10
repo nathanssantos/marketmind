@@ -189,7 +189,6 @@ describe('getHandlePoints — coverage of every handle category', () => {
     ['gannFan', { ...baseDrawing, type: 'gannFan', startIndex: 0, startPrice: 0, endIndex: 1, endPrice: 1 } as Drawing, 2],
     ['horizontalLine', { ...baseDrawing, type: 'horizontalLine', index: 0, price: 0 } as Drawing, 1],
     ['verticalLine', { ...baseDrawing, type: 'verticalLine', index: 0, price: 0 } as Drawing, 1],
-    ['anchoredVwap', { ...baseDrawing, type: 'anchoredVwap', index: 0, price: 0 } as Drawing, 1],
   ];
 
   for (const [label, drawing, count] of cases) {

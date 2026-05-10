@@ -101,7 +101,7 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
 });
 BuySellButtons.displayName = 'BuySellButtons';
 
-interface QuickTradeActionsProps {
+interface TradeTicketActionsProps {
   symbol: string;
   marketType?: MarketType;
   showDragHandle?: boolean;
@@ -110,8 +110,8 @@ interface QuickTradeActionsProps {
   onClose?: () => void;
 }
 
-export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDragHandle, onDragStart, isDragging, onClose }: QuickTradeActionsProps) => {
-  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('QuickTradeToolbar');
+export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDragHandle, onDragStart, isDragging, onClose }: TradeTicketActionsProps) => {
+  if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('TradeTicket');
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
   const { activeWallet } = useActiveWallet();
@@ -496,15 +496,15 @@ export const QuickTradeActions = memo(({ symbol, marketType = 'FUTURES', showDra
   );
 });
 
-QuickTradeActions.displayName = 'QuickTradeActions';
+TradeTicketActions.displayName = 'TradeTicketActions';
 
-interface QuickTradeToolbarProps {
+interface TradeTicketProps {
   symbol: string;
   marketType?: MarketType;
   onClose?: () => void;
 }
 
-export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onClose }: QuickTradeToolbarProps) => {
+export const TradeTicket = memo(({ symbol, marketType = 'FUTURES', onClose }: TradeTicketProps) => {
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -584,7 +584,7 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onClose
         pointerEvents="auto"
         userSelect={isDragging ? 'none' : 'auto'}
       >
-        <QuickTradeActions
+        <TradeTicketActions
           symbol={symbol}
           marketType={marketType}
           showDragHandle
@@ -597,4 +597,4 @@ export const QuickTradeToolbar = memo(({ symbol, marketType = 'FUTURES', onClose
   );
 });
 
-QuickTradeToolbar.displayName = 'QuickTradeToolbar';
+TradeTicket.displayName = 'TradeTicket';

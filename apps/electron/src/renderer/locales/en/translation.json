@@ -828,6 +828,10 @@
       "hideAll": "Hide all",
       "noFocusedChart": "Focus a chart panel to toggle layers."
     },
+    "toolsMenu": {
+      "title": "Tools",
+      "configure": "Open analysis tools"
+    },
     "tools": {
       "pencil": "Pencil",
       "highlighter": "Highlighter",
@@ -848,7 +852,6 @@
       "gannFan": "Gann Fan",
       "pitchfork": "Pitchfork",
       "priceRange": "Price Range",
-      "anchoredVwap": "Anchored VWAP",
       "longPosition": "Long Position",
       "shortPosition": "Short Position"
     },

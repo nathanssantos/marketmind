@@ -1,4 +1,4 @@
-import { Checkbox, LoadingSpinner, Popover, TooltipWrapper } from '@renderer/components/ui';
+import { LoadingSpinner, Popover, Switch, TooltipWrapper } from '@renderer/components/ui';
 import {
     Box,
     Flex,
@@ -114,7 +114,7 @@ export const SetupTogglePopover = memo(() => {
                     </Flex>
 
                     <Box>
-                        <Checkbox
+                        <Switch
                             checked={allEnabled}
                             onCheckedChange={toggleAll}
                             disabled={updateConfigMutation.isPending}
@@ -122,7 +122,7 @@ export const SetupTogglePopover = memo(() => {
                             <Text fontWeight="semibold" fontSize="sm">
                                 {t('setupConfig.toggleAll')}
                             </Text>
-                        </Checkbox>
+                        </Switch>
                     </Box>
 
                     <Box h="1px" bg="border" />
@@ -139,7 +139,7 @@ export const SetupTogglePopover = memo(() => {
                         ) : (
                             setupList.map((setup: { value: string; title: string }) => (
                                 <Box key={setup.value}>
-                                    <Checkbox
+                                    <Switch
                                         checked={enabledStrategies.includes(setup.value)}
                                         onCheckedChange={() => toggleSetup(setup.value)}
                                         disabled={updateConfigMutation.isPending}
@@ -147,7 +147,7 @@ export const SetupTogglePopover = memo(() => {
                                         <Text fontSize="sm">
                                             {setup.title}
                                         </Text>
-                                    </Checkbox>
+                                    </Switch>
                                 </Box>
                             ))
                         )}

@@ -431,41 +431,6 @@ describe('BinanceFuturesKlineStreamService', () => {
       vi.useRealTimers();
     });
 
-    it('synthesized kline:update emits never trigger a false stream:health=healthy on the native stream', async () => {
-      vi.useFakeTimers();
-      const emitStreamHealth = vi.fn();
-      const emitKlineUpdate = vi.fn();
-      const { getWebSocketService } = await import('../../services/websocket');
-      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({
-        emitKlineUpdate,
-        emitStreamHealth,
-      });
-
-      service.start();
-      service.subscribe('BTCUSDT', '1m');
-
-      vi.advanceTimersByTime(61_000);
-      vi.advanceTimersByTime(15_000);
-
-      const degradedCount = emitStreamHealth.mock.calls.filter((c) => c[0].status === 'degraded').length;
-      expect(degradedCount).toBeGreaterThan(0);
-
-      for (let i = 0; i < 10; i++) {
-        getWebSocketService()?.emitKlineUpdate?.({
-          symbol: 'BTCUSDT', interval: '1m',
-          openTime: Date.now(), closeTime: Date.now() + 59_999,
-          open: '50000', high: '50500', low: '49500', close: '50200',
-          volume: '10', isClosed: false, timestamp: Date.now(),
-        });
-        vi.advanceTimersByTime(1_000);
-      }
-
-      const healthyEmits = emitStreamHealth.mock.calls.filter((c) => c[0].status === 'healthy');
-      expect(healthyEmits.length).toBe(0);
-
-      vi.useRealTimers();
-    });
-
     it('new subscription inherits degraded state when market is currently degraded', async () => {
       const emitStreamHealth = vi.fn();
       const { getWebSocketService } = await import('../../services/websocket');

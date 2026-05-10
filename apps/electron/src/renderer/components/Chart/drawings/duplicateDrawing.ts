@@ -67,7 +67,6 @@ export const duplicateDrawing = (source: Drawing, options: DuplicateOptions = {}
     }
     case 'horizontalLine':
     case 'verticalLine':
-    case 'anchoredVwap':
     case 'text': {
       clone.index += dIndex;
       clone.price += dPrice;

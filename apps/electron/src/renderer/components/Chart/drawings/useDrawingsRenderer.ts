@@ -20,7 +20,6 @@ import { renderChannel } from './renderers/renderChannel';
 import { renderTrendLine } from './renderers/renderTrendLine';
 import { renderPriceRange } from './renderers/renderPriceRange';
 import { renderVerticalLine } from './renderers/renderVerticalLine';
-import { renderAnchoredVwap } from './renderers/renderAnchoredVwap';
 import { renderHighlighter } from './renderers/renderHighlighter';
 import { renderEllipse } from './renderers/renderEllipse';
 import { renderPitchfork } from './renderers/renderPitchfork';
@@ -71,7 +70,6 @@ const renderSingleDrawing = (
   chartWidth: number,
   colors: { bullish: string; bearish: string; crosshair: string },
   themeColors: ChartThemeColors,
-  klines: Kline[],
 ): void => {
   if (!drawing.visible) return;
 
@@ -117,9 +115,6 @@ const renderSingleDrawing = (
       break;
     case 'verticalLine':
       renderVerticalLine(ctx, drawing, mapper, isSelected, chartHeight);
-      break;
-    case 'anchoredVwap':
-      renderAnchoredVwap(ctx, drawing, mapper, isSelected, klines);
       break;
     case 'highlighter':
       renderHighlighter(ctx, drawing, mapper, isSelected);
@@ -228,11 +223,11 @@ export const useDrawingsRenderer = ({
         drawingIndexCache.current.set(cacheKey, drawing);
       }
       if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
-      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, currentKlines);
+      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
     }
 
     if (pendingDrawing) {
-      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, currentKlines);
+      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
     }
 
     ctx.restore();
@@ -268,7 +263,7 @@ export const useDrawingsRenderer = ({
 const FREEFORM_TYPES = new Set(['pencil', 'highlighter']);
 const BOUNDED_VIEWPORT_TYPES = new Set(['line', 'ruler', 'rectangle', 'area', 'arrow', 'priceRange', 'ellipse']);
 const INFINITE_VIEWPORT_TYPES = new Set(['trendLine', 'gannFan', 'horizontalLine']);
-const SEMI_INFINITE_TYPES = new Set(['ray', 'channel', 'pitchfork', 'anchoredVwap', 'longPosition', 'shortPosition']);
+const SEMI_INFINITE_TYPES = new Set(['ray', 'channel', 'pitchfork', 'longPosition', 'shortPosition']);
 const POINT_VIEWPORT_TYPES = new Set(['text', 'verticalLine']);
 
 const isDrawingInViewport = (drawing: Drawing, viewStart: number, viewEnd: number): boolean => {
