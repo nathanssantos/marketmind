@@ -224,14 +224,70 @@ export const useDrawingInteraction = ({
   const magnetEnabled = useDrawingStore(s => s.magnetEnabled);
   const { snap } = useOHLCMagnet({ manager, klines, enabled: magnetEnabled });
 
+  // Magnet pass over existing drawing handles — identifies the nearest
+  // drawing-handle snap target within DRAWING_HANDLE_SNAP_PIXEL_THRESHOLD
+  // and returns BOTH its pixel coordinates and its underlying
+  // (index, price) values. Returns null if magnet is off, no manager,
+  // or no handle is within the threshold.
+  //
+  // Lifted out of `snapToOHLC` so `getIndexAndPrice` can also snap to
+  // drawing handles when creating/dragging drawings — previously only
+  // the visible crosshair (`snapToOHLC`) consulted handles, while
+  // drawing creation went through plain OHLC magnet only, so a click
+  // that visually snapped to a handle still placed the new drawing at
+  // the raw cursor position (the bug user reported).
+  const findDrawingHandleSnap = useCallback((x: number, y: number): { x: number; y: number; index: number; price: number; time?: number } | null => {
+    if (!manager) return null;
+    if (!useDrawingStore.getState().magnetEnabled) return null;
+
+    const store = useDrawingStore.getState();
+    const drawings = store.drawingsByKey[compositeKey(symbol, interval)] ?? [];
+    if (drawings.length === 0) return null;
+
+    const mapper = createDrawingMapper(manager);
+    const draggingId = dragStartRef.current?.originalDrawing.id;
+    let bestDist = DRAWING_HANDLE_SNAP_PIXEL_THRESHOLD;
+    let bestPoint: { x: number; y: number } | null = null;
+
+    for (const drawing of drawings) {
+      if (!drawing.visible) continue;
+      // Don't snap to the drawing being dragged — would pin it to its
+      // own current handle position.
+      if (drawing.id === draggingId) continue;
+      const resolved = resolveDrawingIndices(drawing, klines);
+      const points = getHandlePoints(resolved, mapper);
+      for (const pt of points) {
+        const dx = x - pt.x;
+        const dy = y - pt.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestPoint = pt;
+        }
+      }
+    }
+
+    if (!bestPoint) return null;
+
+    const index = manager.xToIndex(bestPoint.x);
+    const price = manager.yToPrice(bestPoint.y);
+    const roundedIdx = Math.round(index);
+    const time = roundedIdx >= 0 && roundedIdx < klines.length ? klines[roundedIdx]?.openTime : undefined;
+    return { x: bestPoint.x, y: bestPoint.y, index, price, time };
+  }, [manager, klines, symbol, interval]);
+
   const getIndexAndPrice = useCallback((x: number, y: number): { index: number; price: number; time?: number } => {
     if (!manager) return { index: 0, price: 0 };
+    const handleSnap = findDrawingHandleSnap(x, y);
+    if (handleSnap) {
+      return { index: handleSnap.index, price: handleSnap.price, time: handleSnap.time };
+    }
     const result = snap(x, y);
     const idx = result.snappedIndex;
     const roundedIdx = Math.round(idx);
     const time = roundedIdx >= 0 && roundedIdx < klines.length ? klines[roundedIdx]?.openTime : undefined;
     return { index: idx, price: result.snappedPrice, time };
-  }, [manager, snap, klines]);
+  }, [manager, snap, klines, findDrawingHandleSnap]);
 
   /**
    * Freehand variant for pencil / highlighter — keeps the index as a
@@ -679,34 +735,10 @@ export const useDrawingInteraction = ({
     // to a candle vertex when both are nearby; the explicit anchor
     // is what the user placed deliberately. Same visual indicator as
     // OHLC snap, just no letter label.
-    if (useDrawingStore.getState().magnetEnabled) {
-      const store = useDrawingStore.getState();
-      const drawings = store.drawingsByKey[compositeKey(symbol, interval)] ?? [];
-      const mapper = createDrawingMapper(manager);
-      const draggingId = dragStartRef.current?.originalDrawing.id;
-      let bestDist = DRAWING_HANDLE_SNAP_PIXEL_THRESHOLD;
-      let bestPoint: { x: number; y: number } | null = null;
-      for (const drawing of drawings) {
-        if (!drawing.visible) continue;
-        // Don't snap to the drawing being dragged — would pin it to
-        // its own current handle position.
-        if (drawing.id === draggingId) continue;
-        const resolved = resolveDrawingIndices(drawing, klines);
-        const points = getHandlePoints(resolved, mapper);
-        for (const pt of points) {
-          const dx = x - pt.x;
-          const dy = y - pt.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < bestDist) {
-            bestDist = dist;
-            bestPoint = pt;
-          }
-        }
-      }
-      if (bestPoint) {
-        lastSnapRef.current = { x: bestPoint.x, y: bestPoint.y, ohlcType: 'handle' };
-        return { x: bestPoint.x, y: bestPoint.y, snapped: true };
-      }
+    const handleSnap = findDrawingHandleSnap(x, y);
+    if (handleSnap) {
+      lastSnapRef.current = { x: handleSnap.x, y: handleSnap.y, ohlcType: 'handle' };
+      return { x: handleSnap.x, y: handleSnap.y, snapped: true };
     }
 
     const result = snap(x, y);
@@ -718,7 +750,7 @@ export const useDrawingInteraction = ({
     const snappedY = manager.priceToY(result.snappedPrice);
     lastSnapRef.current = { x: snappedX, y: snappedY, ohlcType: result.ohlcType };
     return { x: snappedX, y: snappedY, snapped: true };
-  }, [manager, snap, symbol, interval]);
+  }, [manager, snap, findDrawingHandleSnap]);
 
   return {
     handleMouseDown,
