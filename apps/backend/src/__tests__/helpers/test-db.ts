@@ -34,6 +34,7 @@ DROP TABLE IF EXISTS price_cache CASCADE;
 DROP TABLE IF EXISTS api_keys CASCADE;
 DROP TABLE IF EXISTS mcp_trading_audit CASCADE;
 DROP TABLE IF EXISTS user_indicators CASCADE;
+DROP TABLE IF EXISTS user_patterns CASCADE;
 DROP TABLE IF EXISTS user_layouts_audit CASCADE;
 DROP TABLE IF EXISTS user_layouts_history CASCADE;
 DROP TABLE IF EXISTS user_layouts CASCADE;
@@ -687,6 +688,18 @@ CREATE TABLE IF NOT EXISTS user_indicators (
 );
 CREATE INDEX user_indicators_user_id_idx ON user_indicators(user_id);
 
+CREATE TABLE IF NOT EXISTS user_patterns (
+  id VARCHAR(255) PRIMARY KEY,
+  user_id VARCHAR(255) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  pattern_id VARCHAR(64) NOT NULL,
+  label VARCHAR(120) NOT NULL,
+  definition TEXT NOT NULL,
+  is_custom BOOLEAN DEFAULT false NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+  updated_at TIMESTAMP DEFAULT NOW() NOT NULL
+);
+CREATE INDEX user_patterns_user_id_idx ON user_patterns(user_id);
+
 CREATE TABLE IF NOT EXISTS user_layouts (
   id SERIAL PRIMARY KEY,
   user_id VARCHAR(255) NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
@@ -831,6 +844,7 @@ export const cleanupTables = async (): Promise<void> => {
   await db.delete(schema.apiKeys);
   await db.delete(schema.mcpTradingAudit);
   await db.delete(schema.userIndicators);
+  await db.delete(schema.userPatterns);
   await db.delete(schema.userLayoutsAudit);
   await db.delete(schema.userLayoutsHistory);
   await db.delete(schema.userLayouts);

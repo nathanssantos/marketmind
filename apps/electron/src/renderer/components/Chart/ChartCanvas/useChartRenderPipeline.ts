@@ -23,6 +23,8 @@ export interface UseChartRenderPipelineProps {
   renderGridPreview: () => void;
   renderDrawings: () => void;
   renderEventScale: () => void;
+  /** Optional candle-pattern overlay renderer. Gated on `layerFlags.candlePatterns` upstream. */
+  renderCandlePatterns?: () => void;
   orderDragHandler: ReturnType<typeof useOrderDragHandler>;
   slTpPlacement: ReturnType<typeof useSlTpPlacementMode>;
   tsPlacementActive: boolean;
@@ -39,6 +41,7 @@ interface PipelineRefs {
   renderGridPreview: () => void;
   renderDrawings: () => void;
   renderEventScale: () => void;
+  renderCandlePatterns: () => void;
   orderDragHandler: ReturnType<typeof useOrderDragHandler>;
   slTpPlacement: ReturnType<typeof useSlTpPlacementMode>;
   tsPlacementActive: boolean;
@@ -58,6 +61,7 @@ export const useChartRenderPipeline = ({
   renderGridPreview,
   renderDrawings,
   renderEventScale,
+  renderCandlePatterns,
   orderDragHandler,
   slTpPlacement,
   tsPlacementActive,
@@ -75,6 +79,7 @@ export const useChartRenderPipeline = ({
     renderGridPreview,
     renderDrawings,
     renderEventScale,
+    renderCandlePatterns: renderCandlePatterns ?? (() => undefined),
     orderDragHandler,
     slTpPlacement,
     tsPlacementActive,
@@ -91,6 +96,7 @@ export const useChartRenderPipeline = ({
   refs.current.renderGridPreview = renderGridPreview;
   refs.current.renderDrawings = renderDrawings;
   refs.current.renderEventScale = renderEventScale;
+  refs.current.renderCandlePatterns = renderCandlePatterns ?? (() => undefined);
   refs.current.orderDragHandler = orderDragHandler;
   refs.current.slTpPlacement = slTpPlacement;
   refs.current.tsPlacementActive = tsPlacementActive;
@@ -133,6 +139,7 @@ export const useChartRenderPipeline = ({
       const b = r.base;
 
       timed('drawings', r.renderDrawings);
+      timed('candlePatterns', r.renderCandlePatterns);
       timed('eventScale', r.renderEventScale);
       timed('orderLines', r.renderOrderLines);
       timed('gridPreview', r.renderGridPreview);

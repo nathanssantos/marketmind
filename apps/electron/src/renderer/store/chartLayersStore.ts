@@ -6,6 +6,7 @@ export interface ChartLayerFlags {
   orderLines: boolean;
   setupMarkers: boolean;
   heatmap: boolean;
+  candlePatterns: boolean;
 }
 
 const DEFAULT_FLAGS: ChartLayerFlags = {
@@ -14,6 +15,7 @@ const DEFAULT_FLAGS: ChartLayerFlags = {
   orderLines: true,
   setupMarkers: true,
   heatmap: true,
+  candlePatterns: true,
 };
 
 interface ChartLayersState {
