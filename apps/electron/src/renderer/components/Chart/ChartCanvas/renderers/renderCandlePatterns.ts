@@ -95,7 +95,11 @@ export const renderCandlePatterns = (
   for (const [index, group] of byIndex) {
     const kline = klines[index];
     if (!kline) continue;
-    const x = manager.indexToX(index);
+    // Center the glyph on the candle wick (vertical line through OHLC).
+    // `indexToX` returns the slot's left edge; `indexToCenterX` returns the
+    // wick's x — that's where the bar's high / low / open / close are
+    // visually located.
+    const x = manager.indexToCenterX(index);
     if (x < 0 || x > dims.chartWidth) continue;
 
     const yHigh = manager.priceToY(Number(kline.high));
