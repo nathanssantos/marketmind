@@ -691,7 +691,8 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   // The user's full saved layouts (9 presets: 6 trading multi-tf
    // variants + Auto-Trading + Auto-Scalping + Market Indicators).
    // Cloned from local DB; lets the marketing-screenshots script switch
-   // between presets via `setActiveLayout(tabId, presetId)`. The
+   // between presets via `setActiveLayout(presetId)` (single-arg, global
+   // since v1.6 — was `(tabId, presetId)` before #467). The
    // `layout.get` router parses `data` server-side and returns the
    // already-unwrapped state — fixture mirrors that.
   { path: 'layout.get', value: LAYOUT_FIXTURE },

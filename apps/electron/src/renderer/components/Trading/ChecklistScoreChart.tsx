@@ -25,6 +25,13 @@ const BACKFILL_TRIGGER_SPAN_MS = 24 * 60 * 60 * 1000;
 // to 30s balances density (chart stays "alive" at the right edge)
 // against memory (~120 points/hour, well under MAX_HISTORY_POINTS).
 const SAME_VALUE_HEARTBEAT_MS = 30_000;
+// Tolerance window when merging server-canonical points with locally
+// appended live points: if a local point is within this many ms of
+// any server point, drop the local copy (server timestamp is
+// canonical for that window). Outside any server window, the local
+// point survives — that's how transient peaks between server
+// snapshots stay visible in the chart.
+const SERVER_LOCAL_MERGE_TOLERANCE_MS = 5_000;
 
 interface ChecklistScoreChartProps {
   resetKey: string;
@@ -113,10 +120,22 @@ export const ChecklistScoreChart = memo(({
   // in `historyQuery.data` when resetKey flipped, so the chart got
   // seeded with stale points and locked there — subsequent refetches
   // for the new interval no-op'd. Now we gate on data identity
-  // instead: every fresh server payload re-seeds the history,
-  // preserving any LIVE-appended points that are newer than the
-  // server's max timestamp (so we don't lose the live trail when a
-  // refetch lands).
+  // instead: every fresh server payload re-seeds the history.
+  //
+  // Merge-strategy: we MUST NOT just replace local history with
+  // serverPoints + tail. The backend's write-through fires on each
+  // `evaluateChecklist` call (every ~15s); local live-appends fire
+  // every time longScore/shortScore change in React state, which
+  // can be more frequent. So local state can hold transient peaks
+  // that happened BETWEEN backend snapshots. If we replace and
+  // filter by `t > serverMaxT`, those mid-window peaks vanish from
+  // the chart on every refetch — the bug user reported as "vi
+  // valor acima de 25% mas os picos não vão até lá".
+  //
+  // Instead: merge-dedupe with a 5s tolerance window. Server points
+  // are canonical for any window they cover; local points outside
+  // every server window survive the merge. This preserves the live
+  // peaks indefinitely (until MAX_HISTORY_POINTS rolls them off).
   useEffect(() => {
     if (!historyQuery.data) return;
     if (lastSeededDataRef.current === historyQuery.data) return;
@@ -126,10 +145,27 @@ export const ChecklistScoreChart = memo(({
       long: p.long,
       short: p.short,
     }));
-    const serverMaxT = serverPoints[serverPoints.length - 1]?.t ?? 0;
     setHistory((prev) => {
-      const livePoints = prev.filter((p) => p.t > serverMaxT);
-      return [...serverPoints, ...livePoints];
+      // Sorted server timestamps for binary-search nearest-neighbor.
+      const serverTimes = serverPoints.map((p) => p.t);
+      const isCovered = (t: number): boolean => {
+        if (serverTimes.length === 0) return false;
+        let lo = 0;
+        let hi = serverTimes.length - 1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >>> 1;
+          const dt = Math.abs(serverTimes[mid]! - t);
+          if (dt <= SERVER_LOCAL_MERGE_TOLERANCE_MS) return true;
+          if (serverTimes[mid]! < t) lo = mid + 1;
+          else hi = mid - 1;
+        }
+        return false;
+      };
+      const livePoints = prev.filter((p) => !isCovered(p.t));
+      const merged = [...serverPoints, ...livePoints].sort((a, b) => a.t - b.t);
+      return merged.length > MAX_HISTORY_POINTS
+        ? merged.slice(-MAX_HISTORY_POINTS)
+        : merged;
     });
   }, [historyQuery.data]);
 
