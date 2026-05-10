@@ -1,7 +1,6 @@
-import { Button, Popover } from '@renderer/components/ui';
+import { Button, Popover, PopoverActionItem, PopoverList } from '@renderer/components/ui';
 import type { TimeInterval } from '@marketmind/types';
 import { UI_INTERVALS } from '@marketmind/types';
-import { Box, Flex, Text, VStack } from '@chakra-ui/react';
 import type { ReactElement } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -47,33 +46,16 @@ export const TimeframeSelector = ({
         </Button>
       }
     >
-      <Flex direction="column" maxH="300px">
-        <Box overflowY="auto" flex={1}>
-          <VStack gap={0} align="stretch">
-            {UI_INTERVALS.map((timeframe) => (
-              <Box
-                key={timeframe}
-                px={3}
-                py={2}
-                cursor="pointer"
-                bg={selectedTimeframe === timeframe ? 'bg.muted' : 'transparent'}
-                _hover={{ bg: 'bg.muted' }}
-                onClick={() => handleSelect(timeframe)}
-                borderBottomWidth="1px"
-                borderColor="border"
-              >
-                <Text
-                  fontWeight={selectedTimeframe === timeframe ? 'semibold' : 'medium'}
-                  fontSize="xs"
-                  color="fg"
-                >
-                  {timeframe}
-                </Text>
-              </Box>
-            ))}
-          </VStack>
-        </Box>
-      </Flex>
+      <PopoverList maxH="300px">
+        {UI_INTERVALS.map((timeframe) => (
+          <PopoverActionItem
+            key={timeframe}
+            label={timeframe}
+            active={selectedTimeframe === timeframe}
+            onClick={() => handleSelect(timeframe)}
+          />
+        ))}
+      </PopoverList>
     </Popover>
   );
 };

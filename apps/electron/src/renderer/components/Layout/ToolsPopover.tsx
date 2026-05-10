@@ -1,5 +1,5 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { Button, Popover, TooltipWrapper } from '@renderer/components/ui';
+import { Box, Flex } from '@chakra-ui/react';
+import { Button, Popover, PopoverActionItem, PopoverList, TooltipWrapper } from '@renderer/components/ui';
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuChartBar, LuFlaskConical, LuScanLine, LuWrench } from 'react-icons/lu';
@@ -24,6 +24,10 @@ export const ToolsPopover = memo(() => {
     },
     [],
   );
+
+  const backtestLabel = hasActiveBacktest
+    ? t('backtest.runningTooltip', { count: activeBacktests.length })
+    : t('backtest.title');
 
   return (
     <Popover
@@ -56,58 +60,37 @@ export const ToolsPopover = memo(() => {
         </Flex>
       }
     >
-      <Box p={2}>
-        <Stack gap={1}>
-          <Button
-            variant="ghost"
-            size="xs"
-            justifyContent="flex-start"
-            onClick={handle(toggleScreener)}
-            data-testid="tools-open-screener"
-          >
-            <LuScanLine />
-            <Text>{t('screener.title')}</Text>
-          </Button>
-          <Button
-            variant="ghost"
-            size="xs"
-            justifyContent="flex-start"
-            onClick={handle(toggleBacktest)}
-            data-testid="tools-open-backtest"
-            position="relative"
-          >
-            <LuFlaskConical />
-            <Text>
-              {hasActiveBacktest
-                ? t('backtest.runningTooltip', { count: activeBacktests.length })
-                : t('backtest.title')}
-            </Text>
-            {hasActiveBacktest && (
+      <PopoverList p={2}>
+        <PopoverActionItem
+          icon={<LuScanLine />}
+          label={t('screener.title')}
+          onClick={handle(toggleScreener)}
+          data-testid="tools-open-screener"
+        />
+        <PopoverActionItem
+          icon={<LuFlaskConical />}
+          label={backtestLabel}
+          onClick={handle(toggleBacktest)}
+          trailing={
+            hasActiveBacktest ? (
               <Box
-                position="absolute"
-                top="6px"
-                right="6px"
                 w="6px"
                 h="6px"
                 borderRadius="full"
                 bg="trading.profit"
-                pointerEvents="none"
                 data-testid="tools-backtest-running-indicator"
               />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="xs"
-            justifyContent="flex-start"
-            onClick={handle(toggleAnalytics)}
-            data-testid="tools-open-analytics"
-          >
-            <LuChartBar />
-            <Text>{t('trading.tabs.analytics')}</Text>
-          </Button>
-        </Stack>
-      </Box>
+            ) : undefined
+          }
+          data-testid="tools-open-backtest"
+        />
+        <PopoverActionItem
+          icon={<LuChartBar />}
+          label={t('trading.tabs.analytics')}
+          onClick={handle(toggleAnalytics)}
+          data-testid="tools-open-analytics"
+        />
+      </PopoverList>
     </Popover>
   );
 });

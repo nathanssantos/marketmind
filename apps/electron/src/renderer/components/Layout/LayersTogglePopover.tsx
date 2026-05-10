@@ -1,5 +1,5 @@
-import { Box, Flex, Stack, Text } from '@chakra-ui/react';
-import { Button, FormRow, Popover, Switch, TooltipWrapper } from '@renderer/components/ui';
+import { Flex, Text } from '@chakra-ui/react';
+import { Button, Popover, PopoverList, PopoverListHeader, PopoverToggleItem, TooltipWrapper } from '@renderer/components/ui';
 import { useChartLayersStore, type ChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { isChartPanel } from '@shared/types/layout';
@@ -106,12 +106,10 @@ export const LayersTogglePopover = memo(() => {
         </Flex>
       }
     >
-      <Box p={3}>
-        <Stack gap={3}>
-          <Flex justify="space-between" align="center">
-            <Text fontSize="sm" fontWeight="semibold">
-              {t('chart.layers.title')}
-            </Text>
+      <PopoverList p={2}>
+        <PopoverListHeader
+          title={t('chart.layers.title')}
+          action={
             <Button
               size="2xs"
               variant="ghost"
@@ -120,39 +118,28 @@ export const LayersTogglePopover = memo(() => {
             >
               {allOn ? t('chart.layers.hideAll') : t('chart.layers.showAll')}
             </Button>
-          </Flex>
-
-          {disabled ? (
-            <Text fontSize="xs" color="fg.muted" py={2} textAlign="center">
-              {t('chart.layers.noFocusedChart')}
-            </Text>
-          ) : (
-            <Stack gap={2}>
-              {LAYER_ROWS.map((row) => (
-                <FormRow
-                  key={row.key}
-                  label={
-                    <Flex align="center" gap={2}>
-                      <Box color="fg.muted">{row.icon}</Box>
-                      <Text fontSize="xs">{t(row.labelKey)}</Text>
-                    </Flex>
-                  }
-                >
-                  <Switch
-                    checked={flags?.[row.key] ?? true}
-                    onCheckedChange={() => {
-                      if (!focusedPanelKey) return;
-                      toggleFlag(focusedPanelKey.symbol, focusedPanelKey.interval, row.key);
-                    }}
-                    aria-label={t(row.labelKey)}
-                    data-testid={`layers-toggle-${row.key}`}
-                  />
-                </FormRow>
-              ))}
-            </Stack>
-          )}
-        </Stack>
-      </Box>
+          }
+        />
+        {disabled ? (
+          <Text fontSize="xs" color="fg.muted" py={2} textAlign="center">
+            {t('chart.layers.noFocusedChart')}
+          </Text>
+        ) : (
+          LAYER_ROWS.map((row) => (
+            <PopoverToggleItem
+              key={row.key}
+              icon={row.icon}
+              label={t(row.labelKey)}
+              checked={flags?.[row.key] ?? true}
+              onCheckedChange={() => {
+                if (!focusedPanelKey) return;
+                toggleFlag(focusedPanelKey.symbol, focusedPanelKey.interval, row.key);
+              }}
+              data-testid={`layers-toggle-${row.key}`}
+            />
+          ))
+        )}
+      </PopoverList>
     </Popover>
   );
 });
