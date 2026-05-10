@@ -52,8 +52,8 @@ export const GridEditOverlay = memo(({ panelId, onClose }: GridEditOverlayProps)
       <TooltipWrapper label={t('common.close')} showArrow>
         <IconButton
           position="absolute"
-          top={1}
-          right={1}
+          top={3}
+          right={3}
           size="2xs"
           variant="ghost"
           color="fg.muted"

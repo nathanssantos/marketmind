@@ -22,8 +22,8 @@ export const GridEditFloatingActions = memo(() => {
   return (
     <Box
       position="absolute"
-      bottom={2}
-      right={2}
+      bottom={4}
+      right={4}
       zIndex={101}
       bg="bg.panel"
       borderWidth="1px"
