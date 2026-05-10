@@ -105,6 +105,12 @@ export const renderCandlePatterns = (
     const yHigh = manager.priceToY(Number(kline.high));
     const yLow = manager.priceToY(Number(kline.low));
 
+    // Bullish glyphs always anchor to the LOW-price side of the bar (yLow);
+    // bearish always to the HIGH-price side (yHigh). The flip only inverts
+    // which screen direction those sides face — yLow sits at the screen
+    // bottom when not flipped (so the glyph stacks DOWNWARD past yLow), and
+    // at the screen top when flipped (so the glyph stacks UPWARD past yLow).
+    // Same idea, mirrored, for bearish around yHigh.
     let bullishOffset = 0;
     let bearishOffset = 0;
     let neutralOffset = 0;
@@ -112,14 +118,23 @@ export const renderCandlePatterns = (
       const color = colorForSentiment(hit.sentiment, colors);
       let glyphY: number;
       if (hit.sentiment === 'bullish') {
-        glyphY = flipped ? yHigh - GLYPH_OFFSET - bullishOffset : yLow + GLYPH_OFFSET + bullishOffset;
+        glyphY = flipped
+          ? yLow - GLYPH_OFFSET - bullishOffset
+          : yLow + GLYPH_OFFSET + bullishOffset;
+        // Triangle still semantically points UP (bullish direction), but on
+        // a flipped chart "up" visually means screen-down, so we draw the
+        // mirrored triangle to keep the orientation consistent with the bar.
         drawTriangle(ctx, x, glyphY, flipped ? 'down' : 'up', GLYPH_SIZE, color);
         bullishOffset += GLYPH_SIZE + GLYPH_GAP;
       } else if (hit.sentiment === 'bearish') {
-        glyphY = flipped ? yLow + GLYPH_OFFSET + bearishOffset : yHigh - GLYPH_OFFSET - bearishOffset;
+        glyphY = flipped
+          ? yHigh + GLYPH_OFFSET + bearishOffset
+          : yHigh - GLYPH_OFFSET - bearishOffset;
         drawTriangle(ctx, x, glyphY, flipped ? 'up' : 'down', GLYPH_SIZE, color);
         bearishOffset += GLYPH_SIZE + GLYPH_GAP;
       } else {
+        // Neutral always sits OUTSIDE the visual top of the bar — yHigh is
+        // the screen top in normal mode, yLow is the screen top when flipped.
         glyphY = (flipped ? yLow : yHigh) - NEUTRAL_OFFSET - neutralOffset;
         drawCircle(ctx, x, glyphY, GLYPH_SIZE, color);
         neutralOffset += GLYPH_SIZE + GLYPH_GAP;
