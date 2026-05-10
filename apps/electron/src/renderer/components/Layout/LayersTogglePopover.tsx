@@ -4,7 +4,7 @@ import { useChartLayersStore, type ChartLayerFlags } from '@renderer/store/chart
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuLayers, LuPencil, LuActivity, LuChartLine, LuFlame } from 'react-icons/lu';
+import { LuLayers, LuPencil, LuActivity, LuChartLine, LuFlame, LuFlag } from 'react-icons/lu';
 
 const DEFAULT_FLAGS: ChartLayerFlags = {
   drawings: true,
@@ -12,6 +12,7 @@ const DEFAULT_FLAGS: ChartLayerFlags = {
   orderLines: true,
   setupMarkers: true,
   heatmap: true,
+  candlePatterns: true,
 };
 
 interface LayerRow {
@@ -23,6 +24,7 @@ interface LayerRow {
 const LAYER_ROWS: LayerRow[] = [
   { key: 'drawings', icon: <LuPencil />, labelKey: 'chart.layers.drawings' },
   { key: 'indicators', icon: <LuActivity />, labelKey: 'chart.layers.indicators' },
+  { key: 'candlePatterns', icon: <LuFlag />, labelKey: 'chart.layers.candlePatterns' },
   { key: 'orderLines', icon: <LuChartLine />, labelKey: 'chart.layers.orderLines' },
   { key: 'heatmap', icon: <LuFlame />, labelKey: 'chart.layers.heatmap' },
 ];

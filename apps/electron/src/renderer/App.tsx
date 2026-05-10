@@ -25,6 +25,7 @@ import { useLayoutSync } from './hooks/useLayoutSync';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useSetupToasts } from './hooks/useSetupToasts';
 import { useAutoActivateDefaultIndicators } from './hooks/useAutoActivateDefaultIndicators';
+import { useAutoActivateDefaultPatterns } from './hooks/useAutoActivateDefaultPatterns';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useShallow } from 'zustand/shallow';
 import { useChartPref } from './store/preferencesStore';
@@ -85,6 +86,7 @@ function AppContent(): ReactElement {
   useOrderNotifications();
   useSetupToasts();
   useAutoActivateDefaultIndicators();
+  useAutoActivateDefaultPatterns();
 
   const [chartType] = useChartPref<ChartType>('chartType', 'kline');
   const [timeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);

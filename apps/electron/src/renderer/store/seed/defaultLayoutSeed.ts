@@ -24,15 +24,34 @@ export interface SeedIndicatorBinding {
   visible: boolean;
 }
 
+export interface SeedPatternBinding {
+  /** Stable pattern catalog id (e.g. 'hammer'). Resolved to user-pattern id at activation. */
+  patternId: string;
+  /** Grid-panel id this binding applies to. */
+  panelId: string;
+}
+
 export interface DefaultLayoutSeed {
   symbolTabs: SymbolTab[];
   activeSymbolTabId: string;
   activeLayoutId: string;
   layoutPresets: LayoutPreset[];
   indicatorBindings: SeedIndicatorBinding[];
+  /**
+   * Per-panel candle-pattern bindings. Each new chart panel gets the
+   * default pattern set (Hammer / Shooting Star / Engulfings / Doji)
+   * enabled on first run; users add or remove from the popover.
+   */
+  patternBindings: SeedPatternBinding[];
 }
 
+// Pattern bindings are populated at activation time by
+// `useAutoActivateDefaultPatterns` (DEFAULT_ENABLED_PATTERN_IDS × every
+// chart panel of every layout). The seed file just declares the empty
+// array so the type contract is satisfied without regenerating the JSON
+// snapshot when DEFAULT_ENABLED_PATTERN_IDS changes.
 export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
+  patternBindings: [],
   "symbolTabs": [
     {
       "id": "default",

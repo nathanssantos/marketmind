@@ -29,6 +29,8 @@ import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useChartLayerFlags } from '@renderer/store/chartLayersStore';
+import { usePatternMarkers } from '@renderer/hooks/usePatternMarkers';
+import { renderCandlePatterns as drawCandlePatterns } from './ChartCanvas/renderers/renderCandlePatterns';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
@@ -471,6 +473,18 @@ const ChartCanvasInternal = ({
 
   useChartPanelHeights({ manager, showEventRow, advancedConfig, indicatorsEnabled: layerFlags.indicators, panelId });
 
+  // Candle-pattern hits for this panel — closed-bars-only, memoized so live
+  // ticks don't re-evaluate. Layer flag gates the actual render call below.
+  const patternHits = usePatternMarkers(panelId, klines);
+  const renderCandlePatternsCb = useCallback(() => {
+    if (!layerFlags.candlePatterns || !manager || patternHits.length === 0) return;
+    const ctx = manager.getContext();
+    if (!ctx) return;
+    ctx.save();
+    drawCandlePatterns(ctx, manager, klines, patternHits, colors);
+    ctx.restore();
+  }, [layerFlags.candlePatterns, manager, patternHits, klines, colors]);
+
   useEffect(() => {
     if (!manager || !advancedConfig) return;
     manager.setChartPadding(advancedConfig.paddingTop, advancedConfig.paddingBottom);
@@ -504,6 +518,7 @@ const ChartCanvasInternal = ({
     manager, chartType, colors, allExecutions,
     baseRenderers: { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark },
     genericRenderers, renderOrderLines, renderGridPreview, renderDrawings, renderEventScale,
+    renderCandlePatterns: renderCandlePatternsCb,
     orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, orderPreviewRef,
   });
 
