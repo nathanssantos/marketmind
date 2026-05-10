@@ -1,4 +1,5 @@
 import { Box } from '@chakra-ui/react';
+import type { PatternHit } from '@marketmind/trading-core';
 import type { Kline, MarketType, TimeInterval, TradingSetup, Viewport } from '@marketmind/types';
 import type { KlineSource } from '@renderer/hooks/useKlineLiveStream';
 import { useChartColors } from '@renderer/hooks/useChartColors';
@@ -496,7 +497,7 @@ const ChartCanvasInternal = ({
   // M1.1 — click a pattern glyph → info popover at the click point.
   const { patterns: userPatterns } = useUserPatterns();
   const [patternPopover, setPatternPopover] = useState<
-    | { hit: import('@marketmind/trading-core').PatternHit; anchor: { x: number; y: number }; barTime?: number; category?: string; description?: string }
+    | { hit: PatternHit; anchor: { x: number; y: number }; barTime?: number; category?: string; description?: string }
     | null
   >(null);
 
