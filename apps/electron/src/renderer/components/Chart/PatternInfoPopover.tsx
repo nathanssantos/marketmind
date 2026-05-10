@@ -1,8 +1,9 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import { Badge, CloseButton } from '@renderer/components/ui';
+import { Badge, Button, CloseButton } from '@renderer/components/ui';
 import type { PatternHit } from '@marketmind/trading-core';
 import { useEffect, useRef, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LuPencil } from 'react-icons/lu';
 
 const SENTIMENT_COLORS: Record<PatternHit['sentiment'], { bg: string; label: string }> = {
   bullish: { bg: 'trading.profit', label: 'patterns.sentiment.bullish' },
@@ -26,6 +27,8 @@ export interface PatternInfoPopoverProps {
   /** Bar timestamp (ms epoch) — formatted for the header. */
   barTime?: number;
   onClose: () => void;
+  /** When present, shows an "Edit pattern" button that calls back. */
+  onEdit?: () => void;
 }
 
 /**
@@ -41,6 +44,7 @@ export const PatternInfoPopover = ({
   description,
   barTime,
   onClose,
+  onEdit,
 }: PatternInfoPopoverProps): ReactElement => {
   const { t } = useTranslation();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -111,6 +115,14 @@ export const PatternInfoPopover = ({
             <Text fontSize="2xs" color="fg.muted" fontVariantNumeric="tabular-nums">
               {time}
             </Text>
+          ) : null}
+          {onEdit ? (
+            <Flex justify="flex-end" pt={1}>
+              <Button size="2xs" variant="outline" onClick={onEdit}>
+                <LuPencil />
+                {t('chart.patterns.edit', { defaultValue: 'Edit pattern' })}
+              </Button>
+            </Flex>
           ) : null}
         </Stack>
       </Box>
