@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.1] - 2026-05-10
+
+### Fixed
+
+- **Vertical pan multiplied by zoom (#574)** — regression from #569. `panVerticalOffset` was recomputing its own bounds from the current viewport while the chart was drawing with the locked `rawBaseBounds`. After horizontal pan into a more volatile region (or after vertical zoom), the priceDelta basis diverged → pan moved faster than the mouse. Pass the locked `rawBaseBounds` directly so the pan math uses the same bounds the chart is drawing.
+- **Volume bars overflow chart area (#575)** — regression from #569. `applyBoundsTransform` only transforms `minPrice` / `maxPrice`; `maxVolume` was effectively locked at chart-load time. Pan into a higher-volume region → `volumeRatio > 1` → bars overflowed the bottom 25% overlay band into the candle area. Split bounds responsibilities: price stays locked, volume refreshes from current viewport on every transform re-apply.
+
+### Refactored
+
+- **Header selector typography + Spot/Futures blue (#573)** — Symbol / Timeframe / Indicators / Layers / Tools triggers now share an explicit `size="2xs" variant="outline" color="fg.muted" fontWeight="medium" gap={1.5}` style. Spot/Futures toggle inside SymbolSelector swaps `trading.info` / `trading.warning` active colors for `accent.solid` (blue) — matches the active-state convention used elsewhere.
+- **Popover-list primitives (#573)** — extracted `PopoverList` / `PopoverListHeader` / `PopoverSectionLabel` / `PopoverActionItem` / `PopoverToggleItem` in `components/ui/popover-list.tsx`. TimeframeSelector / LayersTogglePopover / IndicatorTogglePopoverGeneric / ToolsPopover refactored to use them — canonical text size (`xs`/`medium`), padding (`px=2 py=1.5`), hover, active background.
+
 ## [1.17.0] - 2026-05-09
 
 ### Added — UI polish + chart camera fixes

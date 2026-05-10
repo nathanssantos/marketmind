@@ -320,8 +320,10 @@ export function SymbolSelector({
           size="2xs"
           variant="outline"
           color="fg.muted"
+          fontWeight="medium"
+          gap={1.5}
         >
-          <CryptoIcon symbol={value} size={12} />
+          <CryptoIcon symbol={value} size={14} />
           {currentSymbol}
         </Button>
       }
@@ -356,7 +358,7 @@ export function SymbolSelector({
             <Button
               size="2xs"
               variant="outline"
-              color={!isFutures ? 'trading.info' : 'fg.muted'}
+              color={!isFutures ? 'accent.solid' : 'fg.muted'}
               onClick={() => handleMarketTypeToggle('SPOT')}
               flex={1}
             >
@@ -365,7 +367,7 @@ export function SymbolSelector({
             <Button
               size="2xs"
               variant="outline"
-              color={isFutures ? 'trading.warning' : 'fg.muted'}
+              color={isFutures ? 'accent.solid' : 'fg.muted'}
               onClick={() => handleMarketTypeToggle('FUTURES')}
               flex={1}
             >
