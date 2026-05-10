@@ -9,7 +9,7 @@ import {
   type PatternParamDef,
   type PatternSentiment,
 } from '@marketmind/trading-core';
-import type { Kline } from '@marketmind/types';
+import type { DialogControlProps, Kline } from '@marketmind/types';
 import {
   Button,
   Field,
@@ -95,9 +95,7 @@ const buildDefinition = (form: FormState): PatternDefinition => ({
   ...(form.description.trim() ? { description: form.description.trim() } : {}),
 });
 
-export interface PatternConfigDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+export interface PatternConfigDialogProps extends DialogControlProps {
   mode: Mode;
   /** Required in edit mode, ignored otherwise. */
   pattern?: UserPattern;
