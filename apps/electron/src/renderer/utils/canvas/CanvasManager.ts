@@ -360,11 +360,16 @@ export class CanvasManager {
 
   /**
    * Re-apply the current vertical transform (priceOffset/priceScale)
-   * onto the locked `rawBaseBounds`, leaving the raw bounds untouched.
-   * Used by every viewport mutation that should NOT refit Y: horizontal
-   * pan, horizontal zoom, vertical pan, vertical zoom, setViewport,
-   * panToNextKline. The first call falls back to `refitBaseBounds()`
-   * so the very first render still has bounds.
+   * onto the locked `rawBaseBounds`, leaving the raw price bounds
+   * untouched. Volume bounds always refresh from the current viewport
+   * so volume bars stay within their bottom-band overlay even after
+   * horizontal pan into a higher-volume region (otherwise volumeRatio
+   * would exceed 1 and bars would overflow into the candle area).
+   *
+   * Used by every viewport mutation that should NOT refit Y price:
+   * horizontal pan, horizontal zoom, vertical pan, vertical zoom,
+   * setViewport, panToNextKline. The first call falls back to
+   * `refitBaseBounds()` so the very first render still has bounds.
    */
   private applyTransform(): void {
     if (!this.rawBaseBounds) {
@@ -375,7 +380,13 @@ export class CanvasManager {
       this.bounds = null;
       return;
     }
-    this.bounds = applyBoundsTransform(this.rawBaseBounds, this.priceOffset, this.priceScale);
+    const transformed = applyBoundsTransform(this.rawBaseBounds, this.priceOffset, this.priceScale);
+    const currentForVolume = calculateBounds(this.klines, this.viewport);
+    this.bounds = {
+      ...transformed,
+      minVolume: currentForVolume.minVolume,
+      maxVolume: currentForVolume.maxVolume,
+    };
   }
 
   public getBounds(): Bounds | null { return this.bounds; }
