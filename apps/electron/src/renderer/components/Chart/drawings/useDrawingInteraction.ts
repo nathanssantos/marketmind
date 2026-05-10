@@ -79,6 +79,22 @@ const applyDragUpdate = (
   timeAt: (idx: number) => number | undefined,
   timeAtFloor: (idx: number) => number | undefined,
 ): void => {
+  // Single-point drawings (text / horizontalLine / verticalLine) only
+  // have one anchor. Dragging the body and dragging the 'start' handle
+  // are semantically identical — both move that anchor by
+  // (deltaIndex, deltaPrice). Handled at the top so the 'start' handle
+  // case isn't accidentally swallowed by the two-point/fibonacci
+  // branches further down (which would make the handle drag a silent
+  // no-op, the bug user reported).
+  if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine') {
+    store.updateDrawing(originalDrawing.id, {
+      index: originalDrawing.index + deltaIndex,
+      price: originalDrawing.price + deltaPrice,
+      time: timeAt(originalDrawing.index + deltaIndex),
+    });
+    return;
+  }
+
   if (handleType === 'body' || handleType === null) {
     if (originalDrawing.type === 'channel' || originalDrawing.type === 'pitchfork') {
       const si = originalDrawing.startIndex + deltaIndex;
@@ -126,15 +142,6 @@ const applyDragUpdate = (
         entryTime: timeAt(ei),
         stopLossPrice: originalDrawing.stopLossPrice + deltaPrice,
         takeProfitPrice: originalDrawing.takeProfitPrice + deltaPrice,
-      });
-      return;
-    }
-
-    if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine') {
-      store.updateDrawing(originalDrawing.id, {
-        index: originalDrawing.index + deltaIndex,
-        price: originalDrawing.price + deltaPrice,
-        time: timeAt(originalDrawing.index + deltaIndex),
       });
       return;
     }
