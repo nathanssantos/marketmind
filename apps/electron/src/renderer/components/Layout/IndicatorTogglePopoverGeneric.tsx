@@ -234,7 +234,8 @@ export const IndicatorTogglePopoverGeneric = memo(
                 </Text>
                 <Button
                   size="2xs"
-                  colorPalette="blue"
+                  variant="outline"
+                  color="fg.muted"
                   onClick={() => setDialog({ kind: 'create' })}
                 >
                   <LuPlus />
