@@ -39,6 +39,7 @@ import {
 } from '../services/auth';
 import { sendPasswordResetEmail, sendTwoFactorCode, sendVerificationEmail } from '../services/email';
 import { seedDefaultTradingProfile, seedDefaultUserIndicators } from '../services/user-indicators';
+import { seedDefaultUserPatterns } from '../services/user-patterns';
 import {
   checkEmailVerificationRateLimit,
   checkLoginRateLimit,
@@ -115,6 +116,7 @@ export const authRouter = router({
 
       const userId = await createUser(input.email, input.password);
       await seedDefaultUserIndicators(userId);
+      await seedDefaultUserPatterns(userId);
       await seedDefaultTradingProfile(userId);
       const { sessionId, expiresAt } = await createSession(userId, true, {
         ip: metadata.ip,

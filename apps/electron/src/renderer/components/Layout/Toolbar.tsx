@@ -10,6 +10,7 @@ import { useGlobalActionsOptional } from '../../context/GlobalActionsContext';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
+import { PatternTogglePopover } from './PatternTogglePopover';
 import { LayersTogglePopover } from './LayersTogglePopover';
 import { ToolsPopover } from './ToolsPopover';
 import type { MarketType } from '@marketmind/types';
@@ -104,6 +105,8 @@ export const Toolbar = memo(({
         />
 
         <IndicatorTogglePopover triggerVariant="labeled" popoverPlacement="bottom-start" />
+
+        <PatternTogglePopover triggerVariant="labeled" popoverPlacement="bottom-start" />
 
         <LayersTogglePopover />
 
