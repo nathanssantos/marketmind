@@ -37,7 +37,8 @@ import {
   type PatternHitDraw,
 } from './ChartCanvas/renderers/renderCandlePatterns';
 import { PatternInfoPopover } from './PatternInfoPopover';
-import { useUserPatterns } from '@renderer/hooks/useUserPatterns';
+import { PatternConfigDialog } from '@renderer/components/Patterns/PatternConfigDialog';
+import { useUserPatterns, type UserPattern } from '@renderer/hooks/useUserPatterns';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
@@ -495,11 +496,13 @@ const ChartCanvasInternal = ({
   }, [layerFlags.candlePatterns, manager, patternHits, klines, colors]);
 
   // M1.1 — click a pattern glyph → info popover at the click point.
-  const { patterns: userPatterns } = useUserPatterns();
+  // M2 — popover gains an "Edit pattern" button that opens the config dialog.
+  const { patterns: userPatterns, update: updateUserPattern } = useUserPatterns();
   const [patternPopover, setPatternPopover] = useState<
-    | { hit: PatternHit; anchor: { x: number; y: number }; barTime?: number; category?: string; description?: string }
+    | { hit: PatternHit; anchor: { x: number; y: number }; barTime?: number; category?: string; description?: string; userPattern?: UserPattern }
     | null
   >(null);
+  const [patternEditTarget, setPatternEditTarget] = useState<UserPattern | null>(null);
 
   const handlePatternClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -519,7 +522,9 @@ const ChartCanvasInternal = ({
         hit: draw.hit,
         anchor: { x: e.clientX, y: e.clientY },
         ...(kline ? { barTime: Number(kline.openTime) } : {}),
-        ...(userPattern ? { category: userPattern.definition.category, description: userPattern.definition.description } : {}),
+        ...(userPattern
+          ? { category: userPattern.definition.category, description: userPattern.definition.description, userPattern }
+          : {}),
       });
     },
     [layerFlags.candlePatterns, canvasRef, klines, userPatterns],
@@ -605,9 +610,30 @@ const ChartCanvasInternal = ({
           {...(patternPopover.category ? { category: patternPopover.category } : {})}
           {...(patternPopover.description ? { description: patternPopover.description } : {})}
           {...(patternPopover.barTime !== undefined ? { barTime: patternPopover.barTime } : {})}
+          {...(patternPopover.userPattern
+            ? {
+                onEdit: () => {
+                  setPatternEditTarget(patternPopover.userPattern!);
+                  setPatternPopover(null);
+                },
+              }
+            : {})}
           onClose={() => setPatternPopover(null)}
         />
       ) : null}
+      <PatternConfigDialog
+        isOpen={patternEditTarget !== null}
+        onClose={() => setPatternEditTarget(null)}
+        mode="edit"
+        {...(patternEditTarget ? { pattern: patternEditTarget } : {})}
+        isLoading={updateUserPattern.isPending}
+        previewKlines={klines}
+        onSubmit={(def) => {
+          if (!patternEditTarget) return;
+          void updateUserPattern.mutateAsync({ id: patternEditTarget.id, definition: def })
+            .then(() => setPatternEditTarget(null));
+        }}
+      />
     </>
   );
 };
