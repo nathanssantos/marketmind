@@ -65,9 +65,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 4
     },
     {
-      "id": "seed-tab-politifi",
-      "symbol": "POLITIFI",
-      "marketType": "SPOT",
+      "id": "seed-tab-bnbusdt",
+      "symbol": "BNBUSDT",
+      "marketType": "FUTURES",
       "order": 5
     }
   ],
@@ -1531,6 +1531,270 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "lineWidth": 1
       },
       "panelId": "seed-4h-1d-1w-p7",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
       "visible": true
     }
   ]

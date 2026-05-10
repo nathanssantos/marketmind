@@ -31,9 +31,9 @@
       "order": 4
     },
     {
-      "id": "seed-tab-politifi",
-      "symbol": "POLITIFI",
-      "marketType": "SPOT",
+      "id": "seed-tab-bnbusdt",
+      "symbol": "BNBUSDT",
+      "marketType": "FUTURES",
       "order": 5
     }
   ],
