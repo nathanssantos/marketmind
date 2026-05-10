@@ -16,7 +16,7 @@ import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStor
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
@@ -30,7 +30,13 @@ import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { usePatternMarkers } from '@renderer/hooks/usePatternMarkers';
-import { renderCandlePatterns as drawCandlePatterns } from './ChartCanvas/renderers/renderCandlePatterns';
+import {
+  renderCandlePatterns as drawCandlePatterns,
+  findPatternHitAtPosition,
+  type PatternHitDraw,
+} from './ChartCanvas/renderers/renderCandlePatterns';
+import { PatternInfoPopover } from './PatternInfoPopover';
+import { useUserPatterns } from '@renderer/hooks/useUserPatterns';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
@@ -476,14 +482,47 @@ const ChartCanvasInternal = ({
   // Candle-pattern hits for this panel — closed-bars-only, memoized so live
   // ticks don't re-evaluate. Layer flag gates the actual render call below.
   const patternHits = usePatternMarkers(panelId, klines);
+  const patternDrawsRef = useRef<PatternHitDraw[]>([]);
   const renderCandlePatternsCb = useCallback(() => {
+    patternDrawsRef.current.length = 0;
     if (!layerFlags.candlePatterns || !manager || patternHits.length === 0) return;
     const ctx = manager.getContext();
     if (!ctx) return;
     ctx.save();
-    drawCandlePatterns(ctx, manager, klines, patternHits, colors);
+    drawCandlePatterns(ctx, manager, klines, patternHits, colors, patternDrawsRef.current);
     ctx.restore();
   }, [layerFlags.candlePatterns, manager, patternHits, klines, colors]);
+
+  // M1.1 — click a pattern glyph → info popover at the click point.
+  const { patterns: userPatterns } = useUserPatterns();
+  const [patternPopover, setPatternPopover] = useState<
+    | { hit: import('@marketmind/trading-core').PatternHit; anchor: { x: number; y: number }; barTime?: number; category?: string; description?: string }
+    | null
+  >(null);
+
+  const handlePatternClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!layerFlags.candlePatterns || !canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const localX = e.clientX - rect.left;
+      const localY = e.clientY - rect.top;
+      const draw = findPatternHitAtPosition(patternDrawsRef.current, localX, localY);
+      if (!draw) return;
+      // Stop propagation so the click doesn't also trigger drawing-tool / order
+      // placement handlers that listen to the canvas. Mousedown/up still flow
+      // through their normal paths so drag gestures aren't broken.
+      e.stopPropagation();
+      const userPattern = userPatterns.find((p) => p.patternId === draw.hit.patternId);
+      const kline = klines[draw.hit.index];
+      setPatternPopover({
+        hit: draw.hit,
+        anchor: { x: e.clientX, y: e.clientY },
+        ...(kline ? { barTime: Number(kline.openTime) } : {}),
+        ...(userPattern ? { category: userPattern.definition.category, description: userPattern.definition.description } : {}),
+      });
+    },
+    [layerFlags.candlePatterns, canvasRef, klines, userPatterns],
+  );
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;
@@ -548,6 +587,7 @@ const ChartCanvasInternal = ({
           onMouseMove={handleCanvasMouseMoveWrapped}
           onMouseUp={handleCanvasMouseUp}
           onMouseLeave={handleCanvasMouseLeave}
+          onClick={handlePatternClick}
           onWheel={handleWheel}
           style={{ width: '100%', height: '100%', cursor: 'crosshair', display: 'block' }}
         />
@@ -557,6 +597,16 @@ const ChartCanvasInternal = ({
         <ChartPerfOverlay />
       </Box>
       </ChartContextMenuManager>
+      {patternPopover ? (
+        <PatternInfoPopover
+          anchor={patternPopover.anchor}
+          hit={patternPopover.hit}
+          {...(patternPopover.category ? { category: patternPopover.category } : {})}
+          {...(patternPopover.description ? { description: patternPopover.description } : {})}
+          {...(patternPopover.barTime !== undefined ? { barTime: patternPopover.barTime } : {})}
+          onClose={() => setPatternPopover(null)}
+        />
+      ) : null}
     </>
   );
 };
