@@ -83,8 +83,14 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
   canvasCtx.rect(0, 0, chartWidth, chartHeight);
   canvasCtx.clip();
 
+  // When the chart is flipped (price grows downward), low-price candles sit at
+  // the top and high-price candles at the bottom — so volume must anchor at
+  // the TOP (next to the lows) and grow downward to avoid overlapping the
+  // bars that have moved to the bottom of the chart. Mirrors the convention
+  // candles + indicators follow via priceToY/isFlipped.
+  const flipped = manager.isFlipped();
   const volumeOverlayHeight = chartHeight * volumeHeightRatio;
-  const volumeBaseY = chartHeight;
+  const volumeBaseY = flipped ? 0 : chartHeight;
   const lastKlineIndex = klines.length - 1;
 
   visibleKlines.forEach((kline, index) => {
@@ -111,7 +117,8 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
       canvasCtx.shadowBlur = 6;
     }
 
-    drawRect(canvasCtx, barX, volumeBaseY - barHeight, klineWidth, barHeight, finalColor);
+    const barTop = flipped ? volumeBaseY : volumeBaseY - barHeight;
+    drawRect(canvasCtx, barX, barTop, klineWidth, barHeight, finalColor);
 
     if (isHovered) canvasCtx.restore();
 
@@ -136,17 +143,21 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
           canvasCtx.lineWidth = 2;
 
           const lineOffset = 1;
-          const topY = volumeBaseY - projectedHeight;
+          // Outer edge = projection tip (away from baseline). Inner edge =
+          // current bar tip. Flip swaps which is "above" and which is "below"
+          // the baseline.
+          const projectionTipY = flipped ? volumeBaseY + projectedHeight : volumeBaseY - projectedHeight;
+          const currentTipY = flipped ? volumeBaseY + barHeight : volumeBaseY - barHeight;
           const leftX = barX + lineOffset;
           const rightX = barX + klineWidth - lineOffset;
 
           canvasCtx.beginPath();
-          canvasCtx.moveTo(leftX, topY);
-          canvasCtx.lineTo(rightX, topY);
-          canvasCtx.moveTo(rightX, topY);
-          canvasCtx.lineTo(rightX, volumeBaseY - barHeight);
-          canvasCtx.moveTo(leftX, topY);
-          canvasCtx.lineTo(leftX, volumeBaseY - barHeight);
+          canvasCtx.moveTo(leftX, projectionTipY);
+          canvasCtx.lineTo(rightX, projectionTipY);
+          canvasCtx.moveTo(rightX, projectionTipY);
+          canvasCtx.lineTo(rightX, currentTipY);
+          canvasCtx.moveTo(leftX, projectionTipY);
+          canvasCtx.lineTo(leftX, currentTipY);
           canvasCtx.stroke();
 
           canvasCtx.restore();
@@ -176,7 +187,9 @@ export const renderVolume: GenericRenderer = (ctx, _input) => {
 
       const barX = xPos + (widthPerKline - klineWidth) / 2 + klineWidth / 2;
       const ratio = maValue / bounds.maxVolume;
-      const y = volumeBaseY - (ratio * volumeOverlayHeight);
+      const y = flipped
+        ? volumeBaseY + (ratio * volumeOverlayHeight)
+        : volumeBaseY - (ratio * volumeOverlayHeight);
 
       if (!hasMovedTo) {
         canvasCtx.moveTo(barX, y);
