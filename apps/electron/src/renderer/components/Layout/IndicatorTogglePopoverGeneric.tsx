@@ -3,10 +3,10 @@ import type { IndicatorCategory, UserIndicator } from '@marketmind/trading-core'
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import {
   Button,
-  Checkbox,
   ConfirmationDialog,
   IconButton,
   Popover,
+  Switch,
   TooltipWrapper,
 } from '@renderer/components/ui';
 import { useUserIndicators } from '@renderer/hooks';
@@ -261,15 +261,15 @@ export const IndicatorTogglePopoverGeneric = memo(
                       return (
                         <Flex key={ui.id} align="center" justify="space-between" gap={2}>
                           <Box flex={1} minW={0}>
-                            <Checkbox
-                              checked={isActive}
-                              onCheckedChange={() => handleToggle(ui, isActive)}
-                            >
-                              <Text fontSize="sm" truncate>
-                                {ui.label}
-                              </Text>
-                            </Checkbox>
+                            <Text fontSize="sm" truncate>
+                              {ui.label}
+                            </Text>
                           </Box>
+                          <Switch
+                            checked={isActive}
+                            onCheckedChange={() => handleToggle(ui, isActive)}
+                            aria-label={ui.label}
+                          />
                           <HStack gap={0.5}>
                             <TooltipWrapper label={t('common.edit')}>
                               <IconButton
