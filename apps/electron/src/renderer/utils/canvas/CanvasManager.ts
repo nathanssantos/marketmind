@@ -551,7 +551,10 @@ export class CanvasManager {
   public panVertical(deltaY: number): void {
     if (!this.dimensions) return;
     const adjustedDeltaY = this.flipped ? -deltaY : deltaY;
-    this.priceOffset = panVerticalOffset(this.priceOffset, adjustedDeltaY, this.dimensions.chartHeight, this.klines, this.viewport, this.priceScale);
+    // Pass the LOCKED rawBaseBounds — not re-derived bounds — so the
+    // priceDelta basis matches what the chart is actually drawing.
+    // See `panVerticalOffset` doc for the bug history.
+    this.priceOffset = panVerticalOffset(this.priceOffset, adjustedDeltaY, this.dimensions.chartHeight, this.rawBaseBounds, this.priceScale);
     this.applyTransform();
     this.markDirty('viewport');
   }

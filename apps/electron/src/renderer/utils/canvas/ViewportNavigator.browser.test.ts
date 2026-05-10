@@ -257,13 +257,13 @@ describe('ViewportNavigator — real browser', () => {
       const v = { ...viewport, start: 0, end: 100 };
       const bounds = calculateBounds(klines, v);
       const range = bounds.maxPrice - bounds.minPrice;
-      const next = panVerticalOffset(0, dims.chartHeight, dims.chartHeight, klines, v, 1);
+      const next = panVerticalOffset(0, dims.chartHeight, dims.chartHeight, bounds, 1);
       expect(next).toBeCloseTo(range, 3);
     });
 
-    test('empty klines returns the current offset unchanged', () => {
+    test('null bounds returns the current offset unchanged', () => {
       const dims: Dimensions = { width: 1000, height: 600, chartWidth: 1000, chartHeight: 500, volumeHeight: 100 };
-      const result = panVerticalOffset(7, 100, dims.chartHeight, [], viewport, 1);
+      const result = panVerticalOffset(7, 100, dims.chartHeight, null, 1);
       expect(result).toBe(7);
     });
   });

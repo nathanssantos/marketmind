@@ -1,6 +1,6 @@
 import type { Kline, Viewport } from '@marketmind/types';
 import { CHART_CONFIG } from '@shared/constants';
-import { calculateBounds, clampViewport, type Bounds, type Dimensions } from './coordinateSystem';
+import { clampViewport, type Bounds, type Dimensions } from './coordinateSystem';
 
 export interface ViewportState {
   viewport: Viewport;
@@ -60,11 +60,18 @@ export const panVerticalOffset = (
   currentOffset: number,
   deltaY: number,
   chartHeight: number,
-  klines: Kline[],
-  viewport: Viewport,
+  baseBounds: Bounds | null,
   priceScale: number = 1
 ): number => {
-  const baseBounds = klines.length > 0 ? calculateBounds(klines, viewport) : null;
+  // CRITICAL: `baseBounds` must be the LOCKED `rawBaseBounds` from
+  // CanvasManager — not bounds re-derived from the current viewport.
+  // The chart's Y-axis is locked at the last refit (initial load /
+  // symbol swap / `>>` reset / vertical zoom reset); horizontal pan
+  // does not move it. If we recomputed bounds from the post-pan
+  // viewport here, the visible-range basis would diverge from what
+  // the chart is actually drawing, and the resulting priceDelta
+  // would scale `deltaY` by `currentRange / lockedRange` — the
+  // "pan moves faster than the mouse after vertical zoom" bug.
   if (!baseBounds) return currentOffset;
 
   const visibleRange = (baseBounds.maxPrice - baseBounds.minPrice) * priceScale;
