@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.2] - 2026-05-10
+
+### Fixed
+
+- **Checklist score chart loses transient peaks (#579)** — the seed/re-seed effect in `ChecklistScoreChart` replaced the in-memory history with `serverPoints + tail` (filtering local points by `t > serverMaxT`). Backend write-through fires on the frontend's ~15s polling cadence; local live-appends fire whenever scores change in React state (potentially much more frequently). So local state held transient peaks BETWEEN server snapshots — and the chronology filter dropped them on every refetch. Replaced with a merge-dedupe pass using a 5s tolerance window; peaks now survive refetches until rolled off by the buffer cap.
+
+### Maintenance
+
+- **Marketing screenshots script (#578)** — adapted `switchLayout` to the v1.6+ single-arg `setActiveLayout(presetId)` and bumped the post-switch wait so the canvas has time to render. v1.17.0 / v1.17.1 site assets had landed blank because the script was passing the symbolTabId as the layoutId; site repo re-pushed with corrected captures.
+
 ## [1.17.1] - 2026-05-10
 
 ### Fixed
