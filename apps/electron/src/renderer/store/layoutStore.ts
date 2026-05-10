@@ -494,7 +494,7 @@ const persistLayout = (): void => {
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
     const { symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets } = useLayoutStore.getState();
-    const chartLayers = useChartLayersStore.getState().flagsByKey;
+    const chartLayers = useChartLayersStore.getState().flagsByPanelId;
     const data = JSON.stringify({ symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets, chartLayers, gridVersion: GRID_VERSION });
     trpc.layout.save.mutate({ data }).catch(() => {});
   }, 500);
@@ -562,9 +562,18 @@ export const hydrateLayoutStore = async (): Promise<void> => {
         ...(migratedPresets && { layoutPresets: migratedPresets }),
       });
 
+      // Persisted chart-layer flags. Older snapshots used a
+      // `(symbol, interval)` composite key; the current schema is
+      // per-panelId. Drop any old-shape entries (keys that contain ':'
+      // are the legacy composite). Existing per-panelId entries
+      // (UUIDs, no colon) survive untouched.
       const persistedChartLayers = (saved as { chartLayers?: Record<string, unknown> }).chartLayers;
       if (persistedChartLayers && typeof persistedChartLayers === 'object') {
-        useChartLayersStore.setState({ flagsByKey: persistedChartLayers as ReturnType<typeof useChartLayersStore.getState>['flagsByKey'] });
+        const filtered: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(persistedChartLayers)) {
+          if (!key.includes(':')) filtered[key] = value;
+        }
+        useChartLayersStore.setState({ flagsByPanelId: filtered as ReturnType<typeof useChartLayersStore.getState>['flagsByPanelId'] });
       }
 
       isHydrated = true;

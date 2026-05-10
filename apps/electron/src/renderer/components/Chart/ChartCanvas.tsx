@@ -72,6 +72,15 @@ export interface ChartCanvasProps {
   timeframe?: string;
   onNearLeftEdge?: () => void;
   isLoadingMore?: boolean;
+  /**
+   * Grid-panel ID this chart instance is rendered into. Used to scope
+   * per-panel state (layer-visibility flags in `chartLayersStore`,
+   * indicator instances in `indicatorStore`) so two chart panels in
+   * the same layout — even on the same (symbol, interval) — keep
+   * independent settings. Optional only because the same component
+   * is also used outside the layout grid (e.g. a detached window).
+   */
+  panelId?: string;
 }
 
 const ChartCanvasInternal = ({
@@ -88,6 +97,7 @@ const ChartCanvasInternal = ({
   timeframe = '1h',
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
+  panelId,
 }: ChartCanvasProps): ReactElement => {
   perfMonitor.recordComponentRender('ChartCanvas', `${symbol ?? '?'}@${timeframe}`);
 
@@ -362,6 +372,7 @@ const ChartCanvasInternal = ({
     managerRef,
     liveDataTarget,
     klineSource,
+    panelId,
   );
 
   const volumeHeightRatio = advancedConfig?.volumeHeightRatio;
@@ -377,6 +388,7 @@ const ChartCanvasInternal = ({
   const rawGenericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, outputsRef: genericOutputsRef,
     external,
+    panelId,
   });
 
   const { render: renderEventScale } = useEventScaleRenderer({
@@ -402,7 +414,7 @@ const ChartCanvasInternal = ({
   // v1.5 — Layers popover gates: when the user toggles a layer off,
   // skip its render call so the canvas re-paints without it. Flags
   // are session-only, per (symbol, interval).
-  const layerFlags = useChartLayerFlags(symbol ?? '', timeframe);
+  const layerFlags = useChartLayerFlags(panelId ?? '');
   const renderOrderLines = useCallback<typeof rawRenderOrderLines>(
     (...args) => {
       if (!layerFlags.orderLines) return false;
@@ -457,7 +469,7 @@ const ChartCanvasInternal = ({
 
   useChartOverlayEffects({ manager, allExecutions, orderLoadingMapRef, orderFlashMapRef, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders });
 
-  useChartPanelHeights({ manager, showEventRow, advancedConfig, indicatorsEnabled: layerFlags.indicators });
+  useChartPanelHeights({ manager, showEventRow, advancedConfig, indicatorsEnabled: layerFlags.indicators, panelId });
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;

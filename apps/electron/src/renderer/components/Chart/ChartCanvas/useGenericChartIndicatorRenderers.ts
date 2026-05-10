@@ -15,7 +15,22 @@ export interface UseGenericChartIndicatorRenderersProps {
   colors: ChartThemeColors;
   outputsRef: MutableRefObject<Map<string, IndicatorOutputs>>;
   external?: GenericRendererExternal;
+  /**
+   * Grid-panel ID this chart is rendering into. When set, only
+   * indicator instances bound to this panel are rendered. When
+   * undefined (detached window etc.), all instances are rendered
+   * — legacy behavior.
+   */
+  panelId?: string;
 }
+
+const filterByPanelId = (
+  instances: IndicatorInstance[],
+  panelId: string | undefined,
+): IndicatorInstance[] => {
+  if (panelId === undefined) return instances;
+  return instances.filter((inst) => inst.panelId === panelId);
+};
 
 export interface UseGenericChartIndicatorRenderersResult {
   renderAllOverlayIndicators: () => void;
@@ -60,25 +75,35 @@ export const useGenericChartIndicatorRenderers = ({
   colors,
   outputsRef,
   external,
+  panelId,
 }: UseGenericChartIndicatorRenderersProps): UseGenericChartIndicatorRenderersResult => {
   const externalRef = useRef<GenericRendererExternal | undefined>(external);
   externalRef.current = external;
   const colorsRef = useRef(colors);
   colorsRef.current = colors;
+  const panelIdRef = useRef(panelId);
+  panelIdRef.current = panelId;
 
-  const resolvedRef = useRef<ResolvedInstance[]>(buildResolved(useIndicatorStore.getState().instances));
-  const instancesRef = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
+  const resolvedRef = useRef<ResolvedInstance[]>(
+    buildResolved(filterByPanelId(useIndicatorStore.getState().instances, panelId)),
+  );
+  const instancesRef = useRef<IndicatorInstance[]>(
+    filterByPanelId(useIndicatorStore.getState().instances, panelId),
+  );
 
   useEffect(() => {
+    const filtered = filterByPanelId(useIndicatorStore.getState().instances, panelIdRef.current);
+    instancesRef.current = filtered;
+    resolvedRef.current = buildResolved(filtered);
+    manager?.markDirty('all');
     const unsubscribe = useIndicatorStore.subscribe((state) => {
-      const next = state.instances;
-      if (next === instancesRef.current) return;
-      instancesRef.current = next;
-      resolvedRef.current = buildResolved(next);
+      const filteredNext = filterByPanelId(state.instances, panelIdRef.current);
+      instancesRef.current = filteredNext;
+      resolvedRef.current = buildResolved(filteredNext);
       manager?.markDirty('all');
     });
     return unsubscribe;
-  }, [manager]);
+  }, [manager, panelId]);
 
   const renderInstance = useCallback(
     (instanceId: string) => {
