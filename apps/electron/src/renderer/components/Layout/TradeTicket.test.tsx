@@ -84,13 +84,13 @@ vi.mock('./LeveragePopover', () => ({
   },
 }));
 
-import { QuickTradeActions } from './QuickTradeToolbar';
+import { TradeTicketActions } from './TradeTicket';
 
-const renderActions = (props: Partial<React.ComponentProps<typeof QuickTradeActions>> = {}) =>
+const renderActions = (props: Partial<React.ComponentProps<typeof TradeTicketActions>> = {}) =>
   render(
     <ChakraProvider value={defaultSystem}>
       <ColorModeProvider>
-        <QuickTradeActions
+        <TradeTicketActions
           symbol="BTCUSDT"
           marketType="FUTURES"
           {...props}
@@ -135,7 +135,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('QuickTradeToolbar — Buy / Sell flow (regression: v0.107)', () => {
+describe('TradeTicket — Buy / Sell flow (regression: v0.107)', () => {
   it('places a BUY market order with the previewed quantity (NOT percent)', async () => {
     const user = userEvent.setup();
     renderActions();
@@ -231,7 +231,7 @@ describe('QuickTradeToolbar — Buy / Sell flow (regression: v0.107)', () => {
   });
 });
 
-describe('QuickTradeToolbar — Reverse Position', () => {
+describe('TradeTicket — Reverse Position', () => {
   it('the reverse row is disabled when there is no open position', () => {
     renderActions();
 
@@ -291,7 +291,7 @@ describe('QuickTradeToolbar — Reverse Position', () => {
   });
 });
 
-describe('QuickTradeToolbar — Close Position', () => {
+describe('TradeTicket — Close Position', () => {
   it('the close row is disabled when there is no open position', () => {
     renderActions();
 
@@ -335,7 +335,7 @@ describe('QuickTradeToolbar — Close Position', () => {
   });
 });
 
-describe('QuickTradeToolbar — Cancel Orders', () => {
+describe('TradeTicket — Cancel Orders', () => {
   it('opens the confirm dialog (no position required) and calls cancelAllOrders', async () => {
     const user = userEvent.setup();
     renderActions();
@@ -379,7 +379,7 @@ describe('QuickTradeToolbar — Cancel Orders', () => {
   });
 });
 
-describe('QuickTradeToolbar — Grid Orders / Trailing Stop sub-components', () => {
+describe('TradeTicket — Grid Orders / Trailing Stop sub-components', () => {
   it('renders GridOrderPopover with the action-row trigger always visible', () => {
     renderActions();
 
@@ -407,7 +407,7 @@ describe('QuickTradeToolbar — Grid Orders / Trailing Stop sub-components', () 
   });
 });
 
-describe('QuickTradeToolbar — Size controls (presets, slider, +/- 5%)', () => {
+describe('TradeTicket — Size controls (presets, slider, +/- 5%)', () => {
   it('clicking a preset updates the size percent', async () => {
     const user = userEvent.setup();
     renderActions();
@@ -478,7 +478,7 @@ describe('QuickTradeToolbar — Size controls (presets, slider, +/- 5%)', () => 
   });
 });
 
-describe('QuickTradeToolbar — Pending order confirmation dialog', () => {
+describe('TradeTicket — Pending order confirmation dialog', () => {
   const openConfirm = async () => {
     const user = userEvent.setup();
     renderActions();
@@ -564,7 +564,7 @@ describe('QuickTradeToolbar — Pending order confirmation dialog', () => {
   });
 });
 
-describe('QuickTradeToolbar — Position detection edge cases', () => {
+describe('TradeTicket — Position detection edge cases', () => {
   it('detects open position via Binance-shape positions (positionAmt > 0 → LONG)', async () => {
     setDefaults({
       positions: [{ symbol: 'BTCUSDT', positionAmt: '0.5' }],
@@ -652,7 +652,7 @@ describe('QuickTradeToolbar — Position detection edge cases', () => {
   });
 });
 
-describe('QuickTradeToolbar — Layout-level UI affordances', () => {
+describe('TradeTicket — Layout-level UI affordances', () => {
   it('renders LeveragePopover only for FUTURES', () => {
     renderActions();
     expect(screen.getByTestId('leverage-popover-BTCUSDT')).toBeInTheDocument();
@@ -670,7 +670,7 @@ describe('QuickTradeToolbar — Layout-level UI affordances', () => {
     rerender(
       <ChakraProvider value={defaultSystem}>
         <ColorModeProvider>
-          <QuickTradeActions
+          <TradeTicketActions
             symbol="BTCUSDT"
             marketType="FUTURES"
             showDragHandle
@@ -696,7 +696,7 @@ describe('QuickTradeToolbar — Layout-level UI affordances', () => {
     render(
       <ChakraProvider value={defaultSystem}>
         <ColorModeProvider>
-          <QuickTradeActions symbol="BTCUSDT" marketType="FUTURES" onClose={onClose} />
+          <TradeTicketActions symbol="BTCUSDT" marketType="FUTURES" onClose={onClose} />
         </ColorModeProvider>
       </ChakraProvider>,
     );

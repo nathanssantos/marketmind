@@ -358,7 +358,7 @@ test.describe('Chart hot-path perf', () => {
     await clearDrawings(page);
   });
 
-  test('hover-and-tick-storm: ChartCanvas + QuickTradeToolbar stay bounded during hover + ticks', async ({ page }) => {
+  test('hover-and-tick-storm: ChartCanvas + TradeTicket stay bounded during hover + ticks', async ({ page }) => {
     await clearIndicators(page);
     await addIndicators(page, OVERLAY_INDICATORS);
     await driveFrames(page, WARMUP_FRAMES);
@@ -399,8 +399,8 @@ test.describe('Chart hot-path perf', () => {
       'ChartCanvas re-rendering under hover+tick storm — likely hoveredKlineIndex in external + hot selectors (Parts 2-3)',
     ).toBeLessThanOrEqual(5);
     expect(
-      componentRenderRate(snap, 'QuickTradeToolbar'),
-      'QuickTradeToolbar re-rendering under tick storm — subscribed to usePriceStore via selector (Part 2)',
+      componentRenderRate(snap, 'TradeTicket'),
+      'TradeTicket re-rendering under tick storm — subscribed to usePriceStore via selector (Part 2)',
     ).toBeLessThanOrEqual(10);
   });
 
