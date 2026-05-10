@@ -1,24 +1,17 @@
 import { Box, Flex, HStack } from '@chakra-ui/react';
-import { IconButton, Logo, ToggleIconButton, TooltipWrapper } from '@renderer/components/ui';
+import { IconButton, Logo, TooltipWrapper } from '@renderer/components/ui';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LuChartBar,
   LuSettings,
   LuSquareArrowOutUpRight,
-  LuFlaskConical,
-  LuScanLine,
 } from 'react-icons/lu';
 import { useGlobalActionsOptional } from '../../context/GlobalActionsContext';
-import { useShallow } from 'zustand/react/shallow';
-import { useBacktestActiveRuns } from '../../hooks/useBacktestActiveRuns';
-import { useBacktestDialogStore } from '../../store/backtestDialogStore';
-import { useScreenerStore } from '../../store/screenerStore';
-import { useUIStore } from '../../store/uiStore';
 import { useChartWindows } from '../../hooks/useChartWindows';
 import { TimeframeSelector, type Timeframe } from '../Chart/TimeframeSelector';
 import { IndicatorTogglePopover } from './IndicatorTogglePopover';
 import { LayersTogglePopover } from './LayersTogglePopover';
+import { ToolsPopover } from './ToolsPopover';
 import type { MarketType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
 import { UserAvatar } from '../UserAvatar';
@@ -50,28 +43,6 @@ export const Toolbar = memo(({
   const { t } = useTranslation();
   const { openChartWindow } = useChartWindows();
   const globalActions = useGlobalActionsOptional();
-
-  const { isAnalyticsOpen, toggleAnalytics } = useUIStore(
-    useShallow((state) => ({
-      isAnalyticsOpen: state.isAnalyticsOpen,
-      toggleAnalytics: state.toggleAnalytics,
-    }))
-  );
-
-  const { isScreenerOpen, toggleScreener } = useScreenerStore(
-    useShallow((state) => ({
-      isScreenerOpen: state.isScreenerOpen,
-      toggleScreener: state.toggleScreener,
-    }))
-  );
-
-  const { activeRuns: activeBacktests, hasActiveRuns: hasActiveBacktest } = useBacktestActiveRuns();
-  const { isBacktestOpen, toggleBacktest } = useBacktestDialogStore(
-    useShallow((state) => ({
-      isBacktestOpen: state.isBacktestOpen,
-      toggleBacktest: state.toggleBacktest,
-    }))
-  );
 
   const handleOpenNewWindow = (): void => {
     void openChartWindow(symbol, timeframe);
@@ -132,69 +103,11 @@ export const Toolbar = memo(({
           onTimeframeChange={onTimeframeChange}
         />
 
-        <Box w="1px" h="22px" bg="border" flexShrink={0} />
-
         <IndicatorTogglePopover triggerVariant="labeled" popoverPlacement="bottom-start" />
 
         <LayersTogglePopover />
 
-        <Box w="1px" h="22px" bg="border" flexShrink={0} />
-
-        {showSidebarButtons && (
-          <HStack gap={1} flexShrink={0}>
-            <TooltipWrapper label={t('screener.title')} showArrow>
-              <ToggleIconButton
-                active={isScreenerOpen}
-                size="2xs"
-                aria-label={t('screener.title')}
-                onClick={toggleScreener}
-              >
-                <LuScanLine />
-              </ToggleIconButton>
-            </TooltipWrapper>
-            <TooltipWrapper
-              label={hasActiveBacktest ? t('backtest.runningTooltip', { count: activeBacktests.length }) : t('backtest.title')}
-              showArrow
-            >
-              <Box position="relative">
-                <ToggleIconButton
-                  active={isBacktestOpen}
-                  size="2xs"
-                  aria-label={t('backtest.title')}
-                  onClick={toggleBacktest}
-                  data-testid="toolbar-backtest-button"
-                >
-                  <LuFlaskConical />
-                </ToggleIconButton>
-                {hasActiveBacktest && (
-                  <Box
-                    position="absolute"
-                    top="-2px"
-                    right="-2px"
-                    w="8px"
-                    h="8px"
-                    borderRadius="full"
-                    bg="trading.profit"
-                    borderWidth="1px"
-                    borderColor="bg.panel"
-                    pointerEvents="none"
-                    data-testid="toolbar-backtest-running-indicator"
-                  />
-                )}
-              </Box>
-            </TooltipWrapper>
-            <TooltipWrapper label={t('trading.tabs.analytics')} showArrow>
-              <ToggleIconButton
-                active={isAnalyticsOpen}
-                size="2xs"
-                aria-label={t('trading.tabs.analytics')}
-                onClick={toggleAnalytics}
-              >
-                <LuChartBar />
-              </ToggleIconButton>
-            </TooltipWrapper>
-          </HStack>
-        )}
+        {showSidebarButtons && <ToolsPopover />}
 
       </Flex>
 
