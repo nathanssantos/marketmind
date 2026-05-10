@@ -10,8 +10,6 @@ import {
   LuScanLine,
 } from 'react-icons/lu';
 import { useGlobalActionsOptional } from '../../context/GlobalActionsContext';
-import { AddPanelMenu } from './AddPanelMenu';
-import { OrganizeGridMenu } from './OrganizeGridMenu';
 import { useShallow } from 'zustand/react/shallow';
 import { useBacktestActiveRuns } from '../../hooks/useBacktestActiveRuns';
 import { useBacktestDialogStore } from '../../store/backtestDialogStore';
@@ -25,26 +23,6 @@ import type { MarketType } from '@marketmind/types';
 import { SymbolSelector } from '../SymbolSelector';
 import { UserAvatar } from '../UserAvatar';
 import { WalletSelector } from '../WalletSelector';
-
-const ToolbarLayoutActions = memo(({ showNewWindowButton, onOpenNewWindow }: { showNewWindowButton: boolean; onOpenNewWindow: () => void }) => {
-  const { t } = useTranslation();
-
-  return (
-    <HStack gap={1} flexShrink={0}>
-      <AddPanelMenu />
-      <OrganizeGridMenu />
-      {showNewWindowButton && (
-        <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
-          <IconButton size="2xs" aria-label={t('chart.controls.newWindow')} onClick={onOpenNewWindow} variant="outline" color="fg.muted">
-            <LuSquareArrowOutUpRight />
-          </IconButton>
-        </TooltipWrapper>
-      )}
-    </HStack>
-  );
-});
-
-ToolbarLayoutActions.displayName = 'ToolbarLayoutActions';
 
 export interface ToolbarProps {
   symbol: string;
@@ -162,13 +140,6 @@ export const Toolbar = memo(({
 
         <Box w="1px" h="22px" bg="border" flexShrink={0} />
 
-        <ToolbarLayoutActions
-          showNewWindowButton={showNewWindowButton}
-          onOpenNewWindow={handleOpenNewWindow}
-        />
-
-        <Box w="1px" h="22px" bg="border" flexShrink={0} />
-
         {showSidebarButtons && (
           <HStack gap={1} flexShrink={0}>
             <TooltipWrapper label={t('screener.title')} showArrow>
@@ -229,6 +200,20 @@ export const Toolbar = memo(({
 
       {showSidebarButtons && (
         <HStack gap={1} flexShrink={0}>
+          {showNewWindowButton && (
+            <TooltipWrapper label={t('chart.controls.newWindow')} showArrow>
+              <IconButton
+                size="2xs"
+                aria-label={t('chart.controls.newWindow')}
+                onClick={handleOpenNewWindow}
+                variant="outline"
+                color="fg.muted"
+                data-testid="toolbar-detach-button"
+              >
+                <LuSquareArrowOutUpRight />
+              </IconButton>
+            </TooltipWrapper>
+          )}
           <TooltipWrapper label={t('settings.title')} showArrow>
             <IconButton
               size="2xs"

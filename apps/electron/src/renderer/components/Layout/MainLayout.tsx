@@ -24,6 +24,7 @@ import { SymbolTabBar } from './SymbolTabBar';
 import { LayoutTabBar } from './LayoutTabBar';
 import { MinimizedPanelBar } from './MinimizedPanelBar';
 import { ChartGrid } from './ChartGrid';
+import { GridEditFloatingActions } from './GridEditFloatingActions';
 import { Toolbar } from './Toolbar';
 
 interface MainLayoutProps {
@@ -130,8 +131,9 @@ const MainLayoutComponent = ({
             width="100%"
           >
             <SymbolTabBar />
-            <Box flex={1} overflow="hidden">
+            <Box flex={1} overflow="hidden" position="relative">
               <ChartGrid />
+              <GridEditFloatingActions />
             </Box>
             <MinimizedPanelBar />
             <LayoutTabBar />
