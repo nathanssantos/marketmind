@@ -360,6 +360,35 @@ Integrated into `ChartCanvas` next to where `renderOrderLines` and `setupMarkers
 - Refactor `IndicatorTogglePopoverGeneric → CatalogTogglePopover`. New `PatternTogglePopover` wrapper.
 - **Defer**: custom-pattern creation UI (M2). M1 ships only the built-ins; "+ New pattern" button is hidden.
 
+### M1.1 — pattern hit popover on glyph click (one small PR, ~half a day)
+
+User clicks a pattern glyph on the chart → small popover anchored at the
+glyph showing:
+
+- Pattern label (e.g. "Bullish Engulfing")
+- Sentiment dot + category badge
+- Description from the pattern definition
+- Bar timestamp (so the user can correlate with the chart x-axis)
+- (Added in M2) "Edit pattern" button → opens `PatternConfigDialog`.
+
+Implementation:
+
+- Hit-test glyph positions against mouse coords. The renderer already
+  exposes a `findPatternHitAtPosition` stub in
+  `apps/electron/src/renderer/components/Chart/ChartCanvas/renderers/renderCandlePatterns.ts`
+  — wire it into the chart's mousedown handler.
+- Hits are already in memory via `usePatternMarkers`; no backend / store
+  changes needed.
+- Open a Chakra `Popover` positioned at the click point; close on
+  outside-click / Escape.
+
+Click chosen over hover because the popover content (label + description
++ sentiment + future "Edit" button) deserves a stable surface, not a
+transient tooltip.
+
+Ships as a polish follow-up to M1 so the layer launches with discoverable
+UX before M2's larger dialog work begins.
+
 ### M2 — custom-pattern creation (one PR, ~3-4 days)
 
 - `PatternConfigDialog` with constraint editor + live preview strip.
