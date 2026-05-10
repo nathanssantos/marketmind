@@ -1,6 +1,5 @@
 import {
   Button,
-  Checkbox,
   Field,
   FormRow,
   FormSection,
@@ -253,10 +252,10 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
 
       <FormSection title={t('settings.chart.trading')}>
         <Box>
-          <Checkbox checked={enableShiftAltOrderEntry} onCheckedChange={setEnableShiftAltOrderEntry}>
+          <Switch checked={enableShiftAltOrderEntry} onCheckedChange={setEnableShiftAltOrderEntry}>
             {t('settings.chart.enableShiftAltOrderEntry')}
-          </Checkbox>
-          <Text fontSize="2xs" color="fg.muted" mt={1} ml={6}>
+          </Switch>
+          <Text fontSize="2xs" color="fg.muted" mt={1} ml={11}>
             {t('settings.chart.enableShiftAltOrderEntryHelper')}
           </Text>
         </Box>

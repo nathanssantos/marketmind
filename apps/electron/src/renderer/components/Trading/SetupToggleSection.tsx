@@ -1,4 +1,4 @@
-import { Badge, Checkbox, CollapsibleSection, Input, LoadingSpinner } from '@renderer/components/ui';
+import { Badge, CollapsibleSection, Input, LoadingSpinner, Switch } from '@renderer/components/ui';
 import { Box, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import type { StrategyDefinition } from '@marketmind/types';
 import { memo, useCallback, useMemo, useState } from 'react';
@@ -106,11 +106,11 @@ export const SetupToggleSection = memo(() => {
       badge={countBadge}
     >
       <Stack gap={3}>
-        <Checkbox checked={allEnabled} onCheckedChange={toggleAll} disabled={updateConfigMutation.isPending}>
+        <Switch checked={allEnabled} onCheckedChange={toggleAll} disabled={updateConfigMutation.isPending}>
           <Text fontWeight="semibold" fontSize="sm">
             {t('setupConfig.toggleAll')}
           </Text>
-        </Checkbox>
+        </Switch>
 
         {setupList.length > 8 && (
           <Input
@@ -141,13 +141,13 @@ export const SetupToggleSection = memo(() => {
                 borderRadius="md"
                 _hover={{ bg: 'bg.muted' }}
               >
-                <Checkbox
+                <Switch
                   checked={enabledStrategies.includes(setup.value)}
                   onCheckedChange={() => toggleSetup(setup.value)}
                   disabled={updateConfigMutation.isPending}
                 >
                   <Text fontSize="sm">{setup.title}</Text>
-                </Checkbox>
+                </Switch>
               </Box>
             ))}
           </SimpleGrid>
