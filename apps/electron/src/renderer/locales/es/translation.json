@@ -933,6 +933,58 @@
       "degradedTitle": "Stream del exchange degradado",
       "degradedDescription": "Sin actualizaciones del exchange — reconectando automáticamente."
     },
+    "layers": {
+      "title": "Capas",
+      "configure": "Configurar capas visibles en este gráfico",
+      "drawings": "Dibujos",
+      "indicators": "Indicadores",
+      "orderLines": "Líneas de orden",
+      "setupMarkers": "Marcadores de setup",
+      "heatmap": "Heatmap / liquidaciones",
+      "candlePatterns": "Patrones de vela",
+      "showAll": "Mostrar todo",
+      "hideAll": "Ocultar todo",
+      "noFocusedChart": "Selecciona un panel de gráfico para alternar capas."
+    },
+    "patterns": {
+      "title": "Patrones",
+      "configure": "Configurar detección de patrones de vela",
+      "empty": "No hay patrones disponibles.",
+      "new": "Nuevo",
+      "edit": "Editar patrón",
+      "deleteTitle": "Eliminar patrón",
+      "deleteDescription": "¿Eliminar permanentemente \"{{label}}\"? No se puede deshacer.",
+      "categories": {
+        "reversal-single": "Reversión — barra única",
+        "reversal-multi": "Reversión — múltiples barras",
+        "continuation": "Continuación",
+        "indecision": "Indecisión"
+      },
+      "dialog": {
+        "identity": "Identidad",
+        "label": "Etiqueta",
+        "category": "Categoría",
+        "sentiment": "Dirección",
+        "bars": "Barras",
+        "description": "Descripción (opcional)",
+        "params": "Parámetros",
+        "addParam": "Agregar parámetro",
+        "paramsEmpty": "Sin parámetros. Agrega uno para exponer un ajuste en el popover.",
+        "paramKey": "Clave",
+        "paramLabel": "Etiqueta",
+        "paramDefault": "Por defecto",
+        "constraints": "Restricciones",
+        "addConstraint": "Agregar restricción",
+        "constraintsHint": "Todas las restricciones se combinan con Y. Referencia las barras como b0 (la más reciente), b1, b2, … y parámetros como params.<clave>. Disponibles: open / high / low / close / volume / body / range / upperWick / lowerWick / topBody / bottomBody / midBody / direction.",
+        "previewMatches": "Coincidencias en las últimas {{n}} barras: {{count}}",
+        "previewInvalid": "Vista previa no disponible — corrige los errores anteriores para ver coincidencias."
+      },
+      "sentiment": {
+        "bullish": "Alcista",
+        "bearish": "Bajista",
+        "neutral": "Neutral"
+      }
+    },
     "controls": {
       "title": "Controles del Gráfico",
       "timeframe": "Marco Temporal",

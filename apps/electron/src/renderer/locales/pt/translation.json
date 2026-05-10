@@ -903,6 +903,58 @@
       "degradedTitle": "Stream da corretora degradado",
       "degradedDescription": "Sem atualizações da corretora — reconectando automaticamente."
     },
+    "layers": {
+      "title": "Camadas",
+      "configure": "Configurar camadas visíveis neste gráfico",
+      "drawings": "Desenhos",
+      "indicators": "Indicadores",
+      "orderLines": "Linhas de ordem",
+      "setupMarkers": "Marcadores de setup",
+      "heatmap": "Heatmap / liquidações",
+      "candlePatterns": "Padrões de candle",
+      "showAll": "Mostrar tudo",
+      "hideAll": "Ocultar tudo",
+      "noFocusedChart": "Foque um painel de gráfico para alternar camadas."
+    },
+    "patterns": {
+      "title": "Padrões",
+      "configure": "Configurar detecção de padrões de candle",
+      "empty": "Nenhum padrão disponível.",
+      "new": "Novo",
+      "edit": "Editar padrão",
+      "deleteTitle": "Excluir padrão",
+      "deleteDescription": "Excluir permanentemente \"{{label}}\"? Não é possível desfazer.",
+      "categories": {
+        "reversal-single": "Reversão — barra única",
+        "reversal-multi": "Reversão — múltiplas barras",
+        "continuation": "Continuação",
+        "indecision": "Indecisão"
+      },
+      "dialog": {
+        "identity": "Identidade",
+        "label": "Rótulo",
+        "category": "Categoria",
+        "sentiment": "Direção",
+        "bars": "Barras",
+        "description": "Descrição (opcional)",
+        "params": "Parâmetros",
+        "addParam": "Adicionar parâmetro",
+        "paramsEmpty": "Nenhum parâmetro. Adicione um para expor um ajuste no popover.",
+        "paramKey": "Chave",
+        "paramLabel": "Rótulo",
+        "paramDefault": "Padrão",
+        "constraints": "Restrições",
+        "addConstraint": "Adicionar restrição",
+        "constraintsHint": "Todas as restrições são combinadas com E. Referencie barras como b0 (mais recente), b1, b2, … e parâmetros como params.<chave>. Disponíveis: open / high / low / close / volume / body / range / upperWick / lowerWick / topBody / bottomBody / midBody / direction.",
+        "previewMatches": "Correspondências nas últimas {{n}} barras: {{count}}",
+        "previewInvalid": "Pré-visualização indisponível — corrija os erros acima para ver correspondências."
+      },
+      "sentiment": {
+        "bullish": "Alta",
+        "bearish": "Baixa",
+        "neutral": "Neutro"
+      }
+    },
     "controls": {
       "title": "Controles do Gráfico",
       "timeframe": "Período",
