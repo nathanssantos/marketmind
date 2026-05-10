@@ -34,14 +34,22 @@ const OUT_DIR = process.env.MM_MARKETING_OUT_DIR
 
 const switchLayout = async (presetName) => {
   const page = await getPage();
-  await page.evaluate((name) => {
+  const switched = await page.evaluate((name) => {
     const store = window.__layoutStore?.getState?.();
-    if (!store) return;
+    if (!store) return false;
     const preset = store.layoutPresets?.find((p) => p.name === name);
-    const tabId = store.activeSymbolTabId;
-    if (preset && tabId) store.setActiveLayout?.(tabId, preset.id);
+    if (!preset) return false;
+    // v1.6+ signature: setActiveLayout(layoutId) — global, not
+    // per-symbol-tab. Earlier versions took (tabId, layoutId).
+    store.setActiveLayout?.(preset.id);
+    return true;
   }, presetName);
-  await page.waitForTimeout(1200);
+  if (!switched) {
+    throw new Error(`switchLayout: preset "${presetName}" not found in layoutPresets`);
+  }
+  // Give the canvas time to mount, hydrate kline data via the trpc
+  // mock, and run a few rAF frames so candles actually render.
+  await page.waitForTimeout(3000);
 };
 
 const closeAll = async () => {
