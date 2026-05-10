@@ -51,17 +51,24 @@ const drawCircle = (
   ctx.stroke();
 };
 
-interface PatternHitDraw {
+/** Position record emitted while drawing — used for hit-testing in M1.1. */
+export interface PatternHitDraw {
   hit: PatternHit;
+  /** Glyph center x (canvas coords). */
   x: number;
-  yHigh: number;
-  yLow: number;
+  /** Glyph center y (canvas coords). */
+  y: number;
 }
 
 /**
  * Draw glyphs for every pattern hit. Multiple hits on the same bar stack
  * vertically (decision 3). Bullish glyphs draw below the bar low; bearish
  * above the bar high; neutral as a small circle near the bar high.
+ *
+ * When `draws` is provided, the renderer pushes a `PatternHitDraw` record
+ * for every glyph so a downstream click handler can hit-test against the
+ * visible positions. The array is cleared on entry so callers can reuse a
+ * single ref across frames.
  */
 export const renderCandlePatterns = (
   ctx: CanvasRenderingContext2D,
@@ -69,12 +76,13 @@ export const renderCandlePatterns = (
   klines: readonly Kline[],
   hits: readonly PatternHit[],
   colors: ChartThemeColors,
+  draws?: PatternHitDraw[],
 ): void => {
+  if (draws) draws.length = 0;
   if (hits.length === 0) return;
   const dims = manager.getDimensions();
   if (!dims) return;
 
-  // Group hits by bar index so we can stack glyphs.
   const byIndex = new Map<number, PatternHit[]>();
   for (const hit of hits) {
     const list = byIndex.get(hit.index);
@@ -87,7 +95,11 @@ export const renderCandlePatterns = (
   for (const [index, group] of byIndex) {
     const kline = klines[index];
     if (!kline) continue;
-    const x = manager.indexToX(index);
+    // Center the glyph on the candle wick (vertical line through OHLC).
+    // `indexToX` returns the slot's left edge; `indexToCenterX` returns the
+    // wick's x — that's where the bar's high / low / open / close are
+    // visually located.
+    const x = manager.indexToCenterX(index);
     if (x < 0 || x > dims.chartWidth) continue;
 
     const yHigh = manager.priceToY(Number(kline.high));
@@ -98,38 +110,42 @@ export const renderCandlePatterns = (
     let neutralOffset = 0;
     for (const hit of group) {
       const color = colorForSentiment(hit.sentiment, colors);
+      let glyphY: number;
       if (hit.sentiment === 'bullish') {
-        const baseY = flipped ? yHigh - GLYPH_OFFSET - bullishOffset : yLow + GLYPH_OFFSET + bullishOffset;
-        drawTriangle(ctx, x, baseY, flipped ? 'down' : 'up', GLYPH_SIZE, color);
+        glyphY = flipped ? yHigh - GLYPH_OFFSET - bullishOffset : yLow + GLYPH_OFFSET + bullishOffset;
+        drawTriangle(ctx, x, glyphY, flipped ? 'down' : 'up', GLYPH_SIZE, color);
         bullishOffset += GLYPH_SIZE + GLYPH_GAP;
       } else if (hit.sentiment === 'bearish') {
-        const baseY = flipped ? yLow + GLYPH_OFFSET + bearishOffset : yHigh - GLYPH_OFFSET - bearishOffset;
-        drawTriangle(ctx, x, baseY, flipped ? 'up' : 'down', GLYPH_SIZE, color);
+        glyphY = flipped ? yLow + GLYPH_OFFSET + bearishOffset : yHigh - GLYPH_OFFSET - bearishOffset;
+        drawTriangle(ctx, x, glyphY, flipped ? 'up' : 'down', GLYPH_SIZE, color);
         bearishOffset += GLYPH_SIZE + GLYPH_GAP;
       } else {
-        const baseY = (flipped ? yLow : yHigh) - NEUTRAL_OFFSET - neutralOffset;
-        drawCircle(ctx, x, baseY, GLYPH_SIZE, color);
+        glyphY = (flipped ? yLow : yHigh) - NEUTRAL_OFFSET - neutralOffset;
+        drawCircle(ctx, x, glyphY, GLYPH_SIZE, color);
         neutralOffset += GLYPH_SIZE + GLYPH_GAP;
       }
+      draws?.push({ hit, x, y: glyphY });
     }
   }
 };
 
-/** Hit-test helper for hover tooltips: returns hits whose glyph is near (x, y). */
+/**
+ * Find the topmost glyph within `tolerance` pixels of (x, y). Used by the
+ * click handler in ChartCanvas to surface a pattern info popover.
+ * Iterates last-to-first so glyphs drawn later (= visually on top of
+ * stacked glyphs) win the hit.
+ */
 export const findPatternHitAtPosition = (
-  hits: readonly PatternHit[],
   draws: readonly PatternHitDraw[],
   x: number,
   y: number,
   tolerance = 10,
-): PatternHit | null => {
+): PatternHitDraw | null => {
   for (let i = draws.length - 1; i >= 0; i--) {
     const d = draws[i]!;
-    if (Math.abs(d.x - x) > tolerance) continue;
-    // y can be near either yHigh-offset or yLow+offset depending on sentiment;
-    // a wide vertical band is fine for tooltip discovery.
-    if (y > d.yHigh - 30 && y < d.yLow + 30) return d.hit;
+    const dx = d.x - x;
+    const dy = d.y - y;
+    if (dx * dx + dy * dy <= tolerance * tolerance) return d;
   }
-  // Fallback: ignore draws and use raw hits index match.
-  return hits[0] ?? null;
+  return null;
 };
