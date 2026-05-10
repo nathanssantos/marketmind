@@ -79,7 +79,7 @@ const ScoreBadgePair = ({
 export const ChecklistSection = memo(({ symbol, interval, marketType }: ChecklistSectionProps) => {
   const { t } = useTranslation();
   const { getDefaultProfile, isLoadingProfiles } = useTradingProfiles();
-  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('checklistScoreChartVisible', false);
+  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('checklistScoreChartVisible', true);
 
   const defaultProfile = getDefaultProfile();
   const hasCurrentTimeframeCondition = useMemo(
@@ -379,9 +379,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         </>
       ) : (
         <Flex align="center" gap={1} px={1} py={0.5}>
-          <Text fontSize="xs" color="fg.muted" flex={1}>
-            {t('checklist.section.title')}
-          </Text>
+          <Box flex={1} />
           {scoreBadges}
           {optionsMenu}
         </Flex>
