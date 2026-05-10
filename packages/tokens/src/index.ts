@@ -29,6 +29,13 @@ export const config = defineConfig({
     '.recharts-wrapper, .recharts-surface, .recharts-wrapper *:focus, .recharts-surface:focus': {
       outline: 'none',
     },
+    // Theme-wide backdrop blur — every Chakra modal-style overlay
+    // (Dialog, Drawer) gets the same frosted-glass treatment so the
+    // app behind feels visually pushed back. Backdrop tone is left
+    // alone (Chakra picks `blackAlpha.*` by default per theme).
+    '[data-scope="dialog"][data-part="backdrop"], [data-scope="drawer"][data-part="backdrop"]': {
+      backdropFilter: 'blur(8px)',
+    },
   },
 });
 
