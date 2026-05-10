@@ -468,6 +468,24 @@ const TRADING_PROFILES = [
   },
 ];
 
+const SCORE_HISTORY_POINTS = 96;
+const SCORE_HISTORY_INTERVAL_MS = 15 * 60 * 1000;
+const SCORE_HISTORY = (() => {
+  const now = Date.now();
+  const start = now - SCORE_HISTORY_POINTS * SCORE_HISTORY_INTERVAL_MS;
+  const out: Array<{ t: number; long: number; short: number }> = [];
+  for (let i = 0; i < SCORE_HISTORY_POINTS; i++) {
+    const t = start + i * SCORE_HISTORY_INTERVAL_MS;
+    const phase = (i / SCORE_HISTORY_POINTS) * Math.PI * 2;
+    // Long oscillates 30–80 with a slow upward drift; Short is its
+    // mirror so the two lines weave around the 50 reference band.
+    const long = Math.round(55 + 22 * Math.sin(phase * 1.3) + 8 * Math.sin(phase * 3.7));
+    const short = Math.round(45 - 22 * Math.sin(phase * 1.3) - 8 * Math.sin(phase * 3.7));
+    out.push({ t, long: Math.max(5, Math.min(95, long)), short: Math.max(5, Math.min(95, short)) });
+  }
+  return out;
+})();
+
 const ACTIVE_WATCHERS = [
   {
     watcherId: `${DEMO_WALLET.id}-BTCUSDT-1h`,
@@ -704,6 +722,15 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   // Trading profiles + watchers
   { path: 'tradingProfiles.list', value: TRADING_PROFILES },
   { path: 'tradingProfiles.getDefault', value: TRADING_PROFILES[0] },
+  // Checklist score history — drives the L/S area chart in the
+  // ChecklistSection. Without this fixture, the renderer's tRPC mock
+  // returns null, the chart's `historyQuery.data` stays empty, and
+  // the chart panel renders with no line. We synthesize ~96 points
+  // (one per 15 min over the last 24h) with long/short oscillating
+  // around the 25 / 50 / 75 reference bands so each capture shows
+  // meaningful data.
+  { path: 'trading.getScoreHistory', value: SCORE_HISTORY },
+  { path: 'trading.backfillScoreHistory', value: { success: true, count: SCORE_HISTORY.length } },
   { path: 'autoTrading.listWatchers', value: ACTIVE_WATCHERS },
   // Market sidebar indicators
   { path: 'autoTrading.getMinActiveWatcherInterval', value: { halfIntervalMs: 30 * 60 * 1000 } },

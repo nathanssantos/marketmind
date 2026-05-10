@@ -14,6 +14,7 @@ import {
 } from '@renderer/components/ui';
 import { useUserIndicators } from '@renderer/hooks';
 import { useIndicatorStore } from '@renderer/store';
+import { useLayoutStore } from '@renderer/store/layoutStore';
 import type { IndicatorInstance } from '@renderer/store/indicatorStore';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -106,15 +107,26 @@ export const IndicatorTogglePopoverGeneric = memo(
     })),
   );
 
+  // Indicator instances are per-grid-panel (since #493). The popover
+  // operates on the focused chart only — toggling adds/removes
+  // instances bound to that panel; "active" status reads from the
+  // same panel slice. No focused panel → no toggling allowed.
+  const focusedPanelId = useLayoutStore((s) => s.focusedPanelId);
+
+  const panelInstances = useMemo(
+    () => (focusedPanelId ? instances.filter((i) => i.panelId === focusedPanelId) : []),
+    [instances, focusedPanelId],
+  );
+
   const instancesByUserIndicatorId = useMemo(() => {
     const map = new Map<string, IndicatorInstance[]>();
-    for (const inst of instances) {
+    for (const inst of panelInstances) {
       const list = map.get(inst.userIndicatorId) ?? [];
       list.push(inst);
       map.set(inst.userIndicatorId, list);
     }
     return map;
-  }, [instances]);
+  }, [panelInstances]);
 
   const overrideActiveSet = useMemo(
     () => (activeUserIndicatorIdsOverride ? new Set(activeUserIndicatorIdsOverride) : null),
@@ -138,8 +150,9 @@ export const IndicatorTogglePopoverGeneric = memo(
         onToggleUserIndicatorOverride(ui.id);
         return;
       }
+      if (!focusedPanelId) return;
       if (isActive) {
-        removeInstancesByUserIndicatorId(ui.id);
+        removeInstancesByUserIndicatorId(ui.id, focusedPanelId);
         return;
       }
       addInstance({
@@ -147,9 +160,10 @@ export const IndicatorTogglePopoverGeneric = memo(
         catalogType: ui.catalogType,
         params: ui.params,
         visible: true,
+        panelId: focusedPanelId,
       });
     },
-    [addInstance, removeInstancesByUserIndicatorId, isOverrideMode, onToggleUserIndicatorOverride],
+    [addInstance, removeInstancesByUserIndicatorId, isOverrideMode, onToggleUserIndicatorOverride, focusedPanelId],
   );
 
   const handleSubmit = useCallback(

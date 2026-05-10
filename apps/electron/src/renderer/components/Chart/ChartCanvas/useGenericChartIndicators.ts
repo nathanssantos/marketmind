@@ -155,15 +155,28 @@ const syncLiveData = (
   });
 };
 
+const filterByPanelId = (
+  instances: IndicatorInstance[],
+  panelId: string | undefined,
+): IndicatorInstance[] => {
+  if (panelId === undefined) return instances;
+  return instances.filter((inst) => inst.panelId === panelId);
+};
+
 export const useGenericChartIndicators = (
   klines: Kline[],
   externalCtx: NativeEvaluatorContext = {},
   managerRef?: MutableRefObject<CanvasManager | null>,
   liveDataTarget?: LiveDataTarget | null,
   klineSource?: KlineSource,
+  panelId?: string,
 ): UseGenericChartIndicatorsResult => {
   perfMonitor.recordComponentRender('useGenericChartIndicators');
-  const initialInstances = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
+  const panelIdRef = useRef(panelId);
+  panelIdRef.current = panelId;
+  const initialInstances = useRef<IndicatorInstance[]>(
+    filterByPanelId(useIndicatorStore.getState().instances, panelId),
+  );
   const instancesRef = useRef<IndicatorInstance[]>(initialInstances.current);
   const batchesRef = useRef<BatchKey[]>(buildBatches(initialInstances.current));
 
@@ -281,15 +294,18 @@ export const useGenericChartIndicators = (
   }, [externalCtx]);
 
   useEffect(() => {
+    const filtered = filterByPanelId(useIndicatorStore.getState().instances, panelIdRef.current);
+    instancesRef.current = filtered;
+    batchesRef.current = buildBatches(filtered);
+    runCompute();
     const unsubscribe = useIndicatorStore.subscribe((state) => {
-      const next = state.instances;
-      if (next === instancesRef.current) return;
+      const next = filterByPanelId(state.instances, panelIdRef.current);
       instancesRef.current = next;
       batchesRef.current = buildBatches(next);
       runCompute();
     });
     return unsubscribe;
-  }, [runCompute]);
+  }, [runCompute, panelId]);
 
   useEffect(() => {
     runCompute();

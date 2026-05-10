@@ -15,7 +15,22 @@ export interface UseChartPanelHeightsProps {
    * callers behave unchanged.
    */
   indicatorsEnabled?: boolean;
+  /**
+   * Grid-panel ID this chart is rendering into. When set, only
+   * indicator instances bound to this panel contribute to pane
+   * heights. When undefined (detached window etc.), all instances
+   * count — legacy behavior.
+   */
+  panelId?: string;
 }
+
+const filterByPanelId = (
+  instances: IndicatorInstance[],
+  panelId: string | undefined,
+): IndicatorInstance[] => {
+  if (panelId === undefined) return instances;
+  return instances.filter((inst) => inst.panelId === panelId);
+};
 
 const isPaneKind = (kind: string): boolean => kind.startsWith('pane-');
 
@@ -37,9 +52,14 @@ export const useChartPanelHeights = ({
   showEventRow,
   advancedConfig,
   indicatorsEnabled = true,
+  panelId,
 }: UseChartPanelHeightsProps): void => {
   const previousPaneIdsRef = useRef<Set<string>>(new Set());
-  const instancesRef = useRef<IndicatorInstance[]>(useIndicatorStore.getState().instances);
+  const instancesRef = useRef<IndicatorInstance[]>(
+    filterByPanelId(useIndicatorStore.getState().instances, panelId),
+  );
+  const panelIdRef = useRef(panelId);
+  panelIdRef.current = panelId;
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;
@@ -69,15 +89,15 @@ export const useChartPanelHeights = ({
 
   useEffect(() => {
     if (!manager) return;
+    instancesRef.current = filterByPanelId(useIndicatorStore.getState().instances, panelIdRef.current);
     applyPanelHeights();
     const unsubscribe = useIndicatorStore.subscribe((state) => {
-      const next = state.instances;
-      if (next === instancesRef.current) return;
-      instancesRef.current = next;
+      const filtered = filterByPanelId(state.instances, panelIdRef.current);
+      instancesRef.current = filtered;
       applyPanelHeights();
     });
     return unsubscribe;
-  }, [manager, applyPanelHeights]);
+  }, [manager, applyPanelHeights, panelId]);
 
   useEffect(() => {
     if (!manager) return;

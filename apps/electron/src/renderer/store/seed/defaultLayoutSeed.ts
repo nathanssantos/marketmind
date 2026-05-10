@@ -1,4 +1,38 @@
-{
+import type { LayoutPreset, SymbolTab } from '@shared/types/layout';
+import type { IndicatorParamValue } from '@marketmind/trading-core';
+
+/**
+ * Seed snapshot generated from a curated user setup. Replaces the
+ * 3-preset starter (#423) with a 9-preset / 6-tab seed that ships
+ * meaningful symbol coverage and pre-bound indicators per chart
+ * panel — new users land in a working trading view instead of a
+ * blank chart.
+ *
+ * IDs are stable strings (`seed-*`) so the backend's
+ * `isDefaultLayoutData` guard can recognize the snapshot and the
+ * indicator bindings can reference panels by ID across users.
+ *
+ * To regenerate: run scripts/dump-default-layout-seed.ts.
+ */
+export interface SeedIndicatorBinding {
+  /** UserIndicator label — resolved to id at activation time. */
+  label: string;
+  catalogType: string;
+  params: Record<string, IndicatorParamValue>;
+  /** Grid-panel id this instance binds to (matches a panel id in `layoutPresets`). */
+  panelId: string;
+  visible: boolean;
+}
+
+export interface DefaultLayoutSeed {
+  symbolTabs: SymbolTab[];
+  activeSymbolTabId: string;
+  activeLayoutId: string;
+  layoutPresets: LayoutPreset[];
+  indicatorBindings: SeedIndicatorBinding[];
+}
+
+export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
   "symbolTabs": [
     {
       "id": "default",
@@ -937,6 +971,831 @@
       "order": 8
     }
   ],
-  "chartLayers": {},
-  "gridVersion": 2
-}
+  "indicatorBindings": [
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1m-5m-15min-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1m-5m-15min-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1m-5m-15min-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1m-5m-15min-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-1m-5m-15min-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-1m-5m-15min-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1m-5m-15min-p6",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1m-5m-15min-p7",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-15m-1h-4h-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-15m-1h-4h-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-15m-1h-4h-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-15m-1h-4h-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-15m-1h-4h-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-15m-1h-4h-p6",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-15m-1h-4h-p7",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1h-4h-1d-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1h-4h-1d-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1h-4h-1d-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1h-4h-1d-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-1h-4h-1d-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1h-4h-1d-p6",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1h-4h-1d-p7",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-5m-15m-1h-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-5m-15m-1h-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-5m-15m-1h-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-5m-15m-1h-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-5m-15m-1h-p0",
+      "visible": true
+    },
+    {
+      "label": "ORB 15m",
+      "catalogType": "orb",
+      "params": {
+        "orbPeriodMinutes": 15
+      },
+      "panelId": "seed-5m-15m-1h-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-5m-15m-1h-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-5m-15m-1h-p6",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-5m-15m-1h-p7",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-4h-1d-1w-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-4h-1d-1w-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-4h-1d-1w-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-4h-1d-1w-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-4h-1d-1w-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-4h-1d-1w-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-1h-4h-1d-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-15m-1h-4h-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1d-1w-1m-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1d-1w-1m-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-1d-1w-1m-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1d-1w-1m-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1d-1w-1m-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-1d-1w-1m-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1d-1w-1m-p6",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-1d-1w-1m-p7",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-4h-1d-1w-p6",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-4h-1d-1w-p7",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p4",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-trading-p5",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "Volume",
+      "catalogType": "volume",
+      "params": {
+        "color": "#607d8b"
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "RSI 2",
+      "catalogType": "rsi",
+      "params": {
+        "period": 2,
+        "color": "#ef5350",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    },
+    {
+      "label": "Stoch 14",
+      "catalogType": "stoch",
+      "params": {
+        "period": 14,
+        "smoothK": 3,
+        "smoothD": 3,
+        "color": "#2196f3",
+        "lineWidth": 1
+      },
+      "panelId": "seed-auto-scalping-p0",
+      "visible": true
+    }
+  ]
+};
