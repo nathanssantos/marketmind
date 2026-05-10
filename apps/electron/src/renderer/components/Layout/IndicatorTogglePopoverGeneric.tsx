@@ -1,4 +1,4 @@
-import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
+import { Flex, HStack, Stack, Text } from '@chakra-ui/react';
 import type { IndicatorCategory, UserIndicator } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
 import {
@@ -6,7 +6,10 @@ import {
   ConfirmationDialog,
   IconButton,
   Popover,
-  Switch,
+  PopoverList,
+  PopoverListHeader,
+  PopoverSectionLabel,
+  PopoverToggleItem,
   TooltipWrapper,
 } from '@renderer/components/ui';
 import { useUserIndicators } from '@renderer/hooks';
@@ -204,6 +207,8 @@ export const IndicatorTogglePopoverGeneric = memo(
                   size="2xs"
                   variant="outline"
                   color="fg.muted"
+                  fontWeight="medium"
+                  gap={1.5}
                 >
                   <LuGauge />
                   {t('chart.indicators.title')}
@@ -222,12 +227,10 @@ export const IndicatorTogglePopoverGeneric = memo(
           </Flex>
         }
       >
-        <Box p={4} maxH="600px" overflowY="auto">
-          <Stack gap={4}>
-            <Flex justify="space-between" align="center">
-              <Text fontSize="sm" fontWeight="bold">
-                {t('chart.indicators.title')}
-              </Text>
+        <PopoverList p={2} maxH="600px">
+          <PopoverListHeader
+            title={t('chart.indicators.title')}
+            action={
               <HStack gap={2}>
                 <Text fontSize="xs" color="fg.muted">
                   {activeCount}/{totalCount}
@@ -242,67 +245,50 @@ export const IndicatorTogglePopoverGeneric = memo(
                   {t('settings.indicators.new')}
                 </Button>
               </HStack>
-            </Flex>
-
-            <Stack gap={4} maxH="500px" overflowY="auto">
-              {groups.map((group) => (
-                <Stack key={group.category} gap={2}>
-                  <Text
-                    fontSize="xs"
-                    fontWeight="bold"
-                    color="fg.muted"
-                    textTransform="uppercase"
-                    letterSpacing="wide"
-                  >
-                    {t(group.titleKey)}
-                  </Text>
-                  <Stack gap={1.5} pl={2}>
-                    {group.items.map((ui) => {
-                      const isActive = isUserIndicatorActive(ui);
-                      return (
-                        <Flex key={ui.id} align="center" justify="space-between" gap={2}>
-                          <Box flex={1} minW={0}>
-                            <Text fontSize="sm" truncate>
-                              {ui.label}
-                            </Text>
-                          </Box>
-                          <Switch
-                            checked={isActive}
-                            onCheckedChange={() => handleToggle(ui, isActive)}
-                            aria-label={ui.label}
-                          />
-                          <HStack gap={0.5}>
-                            <TooltipWrapper label={t('common.edit')}>
-                              <IconButton
-                                aria-label={t('common.edit')}
-                                size="2xs"
-                                variant="ghost"
-                                onClick={() => setDialog({ kind: 'edit', indicator: ui })}
-                              >
-                                <LuPencil />
-                              </IconButton>
-                            </TooltipWrapper>
-                            <TooltipWrapper label={t('common.delete')}>
-                              <IconButton
-                                aria-label={t('common.delete')}
-                                size="2xs"
-                                variant="ghost"
-                                colorPalette="red"
-                                onClick={() => setConfirmDelete(ui)}
-                              >
-                                <LuTrash2 />
-                              </IconButton>
-                            </TooltipWrapper>
-                          </HStack>
-                        </Flex>
-                      );
-                    })}
-                  </Stack>
-                </Stack>
-              ))}
+            }
+          />
+          {groups.map((group) => (
+            <Stack key={group.category} gap={1}>
+              <PopoverSectionLabel>{t(group.titleKey)}</PopoverSectionLabel>
+              {group.items.map((ui) => {
+                const isActive = isUserIndicatorActive(ui);
+                return (
+                  <PopoverToggleItem
+                    key={ui.id}
+                    label={ui.label}
+                    checked={isActive}
+                    onCheckedChange={() => handleToggle(ui, isActive)}
+                    trailing={
+                      <HStack gap={0.5}>
+                        <TooltipWrapper label={t('common.edit')}>
+                          <IconButton
+                            aria-label={t('common.edit')}
+                            size="2xs"
+                            variant="ghost"
+                            onClick={() => setDialog({ kind: 'edit', indicator: ui })}
+                          >
+                            <LuPencil />
+                          </IconButton>
+                        </TooltipWrapper>
+                        <TooltipWrapper label={t('common.delete')}>
+                          <IconButton
+                            aria-label={t('common.delete')}
+                            size="2xs"
+                            variant="ghost"
+                            colorPalette="red"
+                            onClick={() => setConfirmDelete(ui)}
+                          >
+                            <LuTrash2 />
+                          </IconButton>
+                        </TooltipWrapper>
+                      </HStack>
+                    }
+                  />
+                );
+              })}
             </Stack>
-          </Stack>
-        </Box>
+          ))}
+        </PopoverList>
       </Popover>
 
       <IndicatorConfigDialog
