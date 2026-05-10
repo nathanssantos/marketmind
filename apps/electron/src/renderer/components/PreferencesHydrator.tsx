@@ -2,6 +2,7 @@ import { Box, Spinner } from '@chakra-ui/react';
 import type { ReactNode } from 'react';
 import { useEffect, useRef } from 'react';
 import { useIndicatorStore } from '../store/indicatorStore';
+import { usePatternStore } from '../store/patternStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { useScreenerStore } from '../store/screenerStore';
 import { useSetupStore } from '../store/setupStore';
@@ -17,6 +18,10 @@ const hydrateDomainStores = (prefs: Record<string, Record<string, unknown>>) => 
 
   useIndicatorStore.getState().hydrate({
     instances: chart['indicatorInstances'],
+  });
+
+  usePatternStore.getState().hydrate({
+    enabledIdsByPanelId: chart['patternsByPanel'],
   });
 
   useUIStore.getState().hydrate(ui);
