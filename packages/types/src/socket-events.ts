@@ -90,7 +90,6 @@ export interface KlineUpdatePayload {
   volume: string;
   isClosed: boolean;
   timestamp: number;
-  synthetic?: boolean;
 }
 
 export interface StreamHealthPayload {

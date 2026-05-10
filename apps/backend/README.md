@@ -337,7 +337,7 @@ pnpm --filter @marketmind/backend db:migrate
 
 ## Exchange stream resilience
 
-Both `BinanceKlineStreamService` (SPOT) and `BinanceFuturesKlineStreamService` (USDT-M futures) ship with a watchdog + synthesis fallback that keeps the chart alive during partial Binance WS incidents (e.g. when `@kline_*` / `@aggTrade` / `@markPrice` stop emitting but `@trade` stays alive).
+Both `BinanceKlineStreamService` (SPOT) and `BinanceFuturesKlineStreamService` (USDT-M futures) ship with a watchdog that detects partial Binance WS incidents and forces a reconnect. There is no synthesis fallback — when the stream stays silent past the threshold the chart's `StreamHealthDot` flips to degraded so the user knows updates are paused, and the connection cycles to recover.
 
 ### Watchdog (`services/binance-kline-stream.ts`)
 
@@ -346,20 +346,18 @@ Both `BinanceKlineStreamService` (SPOT) and `BinanceFuturesKlineStreamService` (
 - Any real frame arriving resets `lastMessageAt` via `recordMessageReceived`. If status was degraded, it flips back to healthy and emits.
 - New subscriptions created while any existing sub is already degraded inherit the degraded state immediately — avoids the 60 s blind spot when the user switches symbols mid-incident.
 
-### Synthesis (`services/kline-synthesis.ts`)
+### Custom-symbol kline emission (`services/custom-symbol-service.ts`)
 
-- Owns its own WS client subscribed to `@trade` (which typically stays alive during aggregated-stream outages).
-- Enabled from the stream service on `healthy → degraded` transitions.
-- Aligns each trade to the interval's bucket boundary, accumulates OHLCV (open=first, high/low=minmax, close=last, volume=sum), emits progressive `kline:update` via the same `WebSocketService.emitKlineUpdate` path (≤ 1 per 200 ms), emits `isClosed: true` when a new bucket begins.
-- On recovery (or unsubscribe), `disable(symbol, interval, marketType)` clears per-combo state so native frames take over seamlessly.
+- Custom indices (e.g. PolitiFi) don't have a Binance kline stream. The service tracks a per-(symbol, interval) bucket; on every component price tick it patches the open candle (high/low/close), throttles `kline:update` emits to one per 250 ms, and persists a final closed bar via `persistKline` when the bucket boundary rolls.
+- This puts custom symbols on the same `kline:update` contract as Binance symbols — the renderer's `useKlineStream` consumes them with no special path.
 
 ### Socket events emitted
 
 | Event | Payload | Emitted when |
 |---|---|---|
-| `kline:update` | `{ symbol, interval, openTime, closeTime, open, high, low, close, volume, isClosed, timestamp }` | Every real frame from Binance + every synthesis emit (frontend doesn't distinguish; **backend is the single source of truth for health**) |
+| `kline:update` | `{ symbol, interval, openTime, closeTime, open, high, low, close, volume, isClosed, timestamp }` | Every real Binance frame + every custom-symbol per-tick emit (frontend doesn't distinguish; **backend is the single source of truth**) |
 | `stream:health` | `{ symbol, interval, marketType, status, reason?, lastMessageAt }` | State transitions on a subscription (`healthy → degraded` or `degraded → healthy`) |
-| `price:update` | `{ symbol, price, timestamp }` | Via `BinancePriceStreamService` — unrelated to kline health |
+| `price:update` | `{ symbol, price, timestamp }` | Via `BinancePriceStreamService` and `CustomSymbolService` — fastest scalar update path |
 
 ### Tuning
 

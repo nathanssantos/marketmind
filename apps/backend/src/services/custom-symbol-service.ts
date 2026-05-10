@@ -1,4 +1,5 @@
 import type { Interval, MarketType } from '@marketmind/types';
+import { INTERVAL_MS, type TimeInterval } from '@marketmind/types';
 import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../db';
 import {
@@ -19,8 +20,33 @@ import {
 import { logger } from './logger';
 import { smartBackfillKlines } from './binance-historical';
 import { getWebSocketService } from './websocket';
+import { ReconnectionGuard, persistKline } from './kline-stream-persistence';
 
 const COMPONENT_BACKFILL_TARGET = 5_000;
+const KLINE_EMIT_THROTTLE_MS = 250;
+
+interface CustomKlineBucketState {
+  symbol: string;
+  interval: TimeInterval;
+  intervalMs: number;
+  openTime: number;
+  closeTime: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  lastEmitAt: number;
+}
+
+const alignToInterval = (timestamp: number, intervalMs: number): number =>
+  Math.floor(timestamp / intervalMs) * intervalMs;
+
+const toFixed8 = (n: number): string => {
+  if (!Number.isFinite(n)) return '0';
+  return n.toFixed(8);
+};
+
+const customKlineReconnectionGuard = new ReconnectionGuard();
 
 export { computeWeights, fetchBinancePrice, fetchMarketCaps } from './custom-symbol-helpers';
 
@@ -28,6 +54,11 @@ export class CustomSymbolService {
   private definitions = new Map<string, CustomSymbolState>();
   private customSymbolSet = new Set<string>();
   private priceObserverRegistered = false;
+  // Per-(symbol, interval) live kline bucket state. Filled lazily as
+  // component price ticks arrive. Used to emit `kline:update` events to
+  // the renderer (mirrors the Binance kline-stream emission contract)
+  // and to persist a final bar when the bucket closes.
+  private klineBuckets = new Map<string, CustomKlineBucketState>();
 
   async start(): Promise<void> {
     await this.seedPolitifi();
@@ -193,6 +224,115 @@ export class CustomSymbolService {
       if (wsService) {
         wsService.emitPriceUpdate(state.symbol, indexPrice, timestamp);
       }
+
+      this.applyTickToKlineBuckets(state.symbol, indexPrice, timestamp);
+    }
+  }
+
+  // Per-tick: drive every watched interval's live kline bucket forward,
+  // emit `kline:update` so the renderer's chart hook (`useKlineStream`)
+  // updates the open candle in real time, and persist the closed bar to
+  // DB on bucket roll. This is the live-stream analogue of
+  // `backfillKlines` (which produces historical bars) and replaces the
+  // old behavior where custom symbols only emitted price ticks — that
+  // left the chart's last candle and timer stuck because the canvas
+  // pipeline only re-renders on `kline:update`, not `price:update`.
+  private applyTickToKlineBuckets(symbol: string, price: number, timestamp: number): void {
+    const wsService = getWebSocketService();
+
+    for (const interval of KLINE_INTERVALS) {
+      const intervalMs = INTERVAL_MS[interval as TimeInterval];
+      if (!intervalMs) continue;
+
+      const bucketStart = alignToInterval(timestamp, intervalMs);
+      const bucketEnd = bucketStart + intervalMs - 1;
+      const key = `${symbol}:${interval}`;
+      const existing = this.klineBuckets.get(key);
+
+      if (existing && existing.openTime !== bucketStart) {
+        // Boundary crossed — finalize previous bucket: emit closed
+        // kline:update and persist to DB so the chart can refetch
+        // history + the next session sees the bar.
+        this.emitKline(existing, true);
+        void this.persistClosedBucket(existing);
+        this.klineBuckets.delete(key);
+      }
+
+      const current = this.klineBuckets.get(key);
+      if (!current) {
+        const seed: CustomKlineBucketState = {
+          symbol,
+          interval: interval as TimeInterval,
+          intervalMs,
+          openTime: bucketStart,
+          closeTime: bucketEnd,
+          open: price,
+          high: price,
+          low: price,
+          close: price,
+          lastEmitAt: 0,
+        };
+        this.klineBuckets.set(key, seed);
+        if (wsService) this.emitKline(seed, false);
+        continue;
+      }
+
+      current.high = Math.max(current.high, price);
+      current.low = Math.min(current.low, price);
+      current.close = price;
+
+      if (wsService && Date.now() - current.lastEmitAt >= KLINE_EMIT_THROTTLE_MS) {
+        this.emitKline(current, false);
+      }
+    }
+  }
+
+  private emitKline(bucket: CustomKlineBucketState, isClosed: boolean): void {
+    const wsService = getWebSocketService();
+    if (!wsService) return;
+    wsService.emitKlineUpdate({
+      symbol: bucket.symbol,
+      interval: bucket.interval,
+      marketType: 'SPOT',
+      openTime: bucket.openTime,
+      closeTime: bucket.closeTime,
+      open: toFixed8(bucket.open),
+      high: toFixed8(bucket.high),
+      low: toFixed8(bucket.low),
+      close: toFixed8(bucket.close),
+      volume: '0',
+      isClosed,
+      timestamp: Date.now(),
+    });
+    bucket.lastEmitAt = Date.now();
+  }
+
+  private async persistClosedBucket(bucket: CustomKlineBucketState): Promise<void> {
+    try {
+      await persistKline(
+        {
+          symbol: bucket.symbol,
+          interval: bucket.interval,
+          marketType: 'SPOT',
+          openTime: bucket.openTime,
+          closeTime: bucket.closeTime,
+          open: toFixed8(bucket.open),
+          high: toFixed8(bucket.high),
+          low: toFixed8(bucket.low),
+          close: toFixed8(bucket.close),
+          volume: '0',
+          quoteVolume: '0',
+          trades: 0,
+          takerBuyBaseVolume: '0',
+          takerBuyQuoteVolume: '0',
+          isClosed: true,
+          timestamp: Date.now(),
+        },
+        customKlineReconnectionGuard,
+        'SPOT',
+      );
+    } catch (err) {
+      logger.warn({ symbol: bucket.symbol, interval: bucket.interval, error: err }, 'Failed to persist custom kline bucket');
     }
   }
 
