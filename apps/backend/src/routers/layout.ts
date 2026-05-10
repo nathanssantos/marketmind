@@ -11,10 +11,11 @@ const AUDIT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 const sha256 = (input: string): string => createHash('sha256').update(input).digest('hex');
 
-// v1.10 starter templates (trading / autotrading / scalping) replaced the
-// old single / dual / quad presets. We accept either set so an existing
-// user's persisted-but-untouched-default layout still triggers the
-// overwrite guard, but new users (post-#423) match the new ids.
+// V1: single/dual/quad (pre-v1.10).
+// V2: trading/autotrading/scalping (#423).
+// V3: 9-preset / 6-tab seed with `seed-*` ids (curated user setup).
+// We accept all three so untouched-default layouts at any version
+// still trigger the overwrite guard; new users (post-V3) ship V3.
 const DEFAULT_PRESET_IDS_V1 = ['dual', 'quad', 'single'];
 const DEFAULT_PRESET_IDS_V2 = ['autotrading', 'scalping', 'trading'];
 
@@ -26,6 +27,15 @@ const isDefaultLayoutData = (raw: string): boolean => {
     };
     const tabs = parsed.symbolTabs ?? [];
     const presets = parsed.layoutPresets ?? [];
+
+    // V3: every preset id starts with `seed-`. Tab list and preset
+    // count are fixed by the seed but we don't pin them here — any
+    // edit to the seed shouldn't break the guard.
+    if (presets.length > 0 && presets.every((p) => typeof p.id === 'string' && p.id.startsWith('seed-'))) {
+      return tabs.every((t) => t.id === 'default' || (typeof t.id === 'string' && t.id.startsWith('seed-tab-')));
+    }
+
+    // V1 / V2: single tab + 3 fixed presets.
     if (tabs.length !== 1) return false;
     if (tabs[0]?.id !== 'default' || tabs[0]?.symbol !== 'BTCUSDT') return false;
     if (presets.length !== 3) return false;

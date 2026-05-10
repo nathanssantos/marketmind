@@ -1,9 +1,7 @@
-import { DEFAULT_ACTIVE_SEED_LABELS } from '@marketmind/trading-core';
 import { useUserIndicators } from '@renderer/hooks/useUserIndicators';
 import { useIndicatorStore } from '@renderer/store/indicatorStore';
-import { useLayoutStore } from '@renderer/store/layoutStore';
 import { useChartPref } from '@renderer/store/preferencesStore';
-import { isChartPanel } from '@shared/types/layout';
+import { DEFAULT_LAYOUT_SEED } from '@renderer/store/seed/defaultLayoutSeed';
 import { useEffect } from 'react';
 
 export const useAutoActivateDefaultIndicators = (): void => {
@@ -24,35 +22,24 @@ export const useAutoActivateDefaultIndicators = (): void => {
       return;
     }
 
-    // Seed default indicators on every chart-panel of every layout so
-    // the first-run experience matches the legacy "indicators show
-    // everywhere" behavior — but each panel gets its OWN independent
-    // copy. Toggling a default off in one panel doesn't affect any
-    // other panel (since #493).
-    const layoutStore = useLayoutStore.getState();
-    const chartPanelIds: string[] = [];
-    for (const layout of layoutStore.layoutPresets) {
-      for (const panel of layout.grid) {
-        if (isChartPanel(panel)) chartPanelIds.push(panel.id);
-      }
-    }
-
-    if (chartPanelIds.length === 0) {
-      setDefaultsAutoActivated(true);
-      return;
-    }
-
-    for (const ui of indicators) {
-      if (!DEFAULT_ACTIVE_SEED_LABELS.has(ui.label)) continue;
-      for (const panelId of chartPanelIds) {
-        store.addInstance({
-          userIndicatorId: ui.id,
-          catalogType: ui.catalogType,
-          params: ui.params,
-          visible: true,
-          panelId,
-        });
-      }
+    // Seed instances from the curated v3 layout seed
+    // (`store/seed/defaultLayoutSeed.ts`). Each binding names the
+    // userIndicator it wants by `label`; we resolve the label to the
+    // user's own userIndicator id (which is unique per user but the
+    // labels are stable across the seed flow). Bindings without a
+    // matching userIndicator are silently dropped — happens if the
+    // user deleted a default-seeded indicator before first activation.
+    const labelToUi = new Map(indicators.map((ui) => [ui.label, ui]));
+    for (const binding of DEFAULT_LAYOUT_SEED.indicatorBindings) {
+      const ui = labelToUi.get(binding.label);
+      if (!ui) continue;
+      store.addInstance({
+        userIndicatorId: ui.id,
+        catalogType: binding.catalogType,
+        params: binding.params,
+        visible: binding.visible,
+        panelId: binding.panelId,
+      });
     }
     setDefaultsAutoActivated(true);
   }, [defaultsAutoActivated, isLoading, indicators, setDefaultsAutoActivated]);
