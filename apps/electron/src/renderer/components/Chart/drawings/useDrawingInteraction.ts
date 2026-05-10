@@ -130,7 +130,7 @@ const applyDragUpdate = (
       return;
     }
 
-    if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine' || originalDrawing.type === 'anchoredVwap') {
+    if (originalDrawing.type === 'text' || originalDrawing.type === 'horizontalLine' || originalDrawing.type === 'verticalLine') {
       store.updateDrawing(originalDrawing.id, {
         index: originalDrawing.index + deltaIndex,
         price: originalDrawing.price + deltaPrice,
@@ -337,7 +337,7 @@ export const useDrawingInteraction = ({
       return true;
     }
 
-    if (activeTool === 'horizontalLine' || activeTool === 'verticalLine' || activeTool === 'anchoredVwap') {
+    if (activeTool === 'horizontalLine' || activeTool === 'verticalLine') {
       const drawing: Drawing = {
         id: generateId(), type: activeTool, symbol, interval, visible: true, locked: false, zIndex: 0,
         createdAt: Date.now(), updatedAt: Date.now(),

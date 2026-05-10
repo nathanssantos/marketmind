@@ -100,7 +100,6 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
       break;
     case 'horizontalLine':
     case 'verticalLine':
-    case 'anchoredVwap':
       data.index = drawing.index;
       data.price = drawing.price;
       data.time = t(drawing.index);
@@ -181,7 +180,6 @@ export const deserializeDrawingData = (
           time: data.time,
         };
       case 'verticalLine':
-      case 'anchoredVwap':
         return { ...common, type, index: ri(data.index!, data.time), price: data.price!, time: data.time } as Drawing;
       case 'longPosition':
       case 'shortPosition':

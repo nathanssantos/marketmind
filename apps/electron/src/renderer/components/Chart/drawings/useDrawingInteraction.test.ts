@@ -178,7 +178,7 @@ describe('useDrawingInteraction — state machine', () => {
   });
 
   describe('single-click creation (text, horizontalLine)', () => {
-    it.each(['text', 'horizontalLine', 'verticalLine', 'anchoredVwap'] as const)(
+    it.each(['text', 'horizontalLine', 'verticalLine'] as const)(
       'creates %s on a single mousedown without entering placing-second',
       (type) => {
         useDrawingStore.getState().setActiveTool(type);
