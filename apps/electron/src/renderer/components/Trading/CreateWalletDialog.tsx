@@ -116,6 +116,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
       submitColorPalette={walletType === 'live' ? 'red' : 'blue'}
       submitDisabled={!isValid}
       isLoading={isCreating}
+      bodyOverflow="visible"
     >
       <Stack gap={3}>
         <Field label={t('trading.wallets.exchange')}>
@@ -130,8 +131,8 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
               }
             }}
             options={[
-              { value: 'BINANCE', label: `🪙 Binance (Crypto)` },
-              { value: 'INTERACTIVE_BROKERS', label: `📈 Interactive Brokers (Stocks)` },
+              { value: 'BINANCE', label: 'Binance (Crypto)' },
+              { value: 'INTERACTIVE_BROKERS', label: 'Interactive Brokers (Stocks)' },
             ]}
             usePortal={false}
           />
@@ -143,12 +144,12 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
             value={walletType}
             onChange={(value) => setWalletType(value as WalletType)}
             options={isBinance ? [
-              { value: 'paper', label: `📝 ${t('trading.wallets.paper')}` },
-              { value: 'testnet', label: `🧪 ${t('trading.wallets.testnet')}` },
-              { value: 'live', label: `🔴 ${t('trading.wallets.live')}` },
+              { value: 'paper', label: t('trading.wallets.paper') },
+              { value: 'testnet', label: t('trading.wallets.testnet') },
+              { value: 'live', label: t('trading.wallets.live') },
             ] : [
-              { value: 'paper', label: `📝 ${t('trading.wallets.ibPaper')}` },
-              { value: 'live', label: `🔴 ${t('trading.wallets.ibLive')}` },
+              { value: 'paper', label: t('trading.wallets.ibPaper') },
+              { value: 'live', label: t('trading.wallets.ibLive') },
             ]}
             usePortal={false}
           />
