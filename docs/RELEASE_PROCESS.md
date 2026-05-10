@@ -118,14 +118,41 @@ gh pr merge --admin --merge   # merge commit preserves develop history on main
 
 ### 8. Update landing site (separate repo — DO NOT SKIP)
 
+#### 8a. Refresh marketing screenshots
+
+```bash
+# 1) Boot the renderer dev server (separate terminal, leave running)
+pnpm --filter @marketmind/electron dev:web
+# Confirm it answers on http://localhost:5174 (the script's default).
+
+# 2) Build the screenshot package
+pnpm --filter @marketmind/mcp-screenshot build
+
+# 3) Run the curated marketing pass — captures 7 scenes at 4K (3840x2160)
+#    dark theme + writes to ../marketmind-site/public/images/screenshot-{0..N}.png
+node scripts/marketing-screenshots.mjs
+```
+
+Stage the regenerated PNGs from the marketmind-site repo together with the
+version bump in step 8b — keeps the deploy a single commit.
+
+If a step fails:
+- `MM_MCP_BASE_URL` / `MM_MCP_VIEWPORT` / `MM_MCP_SCALE` env vars override
+  the defaults (see the script header).
+- The script injects mock data via Playwright `addInitScript`, so no
+  auth bypass and no live backend is required — but the renderer
+  must be running.
+
+#### 8b. Bump site version + commit
+
 ```bash
 cd ../marketmind-site
 git checkout main
 git pull --ff-only
 
 # Edit src/config/site.ts → stats.version: 'vX.Y.Z'
-git add src/config/site.ts
-git commit -m "chore: bump version to vX.Y.Z"
+git add src/config/site.ts public/images/screenshot-*.png
+git commit -m "chore: bump version to vX.Y.Z + refresh screenshots"
 git push     # Vercel auto-deploys in ~1-2 min
 
 cd -

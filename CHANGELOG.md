@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-05-09
+
+### Added — UI polish + chart camera fixes
+
+- **Backdrop blur** (#556) — every Chakra Dialog and Drawer now has a default `backdropFilter: blur(8px)` via the tokens package's `globalCss`, so every modal in the app gets a frosted-glass scrim with no per-callsite work.
+- **Wallet card metrics** (#558) — promoted Net P&L tooltip contents (Gross PnL, Fees, Funding) into inline rows, and added Total Trades / Win Rate / Max Drawdown / Profit Factor / Avg Trade Duration below. Both blocks gated so paper wallets stay short.
+- **Tools popover** (#563) — Screener / Backtest / Analytics buttons collapsed into a single "Tools" popover styled like Indicators / Layers, with backtest-running pip preserved. Vertical separators between header button groups dropped.
+- **Floating grid edit actions** (#566) — Add Panel + Organize Grid menus pulled out of the always-on header into a floating cluster that only renders in grid edit mode (anchored bottom-right inside the chart-grid surface). "Open Chart in New Window" IconButton moved next to Settings on the right.
+- **Custom-symbol live klines** (#567) — `custom-symbol-service` now emits `kline:update` per component-price tick (per-(symbol, interval) bucket + `persistKline` on bucket roll). PolitiFi and other custom indices update in real time on the same contract as Binance symbols. The standalone `kline-synthesis` service was removed (393 LOC deleted).
+
+### Fixed
+
+- **Custom Symbols dialog double header** (#555) — dropped the duplicate inner FormSection title; BetaBadge moved inline into the dialog title.
+- **Create Wallet dialog selects** (#557) — dropped the `🪙` / `📈` / `📝` / `🧪` / `🔴` emoji icons from option labels; opted into `bodyOverflow="visible"` so portal-disabled select dropdowns aren't clipped by the dialog scroll container.
+- **Solid preview lines** (#559) — SL/TP and trailing-stop placement preview lines render solid (matches the rest of the order-line system) instead of dashed `[4, 4]`.
+- **H/V drawing handle drag** (#561) — horizontal and vertical line drawings can now be moved by clicking and dragging the handle dot, not just the line body. Single-point branch lifted above the body guard so `handleType === 'start'` doesn't fall through silently.
+- **Magnet snap target** (#562) — when magnet is engaged on an existing drawing's handle, a new drawing's anchor lands on the snapped point (not the raw cursor xy). Drawing-handle snap pass extracted into `findDrawingHandleSnap` and used by both `snapToOHLC` (visible crosshair) and `getIndexAndPrice` (drawing data).
+- **Chart Y-axis camera lock** (#569) — pan/zoom no longer rescales the price axis. Bounds are recomputed only on explicit refit triggers (initial load, symbol/interval/dataset change, vertical zoom reset, resize, `>>` reset). Matches TradingView / Binance / IBKR camera behavior — price exits viewport vertically until the user explicitly refits.
+- **Indicator popover toggles** (#564) — per-row Checkbox replaced with Switch (instant-state semantics); off-spec `colorPalette="blue"` + New buttons on the popover and the IndicatorLibrary surface re-styled as `variant="outline" color="fg.muted"`.
+- **Other instant-state checkboxes → switches** (#570) — `enableShiftAltOrderEntry` chart preference, "toggle all" + per-setup rows in `SetupTogglePopover` and `SetupToggleSection`. Form / multi-select checkboxes (BulkSymbolSelector, AddWatcherDialog, ProfileEditorDialog, LoginPage rememberMe) kept as-is.
+
+### Refactored
+
+- **TradeTicket rename** (#565) — `QuickTradeToolbar` (component / sub-component / file / props / displayName / perfMonitor key / 3 e2e perf-spec selectors) renamed to `TradeTicket` to align with the i18n `trading.ticket.*` namespace and `TicketPanel` wrapper.
+- **Grid edit close affordance** (#568) — corner-pinned `LuX` IconButton replaced with a centered `LuTrash2` ghost button (size md, red colorPalette). Reads as "delete this panel" and stops conflicting with the resize-handle hot zones at the panel borders.
+
+### Removed
+
+- **Anchored VWAP drawing tool** (#560) — entire feature dropped. 23 files touched: type unions / drawing renderer / icon / serialization / hit-testing / index resolver / interaction / drawing handles / toolbar entry / i18n keys / backend zod enum. Net −126 LOC.
+- **kline-synthesis service** (#567) — see Added section.
+
+### Notes
+
+- During a Binance kline-stream incident, the chart now freezes (with `StreamHealthDot` already flipped to degraded) instead of showing synthesized candles. Cleaner UX — synthesized bars could disagree slightly with the real bar once the stream recovered.
+- `RELEASE_PROCESS.md` step 8 now includes the `scripts/marketing-screenshots.mjs` invocation as part of the site refresh — keeps the deploy a single commit (site version bump + regenerated PNGs together).
+
 ## [1.16.0] - 2026-05-09
 
 ### Added — UX restructure (8-PR push)
