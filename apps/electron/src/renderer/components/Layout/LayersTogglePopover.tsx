@@ -95,6 +95,8 @@ export const LayersTogglePopover = memo(() => {
               size="2xs"
               variant="outline"
               color="fg.muted"
+              fontWeight="medium"
+              gap={1.5}
               data-testid="toolbar-layers-button"
             >
               <LuLayers />

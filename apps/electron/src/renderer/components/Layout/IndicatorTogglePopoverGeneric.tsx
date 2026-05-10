@@ -204,6 +204,8 @@ export const IndicatorTogglePopoverGeneric = memo(
                   size="2xs"
                   variant="outline"
                   color="fg.muted"
+                  fontWeight="medium"
+                  gap={1.5}
                 >
                   <LuGauge />
                   {t('chart.indicators.title')}

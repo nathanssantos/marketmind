@@ -39,6 +39,8 @@ export const TimeframeSelector = ({
           size="2xs"
           variant="outline"
           color="fg.muted"
+          fontWeight="medium"
+          gap={1.5}
         >
           <LuClock />
           {selectedTimeframe}
