@@ -35,7 +35,7 @@ import {
  *   - User pans the chart for ~4 seconds
  *
  * Captures: render rate of ChartCanvas + key sibling components
- * (Portfolio, OrdersList, FuturesQuickTradeToolbar) to identify which
+ * (Portfolio, OrdersList, TradeTicket) to identify which
  * subscriber chains light up under combined load. The synthetic
  * tick-storm test in sibling-renders.spec.ts shows clean numbers (0/s)
  * because no position is open — siblings short-circuit when there's
@@ -201,7 +201,7 @@ test.describe('Live-scenario perf (pan + open position + indicators + ticks)', (
     const chartCanvasRate = componentRenderRate(snap, 'ChartCanvas');
     const portfolioRate = componentRenderRate(snap, 'Portfolio');
     const ordersListRate = componentRenderRate(snap, 'OrdersList');
-    const quickTradeRate = componentRenderRate(snap, 'QuickTradeToolbar');
+    const quickTradeRate = componentRenderRate(snap, 'TradeTicket');
     const indicatorsRate = componentRenderRate(snap, 'useGenericChartIndicators');
 
     const result = {
@@ -224,7 +224,7 @@ test.describe('Live-scenario perf (pan + open position + indicators + ticks)', (
     // should not light up sibling React rerenders. ChartCanvas itself
     // is allowed up to 30 renders in the pan window (≈4s of 240
     // frames) since gesture-driven viewport state changes are
-    // unavoidable. Portfolio/OrdersList/QuickTradeToolbar should
+    // unavoidable. Portfolio/OrdersList/TradeTicket should
     // never rerender during pan — they don't depend on viewport
     // state, only on order/position state which doesn't change in
     // this test.
@@ -247,7 +247,7 @@ test.describe('Live-scenario perf (pan + open position + indicators + ticks)', (
     ).toBeLessThanOrEqual(10);
     expect(
       quickTradeRate,
-      `QuickTradeToolbar re-rendering ${quickTradeRate.toFixed(1)}/s during pan + tick storm — selector on usePriceStore?`,
+      `TradeTicket re-rendering ${quickTradeRate.toFixed(1)}/s during pan + tick storm — selector on usePriceStore?`,
     ).toBeLessThanOrEqual(10);
   });
 });

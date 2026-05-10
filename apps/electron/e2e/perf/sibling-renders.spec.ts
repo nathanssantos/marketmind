@@ -96,13 +96,13 @@ test.describe('Sibling renderer hot-path', () => {
     ).toBeLessThanOrEqual(MAX_ORDERS_LIST_RENDERS_PER_SEC);
   });
 
-  test('quick-trade-toolbar-tick-storm: QuickTradeToolbar stays bounded under price ticks', async ({ page }) => {
+  test('quick-trade-toolbar-tick-storm: TradeTicket stays bounded under price ticks', async ({ page }) => {
     await clearIndicators(page);
     await enableChartQuickTrade(page);
     await page.waitForFunction(
       () => {
         const snap = window.__mmPerf?.getSnapshot();
-        return snap?.componentRenders.some((c) => c.name === 'QuickTradeToolbar') ?? false;
+        return snap?.componentRenders.some((c) => c.name === 'TradeTicket') ?? false;
       },
       { timeout: 5_000 },
     );
@@ -128,7 +128,7 @@ test.describe('Sibling renderer hot-path', () => {
     await tickLoop;
 
     const snap = await readPerfSnapshot(page);
-    const quickTradeRate = componentRenderRate(snap, 'QuickTradeToolbar');
+    const quickTradeRate = componentRenderRate(snap, 'TradeTicket');
     const chartCanvasRate = componentRenderRate(snap, 'ChartCanvas');
 
     writeRunResult('quick-trade-toolbar-tick-storm', {
@@ -141,7 +141,7 @@ test.describe('Sibling renderer hot-path', () => {
     expect(snap.enabled).toBe(true);
     expect(
       quickTradeRate,
-      `QuickTradeToolbar re-rendering ${quickTradeRate.toFixed(1)}/s under tick storm — selector on usePriceStore (Part 2)`,
+      `TradeTicket re-rendering ${quickTradeRate.toFixed(1)}/s under tick storm — selector on usePriceStore (Part 2)`,
     ).toBeLessThanOrEqual(MAX_QUICK_TRADE_RENDERS_PER_SEC);
   });
 });

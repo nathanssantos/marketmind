@@ -8,7 +8,7 @@ import { ChartGrid } from '../components/Layout/ChartGrid';
 import { ChartToolsToolbar } from '../components/Layout/ChartToolsToolbar';
 import { LayoutTabBar } from '../components/Layout/LayoutTabBar';
 import { MinimizedPanelBar } from '../components/Layout/MinimizedPanelBar';
-import { QuickTradeToolbar } from '../components/Layout/QuickTradeToolbar';
+import { TradeTicket } from '../components/Layout/TradeTicket';
 import { SymbolTabBar } from '../components/Layout/SymbolTabBar';
 import { Toolbar } from '../components/Layout/Toolbar';
 import { PreferencesHydrator } from '../components/PreferencesHydrator';
@@ -71,7 +71,7 @@ function ChartWindowContent(): ReactElement {
 
         <Flex flex={1} direction="column" overflow="hidden">
           {effectiveSymbol && showQuickTrade && (
-            <QuickTradeToolbar
+            <TradeTicket
               symbol={effectiveSymbol}
               marketType={effectiveMarketType}
               onClose={() => setShowQuickTrade(false)}
