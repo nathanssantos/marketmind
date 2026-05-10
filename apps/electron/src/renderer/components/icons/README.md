@@ -87,7 +87,6 @@ import { LineIcon, FibonacciIcon, PitchforkIcon } from '@renderer/components/ico
 | `RulerIcon`         | `RulerIcon.tsx`         | Diagonal ruler with tick marks                       |
 | `AreaIcon`          | `AreaIcon.tsx`          | Dashed rectangle with corner scan marks              |
 | `PriceRangeIcon`    | `PriceRangeIcon.tsx`    | Two horizontal lines with vertical bracket/arrows    |
-| `AnchoredVwapIcon`  | `AnchoredVwapIcon.tsx`  | Anchor pin with a curved line extending right        |
 | `HighlighterIcon`   | `HighlighterIcon.tsx`   | Thick marker pen at an angle                         |
 | `PitchforkIcon`     | `PitchforkIcon.tsx`     | Three-pronged fork from apex                         |
 | `GannFanIcon`       | `GannFanIcon.tsx`       | Multiple lines radiating from a corner               |

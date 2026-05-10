@@ -23,7 +23,6 @@ import {
   GannFanIcon,
   HighlighterIcon,
   TextIcon,
-  AnchoredVwapIcon,
   RulerIcon,
   LongPositionIcon,
   ShortPositionIcon,
@@ -129,7 +128,6 @@ export const ChartToolsToolbar = memo(() => {
         <DrawingToolButton tool="shortPosition" label={t('chart.tools.shortPosition')} icon={<ShortPositionIcon />} />
         <Separator orientation="horizontal" width="100%" />
         <DrawingToolButton tool="text" label={t('chart.tools.text')} icon={<TextIcon />} />
-        <DrawingToolButton tool="anchoredVwap" label={t('chart.tools.anchoredVwap')} icon={<AnchoredVwapIcon />} />
         <Separator orientation="horizontal" width="100%" />
         <ChartToolButton
           active={magnetEnabled}

@@ -7,7 +7,7 @@ import { protectedProcedure, router } from '../trpc';
 const drawingTypeSchema = z.enum([
   'line', 'rectangle', 'pencil', 'fibonacci', 'ruler', 'area', 'arrow', 'text',
   'ray', 'horizontalLine', 'channel',
-  'trendLine', 'priceRange', 'verticalLine', 'anchoredVwap', 'highlighter', 'ellipse', 'pitchfork', 'gannFan',
+  'trendLine', 'priceRange', 'verticalLine', 'highlighter', 'ellipse', 'pitchfork', 'gannFan',
 ]);
 
 export const drawingRouter = router({

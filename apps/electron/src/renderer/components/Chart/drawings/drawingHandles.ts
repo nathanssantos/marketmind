@@ -12,7 +12,7 @@ export interface HandlePoint {
 const TWO_POINT_HANDLE_TYPES = new Set(['line', 'ruler', 'arrow', 'rectangle', 'area', 'ray', 'trendLine', 'priceRange', 'ellipse', 'gannFan']);
 const THREE_POINT_HANDLE_TYPES = new Set(['channel', 'pitchfork']);
 const FREEFORM_HANDLE_TYPES = new Set(['pencil', 'highlighter']);
-const SINGLE_POINT_HANDLE_TYPES = new Set(['text', 'horizontalLine', 'verticalLine', 'anchoredVwap']);
+const SINGLE_POINT_HANDLE_TYPES = new Set(['text', 'horizontalLine', 'verticalLine']);
 
 /**
  * Returns canvas-space coordinates for every interaction handle on the

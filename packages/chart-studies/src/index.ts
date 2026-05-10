@@ -16,7 +16,6 @@ export type {
   TrendLineDrawing,
   PriceRangeDrawing,
   VerticalLineDrawing,
-  AnchoredVwapDrawing,
   HighlighterDrawing,
   EllipseDrawing,
   PitchforkDrawing,

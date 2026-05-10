@@ -12,7 +12,6 @@ export { AreaIcon } from './AreaIcon';
 export { TrendLineIcon } from './TrendLineIcon';
 export { PriceRangeIcon } from './PriceRangeIcon';
 export { VerticalLineIcon } from './VerticalLineIcon';
-export { AnchoredVwapIcon } from './AnchoredVwapIcon';
 export { HighlighterIcon } from './HighlighterIcon';
 export { EllipseIcon } from './EllipseIcon';
 export { PitchforkIcon } from './PitchforkIcon';

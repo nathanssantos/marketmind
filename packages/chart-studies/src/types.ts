@@ -1,4 +1,4 @@
-export type DrawingType = 'line' | 'rectangle' | 'pencil' | 'fibonacci' | 'ruler' | 'area' | 'arrow' | 'text' | 'ray' | 'horizontalLine' | 'channel' | 'trendLine' | 'priceRange' | 'verticalLine' | 'anchoredVwap' | 'highlighter' | 'ellipse' | 'pitchfork' | 'gannFan' | 'longPosition' | 'shortPosition';
+export type DrawingType = 'line' | 'rectangle' | 'pencil' | 'fibonacci' | 'ruler' | 'area' | 'arrow' | 'text' | 'ray' | 'horizontalLine' | 'channel' | 'trendLine' | 'priceRange' | 'verticalLine' | 'highlighter' | 'ellipse' | 'pitchfork' | 'gannFan' | 'longPosition' | 'shortPosition';
 
 export interface DrawingBase {
   id: string;
@@ -53,12 +53,6 @@ export interface TrendLineDrawing extends DrawingBase, TwoPointFields { type: 't
 export interface PriceRangeDrawing extends DrawingBase, TwoPointFields { type: 'priceRange'; }
 export interface VerticalLineDrawing extends DrawingBase {
   type: 'verticalLine';
-  index: number;
-  price: number;
-  time?: number;
-}
-export interface AnchoredVwapDrawing extends DrawingBase {
-  type: 'anchoredVwap';
   index: number;
   price: number;
   time?: number;
@@ -138,7 +132,6 @@ export type Drawing =
   | TrendLineDrawing
   | PriceRangeDrawing
   | VerticalLineDrawing
-  | AnchoredVwapDrawing
   | HighlighterDrawing
   | EllipseDrawing
   | PitchforkDrawing

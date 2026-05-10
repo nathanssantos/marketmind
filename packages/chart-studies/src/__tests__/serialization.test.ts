@@ -166,13 +166,6 @@ describe('deserializeDrawingData', () => {
     }
   });
 
-  it('deserializes anchoredVwap drawing', () => {
-    const data = JSON.stringify({ index: 5, price: 300 });
-    const result = deserializeDrawingData('anchoredVwap', data, baseProps);
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('anchoredVwap');
-  });
-
   it('deserializes highlighter drawing', () => {
     const data = JSON.stringify({ points: [{ index: 0, price: 100 }, { index: 3, price: 150 }] });
     const result = deserializeDrawingData('highlighter', data, baseProps);

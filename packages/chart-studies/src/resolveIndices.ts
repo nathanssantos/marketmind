@@ -1,4 +1,4 @@
-import type { Drawing, ChannelDrawing, PitchforkDrawing, PencilDrawing, HighlighterDrawing, FibonacciDrawing, TextDrawing, HorizontalLineDrawing, VerticalLineDrawing, AnchoredVwapDrawing, LongPositionDrawing, ShortPositionDrawing } from './types';
+import type { Drawing, ChannelDrawing, PitchforkDrawing, PencilDrawing, HighlighterDrawing, FibonacciDrawing, TextDrawing, HorizontalLineDrawing, VerticalLineDrawing, LongPositionDrawing, ShortPositionDrawing } from './types';
 
 interface KlineWithTime {
   openTime: number;
@@ -7,7 +7,7 @@ interface KlineWithTime {
 const TWO_POINT_TYPES = new Set(['line', 'ruler', 'rectangle', 'area', 'arrow', 'ray', 'trendLine', 'priceRange', 'ellipse', 'gannFan']);
 const THREE_POINT_TYPES = new Set(['channel', 'pitchfork']);
 const FREEFORM_TYPES = new Set(['pencil', 'highlighter']);
-const SINGLE_POINT_TYPES = new Set(['horizontalLine', 'verticalLine', 'anchoredVwap']);
+const SINGLE_POINT_TYPES = new Set(['horizontalLine', 'verticalLine']);
 
 export const resolveDrawingIndices = (drawing: Drawing, klines: KlineWithTime[]): Drawing => {
   if (klines.length === 0) return drawing;
@@ -54,7 +54,7 @@ export const resolveDrawingIndices = (drawing: Drawing, klines: KlineWithTime[])
   }
 
   if (SINGLE_POINT_TYPES.has(drawing.type)) {
-    const d = drawing as HorizontalLineDrawing | VerticalLineDrawing | AnchoredVwapDrawing;
+    const d = drawing as HorizontalLineDrawing | VerticalLineDrawing;
     if (!d.time) return drawing;
     return { ...d, index: timeToIdx(d.time, d.index) };
   }

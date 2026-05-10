@@ -17,7 +17,6 @@ export const DRAWING_COLORS = {
   trendLine: '#ffffff',
   priceRange: '#ffffff',
   verticalLine: '#ffffff',
-  anchoredVwap: '#ffffff',
   highlighter: '#ffffff',
   ellipse: '#ffffff',
   pitchfork: '#ffffff',
