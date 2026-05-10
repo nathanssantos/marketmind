@@ -504,6 +504,32 @@ const ChartCanvasInternal = ({
   >(null);
   const [patternEditTarget, setPatternEditTarget] = useState<UserPattern | null>(null);
 
+  // Update cursor to `pointer` when hovering a pattern glyph so it reads as
+  // clickable. Imperative — bypass React re-renders to keep mousemove cheap.
+  const handlePatternHover = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      if (!layerFlags.candlePatterns || patternDrawsRef.current.length === 0) {
+        if (canvas.dataset['patternCursor'] === 'pointer') {
+          canvas.style.cursor = 'crosshair';
+          delete canvas.dataset['patternCursor'];
+        }
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const draw = findPatternHitAtPosition(patternDrawsRef.current, e.clientX - rect.left, e.clientY - rect.top);
+      if (draw && canvas.dataset['patternCursor'] !== 'pointer') {
+        canvas.style.cursor = 'pointer';
+        canvas.dataset['patternCursor'] = 'pointer';
+      } else if (!draw && canvas.dataset['patternCursor'] === 'pointer') {
+        canvas.style.cursor = 'crosshair';
+        delete canvas.dataset['patternCursor'];
+      }
+    },
+    [layerFlags.candlePatterns, canvasRef],
+  );
+
   const handlePatternClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       if (!layerFlags.candlePatterns || !canvasRef.current) return;
@@ -590,7 +616,7 @@ const ChartCanvasInternal = ({
         <canvas
           ref={canvasRef}
           onMouseDown={handleCanvasMouseDownWrapped}
-          onMouseMove={handleCanvasMouseMoveWrapped}
+          onMouseMove={(e) => { handlePatternHover(e); handleCanvasMouseMoveWrapped(e); }}
           onMouseUp={handleCanvasMouseUp}
           onMouseLeave={handleCanvasMouseLeave}
           onClick={handlePatternClick}
