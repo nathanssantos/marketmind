@@ -32,19 +32,22 @@ export interface DirtyFlags {
   all: boolean;
 }
 
-interface BoundsCache {
-  bounds: Bounds | null;
-  viewportStart: number;
-  viewportEnd: number;
-  klinesLength: number;
-}
-
 export class CanvasManager {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null = null;
   private klines: Kline[] = [];
   private viewport: Viewport;
   private bounds: Bounds | null = null;
+  // Y-axis "lock" — the un-transformed (raw min/max) bounds captured
+  // at the last explicit fit event (initial load, symbol/interval/
+  // chart-type change, `>>` reset, vertical zoom reset). Horizontal
+  // pan / zoom / new-tick updates DO NOT recompute this; the visible
+  // bounds are derived by re-applying the user's vertical transform
+  // (priceOffset/priceScale) onto these locked raw bounds. This is
+  // the market-standard camera behavior — TradingView, Binance and
+  // IBKR all keep Y sticky during horizontal pan, allowing price to
+  // exit the viewport vertically until the user explicitly refits.
+  private rawBaseBounds: Bounds | null = null;
   private dimensions: Dimensions | null = null;
   private padding: number;
   private renderCallback: (() => void) | null = null;
@@ -65,7 +68,6 @@ export class CanvasManager {
   private viewportFrameTime: number = 33;
   private overlayOnlyFrameTime: number = 33;
   private lastViewportDirtyAt: number = 0;
-  private boundsCache: BoundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
   private frameCache: Map<unknown, unknown> | null = null;
   private frameCacheGeneration: number = 0;
   private offscreen: HTMLCanvasElement | null = null;
@@ -310,12 +312,14 @@ export class CanvasManager {
     // layer doesn't keep stale candle geometry around.
     const firstChanged = (oldFirst?.openTime ?? 0) !== (newFirst?.openTime ?? 0);
 
-    if (changed) {
-      this.boundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
-    }
-
     this.klines = klines;
-    this.updateBounds();
+    // Refit Y only when the dataset's anchor changes (initial load,
+    // symbol swap, timeframe swap, pagination prepend) — a plain
+    // last-candle tick keeps the locked bounds so the user's price
+    // scale doesn't twitch on every WS update.
+    if (firstChanged || this.rawBaseBounds === null) {
+      this.refitBaseBounds();
+    }
     if (firstChanged) {
       this.markDirty('all');
     } else if (changed) {
@@ -332,36 +336,46 @@ export class CanvasManager {
       this.viewport.klineWidth !== viewport.klineWidth;
 
     this.viewport = clampViewport(viewport, this.klines.length);
-    this.updateBounds();
+    this.applyTransform();
     if (changed) this.markDirty('viewport');
   }
 
   public getViewport(): Viewport { return this.viewport; }
 
-  private updateBounds(): void {
+  /**
+   * Refit Y-axis to the current viewport's raw min/max — the only path
+   * that actually mutates `rawBaseBounds`. Called at chart load, on
+   * symbol/interval/chart-type swap, on `>>` reset, on vertical-zoom
+   * reset, and on resize. Horizontal pan/zoom must NOT call this.
+   */
+  private refitBaseBounds(): void {
     if (this.klines.length === 0) {
       this.bounds = null;
-      this.boundsCache = { bounds: null, viewportStart: 0, viewportEnd: 0, klinesLength: 0 };
+      this.rawBaseBounds = null;
       return;
     }
+    this.rawBaseBounds = calculateBounds(this.klines, this.viewport);
+    this.bounds = applyBoundsTransform(this.rawBaseBounds, this.priceOffset, this.priceScale);
+  }
 
-    const start = Math.floor(this.viewport.start);
-    const end = Math.ceil(this.viewport.end);
-
-    const canUseCached = this.boundsCache.bounds &&
-      start >= this.boundsCache.viewportStart &&
-      end <= this.boundsCache.viewportEnd &&
-      this.klines.length === this.boundsCache.klinesLength;
-
-    const baseBounds = canUseCached
-      ? this.boundsCache.bounds!
-      : calculateBounds(this.klines, this.viewport);
-
-    if (!canUseCached) {
-      this.boundsCache = { bounds: baseBounds, viewportStart: start, viewportEnd: end, klinesLength: this.klines.length };
+  /**
+   * Re-apply the current vertical transform (priceOffset/priceScale)
+   * onto the locked `rawBaseBounds`, leaving the raw bounds untouched.
+   * Used by every viewport mutation that should NOT refit Y: horizontal
+   * pan, horizontal zoom, vertical pan, vertical zoom, setViewport,
+   * panToNextKline. The first call falls back to `refitBaseBounds()`
+   * so the very first render still has bounds.
+   */
+  private applyTransform(): void {
+    if (!this.rawBaseBounds) {
+      this.refitBaseBounds();
+      return;
     }
-
-    this.bounds = applyBoundsTransform(baseBounds, this.priceOffset, this.priceScale);
+    if (this.klines.length === 0) {
+      this.bounds = null;
+      return;
+    }
+    this.bounds = applyBoundsTransform(this.rawBaseBounds, this.priceOffset, this.priceScale);
   }
 
   public getBounds(): Bounds | null { return this.bounds; }
@@ -414,7 +428,7 @@ export class CanvasManager {
 
   public resize(): void {
     this.initialize();
-    this.updateBounds();
+    this.applyTransform();
     this.markDirty('all');
   }
 
@@ -521,14 +535,16 @@ export class CanvasManager {
       this.dimensions, this.klines, delta, centerX
     );
     this.updateKlineWidth();
-    this.updateBounds();
+    // Horizontal zoom keeps Y bounds locked — re-apply transform only.
+    this.applyTransform();
     this.markDirty('viewport');
   }
 
   public pan(deltaX: number): void {
     if (!this.dimensions) return;
     this.viewport = panViewport(this.viewport, this.dimensions, this.klines, deltaX);
-    this.updateBounds();
+    // Horizontal pan keeps Y bounds locked — re-apply transform only.
+    this.applyTransform();
     this.markDirty('viewport');
   }
 
@@ -536,21 +552,23 @@ export class CanvasManager {
     if (!this.dimensions) return;
     const adjustedDeltaY = this.flipped ? -deltaY : deltaY;
     this.priceOffset = panVerticalOffset(this.priceOffset, adjustedDeltaY, this.dimensions.chartHeight, this.klines, this.viewport, this.priceScale);
-    this.updateBounds();
+    this.applyTransform();
     this.markDirty('viewport');
   }
 
   public zoomVertical(deltaY: number): void {
     if (!this.bounds || !this.dimensions) return;
     this.priceScale = zoomVerticalScale(this.priceScale, deltaY, this.dimensions.chartHeight);
-    this.updateBounds();
+    this.applyTransform();
     this.markDirty('viewport');
   }
 
   public resetVerticalZoom(): void {
     this.priceOffset = 0;
     this.priceScale = 1;
-    this.updateBounds();
+    // Reset is one of the explicit refit triggers — re-anchor base
+    // bounds to the current viewport so the user sees a clean fit.
+    this.refitBaseBounds();
     this.markDirty('viewport');
   }
 
@@ -573,7 +591,7 @@ export class CanvasManager {
     if (newEnd <= this.getMaxViewportEnd()) {
       this.viewport = { ...this.viewport, start: this.viewport.start + 1, end: newEnd };
       this.updateKlineWidth();
-      this.updateBounds();
+      this.applyTransform();
       this.markDirty('viewport');
     }
   }
