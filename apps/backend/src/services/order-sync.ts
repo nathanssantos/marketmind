@@ -575,14 +575,42 @@ export class OrderSyncService {
           skippedStillLive++;
         }
       } catch (err) {
-        // getOrder can fail if the order is older than Binance's retention
-        // window or if the symbol changed — fall back to EXPIRED so the
-        // stale row doesn't keep blocking the renderer's pending list.
-        logger.warn(
-          { walletId, orderId: row.orderId, symbol: row.symbol, error: serializeError(err) },
-          '[OrderSync] getOrder failed for stale orderId — falling back to EXPIRED',
-        );
-        expired++;
+        // getOrder can fail for two distinct reasons that need opposite
+        // handling:
+        //
+        //   1. Order genuinely gone — "Unknown order" / "Order does not
+        //      exist" / "Order is older than X days". Stamp EXPIRED so the
+        //      stale row doesn't keep blocking the renderer's pending list.
+        //
+        //   2. Transient — rate limit (-1003), network blip, ban window,
+        //      Binance 5xx. The order may very well be FILLED on Binance,
+        //      we just can't see it right now. Stamping EXPIRED here was
+        //      producing misleading "Order Expired" toasts for orders that
+        //      had actually filled — the renderer's order-status diff fires
+        //      the toast on NEW→EXPIRED transition without knowing the
+        //      stamp was a fallback. Leave STILL_LIVE so the next reconcile
+        //      cycle retries the lookup once the API recovers.
+        const errMsg = serializeError(err).toLowerCase();
+        const isOrderGone =
+          errMsg.includes('unknown order') ||
+          errMsg.includes('order does not exist') ||
+          errMsg.includes('does not exist') ||
+          errMsg.includes('older than');
+        if (isOrderGone) {
+          logger.warn(
+            { walletId, orderId: row.orderId, symbol: row.symbol, error: serializeError(err) },
+            '[OrderSync] getOrder reports order not found — marking EXPIRED',
+          );
+          expired++;
+          // realStatus already initialised to 'EXPIRED'
+        } else {
+          logger.warn(
+            { walletId, orderId: row.orderId, symbol: row.symbol, error: serializeError(err) },
+            '[OrderSync] getOrder transient failure — leaving STILL_LIVE for next reconcile cycle',
+          );
+          realStatus = 'STILL_LIVE';
+          skippedStillLive++;
+        }
       }
 
       if (realStatus === 'STILL_LIVE') continue;
