@@ -370,6 +370,18 @@ export const useChartTradingActions = ({
           ...newOrderRequest,
         }))
         .then(() => {
+          // `trading.createOrder.onSuccess` invalidates getOrders /
+          // getPositions / getTradeExecutions, but the chart for an
+          // exchange-moved order reads from `futuresTrading.getOpenOrders`
+          // / `getOpenAlgoOrders`. Those keys were invalidated by the
+          // cancel above (returning a snapshot WITHOUT the not-yet-created
+          // replacement) and never re-invalidated by createOrder, so the
+          // new order sat in Binance but was absent from the chart until
+          // a manual refresh. Force the refetch here so the new order
+          // appears in the same render tick the optimistic was placed.
+          void utils.futuresTrading.getOpenOrders.invalidate();
+          void utils.futuresTrading.getOpenAlgoOrders.invalidate();
+          void utils.futuresTrading.getOpenDbOrderIds.invalidate();
           orderFlashMapRef.current.set(optimisticExecution.id, performance.now());
           manager?.markDirty('overlays');
         })

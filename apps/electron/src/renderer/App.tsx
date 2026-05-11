@@ -36,9 +36,13 @@ import { ToastShelf } from './components/Toast/ToastShelf';
 function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
   const { wallets } = useBackendWallet();
   const activeWalletId = wallets[0]?.id;
+  // Pass every wallet id so the provider can subscribe to each wallet's
+  // socket room — closing a trade on a non-focused wallet still patches
+  // its balance row in wallet.list without a manual sync.
+  const allWalletIds = useMemo(() => wallets.map((w) => w.id), [wallets]);
 
   return (
-    <RealtimeTradingSyncProvider walletId={activeWalletId}>
+    <RealtimeTradingSyncProvider walletId={activeWalletId} allWalletIds={allWalletIds}>
       {children}
     </RealtimeTradingSyncProvider>
   );

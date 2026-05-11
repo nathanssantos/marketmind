@@ -8,7 +8,7 @@ import type {
 } from '@marketmind/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { createPlatformAdapter } from '../adapters/factory';
-import { useSocketEvent, useWalletSubscription } from '../hooks/socket';
+import { useSocketEvent, useWalletSubscription, useAllWalletsBalanceSubscription } from '../hooks/socket';
 import { socketBus } from '../services/socketBus';
 import { QUERY_CONFIGS } from '../services/queryConfig';
 import {
@@ -51,10 +51,18 @@ const COLD_KEYS = new Set(['setupStats', 'equityCurve']);
 
 interface RealtimeTradingSyncProviderProps {
   walletId: string | undefined;
+  /**
+   * Every walletId the current user owns. Used to subscribe to each
+   * wallet's `wallet:update` socket room so balances stay fresh in the
+   * wallet.list cache regardless of which wallet is currently focused.
+   * Without this, only the focused wallet ever sees balance updates and
+   * the others go stale until manual refresh.
+   */
+  allWalletIds?: readonly string[];
   children: ReactNode;
 }
 
-export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTradingSyncProviderProps) => {
+export const RealtimeTradingSyncProvider = ({ walletId, allWalletIds, children }: RealtimeTradingSyncProviderProps) => {
   const recentAlertsRef = useRef<Map<string, number>>(new Map());
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
@@ -172,6 +180,7 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   }, [requiredSymbolsKey]);
 
   useWalletSubscription(walletId);
+  useAllWalletsBalanceSubscription(allWalletIds ?? []);
 
   // Live price ticks → priceStore (RAF-coalesced via socketBus)
   useSocketEvent('price:update', (data) => {
@@ -291,7 +300,14 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
   }, !!walletId);
 
   useSocketEvent('wallet:update', (raw) => {
-    if (!walletId) return;
+    // Resolve the target wallet from the payload (backend now echoes
+    // `walletId` in every emit) and fall back to the focused walletId
+    // for legacy payloads. Critical because we subscribe to EVERY
+    // wallet's room — without payload.walletId, a non-focused wallet's
+    // event would incorrectly patch the focused wallet's row.
+    const payload = raw as { walletId?: string } | null | undefined;
+    const targetWalletId = payload?.walletId ?? walletId;
+    if (!targetWalletId) return;
     // Patch wallet.list cache directly with the new balance from the
     // payload — same render frame as the socket event, no tRPC round
     // trip. Critical for scalping: when a position closes, the ticket
@@ -300,10 +316,10 @@ export const RealtimeTradingSyncProvider = ({ walletId, children }: RealtimeTrad
     // ticket waits ~300–700ms (debounce + refetch) before reflecting
     // the new balance.
     utils.wallet.list.setData(undefined, (prev) =>
-      mergeWalletBalanceUpdate(prev as never, walletId, raw as never)
+      mergeWalletBalanceUpdate(prev as never, targetWalletId, raw as never)
     );
-    scheduleRef.current('wallet');
-  }, !!walletId);
+    if (targetWalletId === walletId) scheduleRef.current('wallet');
+  }, true);
 
   // v1.6 Track F.2 — backend signals after a user-stream reconnect (the
   // listenKey expired, the watchdog forced a reconnect, or a message
