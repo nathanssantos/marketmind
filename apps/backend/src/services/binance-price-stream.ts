@@ -12,6 +12,29 @@ import { logger } from './logger';
 import { positionMonitorService } from './position-monitor';
 import { getWebSocketService } from './websocket';
 
+/**
+ * Custom symbols (basket/synthetic — POLITIFI, MAGNIFICENT7, etc.) are NOT
+ * listed on Binance, so subscribing to them on the public aggTrade stream
+ * causes the connection to be closed by the exchange. The custom-symbol
+ * service emits its own synthesized aggTrades, so the price-stream layer
+ * must filter them out of every subscription path. Imported lazily — same
+ * pattern as `websocket.ts:35` — because custom-symbol-service imports
+ * back into the websocket layer and we'd otherwise hit a circular dep at
+ * module-eval time.
+ */
+let _getCustomSymbolService: (() => { isCustomSymbolSync: (s: string) => boolean } | null) | null = null;
+let _customSymbolImportPromise: Promise<void> | null = null;
+const ensureCustomSymbolImport = (): void => {
+  if (_customSymbolImportPromise) return;
+  _customSymbolImportPromise = import('./custom-symbol-service').then((mod) => {
+    _getCustomSymbolService = mod.getCustomSymbolService;
+  });
+};
+const isCustomSymbol = (symbol: string): boolean => {
+  if (!_getCustomSymbolService) return false;
+  return _getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false;
+};
+
 export interface PriceUpdate {
   symbol: string;
   price: number;
@@ -270,6 +293,7 @@ export class BinancePriceStreamService {
 
   public async reconcileSubscriptions(): Promise<void> {
     try {
+      ensureCustomSymbolImport();
       const openExecutions = await db
         .select()
         .from(tradeExecutions)
@@ -280,6 +304,11 @@ export class BinancePriceStreamService {
 
       for (const execution of openExecutions) {
         const symbol = execution.symbol.toLowerCase();
+        // Custom basket symbols (POLITIFI etc.) don't exist on Binance —
+        // subscribing them closes the connection and triggers the reconnect
+        // loop seen at 2026-05-11T19:59. Skip; the custom-symbol service
+        // synthesizes their trades separately.
+        if (isCustomSymbol(symbol)) continue;
         if (execution.marketType === 'FUTURES') {
           futuresSymbols.add(symbol);
         } else {
@@ -290,7 +319,9 @@ export class BinancePriceStreamService {
       const wsService = getWebSocketService();
       const viewedRooms = wsService?.getActiveRooms(ROOM_PREFIXES.prices) ?? [];
       for (const symbol of viewedRooms) {
-        futuresSymbols.add(symbol.toLowerCase());
+        const lower = symbol.toLowerCase();
+        if (isCustomSymbol(lower)) continue;
+        futuresSymbols.add(lower);
       }
 
       const allSymbolsNeeded = new Set([...spotSymbols, ...futuresSymbols]);
