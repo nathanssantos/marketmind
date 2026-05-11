@@ -241,7 +241,7 @@ export class CustomSymbolService {
     const wsService = getWebSocketService();
 
     for (const interval of KLINE_INTERVALS) {
-      const intervalMs = INTERVAL_MS[interval as TimeInterval];
+      const intervalMs = INTERVAL_MS[interval];
       if (!intervalMs) continue;
 
       const bucketStart = alignToInterval(timestamp, intervalMs);
@@ -262,7 +262,7 @@ export class CustomSymbolService {
       if (!current) {
         const seed: CustomKlineBucketState = {
           symbol,
-          interval: interval as TimeInterval,
+          interval,
           intervalMs,
           openTime: bucketStart,
           closeTime: bucketEnd,

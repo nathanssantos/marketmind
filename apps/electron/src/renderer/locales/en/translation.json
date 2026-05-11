@@ -824,9 +824,21 @@
       "orderLines": "Order lines",
       "setupMarkers": "Setup markers",
       "heatmap": "Heatmap / liquidations",
+      "candlePatterns": "Candle patterns",
       "showAll": "Show all",
       "hideAll": "Hide all",
       "noFocusedChart": "Focus a chart panel to toggle layers."
+    },
+    "patterns": {
+      "title": "Patterns",
+      "configure": "Configure candle-pattern detection",
+      "empty": "No patterns available.",
+      "categories": {
+        "reversal-single": "Reversal — single bar",
+        "reversal-multi": "Reversal — multi bar",
+        "continuation": "Continuation",
+        "indecision": "Indecision"
+      }
     },
     "toolsMenu": {
       "title": "Tools",

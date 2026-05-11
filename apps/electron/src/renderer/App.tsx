@@ -25,6 +25,7 @@ import { useLayoutSync } from './hooks/useLayoutSync';
 import { useOrderNotifications } from './hooks/useOrderNotifications';
 import { useSetupToasts } from './hooks/useSetupToasts';
 import { useAutoActivateDefaultIndicators } from './hooks/useAutoActivateDefaultIndicators';
+import { useAutoActivateDefaultPatterns } from './hooks/useAutoActivateDefaultPatterns';
 import { useIndicatorStore } from './store/indicatorStore';
 import { useShallow } from 'zustand/shallow';
 import { useChartPref } from './store/preferencesStore';
@@ -35,9 +36,13 @@ import { ToastShelf } from './components/Toast/ToastShelf';
 function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
   const { wallets } = useBackendWallet();
   const activeWalletId = wallets[0]?.id;
+  // Pass every wallet id so the provider can subscribe to each wallet's
+  // socket room — closing a trade on a non-focused wallet still patches
+  // its balance row in wallet.list without a manual sync.
+  const allWalletIds = useMemo(() => wallets.map((w) => w.id), [wallets]);
 
   return (
-    <RealtimeTradingSyncProvider walletId={activeWalletId}>
+    <RealtimeTradingSyncProvider walletId={activeWalletId} allWalletIds={allWalletIds}>
       {children}
     </RealtimeTradingSyncProvider>
   );
@@ -85,6 +90,7 @@ function AppContent(): ReactElement {
   useOrderNotifications();
   useSetupToasts();
   useAutoActivateDefaultIndicators();
+  useAutoActivateDefaultPatterns();
 
   const [chartType] = useChartPref<ChartType>('chartType', 'kline');
   const [timeframe] = useChartPref<Timeframe>('timeframe', DEFAULT_TIMEFRAME);

@@ -922,6 +922,58 @@
       "degradedTitle": "Flux d'échange dégradé",
       "degradedDescription": "Aucune mise à jour reçue — reconnexion automatique en cours."
     },
+    "layers": {
+      "title": "Calques",
+      "configure": "Configurer les calques visibles sur ce graphique",
+      "drawings": "Dessins",
+      "indicators": "Indicateurs",
+      "orderLines": "Lignes d'ordre",
+      "setupMarkers": "Marqueurs de setup",
+      "heatmap": "Heatmap / liquidations",
+      "candlePatterns": "Motifs de chandelier",
+      "showAll": "Tout afficher",
+      "hideAll": "Tout masquer",
+      "noFocusedChart": "Sélectionnez un panneau de graphique pour basculer les calques."
+    },
+    "patterns": {
+      "title": "Motifs",
+      "configure": "Configurer la détection de motifs de chandelier",
+      "empty": "Aucun motif disponible.",
+      "new": "Nouveau",
+      "edit": "Modifier le motif",
+      "deleteTitle": "Supprimer le motif",
+      "deleteDescription": "Supprimer définitivement \"{{label}}\" ? Cette action est irréversible.",
+      "categories": {
+        "reversal-single": "Renversement — barre unique",
+        "reversal-multi": "Renversement — plusieurs barres",
+        "continuation": "Continuation",
+        "indecision": "Indécision"
+      },
+      "dialog": {
+        "identity": "Identité",
+        "label": "Libellé",
+        "category": "Catégorie",
+        "sentiment": "Direction",
+        "bars": "Barres",
+        "description": "Description (optionnel)",
+        "params": "Paramètres",
+        "addParam": "Ajouter un paramètre",
+        "paramsEmpty": "Aucun paramètre. Ajoutez-en un pour exposer un réglage dans le popover.",
+        "paramKey": "Clé",
+        "paramLabel": "Libellé",
+        "paramDefault": "Défaut",
+        "constraints": "Contraintes",
+        "addConstraint": "Ajouter une contrainte",
+        "constraintsHint": "Toutes les contraintes sont combinées par ET. Référencez les barres comme b0 (la plus récente), b1, b2, … et les paramètres comme params.<clé>. Disponibles : open / high / low / close / volume / body / range / upperWick / lowerWick / topBody / bottomBody / midBody / direction.",
+        "previewMatches": "Correspondances dans les {{n}} dernières barres : {{count}}",
+        "previewInvalid": "Aperçu indisponible — corrigez les erreurs ci-dessus pour voir les correspondances."
+      },
+      "sentiment": {
+        "bullish": "Haussier",
+        "bearish": "Baissier",
+        "neutral": "Neutre"
+      }
+    },
     "controls": {
       "title": "Contrôles du Graphique",
       "timeframe": "Période",

@@ -17,6 +17,7 @@ import { getPanelDef } from '@renderer/grid/panel-registry';
 import { usePreferencesStore } from './preferencesStore';
 import { trpc } from '@renderer/services/trpc';
 import { useChartLayersStore } from './chartLayersStore';
+import { DEFAULT_LAYOUT_SEED } from './seed/defaultLayoutSeed';
 
 const generateId = (): string => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -190,34 +191,14 @@ const getTemplate = (key: LayoutTemplateKey): LayoutTemplate => {
   return t;
 };
 
-// Three layouts seeded for new users. Stable IDs (`trading` /
-// `autotrading` / `scalping`) match the backend `isDefaultLayoutData`
-// guard so the overwrite-protection still detects untouched-default
-// state — adding a 4th seed here would trip the guard and treat the
-// new defaults as user-customized. The "Trading" seed uses the swing
-// variant (15m / 1h / 4h) as the most generally useful timeframe set;
-// the other 5 trading variants + Market Indicators are available via
-// the New Layout dialog.
-const DEFAULT_LAYOUTS: LayoutPreset[] = [
-  {
-    id: 'trading',
-    name: '15m / 1h / 4h',
-    grid: getTemplate('tradingSwing').buildGrid(),
-    order: 0,
-  },
-  {
-    id: 'autotrading',
-    name: 'Auto-Trading',
-    grid: getTemplate('autoTrading').buildGrid(),
-    order: 1,
-  },
-  {
-    id: 'scalping',
-    name: 'Auto-Scalping',
-    grid: getTemplate('autoScalping').buildGrid(),
-    order: 2,
-  },
-];
+// V3 seed (9 layouts / 6 symbol tabs) sourced from
+// `seed/defaultLayoutSeed.ts`. New users start with this snapshot
+// pre-bound — meaningful symbol coverage, multi-timeframe layouts,
+// and per-panel indicator instances (resolved at activation time
+// in `useAutoActivateDefaultIndicators`). The backend's
+// `isDefaultLayoutData` guard recognizes this V3 set in addition to
+// V1 (single/dual/quad) and V2 (trading/autotrading/scalping).
+const DEFAULT_LAYOUTS: LayoutPreset[] = DEFAULT_LAYOUT_SEED.layoutPresets;
 
 interface LayoutActions {
   addSymbolTab: (symbol: string, marketType: MarketType) => void;
@@ -263,14 +244,9 @@ interface LayoutActions {
 }
 
 export const useLayoutStore = create<LayoutState & LayoutActions>((set, get) => ({
-  symbolTabs: [{
-    id: 'default',
-    symbol: 'BTCUSDT',
-    marketType: 'FUTURES',
-    order: 0,
-  }],
-  activeSymbolTabId: 'default',
-  activeLayoutId: 'trading',
+  symbolTabs: DEFAULT_LAYOUT_SEED.symbolTabs,
+  activeSymbolTabId: DEFAULT_LAYOUT_SEED.activeSymbolTabId,
+  activeLayoutId: DEFAULT_LAYOUT_SEED.activeLayoutId,
   layoutPresets: DEFAULT_LAYOUTS,
   focusedPanelId: null,
   gridEditMode: false,
@@ -494,7 +470,7 @@ const persistLayout = (): void => {
   if (persistDebounce) clearTimeout(persistDebounce);
   persistDebounce = setTimeout(() => {
     const { symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets } = useLayoutStore.getState();
-    const chartLayers = useChartLayersStore.getState().flagsByKey;
+    const chartLayers = useChartLayersStore.getState().flagsByPanelId;
     const data = JSON.stringify({ symbolTabs, activeSymbolTabId, activeLayoutId, layoutPresets, chartLayers, gridVersion: GRID_VERSION });
     trpc.layout.save.mutate({ data }).catch(() => {});
   }, 500);
@@ -562,9 +538,18 @@ export const hydrateLayoutStore = async (): Promise<void> => {
         ...(migratedPresets && { layoutPresets: migratedPresets }),
       });
 
+      // Persisted chart-layer flags. Older snapshots used a
+      // `(symbol, interval)` composite key; the current schema is
+      // per-panelId. Drop any old-shape entries (keys that contain ':'
+      // are the legacy composite). Existing per-panelId entries
+      // (UUIDs, no colon) survive untouched.
       const persistedChartLayers = (saved as { chartLayers?: Record<string, unknown> }).chartLayers;
       if (persistedChartLayers && typeof persistedChartLayers === 'object') {
-        useChartLayersStore.setState({ flagsByKey: persistedChartLayers as ReturnType<typeof useChartLayersStore.getState>['flagsByKey'] });
+        const filtered: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(persistedChartLayers)) {
+          if (!key.includes(':')) filtered[key] = value;
+        }
+        useChartLayersStore.setState({ flagsByPanelId: filtered as ReturnType<typeof useChartLayersStore.getState>['flagsByPanelId'] });
       }
 
       isHydrated = true;

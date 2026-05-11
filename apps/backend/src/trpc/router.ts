@@ -22,6 +22,7 @@ import { tickerRouter } from '../routers/ticker';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
 import { userIndicatorsRouter } from '../routers/user-indicators';
+import { userPatternsRouter } from '../routers/user-patterns';
 import { walletRouter } from '../routers/wallet';
 import { scalpingRouter } from '../routers/scalping';
 import { heatmapRouter } from '../routers/heatmap';
@@ -55,6 +56,7 @@ export const appRouter = router({
   economicCalendar: economicCalendarRouter,
   heatmap: heatmapRouter,
   userIndicators: userIndicatorsRouter,
+  userPatterns: userPatternsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -2,10 +2,9 @@ import { Flex, Text } from '@chakra-ui/react';
 import { Button, Popover, PopoverList, PopoverListHeader, PopoverToggleItem, TooltipWrapper } from '@renderer/components/ui';
 import { useChartLayersStore, type ChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { useLayoutStore } from '@renderer/store/layoutStore';
-import { isChartPanel } from '@shared/types/layout';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuLayers, LuPencil, LuActivity, LuChartLine, LuFlame } from 'react-icons/lu';
+import { LuLayers, LuPencil, LuActivity, LuChartLine, LuFlame, LuFlag } from 'react-icons/lu';
 
 const DEFAULT_FLAGS: ChartLayerFlags = {
   drawings: true,
@@ -13,6 +12,7 @@ const DEFAULT_FLAGS: ChartLayerFlags = {
   orderLines: true,
   setupMarkers: true,
   heatmap: true,
+  candlePatterns: true,
 };
 
 interface LayerRow {
@@ -24,6 +24,7 @@ interface LayerRow {
 const LAYER_ROWS: LayerRow[] = [
   { key: 'drawings', icon: <LuPencil />, labelKey: 'chart.layers.drawings' },
   { key: 'indicators', icon: <LuActivity />, labelKey: 'chart.layers.indicators' },
+  { key: 'candlePatterns', icon: <LuFlag />, labelKey: 'chart.layers.candlePatterns' },
   { key: 'orderLines', icon: <LuChartLine />, labelKey: 'chart.layers.orderLines' },
   { key: 'heatmap', icon: <LuFlame />, labelKey: 'chart.layers.heatmap' },
 ];
@@ -32,40 +33,19 @@ export const LayersTogglePopover = memo(() => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Read primitives separately — returning a new object from the
-  // selector creates a fresh reference every store update and triggers
-  // an infinite re-render loop (saw "Maximum update depth exceeded" on
-  // first focus).
   const focusedPanelId = useLayoutStore((s) => s.focusedPanelId);
-  const activeLayoutId = useLayoutStore((s) => s.activeLayoutId);
-  const activeSymbolTabId = useLayoutStore((s) => s.activeSymbolTabId);
-  const layoutPresets = useLayoutStore((s) => s.layoutPresets);
-  const symbolTabs = useLayoutStore((s) => s.symbolTabs);
-
-  const focusedPanelKey = useMemo<{ symbol: string; interval: string } | null>(() => {
-    if (!focusedPanelId) return null;
-    const layout = layoutPresets.find((l) => l.id === activeLayoutId);
-    if (!layout) return null;
-    const panel = layout.grid.find((p) => p.id === focusedPanelId);
-    if (!panel || !isChartPanel(panel)) return null;
-    const tab = symbolTabs.find((tt) => tt.id === activeSymbolTabId);
-    if (!tab) return null;
-    return { symbol: tab.symbol, interval: panel.timeframe };
-  }, [focusedPanelId, activeLayoutId, activeSymbolTabId, layoutPresets, symbolTabs]);
-
-  const flagsKey = focusedPanelKey ? `${focusedPanelKey.symbol}:${focusedPanelKey.interval}` : '';
-  const storedFlags = useChartLayersStore((s) => (flagsKey ? s.flagsByKey[flagsKey] : undefined));
-  const flags = focusedPanelKey ? (storedFlags ?? DEFAULT_FLAGS) : null;
+  const storedFlags = useChartLayersStore((s) => (focusedPanelId ? s.flagsByPanelId[focusedPanelId] : undefined));
+  const flags = focusedPanelId ? (storedFlags ?? DEFAULT_FLAGS) : null;
   const toggleFlag = useChartLayersStore((s) => s.toggleFlag);
 
   const setAll = useCallback(
     (visible: boolean) => {
-      if (!focusedPanelKey) return;
+      if (!focusedPanelId) return;
       for (const row of LAYER_ROWS) {
-        useChartLayersStore.getState().setFlag(focusedPanelKey.symbol, focusedPanelKey.interval, row.key, visible);
+        useChartLayersStore.getState().setFlag(focusedPanelId, row.key, visible);
       }
     },
-    [focusedPanelKey],
+    [focusedPanelId],
   );
 
   const allOn = useMemo(() => {
@@ -73,7 +53,7 @@ export const LayersTogglePopover = memo(() => {
     return LAYER_ROWS.every((r) => flags[r.key]);
   }, [flags]);
 
-  const disabled = !focusedPanelKey || !flags;
+  const disabled = !focusedPanelId || !flags;
 
   return (
     <Popover
@@ -132,8 +112,8 @@ export const LayersTogglePopover = memo(() => {
               label={t(row.labelKey)}
               checked={flags?.[row.key] ?? true}
               onCheckedChange={() => {
-                if (!focusedPanelKey) return;
-                toggleFlag(focusedPanelKey.symbol, focusedPanelKey.interval, row.key);
+                if (!focusedPanelId) return;
+                toggleFlag(focusedPanelId, row.key);
               }}
               data-testid={`layers-toggle-${row.key}`}
             />

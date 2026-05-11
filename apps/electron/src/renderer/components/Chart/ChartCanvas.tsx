@@ -1,4 +1,5 @@
 import { Box } from '@chakra-ui/react';
+import type { PatternHit } from '@marketmind/trading-core';
 import type { Kline, MarketType, TimeInterval, TradingSetup, Viewport } from '@marketmind/types';
 import type { KlineSource } from '@renderer/hooks/useKlineLiveStream';
 import { useChartColors } from '@renderer/hooks/useChartColors';
@@ -16,7 +17,7 @@ import { makeChartKey, useChartHoverStore } from '@renderer/store/chartHoverStor
 import { CHART_CONFIG } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import type { ReactElement } from 'react';
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AdvancedControlsConfig } from './AdvancedControls';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
@@ -29,6 +30,15 @@ import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useChartLayerFlags } from '@renderer/store/chartLayersStore';
+import { usePatternMarkers } from '@renderer/hooks/usePatternMarkers';
+import {
+  renderCandlePatterns as drawCandlePatterns,
+  findPatternHitAtPosition,
+  type PatternHitDraw,
+} from './ChartCanvas/renderers/renderCandlePatterns';
+import { PatternInfoPopover } from './PatternInfoPopover';
+import { PatternConfigDialog } from '@renderer/components/Patterns/PatternConfigDialog';
+import { useUserPatterns, type UserPattern } from '@renderer/hooks/useUserPatterns';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
 import { DrawingToolbar } from './drawings/DrawingToolbar';
 import { TextEditOverlay } from './drawings/TextEditOverlay';
@@ -72,6 +82,15 @@ export interface ChartCanvasProps {
   timeframe?: string;
   onNearLeftEdge?: () => void;
   isLoadingMore?: boolean;
+  /**
+   * Grid-panel ID this chart instance is rendered into. Used to scope
+   * per-panel state (layer-visibility flags in `chartLayersStore`,
+   * indicator instances in `indicatorStore`) so two chart panels in
+   * the same layout — even on the same (symbol, interval) — keep
+   * independent settings. Optional only because the same component
+   * is also used outside the layout grid (e.g. a detached window).
+   */
+  panelId?: string;
 }
 
 const ChartCanvasInternal = ({
@@ -88,6 +107,7 @@ const ChartCanvasInternal = ({
   timeframe = '1h',
   onNearLeftEdge,
   isLoadingMore: _isLoadingMore,
+  panelId,
 }: ChartCanvasProps): ReactElement => {
   perfMonitor.recordComponentRender('ChartCanvas', `${symbol ?? '?'}@${timeframe}`);
 
@@ -362,6 +382,7 @@ const ChartCanvasInternal = ({
     managerRef,
     liveDataTarget,
     klineSource,
+    panelId,
   );
 
   const volumeHeightRatio = advancedConfig?.volumeHeightRatio;
@@ -377,6 +398,7 @@ const ChartCanvasInternal = ({
   const rawGenericRenderers = useGenericChartIndicatorRenderers({
     manager, colors, outputsRef: genericOutputsRef,
     external,
+    panelId,
   });
 
   const { render: renderEventScale } = useEventScaleRenderer({
@@ -402,7 +424,7 @@ const ChartCanvasInternal = ({
   // v1.5 — Layers popover gates: when the user toggles a layer off,
   // skip its render call so the canvas re-paints without it. Flags
   // are session-only, per (symbol, interval).
-  const layerFlags = useChartLayerFlags(symbol ?? '', timeframe);
+  const layerFlags = useChartLayerFlags(panelId ?? '');
   const renderOrderLines = useCallback<typeof rawRenderOrderLines>(
     (...args) => {
       if (!layerFlags.orderLines) return false;
@@ -457,7 +479,82 @@ const ChartCanvasInternal = ({
 
   useChartOverlayEffects({ manager, allExecutions, orderLoadingMapRef, orderFlashMapRef, backendExecutions, exchangeOpenOrders, exchangeAlgoOrders });
 
-  useChartPanelHeights({ manager, showEventRow, advancedConfig, indicatorsEnabled: layerFlags.indicators });
+  useChartPanelHeights({ manager, showEventRow, advancedConfig, indicatorsEnabled: layerFlags.indicators, panelId });
+
+  // Candle-pattern hits for this panel — closed-bars-only, memoized so live
+  // ticks don't re-evaluate. Layer flag gates the actual render call below.
+  const patternHits = usePatternMarkers(panelId, klines);
+  const patternDrawsRef = useRef<PatternHitDraw[]>([]);
+  const renderCandlePatternsCb = useCallback(() => {
+    patternDrawsRef.current.length = 0;
+    if (!layerFlags.candlePatterns || !manager || patternHits.length === 0) return;
+    const ctx = manager.getContext();
+    if (!ctx) return;
+    ctx.save();
+    drawCandlePatterns(ctx, manager, klines, patternHits, colors, patternDrawsRef.current);
+    ctx.restore();
+  }, [layerFlags.candlePatterns, manager, patternHits, klines, colors]);
+
+  // M1.1 — click a pattern glyph → info popover at the click point.
+  // M2 — popover gains an "Edit pattern" button that opens the config dialog.
+  const { patterns: userPatterns, update: updateUserPattern } = useUserPatterns();
+  const [patternPopover, setPatternPopover] = useState<
+    | { hit: PatternHit; anchor: { x: number; y: number }; barTime?: number; category?: string; description?: string; userPattern?: UserPattern }
+    | null
+  >(null);
+  const [patternEditTarget, setPatternEditTarget] = useState<UserPattern | null>(null);
+
+  // Update cursor to `pointer` when hovering a pattern glyph so it reads as
+  // clickable. Imperative — bypass React re-renders to keep mousemove cheap.
+  const handlePatternHover = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      if (!layerFlags.candlePatterns || patternDrawsRef.current.length === 0) {
+        if (canvas.dataset['patternCursor'] === 'pointer') {
+          canvas.style.cursor = 'crosshair';
+          delete canvas.dataset['patternCursor'];
+        }
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const draw = findPatternHitAtPosition(patternDrawsRef.current, e.clientX - rect.left, e.clientY - rect.top);
+      if (draw && canvas.dataset['patternCursor'] !== 'pointer') {
+        canvas.style.cursor = 'pointer';
+        canvas.dataset['patternCursor'] = 'pointer';
+      } else if (!draw && canvas.dataset['patternCursor'] === 'pointer') {
+        canvas.style.cursor = 'crosshair';
+        delete canvas.dataset['patternCursor'];
+      }
+    },
+    [layerFlags.candlePatterns, canvasRef],
+  );
+
+  const handlePatternClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!layerFlags.candlePatterns || !canvasRef.current) return;
+      const rect = canvasRef.current.getBoundingClientRect();
+      const localX = e.clientX - rect.left;
+      const localY = e.clientY - rect.top;
+      const draw = findPatternHitAtPosition(patternDrawsRef.current, localX, localY);
+      if (!draw) return;
+      // Stop propagation so the click doesn't also trigger drawing-tool / order
+      // placement handlers that listen to the canvas. Mousedown/up still flow
+      // through their normal paths so drag gestures aren't broken.
+      e.stopPropagation();
+      const userPattern = userPatterns.find((p) => p.patternId === draw.hit.patternId);
+      const kline = klines[draw.hit.index];
+      setPatternPopover({
+        hit: draw.hit,
+        anchor: { x: e.clientX, y: e.clientY },
+        ...(kline ? { barTime: Number(kline.openTime) } : {}),
+        ...(userPattern
+          ? { category: userPattern.definition.category, description: userPattern.definition.description, userPattern }
+          : {}),
+      });
+    },
+    [layerFlags.candlePatterns, canvasRef, klines, userPatterns],
+  );
 
   useEffect(() => {
     if (!manager || !advancedConfig) return;
@@ -492,6 +589,7 @@ const ChartCanvasInternal = ({
     manager, chartType, colors, allExecutions,
     baseRenderers: { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark },
     genericRenderers, renderOrderLines, renderGridPreview, renderDrawings, renderEventScale,
+    renderCandlePatterns: renderCandlePatternsCb,
     orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, orderPreviewRef,
   });
 
@@ -518,9 +616,10 @@ const ChartCanvasInternal = ({
         <canvas
           ref={canvasRef}
           onMouseDown={handleCanvasMouseDownWrapped}
-          onMouseMove={handleCanvasMouseMoveWrapped}
+          onMouseMove={(e) => { handlePatternHover(e); handleCanvasMouseMoveWrapped(e); }}
           onMouseUp={handleCanvasMouseUp}
           onMouseLeave={handleCanvasMouseLeave}
+          onClick={handlePatternClick}
           onWheel={handleWheel}
           style={{ width: '100%', height: '100%', cursor: 'crosshair', display: 'block' }}
         />
@@ -530,6 +629,37 @@ const ChartCanvasInternal = ({
         <ChartPerfOverlay />
       </Box>
       </ChartContextMenuManager>
+      {patternPopover ? (
+        <PatternInfoPopover
+          anchor={patternPopover.anchor}
+          hit={patternPopover.hit}
+          {...(patternPopover.category ? { category: patternPopover.category } : {})}
+          {...(patternPopover.description ? { description: patternPopover.description } : {})}
+          {...(patternPopover.barTime !== undefined ? { barTime: patternPopover.barTime } : {})}
+          {...(patternPopover.userPattern
+            ? {
+                onEdit: () => {
+                  setPatternEditTarget(patternPopover.userPattern!);
+                  setPatternPopover(null);
+                },
+              }
+            : {})}
+          onClose={() => setPatternPopover(null)}
+        />
+      ) : null}
+      <PatternConfigDialog
+        isOpen={patternEditTarget !== null}
+        onClose={() => setPatternEditTarget(null)}
+        mode="edit"
+        {...(patternEditTarget ? { pattern: patternEditTarget } : {})}
+        isLoading={updateUserPattern.isPending}
+        previewKlines={klines}
+        onSubmit={(def) => {
+          if (!patternEditTarget) return;
+          void updateUserPattern.mutateAsync({ id: patternEditTarget.id, definition: def })
+            .then(() => setPatternEditTarget(null));
+        }}
+      />
     </>
   );
 };

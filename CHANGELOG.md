@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-05-11
+
+### Added
+
+- **Candle-pattern detection layer (#584, #585, #586, #587, #588)** — new annotation layer that highlights classical candlestick patterns on the chart. 25 built-in patterns (Hammer, Shooting Star, Engulfings, Doji, Stars, Soldiers/Crows, …), per-panel scoping, layer toggle in the Layers popover, dedicated Patterns popover next to Indicators. Detection runs on closed bars only (no flicker, tick-warm memo). Glyphs are sentiment-colored (green up-triangle for bullish, red down for bearish, open circle for indecision) and stack vertically when multiple patterns hit the same bar. Click a glyph → info popover with label / sentiment / category / description / bar timestamp; in M2, an Edit button opens the create/edit dialog. Patterns are stored as data (a small expression DSL over OHLC primitives, parsed and evaluated entirely in-process — no `eval`, no sandbox), so users can register custom patterns from a dialog with inline constraint validation + live match-count preview against the focused chart. Plan: `docs/CANDLE_PATTERNS_PLAN.md`.
+- **V3 default-layout seed (#583)** — new users boot into a curated 9-layout / 6-tab setup (1m/5m/15min, 5m/15m/1h, 15m/1h/4h, 1h/4h/1d, 4h/1d/1w, 1d/1w/1M, Auto-Trading, Auto-Scalping, Market Indicators · BTC/ETH/SOL/XRP/ADA/BNB tabs) with default indicator instances pre-bound on every chart panel (EMA 9 / 21 / 200, Volume, RSI 2, Stoch 14). Replaces the prior 1-tab / 3-preset starter; backend `isDefaultLayoutData` accepts the V3 shape alongside V1 (single/dual/quad) and V2 (trading/autotrading/scalping). Existing users keep their saved data — the seed only fires when `user_layouts` is empty.
+- **Per-panel scoping for chart-layer flags + indicators (#583)** — `chartLayersStore` now keys on grid-panel id instead of `${symbol}:${interval}`, and indicator instances gained an optional `panelId` field. Two chart panels showing the same (symbol, interval) — even on the same layout — keep independent layer toggles and indicator sets. Closes #492 and #493.
+
+### Fixed
+
+- **Pattern glyphs followed wrong wick side on flipped charts (#591)** — bullish anchored at `yHigh` when flipped (should always anchor at the LOW-price side `yLow`), bearish had the mirror issue. Triangle pointing was already correct — only the y-anchor selection was inverted. After the fix glyphs sit on the same wick side regardless of flip orientation; only the screen-direction of the stack flips with the chart.
+- **20s delay for paper-trade TP/SL detection (#592)** — `BinancePriceStreamService.reconcileSubscriptions` aggregated every viewed symbol and called `subscribeAggregateTrades(symbol, 'spot'|'usdm')` on each. Custom basket symbols (POLITIFI, MAGNIFICENT7) don't exist on Binance — the exchange closed the socket on the unknown stream and the SDK reconnected + replayed the same bad sub in an infinite ~7s cycle. With the price stream cycling, the only thing detecting paper TP/SL fills was the 15s polling fallback, producing the 20s delay the user reported. Custom symbols are now filtered out of the price-stream subscription path (they continue to receive synthesized trades from `custom-symbol-service`).
+- **Wallet balance only updated for `wallets[0]` (#593)** — `RealtimeSyncWrapper` passed `wallets[0]?.id` to the realtime provider and `useWalletSubscription` only joined ONE wallet's socket room. Closes on any other wallet emitted `wallet:update` to a room the socket wasn't in; the event was dropped at the server and the user had to click "Sync balance from Binance" to see the new total. Now subscribes to every wallet's room, `emitWalletUpdate` echoes the walletId in the payload, and the merge handler routes to the correct row via `payload.walletId`.
+- **Exchange orders disappeared after chart drag (#593)** — the exchange-move flow is cancel-then-create. `cancelFuturesOrder.onSuccess` invalidates `futuresTrading.getOpenOrders / getOpenAlgoOrders / getOpenDbOrderIds`, but `trading.createOrder.onSuccess` invalidates a different set. The chart's order layer reads from the futures keys; the new order existed on Binance but was missing from the cache until manual reload. Now invalidates the three futures keys inline in the exchange-move flow.
+- **"Order Expired" toast on actually-filled orders (#594)** — `reconcileOrdersTable` falls back to `getOrder(orderId)` for stale DB rows. On API failure the catch block kept the initial `realStatus = 'EXPIRED'` and stamped the row, triggering a misleading `useOrderNotifications` toast. The order was likely FILLED on Binance but unreachable for one cycle (rate limit, 5xx, ban window). Now discriminates "order genuinely gone" (Unknown order / does not exist / older than) from transient errors; transient failures leave the row STILL_LIVE for the next reconcile cycle.
+
+### Changed
+
+- **Checklist score chart shows by default (#582)** — `checklistScoreChartVisible` UI pref default flipped from `false` to `true`. The redundant "Checklist" title row when the chart is hidden was replaced with a `<Box flex={1} />` spacer so the score badges + options menu stay right-aligned without the title showing through.
+
+### Notes
+
+- Existing users keep their saved layouts and indicator state. Per-panel scoping migrates cleanly because indicator instances simply receive a `panelId` field on next mutation; legacy entries with `panelId: undefined` are filtered out of the per-panel render path on first interaction.
+- Marketing screenshots regenerated with the V3 seed (BTC/ETH/SOL/XRP/ADA/BNB tabs, indicators pre-bound, ChecklistScoreChart visible).
+
 ## [1.17.2] - 2026-05-10
 
 ### Fixed

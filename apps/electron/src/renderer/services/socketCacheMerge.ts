@@ -157,6 +157,13 @@ interface WalletUpdatePayload {
   // Some emit paths (paper close synthesizers) push a flat patch instead.
   currentBalance?: string;
   totalWalletBalance?: string;
+  /**
+   * Backend echoes the walletId in the payload (since #592 follow-up)
+   * so a client subscribed to multiple wallet rooms knows which wallet
+   * the patch is for. Older payloads without it fall back to the
+   * subscription-room walletId in the dispatcher.
+   */
+  walletId?: string;
 }
 
 /**

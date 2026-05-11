@@ -1,28 +1,58 @@
 {
-  "activeSymbolTabId": "default",
-  "gridVersion": 2,
   "symbolTabs": [
     {
       "id": "default",
       "symbol": "BTCUSDT",
       "marketType": "FUTURES",
-      "activeLayoutId": "1777750823737-thmk81"
+      "order": 0
+    },
+    {
+      "id": "seed-tab-ethusdt",
+      "symbol": "ETHUSDT",
+      "marketType": "FUTURES",
+      "order": 1
+    },
+    {
+      "id": "seed-tab-solusdt",
+      "symbol": "SOLUSDT",
+      "marketType": "FUTURES",
+      "order": 2
+    },
+    {
+      "id": "seed-tab-xrpusdt",
+      "symbol": "XRPUSDT",
+      "marketType": "FUTURES",
+      "order": 3
+    },
+    {
+      "id": "seed-tab-adausdt",
+      "symbol": "ADAUSDT",
+      "marketType": "FUTURES",
+      "order": 4
+    },
+    {
+      "id": "seed-tab-bnbusdt",
+      "symbol": "BNBUSDT",
+      "marketType": "FUTURES",
+      "order": 5
     }
   ],
+  "activeSymbolTabId": "default",
+  "activeLayoutId": "seed-1m-5m-15min",
   "layoutPresets": [
     {
-      "id": "1777750823737-thmk81",
+      "id": "seed-1m-5m-15min",
       "name": "1m / 5m / 15min",
       "grid": [
         {
-          "id": "1777750823737-r6v1vf",
+          "id": "seed-1m-5m-15min-p0",
           "kind": "chart",
           "timeframe": "1m",
           "chartType": "kline",
           "gridPosition": {
             "x": 0,
             "y": 0,
-            "w": 122,
+            "w": 111,
             "h": 82
           },
           "windowState": "normal",
@@ -34,7 +64,7 @@
           }
         },
         {
-          "id": "1777750823737-c5t09z",
+          "id": "seed-1m-5m-15min-p1",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
@@ -45,7 +75,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777750823737-nuzi1m",
+          "id": "seed-1m-5m-15min-p2",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
@@ -56,7 +86,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777750823737-lru0eo",
+          "id": "seed-1m-5m-15min-p3",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -67,7 +97,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777750823737-nr5xnu",
+          "id": "seed-1m-5m-15min-p4",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -78,7 +108,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777750916192-1hj1fv",
+          "id": "seed-1m-5m-15min-p5",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -89,47 +119,47 @@
           "windowState": "normal"
         },
         {
-          "id": "1777758910073-qbl12r",
+          "id": "seed-1m-5m-15min-p6",
           "kind": "chart",
           "timeframe": "5m",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 0,
-            "w": 37,
+            "w": 48,
             "h": 44
           },
           "windowState": "normal"
         },
         {
-          "id": "1777758914094-pl4dt9",
+          "id": "seed-1m-5m-15min-p7",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 44,
-            "w": 37,
+            "w": 48,
             "h": 38
           },
           "windowState": "normal"
         }
       ],
-      "order": 1
+      "order": 0
     },
     {
-      "id": "1777760165454-n4vvlx",
+      "id": "seed-5m-15m-1h",
       "name": "5m / 15m / 1h",
       "grid": [
         {
-          "id": "1777760165454-qh0a2a",
+          "id": "seed-5m-15m-1h-p0",
           "kind": "chart",
           "timeframe": "5m",
           "chartType": "kline",
           "gridPosition": {
             "x": 0,
             "y": 0,
-            "w": 122,
+            "w": 111,
             "h": 82
           },
           "windowState": "normal",
@@ -141,7 +171,7 @@
           }
         },
         {
-          "id": "1777760165454-ol3ygj",
+          "id": "seed-5m-15m-1h-p1",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
@@ -152,7 +182,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760165454-vav2ol",
+          "id": "seed-5m-15m-1h-p2",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
@@ -163,7 +193,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760165454-g5zocu",
+          "id": "seed-5m-15m-1h-p3",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -174,7 +204,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760165454-yhleqy",
+          "id": "seed-5m-15m-1h-p4",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -185,7 +215,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760165454-7teuhm",
+          "id": "seed-5m-15m-1h-p5",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -196,27 +226,27 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760165454-ano6ud",
+          "id": "seed-5m-15m-1h-p6",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 0,
-            "w": 37,
+            "w": 48,
             "h": 44
           },
           "windowState": "normal"
         },
         {
-          "id": "1777760165454-hdm0we",
+          "id": "seed-5m-15m-1h-p7",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 44,
-            "w": 37,
+            "w": 48,
             "h": 38
           },
           "windowState": "normal"
@@ -225,24 +255,30 @@
       "order": 1
     },
     {
-      "id": "1777760167701-96ty68",
+      "id": "seed-15m-1h-4h",
       "name": "15m / 1h / 4h",
       "grid": [
         {
-          "id": "1777760167701-9kdao9",
+          "id": "seed-15m-1h-4h-p0",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
           "gridPosition": {
             "x": 0,
             "y": 0,
-            "w": 122,
+            "w": 111,
             "h": 82
           },
-          "windowState": "normal"
+          "windowState": "normal",
+          "savedGridPosition": {
+            "x": 0,
+            "y": 0,
+            "w": 111,
+            "h": 82
+          }
         },
         {
-          "id": "1777760167701-h1a2rf",
+          "id": "seed-15m-1h-4h-p1",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
@@ -253,7 +289,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760167701-hb0qfv",
+          "id": "seed-15m-1h-4h-p2",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
@@ -264,7 +300,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760167701-5qcfsw",
+          "id": "seed-15m-1h-4h-p3",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -275,7 +311,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760167701-luywbk",
+          "id": "seed-15m-1h-4h-p4",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -286,7 +322,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760167701-bxvreb",
+          "id": "seed-15m-1h-4h-p5",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -297,27 +333,27 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760167701-8t6iq2",
+          "id": "seed-15m-1h-4h-p6",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 0,
-            "w": 37,
+            "w": 48,
             "h": 44
           },
           "windowState": "normal"
         },
         {
-          "id": "1777760167701-uv6vgx",
+          "id": "seed-15m-1h-4h-p7",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 44,
-            "w": 37,
+            "w": 48,
             "h": 38
           },
           "windowState": "normal"
@@ -326,24 +362,24 @@
       "order": 2
     },
     {
-      "id": "1777760221340-xrq2zz",
+      "id": "seed-1h-4h-1d",
       "name": "1h / 4h / 1d",
       "grid": [
         {
-          "id": "1777760221340-jfuxhi",
+          "id": "seed-1h-4h-1d-p0",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
           "gridPosition": {
             "x": 0,
             "y": 0,
-            "w": 122,
+            "w": 111,
             "h": 82
           },
           "windowState": "normal"
         },
         {
-          "id": "1777760221340-84m7ln",
+          "id": "seed-1h-4h-1d-p1",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
@@ -354,7 +390,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760221340-bgq39n",
+          "id": "seed-1h-4h-1d-p2",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
@@ -365,7 +401,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760221340-m0eoe0",
+          "id": "seed-1h-4h-1d-p3",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -376,7 +412,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760221340-0q7mor",
+          "id": "seed-1h-4h-1d-p4",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -387,7 +423,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760221340-fw8o1x",
+          "id": "seed-1h-4h-1d-p5",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -398,27 +434,27 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760221340-nqfpb2",
+          "id": "seed-1h-4h-1d-p6",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 0,
-            "w": 37,
+            "w": 48,
             "h": 44
           },
           "windowState": "normal"
         },
         {
-          "id": "1777760221340-1pp0ag",
+          "id": "seed-1h-4h-1d-p7",
           "kind": "chart",
           "timeframe": "1d",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 111,
             "y": 44,
-            "w": 37,
+            "w": 48,
             "h": 38
           },
           "windowState": "normal"
@@ -427,24 +463,24 @@
       "order": 3
     },
     {
-      "id": "1777760238827-zb44fy",
+      "id": "seed-4h-1d-1w",
       "name": "4h / 1d / 1w",
       "grid": [
         {
-          "id": "1777760238827-fx9d21",
+          "id": "seed-4h-1d-1w-p0",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
           "gridPosition": {
             "x": 0,
             "y": 0,
-            "w": 122,
+            "w": 110,
             "h": 82
           },
           "windowState": "normal"
         },
         {
-          "id": "1777760238827-d00fdw",
+          "id": "seed-4h-1d-1w-p1",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
@@ -455,7 +491,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760238827-g5tv6l",
+          "id": "seed-4h-1d-1w-p2",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
@@ -466,7 +502,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760238827-i0umph",
+          "id": "seed-4h-1d-1w-p3",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -477,7 +513,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760238827-u3kz59",
+          "id": "seed-4h-1d-1w-p4",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -488,7 +524,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760238827-rfssvu",
+          "id": "seed-4h-1d-1w-p5",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -499,27 +535,27 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760238827-jgzu1b",
+          "id": "seed-4h-1d-1w-p6",
           "kind": "chart",
           "timeframe": "1d",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 110,
             "y": 0,
-            "w": 37,
+            "w": 49,
             "h": 44
           },
           "windowState": "normal"
         },
         {
-          "id": "1777760238827-h6m59t",
+          "id": "seed-4h-1d-1w-p7",
           "kind": "chart",
           "timeframe": "1w",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 110,
             "y": 44,
-            "w": 37,
+            "w": 49,
             "h": 38
           },
           "windowState": "normal",
@@ -534,24 +570,24 @@
       "order": 4
     },
     {
-      "id": "1777760258591-e4ozh3",
+      "id": "seed-1d-1w-1m",
       "name": "1d / 1w / 1M",
       "grid": [
         {
-          "id": "1777760258591-xdchtj",
+          "id": "seed-1d-1w-1m-p0",
           "kind": "chart",
           "timeframe": "1d",
           "chartType": "kline",
           "gridPosition": {
             "x": 0,
             "y": 0,
-            "w": 122,
+            "w": 110,
             "h": 82
           },
           "windowState": "normal"
         },
         {
-          "id": "1777760258591-1rjl6a",
+          "id": "seed-1d-1w-1m-p1",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
@@ -562,7 +598,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760258591-fvl79s",
+          "id": "seed-1d-1w-1m-p2",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
@@ -573,7 +609,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760258591-jhsi9t",
+          "id": "seed-1d-1w-1m-p3",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -584,7 +620,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760258591-3475ec",
+          "id": "seed-1d-1w-1m-p4",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -595,7 +631,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760258591-vq8lkq",
+          "id": "seed-1d-1w-1m-p5",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -606,14 +642,14 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760258591-hqu3ij",
+          "id": "seed-1d-1w-1m-p6",
           "kind": "chart",
           "timeframe": "1w",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 110,
             "y": 0,
-            "w": 37,
+            "w": 49,
             "h": 44
           },
           "windowState": "normal",
@@ -625,14 +661,14 @@
           }
         },
         {
-          "id": "1777760258591-908z3b",
+          "id": "seed-1d-1w-1m-p7",
           "kind": "chart",
           "timeframe": "1M",
           "chartType": "kline",
           "gridPosition": {
-            "x": 122,
+            "x": 110,
             "y": 44,
-            "w": 37,
+            "w": 49,
             "h": 38
           },
           "windowState": "normal"
@@ -641,11 +677,11 @@
       "order": 5
     },
     {
-      "id": "1777760602696-2vv7ns",
+      "id": "seed-auto-trading",
       "name": "Auto-Trading",
       "grid": [
         {
-          "id": "1777760602696-5rassu",
+          "id": "seed-auto-trading-p0",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
@@ -658,7 +694,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760602696-21xp0b",
+          "id": "seed-auto-trading-p1",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -669,7 +705,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760602696-3jr29c",
+          "id": "seed-auto-trading-p2",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -680,7 +716,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760602696-6ryyjs",
+          "id": "seed-auto-trading-p3",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -691,7 +727,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760602696-ltqj8b",
+          "id": "seed-auto-trading-p4",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
@@ -704,7 +740,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760602696-h904rw",
+          "id": "seed-auto-trading-p5",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
@@ -717,7 +753,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760643589-zfb3iw",
+          "id": "seed-auto-trading-p6",
           "kind": "watchers",
           "gridPosition": {
             "x": 159,
@@ -731,11 +767,11 @@
       "order": 6
     },
     {
-      "id": "1777760676537-yvn4ij",
+      "id": "seed-auto-scalping",
       "name": "Auto-Scalping",
       "grid": [
         {
-          "id": "1777760676537-qbdxh1",
+          "id": "seed-auto-scalping-p0",
           "kind": "chart",
           "timeframe": "1m",
           "chartType": "kline",
@@ -748,7 +784,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760676537-e1feiv",
+          "id": "seed-auto-scalping-p1",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -759,7 +795,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760676537-m8zzeg",
+          "id": "seed-auto-scalping-p2",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -770,7 +806,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760676537-5si2qi",
+          "id": "seed-auto-scalping-p3",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -781,7 +817,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760691737-vmuj6c",
+          "id": "seed-auto-scalping-p4",
           "kind": "orderBook",
           "gridPosition": {
             "x": 133,
@@ -792,7 +828,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760777970-mno2y7",
+          "id": "seed-auto-scalping-p5",
           "kind": "autoTradingSetup",
           "gridPosition": {
             "x": 159,
@@ -803,7 +839,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777760861460-omayzy",
+          "id": "seed-auto-scalping-p6",
           "kind": "orderFlowMetrics",
           "gridPosition": {
             "x": 159,
@@ -817,11 +853,11 @@
       "order": 7
     },
     {
-      "id": "1777992346938-9a2fof",
+      "id": "seed-market-indicators",
       "name": "Market Indicators",
       "grid": [
         {
-          "id": "1777994013239-drtiju",
+          "id": "seed-market-indicators-p0",
           "kind": "marketFearGreed",
           "gridPosition": {
             "x": 0,
@@ -832,7 +868,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777994060026-uiyde1",
+          "id": "seed-market-indicators-p1",
           "kind": "marketBtcDominance",
           "gridPosition": {
             "x": 64,
@@ -843,7 +879,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777994070337-j8trax",
+          "id": "seed-market-indicators-p2",
           "kind": "marketMvrv",
           "gridPosition": {
             "x": 128,
@@ -854,7 +890,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777994075260-63ob7a",
+          "id": "seed-market-indicators-p3",
           "kind": "marketProductionCost",
           "gridPosition": {
             "x": 0,
@@ -865,7 +901,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777994078035-8tctgp",
+          "id": "seed-market-indicators-p4",
           "kind": "marketOpenInterest",
           "gridPosition": {
             "x": 64,
@@ -876,7 +912,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777994088543-85pddx",
+          "id": "seed-market-indicators-p5",
           "kind": "marketLongShort",
           "gridPosition": {
             "x": 128,
@@ -887,7 +923,7 @@
           "windowState": "normal"
         },
         {
-          "id": "1777994326165-xrehzc",
+          "id": "seed-market-indicators-p6",
           "kind": "marketIndicators",
           "gridPosition": {
             "x": 0,
@@ -900,5 +936,7 @@
       ],
       "order": 8
     }
-  ]
+  ],
+  "chartLayers": {},
+  "gridVersion": 2
 }

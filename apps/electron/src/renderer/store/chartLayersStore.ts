@@ -6,6 +6,7 @@ export interface ChartLayerFlags {
   orderLines: boolean;
   setupMarkers: boolean;
   heatmap: boolean;
+  candlePatterns: boolean;
 }
 
 const DEFAULT_FLAGS: ChartLayerFlags = {
@@ -14,50 +15,62 @@ const DEFAULT_FLAGS: ChartLayerFlags = {
   orderLines: true,
   setupMarkers: true,
   heatmap: true,
+  candlePatterns: true,
 };
 
-const compositeKey = (symbol: string, interval: string) => `${symbol}:${interval}`;
-
 interface ChartLayersState {
-  flagsByKey: Record<string, ChartLayerFlags>;
-  getFlags: (symbol: string, interval: string) => ChartLayerFlags;
-  setFlag: (symbol: string, interval: string, layer: keyof ChartLayerFlags, visible: boolean) => void;
-  toggleFlag: (symbol: string, interval: string, layer: keyof ChartLayerFlags) => void;
+  // Keyed on the chart-panel ID (the unique grid-panel id inside the
+  // active layout). Earlier this was keyed on `${symbol}:${interval}`,
+  // which leaked state across layouts: two BTC@1h panels in different
+  // layouts shared flags. Per-panel scoping lets each chart in a
+  // layout carry its own visibility set.
+  flagsByPanelId: Record<string, ChartLayerFlags>;
+  getFlags: (panelId: string) => ChartLayerFlags;
+  setFlag: (panelId: string, layer: keyof ChartLayerFlags, visible: boolean) => void;
+  toggleFlag: (panelId: string, layer: keyof ChartLayerFlags) => void;
+  /** Drop entries for panels that no longer exist (called on layout teardown). */
+  pruneRemovedPanels: (knownPanelIds: Set<string>) => void;
 }
 
 export const useChartLayersStore = create<ChartLayersState>((set, get) => ({
-  flagsByKey: {},
+  flagsByPanelId: {},
 
-  getFlags: (symbol, interval) => {
-    const key = compositeKey(symbol, interval);
-    return get().flagsByKey[key] ?? DEFAULT_FLAGS;
-  },
+  getFlags: (panelId) => get().flagsByPanelId[panelId] ?? DEFAULT_FLAGS,
 
-  setFlag: (symbol, interval, layer, visible) =>
+  setFlag: (panelId, layer, visible) =>
     set((state) => {
-      const key = compositeKey(symbol, interval);
-      const current = state.flagsByKey[key] ?? DEFAULT_FLAGS;
+      const current = state.flagsByPanelId[panelId] ?? DEFAULT_FLAGS;
       if (current[layer] === visible) return state;
       return {
-        flagsByKey: {
-          ...state.flagsByKey,
-          [key]: { ...current, [layer]: visible },
+        flagsByPanelId: {
+          ...state.flagsByPanelId,
+          [panelId]: { ...current, [layer]: visible },
         },
       };
     }),
 
-  toggleFlag: (symbol, interval, layer) =>
+  toggleFlag: (panelId, layer) =>
     set((state) => {
-      const key = compositeKey(symbol, interval);
-      const current = state.flagsByKey[key] ?? DEFAULT_FLAGS;
+      const current = state.flagsByPanelId[panelId] ?? DEFAULT_FLAGS;
       return {
-        flagsByKey: {
-          ...state.flagsByKey,
-          [key]: { ...current, [layer]: !current[layer] },
+        flagsByPanelId: {
+          ...state.flagsByPanelId,
+          [panelId]: { ...current, [layer]: !current[layer] },
         },
       };
+    }),
+
+  pruneRemovedPanels: (knownPanelIds) =>
+    set((state) => {
+      const next: Record<string, ChartLayerFlags> = {};
+      let changed = false;
+      for (const [id, flags] of Object.entries(state.flagsByPanelId)) {
+        if (knownPanelIds.has(id)) next[id] = flags;
+        else changed = true;
+      }
+      return changed ? { flagsByPanelId: next } : state;
     }),
 }));
 
-export const useChartLayerFlags = (symbol: string, interval: string): ChartLayerFlags =>
-  useChartLayersStore((s) => s.flagsByKey[compositeKey(symbol, interval)] ?? DEFAULT_FLAGS);
+export const useChartLayerFlags = (panelId: string): ChartLayerFlags =>
+  useChartLayersStore((s) => s.flagsByPanelId[panelId] ?? DEFAULT_FLAGS);

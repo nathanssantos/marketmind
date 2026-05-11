@@ -8,7 +8,20 @@ export interface IndicatorInstance {
   catalogType: string;
   params: Record<string, IndicatorParamValue>;
   visible: boolean;
+  /**
+   * Sub-pane ID INSIDE a chart-panel (e.g. `'stochastic'`, `'rsi'`)
+   * — used to stack indicators of the same kind into the same
+   * bottom strip. Not the grid-panel id.
+   */
   paneId?: string;
+  /**
+   * Grid-panel ID this indicator instance belongs to. Optional for
+   * legacy reasons (older saved state may have no panelId — those
+   * instances are treated as "global" and won't render anywhere
+   * after the bug fix). Going forward, every new instance must have
+   * panelId set so it only renders on the focused chart.
+   */
+  panelId?: string;
   zIndex?: number;
 }
 
@@ -32,12 +45,17 @@ interface IndicatorState {
 
   addInstance: (input: Omit<IndicatorInstance, 'id'>) => string;
   removeInstance: (id: string) => void;
-  removeInstancesByUserIndicatorId: (userIndicatorId: string) => void;
+  removeInstancesByUserIndicatorId: (userIndicatorId: string, panelId?: string) => void;
   updateInstance: (id: string, patch: Partial<Omit<IndicatorInstance, 'id'>>) => void;
   toggleInstanceVisible: (id: string) => void;
   reorderInstances: (ids: string[]) => void;
   getVisibleInstances: () => IndicatorInstance[];
+  /** Filters instances by sub-pane ID (e.g. `'stochastic'`). */
   getInstancesByPaneId: (paneId: string) => IndicatorInstance[];
+  /** Filters instances by grid-panel ID (the chart this instance is bound to). */
+  getInstancesByPanelId: (panelId: string) => IndicatorInstance[];
+  /** Drop entries for grid-panels that no longer exist. */
+  pruneRemovedPanels: (knownPanelIds: Set<string>) => void;
 }
 
 const sanitizeInstance = (raw: unknown): IndicatorInstance | null => {
@@ -53,6 +71,7 @@ const sanitizeInstance = (raw: unknown): IndicatorInstance | null => {
     params: candidate.params,
     visible: candidate.visible !== false,
     paneId: typeof candidate.paneId === 'string' ? candidate.paneId : undefined,
+    panelId: typeof candidate.panelId === 'string' ? candidate.panelId : undefined,
     zIndex: typeof candidate.zIndex === 'number' ? candidate.zIndex : undefined,
   };
 };
@@ -81,6 +100,7 @@ export const useIndicatorStore = create<IndicatorState>()((set, get) => ({
       params: { ...input.params },
       visible: input.visible !== false,
       paneId: input.paneId,
+      panelId: input.panelId,
       zIndex: input.zIndex,
     };
     set((state) => {
@@ -99,9 +119,15 @@ export const useIndicatorStore = create<IndicatorState>()((set, get) => ({
       return { instances };
     }),
 
-  removeInstancesByUserIndicatorId: (userIndicatorId) =>
+  removeInstancesByUserIndicatorId: (userIndicatorId, panelId) =>
     set((state) => {
-      const instances = state.instances.filter((inst) => inst.userIndicatorId !== userIndicatorId);
+      const instances = state.instances.filter((inst) => {
+        if (inst.userIndicatorId !== userIndicatorId) return true;
+        // When panelId is given, only drop instances bound to that
+        // panel — leaves the same indicator on other panels alone.
+        if (panelId !== undefined && inst.panelId !== panelId) return true;
+        return false;
+      });
       if (instances.length === state.instances.length) return state;
       syncInstancesToPreferences(instances);
       return { instances };
@@ -153,4 +179,16 @@ export const useIndicatorStore = create<IndicatorState>()((set, get) => ({
   getVisibleInstances: () => get().instances.filter((inst) => inst.visible),
 
   getInstancesByPaneId: (paneId) => get().instances.filter((inst) => inst.paneId === paneId),
+
+  getInstancesByPanelId: (panelId) => get().instances.filter((inst) => inst.panelId === panelId),
+
+  pruneRemovedPanels: (knownPanelIds) =>
+    set((state) => {
+      const instances = state.instances.filter(
+        (inst) => inst.panelId === undefined || knownPanelIds.has(inst.panelId),
+      );
+      if (instances.length === state.instances.length) return state;
+      syncInstancesToPreferences(instances);
+      return { instances };
+    }),
 }));
