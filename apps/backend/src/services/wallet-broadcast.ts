@@ -68,6 +68,7 @@ export const incrementWalletBalanceAndBroadcast = async (
     // Binance USER_DATA shape (`{ balances: [...] }`). We send the
     // flat shape — there's no Binance balance delta to forward.
     wsService.emitWalletUpdate(walletId, {
+      walletId,
       currentBalance: updated.currentBalance,
       totalWalletBalance: updated.totalWalletBalance,
     });
