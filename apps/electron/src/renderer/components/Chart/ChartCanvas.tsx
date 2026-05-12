@@ -511,9 +511,18 @@ const ChartCanvasInternal = ({
     | { positionId: string; rect: { x: number; y: number; width: number; height: number } }
     | null
   >(null);
+  // The synthetic id rendered by renderPositions encodes (symbol, side):
+  // `position-SYMBOL-LONG|SHORT`. Decode it back so we can pick the open
+  // execution out of `allExecutions` — its real DB id is what the
+  // popover's mutations need as `positionId`.
   const currentPositionForActions = useMemo(() => {
     if (!positionActionsAnchor) return null;
-    const exec = allExecutions.find((e) => e.id === positionActionsAnchor.positionId);
+    const match = /^position-(.+)-(LONG|SHORT)$/.exec(positionActionsAnchor.positionId);
+    if (!match) return null;
+    const [, posSymbol, posSide] = match;
+    const exec = allExecutions.find(
+      (e) => e.symbol === posSymbol && e.side === posSide && e.status === 'open',
+    );
     if (!exec) return null;
     return { id: exec.id, side: exec.side, quantity: exec.quantity };
   }, [positionActionsAnchor, allExecutions]);
