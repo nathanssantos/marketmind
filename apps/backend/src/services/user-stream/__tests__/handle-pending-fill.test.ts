@@ -28,6 +28,7 @@ vi.mock('../../../db', () => ({
 
 vi.mock('../../../db/schema', () => ({
   tradeExecutions: { id: 'trade_executions.id', walletId: 'walletId', symbol: 'symbol', status: 'status', marketType: 'marketType', side: 'side' },
+  orders: { walletId: 'orders.wallet_id', orderId: 'orders.order_id', status: 'orders.status', executedQty: 'orders.executed_qty', updateTime: 'orders.update_time' },
 }));
 
 const mockGetOrderEntryFee = vi.fn().mockResolvedValue(null);
@@ -52,9 +53,11 @@ vi.mock('../../logger', () => ({
 }));
 
 const mockEmitPositionUpdate = vi.fn();
+const mockEmitOrderUpdate = vi.fn();
 vi.mock('../../websocket', () => ({
   getWebSocketService: vi.fn(() => ({
     emitPositionUpdate: mockEmitPositionUpdate,
+    emitOrderUpdate: mockEmitOrderUpdate,
     emitTradeNotification: vi.fn(),
   })),
 }));
