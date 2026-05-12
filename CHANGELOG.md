@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.1] - 2026-05-12
+
+### Fixed
+
+- **Residual fill→UI latency closures (#597)** — four post-v1.18.0 follow-ups consolidating what was still slow or erratic after #592/#593/#594 landed:
+  - **`handleExitFill` broadcast latency cut from 2-3s to ~50-100ms.** Opposite-order cancellation, `getAllTradeFeesForPosition`, and `getOrderEntryFee` were all `await`ed before emitting `position:update`. The cancel was moved to fire-and-forget (`void (async () => {…})()`) and the two fee REST calls were pulled out of the hot path; the renderer now sees the close immediately and a background refinement task patches the fees + emits a delta `position:update` (with a paired `incrementWalletBalanceAndBroadcast` if PnL moved more than $0.005) once the API returns.
+  - **Pending LIMIT-entry phantom line on chart eliminated.** `handlePendingFill` activated the trade execution but never marked the underlying `orders` row `FILLED` or emitted `order:update`, so the renderer's 500ms invalidation-debounce refetched `getOrders`, saw status `NEW`, and re-rendered the pending line on top of the freshly opened position until `reconcileOrdersTable` caught up ~30s later. Now updates `orders.status = 'FILLED'` inline and emits `order:update` from the WS handler — the pending-order line disappears the same render frame the position appears.
+  - **Today's P&L stale after closes on live wallets.** Closes streamed through `handleExitFill` updated the wallet balance but never appended to `income_events`, so the analytics card kept the pre-close total until the user clicked "Sync balance from Binance" or the reconnect path ran. A background `syncWalletIncome` task is now triggered post-broadcast; on `inserted > 0 || linked > 0` it re-emits `wallet:update` so the renderer flushes `getDailyPerformance.invalidate()` within ~1-2s.
+  - **New trade-ticket orders invisible until next polling tick.** `trading.createOrder.useMutation.onSuccess` only invalidated the `trading.*` cache keys, but the chart's order layer reads from `futuresTrading.getOpenOrders / getOpenAlgoOrders / getOpenDbOrderIds`. The exchange order existed on Binance but stayed missing from the chart until ~15s polling reconciled them. Now invalidates the three futures keys inline. (Note: this duplicates the inline invalidation added in #593's exchange-move flow; both paths needed the same fix.)
+
 ## [1.18.0] - 2026-05-11
 
 ### Added
