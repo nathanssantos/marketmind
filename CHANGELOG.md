@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - 2026-05-12
+
+### Added
+
+- **Position-chip kebab + `PositionActionsPopover` (#600)** — the X close button drawn on every open-position chip on the chart is replaced with a kebab (three vertical dots). Clicking it opens a new popover anchored at the click coordinates with `Reverse Position` + `Close Position` menu items. Both items keep the existing confirmation dialogs (blue button for Reverse, red for Close); on success the popover dismisses, on error a toast surfaces and the popover stays open for retry. The X behavior is preserved for non-position rows (LIMIT entries, SL / TP orders).
+- **Order type tabs on the trade ticket (#600)** — `Market | Limit` tabs above the size slider. Market stays the default. Selecting Limit reveals a price `Input` that auto-fills with the mid price (`(bid + ask) / 2`) on the first Market → Limit transition; the user can edit or clear freely. Submitting a Limit order sends `type: 'LIMIT', price: <limitPrice>` to the backend (the futures-trading `createOrder` mutation already accepted these — no backend change needed).
+- **SL / TP at order open on the trade ticket (#600)** — two toggleable rows (Switch + price Input) below the BUY / SELL buttons. Validation rejects SL on the profit side of the entry and TP on the loss side (per side: BUY → SL below entry, TP above; SELL → SL above, TP below). When enabled, the values flow into `createOrder` as `stopLoss` / `takeProfit`. The confirmation dialog gains rows for SL / TP / Order Type when set.
+- **Total Value row on the trade ticket (#600)** — read-only row showing `previewedQuantity × referencePrice` in USDT (mid price for Market, `limitPrice` for Limit). Updates live with the size slider, leverage changes, and order-type switches. Shows `—` when price isn't ready.
+
+### Removed
+
+- **Reverse / Close `ActionRow`s removed from the trade ticket body (#600)** — they live exclusively in the new `PositionActionsPopover`. Cancel Orders + Grid Orders + Trailing Stop **stay** in the ticket (symbol-scoped — they're useful without an open position).
+
+### Notes
+
+- The chart's position-line "X close" hit-test has been split: `getClickedOrderId` no longer matches positions; a new `getClickedPositionActions(x, y)` returns `{ positionId, rect }` consumed by `useChartInteraction` to open the popover. Orders still match `getClickedOrderId` and trigger the existing close-confirmation flow unchanged.
+- 8 new i18n keys (`chart.quickTrade.orderType` / `orderTypeMarket` / `orderTypeLimit` / `limitPrice` / `stopLoss` / `takeProfit` / `slInvalid` / `tpInvalid`) added across all 4 locales (en / pt / es / fr).
+- Visual regression CI baseline will need a refresh on the next batch because the position-chip glyph changed (X → three dots).
+
 ## [1.18.1] - 2026-05-12
 
 ### Fixed

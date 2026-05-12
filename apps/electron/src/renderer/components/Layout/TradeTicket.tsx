@@ -1,5 +1,5 @@
 import type { MarketType } from '@marketmind/types';
-import { Button, ConfirmationDialog, IconButton, Menu, Slider } from '@renderer/components/ui';
+import { Button, ConfirmationDialog, IconButton, Input, Menu, Slider, Switch } from '@renderer/components/ui';
 import { Box, Flex, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { useBookTicker } from '@renderer/hooks/useBookTicker';
@@ -15,11 +15,13 @@ import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { calculateLiquidationPrice } from '@marketmind/types';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LuArrowUpDown, LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuMinus, LuPlus, LuShield, LuX } from 'react-icons/lu';
+import { LuEllipsisVertical, LuGrid3X3, LuGripVertical, LuMinus, LuPlus, LuShield } from 'react-icons/lu';
 import { PiBroom } from 'react-icons/pi';
 import { GridOrderPopover } from './GridOrderPopover';
 import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
+
+type OrderTypeChoice = 'MARKET' | 'LIMIT';
 
 const ActionRow = ({ icon, label, onClick, loading, disabled, children }: {
   icon?: React.ReactNode;
@@ -119,89 +121,36 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
   const { sizePercent, setSizePercent } = useQuickTradeStore();
 
   const {
-    positions,
-    reversePosition,
-    isReversingPosition,
-    closePositionAndCancelOrders,
-    isClosingPositionAndCancellingOrders,
     cancelAllOrders,
     isCancellingAllOrders,
   } = useBackendFuturesTrading(activeWallet?.id ?? '');
-  const [showReverseConfirm, setShowReverseConfirm] = useState(false);
-  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [showCancelOrdersConfirm, setShowCancelOrdersConfirm] = useState(false);
-  const [pendingOrder, setPendingOrder] = useState<{ side: 'BUY' | 'SELL'; price: number; quantity: string } | null>(null);
+  const [pendingOrder, setPendingOrder] = useState<{ side: 'BUY' | 'SELL'; price: number; quantity: string; orderType: OrderTypeChoice; stopLoss?: string; takeProfit?: string } | null>(null);
 
-  const currentPosition = useMemo(() => {
-    if (marketType !== 'FUTURES' || !Array.isArray(positions)) return null;
-    const found = positions.find((p) => {
-      if (p === null || typeof p !== 'object' || !('symbol' in p)) return false;
-      if (p.symbol !== symbol) return false;
-      if ('id' in p) return p.status === 'open';
-      if ('positionAmt' in p) return parseFloat(String(p.positionAmt)) !== 0;
-      return false;
-    });
-    return found ?? null;
-  }, [positions, symbol, marketType]);
+  const [orderType, setOrderType] = useState<OrderTypeChoice>('MARKET');
+  const [limitPrice, setLimitPrice] = useState<string>('');
+  const [slEnabled, setSlEnabled] = useState(false);
+  const [slPrice, setSlPrice] = useState<string>('');
+  const [tpEnabled, setTpEnabled] = useState(false);
+  const [tpPrice, setTpPrice] = useState<string>('');
+  const { bidPrice: tickerBid, askPrice: tickerAsk } = useBookTicker(symbol);
+  const midPrice = useMemo(() => {
+    if (tickerBid > 0 && tickerAsk > 0) return (tickerBid + tickerAsk) / 2;
+    return 0;
+  }, [tickerBid, tickerAsk]);
 
-  const positionSide = useMemo(() => {
-    if (!currentPosition) return '';
-    if ('side' in currentPosition && currentPosition.side) return String(currentPosition.side).toUpperCase();
-    if ('positionAmt' in currentPosition) return parseFloat(String(currentPosition.positionAmt)) > 0 ? 'LONG' : 'SHORT';
-    return '';
-  }, [currentPosition]);
-
-  const positionQty = useMemo(() => {
-    if (!currentPosition) return '0';
-    if ('positionAmt' in currentPosition) return Math.abs(parseFloat(String(currentPosition.positionAmt))).toFixed(4);
-    return '0';
-  }, [currentPosition]);
-
-  const handleReverseClick = useCallback(() => {
-    if (!currentPosition) return;
-    setShowReverseConfirm(true);
-  }, [currentPosition]);
-
-  const handleReverseConfirm = useCallback(async () => {
-    if (!activeWallet?.id || !currentPosition) return;
-    try {
-      const result = await reversePosition({
-        walletId: activeWallet.id,
-        symbol,
-        positionId: 'id' in currentPosition ? String(currentPosition.id) : undefined,
-      });
-      if (result && 'success' in result && !result.success) {
-        const errorMsg = 'error' in result && typeof result.error === 'string' ? result.error : undefined;
-        toastError(t('futures.reverseFailed'), errorMsg);
+  const handleSelectOrderType = useCallback((next: OrderTypeChoice) => {
+    setOrderType((prev) => {
+      // Auto-fill the limit price ONCE per Market→Limit transition. The
+      // user is then free to clear the field and submit (which raises a
+      // noPriceError); otherwise the auto-fill would keep restoring the
+      // mid price after every clear.
+      if (prev === 'MARKET' && next === 'LIMIT' && midPrice > 0) {
+        setLimitPrice(midPrice.toString());
       }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toastError(t('futures.reverseFailed'), msg);
-    } finally {
-      setShowReverseConfirm(false);
-    }
-  }, [activeWallet?.id, currentPosition, symbol, reversePosition, toastError, t]);
-
-  const handleClosePositionClick = useCallback(() => {
-    if (!currentPosition) return;
-    setShowCloseConfirm(true);
-  }, [currentPosition]);
-
-  const handleClosePositionConfirm = useCallback(async () => {
-    if (!activeWallet?.id || !currentPosition) return;
-    try {
-      await closePositionAndCancelOrders({
-        walletId: activeWallet.id,
-        symbol,
-        positionId: 'id' in currentPosition ? String(currentPosition.id) : undefined,
-      });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toastError(t('futures.closePositionFailed'), msg);
-    } finally {
-      setShowCloseConfirm(false);
-    }
-  }, [activeWallet?.id, currentPosition, symbol, closePositionAndCancelOrders, toastError, t]);
+      return next;
+    });
+  }, [midPrice]);
 
   const handleCancelOrdersClick = useCallback(() => {
     setShowCancelOrdersConfirm(true);
@@ -224,13 +173,30 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
 
   const { getQuantity, leverage, isReady, notReadyReason } = useOrderQuantity(symbol, marketType);
 
-  const handleQuickOrder = useCallback((side: 'BUY' | 'SELL', price: number) => {
+  const slPriceNum = useMemo(() => (slEnabled ? parseFloat(slPrice) : NaN), [slEnabled, slPrice]);
+  const tpPriceNum = useMemo(() => (tpEnabled ? parseFloat(tpPrice) : NaN), [tpEnabled, tpPrice]);
+
+  const isSlInvalidFor = useCallback((side: 'BUY' | 'SELL', entry: number): boolean => {
+    if (!slEnabled) return false;
+    if (Number.isNaN(slPriceNum) || slPriceNum <= 0) return true;
+    return side === 'BUY' ? slPriceNum >= entry : slPriceNum <= entry;
+  }, [slEnabled, slPriceNum]);
+
+  const isTpInvalidFor = useCallback((side: 'BUY' | 'SELL', entry: number): boolean => {
+    if (!tpEnabled) return false;
+    if (Number.isNaN(tpPriceNum) || tpPriceNum <= 0) return true;
+    return side === 'BUY' ? tpPriceNum <= entry : tpPriceNum >= entry;
+  }, [tpEnabled, tpPriceNum]);
+
+  const handleQuickOrder = useCallback((side: 'BUY' | 'SELL', tickerPrice: number) => {
     if (!activeWallet?.id) {
       warning(t('trading.ticket.noWallet'));
       return;
     }
     if (!symbol) return;
-    if (!price || price <= 0) {
+    const limitPriceNum = orderType === 'LIMIT' ? parseFloat(limitPrice) : NaN;
+    const effectivePrice = orderType === 'LIMIT' ? limitPriceNum : tickerPrice;
+    if (!effectivePrice || effectivePrice <= 0 || Number.isNaN(effectivePrice)) {
       toastError(t('chart.quickTrade.noPriceError'));
       return;
     }
@@ -241,13 +207,28 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
       toastError(notReadyReason ?? t('chart.quickTrade.invalidQuantityError'));
       return;
     }
-    const previewQty = getQuantity(price);
+    if (isSlInvalidFor(side, effectivePrice)) {
+      toastError(t('chart.quickTrade.slInvalid'));
+      return;
+    }
+    if (isTpInvalidFor(side, effectivePrice)) {
+      toastError(t('chart.quickTrade.tpInvalid'));
+      return;
+    }
+    const previewQty = getQuantity(effectivePrice);
     if (!previewQty || parseFloat(previewQty) <= 0) {
       toastError(t('chart.quickTrade.invalidQuantityError'));
       return;
     }
-    setPendingOrder({ side, price, quantity: previewQty });
-  }, [activeWallet?.id, symbol, getQuantity, isReady, notReadyReason, warning, toastError, t]);
+    setPendingOrder({
+      side,
+      price: effectivePrice,
+      quantity: previewQty,
+      orderType,
+      ...(slEnabled && !Number.isNaN(slPriceNum) ? { stopLoss: slPriceNum.toString() } : {}),
+      ...(tpEnabled && !Number.isNaN(tpPriceNum) ? { takeProfit: tpPriceNum.toString() } : {}),
+    });
+  }, [activeWallet?.id, symbol, orderType, limitPrice, getQuantity, isReady, notReadyReason, warning, toastError, t, isSlInvalidFor, isTpInvalidFor, slEnabled, slPriceNum, tpEnabled, tpPriceNum]);
 
   const handleConfirmOrder = useCallback(async () => {
     if (!activeWallet?.id || !pendingOrder) return;
@@ -264,9 +245,12 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
         walletId: activeWallet.id,
         symbol,
         side: pendingOrder.side,
-        type: 'MARKET',
+        type: pendingOrder.orderType,
         quantity: pendingOrder.quantity,
         referencePrice: pendingOrder.price,
+        ...(pendingOrder.orderType === 'LIMIT' ? { price: pendingOrder.price.toString() } : {}),
+        ...(pendingOrder.stopLoss ? { stopLoss: pendingOrder.stopLoss } : {}),
+        ...(pendingOrder.takeProfit ? { takeProfit: pendingOrder.takeProfit } : {}),
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -366,6 +350,50 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
           </IconButton>
         </HStack>
 
+        <HStack gap={1} role="tablist" aria-label={t('chart.quickTrade.orderType')}>
+          <Button
+            size="2xs"
+            fontSize="xs"
+            h="22px"
+            flex={1}
+            variant={orderType === 'MARKET' ? 'solid' : 'outline'}
+            colorPalette={orderType === 'MARKET' ? 'accent' : undefined}
+            onClick={() => handleSelectOrderType('MARKET')}
+            role="tab"
+            aria-selected={orderType === 'MARKET'}
+          >
+            {t('chart.quickTrade.orderTypeMarket')}
+          </Button>
+          <Button
+            size="2xs"
+            fontSize="xs"
+            h="22px"
+            flex={1}
+            variant={orderType === 'LIMIT' ? 'solid' : 'outline'}
+            colorPalette={orderType === 'LIMIT' ? 'accent' : undefined}
+            onClick={() => handleSelectOrderType('LIMIT')}
+            role="tab"
+            aria-selected={orderType === 'LIMIT'}
+          >
+            {t('chart.quickTrade.orderTypeLimit')}
+          </Button>
+        </HStack>
+
+        {orderType === 'LIMIT' && (
+          <HStack gap={1.5}>
+            <Text fontSize="2xs" color="fg.muted" minW="60px">{t('chart.quickTrade.limitPrice')}</Text>
+            <Input
+              size="xs"
+              aria-label={t('chart.quickTrade.limitPrice')}
+              value={limitPrice}
+              onChange={(e) => setLimitPrice(e.target.value)}
+              placeholder={midPrice > 0 ? midPrice.toString() : ''}
+              type="number"
+              flex={1}
+            />
+          </HStack>
+        )}
+
         <HStack gap={1.5}>
           <BuySellButtons
             symbol={symbol}
@@ -377,13 +405,67 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
           />
         </HStack>
 
+        <VStack gap={1} align="stretch">
+          <HStack gap={1.5}>
+            <Switch
+              checked={slEnabled}
+              onCheckedChange={setSlEnabled}
+              size="sm"
+              aria-label={t('chart.quickTrade.stopLoss')}
+              data-testid="trade-ticket-sl-switch"
+            />
+            <Text fontSize="2xs" color="fg.muted" minW="20px">{t('chart.quickTrade.stopLoss')}</Text>
+            <Input
+              size="xs"
+              aria-label={t('chart.quickTrade.stopLoss')}
+              value={slPrice}
+              onChange={(e) => setSlPrice(e.target.value)}
+              type="number"
+              disabled={!slEnabled}
+              flex={1}
+              data-testid="trade-ticket-sl-input"
+            />
+          </HStack>
+          <HStack gap={1.5}>
+            <Switch
+              checked={tpEnabled}
+              onCheckedChange={setTpEnabled}
+              size="sm"
+              aria-label={t('chart.quickTrade.takeProfit')}
+              data-testid="trade-ticket-tp-switch"
+            />
+            <Text fontSize="2xs" color="fg.muted" minW="20px">{t('chart.quickTrade.takeProfit')}</Text>
+            <Input
+              size="xs"
+              aria-label={t('chart.quickTrade.takeProfit')}
+              value={tpPrice}
+              onChange={(e) => setTpPrice(e.target.value)}
+              type="number"
+              disabled={!tpEnabled}
+              flex={1}
+              data-testid="trade-ticket-tp-input"
+            />
+          </HStack>
+        </VStack>
+
+        <Flex justify="space-between" align="center" px={0.5}>
+          <Text fontSize="2xs" color="fg.muted">{t('chart.quickTrade.totalValue')}</Text>
+          <Text fontSize="xs" fontWeight="semibold" color="fg" data-testid="trade-ticket-total-value">
+            {(() => {
+              const referencePrice = orderType === 'LIMIT'
+                ? parseFloat(limitPrice)
+                : (midPrice > 0 ? midPrice : currentPrice);
+              if (!referencePrice || referencePrice <= 0 || !isReady) return '—';
+              const previewQty = parseFloat(getQuantity(referencePrice));
+              if (!previewQty || previewQty <= 0) return '—';
+              return `${formatChartPrice(previewQty * referencePrice)} USDT`;
+            })()}
+          </Text>
+        </Flex>
+
         <VStack gap={0.5} align="stretch">
           {marketType === 'FUTURES' && (
-            <>
-              <ActionRow icon={<LuArrowUpDown />} label={t('futures.reversePosition')} onClick={handleReverseClick} loading={isReversingPosition} disabled={!currentPosition} />
-              <ActionRow icon={<LuX />} label={t('futures.closePosition')} onClick={handleClosePositionClick} loading={isClosingPositionAndCancellingOrders} disabled={!currentPosition} />
-              <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
-            </>
+            <ActionRow icon={<PiBroom />} label={t('futures.cancelOrders')} onClick={handleCancelOrdersClick} loading={isCancellingAllOrders} />
           )}
           <GridOrderPopover triggerElement={
             <ActionRow icon={<LuGrid3X3 />} label={t('chart.quickTrade.gridOrders')} />
@@ -393,37 +475,6 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
           } />
         </VStack>
       </VStack>
-
-      <ConfirmationDialog
-        isOpen={showReverseConfirm}
-        onClose={() => setShowReverseConfirm(false)}
-        onConfirm={() => { void handleReverseConfirm(); }}
-        title={t('futures.reverseConfirmTitle')}
-        description={t('futures.reverseConfirmDescription', {
-          side: positionSide,
-          quantity: positionQty,
-          symbol,
-          newSide: positionSide === 'LONG' ? 'SHORT' : 'LONG',
-        })}
-        confirmLabel={t('futures.reversePosition')}
-        colorPalette="blue"
-        isLoading={isReversingPosition}
-      />
-
-      <ConfirmationDialog
-        isOpen={showCloseConfirm}
-        onClose={() => setShowCloseConfirm(false)}
-        onConfirm={() => { void handleClosePositionConfirm(); }}
-        title={t('futures.closePositionConfirmTitle')}
-        description={t('futures.closePositionConfirmDescription', {
-          side: positionSide,
-          quantity: positionQty,
-          symbol,
-        })}
-        confirmLabel={t('futures.closePosition')}
-        colorPalette="red"
-        isLoading={isClosingPositionAndCancellingOrders}
-      />
 
       <ConfirmationDialog
         isOpen={showCancelOrdersConfirm}
@@ -463,6 +514,10 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
                   <Text fontWeight="bold" color={isBuy ? 'trading.long' : 'trading.short'}>{isBuy ? 'LONG' : 'SHORT'}</Text>
                 </Flex>
                 <Flex justify="space-between">
+                  <Text color="fg.muted">{t('chart.quickTrade.orderType')}</Text>
+                  <Text fontWeight="medium">{pendingOrder.orderType === 'LIMIT' ? t('chart.quickTrade.orderTypeLimit') : t('chart.quickTrade.orderTypeMarket')}</Text>
+                </Flex>
+                <Flex justify="space-between">
                   <Text color="fg.muted">{t('common.price')}</Text>
                   <Text>{formatChartPrice(pendingOrder.price)}</Text>
                 </Flex>
@@ -470,6 +525,18 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
                   <Text color="fg.muted">{t('common.quantity')}</Text>
                   <Text>{pendingOrder.quantity}</Text>
                 </Flex>
+                {pendingOrder.stopLoss && (
+                  <Flex justify="space-between">
+                    <Text color="fg.muted">{t('chart.quickTrade.stopLoss')}</Text>
+                    <Text color="trading.loss">{formatChartPrice(parseFloat(pendingOrder.stopLoss))}</Text>
+                  </Flex>
+                )}
+                {pendingOrder.takeProfit && (
+                  <Flex justify="space-between">
+                    <Text color="fg.muted">{t('chart.quickTrade.takeProfit')}</Text>
+                    <Text color="trading.profit">{formatChartPrice(parseFloat(pendingOrder.takeProfit))}</Text>
+                  </Flex>
+                )}
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('futures.leverage')}</Text>
                   <Text color="orange.fg" fontWeight="bold">{leverage}x</Text>

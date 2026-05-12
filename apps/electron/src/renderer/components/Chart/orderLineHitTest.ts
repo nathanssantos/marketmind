@@ -1,6 +1,6 @@
 import type { Order } from '@marketmind/types';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
-import type { OrderCloseButton, OrderHitbox, SLTPHitbox, SLTPCloseButton, SlTpButtonHitbox } from './orderLineTypes';
+import type { OrderCloseButton, OrderHitbox, PositionActionsButton, SLTPHitbox, SLTPCloseButton, SlTpButtonHitbox } from './orderLineTypes';
 import type { RefObject } from 'react';
 
 export const getClickedOrderId = (
@@ -102,6 +102,32 @@ export const getSLTPAtPosition = (
   return null;
 };
 
+export interface ClickedPositionActions {
+  positionId: string;
+  rect: { x: number; y: number; width: number; height: number };
+}
+
+export const getClickedPositionActions = (
+  x: number,
+  y: number,
+  actionsButtons: PositionActionsButton[]
+): ClickedPositionActions | null => {
+  for (const button of actionsButtons) {
+    if (
+      x >= button.x &&
+      x <= button.x + button.width &&
+      y >= button.y &&
+      y <= button.y + button.height
+    ) {
+      return {
+        positionId: button.positionId,
+        rect: { x: button.x, y: button.y, width: button.width, height: button.height },
+      };
+    }
+  }
+  return null;
+};
+
 export const getSlTpButtonAtPosition = (
   x: number,
   y: number,
@@ -122,6 +148,7 @@ export const getSlTpButtonAtPosition = (
 
 export interface HitTestRefs {
   closeButtonsRef: RefObject<OrderCloseButton[]>;
+  actionsButtonsRef: RefObject<PositionActionsButton[]>;
   orderHitboxesRef: RefObject<OrderHitbox[]>;
   sltpHitboxesRef: RefObject<SLTPHitbox[]>;
   sltpCloseButtonsRef: RefObject<SLTPCloseButton[]>;

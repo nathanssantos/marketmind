@@ -2,12 +2,13 @@ import type { Order } from '@marketmind/types';
 import { describe, expect, it } from 'vitest';
 import {
   getClickedOrderId,
+  getClickedPositionActions,
   getOrderAtPosition,
   getHoveredOrder,
   getSLTPAtPosition,
   getSlTpButtonAtPosition,
 } from '../orderLineHitTest';
-import type { OrderCloseButton, OrderHitbox, SLTPCloseButton, SLTPHitbox, SlTpButtonHitbox } from '../orderLineTypes';
+import type { OrderCloseButton, OrderHitbox, PositionActionsButton, SLTPCloseButton, SLTPHitbox, SlTpButtonHitbox } from '../orderLineTypes';
 
 const makeOrder = (id: string): Order =>
   ({
@@ -140,6 +141,49 @@ describe('getSLTPAtPosition', () => {
 
   it('returns null for empty array', () => {
     expect(getSLTPAtPosition(20, 15, [])).toBeNull();
+  });
+});
+
+describe('getClickedPositionActions', () => {
+  const actionsButtons: PositionActionsButton[] = [
+    { positionId: 'pos-1', x: 5, y: 100, width: 14, height: 14 },
+    { positionId: 'pos-2', x: 5, y: 200, width: 14, height: 14 },
+  ];
+
+  it('returns positionId + rect when clicking inside a button', () => {
+    const result = getClickedPositionActions(10, 105, actionsButtons);
+    expect(result).toEqual({
+      positionId: 'pos-1',
+      rect: { x: 5, y: 100, width: 14, height: 14 },
+    });
+  });
+
+  it('returns the matching position for the second button', () => {
+    const result = getClickedPositionActions(10, 205, actionsButtons);
+    expect(result).not.toBeNull();
+    expect(result?.positionId).toBe('pos-2');
+  });
+
+  it('returns null when outside all buttons', () => {
+    expect(getClickedPositionActions(50, 50, actionsButtons)).toBeNull();
+  });
+
+  it('returns null for empty array', () => {
+    expect(getClickedPositionActions(10, 105, [])).toBeNull();
+  });
+
+  it('returns the position at exact boundary', () => {
+    expect(getClickedPositionActions(5, 100, actionsButtons)).not.toBeNull();
+    expect(getClickedPositionActions(19, 114, actionsButtons)).not.toBeNull();
+  });
+});
+
+describe('getClickedOrderId — position regression', () => {
+  it('does NOT match position close buttons (positions moved to actionsButtons)', () => {
+    // Regression for the kebab refactor: when the kebab replaces the X on
+    // positions, the position id must NOT come back from getClickedOrderId
+    // anymore — only order ids do.
+    expect(getClickedOrderId(10, 105, [], [], [])).toBeNull();
   });
 });
 
