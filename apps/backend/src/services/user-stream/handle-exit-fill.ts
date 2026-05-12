@@ -51,49 +51,57 @@ export async function handleExitFill(
     ? (execution.takeProfitIsAlgo ? execution.takeProfitAlgoId : execution.takeProfitOrderId)
     : (execution.stopLossIsAlgo ? execution.stopLossAlgoId : execution.stopLossOrderId);
 
+  // Cancel opposite SL/TP in the BACKGROUND. The previous shape awaited up
+  // to 3 retries × 100-300ms backoff = ~1.5s worst case before the position-
+  // closed broadcast could fire. The renderer was paying that latency for
+  // every TP/SL fill — perceived as "screen takes seconds to react after a
+  // fill". Now the cancel runs in parallel; if every retry fails, the next
+  // reconcileOrdersTable cycle picks up the orphan and a CRITICAL log is
+  // emitted for ops visibility.
   if (orderToCancel && apiClient && !isAlgoTriggerFill) {
-    const maxRetries = 3;
-    let cancelSuccess = false;
-
-    for (let attempt = 1; attempt <= maxRetries && !cancelSuccess; attempt++) {
-      try {
-        if (oppositeIsAlgo) {
-          await cancelFuturesAlgoOrder(apiClient, orderToCancel);
-        } else {
-          await apiClient.cancelOrder({ symbol, orderId: Number(orderToCancel) });
-        }
-        cancelSuccess = true;
-        logger.info(
-          {
-            executionId: execution.id,
-            cancelledOrderId: orderToCancel,
-            isAlgoOrder: oppositeIsAlgo,
-            reason: isSLOrder ? 'SL filled, cancelling TP' : 'TP filled, cancelling SL',
-          },
-          '[FuturesUserStream] Opposite order cancelled'
-        );
-      } catch (cancelError) {
-        const errorMessage = serializeError(cancelError);
-        if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist')) {
+    void (async () => {
+      const maxRetries = 3;
+      let cancelSuccess = false;
+      for (let attempt = 1; attempt <= maxRetries && !cancelSuccess; attempt++) {
+        try {
+          if (oppositeIsAlgo) {
+            await cancelFuturesAlgoOrder(apiClient, orderToCancel);
+          } else {
+            await apiClient.cancelOrder({ symbol, orderId: Number(orderToCancel) });
+          }
           cancelSuccess = true;
           logger.info(
-            { orderToCancel, isAlgoOrder: oppositeIsAlgo },
-            '[FuturesUserStream] Order already cancelled or executed'
+            {
+              executionId: execution.id,
+              cancelledOrderId: orderToCancel,
+              isAlgoOrder: oppositeIsAlgo,
+              reason: isSLOrder ? 'SL filled, cancelling TP' : 'TP filled, cancelling SL',
+            },
+            '[FuturesUserStream] Opposite order cancelled (background)'
           );
-        } else if (attempt < maxRetries) {
-          logger.warn(
-            { error: errorMessage, orderToCancel, attempt, maxRetries },
-            '[FuturesUserStream] Retry cancelling opposite order'
-          );
-          await new Promise(resolve => setTimeout(resolve, 100 * attempt));
-        } else {
-          logger.error(
-            { error: errorMessage, orderToCancel, isAlgoOrder: oppositeIsAlgo },
-            '[FuturesUserStream] ! CRITICAL: Failed to cancel opposite order after retries - MANUAL CHECK REQUIRED'
-          );
+        } catch (cancelError) {
+          const errorMessage = serializeError(cancelError);
+          if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist')) {
+            cancelSuccess = true;
+            logger.info(
+              { orderToCancel, isAlgoOrder: oppositeIsAlgo },
+              '[FuturesUserStream] Order already cancelled or executed'
+            );
+          } else if (attempt < maxRetries) {
+            logger.warn(
+              { error: errorMessage, orderToCancel, attempt, maxRetries },
+              '[FuturesUserStream] Retry cancelling opposite order (background)'
+            );
+            await new Promise(resolve => setTimeout(resolve, 100 * attempt));
+          } else {
+            logger.error(
+              { error: errorMessage, orderToCancel, isAlgoOrder: oppositeIsAlgo },
+              '[FuturesUserStream] ! CRITICAL: Failed to cancel opposite order after retries - reconcileOrdersTable will retry, manual check recommended'
+            );
+          }
         }
       }
-    }
+    })();
   }
 
   const exitPrice = parseFloat(avgPrice || lastFilledPrice);
@@ -179,37 +187,24 @@ export async function handleExitFill(
   }
 
   const quantity = closedQty;
-  let actualExitFee = parseFloat(commission || '0');
-  let actualEntryFee = parseFloat(execution.entryFee ?? '0');
-
-  try {
-    const feeConnection = ctx.connections.get(walletId);
-    if (feeConnection) {
-      const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
-      const allFees = await getAllTradeFeesForPosition(feeConnection.apiClient, symbol, execution.side, openedAt, undefined, execution.entryOrderId, execution.exitOrderId);
-      if (allFees) {
-        if (allFees.exitFee > 0) actualExitFee = allFees.exitFee;
-        if (allFees.entryFee > 0) actualEntryFee = allFees.entryFee;
-        logger.info({
-          walletId, symbol, executionId: execution.id,
-          eventCommission: parseFloat(commission || '0'),
-          actualExitFee, actualEntryFee,
-        }, '[FuturesUserStream] Fetched accurate fees from REST API');
-      }
-    }
-  } catch (_e) {
-    logger.warn({ walletId, symbol, executionId: execution.id }, '[FuturesUserStream] Failed to fetch accurate fees - using event commission');
-  }
-
-  if (actualEntryFee === 0 && execution.entryOrderId) {
-    try {
-      const entryFeeConnection = ctx.connections.get(walletId);
-      if (entryFeeConnection) {
-        const feeResult = await getOrderEntryFee(entryFeeConnection.apiClient, symbol, execution.entryOrderId);
-        if (feeResult) actualEntryFee = feeResult.entryFee;
-      }
-    } catch (_e) { /* entry fee fetch is best-effort */ }
-  }
+  // Use the WS event's commission as the EXIT fee directly — it IS the
+  // exact commission Binance charged for this fill. The previous shape
+  // re-fetched via `getAllTradeFeesForPosition` (~500-800ms blocking)
+  // just to verify the value, then re-fetched the entry fee on top
+  // (another ~300ms when entryFee was 0). Combined with the now-async
+  // opposite-cancel above, the broadcast goes out in ~50-100ms instead
+  // of the previous 1.5-3s.
+  //
+  // If `execution.entryFee` is 0 (the entry-fill handler didn't have
+  // it) the entry fee defaults to 0 — that produces a small PnL
+  // inaccuracy (typically a few cents on a futures trade). A background
+  // refinement runs after the broadcast and patches the DB with the
+  // accurate fees + emits a follow-up `position:update` if the values
+  // moved materially. The user sees the close near-instantly with a
+  // ballpark PnL, and the precise figure self-corrects within a second
+  // or two.
+  const actualExitFee = parseFloat(commission || '0');
+  const actualEntryFee = parseFloat(execution.entryFee ?? '0');
 
   const accumulatedFunding = parseFloat(execution.accumulatedFunding ?? '0');
 
@@ -337,4 +332,98 @@ export async function handleExitFill(
   setTimeout(() => {
     void ctx.closeResidualPosition(walletId, symbol, execution.id);
   }, 3000);
+
+  // Background fee refinement — the broadcast above used event-commission
+  // for the exit fee and `execution.entryFee` (possibly 0) for the entry.
+  // Now pull the authoritative fees from Binance and, if they differ
+  // materially, update the DB row + emit a `position:update` so the
+  // renderer's PnL cell self-corrects without the user noticing. This
+  // path is BEST-EFFORT — every failure is logged and swallowed; the
+  // close has already been broadcast with the ballpark figure.
+  void (async () => {
+    try {
+      const feeConnection = ctx.connections.get(walletId);
+      if (!feeConnection) return;
+      const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
+      const allFees = await getAllTradeFeesForPosition(
+        feeConnection.apiClient,
+        symbol,
+        execution.side,
+        openedAt,
+        undefined,
+        execution.entryOrderId,
+        execution.exitOrderId,
+      );
+      let refinedEntryFee = actualEntryFee;
+      let refinedExitFee = actualExitFee;
+      if (allFees) {
+        if (allFees.exitFee > 0) refinedExitFee = allFees.exitFee;
+        if (allFees.entryFee > 0) refinedEntryFee = allFees.entryFee;
+      }
+      if (refinedEntryFee === 0 && execution.entryOrderId) {
+        try {
+          const feeResult = await getOrderEntryFee(feeConnection.apiClient, symbol, execution.entryOrderId);
+          if (feeResult) refinedEntryFee = feeResult.entryFee;
+        } catch (_e) { /* best-effort */ }
+      }
+      const feeDeltaTotal = (refinedEntryFee - actualEntryFee) + (refinedExitFee - actualExitFee);
+      // Only patch if the corrected fees move PnL by more than half a cent.
+      if (Math.abs(feeDeltaTotal) < 0.005) return;
+
+      const refinedPnlResult = calculatePnl({
+        entryPrice,
+        exitPrice,
+        quantity,
+        side: execution.side,
+        marketType: 'FUTURES',
+        leverage,
+        accumulatedFunding,
+        entryFee: refinedEntryFee,
+        exitFee: refinedExitFee,
+      });
+      const refinedPnl = refinedPnlResult.netPnl + partialClosePnl;
+      const refinedTotalFees = refinedEntryFee + refinedExitFee;
+
+      await db
+        .update(tradeExecutions)
+        .set({
+          pnl: refinedPnl.toString(),
+          pnlPercent: refinedPnlResult.pnlPercent.toString(),
+          fees: refinedTotalFees.toString(),
+          entryFee: refinedEntryFee.toString(),
+          exitFee: refinedExitFee.toString(),
+          updatedAt: new Date(),
+        })
+        .where(eq(tradeExecutions.id, execution.id));
+
+      // Also patch the wallet balance with the delta so the running
+      // balance reconciles. The initial broadcast already credited
+      // `pnl` to the wallet; we only need to add the correction.
+      const pnlDelta = refinedPnl - pnl;
+      if (Math.abs(pnlDelta) > 0.005) {
+        await incrementWalletBalanceAndBroadcast(walletId, pnlDelta);
+      }
+
+      const wsServiceBg = getWebSocketService();
+      if (wsServiceBg) {
+        wsServiceBg.emitPositionUpdate(walletId, {
+          id: execution.id,
+          status: 'closed',
+          pnl: refinedPnl.toString(),
+          pnlPercent: refinedPnlResult.pnlPercent.toString(),
+          fees: refinedTotalFees.toString(),
+        });
+      }
+
+      logger.info(
+        { executionId: execution.id, oldPnl: pnl.toFixed(4), newPnl: refinedPnl.toFixed(4), delta: pnlDelta.toFixed(4) },
+        '[FuturesUserStream] Background fee refinement patched PnL',
+      );
+    } catch (err) {
+      logger.warn(
+        { executionId: execution.id, error: serializeError(err) },
+        '[FuturesUserStream] Background fee refinement failed — close already broadcast with ballpark PnL',
+      );
+    }
+  })();
 }
