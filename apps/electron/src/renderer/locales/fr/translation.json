@@ -1053,7 +1053,15 @@
       "confirmSell": "Confirmer la Vente",
       "totalValue": "Valeur Totale",
       "margin": "Marge Requise",
-      "liquidation": "Prix de Liq."
+      "liquidation": "Prix de Liq.",
+      "orderType": "Type d'Ordre",
+      "orderTypeMarket": "Marché",
+      "orderTypeLimit": "Limite",
+      "limitPrice": "Prix Limite",
+      "stopLoss": "SL",
+      "takeProfit": "TP",
+      "slInvalid": "Le Stop Loss doit être du côté perte par rapport au prix d'entrée",
+      "tpInvalid": "Le Take Profit doit être du côté profit par rapport au prix d'entrée"
     },
     "gridOrders": {
       "title": "Ordres en Grille",
