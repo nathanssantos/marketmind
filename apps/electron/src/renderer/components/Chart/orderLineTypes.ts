@@ -29,6 +29,14 @@ export interface OrderCloseButton {
   height: number;
 }
 
+export interface PositionActionsButton {
+  positionId: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface OrderHitbox {
   orderId: string;
   x: number;

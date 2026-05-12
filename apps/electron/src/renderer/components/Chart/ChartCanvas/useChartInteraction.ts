@@ -25,6 +25,8 @@ export interface UseChartInteractionProps {
   setOrderToClose: (orderId: string | null) => void;
   getHoveredOrder: (x: number, y: number) => Order | null;
   getClickedOrderId: (x: number, y: number) => string | null;
+  getClickedPositionActions?: (x: number, y: number) => { positionId: string; rect: { x: number; y: number; width: number; height: number } } | null;
+  onPositionActions?: (payload: { positionId: string; rect: { x: number; y: number; width: number; height: number } }) => void;
   getSLTPAtPosition: (x: number, y: number) => { type: 'stopLoss' | 'takeProfit'; orderId: string; price: number } | null;
   onLongEntry?: (price: number) => void;
   onShortEntry?: (price: number) => void;
@@ -87,6 +89,8 @@ export const useChartInteraction = ({
   setOrderToClose,
   getHoveredOrder,
   getClickedOrderId,
+  getClickedPositionActions,
+  onPositionActions,
   getSLTPAtPosition,
   onLongEntry,
   onShortEntry,
@@ -284,6 +288,16 @@ export const useChartInteraction = ({
 
     const sltpAtPosition = getSLTPAtPosition(mouseX, mouseY);
 
+    if (getClickedPositionActions && onPositionActions) {
+      const clickedActions = getClickedPositionActions(mouseX, mouseY);
+      if (clickedActions) {
+        onPositionActions(clickedActions);
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+    }
+
     const clickedOrderId = getClickedOrderId(mouseX, mouseY);
     if (clickedOrderId) {
       setOrderToClose(clickedOrderId);
@@ -334,7 +348,7 @@ export const useChartInteraction = ({
 
     handleMouseDown(event);
     startInteraction();
-  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, getSLTPAtPosition, getClickedOrderId, setOrderToClose, orderDragHandler, gridInteraction, drawingInteraction, handleMouseDown, startInteraction, onLongEntry, onShortEntry]);
+  }, [manager, canvasRef, advancedConfig, shiftPressed, altPressed, getSLTPAtPosition, getClickedOrderId, getClickedPositionActions, onPositionActions, setOrderToClose, orderDragHandler, gridInteraction, drawingInteraction, handleMouseDown, startInteraction, onLongEntry, onShortEntry]);
 
   const handleCanvasMouseUp = useCallback((): void => {
     if (orderDragHandler.isDragging) {

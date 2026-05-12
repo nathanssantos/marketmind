@@ -924,7 +924,15 @@
       "confirmSell": "Confirm Sell",
       "totalValue": "Total Value",
       "margin": "Margin Required",
-      "liquidation": "Liq. Price"
+      "liquidation": "Liq. Price",
+      "orderType": "Order Type",
+      "orderTypeMarket": "Market",
+      "orderTypeLimit": "Limit",
+      "limitPrice": "Limit Price",
+      "stopLoss": "SL",
+      "takeProfit": "TP",
+      "slInvalid": "Stop Loss must be on the loss side of the entry price",
+      "tpInvalid": "Take Profit must be on the profit side of the entry price"
     },
     "gridOrders": {
       "title": "Grid Orders",

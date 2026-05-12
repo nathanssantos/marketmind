@@ -1,5 +1,5 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ColorModeProvider } from '@renderer/components/ui/color-mode';
@@ -231,107 +231,24 @@ describe('TradeTicket — Buy / Sell flow (regression: v0.107)', () => {
   });
 });
 
-describe('TradeTicket — Reverse Position', () => {
-  it('the reverse row is disabled when there is no open position', () => {
+describe('TradeTicket — Reverse / Close moved out of the ticket (regression)', () => {
+  // These actions live in PositionActionsPopover (opened from the canvas
+  // position-chip kebab). The ticket body itself MUST NOT render them.
+  it('does NOT render the Reverse Position row in the ticket body', () => {
     renderActions();
-
-    const row = screen.getByText('futures.reversePosition').parentElement!;
-    expect(row).toHaveStyle({ opacity: '0.4' });
+    expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
   });
 
-  it('opens the confirm dialog and calls reversePosition with positionId', async () => {
-    const user = userEvent.setup();
+  it('does NOT render the Close Position row in the ticket body', () => {
+    renderActions();
+    expect(screen.queryByText('futures.closePosition')).not.toBeInTheDocument();
+  });
+
+  it('still does NOT render Reverse/Close even when there IS an open position', () => {
     setDefaults({ positions: [{ id: 'pos-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }] });
     renderActions();
-
-    await user.click(screen.getByText('futures.reversePosition'));
-
-    expect(await screen.findByText('futures.reverseConfirmTitle')).toBeInTheDocument();
-
-    const dialog = screen.getByText('futures.reverseConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.reversePosition/i }));
-
-    expect(reversePositionMock).toHaveBeenCalledWith({
-      walletId: 'w1',
-      symbol: 'BTCUSDT',
-      positionId: 'pos-1',
-    });
-  });
-
-  it('toasts the error message returned in result.error when reverse fails', async () => {
-    reversePositionMock.mockResolvedValueOnce({ success: false, error: 'No active position' });
-    setDefaults({ positions: [{ id: 'pos-1', symbol: 'BTCUSDT', side: 'SHORT', status: 'open' }] });
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByText('futures.reversePosition'));
-
-    const dialog = screen.getByText('futures.reverseConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.reversePosition/i }));
-
-    await vi.waitFor(() => {
-      expect(errorMock).toHaveBeenCalledWith('futures.reverseFailed', 'No active position');
-    });
-  });
-
-  it('toasts the thrown message when reversePosition rejects', async () => {
-    reversePositionMock.mockRejectedValueOnce(new Error('network down'));
-    setDefaults({ positions: [{ id: 'pos-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }] });
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByText('futures.reversePosition'));
-
-    const dialog = screen.getByText('futures.reverseConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.reversePosition/i }));
-
-    await vi.waitFor(() => {
-      expect(errorMock).toHaveBeenCalledWith('futures.reverseFailed', 'network down');
-    });
-  });
-});
-
-describe('TradeTicket — Close Position', () => {
-  it('the close row is disabled when there is no open position', () => {
-    renderActions();
-
-    const row = screen.getByText('futures.closePosition').parentElement!;
-    expect(row).toHaveStyle({ opacity: '0.4' });
-  });
-
-  it('opens the confirm dialog and calls closePositionAndCancelOrders with positionId', async () => {
-    setDefaults({ positions: [{ id: 'pos-2', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }] });
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByText('futures.closePosition'));
-
-    expect(await screen.findByText('futures.closePositionConfirmTitle')).toBeInTheDocument();
-
-    const dialog = screen.getByText('futures.closePositionConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.closePosition/i }));
-
-    expect(closePositionAndCancelOrdersMock).toHaveBeenCalledWith({
-      walletId: 'w1',
-      symbol: 'BTCUSDT',
-      positionId: 'pos-2',
-    });
-  });
-
-  it('toasts when closePositionAndCancelOrders rejects', async () => {
-    closePositionAndCancelOrdersMock.mockRejectedValueOnce(new Error('exchange closed'));
-    setDefaults({ positions: [{ id: 'pos-2', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }] });
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByText('futures.closePosition'));
-
-    const dialog = screen.getByText('futures.closePositionConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.closePosition/i }));
-
-    await vi.waitFor(() => {
-      expect(errorMock).toHaveBeenCalledWith('futures.closePositionFailed', 'exchange closed');
-    });
+    expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
+    expect(screen.queryByText('futures.closePosition')).not.toBeInTheDocument();
   });
 });
 
@@ -396,11 +313,9 @@ describe('TradeTicket — Grid Orders / Trailing Stop sub-components', () => {
     expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
   });
 
-  it('hides Reverse / Close / Cancel rows for SPOT but still renders Grid + Trailing', () => {
+  it('hides Cancel Orders row for SPOT but still renders Grid + Trailing', () => {
     renderActions({ marketType: 'SPOT' });
 
-    expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
-    expect(screen.queryByText('futures.closePosition')).not.toBeInTheDocument();
     expect(screen.queryByText('futures.cancelOrders')).not.toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.gridOrders')).toBeInTheDocument();
     expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
@@ -564,91 +479,169 @@ describe('TradeTicket — Pending order confirmation dialog', () => {
   });
 });
 
-describe('TradeTicket — Position detection edge cases', () => {
-  it('detects open position via Binance-shape positions (positionAmt > 0 → LONG)', async () => {
-    setDefaults({
-      positions: [{ symbol: 'BTCUSDT', positionAmt: '0.5' }],
-    });
+describe('TradeTicket — Order type tabs (Market / Limit)', () => {
+  it('renders Market and Limit tabs', () => {
+    renderActions();
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' })).toBeInTheDocument();
+  });
+
+  it('Market is selected by default', () => {
+    renderActions();
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('selecting Limit reveals the limit price input (and Market hides it)', async () => {
     const user = userEvent.setup();
     renderActions();
+    expect(screen.queryByLabelText('chart.quickTrade.limitPrice')).not.toBeInTheDocument();
 
-    // Reverse row should be enabled — the Binance-shape position counts as open.
-    await user.click(screen.getByText('futures.reversePosition'));
-    const dialog = await screen.findByText('futures.reverseConfirmTitle');
-    expect(dialog).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    expect(screen.getByLabelText('chart.quickTrade.limitPrice')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' }));
+    expect(screen.queryByLabelText('chart.quickTrade.limitPrice')).not.toBeInTheDocument();
   });
 
-  it('detects open position via Binance-shape positions (positionAmt < 0 → SHORT)', async () => {
-    setDefaults({
-      positions: [{ symbol: 'BTCUSDT', positionAmt: '-0.5' }],
-    });
+  it('Limit price input defaults to the mid price ((bid + ask) / 2)', async () => {
     const user = userEvent.setup();
     renderActions();
-
-    await user.click(screen.getByText('futures.reversePosition'));
-    expect(await screen.findByText('futures.reverseConfirmTitle')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    const input = await screen.findByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement;
+    // bid=49950, ask=50050 → mid 50000
+    expect(input.value).toBe('50000');
   });
 
-  it('treats positionAmt=0 as no open position', () => {
-    setDefaults({
-      positions: [{ symbol: 'BTCUSDT', positionAmt: '0' }],
-    });
-    renderActions();
-    const row = screen.getByText('futures.reversePosition').parentElement!;
-    expect(row).toHaveStyle({ opacity: '0.4' });
-  });
-
-  it('only matches positions for the current symbol', () => {
-    setDefaults({
-      positions: [{ id: 'pos-1', symbol: 'ETHUSDT', side: 'LONG', status: 'open' }],
-    });
-    renderActions();
-    const row = screen.getByText('futures.reversePosition').parentElement!;
-    expect(row).toHaveStyle({ opacity: '0.4' });
-  });
-
-  it('picks the open position when array contains a closed one for the same symbol', async () => {
-    setDefaults({
-      positions: [
-        { id: 'pos-old', symbol: 'BTCUSDT', side: 'LONG', status: 'closed' },
-        { id: 'pos-new', symbol: 'BTCUSDT', side: 'SHORT', status: 'open' },
-      ],
-    });
+  it('submitting a LIMIT order sends type=LIMIT and price=limitPrice (NOT bid/ask)', async () => {
     const user = userEvent.setup();
     renderActions();
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    const input = screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '49000' } });
 
-    await user.click(screen.getByText('futures.reversePosition'));
-    const dialog = screen.getByText('futures.reverseConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.reversePosition/i }));
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
 
-    expect(reversePositionMock).toHaveBeenCalledWith(expect.objectContaining({
-      positionId: 'pos-new',
+    const arg = createOrderMock.mock.calls[0]![0];
+    expect(arg).toMatchObject({
+      type: 'LIMIT',
+      price: '49000',
+      referencePrice: 49000,
+    });
+  });
+
+  it('LIMIT with empty price errors out and does NOT call createOrder', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    const input = screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: '' } });
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+
+    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.noPriceError');
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('TradeTicket — SL / TP at open', () => {
+  const enableSl = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByTestId('trade-ticket-sl-switch'));
+  };
+  const enableTp = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByTestId('trade-ticket-tp-switch'));
+  };
+
+  it('SL input is disabled by default and enabled after toggling the SL switch', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
+    expect(slInput).toBeDisabled();
+    await enableSl(user);
+    expect(slInput).not.toBeDisabled();
+  });
+
+  it('TP input is disabled by default and enabled after toggling the TP switch', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
+    expect(tpInput).toBeDisabled();
+    await enableTp(user);
+    expect(tpInput).not.toBeDisabled();
+  });
+
+  it('BUY with SL above entry errors out and does NOT call createOrder', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await enableSl(user);
+    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
+    fireEvent.change(slInput, { target: { value: '51000' } });
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+
+    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.slInvalid');
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('BUY with TP below entry errors out and does NOT call createOrder', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await enableTp(user);
+    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
+    fireEvent.change(tpInput, { target: { value: '40000' } });
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+
+    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.tpInvalid');
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('SELL with SL below entry errors (SL must be ABOVE entry for SHORTs)', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await enableSl(user);
+    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
+    fireEvent.change(slInput, { target: { value: '48000' } });
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i }));
+
+    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.slInvalid');
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+
+  it('valid BUY with SL+TP passes them through to createOrder', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await enableSl(user);
+    await enableTp(user);
+
+    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
+    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
+    fireEvent.change(slInput, { target: { value: '49000' } });
+    fireEvent.change(tpInput, { target: { value: '52000' } });
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({
+      side: 'BUY',
+      type: 'MARKET',
+      stopLoss: '49000',
+      takeProfit: '52000',
     }));
   });
+});
 
-  it('null positions array — reverse / close stay disabled', () => {
-    useBackendFuturesTradingMock.mockReturnValue({
-      positions: null,
-      reversePosition: reversePositionMock,
-      isReversingPosition: false,
-      closePositionAndCancelOrders: closePositionAndCancelOrdersMock,
-      isClosingPositionAndCancellingOrders: false,
-      cancelAllOrders: cancelAllOrdersMock,
-      isCancellingAllOrders: false,
-    });
+describe('TradeTicket — Total value row', () => {
+  it('renders a total-value row whose number tracks qty × ref price', () => {
+    setDefaults({ bid: 49_950, ask: 50_050 });
+    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
     renderActions();
-
-    expect(screen.getByText('futures.reversePosition').parentElement!).toHaveStyle({ opacity: '0.4' });
-    expect(screen.getByText('futures.closePosition').parentElement!).toHaveStyle({ opacity: '0.4' });
+    const total = screen.getByTestId('trade-ticket-total-value');
+    // mid 50000 × 0.1 = 5000
+    expect(total.textContent).toMatch(/5,?000\.00 USDT/);
   });
 
-  it('ignores positions when marketType is SPOT (no FUTURES position concept)', () => {
-    setDefaults({
-      positions: [{ id: 'pos-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }],
-    });
-    renderActions({ marketType: 'SPOT' });
-
-    expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
+  it('shows — when price is unavailable', () => {
+    setDefaults({ price: 0, bid: 0, ask: 0 });
+    renderActions();
+    expect(screen.getByTestId('trade-ticket-total-value').textContent).toBe('—');
   });
 });
 

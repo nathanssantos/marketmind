@@ -37,6 +37,7 @@ import {
   type PatternHitDraw,
 } from './ChartCanvas/renderers/renderCandlePatterns';
 import { PatternInfoPopover } from './PatternInfoPopover';
+import { PositionActionsPopover } from '@renderer/components/Trading/PositionActionsPopover';
 import { PatternConfigDialog } from '@renderer/components/Patterns/PatternConfigDialog';
 import { useUserPatterns, type UserPattern } from '@renderer/hooks/useUserPatterns';
 import { ChartContextMenuManager } from './ChartContextMenuManager';
@@ -410,7 +411,7 @@ const ChartCanvasInternal = ({
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
-  const { renderOrderLines: rawRenderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags);
+  const { renderOrderLines: rawRenderOrderLines, getClickedOrderId, getClickedPositionActions, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags);
 
   const auxiliarySetup = useChartAuxiliarySetup({
     manager, klines, symbol: symbol ?? '', timeframe, colors, hasTradingEnabled,
@@ -460,6 +461,8 @@ const ChartCanvasInternal = ({
     hoveredOrderIdRef, lastHoveredOrderRef,
     setHoveredKline, setOrderToClose: handleOrderCloseRequest,
     getHoveredOrder, getClickedOrderId, getSLTPAtPosition,
+    getClickedPositionActions,
+    onPositionActions: (payload: { positionId: string; rect: { x: number; y: number; width: number; height: number } }) => setPositionActionsAnchor(payload),
     onLongEntry: (price: number) => { void handleLongEntry(price); },
     onShortEntry: (price: number) => { void handleShortEntry(price); },
     orderDragHandler, gridInteraction: isGridModeActive ? gridInteraction : undefined,
@@ -503,6 +506,26 @@ const ChartCanvasInternal = ({
     | null
   >(null);
   const [patternEditTarget, setPatternEditTarget] = useState<UserPattern | null>(null);
+
+  const [positionActionsAnchor, setPositionActionsAnchor] = useState<
+    | { positionId: string; rect: { x: number; y: number; width: number; height: number } }
+    | null
+  >(null);
+  // The synthetic id rendered by renderPositions encodes (symbol, side):
+  // `position-SYMBOL-LONG|SHORT`. Decode it back so we can pick the open
+  // execution out of `allExecutions` — its real DB id is what the
+  // popover's mutations need as `positionId`.
+  const currentPositionForActions = useMemo(() => {
+    if (!positionActionsAnchor) return null;
+    const match = /^position-(.+)-(LONG|SHORT)$/.exec(positionActionsAnchor.positionId);
+    if (!match) return null;
+    const [, posSymbol, posSide] = match;
+    const exec = allExecutions.find(
+      (e) => e.symbol === posSymbol && e.side === posSide && e.status === 'open',
+    );
+    if (!exec) return null;
+    return { id: exec.id, side: exec.side, quantity: exec.quantity };
+  }, [positionActionsAnchor, allExecutions]);
 
   // Update cursor to `pointer` when hovering a pattern glyph so it reads as
   // clickable. Imperative — bypass React re-renders to keep mousemove cheap.
@@ -604,6 +627,14 @@ const ChartCanvasInternal = ({
         onConfirmClose={() => { void handleConfirmCloseOrder(orderToClose); }}
         allExecutions={allExecutions}
         manager={manager}
+      />
+      <PositionActionsPopover
+        open={!!positionActionsAnchor}
+        onOpenChange={(open) => { if (!open) setPositionActionsAnchor(null); }}
+        anchorRect={positionActionsAnchor?.rect ?? null}
+        symbol={symbol ?? ''}
+        walletId={backendWalletId}
+        currentPosition={currentPositionForActions}
       />
       <ChartContextMenuManager
         hasDrawings={hasDrawings}
