@@ -333,6 +333,50 @@ export async function handleExitFill(
     void ctx.closeResidualPosition(walletId, symbol, execution.id);
   }, 3000);
 
+  // Pull the realized-PnL income event from Binance so Today's P&L widget
+  // (driven by `analytics.getDailyPerformance` → income_events aggregate)
+  // reflects this close without waiting for a reconnect, periodic sync, or
+  // a manual "Sync balance from Binance" click. Incremental sync since
+  // `last_synced` is light — typically returns a handful of records and a
+  // single API call. Best-effort; the existing reconcile paths still
+  // backfill if this slips. Emits an extra wallet:update on completion to
+  // nudge the renderer's invalidation flush, which causes
+  // `getDailyPerformance` to refetch + the widget to repaint.
+  void (async () => {
+    try {
+      const { syncWalletIncome } = await import('../income-events/syncFromBinance');
+      const wallet2 = await ctx.getCachedWallet(walletId);
+      if (!wallet2) return;
+      const incomeResult = await syncWalletIncome(wallet2);
+      if (incomeResult.inserted > 0 || incomeResult.linked > 0) {
+        logger.info(
+          { walletId, executionId: execution.id, inserted: incomeResult.inserted, linked: incomeResult.linked },
+          '[FuturesUserStream] Post-close income event sync',
+        );
+        // Re-emit wallet:update so the renderer flushes its 500ms
+        // `analytics.getDailyPerformance.invalidate()` debounce. Without
+        // this nudge the widget would only repaint on the next 5s
+        // polling tick (BACKUP_POLLING_INTERVAL).
+        const wsService = getWebSocketService();
+        if (wsService) {
+          const updatedWallet = await ctx.getCachedWallet(walletId);
+          if (updatedWallet) {
+            wsService.emitWalletUpdate(walletId, {
+              walletId,
+              currentBalance: updatedWallet.currentBalance,
+              totalWalletBalance: updatedWallet.totalWalletBalance,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn(
+        { walletId, executionId: execution.id, error: serializeError(err) },
+        '[FuturesUserStream] Post-close income sync failed — Today\'s P&L will catch up on next periodic sync',
+      );
+    }
+  })();
+
   // Background fee refinement — the broadcast above used event-commission
   // for the exit fee and `execution.entryFee` (possibly 0) for the entry.
   // Now pull the authoritative fees from Binance and, if they differ

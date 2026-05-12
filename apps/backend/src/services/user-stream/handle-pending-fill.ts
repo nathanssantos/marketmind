@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
-import { tradeExecutions } from '../../db/schema';
+import { orders, tradeExecutions } from '../../db/schema';
 import { getOrderEntryFee, getPosition } from '../binance-futures-client';
 import { createStopLossOrder, createTakeProfitOrder } from '../protection-orders';
 import { logger, serializeError } from '../logger';
@@ -142,6 +142,17 @@ export async function handlePendingFill(
     })
     .where(eq(tradeExecutions.id, pendingExecution.id));
 
+  // Mark the underlying orders row FILLED so the renderer's getOrders
+  // refetch (fired by the 500ms invalidation debounce after order:update)
+  // doesn't read NEW and momentarily re-render the pending line on the
+  // chart. Without this, the WS-driven cache patch (status: 'FILLED')
+  // got overwritten by the refetch result and the line bounced back
+  // until order-sync.reconcileOrdersTable caught up ~30s later.
+  await db
+    .update(orders)
+    .set({ status: 'FILLED', executedQty: fillQty.toString(), updateTime: Date.now() })
+    .where(and(eq(orders.walletId, walletId), eq(orders.orderId, String(orderId))));
+
   const wsService = getWebSocketService();
   if (wsService) {
     // Emit the fully-merged post-update shape — pendingExecution was
@@ -176,6 +187,19 @@ export async function handlePendingFill(
       entryPrice: fillPrice,
       quantity: fillQty,
       source: 'LIMIT_FILL',
+    });
+
+    // Patch the orders cache so the pending limit-order line on the chart
+    // disappears the same render frame the position appears. Without this
+    // the orders table still shows the row as NEW until
+    // `order-sync.reconcileOrdersTable` catches up ~30s later, leaving a
+    // phantom pending-order line stacked on the new open-position line.
+    wsService.emitOrderUpdate(walletId, {
+      orderId: String(orderId),
+      symbol,
+      status: 'FILLED',
+      executedQty: fillQty.toString(),
+      avgPrice: fillPrice.toString(),
     });
   }
 }
