@@ -3,6 +3,7 @@ import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import type {
   OrderCloseButton,
   OrderHitbox,
+  PositionActionsButton,
   SLTPCloseButton,
   SLTPHitbox,
   SlTpButtonHitbox,
@@ -27,6 +28,7 @@ export interface RenderContext {
   getFlashAlpha: (orderId: string) => number;
   priceTags: PriceTagEntry[];
   closeButtons: OrderCloseButton[];
+  actionsButtons: PositionActionsButton[];
   orderHitboxes: OrderHitbox[];
   sltpHitboxes: SLTPHitbox[];
   sltpCloseButtons: SLTPCloseButton[];

@@ -130,7 +130,8 @@ export const drawInfoTag = (
   isLoading: boolean = false,
   timestamp: number = 0,
   inlineSlTp: InlineSlTpButtons | null = null,
-  direction: 'up' | 'down' | null = null
+  direction: 'up' | 'down' | null = null,
+  actionsButtonRef?: { x: number; y: number; size: number } | null,
 ): { width: number; height: number } => {
   const {
     LABEL_PADDING,
@@ -140,12 +141,18 @@ export const drawInfoTag = (
     ICON_SIZE,
     ICON_MARGIN,
     CLOSE_CROSS_PADDING,
+    ACTIONS_DOT_RADIUS,
+    ACTIONS_DOT_SPACING,
     LABEL_BORDER_RADIUS,
     LABEL_BORDER_WIDTH,
   } = ORDER_LINE_LAYOUT;
+  // closeButtonRef takes precedence when both are passed (defensive — callers
+  // should pass only one)
+  const useActionsButton = !closeButtonRef && !!actionsButtonRef;
 
   const textWidth = ctx.measureText(text).width;
-  const closeButtonSpace = hasCloseButton ? CLOSE_BUTTON_SIZE + CLOSE_BUTTON_MARGIN : 0;
+  const showLeadingButton = hasCloseButton || useActionsButton;
+  const closeButtonSpace = showLeadingButton ? CLOSE_BUTTON_SIZE + CLOSE_BUTTON_MARGIN : 0;
   const iconSpace = icon ? ICON_SIZE + ICON_MARGIN : 0;
   const directionSpace = direction ? DIRECTION_TRIANGLE_SIZE + DIRECTION_TRIANGLE_GAP : 0;
   // SL + TP render as a joined button group (no gap between them).
@@ -196,6 +203,25 @@ export const drawInfoTag = (
     closeButtonRef.x = closeButtonX;
     closeButtonRef.y = closeButtonY;
     closeButtonRef.size = CLOSE_BUTTON_SIZE;
+  } else if (useActionsButton && actionsButtonRef) {
+    const btnX = LABEL_PADDING;
+    const btnY = y - CLOSE_BUTTON_SIZE / 2;
+
+    if (isLoading) {
+      drawSpinner(ctx, btnX + CLOSE_BUTTON_SIZE / 2, y, CLOSE_BUTTON_SIZE / 2 - 2, timestamp);
+    } else {
+      const cx = btnX + CLOSE_BUTTON_SIZE / 2;
+      ctx.fillStyle = textColor;
+      for (let i = -1; i <= 1; i++) {
+        ctx.beginPath();
+        ctx.arc(cx, y + i * ACTIONS_DOT_SPACING, ACTIONS_DOT_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    actionsButtonRef.x = btnX;
+    actionsButtonRef.y = btnY;
+    actionsButtonRef.size = CLOSE_BUTTON_SIZE;
   }
 
   let currentX = LABEL_PADDING + closeButtonSpace;

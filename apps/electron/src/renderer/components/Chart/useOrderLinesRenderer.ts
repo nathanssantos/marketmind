@@ -11,6 +11,7 @@ import type {
   BackendExecution,
   OrderCloseButton,
   OrderHitbox,
+  PositionActionsButton,
   SLTPHitbox,
   SLTPCloseButton,
   SlTpButtonHitbox,
@@ -19,6 +20,7 @@ import type {
 } from './orderLineTypes';
 import {
   getClickedOrderId as hitTestGetClickedOrderId,
+  getClickedPositionActions as hitTestGetClickedPositionActions,
   getOrderAtPosition as hitTestGetOrderAtPosition,
   getHoveredOrder as hitTestGetHoveredOrder,
   getSLTPAtPosition as hitTestGetSLTPAtPosition,
@@ -99,6 +101,7 @@ export const useOrderLinesRenderer = (
   }, [backendExecutions]);
 
   const closeButtonsRef = useRef<OrderCloseButton[]>([]);
+  const actionsButtonsRef = useRef<PositionActionsButton[]>([]);
   const orderHitboxesRef = useRef<OrderHitbox[]>([]);
   const sltpHitboxesRef = useRef<SLTPHitbox[]>([]);
   const sltpCloseButtonsRef = useRef<SLTPCloseButton[]>([]);
@@ -128,6 +131,7 @@ export const useOrderLinesRenderer = (
     const now = performance.now();
 
     closeButtonsRef.current = [];
+    actionsButtonsRef.current = [];
     orderHitboxesRef.current = [];
     sltpHitboxesRef.current = [];
     sltpCloseButtonsRef.current = [];
@@ -162,6 +166,7 @@ export const useOrderLinesRenderer = (
       },
       priceTags: [],
       closeButtons: closeButtonsRef.current,
+      actionsButtons: actionsButtonsRef.current,
       orderHitboxes: orderHitboxesRef.current,
       sltpHitboxes: sltpHitboxesRef.current,
       sltpCloseButtons: sltpCloseButtonsRef.current,
@@ -246,6 +251,9 @@ export const useOrderLinesRenderer = (
   const getClickedOrderId = (x: number, y: number): string | null =>
     hitTestGetClickedOrderId(x, y, tsCloseButtonsRef.current, sltpCloseButtonsRef.current, closeButtonsRef.current);
 
+  const getClickedPositionActions = (x: number, y: number) =>
+    hitTestGetClickedPositionActions(x, y, actionsButtonsRef.current);
+
   const getOrderAtPosition = (x: number, y: number): Order | null =>
     hitTestGetOrderAtPosition(x, y, manager, hasTradingEnabled, orderHitboxesRef.current);
 
@@ -258,5 +266,5 @@ export const useOrderLinesRenderer = (
   const getSlTpButtonAtPosition = (x: number, y: number): { executionId: string; type: 'stopLoss' | 'takeProfit' } | null =>
     hitTestGetSlTpButtonAtPosition(x, y, slTpButtonHitboxesRef.current);
 
-  return { renderOrderLines, getClickedOrderId, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition };
+  return { renderOrderLines, getClickedOrderId, getClickedPositionActions, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition };
 };

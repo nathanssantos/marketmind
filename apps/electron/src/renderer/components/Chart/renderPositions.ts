@@ -137,7 +137,7 @@ const renderPositionEntry = (
     rc.priceTags.push({ priceText, y, fillColor, flashAlpha: posFlash });
   }
 
-  const closeButtonRef = { x: 0, y: 0, size: 14 };
+  const actionsButtonRef = { x: 0, y: 0, size: 14 };
   // SL/TP buttons stay on the order line ALWAYS — even when an SL/TP
   // order already exists. Lets the user grab the button to drag-
   // reposition the existing SL/TP without having to scroll/search for
@@ -154,13 +154,14 @@ const renderPositionEntry = (
     lineColor,
     rc.infoTagBg,
     rc.infoTagText,
-    true,
-    closeButtonRef,
+    false,
+    null,
     hasAutoTrade ? 'bot' : null,
     posLoading,
     rc.now,
     { showSl, showTp, slButtonRef, tpButtonRef },
     direction,
+    actionsButtonRef,
   );
 
   if (!isHovered) {
@@ -184,14 +185,12 @@ const renderPositionEntry = (
     } as unknown as Order,
   });
 
-  position.orderIds.forEach((orderId) => {
-    rc.closeButtons.push({
-      orderId,
-      x: closeButtonRef.x,
-      y: closeButtonRef.y,
-      width: closeButtonRef.size,
-      height: closeButtonRef.size,
-    });
+  rc.actionsButtons.push({
+    positionId,
+    x: actionsButtonRef.x,
+    y: actionsButtonRef.y,
+    width: actionsButtonRef.size,
+    height: actionsButtonRef.size,
   });
 
   const primaryOrderId = position.orderIds[0] ?? '';
