@@ -70,6 +70,16 @@ export const useBackendTrading = (
       void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.analytics.getPerformance.invalidate();
       void utils.wallet.list.invalidate();
+      // Futures-side orders also live in their own cache keys — the
+      // chart's order layer reads from these for exchange-routed
+      // LIMIT / STOP_MARKET / TAKE_PROFIT_MARKET orders. Without
+      // invalidating here, a fresh exchange order created from the
+      // ticket sat on Binance but stayed invisible on the chart until
+      // the next polling tick (or another mutation incidentally
+      // invalidated these keys).
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
     },
   });
 
