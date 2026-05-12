@@ -408,6 +408,10 @@ describe('handleExitFill', () => {
   });
 
   it('should retry cancelling opposite order on transient errors', async () => {
+    // The opposite-order cancel now runs as a fire-and-forget background
+    // task (post v1.18.0) so the position:closed broadcast isn't gated on
+    // its retries — the function under test resolves before the retry has
+    // fired. Use vi.waitFor to poll until the background pass completes.
     vi.useRealTimers();
     mockGetPosition.mockResolvedValueOnce(null);
 
@@ -432,7 +436,10 @@ describe('handleExitFill', () => {
       ctx, 'wallet-1', execution as never, 'BTCUSDT', 100, '49000', '49000', '0.1', '0.5', false, true, false
     );
 
-    expect(mockApiClient.cancelOrder).toHaveBeenCalledTimes(2);
+    await vi.waitFor(
+      () => expect(mockApiClient.cancelOrder).toHaveBeenCalledTimes(2),
+      { timeout: 1000, interval: 25 },
+    );
   });
 
   it('should treat "Unknown order" as successful cancel', async () => {
