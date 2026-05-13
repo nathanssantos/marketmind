@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions } from '../../db/schema';
 import { cancelFuturesAlgoOrder } from '../binance-futures-client';
+import { logHandlerAction } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
@@ -26,6 +27,13 @@ export async function handleAlgoOrderUpdate(
     },
     '[FuturesUserStream] Algo order update received'
   );
+  logHandlerAction({
+    handler: 'algo-update',
+    walletId,
+    orderId: algoId,
+    action: 'received',
+    extra: { symbol, status, orderType, positionSide },
+  });
 
   if (status === 'REJECTED' || status === 'EXPIRED') {
     await db

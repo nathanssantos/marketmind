@@ -1,7 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { positions } from '../../db/schema';
-import { binanceApiCache } from '../../services/binance-api-cache';
 import { guardBinanceBan, mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
 import {
   createBinanceFuturesClient,
@@ -46,21 +45,11 @@ export const positionQueriesRouter = router({
 
       guardBinanceBan();
 
-      const cached = binanceApiCache.get<Awaited<ReturnType<typeof getFuturesPositions>>>('POSITIONS', input.walletId);
-      if (cached) return cached;
-
       try {
         const client = createBinanceFuturesClient(wallet);
-        const exchangePositions = await getFuturesPositions(client);
-        binanceApiCache.set('POSITIONS', input.walletId, exchangePositions);
-        return exchangePositions;
+        return await getFuturesPositions(client);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        if (errorMessage.includes('418') || errorMessage.includes('-1003') || errorMessage.includes('Way too many requests')) {
-          const banMatch = errorMessage.match(/until\s+(\d+)/);
-          const banExpiry = banMatch?.[1] ? parseInt(banMatch[1], 10) : Date.now() + 5 * 60 * 1000;
-          binanceApiCache.setBanned(banExpiry);
-        }
         logger.error({ error: errorMessage }, 'Failed to get futures positions');
         throw mapBinanceErrorToTRPC(error);
       }

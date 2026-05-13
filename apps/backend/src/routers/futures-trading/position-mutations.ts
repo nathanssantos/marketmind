@@ -17,7 +17,6 @@ import {
   submitFuturesOrder,
 } from '../../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../../services/binance-futures-data';
-import { binanceApiCache } from '../../services/binance-api-cache';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger, serializeError } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
@@ -278,15 +277,11 @@ export const positionMutationsRouter = router({
         // capital on the very next click.
         const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
 
-        // Invalidate the Binance `POSITIONS` cache so the renderer's
-        // immediate `getPositions` refetch sees the flat state instead
-        // of the pre-close cached row (TTL is 10s — long enough for the
-        // UI to feel stuck). closePosition doesn't cancel orders but the
-        // exchange-side trigger orders (TP/SL brackets) on this symbol
-        // become orphaned — drop the per-symbol cache too so a subsequent
-        // poll doesn't keep them around.
-        binanceApiCache.invalidate('POSITIONS', input.walletId);
-        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
+        // Phase 6 (binance audit): `getPositions` no longer caches —
+        // every call fetches fresh from REST. Phase 5 made `getOpenOrders`
+        // DB-backed, and the WS algo-update handler keeps the orders rows
+        // current for orphaned TP/SL brackets after a close. Nothing to
+        // invalidate here anymore.
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
@@ -554,16 +549,11 @@ export const positionMutationsRouter = router({
           // see stale capital until the next user-stream event.
           const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
 
-          // The renderer's `futuresTrading.getPositions` invalidation
-          // immediately after this mutation refetches — but `getPositions`
-          // is fronted by a 10s `binanceApiCache.POSITIONS` layer. Without
-          // explicit invalidation here, the very next query hits the
-          // pre-reverse cache (still LONG) and the UI stays stuck on the
-          // old side for up to 10 seconds even though Binance is already
-          // flipped. Same reasoning for OPEN_ORDERS (cancel-all happens
-          // above) and SYMBOL_LEVERAGE (margin used changed).
-          binanceApiCache.invalidate('POSITIONS', input.walletId);
-          binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
+          // Phase 6 (binance audit): `getPositions` is REST-direct, no
+          // cache to invalidate. The reverse flips the side on Binance
+          // synchronously, so the renderer's `getPositions` refetch
+          // sees the new state on the very next query. OPEN_ORDERS is
+          // DB-backed (Phase 5) and self-maintains via the WS handler.
 
           const openExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -709,11 +699,9 @@ export const positionMutationsRouter = router({
         // sees stale capital until the user-stream WS catches up.
         const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
 
-        // Drop the cached POSITIONS / OPEN_ORDERS rows so the refetch
-        // immediately after this mutation hits Binance fresh instead
-        // of the pre-close cache.
-        binanceApiCache.invalidate('POSITIONS', input.walletId);
-        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
+        // Phase 6 (binance audit): no cache layer for POSITIONS / OPEN_ORDERS
+        // anymore — getPositions is REST-direct, getOpenOrders reads from
+        // the DB. Both refetches after this mutation see fresh state.
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(

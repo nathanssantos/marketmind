@@ -96,6 +96,54 @@ const toInsertRows = (wallet: Wallet, records: IncomeHistoryRecord[]): InsertInc
   return rows;
 };
 
+/**
+ * The WS handler `handle-exit-fill` writes REALIZED_PNL + COMMISSION
+ * rows with a NEGATIVE synthetic `binanceTranId` (`-tradeId`) at fill
+ * time so Today's P&L updates instantly — without waiting for the
+ * Binance /fapi/v1/income REST endpoint's 1–30s propagation lag. When
+ * the real income record eventually shows up here, we look up the
+ * synthetic by `(walletId, incomeType, tradeId, binanceTranId < 0)`
+ * and delete it. The real row then inserts cleanly via the unique
+ * constraint on `(walletId, binanceTranId, incomeType)` — no double-
+ * counting and the daily-PnL aggregation stays consistent.
+ *
+ * The TRANSFER variant below uses a time-window+abs(amount) match
+ * because Binance doesn't echo a tradeId for transfers. PnL /
+ * commission carry the same tradeId on both sides, so the match is
+ * exact and cheaper.
+ */
+const takeOverSyntheticPnlOrCommissionRow = async (
+  walletId: string,
+  record: IncomeHistoryRecord,
+): Promise<{ tookOver: boolean }> => {
+  if (record.incomeType !== 'REALIZED_PNL' && record.incomeType !== 'COMMISSION') {
+    return { tookOver: false };
+  }
+  if (!record.tradeId) return { tookOver: false };
+
+  const [sibling] = await db
+    .select({ id: incomeEvents.id })
+    .from(incomeEvents)
+    .where(
+      and(
+        eq(incomeEvents.walletId, walletId),
+        eq(incomeEvents.incomeType, record.incomeType),
+        eq(incomeEvents.tradeId, record.tradeId),
+        lt(incomeEvents.binanceTranId, 0),
+      ),
+    )
+    .limit(1);
+
+  if (!sibling) return { tookOver: false };
+
+  await db.delete(incomeEvents).where(eq(incomeEvents.id, sibling.id));
+  logger.info(
+    { walletId, syntheticId: sibling.id, realTranId: record.tranId, tradeId: record.tradeId, incomeType: record.incomeType },
+    '[IncomeSync] Took over synthetic WS-derived row with real Binance tran_id',
+  );
+  return { tookOver: true };
+};
+
 const takeOverSyntheticTransferRow = async (
   walletId: string,
   record: IncomeHistoryRecord,
@@ -252,9 +300,15 @@ export const syncWalletIncome = async (wallet: Wallet, options: SyncOptions = {}
 
     const skipTranIds = new Set<number>();
     for (const record of records) {
-      if (record.incomeType !== 'TRANSFER') continue;
-      const { tookOver } = await takeOverSyntheticTransferRow(wallet.id, record);
-      if (tookOver) skipTranIds.add(record.tranId);
+      if (record.incomeType === 'TRANSFER') {
+        const { tookOver } = await takeOverSyntheticTransferRow(wallet.id, record);
+        if (tookOver) skipTranIds.add(record.tranId);
+      } else if (record.incomeType === 'REALIZED_PNL' || record.incomeType === 'COMMISSION') {
+        // Replace any WS-derived synthetic row (`binanceTranId < 0`) for this
+        // trade. The real record then inserts normally below — single row
+        // post-takeover, no aggregation skew.
+        await takeOverSyntheticPnlOrCommissionRow(wallet.id, record);
+      }
     }
 
     const insertRows = toInsertRows(wallet, records);

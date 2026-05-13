@@ -27,9 +27,14 @@ interface OptimisticOverride {
 // server stops showing the entry" logic below.
 const OPTIMISTIC_OVERRIDE_HARD_CAP_MS = 30_000;
 // Pre-confirmation TTL for newly-created entries (shown before the
-// server returns the real exec). Different concern from the override
-// cap above — keeps the staleness short for create flows.
-const OPTIMISTIC_ENTRY_TTL_MS = 5_000;
+// server returns the real exec). The drag-to-move flow does
+// cancel + create + REST refetch on Binance — the user-reported
+// "order disappears on release" was the 5s TTL kicking in BEFORE the
+// new exchange order had time to round-trip back into the chart's
+// `getOpenOrders` cache. 15s is long enough for any sane Binance
+// round-trip while still bounded for the cancel-only case.
+// Loading flag overrides this anyway — see the keep-alive rule below.
+const OPTIMISTIC_ENTRY_TTL_MS = 15_000;
 
 export interface UseChartTradingDataProps {
   symbol?: string;
@@ -329,7 +334,15 @@ export const useChartTradingData = ({
     const now = Date.now();
     const remaining = optimisticExecutions.filter(opt => {
       const openedMs = opt.openedAt instanceof Date ? opt.openedAt.getTime() : opt.openedAt ? new Date(opt.openedAt).getTime() : now;
-      if (now - openedMs > OPTIMISTIC_ENTRY_TTL_MS) return false;
+      const isLoading = orderLoadingMapRef.current.has(opt.id);
+      // Keep the optimistic alive as long as either:
+      //   - the mutation is still in flight (loading flag set), or
+      //   - the TTL hasn't expired yet.
+      // The user-reported "order disappears on release" hit when the
+      // mutation completed (loading cleared) but the cache refetch
+      // hadn't yet returned the new exchange order — the prior rule
+      // dropped the optimistic, leaving a flicker of nothing.
+      if (!isLoading && now - openedMs > OPTIMISTIC_ENTRY_TTL_MS) return false;
       const optPrice = parseFloat(opt.entryPrice);
       const matchingReal = allReal.find(real =>
         real.symbol === opt.symbol &&
