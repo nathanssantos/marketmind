@@ -6,9 +6,6 @@ import { ORDER_LINE_ANIMATION } from '@shared/constants';
 import type { RefObject } from 'react';
 import { useMemo, useRef } from 'react';
 import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
-import { hexToRgba } from '@renderer/utils/canvas/canvasHelpers';
-
-const BREAKEVEN_LINE_ALPHA = 0.4;
 
 import type {
   BackendExecution,
@@ -187,7 +184,7 @@ export const useOrderLinesRenderer = (
       stackPriceTags,
       showBreakevenLines,
       breakevenTakerRate,
-      breakevenLineColor: hexToRgba(colors?.text ?? '#ffffff', BREAKEVEN_LINE_ALPHA),
+      breakevenLineColor: colors?.text ?? '#ffffff',
     };
 
     const pendingOrders = activeOrders.filter((order) => isOrderPending(order));
