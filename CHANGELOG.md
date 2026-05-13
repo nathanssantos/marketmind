@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.2] - 2026-05-13
+
+### Changed
+
+- **Comprehensive dep refresh + Node 20 → 24 LTS (#635)** — `pnpm -r outdated` swept every workspace. 38 packages updated: 18 patches (react/react-dom, vitest, zustand, immer, nanoid, ws, vite, etc.), 17 minors (@typescript-eslint, @tanstack/react-query, @trpc trio, @playwright/test, playwright, axios, eslint, fast-check, globals, i18next, jsdom, pixelmatch, react-router-dom, vite-plugin-pwa, zod, all @vitest/*), and 1 major (electron 41.5.2 → 42.0.1). CI Node bumped from 20 (4 generations behind LTS) to 24 (current Active LTS). Added `.nvmrc` and root `engines.node: ">=24.0.0"` so local dev + CI stay aligned. Backend 5580 / electron 2497 tests stay green; type-check and lint clean.
+
 ## [1.22.1] - 2026-05-13
 
 ### Changed
