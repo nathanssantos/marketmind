@@ -396,12 +396,15 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
   async subscribeWallet(wallet: Wallet): Promise<void> {
     if (isPaperWallet(wallet)) {
+      logger.warn({ walletId: wallet.id }, '[FuturesUserStream] Skipping subscribe — paper wallet');
       return;
     }
 
     if (this.connections.has(wallet.id)) {
+      logger.warn({ walletId: wallet.id }, '[FuturesUserStream] Skipping subscribe — wallet already connected');
       return;
     }
+    logger.warn({ walletId: wallet.id, marketType: wallet.marketType, exchange: wallet.exchange }, '[FuturesUserStream] subscribeWallet starting');
 
     try {
       const apiClient = createBinanceFuturesClient(wallet);
@@ -551,7 +554,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
         healthStatus: 'healthy',
       });
 
-      logger.info({ walletId: wallet.id, walletType }, '[FuturesUserStream] Subscribed successfully');
+      logger.warn({ walletId: wallet.id, walletType }, '[FuturesUserStream] Subscribed successfully');
     } catch (error) {
       logger.error(
         {
@@ -563,6 +566,8 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     }
   }
 
+  private firstMessageLoggedFor = new Set<string>();
+
   private handleUserDataMessage(walletId: string, data: unknown): void {
     try {
       this.recordUserStreamActivity(walletId);
@@ -572,6 +577,14 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
       const message = data as Record<string, unknown>;
       const eventType = message['e'] as string;
+
+      // One-shot warn-level confirmation that the WS stream is actually
+      // delivering — without this, a silently-broken subscribe just shows
+      // up as a quiet stream and "events never arrived" is the only signal.
+      if (!this.firstMessageLoggedFor.has(walletId)) {
+        this.firstMessageLoggedFor.add(walletId);
+        logger.warn({ walletId, eventType }, '[FuturesUserStream] First WS event received');
+      }
 
       // Persist every WS event before dispatch so we can reconstruct
       // exactly what arrived from Binance during any reported incident.
