@@ -28,13 +28,13 @@ interface OptimisticOverride {
 const OPTIMISTIC_OVERRIDE_HARD_CAP_MS = 30_000;
 // Pre-confirmation TTL for newly-created entries (shown before the
 // server returns the real exec). The drag-to-move flow does
-// cancel + create + REST refetch on Binance — the user-reported
-// "order disappears on release" was the 5s TTL kicking in BEFORE the
-// new exchange order had time to round-trip back into the chart's
-// `getOpenOrders` cache. 15s is long enough for any sane Binance
-// round-trip while still bounded for the cancel-only case.
-// Loading flag overrides this anyway — see the keep-alive rule below.
-const OPTIMISTIC_ENTRY_TTL_MS = 15_000;
+// cancel + create + REST refetch on Binance. The 15s bump from #612
+// Phase 4 covered the WS-silent era where the new order took 30s
+// (REST sync) to surface; with the WS now firing `position:update`
+// in ms, 7s is plenty for the cancel→create round-trip on a healthy
+// Binance link. The loading-flag override keeps the row alive past
+// TTL while the mutation is in flight regardless.
+const OPTIMISTIC_ENTRY_TTL_MS = 7_000;
 
 export interface UseChartTradingDataProps {
   symbol?: string;
