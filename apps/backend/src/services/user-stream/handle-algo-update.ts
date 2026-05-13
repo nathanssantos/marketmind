@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
-import { tradeExecutions } from '../../db/schema';
+import { orders, tradeExecutions } from '../../db/schema';
 import { cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logHandlerAction } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
@@ -62,6 +62,40 @@ export async function handleAlgoOrderUpdate(
       wsService.emitPositionUpdate(walletId, { id: String(algoId), status: 'cancelled' });
     }
     return;
+  }
+
+  // Mirror the algo's terminal state into the regular `orders` table row
+  // for the same orderId. Without this, the row stays at NEW after the
+  // algo fires/cancels and the periodic `OrderSync` sweep sees it as
+  // stale, queries `getOrder()` on a regular-orders endpoint (which
+  // doesn't know about algo IDs), gets "Order does not exist", and stamps
+  // the row EXPIRED. That EXPIRED status propagates to the renderer via
+  // `order:update` and shows a false "Order expired" toast on what was
+  // actually a successful TRIGGERED+FILLED stop-loss or take-profit.
+  if (status === 'FINISHED' || status === 'CANCELED') {
+    try {
+      const newOrderStatus = status === 'FINISHED' ? 'FILLED' : 'CANCELED';
+      const updated = await db
+        .update(orders)
+        .set({ status: newOrderStatus, updateTime: Date.now() })
+        .where(eq(orders.orderId, String(algoId)))
+        .returning();
+      if (updated.length > 0) {
+        const wsServiceForAlgo = getWebSocketService();
+        if (wsServiceForAlgo) {
+          if (status === 'CANCELED') {
+            wsServiceForAlgo.emitOrderCancelled(walletId, String(algoId));
+          } else {
+            wsServiceForAlgo.emitOrderUpdate(walletId, updated[0]);
+          }
+        }
+      }
+    } catch (err) {
+      logger.warn(
+        { walletId, symbol, algoId, status, error: serializeError(err) },
+        '[FuturesUserStream] Failed to mirror algo terminal status into orders table',
+      );
+    }
   }
 
   if (status !== 'TRIGGERED') {
