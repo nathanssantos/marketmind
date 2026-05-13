@@ -161,6 +161,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: github.event_name == 'pull_request'
+    timeout-minutes: 45
 
     steps:
       - name: Checkout code
