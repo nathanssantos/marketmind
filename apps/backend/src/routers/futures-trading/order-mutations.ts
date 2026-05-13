@@ -16,6 +16,7 @@ import {
   setMarginType,
   submitFuturesOrder,
 } from '../../services/binance-futures-client';
+import { binanceApiCache } from '../../services/binance-api-cache';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
@@ -252,6 +253,17 @@ export const orderMutationsRouter = router({
         // capital before the user clicks again.
         const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
 
+        // Drop the cached Binance state so the renderer's immediate
+        // `getOpenOrders` refetch sees the new order (LIMIT/STOP) or
+        // the missing one (MARKET filled and gone). For MARKET, the
+        // POSITIONS cache also needs invalidation since the fill
+        // changes exposure inline — without this the FuturesPositions-
+        // Panel keeps the pre-fill positionAmt for up to 10s.
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
+        if (input.type === 'MARKET') {
+          binanceApiCache.invalidate('POSITIONS', input.walletId);
+        }
+
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
             eq(tradeExecutions.walletId, input.walletId),
@@ -353,6 +365,11 @@ export const orderMutationsRouter = router({
         // size sizer doesn't undercount margin on the next click.
         const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
 
+        // Drop the cached OPEN_ORDERS rows so the renderer's refetch
+        // sees the cancelled order removed in the same frame. The cache
+        // has 10s TTL — without this the order would visually linger.
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
+
         return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions, walletSnapshot };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
@@ -386,6 +403,8 @@ export const orderMutationsRouter = router({
 
         await cancelAllFuturesAlgoOrders(client, input.symbol);
         logger.info({ symbol: input.symbol, cancelled: orderCount }, 'Cancelled all algo orders for symbol');
+
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
 
         return { success: true, cancelled: orderCount };
       } catch (error) {
@@ -424,6 +443,9 @@ export const orderMutationsRouter = router({
         const client = createBinanceFuturesClient(wallet);
         await cancelAllFuturesOrders(client, input.symbol);
         logger.info({ symbol: input.symbol }, 'Cancelled all regular orders for symbol');
+
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
+
         return { success: true };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);

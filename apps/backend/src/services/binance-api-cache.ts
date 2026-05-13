@@ -206,6 +206,21 @@ export class BinanceApiCache {
     this.cache.delete(this.generateKey(type, walletId, extra));
   }
 
+  /**
+   * Drops every cached entry of `type` for the given wallet, regardless
+   * of the `extra` discriminator. Useful for mutations that may affect
+   * multiple per-symbol variants — e.g. `cancelAllOrders` for BTCUSDT
+   * invalidates the `OPEN_ORDERS:walletId:BTCUSDT` AND the
+   * `OPEN_ORDERS:walletId:all` rows in one shot, instead of forcing the
+   * caller to know which symbol-specific keys were ever set.
+   */
+  invalidateAllVariants(type: keyof typeof CACHE_TTL, walletId: string): void {
+    const prefix = `${type}:${walletId}`;
+    for (const key of this.cache.keys()) {
+      if (key === prefix || key.startsWith(`${prefix}:`)) this.cache.delete(key);
+    }
+  }
+
   invalidateWallet(walletId: string): void {
     for (const key of this.cache.keys()) {
       if (key.includes(`:${walletId}`)) this.cache.delete(key);
