@@ -49,18 +49,24 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
   private static readonly PYRAMID_SLTP_DEBOUNCE_MS = 3000;
   private static readonly PYRAMID_LOCK_TIMEOUT_MS = 30_000;
   private static readonly WALLET_CACHE_TTL_MS = 60_000;
-  private static readonly HEALTH_CHECK_INTERVAL_MS = 15_000;
+  private static readonly HEALTH_CHECK_INTERVAL_MS = 60_000;
   // Binance's user-data stream is event-driven, NOT a heartbeat — it
-  // only emits when account state changes. WS pings/pongs keep the
-  // socket alive but don't update lastMessageAt (we'd need to wire a
-  // separate ping listener to count those, which the current SDK
-  // wrapper doesn't expose). 60s was producing false positives every
-  // ~73s on idle wallets, forcing reconnect every minute and losing
-  // events in the gap. 10min is conservative — long enough to clear
-  // any normal idle stretch, short enough that a genuinely-dead
-  // connection still recovers within a reasonable window.
-  private static readonly STALE_THRESHOLD_MS = 600_000;
-  private static readonly FORCED_RECONNECT_COOLDOWN_MS = 120_000;
+  // only emits when account state changes. The SDK's internal heartbeat
+  // (pingInterval=10s + pongTimeout=5s + reconnectTimeout=500ms) is the
+  // authoritative liveness signal: when the socket genuinely dies, the
+  // SDK closes + reconnects within ~15s and fires our `'reconnected'`
+  // listener, which triggers the post-reconnect REST sync (positions,
+  // orders, income). A forced reconnect from *our side* based on
+  // `silenceMs > threshold` is harmful: idle wallets produce no events
+  // for hours of normal operation, so the threshold fires falsely and
+  // each unsubscribe → 500ms wait → resubscribe creates a ~1-3s window
+  // where a real ORDER_TRADE_UPDATE / ACCOUNT_UPDATE *can* arrive and
+  // be lost. The user then sees the operation "only fire via reconcile,
+  // never on the spot". Production logs proved this: 15,450 forced
+  // reconnects in a single day vs. 0 genuine SDK auto-reconnects.
+  // We keep STALE_THRESHOLD_MS only for the renderer's UI health dot —
+  // it never forces a reconnect.
+  private static readonly STALE_THRESHOLD_MS = 1_800_000;
 
   async getCachedWallet(walletId: string): Promise<Wallet | null> {
     const cached = this.walletCache.get(walletId);
@@ -310,7 +316,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
   private startHealthWatchdog(): void {
     if (this.healthCheckInterval) return;
     this.healthCheckInterval = setInterval(
-      () => { void this.checkUserStreamHealth(); },
+      () => { this.checkUserStreamHealth(); },
       BinanceFuturesUserStreamService.HEALTH_CHECK_INTERVAL_MS,
     );
   }
@@ -322,7 +328,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     }
   }
 
-  private async checkUserStreamHealth(): Promise<void> {
+  private checkUserStreamHealth(): void {
     const now = Date.now();
     for (const [walletId, health] of this.walletHealth) {
       const silenceMs = now - health.lastMessageAt;
@@ -331,116 +337,12 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
         health.healthStatus = 'degraded';
         logger.warn(
           { walletId, silenceMs, lastMessageAt: new Date(health.lastMessageAt).toISOString() },
-          '[FuturesUserStream] User stream silent — marking degraded',
+          '[FuturesUserStream] User stream silent — marking degraded (UI only; SDK heartbeat owns reconnect)',
         );
-
-        if (now - health.lastReconnectAt > BinanceFuturesUserStreamService.FORCED_RECONNECT_COOLDOWN_MS) {
-          health.lastReconnectAt = now;
-          await this.forceReconnectWallet(walletId, `silent for ${Math.floor(silenceMs / 1000)}s`);
-        }
       } else if (silenceMs <= BinanceFuturesUserStreamService.STALE_THRESHOLD_MS && health.healthStatus === 'degraded') {
         health.healthStatus = 'healthy';
         logger.info({ walletId }, '[FuturesUserStream] User stream recovered');
       }
-    }
-  }
-
-  private async forceReconnectWallet(walletId: string, reason: string): Promise<void> {
-    logger.warn({ walletId, reason }, '[FuturesUserStream] Forcing reconnect');
-    try {
-      this.unsubscribeWallet(walletId);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      this.invalidateWalletCache(walletId);
-
-      const wallet = await this.getCachedWallet(walletId);
-      if (!wallet || !wallet.isActive || isPaperWallet(wallet) || wallet.marketType !== 'FUTURES') {
-        logger.info({ walletId }, '[FuturesUserStream] Skipping reconnect — wallet no longer eligible');
-        return;
-      }
-
-      await this.subscribeWallet(wallet);
-
-      // v1.6 Track F.2 — emit before the REST sync below so the renderer
-      // gets the signal as early as possible. The sync may also produce
-      // its own emits (positionSync re-emits state for any drift it
-      // catches) — those debounce with this on the renderer side.
-      const wsService = getWebSocketService();
-      wsService?.emitStreamReconnected(walletId, {
-        source: 'user',
-        reason: 'forced_reconnect',
-      });
-
-      try {
-        const syncResult = await positionSyncService.syncWallet(wallet);
-        logger.info(
-          {
-            walletId,
-            orphanedPositions: syncResult.changes.orphanedPositions.length,
-            unknownPositions: syncResult.changes.unknownPositions.length,
-            updatedPositions: syncResult.changes.updatedPositions.length,
-            balanceUpdated: syncResult.changes.balanceUpdated,
-          },
-          '[FuturesUserStream] Post-forced-reconnect REST sync completed',
-        );
-      } catch (syncError) {
-        logger.error(
-          { walletId, error: serializeError(syncError) },
-          '[FuturesUserStream] Post-forced-reconnect REST sync failed',
-        );
-      }
-
-      // Order-table reconciliation. Position sync covers position
-      // state but doesn't touch the orders table. If an entry / SL /
-      // TP / partial-close fill arrived during the gap, the orders
-      // row may still be stuck at NEW. orderSyncService.syncWallet
-      // calls reconcileOrdersTable which queries Binance per-stale
-      // orderId for the real final status (FILLED / CANCELED / EXPIRED)
-      // and emits the matching WS events so the renderer's chart line
-      // disappears immediately. Without this, the user has to wait
-      // up to 30s for the next periodic sweep.
-      try {
-        const { orderSyncService } = await import('./order-sync');
-        const orderResult = await orderSyncService.syncWallet(wallet);
-        if (orderResult.synced) {
-          logger.info(
-            { walletId, orphanOrders: orderResult.orphanOrders.length, fixedOrders: orderResult.fixedOrders.length },
-            '[FuturesUserStream] Post-forced-reconnect order sync completed',
-          );
-        }
-      } catch (orderSyncError) {
-        logger.error(
-          { walletId, error: serializeError(orderSyncError) },
-          '[FuturesUserStream] Post-forced-reconnect order sync failed',
-        );
-      }
-
-      // Position sync covers position state, but income events
-      // (FUNDING_FEE / COMMISSION / REALIZED_PNL) flow on a separate
-      // Binance channel and may have been missed during the gap. Pull
-      // them too so the wallet balance and per-execution funding stay
-      // accurate without waiting for the hourly sync to catch up.
-      try {
-        const { syncWalletIncome } = await import('./income-events/syncFromBinance');
-        const incomeResult = await syncWalletIncome(wallet);
-        if (incomeResult.inserted > 0 || incomeResult.linked > 0) {
-          logger.info(
-            {
-              walletId,
-              fetched: incomeResult.fetched,
-              inserted: incomeResult.inserted,
-              linked: incomeResult.linked,
-            },
-            '[FuturesUserStream] Post-forced-reconnect income recovery completed',
-          );
-        }
-      } catch (incomeError) {
-        logger.error(
-          { walletId, error: serializeError(incomeError) },
-          '[FuturesUserStream] Post-forced-reconnect income recovery failed',
-        );
-      }
-    } catch (error) {
-      logger.error({ walletId, error: serializeError(error) }, '[FuturesUserStream] forceReconnectWallet failed');
     }
   }
 
@@ -535,6 +437,30 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
           },
           '[FuturesUserStream] WebSocket exception'
         );
+      });
+
+      // The SDK fires `'open'` on every socket attach — both the initial
+      // connect and every internal reconnect from its pong-timeout path.
+      // Refresh lastMessageAt here so the UI doesn't show `degraded` after
+      // a clean SDK-driven reconnect on an otherwise-idle wallet.
+      wsClient.on('open', () => {
+        const health = this.walletHealth.get(wallet.id);
+        if (health) {
+          health.lastMessageAt = Date.now();
+          if (health.healthStatus === 'degraded') {
+            health.healthStatus = 'healthy';
+            logger.info({ walletId: wallet.id }, '[FuturesUserStream] Socket open — clearing degraded flag');
+          }
+        }
+      });
+
+      wsClient.on('reconnecting', () => {
+        const health = this.walletHealth.get(wallet.id);
+        if (health) {
+          health.healthStatus = 'degraded';
+          health.lastReconnectAt = Date.now();
+        }
+        logger.info({ walletId: wallet.id }, '[FuturesUserStream] SDK reconnecting (pong timeout or network)');
       });
 
       wsClient.on('reconnected', () => {
