@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - 2026-05-13
+
+### Added
+
+- **"→ TICKET" button on Long/Short Position drawings (#605)** — every Long Position / Short Position drawing on the chart now renders a small filled badge next to its entry-price label. Clicking it pushes the drawing's `{ side, entryPrice, stopLoss, takeProfit }` into the trade ticket: order type switches to `LIMIT`, the limit-price input fills with the drawing's entry, and the SL/TP toggles turn on with the drawing's prices populated. `longPosition` → BUY, `shortPosition` → SELL. State is single-use (`quickTradeStore.consumePrefill`) so tab/panel switches don't re-apply the prefill. End-to-end flow: sketch your trade plan on the chart → one click → ticket ready to send.
+- **SL / TP placeholders on the trade ticket (#605)** — both inputs show a magnitude hint derived from the live mid price (`(bid + ask) / 2`). SL hints `~-2%` of mid, TP hints `~+4%`. Empty when no quote is available. Quick visual cue for the price range without typing the full price out first.
+
+### Changed
+
+- **Limit-price input is now inline next to the Limit tab (#605)** — selecting LIMIT no longer drops a separate `Limit Price:` label row below the tabs. The Market / Limit tab buttons collapse to auto-width pills when LIMIT is active and the price input takes the remaining flex space on the same row. Tighter vertical rhythm; the input's mid-price placeholder carries the affordance the label was doing.
+
 ## [1.19.0] - 2026-05-12
 
 ### Added
