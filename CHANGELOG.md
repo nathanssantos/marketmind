@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.21.0] - 2026-05-13
+
+### Added
+
+- **Breakeven line overlay on the chart (#619)** — opt-in chart overlay that draws a dashed horizontal line at the price where an open futures position would close net-flat after round-trip taker fees. Mirrors the existing liquidation-line pattern visually: dashed `[4, 3]` stroke, leading `BE` info tag on the left, trailing price tag on the right. The color is theme-aware via `colors.text` (light in dark mode, dark in light mode) with a baked `0.4` alpha — translucent enough to not pollute the chart, opaque enough to read clearly. Math: `BE = entryPrice × (1 + r) / (1 − r)` for LONG and `entryPrice × (1 − r) / (1 + r)` for SHORT, where `r` is single-side taker rate (default `0.0004` = Binance Futures VIP 0). Validated end-to-end by a unit test that round-trips the BE through `calculatePnl` and asserts `netPnl ≈ 0`. Toggle lives in **Settings → Chart → Display Options → "Breakeven lines"**, persisted globally via `useChartPref` (same store as `showGrid` / `showCrosshair`). i18n added in all 4 locales (en/pt/es/fr).
+
+### Notes
+
+- New helper `calculateBreakevenPrice` in `@marketmind/utils` (`packages/utils/src/breakeven.ts`) — pure function, theme-agnostic, defaults to the constants already in `@marketmind/types#BINANCE_FUTURES_VIP_LEVELS`. Future enhancement: when wallets gain a `takerCommissionRate` field synced from `getFuturesAccountInformation`, the renderer can pass the per-account rate into the render context instead of the VIP 0 default — no other code change required.
+- `@marketmind/utils` now has a `test` script (`vitest run`) — previously the `__tests__` directory was orphaned. `pnpm -r test` now picks up the 28 utility tests (including the new `breakeven.test.ts`).
+- Extended `drawHorizontalLine` (`apps/electron/src/renderer/components/Chart/orderLineDrawing.ts`) with an optional `dashed: boolean` argument. Backwards-compatible default `false`; available to future dashed-overlay needs (the breakeven line itself draws inline to match the LIQ-pattern more precisely).
+
 ## [1.20.3] - 2026-05-13
 
 ### Fixed
