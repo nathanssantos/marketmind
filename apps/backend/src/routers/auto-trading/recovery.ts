@@ -5,6 +5,7 @@ import { PROTECTION_CONFIG } from '../../constants';
 import { autoTradingConfig, tradeExecutions } from '../../db/schema';
 import { autoTradingService } from '../../services/auto-trading';
 import { autoTradingScheduler } from '../../services/auto-trading-scheduler';
+import { binanceApiCache } from '../../services/binance-api-cache';
 import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../../services/binance-futures-client';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
@@ -201,6 +202,14 @@ export const recoveryRouter = router({
             updatedAt: new Date(),
           })
           .where(eq(autoTradingConfig.id, config.id));
+      }
+
+      // The emergency-stop closed every position + cancelled every algo
+      // order on Binance. Drop the cached snapshots so the renderer's
+      // refetch sees the flat state instead of the pre-stop rows.
+      if (!isPaperWallet(wallet) && walletMarketType === 'FUTURES') {
+        binanceApiCache.invalidate('POSITIONS', input.walletId);
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
       }
 
       log('! EMERGENCY STOP completed', {

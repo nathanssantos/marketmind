@@ -20,6 +20,7 @@ import { positionMonitorService } from '../services/position-monitor';
 import { autoTradingLogBuffer } from '../services/auto-trading-log-buffer';
 import { autoTradingScheduler } from '../services/auto-trading-scheduler';
 import { getTopSymbolsByVolume } from '../services/binance-exchange-info';
+import { binanceApiCache } from '../services/binance-api-cache';
 import { cancelAllFuturesAlgoOrders, closePosition, createBinanceFuturesClient, getPositions, isPaperWallet } from '../services/binance-futures-client';
 import { getBinanceFuturesDataService } from '../services/binance-futures-data';
 import { getAltcoinSeasonIndexService } from '../services/altcoin-season-index';
@@ -1713,6 +1714,17 @@ export const autoTradingRouter = router({
             updatedAt: new Date(),
           })
           .where(eq(autoTradingConfig.id, config.id));
+      }
+
+      // The emergency-stop flow just closed every live FUTURES position
+      // and cancelled every algo order on Binance. Drop the cached
+      // POSITIONS / OPEN_ORDERS rows so the renderer's refetch right
+      // after the mutation settles sees the flat state instead of the
+      // pre-stop snapshot (TTL is 10s — long enough for the panel to
+      // feel stuck).
+      if (!isPaperWallet(wallet)) {
+        binanceApiCache.invalidate('POSITIONS', input.walletId);
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
       }
 
       log('! EMERGENCY STOP completed', {
