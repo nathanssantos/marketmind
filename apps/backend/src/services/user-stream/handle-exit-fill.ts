@@ -26,6 +26,10 @@ export async function handleExitFill(
   _isTPOrder: boolean,
   isAlgoTriggerFill: boolean,
   isLiquidation = false,
+  realizedProfit: string = '0',
+  commissionAsset: string = 'USDT',
+  tradeId: number = 0,
+  fillEventTime: number = Date.now(),
 ): Promise<void> {
   if (isAlgoTriggerFill) {
     logger.info(
@@ -285,6 +289,75 @@ export async function handleExitFill(
     extra: { netPnl: pnlResult.netPnl, symbol, exitReason: determinedExitReason, isLiquidation },
   });
 
+  // Today's-PnL fix: write the realized-PnL + commission income events
+  // straight from the WS payload. The /fapi/v1/income REST endpoint has
+  // 1–30s propagation lag — previously we depended on `syncWalletIncome`
+  // (immediate + retry) to backfill these rows, which made the widget
+  // visibly stale. Both fields are right here on the fill event (`rp`,
+  // `n`, `t`). A negative synthetic `binanceTranId` lets the REST sync
+  // later "take over" with the real id (see
+  // `takeOverSyntheticPnlOrCommissionRow` in syncFromBinance.ts) so
+  // there's no double counting.
+  if (tradeId > 0 && execution.userId) {
+    const insertSyntheticIncome = async (): Promise<void> => {
+      try {
+        const { insertIncomeEvent } = await import('../income-events/insertIncomeEvent');
+        const rpAmount = parseFloat(realizedProfit);
+        const commissionAmount = parseFloat(commission);
+        const incomeTime = new Date(fillEventTime);
+        if (Number.isFinite(rpAmount) && rpAmount !== 0) {
+          await insertIncomeEvent({
+            walletId,
+            userId: execution.userId,
+            binanceTranId: -tradeId,
+            incomeType: 'REALIZED_PNL',
+            amount: rpAmount,
+            asset: 'USDT',
+            symbol,
+            executionId: execution.id,
+            tradeId: String(tradeId),
+            source: 'binance',
+            incomeTime,
+          });
+        }
+        if (Number.isFinite(commissionAmount) && commissionAmount !== 0) {
+          await insertIncomeEvent({
+            walletId,
+            userId: execution.userId,
+            // -tradeId is taken by REALIZED_PNL; subtract a constant so
+            // the COMMISSION row gets its own synthetic id without
+            // colliding. The takeover keys on (walletId, incomeType,
+            // tradeId, binanceTranId < 0) so the constant offset is
+            // invisible to the matcher.
+            binanceTranId: -tradeId - 1_000_000_000_000,
+            incomeType: 'COMMISSION',
+            amount: -Math.abs(commissionAmount),
+            asset: commissionAsset || 'USDT',
+            symbol,
+            executionId: execution.id,
+            tradeId: String(tradeId),
+            source: 'binance',
+            incomeTime,
+          });
+        }
+        logHandlerAction({
+          handler: 'exit-fill',
+          walletId,
+          executionId: execution.id,
+          orderId,
+          action: 'synthetic-income-inserted',
+          extra: { tradeId, rp: rpAmount, commission: commissionAmount },
+        });
+      } catch (err) {
+        logger.warn(
+          { walletId, executionId: execution.id, tradeId, error: serializeError(err) },
+          '[FuturesUserStream] Failed to insert synthetic income event — Today\'s PnL may lag until next sync',
+        );
+      }
+    };
+    await insertSyntheticIncome();
+  }
+
   binancePriceStreamService.invalidateExecutionCache(symbol);
 
   emitPositionClosedEvents({
@@ -342,68 +415,43 @@ export async function handleExitFill(
     void ctx.closeResidualPosition(walletId, symbol, execution.id);
   }, 3000);
 
-  // Pull the realized-PnL income event from Binance so Today's P&L widget
-  // (driven by `analytics.getDailyPerformance` → income_events aggregate)
-  // reflects this close without waiting for a reconnect, periodic sync, or
-  // a manual "Sync balance from Binance" click. Incremental sync since
-  // `last_synced` is light — typically returns a handful of records and a
-  // single API call. Best-effort; the existing reconcile paths still
-  // backfill if this slips. Emits an extra wallet:update on completion to
-  // nudge the renderer's invalidation flush, which causes
-  // `getDailyPerformance` to refetch + the widget to repaint.
+  // REALIZED_PNL + COMMISSION rows for this fill were written
+  // synchronously above from the WS payload (`rp`, `n`, `t`). Today's
+  // P&L gets the new value on the very next `getDailyPerformance`
+  // refetch triggered by the `wallet:update` broadcast — no race
+  // against Binance's income-endpoint propagation.
+  //
+  // We still run `syncWalletIncome` once in the background to pick up
+  // events the WS doesn't carry (FUNDING_FEE most notably) and to
+  // backfill in the rare case where the synthetic insert failed. The
+  // 3-second retry from the old code is gone — it existed only because
+  // we were chasing the realized-PnL latency we no longer depend on.
   void (async () => {
-    const { syncWalletIncome } = await import('../income-events/syncFromBinance');
-    const wsService = getWebSocketService();
-
-    // Binance's /fapi/v1/income endpoint has observable propagation
-    // lag — the income event for a freshly-filled close can take 1–3s
-    // (sometimes more) to appear. A single sync attempt fired right
-    // after the fill usually returns `inserted: 0`, which leaves the
-    // renderer's Today's P&L widget waiting on the 5s `getDaily-
-    // Performance` polling cycle (or a manual "Sync from Binance"
-    // click) to catch up. So we try twice: once immediate, once after
-    // a delay, and ALWAYS nudge the renderer afterwards (regardless of
-    // insert count) so the widget refetches and at least one of the
-    // two passes finds the new event.
-    const trySync = async (label: string): Promise<void> => {
-      const startedAt = Date.now();
-      try {
-        const wallet2 = await ctx.getCachedWallet(walletId);
-        if (!wallet2) return;
-        const result = await syncWalletIncome(wallet2);
-        logger.info(
-          { walletId, executionId: execution.id, inserted: result.inserted, linked: result.linked, attempt: label },
-          '[FuturesUserStream] Post-close income event sync',
-        );
-        logHandlerAction({
-          handler: 'exit-fill',
-          walletId,
-          executionId: execution.id,
-          action: `income-sync-${label}`,
-          latencyMs: Date.now() - startedAt,
-          extra: { inserted: result.inserted, linked: result.linked },
-        });
-        if (!wsService) return;
-        const updatedWallet = await ctx.getCachedWallet(walletId);
-        if (!updatedWallet) return;
-        wsService.emitWalletUpdate(walletId, {
-          walletId,
-          currentBalance: updatedWallet.currentBalance,
-          totalWalletBalance: updatedWallet.totalWalletBalance,
-        });
-      } catch (err) {
-        logger.warn(
-          { walletId, executionId: execution.id, attempt: label, error: serializeError(err) },
-          '[FuturesUserStream] Post-close income sync failed — Today\'s P&L will catch up on next periodic sync',
-        );
-        logHandlerError('exit-fill', walletId, err, { executionId: execution.id, attempt: label });
-      }
-    };
-
-    await trySync('immediate');
-    // Retry after 3s — wide enough to catch the typical Binance income
-    // propagation delay without making the user perceive any wait.
-    setTimeout(() => { void trySync('retry-3s'); }, 3000);
+    const startedAt = Date.now();
+    try {
+      const { syncWalletIncome } = await import('../income-events/syncFromBinance');
+      const wallet2 = await ctx.getCachedWallet(walletId);
+      if (!wallet2) return;
+      const result = await syncWalletIncome(wallet2);
+      logger.info(
+        { walletId, executionId: execution.id, inserted: result.inserted, linked: result.linked },
+        '[FuturesUserStream] Post-close income event sync (funding / corrections)',
+      );
+      logHandlerAction({
+        handler: 'exit-fill',
+        walletId,
+        executionId: execution.id,
+        action: 'income-sync-funding',
+        latencyMs: Date.now() - startedAt,
+        extra: { inserted: result.inserted, linked: result.linked },
+      });
+    } catch (err) {
+      logger.warn(
+        { walletId, executionId: execution.id, error: serializeError(err) },
+        '[FuturesUserStream] Post-close income sync (funding) failed — backfilled by periodic sync',
+      );
+      logHandlerError('exit-fill', walletId, err, { executionId: execution.id });
+    }
   })();
 
   // Background fee refinement — the broadcast above used event-commission
