@@ -446,15 +446,15 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       // connect and every internal reconnect from its pong-timeout path.
       // Refresh lastMessageAt here so the UI doesn't show `degraded` after
       // a clean SDK-driven reconnect on an otherwise-idle wallet.
-      wsClient.on('open', () => {
+      wsClient.on('open', (ctx) => {
         const health = this.walletHealth.get(wallet.id);
         if (health) {
           health.lastMessageAt = Date.now();
           if (health.healthStatus === 'degraded') {
             health.healthStatus = 'healthy';
-            logger.info({ walletId: wallet.id }, '[FuturesUserStream] Socket open — clearing degraded flag');
           }
         }
+        logger.warn({ walletId: wallet.id, wsKey: (ctx as { wsKey?: string } | undefined)?.wsKey }, '[FuturesUserStream] Socket open');
       });
 
       wsClient.on('reconnecting', () => {
@@ -463,7 +463,15 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
           health.healthStatus = 'degraded';
           health.lastReconnectAt = Date.now();
         }
-        logger.info({ walletId: wallet.id }, '[FuturesUserStream] SDK reconnecting (pong timeout or network)');
+        logger.warn({ walletId: wallet.id }, '[FuturesUserStream] SDK reconnecting');
+      });
+
+      wsClient.on('close', (ctx) => {
+        logger.warn({ walletId: wallet.id, wsKey: (ctx as { wsKey?: string } | undefined)?.wsKey }, '[FuturesUserStream] Socket close');
+      });
+
+      wsClient.on('response', (response) => {
+        logger.warn({ walletId: wallet.id, response: JSON.stringify(response).slice(0, 500) }, '[FuturesUserStream] SDK response');
       });
 
       wsClient.on('reconnected', () => {
