@@ -57,48 +57,54 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "id": "default",
       "symbol": "BTCUSDT",
       "marketType": "FUTURES",
+      "activeLayoutId": "1777760167701-96ty68",
       "order": 0
     },
     {
-      "id": "seed-tab-ethusdt",
+      "id": "1777561512460-teuxun",
       "symbol": "ETHUSDT",
       "marketType": "FUTURES",
+      "activeLayoutId": "1777750823737-thmk81",
       "order": 1
     },
     {
-      "id": "seed-tab-solusdt",
+      "id": "1777561519815-0hz85e",
       "symbol": "SOLUSDT",
       "marketType": "FUTURES",
+      "activeLayoutId": "1777760167701-96ty68",
       "order": 2
     },
     {
-      "id": "seed-tab-xrpusdt",
+      "id": "1777561525547-26m3kz",
       "symbol": "XRPUSDT",
       "marketType": "FUTURES",
+      "activeLayoutId": "1777750823737-thmk81",
       "order": 3
     },
     {
-      "id": "seed-tab-adausdt",
+      "id": "1777561530180-o3n94x",
       "symbol": "ADAUSDT",
       "marketType": "FUTURES",
+      "activeLayoutId": "1777750823737-thmk81",
       "order": 4
     },
     {
-      "id": "seed-tab-bnbusdt",
-      "symbol": "BNBUSDT",
-      "marketType": "FUTURES",
+      "id": "1777561540597-zjd3r9",
+      "symbol": "POLITIFI",
+      "marketType": "SPOT",
+      "activeLayoutId": "1777750823737-thmk81",
       "order": 5
     }
   ],
   "activeSymbolTabId": "default",
-  "activeLayoutId": "seed-1m-5m-15min",
+  "activeLayoutId": "1777760167701-96ty68",
   "layoutPresets": [
     {
-      "id": "seed-1m-5m-15min",
+      "id": "1777750823737-thmk81",
       "name": "1m / 5m / 15min",
       "grid": [
         {
-          "id": "seed-1m-5m-15min-p0",
+          "id": "1777750823737-r6v1vf",
           "kind": "chart",
           "timeframe": "1m",
           "chartType": "kline",
@@ -117,29 +123,29 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           }
         },
         {
-          "id": "seed-1m-5m-15min-p1",
+          "id": "1777750823737-c5t09z",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 9
+            "h": 19
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1m-5m-15min-p2",
+          "id": "1777750823737-nuzi1m",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
-            "y": 44,
+            "y": 54,
             "w": 33,
-            "h": 38
+            "h": 28
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1m-5m-15min-p3",
+          "id": "1777750823737-lru0eo",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -150,7 +156,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1m-5m-15min-p4",
+          "id": "1777750823737-nr5xnu",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -161,7 +167,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1m-5m-15min-p5",
+          "id": "1777750916192-1hj1fv",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -172,7 +178,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1m-5m-15min-p6",
+          "id": "1777758910073-qbl12r",
           "kind": "chart",
           "timeframe": "5m",
           "chartType": "kline",
@@ -180,32 +186,32 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 111,
             "y": 0,
             "w": 48,
-            "h": 44
+            "h": 43
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1m-5m-15min-p7",
+          "id": "1777758914094-pl4dt9",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
           "gridPosition": {
             "x": 111,
-            "y": 44,
+            "y": 43,
             "w": 48,
-            "h": 38
+            "h": 39
           },
           "windowState": "normal"
         }
       ],
-      "order": 0
+      "order": 1
     },
     {
-      "id": "seed-5m-15m-1h",
+      "id": "1777760165454-n4vvlx",
       "name": "5m / 15m / 1h",
       "grid": [
         {
-          "id": "seed-5m-15m-1h-p0",
+          "id": "1777760165454-qh0a2a",
           "kind": "chart",
           "timeframe": "5m",
           "chartType": "kline",
@@ -224,29 +230,29 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           }
         },
         {
-          "id": "seed-5m-15m-1h-p1",
+          "id": "1777760165454-ol3ygj",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 9
+            "h": 19
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-5m-15m-1h-p2",
+          "id": "1777760165454-vav2ol",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
-            "y": 44,
+            "y": 54,
             "w": 33,
-            "h": 38
+            "h": 28
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-5m-15m-1h-p3",
+          "id": "1777760165454-g5zocu",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -257,7 +263,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-5m-15m-1h-p4",
+          "id": "1777760165454-yhleqy",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -268,7 +274,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-5m-15m-1h-p5",
+          "id": "1777760165454-7teuhm",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -279,7 +285,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-5m-15m-1h-p6",
+          "id": "1777760165454-ano6ud",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
@@ -287,20 +293,20 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 111,
             "y": 0,
             "w": 48,
-            "h": 44
+            "h": 42
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-5m-15m-1h-p7",
+          "id": "1777760165454-hdm0we",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
           "gridPosition": {
             "x": 111,
-            "y": 44,
+            "y": 42,
             "w": 48,
-            "h": 38
+            "h": 40
           },
           "windowState": "normal"
         }
@@ -308,11 +314,11 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 1
     },
     {
-      "id": "seed-15m-1h-4h",
+      "id": "1777760167701-96ty68",
       "name": "15m / 1h / 4h",
       "grid": [
         {
-          "id": "seed-15m-1h-4h-p0",
+          "id": "1777760167701-9kdao9",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
@@ -331,29 +337,29 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           }
         },
         {
-          "id": "seed-15m-1h-4h-p1",
+          "id": "1777760167701-h1a2rf",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 9
+            "h": 19
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-15m-1h-4h-p2",
+          "id": "1777760167701-hb0qfv",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
-            "y": 44,
+            "y": 54,
             "w": 33,
-            "h": 38
+            "h": 28
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-15m-1h-4h-p3",
+          "id": "1777760167701-5qcfsw",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -364,7 +370,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-15m-1h-4h-p4",
+          "id": "1777760167701-luywbk",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -375,7 +381,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-15m-1h-4h-p5",
+          "id": "1777760167701-bxvreb",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -386,7 +392,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-15m-1h-4h-p6",
+          "id": "1777760167701-8t6iq2",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
@@ -394,20 +400,20 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 111,
             "y": 0,
             "w": 48,
-            "h": 44
+            "h": 42
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-15m-1h-4h-p7",
+          "id": "1777760167701-uv6vgx",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
           "gridPosition": {
             "x": 111,
-            "y": 44,
+            "y": 42,
             "w": 48,
-            "h": 38
+            "h": 40
           },
           "windowState": "normal"
         }
@@ -415,11 +421,11 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 2
     },
     {
-      "id": "seed-1h-4h-1d",
+      "id": "1777760221340-xrq2zz",
       "name": "1h / 4h / 1d",
       "grid": [
         {
-          "id": "seed-1h-4h-1d-p0",
+          "id": "1777760221340-jfuxhi",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
@@ -432,29 +438,29 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1h-4h-1d-p1",
+          "id": "1777760221340-84m7ln",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 9
+            "h": 19
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1h-4h-1d-p2",
+          "id": "1777760221340-bgq39n",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
-            "y": 44,
+            "y": 54,
             "w": 33,
-            "h": 38
+            "h": 28
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1h-4h-1d-p3",
+          "id": "1777760221340-m0eoe0",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -465,7 +471,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1h-4h-1d-p4",
+          "id": "1777760221340-0q7mor",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -476,7 +482,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1h-4h-1d-p5",
+          "id": "1777760221340-fw8o1x",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -487,7 +493,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1h-4h-1d-p6",
+          "id": "1777760221340-nqfpb2",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
@@ -495,20 +501,20 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 111,
             "y": 0,
             "w": 48,
-            "h": 44
+            "h": 42
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1h-4h-1d-p7",
+          "id": "1777760221340-1pp0ag",
           "kind": "chart",
           "timeframe": "1d",
           "chartType": "kline",
           "gridPosition": {
             "x": 111,
-            "y": 44,
+            "y": 42,
             "w": 48,
-            "h": 38
+            "h": 40
           },
           "windowState": "normal"
         }
@@ -516,11 +522,11 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 3
     },
     {
-      "id": "seed-4h-1d-1w",
+      "id": "1777760238827-zb44fy",
       "name": "4h / 1d / 1w",
       "grid": [
         {
-          "id": "seed-4h-1d-1w-p0",
+          "id": "1777760238827-fx9d21",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
@@ -533,29 +539,29 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-4h-1d-1w-p1",
+          "id": "1777760238827-d00fdw",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 9
+            "h": 19
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-4h-1d-1w-p2",
+          "id": "1777760238827-g5tv6l",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
-            "y": 44,
+            "y": 54,
             "w": 33,
-            "h": 38
+            "h": 28
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-4h-1d-1w-p3",
+          "id": "1777760238827-i0umph",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -566,7 +572,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-4h-1d-1w-p4",
+          "id": "1777760238827-u3kz59",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -577,7 +583,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-4h-1d-1w-p5",
+          "id": "1777760238827-rfssvu",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -588,7 +594,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-4h-1d-1w-p6",
+          "id": "1777760238827-jgzu1b",
           "kind": "chart",
           "timeframe": "1d",
           "chartType": "kline",
@@ -596,20 +602,20 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 110,
             "y": 0,
             "w": 49,
-            "h": 44
+            "h": 42
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-4h-1d-1w-p7",
+          "id": "1777760238827-h6m59t",
           "kind": "chart",
           "timeframe": "1w",
           "chartType": "kline",
           "gridPosition": {
             "x": 110,
-            "y": 44,
+            "y": 42,
             "w": 49,
-            "h": 38
+            "h": 40
           },
           "windowState": "normal",
           "savedGridPosition": {
@@ -623,11 +629,11 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 4
     },
     {
-      "id": "seed-1d-1w-1m",
+      "id": "1777760258591-e4ozh3",
       "name": "1d / 1w / 1M",
       "grid": [
         {
-          "id": "seed-1d-1w-1m-p0",
+          "id": "1777760258591-xdchtj",
           "kind": "chart",
           "timeframe": "1d",
           "chartType": "kline",
@@ -640,29 +646,29 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1d-1w-1m-p1",
+          "id": "1777760258591-1rjl6a",
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 9
+            "h": 19
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1d-1w-1m-p2",
+          "id": "1777760258591-fvl79s",
           "kind": "checklist",
           "gridPosition": {
             "x": 159,
-            "y": 44,
+            "y": 54,
             "w": 33,
-            "h": 38
+            "h": 28
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-1d-1w-1m-p3",
+          "id": "1777760258591-jhsi9t",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -673,7 +679,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1d-1w-1m-p4",
+          "id": "1777760258591-3475ec",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -684,7 +690,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1d-1w-1m-p5",
+          "id": "1777760258591-vq8lkq",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -695,7 +701,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-1d-1w-1m-p6",
+          "id": "1777760258591-hqu3ij",
           "kind": "chart",
           "timeframe": "1w",
           "chartType": "kline",
@@ -703,26 +709,26 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 110,
             "y": 0,
             "w": 49,
-            "h": 44
+            "h": 42
           },
           "windowState": "normal",
           "savedGridPosition": {
-            "x": 122,
+            "x": 110,
             "y": 0,
-            "w": 37,
+            "w": 49,
             "h": 44
           }
         },
         {
-          "id": "seed-1d-1w-1m-p7",
+          "id": "1777760258591-908z3b",
           "kind": "chart",
           "timeframe": "1M",
           "chartType": "kline",
           "gridPosition": {
             "x": 110,
-            "y": 44,
+            "y": 42,
             "w": 49,
-            "h": 38
+            "h": 40
           },
           "windowState": "normal"
         }
@@ -730,11 +736,11 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 5
     },
     {
-      "id": "seed-auto-trading",
+      "id": "1777760602696-2vv7ns",
       "name": "Auto-Trading",
       "grid": [
         {
-          "id": "seed-auto-trading-p0",
+          "id": "1777760602696-5rassu",
           "kind": "chart",
           "timeframe": "15m",
           "chartType": "kline",
@@ -747,7 +753,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-trading-p1",
+          "id": "1777760602696-21xp0b",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -758,7 +764,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-trading-p2",
+          "id": "1777760602696-3jr29c",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -769,7 +775,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-trading-p3",
+          "id": "1777760602696-6ryyjs",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -780,7 +786,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-trading-p4",
+          "id": "1777760602696-ltqj8b",
           "kind": "chart",
           "timeframe": "1h",
           "chartType": "kline",
@@ -793,7 +799,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-trading-p5",
+          "id": "1777760602696-h904rw",
           "kind": "chart",
           "timeframe": "4h",
           "chartType": "kline",
@@ -806,7 +812,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-trading-p6",
+          "id": "1777760643589-zfb3iw",
           "kind": "watchers",
           "gridPosition": {
             "x": 159,
@@ -820,11 +826,11 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 6
     },
     {
-      "id": "seed-auto-scalping",
+      "id": "1777760676537-yvn4ij",
       "name": "Auto-Scalping",
       "grid": [
         {
-          "id": "seed-auto-scalping-p0",
+          "id": "1777760676537-qbdxh1",
           "kind": "chart",
           "timeframe": "1m",
           "chartType": "kline",
@@ -837,7 +843,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-scalping-p1",
+          "id": "1777760676537-e1feiv",
           "kind": "positions",
           "gridPosition": {
             "x": 0,
@@ -848,7 +854,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-scalping-p2",
+          "id": "1777760676537-m8zzeg",
           "kind": "orders",
           "gridPosition": {
             "x": 96,
@@ -859,7 +865,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-scalping-p3",
+          "id": "1777760676537-5si2qi",
           "kind": "portfolio",
           "gridPosition": {
             "x": 159,
@@ -870,7 +876,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-scalping-p4",
+          "id": "1777760691737-vmuj6c",
           "kind": "orderBook",
           "gridPosition": {
             "x": 133,
@@ -881,7 +887,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-scalping-p5",
+          "id": "1777760777970-mno2y7",
           "kind": "autoTradingSetup",
           "gridPosition": {
             "x": 159,
@@ -892,7 +898,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-auto-scalping-p6",
+          "id": "1777760861460-omayzy",
           "kind": "orderFlowMetrics",
           "gridPosition": {
             "x": 159,
@@ -906,44 +912,44 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "order": 7
     },
     {
-      "id": "seed-market-indicators",
+      "id": "1777992346938-9a2fof",
       "name": "Market Indicators",
       "grid": [
         {
-          "id": "seed-market-indicators-p0",
+          "id": "1777994013239-drtiju",
           "kind": "marketFearGreed",
           "gridPosition": {
             "x": 0,
-            "y": 63,
+            "y": 0,
             "w": 64,
             "h": 41
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-market-indicators-p1",
+          "id": "1777994060026-uiyde1",
           "kind": "marketBtcDominance",
           "gridPosition": {
             "x": 64,
-            "y": 63,
+            "y": 0,
             "w": 64,
             "h": 41
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-market-indicators-p2",
+          "id": "1777994070337-j8trax",
           "kind": "marketMvrv",
           "gridPosition": {
             "x": 128,
-            "y": 63,
+            "y": 0,
             "w": 64,
             "h": 41
           },
           "windowState": "normal"
         },
         {
-          "id": "seed-market-indicators-p3",
+          "id": "1777994075260-63ob7a",
           "kind": "marketProductionCost",
           "gridPosition": {
             "x": 0,
@@ -954,7 +960,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-market-indicators-p4",
+          "id": "1777994078035-8tctgp",
           "kind": "marketOpenInterest",
           "gridPosition": {
             "x": 64,
@@ -965,7 +971,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-market-indicators-p5",
+          "id": "1777994088543-85pddx",
           "kind": "marketLongShort",
           "gridPosition": {
             "x": 128,
@@ -976,11 +982,11 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "windowState": "normal"
         },
         {
-          "id": "seed-market-indicators-p6",
+          "id": "1777994326165-xrehzc",
           "kind": "marketIndicators",
           "gridPosition": {
             "x": 0,
-            "y": 0,
+            "y": 41,
             "w": 192,
             "h": 63
           },
@@ -992,17 +998,6 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
   ],
   "indicatorBindings": [
     {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-1m-5m-15min-p0",
-      "visible": true
-    },
-    {
       "label": "Stoch 14",
       "catalogType": "stoch",
       "params": {
@@ -1012,7 +1007,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1m-5m-15min-p0",
+      "panelId": "1777750823737-r6v1vf",
       "visible": true
     },
     {
@@ -1023,7 +1018,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-1m-5m-15min-p0",
+      "panelId": "1777750823737-r6v1vf",
       "visible": true
     },
     {
@@ -1034,7 +1029,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-1m-5m-15min-p0",
+      "panelId": "1777750823737-r6v1vf",
       "visible": true
     },
     {
@@ -1045,7 +1040,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-1m-5m-15min-p0",
+      "panelId": "1777750823737-r6v1vf",
       "visible": true
     },
     {
@@ -1054,7 +1049,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "params": {
         "color": "#607d8b"
       },
-      "panelId": "seed-1m-5m-15min-p0",
+      "panelId": "1777750823737-r6v1vf",
       "visible": true
     },
     {
@@ -1067,7 +1062,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1m-5m-15min-p6",
+      "panelId": "1777758910073-qbl12r",
       "visible": true
     },
     {
@@ -1080,18 +1075,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1m-5m-15min-p7",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-15m-1h-4h-p0",
+      "panelId": "1777758914094-pl4dt9",
       "visible": true
     },
     {
@@ -1104,7 +1088,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-15m-1h-4h-p0",
+      "panelId": "1777760167701-9kdao9",
       "visible": true
     },
     {
@@ -1115,7 +1099,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-15m-1h-4h-p0",
+      "panelId": "1777760167701-9kdao9",
       "visible": true
     },
     {
@@ -1126,7 +1110,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-15m-1h-4h-p0",
+      "panelId": "1777760167701-9kdao9",
       "visible": true
     },
     {
@@ -1137,7 +1121,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-15m-1h-4h-p0",
+      "panelId": "1777760167701-9kdao9",
       "visible": true
     },
     {
@@ -1150,7 +1134,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-15m-1h-4h-p6",
+      "panelId": "1777760167701-8t6iq2",
       "visible": true
     },
     {
@@ -1163,7 +1147,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-15m-1h-4h-p7",
+      "panelId": "1777760167701-uv6vgx",
       "visible": true
     },
     {
@@ -1176,18 +1160,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1h-4h-1d-p0",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-1h-4h-1d-p0",
+      "panelId": "1777760221340-jfuxhi",
       "visible": true
     },
     {
@@ -1198,7 +1171,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-1h-4h-1d-p0",
+      "panelId": "1777760221340-jfuxhi",
       "visible": true
     },
     {
@@ -1209,7 +1182,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-1h-4h-1d-p0",
+      "panelId": "1777760221340-jfuxhi",
       "visible": true
     },
     {
@@ -1220,7 +1193,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-1h-4h-1d-p0",
+      "panelId": "1777760221340-jfuxhi",
       "visible": true
     },
     {
@@ -1233,7 +1206,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1h-4h-1d-p6",
+      "panelId": "1777760221340-nqfpb2",
       "visible": true
     },
     {
@@ -1246,7 +1219,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1h-4h-1d-p7",
+      "panelId": "1777760221340-1pp0ag",
       "visible": true
     },
     {
@@ -1259,18 +1232,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-5m-15m-1h-p0",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-5m-15m-1h-p0",
+      "panelId": "1777760165454-qh0a2a",
       "visible": true
     },
     {
@@ -1281,7 +1243,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-5m-15m-1h-p0",
+      "panelId": "1777760165454-qh0a2a",
       "visible": true
     },
     {
@@ -1292,7 +1254,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-5m-15m-1h-p0",
+      "panelId": "1777760165454-qh0a2a",
       "visible": true
     },
     {
@@ -1303,7 +1265,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-5m-15m-1h-p0",
+      "panelId": "1777760165454-qh0a2a",
       "visible": true
     },
     {
@@ -1312,7 +1274,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "params": {
         "orbPeriodMinutes": 15
       },
-      "panelId": "seed-5m-15m-1h-p0",
+      "panelId": "1777760165454-qh0a2a",
       "visible": true
     },
     {
@@ -1321,7 +1283,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "params": {
         "color": "#607d8b"
       },
-      "panelId": "seed-5m-15m-1h-p0",
+      "panelId": "1777760165454-qh0a2a",
       "visible": true
     },
     {
@@ -1334,7 +1296,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-5m-15m-1h-p6",
+      "panelId": "1777760165454-ano6ud",
       "visible": true
     },
     {
@@ -1347,7 +1309,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-5m-15m-1h-p7",
+      "panelId": "1777760165454-hdm0we",
       "visible": true
     },
     {
@@ -1360,18 +1322,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-4h-1d-1w-p0",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-4h-1d-1w-p0",
+      "panelId": "1777760238827-fx9d21",
       "visible": true
     },
     {
@@ -1380,7 +1331,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "params": {
         "color": "#607d8b"
       },
-      "panelId": "seed-4h-1d-1w-p0",
+      "panelId": "1777760238827-fx9d21",
       "visible": true
     },
     {
@@ -1391,7 +1342,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-4h-1d-1w-p0",
+      "panelId": "1777760238827-fx9d21",
       "visible": true
     },
     {
@@ -1402,7 +1353,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-4h-1d-1w-p0",
+      "panelId": "1777760238827-fx9d21",
       "visible": true
     },
     {
@@ -1413,7 +1364,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-4h-1d-1w-p0",
+      "panelId": "1777760238827-fx9d21",
       "visible": true
     },
     {
@@ -1422,7 +1373,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "params": {
         "color": "#607d8b"
       },
-      "panelId": "seed-1h-4h-1d-p0",
+      "panelId": "1777760221340-jfuxhi",
       "visible": true
     },
     {
@@ -1431,7 +1382,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "params": {
         "color": "#607d8b"
       },
-      "panelId": "seed-15m-1h-4h-p0",
+      "panelId": "1777760167701-9kdao9",
       "visible": true
     },
     {
@@ -1444,18 +1395,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1d-1w-1m-p0",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-1d-1w-1m-p0",
+      "panelId": "1777760258591-xdchtj",
       "visible": true
     },
     {
@@ -1464,7 +1404,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "params": {
         "color": "#607d8b"
       },
-      "panelId": "seed-1d-1w-1m-p0",
+      "panelId": "1777760258591-xdchtj",
       "visible": true
     },
     {
@@ -1475,7 +1415,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-1d-1w-1m-p0",
+      "panelId": "1777760258591-xdchtj",
       "visible": true
     },
     {
@@ -1486,7 +1426,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-1d-1w-1m-p0",
+      "panelId": "1777760258591-xdchtj",
       "visible": true
     },
     {
@@ -1497,7 +1437,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-1d-1w-1m-p0",
+      "panelId": "1777760258591-xdchtj",
       "visible": true
     },
     {
@@ -1510,7 +1450,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1d-1w-1m-p6",
+      "panelId": "1777760258591-hqu3ij",
       "visible": true
     },
     {
@@ -1523,7 +1463,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-1d-1w-1m-p7",
+      "panelId": "1777760258591-908z3b",
       "visible": true
     },
     {
@@ -1536,7 +1476,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-4h-1d-1w-p6",
+      "panelId": "1777760238827-jgzu1b",
       "visible": true
     },
     {
@@ -1549,7 +1489,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#2196f3",
         "lineWidth": 1
       },
-      "panelId": "seed-4h-1d-1w-p7",
+      "panelId": "1777760238827-h6m59t",
       "visible": true
     },
     {
@@ -1560,7 +1500,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-trading-p0",
+      "panelId": "1777760167701-8t6iq2",
       "visible": true
     },
     {
@@ -1571,7 +1511,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-trading-p0",
+      "panelId": "1777760167701-8t6iq2",
       "visible": true
     },
     {
@@ -1582,40 +1522,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-auto-trading-p0",
-      "visible": true
-    },
-    {
-      "label": "Volume",
-      "catalogType": "volume",
-      "params": {
-        "color": "#607d8b"
-      },
-      "panelId": "seed-auto-trading-p0",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#ef5350",
-        "lineWidth": 1
-      },
-      "panelId": "seed-auto-trading-p0",
-      "visible": true
-    },
-    {
-      "label": "Stoch 14",
-      "catalogType": "stoch",
-      "params": {
-        "period": 14,
-        "smoothK": 3,
-        "smoothD": 3,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-auto-trading-p0",
+      "panelId": "1777760167701-8t6iq2",
       "visible": true
     },
     {
@@ -1626,7 +1533,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-trading-p4",
+      "panelId": "1777760165454-ano6ud",
       "visible": true
     },
     {
@@ -1637,7 +1544,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-trading-p4",
+      "panelId": "1777760165454-ano6ud",
       "visible": true
     },
     {
@@ -1648,40 +1555,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-auto-trading-p4",
-      "visible": true
-    },
-    {
-      "label": "Volume",
-      "catalogType": "volume",
-      "params": {
-        "color": "#607d8b"
-      },
-      "panelId": "seed-auto-trading-p4",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#ef5350",
-        "lineWidth": 1
-      },
-      "panelId": "seed-auto-trading-p4",
-      "visible": true
-    },
-    {
-      "label": "Stoch 14",
-      "catalogType": "stoch",
-      "params": {
-        "period": 14,
-        "smoothK": 3,
-        "smoothD": 3,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-auto-trading-p4",
+      "panelId": "1777760165454-ano6ud",
       "visible": true
     },
     {
@@ -1692,7 +1566,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-trading-p5",
+      "panelId": "1777760165454-hdm0we",
       "visible": true
     },
     {
@@ -1703,7 +1577,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-trading-p5",
+      "panelId": "1777760165454-hdm0we",
       "visible": true
     },
     {
@@ -1714,40 +1588,16 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-auto-trading-p5",
+      "panelId": "1777760165454-hdm0we",
       "visible": true
     },
     {
-      "label": "Volume",
-      "catalogType": "volume",
+      "label": "ORB 15m",
+      "catalogType": "orb",
       "params": {
-        "color": "#607d8b"
+        "orbPeriodMinutes": 15
       },
-      "panelId": "seed-auto-trading-p5",
-      "visible": true
-    },
-    {
-      "label": "RSI 2",
-      "catalogType": "rsi",
-      "params": {
-        "period": 2,
-        "color": "#ef5350",
-        "lineWidth": 1
-      },
-      "panelId": "seed-auto-trading-p5",
-      "visible": true
-    },
-    {
-      "label": "Stoch 14",
-      "catalogType": "stoch",
-      "params": {
-        "period": 14,
-        "smoothK": 3,
-        "smoothD": 3,
-        "color": "#2196f3",
-        "lineWidth": 1
-      },
-      "panelId": "seed-auto-trading-p5",
+      "panelId": "1777750823737-r6v1vf",
       "visible": true
     },
     {
@@ -1758,7 +1608,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-scalping-p0",
+      "panelId": "1777758910073-qbl12r",
       "visible": true
     },
     {
@@ -1769,7 +1619,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-scalping-p0",
+      "panelId": "1777758910073-qbl12r",
       "visible": true
     },
     {
@@ -1780,40 +1630,280 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         "color": "#607d8b",
         "lineWidth": 3
       },
-      "panelId": "seed-auto-scalping-p0",
+      "panelId": "1777758910073-qbl12r",
       "visible": true
     },
     {
-      "label": "Volume",
-      "catalogType": "volume",
+      "label": "ORB 15m",
+      "catalogType": "orb",
       "params": {
-        "color": "#607d8b"
+        "orbPeriodMinutes": 15
       },
-      "panelId": "seed-auto-scalping-p0",
+      "panelId": "1777758910073-qbl12r",
       "visible": true
     },
     {
-      "label": "RSI 2",
-      "catalogType": "rsi",
+      "label": "EMA 200",
+      "catalogType": "ema",
       "params": {
-        "period": 2,
-        "color": "#ef5350",
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777758914094-pl4dt9",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-scalping-p0",
+      "panelId": "1777758914094-pl4dt9",
       "visible": true
     },
     {
-      "label": "Stoch 14",
-      "catalogType": "stoch",
+      "label": "EMA 21",
+      "catalogType": "ema",
       "params": {
-        "period": 14,
-        "smoothK": 3,
-        "smoothD": 3,
-        "color": "#2196f3",
+        "period": 21,
+        "color": "#00e676",
         "lineWidth": 1
       },
-      "panelId": "seed-auto-scalping-p0",
+      "panelId": "1777758914094-pl4dt9",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "1777760167701-uv6vgx",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777760167701-uv6vgx",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "1777760167701-uv6vgx",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "1777760221340-1pp0ag",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "1777760221340-1pp0ag",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777760221340-1pp0ag",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "1777760221340-nqfpb2",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "1777760221340-nqfpb2",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777760221340-nqfpb2",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "1777760238827-jgzu1b",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "1777760238827-jgzu1b",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777760238827-jgzu1b",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "1777760238827-h6m59t",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "1777760238827-h6m59t",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777760238827-h6m59t",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "1777760258591-hqu3ij",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "1777760258591-hqu3ij",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777760258591-hqu3ij",
+      "visible": true
+    },
+    {
+      "label": "EMA 9",
+      "catalogType": "ema",
+      "params": {
+        "period": 9,
+        "color": "#ff00ff",
+        "lineWidth": 1
+      },
+      "panelId": "1777760258591-908z3b",
+      "visible": true
+    },
+    {
+      "label": "EMA 21",
+      "catalogType": "ema",
+      "params": {
+        "period": 21,
+        "color": "#00e676",
+        "lineWidth": 1
+      },
+      "panelId": "1777760258591-908z3b",
+      "visible": true
+    },
+    {
+      "label": "EMA 200",
+      "catalogType": "ema",
+      "params": {
+        "period": 200,
+        "color": "#607d8b",
+        "lineWidth": 3
+      },
+      "panelId": "1777760258591-908z3b",
       "visible": true
     }
   ]
