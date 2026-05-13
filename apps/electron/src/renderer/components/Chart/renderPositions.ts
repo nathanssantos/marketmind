@@ -1,4 +1,5 @@
 import type { Order } from '@marketmind/types';
+import { calculateBreakevenPrice } from '@marketmind/utils';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { ORDER_LINE_COLORS } from '@shared/constants';
@@ -107,6 +108,29 @@ const renderPositionEntry = (
   }
 
   drawHorizontalLine(ctx, y, chartWidth, lineColor);
+
+  if (rc.showBreakevenLines) {
+    const bePrice = calculateBreakevenPrice({
+      entryPrice: position.avgPrice,
+      side: isLong ? 'LONG' : 'SHORT',
+      takerRate: rc.breakevenTakerRate,
+    });
+    if (bePrice !== position.avgPrice) {
+      const beY = manager.priceToY(bePrice);
+      const beLineColor = isLong
+        ? ORDER_LINE_COLORS.POSITION_LONG_BE_LINE
+        : ORDER_LINE_COLORS.POSITION_SHORT_BE_LINE;
+      const beFillColor = isLong
+        ? ORDER_LINE_COLORS.POSITION_LONG_BE_FILL
+        : ORDER_LINE_COLORS.POSITION_SHORT_BE_FILL;
+      drawHorizontalLine(ctx, beY, chartWidth, beLineColor, 1, true);
+      rc.priceTags.push({
+        priceText: `BE ${formatChartPrice(bePrice)}`,
+        y: beY,
+        fillColor: beFillColor,
+      });
+    }
+  }
 
   const priceChange = rc.currentPrice - position.avgPrice;
   const percentChange = (isLong

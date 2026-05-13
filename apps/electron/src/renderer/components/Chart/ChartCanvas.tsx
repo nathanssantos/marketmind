@@ -118,6 +118,7 @@ const ChartCanvasInternal = ({
   const [showCrosshair] = useChartPref('showCrosshair', true);
   const [stackPriceTags] = useChartPref<boolean>('stackPriceTags', true);
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
+  const [showBreakevenLines] = useChartPref<boolean>('showBreakevenLines', false);
   const [showEventRow] = useChartPref('showEventRow', false);
   const [showActivityIndicator] = useChartPref<boolean>('showActivityIndicator', true);
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
@@ -412,7 +413,7 @@ const ChartCanvasInternal = ({
 
   const draggedOrderIdRef = useRef<string | null>(null);
 
-  const { renderOrderLines: rawRenderOrderLines, getClickedOrderId, getClickedPositionActions, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags);
+  const { renderOrderLines: rawRenderOrderLines, getClickedOrderId, getClickedPositionActions, getOrderAtPosition, getHoveredOrder, getSLTPAtPosition, getSlTpButtonAtPosition } = useOrderLinesRenderer(manager, hasTradingEnabled, hoveredOrderIdRef, allExecutions, detectedSetupsVisibleRef, showProfitLossAreas, orderLoadingMapRef, orderFlashMapRef, trailingStopLineConfig, draggedOrderIdRef, colors, true, stackPriceTags, showBreakevenLines);
 
   const auxiliarySetup = useChartAuxiliarySetup({
     manager, klines, symbol: symbol ?? '', timeframe, colors, hasTradingEnabled,

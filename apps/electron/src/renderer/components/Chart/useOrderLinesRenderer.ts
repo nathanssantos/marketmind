@@ -57,6 +57,8 @@ export const useOrderLinesRenderer = (
   colors?: ChartThemeColors,
   showCurrentPriceTimer: boolean = true,
   stackPriceTags: boolean = true,
+  showBreakevenLines: boolean = false,
+  breakevenTakerRate: number = 0.0004,
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -180,6 +182,8 @@ export const useOrderLinesRenderer = (
         ? { y: currentPriceY + currentPriceTagHeight / 2 - 9, height: currentPriceTagHeight }
         : null,
       stackPriceTags,
+      showBreakevenLines,
+      breakevenTakerRate,
     };
 
     const pendingOrders = activeOrders.filter((order) => isOrderPending(order));

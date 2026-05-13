@@ -36,6 +36,8 @@ export interface RenderContext {
   tsCloseButtons: Array<{ x: number; y: number; size: number }>;
   needsAnimation: boolean;
   showProfitLossAreas: boolean;
+  showBreakevenLines: boolean;
+  breakevenTakerRate: number;
   infoTagBg: string;
   infoTagText: string;
   currentPriceTag: { y: number; height: number } | null;
