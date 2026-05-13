@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.3] - 2026-05-13
+
+### Fixed
+
+- **False "Ordem Expirada" toast after SL/TP fill (#638)** — when a `STOP_MARKET` / `TAKE_PROFIT_MARKET` algo triggered, the flow was `ALGO_UPDATE X=TRIGGERED → ORDER_TRADE_UPDATE FILLED → ALGO_UPDATE X=FINISHED`. The `handle-algo-update` handler had an early-return on `status !== 'TRIGGERED'`, so the FINISHED step was ignored and the algo's row in the `orders` table stayed at `NEW`. ~30s later the periodic `OrderSync.reconcileOrdersTable` sweep saw the row as stale, called `client.getOrder({ orderId: algoId })` on the *regular* orders endpoint (which doesn't know about algo IDs), got `"Order does not exist"`, stamped the row `EXPIRED` and broadcast `order:update` — the renderer's `useOrderNotifications` then fired the "Order Expired" toast on what was actually a clean SL/TP fill. Fix mirrors the algo terminal state onto the orders row inline: `FINISHED → FILLED`, `CANCELED → CANCELED`, each with the matching WS emit. OrderSync no longer finds the row stale on the next sweep.
+
 ## [1.22.2] - 2026-05-13
 
 ### Changed
