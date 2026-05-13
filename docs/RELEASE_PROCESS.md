@@ -118,7 +118,38 @@ gh pr merge --admin --merge   # merge commit preserves develop history on main
 
 ### 8. Update landing site (separate repo — DO NOT SKIP)
 
-#### 8a. Refresh marketing screenshots
+#### 8a. (Optional) Refresh new-user default layout seed
+
+Skip this step unless your day-to-day layouts have meaningfully changed
+since the previous release. Otherwise jump to 8b.
+
+The seed at `apps/electron/src/renderer/store/seed/defaultLayoutSeed.ts`
+ships every new user's initial 9-preset / 6-tab setup + indicator
+instances. The dumper reads it back out of your local Postgres:
+
+```bash
+# Reads DATABASE_URL from apps/backend/.env. If your DB has multiple
+# users, the script lists them and exits — pass the right userId.
+node --experimental-strip-types scripts/dump-default-layout-seed.ts [userId]
+```
+
+The marketing screenshots pipeline reuses the same snapshot via
+`packages/mcp-screenshot/src/layoutFixture.json`. After updating the
+seed, re-dump the fixture so 8b's `switchLayout('1h / 4h / 1d')` etc.
+keep matching the same preset names:
+
+```bash
+psql "$(grep DATABASE_URL apps/backend/.env | cut -d= -f2-)" \
+  -t -A -c "SELECT data FROM user_layouts WHERE user_id='<userId>'" \
+  | python3 -m json.tool > packages/mcp-screenshot/src/layoutFixture.json
+
+pnpm --filter @marketmind/mcp-screenshot build   # JSON copies to dist/
+```
+
+The seed update gets PR'd to develop on its own branch (see PR #604 for
+the pattern); marketing screenshots ride on the release branch later.
+
+#### 8b. Refresh marketing screenshots
 
 ```bash
 # 1) Boot the renderer dev server (separate terminal, leave running)
@@ -128,13 +159,15 @@ pnpm --filter @marketmind/electron dev:web
 # 2) Build the screenshot package
 pnpm --filter @marketmind/mcp-screenshot build
 
-# 3) Run the curated marketing pass — captures 7 scenes at 4K (3840x2160)
-#    dark theme + writes to ../marketmind-site/public/images/screenshot-{0..N}.png
+# 3) Run the curated marketing pass — captures 9 scenes at 4K (3840x2160)
+#    dark theme + writes to ../marketmind-site/public/images/screenshot-{0..8}.png
+#    Scenes: 0–4 layouts, 5 trading-profiles dialog, 6 market indicators,
+#    7 BTCUSDT 1h chart with Fibonacci, 8 wallets dialog.
 node scripts/marketing-screenshots.mjs
 ```
 
 Stage the regenerated PNGs from the marketmind-site repo together with the
-version bump in step 8b — keeps the deploy a single commit.
+version bump in step 8c — keeps the deploy a single commit.
 
 If a step fails:
 - `MM_MCP_BASE_URL` / `MM_MCP_VIEWPORT` / `MM_MCP_SCALE` env vars override
@@ -142,8 +175,11 @@ If a step fails:
 - The script injects mock data via Playwright `addInitScript`, so no
   auth bypass and no live backend is required — but the renderer
   must be running.
+- Port 5174 is sticky on macOS — kill stale vite processes (`lsof -ti :5174 | xargs kill`)
+  before starting fresh, otherwise the script connects to a stale process
+  on a different port and fails on later modal captures.
 
-#### 8b. Bump site version + commit
+#### 8c. Bump site version + commit
 
 ```bash
 cd ../marketmind-site
