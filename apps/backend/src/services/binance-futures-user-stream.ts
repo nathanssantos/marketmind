@@ -552,7 +552,11 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
         })();
       });
 
-      const wsKey: WsKey = walletType === 'testnet' ? 'usdmTestnet' : 'usdm';
+      // User-data must go through the private subdomain — Binance split
+      // the USDM URL on 2026-03-06 (legacy `usdm` deprecated 2026-04-23).
+      // The SDK ≥3.5.6 coerces `usdm` → `usdmPrivate` defensively, but we
+      // pick the explicit private key to be safe + clear at the call site.
+      const wsKey: WsKey = walletType === 'testnet' ? 'usdmTestnetPrivate' : 'usdmPrivate';
       await wsClient.subscribeUsdFuturesUserDataStream(wsKey);
 
       this.connections.set(wallet.id, { wsClient, apiClient });
