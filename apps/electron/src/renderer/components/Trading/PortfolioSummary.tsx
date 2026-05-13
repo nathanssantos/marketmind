@@ -34,6 +34,15 @@ const PortfolioSummaryComponent = ({
 }: PortfolioSummaryProps) => {
   const { t } = useTranslation();
 
+  // Net P&L = gross unrealized − round-trip taker fees. Aligns the
+  // number with the on-chart breakeven line, which is itself derived
+  // assuming round-trip taker fees. The leverage-adjusted percent is
+  // rescaled proportionally so it tracks the same color/direction.
+  const netPnL = totalPnL - totalFees;
+  const netPnLPercent = totalPnL !== 0 ? totalPnLPercent * (netPnL / totalPnL) : 0;
+  const netSign = netPnL >= 0 ? '+' : '';
+  const netColor = netPnL >= 0 ? 'trading.profit' : 'trading.loss';
+
   return (
     <Box p={3} bg="bg.surface" borderRadius="md" flex={1} minH={0}>
       <Stack gap={2.5} fontSize="xs">
@@ -62,16 +71,16 @@ const PortfolioSummaryComponent = ({
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.unrealizedPnL')}</Text>
                 <Stack gap={0} align="flex-end">
-                  <Text fontWeight="medium" color={totalPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
-                    {totalPnL >= 0 ? '+' : ''}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({totalPnL >= 0 ? '+' : ''}{totalPnLPercent.toFixed(2)}%)
+                  <Text fontWeight="medium" color={netColor}>
+                    {netSign}{netPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({netSign}{netPnLPercent.toFixed(2)}%)
                   </Text>
-                  <BrlValue usdtValue={totalPnL} />
+                  <BrlValue usdtValue={netPnL} />
                 </Stack>
               </Flex>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.pnlVsBalance')}</Text>
-                <Text fontWeight="medium" color={totalPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
-                  {totalPnL >= 0 ? '+' : ''}{effectiveCapital > 0 ? ((totalPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
+                <Text fontWeight="medium" color={netColor}>
+                  {netSign}{effectiveCapital > 0 ? ((netPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
                 </Text>
               </Flex>
               <Flex justify="space-between">
