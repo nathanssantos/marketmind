@@ -103,10 +103,9 @@ describe('BinanceFuturesUserStreamService — watchdog', () => {
     service = new BinanceFuturesUserStreamService();
   });
 
-  it('marks wallet degraded + forces reconnect + triggers REST sync after STALE_THRESHOLD_MS of silence', async () => {
+  it('marks wallet degraded after STALE_THRESHOLD_MS of silence, but does NOT force reconnect (SDK heartbeat owns liveness)', async () => {
     vi.useFakeTimers();
 
-    // Stub getCachedWallet to always return the fake wallet
     vi.spyOn(service, 'getCachedWallet').mockResolvedValue(FAKE_WALLET as never);
 
     await service.start();
@@ -116,22 +115,25 @@ describe('BinanceFuturesUserStreamService — watchdog', () => {
     const initialClient = getMockWsClients()[0];
     expect(initialClient).toBeDefined();
 
-    // Advance past STALE_THRESHOLD_MS (10min in production) + watchdog tick (15s).
-    // STALE_THRESHOLD_MS was raised from 60s to 600s because the user-data
-    // stream is event-driven (no heartbeat) — 60s false-positive'd reconnect
-    // every minute on idle wallets. See binance-futures-user-stream.ts.
-    await vi.advanceTimersByTimeAsync(601_000);
-    await vi.advanceTimersByTimeAsync(15_500);
+    // Advance past STALE_THRESHOLD_MS (30min) + one watchdog tick (60s).
+    // Previously this would force-reconnect, which caused 15,450 false
+    // positives in a single day in production and dropped real events in
+    // the 1-3s unsubscribe→resubscribe window. Now the SDK's pong-timeout
+    // heartbeat owns liveness detection; the watchdog only flags the UI.
+    await vi.advanceTimersByTimeAsync(1_800_500);
+    await vi.advanceTimersByTimeAsync(60_500);
 
-    // Allow microtasks from the forceReconnectWallet chain to settle
     await vi.runOnlyPendingTimersAsync();
     await Promise.resolve();
     await Promise.resolve();
 
-    // Closed the old connection
-    expect(initialClient!.closeAll).toHaveBeenCalledWith(true);
-    // Triggered the REST sync
-    expect(mockSyncWallet).toHaveBeenCalledWith(FAKE_WALLET);
+    // No reconnect: socket stays open, no REST sync triggered.
+    expect(initialClient!.closeAll).not.toHaveBeenCalled();
+    expect(mockSyncWallet).not.toHaveBeenCalled();
+
+    // UI status flipped to degraded so the renderer can surface it.
+    const health = (service as unknown as { walletHealth: Map<string, { healthStatus: string }> }).walletHealth;
+    expect(health.get('wallet-1')!.healthStatus).toBe('degraded');
 
     vi.useRealTimers();
   });
