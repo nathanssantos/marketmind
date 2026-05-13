@@ -12,6 +12,26 @@ const BADGE_PADDING = 4;
 const BADGE_RADIUS = 3;
 const LINE_DASH = [4, 3];
 const LABEL_MARGIN_RIGHT = 8;
+const TICKET_BTN_WIDTH = 56;
+const TICKET_BTN_HEIGHT = 18;
+const TICKET_BTN_GAP = 6;
+const TICKET_BTN_RADIUS = 4;
+const TICKET_BTN_FONT = 'bold 10px monospace';
+
+/**
+ * Rect of the "→ Ticket" badge a click handler outside the renderer
+ * (`useChartInteraction`) can hit-test against. Populated by side-effect
+ * during `renderPosition`. The renderer doesn't own the hit-test
+ * pipeline — see `useDrawingsRenderer`'s `ticketButtonsRef` for the
+ * canvas-level array that aggregates one entry per long/short
+ * projection drawing.
+ */
+export interface TicketButtonRef {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 const formatPercent = (entry: number, target: number): string => {
   const pct = ((target - entry) / entry) * 100;
@@ -37,6 +57,7 @@ export const renderPosition = (
   mapper: CoordinateMapper,
   isSelected: boolean,
   chartWidth: number,
+  ticketButtonRef?: TicketButtonRef,
 ): void => {
   const isLong = drawing.type === 'longPosition';
   const { entryPrice, stopLossPrice, takeProfitPrice, entryIndex } = drawing;
@@ -133,6 +154,30 @@ export const renderPosition = (
   ctx.textAlign = 'right';
   ctx.fillStyle = color;
   ctx.fillText(rrText, labelX, rrMidY);
+
+  // "→ Ticket" badge sitting just to the LEFT of the entry-price label.
+  // Anchored on the entry line so the user reads it as "feed this entry
+  // setup into the ticket". Renders for every long/short projection;
+  // hit-tested via the rect we populate on `ticketButtonRef`.
+  const entryLabelWidth = ctx.measureText(`${dirLabel} ${formatPrice(entryPrice)}`).width;
+  const ticketBtnX = labelX - entryLabelWidth - TICKET_BTN_GAP - TICKET_BTN_WIDTH;
+  const ticketBtnY = entryY - TICKET_BTN_HEIGHT / 2;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.roundRect(ticketBtnX, ticketBtnY, TICKET_BTN_WIDTH, TICKET_BTN_HEIGHT, TICKET_BTN_RADIUS);
+  ctx.fill();
+  ctx.font = TICKET_BTN_FONT;
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('→ TICKET', ticketBtnX + TICKET_BTN_WIDTH / 2, entryY);
+  ctx.textBaseline = 'alphabetic';
+  if (ticketButtonRef) {
+    ticketButtonRef.x = ticketBtnX;
+    ticketButtonRef.y = ticketBtnY;
+    ticketButtonRef.width = TICKET_BTN_WIDTH;
+    ticketButtonRef.height = TICKET_BTN_HEIGHT;
+  }
 
   if (isSelected) {
     ctx.strokeStyle = color;

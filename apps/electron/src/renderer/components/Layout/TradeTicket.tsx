@@ -118,7 +118,10 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
   const { warning, error: toastError } = useToast();
   const { activeWallet } = useActiveWallet();
   const { createOrder, isCreatingOrder } = useBackendTradingMutations();
-  const { sizePercent, setSizePercent } = useQuickTradeStore();
+  const sizePercent = useQuickTradeStore((s) => s.sizePercent);
+  const setSizePercent = useQuickTradeStore((s) => s.setSizePercent);
+  const pendingPrefill = useQuickTradeStore((s) => s.pendingPrefill);
+  const consumePrefill = useQuickTradeStore((s) => s.consumePrefill);
 
   const {
     cancelAllOrders,
@@ -151,6 +154,23 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
       return next;
     });
   }, [midPrice]);
+
+  // Consume any pending prefill set by the long/short position drawing's
+  // "send to ticket" button. Switches the order type to LIMIT (since the
+  // drawing projects a specific entry), turns SL + TP on with the drawing's
+  // values, and routes through `consumePrefill` so the store clears the
+  // payload — refreshing the page or remounting the ticket won't re-fire it.
+  useEffect(() => {
+    if (!pendingPrefill) return;
+    const payload = consumePrefill();
+    if (!payload) return;
+    setOrderType('LIMIT');
+    setLimitPrice(payload.entryPrice);
+    setSlEnabled(true);
+    setSlPrice(payload.stopLoss);
+    setTpEnabled(true);
+    setTpPrice(payload.takeProfit);
+  }, [pendingPrefill, consumePrefill]);
 
   const handleCancelOrdersClick = useCallback(() => {
     setShowCancelOrdersConfirm(true);
@@ -355,7 +375,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
             size="2xs"
             fontSize="xs"
             h="22px"
-            flex={1}
+            flex={orderType === 'LIMIT' ? '0 0 auto' : 1}
+            px={orderType === 'LIMIT' ? 3 : undefined}
             variant={orderType === 'MARKET' ? 'solid' : 'outline'}
             colorPalette={orderType === 'MARKET' ? 'accent' : undefined}
             onClick={() => handleSelectOrderType('MARKET')}
@@ -368,7 +389,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
             size="2xs"
             fontSize="xs"
             h="22px"
-            flex={1}
+            flex={orderType === 'LIMIT' ? '0 0 auto' : 1}
+            px={orderType === 'LIMIT' ? 3 : undefined}
             variant={orderType === 'LIMIT' ? 'solid' : 'outline'}
             colorPalette={orderType === 'LIMIT' ? 'accent' : undefined}
             onClick={() => handleSelectOrderType('LIMIT')}
@@ -377,13 +399,10 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
           >
             {t('chart.quickTrade.orderTypeLimit')}
           </Button>
-        </HStack>
-
-        {orderType === 'LIMIT' && (
-          <HStack gap={1.5}>
-            <Text fontSize="2xs" color="fg.muted" minW="60px">{t('chart.quickTrade.limitPrice')}</Text>
+          {orderType === 'LIMIT' && (
             <Input
               size="xs"
+              h="22px"
               aria-label={t('chart.quickTrade.limitPrice')}
               value={limitPrice}
               onChange={(e) => setLimitPrice(e.target.value)}
@@ -391,8 +410,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
               type="number"
               flex={1}
             />
-          </HStack>
-        )}
+          )}
+        </HStack>
 
         <HStack gap={1.5}>
           <BuySellButtons
@@ -420,6 +439,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
               aria-label={t('chart.quickTrade.stopLoss')}
               value={slPrice}
               onChange={(e) => setSlPrice(e.target.value)}
+              placeholder={midPrice > 0 ? (midPrice * 0.98).toFixed(2) : ''}
               type="number"
               disabled={!slEnabled}
               flex={1}
@@ -440,6 +460,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
               aria-label={t('chart.quickTrade.takeProfit')}
               value={tpPrice}
               onChange={(e) => setTpPrice(e.target.value)}
+              placeholder={midPrice > 0 ? (midPrice * 1.04).toFixed(2) : ''}
               type="number"
               disabled={!tpEnabled}
               flex={1}
