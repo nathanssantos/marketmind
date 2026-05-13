@@ -304,7 +304,7 @@ export async function handleOrderUpdate(
         }
       }
 
-      await handleExitFill(ctx, walletId, execution, symbol, orderId, avgPrice, lastFilledPrice, executedQty, commission, !!isSLOrder, !!isTPOrder, !!isAlgoTriggerFill, isLiquidation, realizedProfit, commissionAsset, event.o.t, event.o.T);
+      await handleExitFill(ctx, walletId, execution, symbol, orderId, avgPrice, lastFilledPrice, executedQty, commission, !!isSLOrder, !!isTPOrder, !!isAlgoTriggerFill, isLiquidation);
     }
     logHandlerAction({
       handler: 'order-update',

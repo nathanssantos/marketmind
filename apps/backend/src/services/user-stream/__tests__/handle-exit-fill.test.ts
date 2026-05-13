@@ -46,11 +46,6 @@ vi.mock('../../binance-event-logger', () => ({
   logHandlerError: vi.fn(),
 }));
 
-const mockInsertIncomeEvent = vi.fn().mockResolvedValue(undefined);
-vi.mock('../../income-events/insertIncomeEvent', () => ({
-  insertIncomeEvent: (...args: unknown[]) => mockInsertIncomeEvent(...args),
-}));
-
 const mockSyncWalletIncome = vi.fn().mockResolvedValue({ fetched: 0, inserted: 0, linked: 0 });
 vi.mock('../../income-events/syncFromBinance', () => ({
   syncWalletIncome: (...args: unknown[]) => mockSyncWalletIncome(...args),
@@ -475,82 +470,4 @@ describe('handleExitFill', () => {
     expect(mockEmitPositionClosed).toHaveBeenCalled();
   });
 
-  describe('synthetic income-event insert (Today\'s P&L fix)', () => {
-    // The whole point: write REALIZED_PNL + COMMISSION directly from
-    // the WS payload so `getDailyPerformance` reflects the close
-    // instantly — no race against Binance's `/fapi/v1/income` REST lag.
-    it('inserts REALIZED_PNL + COMMISSION with negative synthetic tranIds when tradeId > 0', async () => {
-      const ctx = createMockCtx();
-      const execution = createMockExecution();
-
-      await handleExitFill(
-        ctx, 'wallet-1', execution as never, 'BTCUSDT', 100,
-        '51000', '51000', '0.1', '0.25',
-        true, false, false, false,
-        '120.50', 'USDT', 999999, Date.parse('2026-05-13T14:00:00Z'),
-      );
-      await vi.runAllTimersAsync();
-
-      const calls = mockInsertIncomeEvent.mock.calls;
-      const rpCall = calls.find(([arg]) => arg.incomeType === 'REALIZED_PNL');
-      const commCall = calls.find(([arg]) => arg.incomeType === 'COMMISSION');
-
-      expect(rpCall).toBeDefined();
-      expect(rpCall![0]).toMatchObject({
-        walletId: 'wallet-1',
-        userId: 'user-1',
-        binanceTranId: -999999,
-        incomeType: 'REALIZED_PNL',
-        amount: 120.5,
-        asset: 'USDT',
-        symbol: 'BTCUSDT',
-        executionId: 'exec-1',
-        tradeId: '999999',
-      });
-
-      expect(commCall).toBeDefined();
-      expect(commCall![0]).toMatchObject({
-        incomeType: 'COMMISSION',
-        // amount is negative (commissions reduce balance)
-        amount: -0.25,
-        tradeId: '999999',
-      });
-      // The COMMISSION binanceTranId is offset from -tradeId so the
-      // unique (walletId, binanceTranId, incomeType) constraint doesn't
-      // collide with REALIZED_PNL.
-      expect(commCall![0].binanceTranId).not.toBe(rpCall![0].binanceTranId);
-      expect(commCall![0].binanceTranId).toBeLessThan(0);
-    });
-
-    it('skips income insert when tradeId is 0 (defensive — old callsite signature)', async () => {
-      const ctx = createMockCtx();
-      const execution = createMockExecution();
-
-      await handleExitFill(
-        ctx, 'wallet-1', execution as never, 'BTCUSDT', 100,
-        '51000', '51000', '0.1', '0.25', true, false, false,
-        // realizedProfit, commissionAsset, tradeId, fillEventTime — leaving defaults
-      );
-
-      expect(mockInsertIncomeEvent).not.toHaveBeenCalled();
-    });
-
-    it('skips REALIZED_PNL row when realizedProfit is 0 (flat / no-pnl close)', async () => {
-      const ctx = createMockCtx();
-      const execution = createMockExecution();
-
-      await handleExitFill(
-        ctx, 'wallet-1', execution as never, 'BTCUSDT', 100,
-        '51000', '51000', '0.1', '0.25',
-        true, false, false, false,
-        '0', 'USDT', 111, Date.now(),
-      );
-      await vi.runAllTimersAsync();
-
-      const calls = mockInsertIncomeEvent.mock.calls;
-      expect(calls.find(([arg]) => arg.incomeType === 'REALIZED_PNL')).toBeUndefined();
-      // COMMISSION still inserts because the user paid the fee
-      expect(calls.find(([arg]) => arg.incomeType === 'COMMISSION')).toBeDefined();
-    });
-  });
 });
