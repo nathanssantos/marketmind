@@ -1,7 +1,7 @@
 import type { Order } from '@marketmind/types';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { ORDER_LINE_COLORS, ORDER_LINE_LAYOUT } from '@shared/constants';
+import { ORDER_LINE_COLORS } from '@shared/constants';
 import { getOrderId, getOrderPrice, getOrderQuantity, isOrderLong } from '@shared/utils';
 
 import {
@@ -173,12 +173,17 @@ export const renderPendingOrders = (
     const entryTagSize = drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, loading, rc.now, null, direction);
     drawInfoTagFlash(ctx, entryTagSize, y, flashAlpha);
 
+    // Hitbox = the info tag only (NOT the full line). Drag + hover both
+    // read from `orderHitboxes`, so this also restricts drag to the tag
+    // area — which is what the user expects since the X close button is
+    // on the tag. Clicking the line itself does nothing — the chart's
+    // panning kicks in instead.
     rc.orderHitboxes.push({
       orderId,
       x: 0,
-      y: y - ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT / 2,
-      width: chartWidth,
-      height: ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT,
+      y: y - entryTagSize.height / 2,
+      width: entryTagSize.width,
+      height: entryTagSize.height,
       order,
     });
 
@@ -244,14 +249,15 @@ export const renderHoveredPendingOrder = (
   const hoveredLoading = rc.isOrderLoading(hoveredOrderId);
   if (hoveredLoading) rc.needsAnimation = true;
   const closeButtonRef = { x: 0, y: 0, size: 14 };
-  drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, rc.now, null, direction);
+  const hoveredTagSize = drawInfoTag(ctx, infoText, y, lineColor, rc.infoTagBg, rc.infoTagText, true, closeButtonRef, order.isAutoTrade ? 'bot' : null, hoveredLoading, rc.now, null, direction);
 
+  // Tag-only hitbox — same rule as in `renderPendingOrders` above.
   rc.orderHitboxes.push({
     orderId: hoveredOrderId,
     x: 0,
-    y: y - ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT / 2,
-    width: chartWidth,
-    height: ORDER_LINE_LAYOUT.LINE_HIT_HEIGHT,
+    y: y - hoveredTagSize.height / 2,
+    width: hoveredTagSize.width,
+    height: hoveredTagSize.height,
     order,
   });
 
