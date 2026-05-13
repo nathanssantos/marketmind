@@ -58,6 +58,10 @@ export const installVisualFixtures = async (
       // every (symbol, interval) combination the renderer asks for, instead
       // of every chart panel rendering the same series.
       const klineMap = map.get('_klineMap') as Record<string, unknown> | undefined;
+      // Mirror for `drawing.listBySymbol` — same dispatch pattern, so a
+      // marketing scene can inject a Fibonacci on a single (symbol, interval)
+      // without leaking the drawing into every other chart's render.
+      const drawingMap = map.get('_drawingMap') as Record<string, unknown> | undefined;
 
       const body = paths.map((path, i) => {
         const input = unwrap(inputs[String(i)]) as Record<string, unknown> | undefined;
@@ -67,6 +71,13 @@ export const installVisualFixtures = async (
           const key = `${sym}:${intv}`;
           const series = klineMap[key];
           return { result: { data: series ?? [] } };
+        }
+        if (path === 'drawing.listBySymbol' && drawingMap && input) {
+          const sym = input.symbol as string | undefined;
+          const intv = input.interval as string | undefined;
+          const key = `${sym}:${intv}`;
+          const drawings = drawingMap[key];
+          return { result: { data: drawings ?? [] } };
         }
         const data = map.has(path) ? map.get(path) : null;
         return { result: { data } };

@@ -137,6 +137,52 @@ const scenes = [
     },
     capture: async () => captureFullPage({ label: 'screenshot-6', theme: 'dark' }),
   },
+  {
+    name: 'screenshot-7',
+    title: 'Chart with Fibonacci retracement',
+    setup: async () => {
+      await closeAll();
+      // Fib drawing comes pre-baked in the fixture's `_drawingMap` for
+      // BTCUSDT 1h; the chart picks it up on first hydration via
+      // useBackendDrawings. Just need to land on a layout that has a
+      // 1h panel showing BTCUSDT.
+      await switchLayout('1h / 4h / 1d');
+      await setTheme('dark');
+      const page = await getPage();
+      // Wait for the drawing to actually land in the focused-panel
+      // store. Forces a redraw afterwards because the layout switch
+      // may have already flushed the renderer's first overlay pass
+      // before the backend drawings query resolves at this DPR.
+      await page.waitForFunction(() => {
+        const ds = window.__drawingStore?.getState?.();
+        return ds && ds.getDrawingsForSymbol('BTCUSDT', '1h').length > 0;
+      }, undefined, { timeout: 8000 }).catch(() => { /* fall through */ });
+      await page.evaluate(() => {
+        window.__canvasManager?.markDirty?.('overlays');
+        window.__canvasManager?.markDirty?.('base');
+      });
+      await page.waitForTimeout(2000);
+    },
+    capture: async () => captureFullPage({ label: 'screenshot-7', theme: 'dark' }),
+  },
+  {
+    name: 'screenshot-8',
+    title: 'Wallets dialog',
+    setup: async () => {
+      await closeAll();
+      await switchLayout('15m / 1h / 4h');
+      await setTheme('dark');
+      const page = await getPage();
+      await page.evaluate(() => {
+        window.__uiStore?.getState?.().setWalletsDialogOpen?.(true);
+      });
+      // Wait for the dialog AND the wallet list to render. The fixture
+      // injects two wallets so the empty-state branch shouldn't show.
+      await page.waitForSelector('[data-testid="wallet-create-trigger"]', { timeout: 5000 });
+      await page.waitForTimeout(1200);
+    },
+    capture: async () => captureFullPage({ label: 'screenshot-8', theme: 'dark' }),
+  },
 ];
 
 await mkdir(OUT_DIR, { recursive: true });

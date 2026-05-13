@@ -706,6 +706,50 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   { path: 'preferences.getByCategory', value: [] },
   { path: 'preferences.getAll', value: [] },
   { path: 'drawing.list', value: [] },
+  // Per-(symbol, interval) drawings — same dispatch pattern as `_klineMap`.
+  // Lets a marketing scene show a Fibonacci on BTCUSDT 1h without leaking
+  // the drawing into every other chart. Mock falls back to [] for any
+  // (symbol, interval) not present here.
+  {
+    path: '_drawingMap',
+    value: {
+      'BTCUSDT:1h': [
+        {
+          id: 9001,
+          userId: 'fixture',
+          symbol: 'BTCUSDT',
+          interval: '1h',
+          type: 'fibonacci',
+          // Swing points sit INSIDE the default viewport window
+          // (last ~80 candles of the 500-bar BTCUSDT 1h fixture
+          // series). Prices come from the visible-low/high we
+          // measured for those indices.
+          data: JSON.stringify({
+            swingLowIndex: 460,
+            swingLowPrice: 38050,
+            swingHighIndex: 495,
+            swingHighPrice: 42500,
+            direction: 'up',
+            color: '#00ffff',
+            lineWidth: 4,
+            levels: [
+              { level: 0, label: '0%', price: 38050 },
+              { level: 0.236, label: '23.6%', price: 38050 + (42500 - 38050) * 0.236 },
+              { level: 0.382, label: '38.2%', price: 38050 + (42500 - 38050) * 0.382 },
+              { level: 0.5, label: '50%', price: 38050 + (42500 - 38050) * 0.5 },
+              { level: 0.618, label: '61.8%', price: 38050 + (42500 - 38050) * 0.618 },
+              { level: 1, label: '100%', price: 42500 },
+            ],
+          }),
+          visible: true,
+          locked: false,
+          zIndex: 1,
+          createdAt: '2026-05-12T00:00:00.000Z',
+          updatedAt: '2026-05-12T00:00:00.000Z',
+        },
+      ],
+    },
+  },
   // The user's full saved layouts (9 presets: 6 trading multi-tf
    // variants + Auto-Trading + Auto-Scalping + Market Indicators).
    // Cloned from local DB; lets the marketing-screenshots script switch
