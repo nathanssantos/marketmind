@@ -12,15 +12,19 @@ import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTradi
 import { useToast } from '@renderer/hooks/useToast';
 import { useShallow } from 'zustand/react/shallow';
 import type { PortfolioPosition } from './portfolioTypes';
+import { getFeeRateForVipLevel } from '@marketmind/types';
 import {
   buildPortfolioPositions,
   computeEffectiveCapital,
   computeStopProtectedPnl,
   computeTotalExposure,
+  computeTotalFees,
   computeTotalMargin,
   computeTpProjectedProfit,
   hasLeveragedPosition,
 } from './portfolioPositionMath';
+
+const DEFAULT_TAKER_RATE = getFeeRateForVipLevel('FUTURES', 0, 'TAKER');
 
 export const usePortfolioData = () => {
   const [summaryExpanded, setSummaryExpanded] = useUIPref('portfolioSummaryExpanded', true);
@@ -115,6 +119,7 @@ export const usePortfolioData = () => {
   const tpProjectedProfit = useMemo(() => computeTpProjectedProfit(positions), [positions]);
   const totalExposure = useMemo(() => computeTotalExposure(positions), [positions]);
   const totalMargin = useMemo(() => computeTotalMargin(positions), [positions]);
+  const totalFees = useMemo(() => computeTotalFees(positions, DEFAULT_TAKER_RATE), [positions]);
   const hasLeverage = useMemo(() => hasLeveragedPosition(positions), [positions]);
 
   return {
@@ -138,6 +143,7 @@ export const usePortfolioData = () => {
     tpProjectedProfit,
     totalExposure,
     totalMargin,
+    totalFees,
     hasLeverage,
     orphanOrders,
     cancelFuturesOrder,

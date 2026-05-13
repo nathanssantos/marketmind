@@ -1199,6 +1199,7 @@
       "exposure": "Exposure",
       "unrealizedPnL": "Unrealized P&L",
       "pnlVsBalance": "P&L vs Balance",
+      "tradeFees": "Trade Fees",
       "orders": "orders",
       "orderCount": "Orders",
       "quantity": "Quantity",

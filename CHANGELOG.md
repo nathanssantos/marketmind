@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.0] - 2026-05-13
+
+### Fixed
+
+- **Binance user-data WebSocket was completely silent for weeks (#627)** — root cause of every "the close took forever to reflect", "order disappeared on drag-release", "Today's P&L didn't update" report. The `binance` SDK 3.5.5 we were on still routed user-data subscribes to the legacy `_usdm` wsKey — but Binance split the USDM Futures URL on 2026-03-06 (legacy fully deprecated 2026-04-23) and now requires user-data over the `_usdmPrivate` subdomain. WSS handshake succeeded silently, but Binance never pushed events. Fix: bump SDK to ^3.5.8 (PR #665 there: "force private url for user data sub request") and pass `usdmPrivate` / `usdmTestnetPrivate` explicitly at the subscribe call site. The instant this lands, every ORDER_TRADE_UPDATE, ACCOUNT_UPDATE, ALGO_UPDATE arrives in milliseconds; every "the app is slow to reflect Binance state" path was downstream of this.
+- **Portfolio summary Trade Fees row was undercounting (#623)** — the `entryFee` column in `tradeExecutions` is 0 for paper trades and not-yet-synced live trades, and `computeTotalFees` was only counting the estimated exit side when it fell back. Result: a `Total Exposure: 33,623` position showed `Trade Fees: -USDT 13.46` (single side) when round-trip should have been ~26.90, and the on-chart breakeven line silently disagreed with the panel. Fix: when `entryFee = 0`, estimate entry-side too from `avgPrice × qty × takerRate` so the number always reflects round-trip. Now matches the breakeven-line math exactly.
+- **Unrealized P&L row was gross, disagreeing with the breakeven line (#623)** — user could see `+15.30 unrealized` while price was visibly still below BE on the chart, because gross PnL goes positive as soon as `price > entry` but net only crosses zero once price clears the round-trip fee gap. Fix: the Unrealized P&L row + the P&L vs Balance row now subtract `totalFees` (real entry + estimated exit), so the panel numbers cross zero exactly when the chart crosses the BE line. The leverage-adjusted % is rescaled proportionally.
+- **Breakeven line was too washed out at 0.4 alpha (#622)** — dropped the alpha; keeps the theme-aware color (white-ish in dark mode, black-ish in light mode) at full opacity. Still uses dashed `[4, 3]` so it doesn't compete with the entry line visually.
+
+### Changed
+
+- **Portfolio summary panel: Active Positions row removed, Trade Fees row added (#623)** — the always-on "Active Positions  N  0W  1L" row carried real signal only when more than one position was open; was clutter when scanning the financial numbers below. Trade Fees replaces it: shows estimated round-trip taker fees for all open positions (`Σ entryFee + currentPrice × qty × takerRate`) as `-USDT X.XX (Y.YY% of balance)` with BRL conversion below. i18n in all 4 locales.
+- **Dropped 257 lines of WS-silent-era workarounds (#628 — Tier 1 cleanup)** — `insertSyntheticIncome` in `handle-exit-fill` (wrote synthetic REALIZED_PNL + COMMISSION rows from the WS payload to beat REST income lag — superseded by the live WS), the matching `takeOverSyntheticPnlOrCommissionRow` deduplication function in `syncFromBinance`, the 3-second `setTimeout` before `closeResidualPosition` (was waiting for sync to catch up), and 5 `[order-move]` console.log traces in the chart drag-release path (diagnostic noise added when the flow was flickering due to dropped WS events).
+- **Tuned backup polling cadence (#629 — Tier 2 cleanup)** — `BACKUP_POLLING_INTERVAL` 5s → 30s and `OPTIMISTIC_ENTRY_TTL_MS` 15s → 7s. Both were tightened to compensate for the silent WS; with the WS now reliable the tighter values were burning refetches the live handler covers in ms. The loading-flag override on optimistic TTL still keeps the row alive past the new 7s through any slow mutation chain.
+
+### Added
+
+- **Observability: warn-level visibility on WS subscribe + lifecycle (#625, #626)** — `[FuturesUserStream] subscribeWallet starting`, `Socket open`, `Subscribed successfully`, `SDK reconnecting`, `Socket close`, `SDK response` plus a one-shot `First WS event received` per wallet, all promoted from info → warn so they surface in `error.log` for post-incident replay. This is the observability that surfaced the SDK routing bug above.
+- **Logs: `auto-trading.log` renamed to `trading-engine.log` (#624)** — the file was misleadingly named: position-sync sweeps, pending-order monitor results, and OHLC data integrity checks all wrote there alongside the actual auto-trade engine output. Manual traders saw "auto-trading.log" filling up and reasonably wondered if auto-trade was acting behind their back. New name covers both content streams honestly.
+
+### Notes
+
+- The full chain of WS issues investigated this session: false-positive watchdog reconnects (v1.20.3, #616), then visibility logs to confirm subscribe was OK, then deeper lifecycle visibility to confirm socket was opening, then finally the SDK routing bug (#627). Closes out the "every operation only updates via reconcile, never on the spot" symptom that traces back as far as v1.18.
+- Conservatively kept: 30s `OrderSyncService` / `positionSyncService` periodic sweeps, post-reconnect REST recovery in the `'reconnected'` handler, `closeResidualPosition` cleanup, and the 1h `syncWalletIncome` periodic catch-up for `FUNDING_FEE` events the WS doesn't carry. These remain load-bearing safety nets, not workarounds.
+
 ## [1.21.0] - 2026-05-13
 
 ### Added

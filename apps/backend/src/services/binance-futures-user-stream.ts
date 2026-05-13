@@ -396,12 +396,15 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
   async subscribeWallet(wallet: Wallet): Promise<void> {
     if (isPaperWallet(wallet)) {
+      logger.warn({ walletId: wallet.id }, '[FuturesUserStream] Skipping subscribe — paper wallet');
       return;
     }
 
     if (this.connections.has(wallet.id)) {
+      logger.warn({ walletId: wallet.id }, '[FuturesUserStream] Skipping subscribe — wallet already connected');
       return;
     }
+    logger.warn({ walletId: wallet.id, marketType: wallet.marketType, exchange: wallet.exchange }, '[FuturesUserStream] subscribeWallet starting');
 
     try {
       const apiClient = createBinanceFuturesClient(wallet);
@@ -443,15 +446,15 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
       // connect and every internal reconnect from its pong-timeout path.
       // Refresh lastMessageAt here so the UI doesn't show `degraded` after
       // a clean SDK-driven reconnect on an otherwise-idle wallet.
-      wsClient.on('open', () => {
+      wsClient.on('open', (ctx) => {
         const health = this.walletHealth.get(wallet.id);
         if (health) {
           health.lastMessageAt = Date.now();
           if (health.healthStatus === 'degraded') {
             health.healthStatus = 'healthy';
-            logger.info({ walletId: wallet.id }, '[FuturesUserStream] Socket open — clearing degraded flag');
           }
         }
+        logger.warn({ walletId: wallet.id, wsKey: (ctx as { wsKey?: string } | undefined)?.wsKey }, '[FuturesUserStream] Socket open');
       });
 
       wsClient.on('reconnecting', () => {
@@ -460,7 +463,15 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
           health.healthStatus = 'degraded';
           health.lastReconnectAt = Date.now();
         }
-        logger.info({ walletId: wallet.id }, '[FuturesUserStream] SDK reconnecting (pong timeout or network)');
+        logger.warn({ walletId: wallet.id }, '[FuturesUserStream] SDK reconnecting');
+      });
+
+      wsClient.on('close', (ctx) => {
+        logger.warn({ walletId: wallet.id, wsKey: (ctx as { wsKey?: string } | undefined)?.wsKey }, '[FuturesUserStream] Socket close');
+      });
+
+      wsClient.on('response', (response) => {
+        logger.warn({ walletId: wallet.id, response: JSON.stringify(response).slice(0, 500) }, '[FuturesUserStream] SDK response');
       });
 
       wsClient.on('reconnected', () => {
@@ -541,7 +552,11 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
         })();
       });
 
-      const wsKey: WsKey = walletType === 'testnet' ? 'usdmTestnet' : 'usdm';
+      // User-data must go through the private subdomain — Binance split
+      // the USDM URL on 2026-03-06 (legacy `usdm` deprecated 2026-04-23).
+      // The SDK ≥3.5.6 coerces `usdm` → `usdmPrivate` defensively, but we
+      // pick the explicit private key to be safe + clear at the call site.
+      const wsKey: WsKey = walletType === 'testnet' ? 'usdmTestnetPrivate' : 'usdmPrivate';
       await wsClient.subscribeUsdFuturesUserDataStream(wsKey);
 
       this.connections.set(wallet.id, { wsClient, apiClient });
@@ -551,7 +566,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
         healthStatus: 'healthy',
       });
 
-      logger.info({ walletId: wallet.id, walletType }, '[FuturesUserStream] Subscribed successfully');
+      logger.warn({ walletId: wallet.id, walletType }, '[FuturesUserStream] Subscribed successfully');
     } catch (error) {
       logger.error(
         {
@@ -563,6 +578,8 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     }
   }
 
+  private firstMessageLoggedFor = new Set<string>();
+
   private handleUserDataMessage(walletId: string, data: unknown): void {
     try {
       this.recordUserStreamActivity(walletId);
@@ -572,6 +589,14 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
       const message = data as Record<string, unknown>;
       const eventType = message['e'] as string;
+
+      // One-shot warn-level confirmation that the WS stream is actually
+      // delivering — without this, a silently-broken subscribe just shows
+      // up as a quiet stream and "events never arrived" is the only signal.
+      if (!this.firstMessageLoggedFor.has(walletId)) {
+        this.firstMessageLoggedFor.add(walletId);
+        logger.warn({ walletId, eventType }, '[FuturesUserStream] First WS event received');
+      }
 
       // Persist every WS event before dispatch so we can reconstruct
       // exactly what arrived from Binance during any reported incident.

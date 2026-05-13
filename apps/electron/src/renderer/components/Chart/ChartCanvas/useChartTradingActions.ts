@@ -363,31 +363,13 @@ export const useChartTradingActions = ({
       orderLoadingMapRef.current.set(optimisticExecution.id, Date.now());
       manager?.markDirty('overlays');
 
-      const moveStart = performance.now();
-      console.log('[order-move] start', {
-        oldId: id, newOptimisticId: optimisticExecution.id, newPrice,
-        isAlgo, exchangeOrderId, symbol,
-      });
-
       cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
-        .then((result) => {
-          console.log('[order-move] cancel resolved', {
-            optimisticId: optimisticExecution.id,
-            elapsedMs: Math.round(performance.now() - moveStart),
-            result,
-          });
-          return addBackendOrder({
-            walletId: backendWalletId,
-            symbol,
-            ...newOrderRequest,
-          });
-        })
-        .then((created) => {
-          console.log('[order-move] create resolved', {
-            optimisticId: optimisticExecution.id,
-            elapsedMs: Math.round(performance.now() - moveStart),
-            createdId: (created as { orderId?: string | number } | null | undefined)?.orderId,
-          });
+        .then(() => addBackendOrder({
+          walletId: backendWalletId,
+          symbol,
+          ...newOrderRequest,
+        }))
+        .then(() => {
           // `trading.createOrder.onSuccess` invalidates getOrders /
           // getPositions / getTradeExecutions, but the chart for an
           // exchange-moved order reads from `futuresTrading.getOpenOrders`
@@ -404,11 +386,6 @@ export const useChartTradingActions = ({
           manager?.markDirty('overlays');
         })
         .catch((error) => {
-          console.warn('[order-move] failed', {
-            optimisticId: optimisticExecution.id,
-            elapsedMs: Math.round(performance.now() - moveStart),
-            error: error instanceof Error ? error.message : String(error),
-          });
           clearOptimistic(id, cancelPatches);
           setOptimisticExecutions(prev => prev.filter(e => e.id !== optimisticExecution.id));
           toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
@@ -416,10 +393,6 @@ export const useChartTradingActions = ({
         .finally(() => {
           orderLoadingMapRef.current.delete(optimisticExecution.id);
           manager?.markDirty('overlays');
-          console.log('[order-move] settled', {
-            optimisticId: optimisticExecution.id,
-            elapsedMs: Math.round(performance.now() - moveStart),
-          });
         });
       return;
     }

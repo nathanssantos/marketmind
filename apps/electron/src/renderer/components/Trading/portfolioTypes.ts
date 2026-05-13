@@ -21,6 +21,8 @@ export interface PortfolioPosition {
   isAutoTrade?: boolean;
   count: number;
   leverage: number;
+  /** Real entry-side fees already paid (summed across executions in the group). */
+  entryFee: number;
 }
 
 export interface PortfolioProps {
