@@ -29,6 +29,7 @@ import { useOrderLinesRenderer } from './useOrderLinesRenderer';
 import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
+import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { useChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { usePatternMarkers } from '@renderer/hooks/usePatternMarkers';
 import {
@@ -420,7 +421,7 @@ const ChartCanvasInternal = ({
     getOrderAtPosition, draggedOrderIdRef,
   });
 
-  const { orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, tsPlacementDeactivate, tsPlacementSetPreview, isGridModeActive, gridInteraction, renderGridPreview, drawingInteraction, renderDrawings: rawRenderDrawings } = auxiliarySetup;
+  const { orderDragHandler, slTpPlacement, tsPlacementActive, tsPlacementPreviewPrice, tsPlacementDeactivate, tsPlacementSetPreview, isGridModeActive, gridInteraction, renderGridPreview, drawingInteraction, renderDrawings: rawRenderDrawings, getClickedTicketButton } = auxiliarySetup;
 
   // v1.5 — Layers popover gates: when the user toggles a layer off,
   // skip its render call so the canvas re-paints without it. Flags
@@ -463,6 +464,18 @@ const ChartCanvasInternal = ({
     getHoveredOrder, getClickedOrderId, getSLTPAtPosition,
     getClickedPositionActions,
     onPositionActions: (payload: { positionId: string; rect: { x: number; y: number; width: number; height: number } }) => setPositionActionsAnchor(payload),
+    getClickedTicketButton,
+    onUseInTicket: (drawingId: string) => {
+      const drawings = useDrawingStore.getState().getDrawingsForSymbol(symbol ?? '', timeframe);
+      const drawing = drawings.find((d) => d.id === drawingId);
+      if (!drawing || (drawing.type !== 'longPosition' && drawing.type !== 'shortPosition')) return;
+      useQuickTradeStore.getState().prefillFromDrawing({
+        side: drawing.type === 'longPosition' ? 'BUY' : 'SELL',
+        stopLoss: String(drawing.stopLossPrice),
+        takeProfit: String(drawing.takeProfitPrice),
+        entryPrice: String(drawing.entryPrice),
+      });
+    },
     onLongEntry: (price: number) => { void handleLongEntry(price); },
     onShortEntry: (price: number) => { void handleShortEntry(price); },
     orderDragHandler, gridInteraction: isGridModeActive ? gridInteraction : undefined,
