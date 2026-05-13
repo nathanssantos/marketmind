@@ -362,6 +362,18 @@ describe('ChartSettingsTab', () => {
         expect(screen.getByText('settings.chart.enableShiftAltOrderEntryHelper')).toBeDefined();
     });
 
+    it('renders breakeven lines toggle (off by default)', () => {
+        renderWithChakra(
+            <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />
+        );
+
+        expect(screen.getByText('chart.controls.showBreakevenLines')).toBeDefined();
+        expect(screen.getByText('chart.controls.showBreakevenLinesHelper')).toBeDefined();
+        const toggle = screen.getByTestId('chart-show-breakeven-lines');
+        expect(toggle).toBeDefined();
+    });
+
+
     it('renders color palette section with all palettes', () => {
         renderWithChakra(
             <ChartSettingsTab config={mockConfig} onConfigChange={mockOnConfigChange} />

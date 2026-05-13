@@ -998,6 +998,8 @@
       "stackPriceTagsHelper": "Quand deux étiquettes de l'échelle de prix se chevauchent, elles sont décalées verticalement pour rester lisibles.",
       "flipVertical": "Inverser Verticalement",
       "flipVerticalHelper": "Inverse l'axe des prix pour que les positions courtes montent visuellement.",
+      "showBreakevenLines": "Lignes de point mort",
+      "showBreakevenLinesHelper": "Dessine une ligne pointillée au prix auquel la position ouverte clôturerait à l'équilibre après frais aller-retour (taker × 2). Hypothèse : Binance Futures VIP 0.",
       "profitLossAreas": "Zones de Profit/Perte",
       "fibonacciProjection": "Projection de Fibonacci",
       "measurementRuler": "Règle de Mesure",

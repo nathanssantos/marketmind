@@ -396,19 +396,24 @@ export const drawFlashLine = (
   ctx.restore();
 };
 
+const DASH_PATTERN: [number, number] = [6, 4];
+
 export const drawHorizontalLine = (
   ctx: CanvasRenderingContext2D,
   y: number,
   chartWidth: number,
   color: string,
-  lineWidth: number = 1
+  lineWidth: number = 1,
+  dashed: boolean = false
 ): void => {
   ctx.strokeStyle = color;
   ctx.lineWidth = lineWidth;
+  if (dashed) ctx.setLineDash(DASH_PATTERN);
   ctx.beginPath();
   ctx.moveTo(0, y);
   ctx.lineTo(chartWidth, y);
   ctx.stroke();
+  if (dashed) ctx.setLineDash([]);
 };
 
 export const setStandardFont = (ctx: CanvasRenderingContext2D): void => {

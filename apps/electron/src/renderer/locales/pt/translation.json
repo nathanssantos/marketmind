@@ -979,6 +979,8 @@
       "stackPriceTagsHelper": "Quando duas tags da escala de preço se sobrepõem, empurra elas verticalmente para ambas permanecerem legíveis.",
       "flipVertical": "Inverter Verticalmente",
       "flipVerticalHelper": "Inverte o eixo de preço para que operações vendidas subam visualmente.",
+      "showBreakevenLines": "Linhas de breakeven",
+      "showBreakevenLinesHelper": "Desenha uma linha tracejada no preço em que a posição aberta fecharia zero a zero descontando as taxas de ida e volta (taker × 2). Assume Binance Futures VIP 0.",
       "profitLossAreas": "Áreas de Lucro/Prejuízo",
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",

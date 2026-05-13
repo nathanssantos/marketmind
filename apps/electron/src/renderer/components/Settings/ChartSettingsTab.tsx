@@ -34,6 +34,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
   const [stackPriceTags, setStackPriceTags] = useChartPref<boolean>('stackPriceTags', true);
   const [chartFlipped, setChartFlipped] = useChartPref<boolean>('chartFlipped', false);
   const [liquidityColorMode, setLiquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
+  const [showBreakevenLines, setShowBreakevenLines] = useChartPref<boolean>('showBreakevenLines', false);
   const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
   const setEnableShiftAltOrderEntry = useUIStore((state) => state.setEnableShiftAltOrderEntry);
 
@@ -139,6 +140,18 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             size="sm"
             aria-label={t('settings.chart.liquidityIntensity')}
             data-testid="chart-liquidity-intensity"
+          />
+        </FormRow>
+        <FormRow
+          label={t('chart.controls.showBreakevenLines')}
+          helper={t('chart.controls.showBreakevenLinesHelper')}
+        >
+          <Switch
+            checked={showBreakevenLines}
+            onCheckedChange={setShowBreakevenLines}
+            size="sm"
+            aria-label={t('chart.controls.showBreakevenLines')}
+            data-testid="chart-show-breakeven-lines"
           />
         </FormRow>
       </FormSection>

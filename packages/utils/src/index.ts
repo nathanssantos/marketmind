@@ -3,5 +3,6 @@ export * from './orderUtils';
 export * from './klineUtils';
 export * from './numericUtils';
 export * from './pnl';
+export * from './breakeven';
 export * from './formatters';
 export * from './passwordPolicy';

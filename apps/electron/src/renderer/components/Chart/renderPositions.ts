@@ -1,4 +1,5 @@
 import type { Order } from '@marketmind/types';
+import { calculateBreakevenPrice } from '@marketmind/utils';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { ORDER_LINE_COLORS } from '@shared/constants';
@@ -15,6 +16,8 @@ import {
 import type { GroupedPosition } from './orderLineTypes';
 import { PRICE_TAG_WIDTH } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
+
+const BREAKEVEN_DASH_PATTERN: [number, number] = [4, 3];
 
 export const groupActivePositions = (
   activeOrdersList: Order[],
@@ -107,6 +110,51 @@ const renderPositionEntry = (
   }
 
   drawHorizontalLine(ctx, y, chartWidth, lineColor);
+
+  if (rc.showBreakevenLines) {
+    const bePrice = calculateBreakevenPrice({
+      entryPrice: position.avgPrice,
+      side: isLong ? 'LONG' : 'SHORT',
+      takerRate: rc.breakevenTakerRate,
+    });
+    if (bePrice !== position.avgPrice) {
+      const beY = manager.priceToY(bePrice);
+      if (beY >= 0 && beY <= chartHeight) {
+        const beDirection: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
+        ctx.save();
+        ctx.strokeStyle = rc.breakevenLineColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash(BREAKEVEN_DASH_PATTERN);
+        ctx.beginPath();
+        ctx.moveTo(0, beY);
+        ctx.lineTo(chartWidth, beY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        setStandardFont(ctx);
+        drawInfoTag(
+          ctx,
+          'BE',
+          beY,
+          rc.breakevenLineColor,
+          rc.infoTagBg,
+          rc.infoTagText,
+          false,
+          null,
+          null,
+          false,
+          0,
+          null,
+          beDirection,
+        );
+        ctx.restore();
+        rc.priceTags.push({
+          priceText: formatChartPrice(bePrice),
+          y: beY,
+          fillColor: rc.breakevenLineColor,
+        });
+      }
+    }
+  }
 
   const priceChange = rc.currentPrice - position.avgPrice;
   const percentChange = (isLong

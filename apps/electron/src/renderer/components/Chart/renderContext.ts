@@ -36,6 +36,10 @@ export interface RenderContext {
   tsCloseButtons: Array<{ x: number; y: number; size: number }>;
   needsAnimation: boolean;
   showProfitLossAreas: boolean;
+  showBreakevenLines: boolean;
+  breakevenTakerRate: number;
+  /** Theme-aware base color for the BE line (typically `colors.text`). Alpha is applied at draw time. */
+  breakevenLineColor: string;
   infoTagBg: string;
   infoTagText: string;
   currentPriceTag: { y: number; height: number } | null;

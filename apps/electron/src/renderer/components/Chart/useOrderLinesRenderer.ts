@@ -6,6 +6,9 @@ import { ORDER_LINE_ANIMATION } from '@shared/constants';
 import type { RefObject } from 'react';
 import { useMemo, useRef } from 'react';
 import { useOrderFlashStore } from '@renderer/store/orderFlashStore';
+import { hexToRgba } from '@renderer/utils/canvas/canvasHelpers';
+
+const BREAKEVEN_LINE_ALPHA = 0.4;
 
 import type {
   BackendExecution,
@@ -57,6 +60,8 @@ export const useOrderLinesRenderer = (
   colors?: ChartThemeColors,
   showCurrentPriceTimer: boolean = true,
   stackPriceTags: boolean = true,
+  showBreakevenLines: boolean = false,
+  breakevenTakerRate: number = 0.0004,
 ) => {
   const activeOrders = useMemo((): Order[] => {
     return backendExecutions
@@ -180,6 +185,9 @@ export const useOrderLinesRenderer = (
         ? { y: currentPriceY + currentPriceTagHeight / 2 - 9, height: currentPriceTagHeight }
         : null,
       stackPriceTags,
+      showBreakevenLines,
+      breakevenTakerRate,
+      breakevenLineColor: hexToRgba(colors?.text ?? '#ffffff', BREAKEVEN_LINE_ALPHA),
     };
 
     const pendingOrders = activeOrders.filter((order) => isOrderPending(order));
