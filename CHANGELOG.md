@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.3] - 2026-05-13
+
+### Fixed
+
+- **User-stream operations only updating via reconcile, never on the spot (#616)** — true root cause of every "the SL/TP close didn't sync until I clicked Sync" / "the reverse only shows after a moment" report from v1.18 onward. Production logs revealed 15,450 forced reconnects in a single day from our `checkUserStreamHealth` watchdog vs. 0 genuine SDK auto-reconnects. The watchdog flagged `silenceMs > STALE_THRESHOLD_MS` as "dead socket" — but the Binance user-data stream is **event-driven, not heartbeated**, so on an idle wallet `lastMessageAt` legitimately doesn't refresh for minutes. Each false-positive reconnect (unsubscribe → 500ms sleep → resubscribe) opened a **1–3 second window where real `ORDER_TRADE_UPDATE` / `ACCOUNT_UPDATE` events were dropped on the floor**. The 30s `OrderSyncService` / `positionSyncService` REST sweep was masking the bug by catching the missed state — hence "only via reconcile." The fix kills the forced reconnect; the binance SDK's internal heartbeat (`pingInterval: 10s` + `pongTimeout: 5s` + `reconnectTimeout: 500ms`) already detects a genuinely dead socket and fires our existing `'reconnected'` listener (which still runs the REST recovery). Two new listeners (`'open'` refreshes `lastMessageAt`, `'reconnecting'` marks the UI degraded flag) keep the renderer's stream-health dot accurate. STALE_THRESHOLD_MS lives on as a UI hint (10min → 30min) but never forces an action. HEALTH_CHECK_INTERVAL_MS 15s → 60s (UI-only flag doesn't need 4 ticks/min). Net: -131 lines of dead reconnect plumbing, +59 lines of correct event wiring. Expected outcome: every WS event fires the renderer handler on the first arrival, no more reconcile-dependent UX.
+
 ## [1.20.2] - 2026-05-13
 
 ### Fixed
