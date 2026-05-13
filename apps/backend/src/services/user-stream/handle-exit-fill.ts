@@ -26,10 +26,6 @@ export async function handleExitFill(
   _isTPOrder: boolean,
   isAlgoTriggerFill: boolean,
   isLiquidation = false,
-  realizedProfit: string = '0',
-  commissionAsset: string = 'USDT',
-  tradeId: number = 0,
-  fillEventTime: number = Date.now(),
 ): Promise<void> {
   if (isAlgoTriggerFill) {
     logger.info(
@@ -289,75 +285,6 @@ export async function handleExitFill(
     extra: { netPnl: pnlResult.netPnl, symbol, exitReason: determinedExitReason, isLiquidation },
   });
 
-  // Today's-PnL fix: write the realized-PnL + commission income events
-  // straight from the WS payload. The /fapi/v1/income REST endpoint has
-  // 1–30s propagation lag — previously we depended on `syncWalletIncome`
-  // (immediate + retry) to backfill these rows, which made the widget
-  // visibly stale. Both fields are right here on the fill event (`rp`,
-  // `n`, `t`). A negative synthetic `binanceTranId` lets the REST sync
-  // later "take over" with the real id (see
-  // `takeOverSyntheticPnlOrCommissionRow` in syncFromBinance.ts) so
-  // there's no double counting.
-  if (tradeId > 0 && execution.userId) {
-    const insertSyntheticIncome = async (): Promise<void> => {
-      try {
-        const { insertIncomeEvent } = await import('../income-events/insertIncomeEvent');
-        const rpAmount = parseFloat(realizedProfit);
-        const commissionAmount = parseFloat(commission);
-        const incomeTime = new Date(fillEventTime);
-        if (Number.isFinite(rpAmount) && rpAmount !== 0) {
-          await insertIncomeEvent({
-            walletId,
-            userId: execution.userId,
-            binanceTranId: -tradeId,
-            incomeType: 'REALIZED_PNL',
-            amount: rpAmount,
-            asset: 'USDT',
-            symbol,
-            executionId: execution.id,
-            tradeId: String(tradeId),
-            source: 'binance',
-            incomeTime,
-          });
-        }
-        if (Number.isFinite(commissionAmount) && commissionAmount !== 0) {
-          await insertIncomeEvent({
-            walletId,
-            userId: execution.userId,
-            // -tradeId is taken by REALIZED_PNL; subtract a constant so
-            // the COMMISSION row gets its own synthetic id without
-            // colliding. The takeover keys on (walletId, incomeType,
-            // tradeId, binanceTranId < 0) so the constant offset is
-            // invisible to the matcher.
-            binanceTranId: -tradeId - 1_000_000_000_000,
-            incomeType: 'COMMISSION',
-            amount: -Math.abs(commissionAmount),
-            asset: commissionAsset || 'USDT',
-            symbol,
-            executionId: execution.id,
-            tradeId: String(tradeId),
-            source: 'binance',
-            incomeTime,
-          });
-        }
-        logHandlerAction({
-          handler: 'exit-fill',
-          walletId,
-          executionId: execution.id,
-          orderId,
-          action: 'synthetic-income-inserted',
-          extra: { tradeId, rp: rpAmount, commission: commissionAmount },
-        });
-      } catch (err) {
-        logger.warn(
-          { walletId, executionId: execution.id, tradeId, error: serializeError(err) },
-          '[FuturesUserStream] Failed to insert synthetic income event — Today\'s PnL may lag until next sync',
-        );
-      }
-    };
-    await insertSyntheticIncome();
-  }
-
   binancePriceStreamService.invalidateExecutionCache(symbol);
 
   emitPositionClosedEvents({
@@ -411,21 +338,12 @@ export async function handleExitFill(
 
   void ctx.cancelPendingEntryOrders(walletId, symbol, execution.id);
 
-  setTimeout(() => {
-    void ctx.closeResidualPosition(walletId, symbol, execution.id);
-  }, 3000);
+  void ctx.closeResidualPosition(walletId, symbol, execution.id);
 
-  // REALIZED_PNL + COMMISSION rows for this fill were written
-  // synchronously above from the WS payload (`rp`, `n`, `t`). Today's
-  // P&L gets the new value on the very next `getDailyPerformance`
-  // refetch triggered by the `wallet:update` broadcast — no race
-  // against Binance's income-endpoint propagation.
-  //
-  // We still run `syncWalletIncome` once in the background to pick up
-  // events the WS doesn't carry (FUNDING_FEE most notably) and to
-  // backfill in the rare case where the synthetic insert failed. The
-  // 3-second retry from the old code is gone — it existed only because
-  // we were chasing the realized-PnL latency we no longer depend on.
+  // Run `syncWalletIncome` once in the background to pull REALIZED_PNL +
+  // COMMISSION (the WS fill carries them on `rp` / `n`, but we let the
+  // REST sync write the canonical row with the real Binance tranId) plus
+  // FUNDING_FEE / corrections / etc. that don't ride the trade fill.
   void (async () => {
     const startedAt = Date.now();
     try {
