@@ -25,7 +25,7 @@ import { renderEllipse } from './renderers/renderEllipse';
 import { renderPitchfork } from './renderers/renderPitchfork';
 import { renderGannFan } from './renderers/renderGannFan';
 import { renderText } from './renderers/renderText';
-import { renderPosition } from './renderers/renderPosition';
+import { renderPosition, type TicketButtonRef } from './renderers/renderPosition';
 import { renderDrawingHandles } from './drawingHandles';
 import type { OHLCSnapIndicator } from './useDrawingInteraction';
 
@@ -70,6 +70,7 @@ const renderSingleDrawing = (
   chartWidth: number,
   colors: { bullish: string; bearish: string; crosshair: string },
   themeColors: ChartThemeColors,
+  ticketButtonRef?: TicketButtonRef,
 ): void => {
   if (!drawing.visible) return;
 
@@ -130,7 +131,7 @@ const renderSingleDrawing = (
       break;
     case 'longPosition':
     case 'shortPosition':
-      renderPosition(ctx, drawing, mapper, isSelected, chartWidth);
+      renderPosition(ctx, drawing, mapper, isSelected, chartWidth, ticketButtonRef);
       break;
   }
 
@@ -156,6 +157,11 @@ const renderSnapIndicator = (ctx: CanvasRenderingContext2D, snap: OHLCSnapIndica
   ctx.restore();
 };
 
+export interface UseDrawingsRendererResult {
+  render: () => void;
+  getClickedTicketButton: (x: number, y: number) => { drawingId: string; rect: { x: number; y: number; width: number; height: number } } | null;
+}
+
 export const useDrawingsRenderer = ({
   manager,
   symbol,
@@ -165,12 +171,17 @@ export const useDrawingsRenderer = ({
   themeColors,
   pendingDrawingRef,
   lastSnapRef,
-}: UseDrawingsRendererProps): { render: () => void } => {
+}: UseDrawingsRendererProps): UseDrawingsRendererResult => {
   const klinesRef = useRef(klines);
   klinesRef.current = klines;
   const drawingIndexCache = useRef(new Map<string, Drawing>());
   const lastKlinesLengthRef = useRef(0);
   const lastFirstKlineTimeRef = useRef(0);
+  // Populated per-frame by the renderer; consumed by `useChartInteraction`
+  // through `getClickedTicketButton`. Kept on a ref so the renderer can
+  // mutate it without forcing a React re-render — the canvas already
+  // re-paints when drawings change.
+  const ticketButtonsRef = useRef<Array<{ drawingId: string; rect: { x: number; y: number; width: number; height: number } }>>([]);
   useEffect(() => {
     if (!manager || !symbol) return;
     const key = `${symbol}:${interval}`;
@@ -215,6 +226,7 @@ export const useDrawingsRenderer = ({
     ctx.rect(0, 0, dimensions.chartWidth, dimensions.chartHeight);
     ctx.clip();
 
+    ticketButtonsRef.current = [];
     for (const raw of sorted) {
       const cacheKey = `${raw.id}-${raw.updatedAt}`;
       let drawing = drawingIndexCache.current.get(cacheKey);
@@ -223,7 +235,17 @@ export const useDrawingsRenderer = ({
         drawingIndexCache.current.set(cacheKey, drawing);
       }
       if (!isDrawingInViewport(drawing, viewport.start, viewport.end)) continue;
-      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
+      const isPositionDrawing = drawing.type === 'longPosition' || drawing.type === 'shortPosition';
+      const ticketBtn: TicketButtonRef | undefined = isPositionDrawing
+        ? { x: 0, y: 0, width: 0, height: 0 }
+        : undefined;
+      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, ticketBtn);
+      if (ticketBtn && ticketBtn.width > 0) {
+        ticketButtonsRef.current.push({
+          drawingId: drawing.id,
+          rect: { x: ticketBtn.x, y: ticketBtn.y, width: ticketBtn.width, height: ticketBtn.height },
+        });
+      }
     }
 
     if (pendingDrawing) {
@@ -257,7 +279,18 @@ export const useDrawingsRenderer = ({
     }
   }, [manager, symbol, colors, themeColors, pendingDrawingRef, lastSnapRef]);
 
-  return { render };
+  const getClickedTicketButton = useCallback(
+    (x: number, y: number): { drawingId: string; rect: { x: number; y: number; width: number; height: number } } | null => {
+      for (const entry of ticketButtonsRef.current) {
+        const r = entry.rect;
+        if (x >= r.x && x <= r.x + r.width && y >= r.y && y <= r.y + r.height) return entry;
+      }
+      return null;
+    },
+    [],
+  );
+
+  return { render, getClickedTicketButton };
 };
 
 const FREEFORM_TYPES = new Set(['pencil', 'highlighter']);

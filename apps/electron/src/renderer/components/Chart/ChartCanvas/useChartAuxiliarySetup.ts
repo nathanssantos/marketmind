@@ -114,7 +114,7 @@ export const useChartAuxiliarySetup = ({
 
   useBackendDrawings(symbol, timeframe, klines);
 
-  const { render: renderDrawings } = useDrawingsRenderer({
+  const { render: renderDrawings, getClickedTicketButton } = useDrawingsRenderer({
     manager,
     symbol,
     interval: timeframe,
@@ -137,5 +137,6 @@ export const useChartAuxiliarySetup = ({
     renderGridPreview,
     drawingInteraction,
     renderDrawings,
+    getClickedTicketButton,
   };
 };
