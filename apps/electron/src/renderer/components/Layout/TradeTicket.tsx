@@ -375,7 +375,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
             size="2xs"
             fontSize="xs"
             h="22px"
-            flex={1}
+            flex={orderType === 'LIMIT' ? '0 0 auto' : 1}
+            px={orderType === 'LIMIT' ? 3 : undefined}
             variant={orderType === 'MARKET' ? 'solid' : 'outline'}
             colorPalette={orderType === 'MARKET' ? 'accent' : undefined}
             onClick={() => handleSelectOrderType('MARKET')}
@@ -388,7 +389,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
             size="2xs"
             fontSize="xs"
             h="22px"
-            flex={1}
+            flex={orderType === 'LIMIT' ? '0 0 auto' : 1}
+            px={orderType === 'LIMIT' ? 3 : undefined}
             variant={orderType === 'LIMIT' ? 'solid' : 'outline'}
             colorPalette={orderType === 'LIMIT' ? 'accent' : undefined}
             onClick={() => handleSelectOrderType('LIMIT')}
@@ -397,13 +399,10 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
           >
             {t('chart.quickTrade.orderTypeLimit')}
           </Button>
-        </HStack>
-
-        {orderType === 'LIMIT' && (
-          <HStack gap={1.5}>
-            <Text fontSize="2xs" color="fg.muted" minW="60px">{t('chart.quickTrade.limitPrice')}</Text>
+          {orderType === 'LIMIT' && (
             <Input
               size="xs"
+              h="22px"
               aria-label={t('chart.quickTrade.limitPrice')}
               value={limitPrice}
               onChange={(e) => setLimitPrice(e.target.value)}
@@ -411,8 +410,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
               type="number"
               flex={1}
             />
-          </HStack>
-        )}
+          )}
+        </HStack>
 
         <HStack gap={1.5}>
           <BuySellButtons
