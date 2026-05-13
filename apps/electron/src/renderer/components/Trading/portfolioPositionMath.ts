@@ -152,9 +152,16 @@ export const hasLeveragedPosition = (positions: PortfolioPosition[]): boolean =>
   positions.some((pos) => pos.leverage > 1);
 
 /**
- * Estimated round-trip fees across all positions:
- *   real entry fees already paid + estimated exit fees at current price
- *   (priced as taker — most exits are MARKET).
+ * Estimated round-trip fees across all positions. Always counts both
+ * sides so the number aligns with the breakeven line (which assumes
+ * round-trip taker fees in its math):
+ *   - entry side: real `entryFee` from the trade-execution row when
+ *     populated; otherwise estimated from `avgPrice × qty × takerRate`.
+ *     Falling back avoids the case where a paper trade or a not-yet-
+ *     synced live trade has `entryFee = 0` and the panel would show
+ *     only the exit side.
+ *   - exit side: always estimated from `currentPrice × qty × takerRate`
+ *     (most exits are MARKET orders → taker).
  */
 export const computeTotalFees = (
   positions: PortfolioPosition[],
@@ -162,9 +169,11 @@ export const computeTotalFees = (
 ): number => {
   let total = 0;
   for (const pos of positions) {
+    const entryNotional = pos.avgPrice * pos.quantity;
     const exitNotional = pos.currentPrice * pos.quantity;
+    const entryFee = pos.entryFee > 0 ? pos.entryFee : entryNotional * takerRate;
     const estimatedExitFee = exitNotional * takerRate;
-    total += pos.entryFee + estimatedExitFee;
+    total += entryFee + estimatedExitFee;
   }
   return total;
 };
