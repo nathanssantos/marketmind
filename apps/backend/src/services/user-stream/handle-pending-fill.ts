@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { orders, tradeExecutions } from '../../db/schema';
 import { getOrderEntryFee, getPosition } from '../binance-futures-client';
 import { createStopLossOrder, createTakeProfitOrder } from '../protection-orders';
+import { logHandlerAction } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
 import { getWebSocketService } from '../websocket';
 import type { UserStreamContext } from './types';
@@ -200,6 +201,15 @@ export async function handlePendingFill(
       status: 'FILLED',
       executedQty: fillQty.toString(),
       avgPrice: fillPrice.toString(),
+    });
+
+    logHandlerAction({
+      handler: 'pending-fill',
+      walletId,
+      executionId: pendingExecution.id,
+      orderId,
+      action: 'position-activated',
+      extra: { symbol, side: pendingExecution.side, fillPrice, fillQty },
     });
   }
 }

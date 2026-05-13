@@ -45,11 +45,6 @@ export const accountConfigRouter = router({
 
         const result = await setLeverage(client, input.symbol, input.leverage);
         binanceApiCache.invalidate('SYMBOL_LEVERAGE', input.walletId, input.symbol);
-        // The futures account-info-derived positions array carries the
-        // active leverage per symbol. Drop the cache so the next
-        // getPositions reflects the new value instead of waiting up to
-        // 10s for TTL — leverage badges in the UI would otherwise lag.
-        binanceApiCache.invalidate('POSITIONS', input.walletId);
         return result;
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);
@@ -74,10 +69,6 @@ export const accountConfigRouter = router({
       try {
         const client = createBinanceFuturesClient(wallet);
         await setMarginType(client, input.symbol, input.marginType);
-        // POSITIONS rows carry marginType per symbol; without dropping
-        // the cache, the FuturesPositionsPanel keeps the prior badge
-        // for up to 10s after the user toggles it.
-        binanceApiCache.invalidate('POSITIONS', input.walletId);
         return { success: true, marginType: input.marginType };
       } catch (error) {
         throw mapBinanceErrorToTRPC(error);

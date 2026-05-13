@@ -8,6 +8,7 @@ import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
 import { createBinanceFuturesClient, isPaperWallet, getWalletType, getPosition } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
+import { logBinanceEvent } from './binance-event-logger';
 import { logger, serializeError } from './logger';
 import { positionSyncService } from './position-sync';
 import { getWebSocketService } from './websocket';
@@ -645,6 +646,11 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
 
       const message = data as Record<string, unknown>;
       const eventType = message['e'] as string;
+
+      // Persist every WS event before dispatch so we can reconstruct
+      // exactly what arrived from Binance during any reported incident.
+      // Cheap (one JSON line per event); rotates daily by UTC date.
+      logBinanceEvent(walletId, 'usdm', message);
 
       switch (eventType) {
         case 'ORDER_TRADE_UPDATE':

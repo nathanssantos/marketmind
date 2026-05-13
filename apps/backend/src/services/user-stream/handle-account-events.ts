@@ -4,6 +4,7 @@ import { tradeExecutions, wallets } from '../../db/schema';
 import { cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { cancelAllProtectionOrders } from '../protection-orders';
 import { clearProtectionOrderIds, type ProtectionOrderField } from '../execution-manager';
+import { logHandlerAction } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
 import { closeExecutionAndBroadcast } from '../wallet-broadcast';
 import { getWebSocketService } from '../websocket';
@@ -40,6 +41,12 @@ export async function handleAccountUpdate(
       },
       '[FuturesUserStream] Account update received'
     );
+    logHandlerAction({
+      handler: 'account-update',
+      walletId,
+      action: 'received',
+      extra: { reason, balanceCount: balances.length, positionCount: positionUpdates.length },
+    });
 
     const usdtBalance = balances.find((b) => b.a === 'USDT');
     const wallet = usdtBalance ? await ctx.getCachedWallet(walletId) : null;
