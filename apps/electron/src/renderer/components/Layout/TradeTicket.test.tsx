@@ -46,7 +46,14 @@ vi.mock('@renderer/hooks/useToast', () => ({
 }));
 
 vi.mock('@renderer/store/quickTradeStore', () => ({
-  useQuickTradeStore: () => useQuickTradeStoreMock(),
+  // Selector-aware mock — supports both `useQuickTradeStore()` (returns
+  // the whole state object) and `useQuickTradeStore((s) => s.xxx)`
+  // (returns a single field). Production code uses selectors; some
+  // existing tests still destructure the whole object.
+  useQuickTradeStore: (selector?: (s: unknown) => unknown) => {
+    const state = useQuickTradeStoreMock();
+    return typeof selector === 'function' ? selector(state) : state;
+  },
 }));
 
 vi.mock('@renderer/store/priceStore', () => ({
@@ -119,7 +126,13 @@ const setDefaults = (overrides: { positions?: unknown[]; sizePercent?: number; p
   });
   useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
   useToastMock.mockReturnValue({ warning: warningMock, error: errorMock });
-  useQuickTradeStoreMock.mockReturnValue({ sizePercent, setSizePercent: setSizePercentMock });
+  useQuickTradeStoreMock.mockReturnValue({
+    sizePercent,
+    setSizePercent: setSizePercentMock,
+    pendingPrefill: null,
+    prefillFromDrawing: vi.fn(),
+    consumePrefill: () => null,
+  });
   usePricesForSymbolsMock.mockReturnValue({ BTCUSDT: price });
 };
 
@@ -642,6 +655,73 @@ describe('TradeTicket — Total value row', () => {
     setDefaults({ price: 0, bid: 0, ask: 0 });
     renderActions();
     expect(screen.getByTestId('trade-ticket-total-value').textContent).toBe('—');
+  });
+});
+
+describe('TradeTicket — Field placeholders', () => {
+  it('SL input shows a placeholder near -2% from the mid price', () => {
+    setDefaults({ bid: 49_950, ask: 50_050 });
+    renderActions();
+    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
+    expect(slInput.placeholder).toBe('49000.00');
+  });
+
+  it('TP input shows a placeholder near +4% from the mid price', () => {
+    setDefaults({ bid: 49_950, ask: 50_050 });
+    renderActions();
+    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
+    expect(tpInput.placeholder).toBe('52000.00');
+  });
+
+  it('placeholders are empty when bid/ask are unavailable', () => {
+    setDefaults({ price: 0, bid: 0, ask: 0 });
+    renderActions();
+    expect((screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement).placeholder).toBe('');
+    expect((screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement).placeholder).toBe('');
+  });
+});
+
+describe('TradeTicket — Prefill from chart drawing', () => {
+  // Long/short position drawings on the chart have a "→ TICKET" button
+  // that pushes their entry/SL/TP into `quickTradeStore.pendingPrefill`.
+  // The ticket consumes it once, switches to LIMIT type, and enables SL+TP.
+  it('consumes pendingPrefill and populates LIMIT + SL + TP', async () => {
+    const consumePrefillMock = vi.fn(() => ({
+      side: 'BUY' as const,
+      entryPrice: '50100',
+      stopLoss: '49000',
+      takeProfit: '52500',
+    }));
+    useQuickTradeStoreMock.mockReturnValue({
+      sizePercent: 10,
+      setSizePercent: setSizePercentMock,
+      pendingPrefill: { side: 'BUY', entryPrice: '50100', stopLoss: '49000', takeProfit: '52500' },
+      prefillFromDrawing: vi.fn(),
+      consumePrefill: consumePrefillMock,
+    });
+    renderActions();
+    expect(consumePrefillMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }))
+      .toHaveAttribute('aria-selected', 'true');
+    expect((screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement).value)
+      .toBe('50100');
+    expect((screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement).value).toBe('49000');
+    expect((screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement).value).toBe('52500');
+  });
+
+  it('does nothing when pendingPrefill is null', () => {
+    const consumePrefillMock = vi.fn();
+    useQuickTradeStoreMock.mockReturnValue({
+      sizePercent: 10,
+      setSizePercent: setSizePercentMock,
+      pendingPrefill: null,
+      prefillFromDrawing: vi.fn(),
+      consumePrefill: consumePrefillMock,
+    });
+    renderActions();
+    expect(consumePrefillMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' }))
+      .toHaveAttribute('aria-selected', 'true');
   });
 });
 
