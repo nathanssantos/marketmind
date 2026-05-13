@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.2] - 2026-05-13
+
+### Fixed
+
+- **Today's P&L still stale after SL/TP close — definitive fix (#612)** — fifth attempt at this bug. Root cause: the REST `/fapi/v1/income` endpoint has 1–30s+ propagation lag and earlier "fixes" (immediate sync, then 3s retry, then unconditional re-broadcast) were all racing against that lag instead of bypassing it. `handle-exit-fill` now writes synthetic `REALIZED_PNL` + `COMMISSION` rows directly from the WebSocket `ORDER_TRADE_UPDATE` payload (`rp` + `n` + `t` + `T`) using **negative `binanceTranId`s** (`-tradeId` / `-tradeId - 1e12`). When the REST sync eventually catches up, the new `takeOverSyntheticPnlOrCommissionRow` matches the real row to the synthetic one on `(walletId, incomeType, tradeId, binanceTranId < 0)` and patches it in place — same proven pattern that handles TRANSFER events. The 3s-retry chain is removed (no longer needed). End result: the analytics card updates within ~50-100ms of fill, not 1-30s.
+- **Drag-and-drop of pending order lines fires on the whole price line (#612)** — `renderPendingOrders` / `renderHoveredPendingOrder` registered the entire chart-width as the drag hitbox. Clicking anywhere on the LIMIT entry line started a drag even when the user only intended to click on the chart background or hover a candle. Hitbox is now scoped to `entryTagSize.width` × `entryTagSize.height` — only the tag is draggable. The X-close still works for non-position rows (LIMIT entries, SL/TP orders).
+- **Pending orders briefly disappear from chart on drag release (#612)** — the optimistic-execution overlay's `OPTIMISTIC_ENTRY_TTL_MS` was 5s but the cancel + create mutation chain often takes longer (especially on a slow Binance round-trip). The optimistic row would prune before the new real order arrived from `getOpenOrders`, producing a visible flicker. TTL is now 15s **and** the prune effect checks `orderLoadingMapRef.current.has(opt.id)` — the row stays alive as long as the move mutation is still in flight, regardless of TTL. Added `[order-move]` console traces (start / cancel-resolved / create-resolved / failed / settled with elapsed-ms) so future regressions surface in DevTools without digging through the WS log.
+
+### Changed
+
+- **`getOpenOrders` is now DB-backed for live wallets (#612)** — previously `binanceApiCache.OPEN_ORDERS` cached the REST result for 10s and ten mutation paths had to `invalidate('OPEN_ORDERS', walletId)` (or `invalidateAllVariants` for cancel-all) before returning, otherwise the renderer's `onSettled` refetch would read pre-mutation state. The cache + every invalidation site is gone. `getOpenOrders` now queries the `orders` table for both paper and live wallets; the WS algo-update + order-update handlers keep `orders` rows in lockstep with Binance. Single source of truth.
+- **`getPositions` cache removed for live wallets (#612)** — same staleness story for POSITIONS. The 10s `binanceApiCache.POSITIONS` layer + nine `invalidate('POSITIONS', …)` call sites (added in v1.20.1 as the previous best-effort fix for reverse/close UI lag) are gone. Live `getPositions` fetches directly from Binance REST every call; `guardBinanceBan` keeps the IP-ban shortcut. Paper wallets unchanged (DB path). Closes the 10s staleness window where reverse / close / setLeverage / setMarginType left the FuturesPositionsPanel reading pre-mutation state.
+
+### Added
+
+- **Dedicated Binance events log (#612)** — pino logger writing **one JSON-lines file per UTC day** to `apps/backend/logs/binance-events/YYYY-MM-DD.log`. Two helpers: `logBinanceEvent(walletId, ws, raw)` (invoked before the event-type switch in both futures + spot user-streams, captures every event Binance sends even when a handler crashes) and `logHandlerAction({ handler, walletId, action, latencyMs, extra })` (checkpoint hooks at meaningful actions inside `handle-exit-fill` / `handle-pending-fill` / `handle-order-update` / `handle-algo-update` / `handle-account-events`). Plus `logHandlerError` for catch blocks. 2000-char raw-event truncation, silent in tests, daily UTC rotation. Post-incident `jq` recipes are in the PR description and the file is grep-friendly. Replaces the "guess what went wrong" debugging workflow for these recurring user-stream timing bugs.
+
+### Notes
+
+- **Audit framing:** this release is six coordinated phases of the binance-connection audit. Phases 1 (logger) and 2 (Today's P&L synthetic income) close gaps the previous patches couldn't reach. Phases 3 + 4 fix the two chart-interaction bugs. Phases 5 + 6 are structural refactors that eliminate the `binanceApiCache` staleness vector entirely for orders + positions — both the cache and every invalidation site are gone, so future mutation paths don't need to remember to invalidate. Net diff: −80 / +27 in the routers, and one new well-instrumented logging subsystem.
+- **Removed deps on `binanceApiCache.invalidate('OPEN_ORDERS' | 'POSITIONS', …)`:** the helpers still exist for `SYMBOL_LEVERAGE` and a few other types, but all OPEN_ORDERS + POSITIONS callers have been deleted. New mutations that touch orders/positions on Binance no longer need to remember to invalidate — the DB row (orders) or fresh REST call (positions) carries the canonical state.
+
 ## [1.20.1] - 2026-05-13
 
 ### Fixed
