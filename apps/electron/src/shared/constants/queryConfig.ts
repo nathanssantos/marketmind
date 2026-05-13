@@ -16,15 +16,13 @@ export const QUERY_CONFIG = {
 
   /**
    * Backup polling for active executions / orders / positions when the
-   * WebSocket signal misses. Tight (5s) so a missed `position:closed`
-   * surfaces as a stale chart line for at most ~5s instead of 30s.
-   *
-   * v1.6 Track F.3 — was 30s; user reported ~1 min lag on SL closes
-   * because the WebSocket path missed and the 30s backup doubled the
-   * perceived latency. WebSocket is still the primary signal; this is
-   * the safety net.
+   * WebSocket signal misses. With the WS user-data stream reliable
+   * again (SDK 3.5.5→3.5.8 fix wired `usdmPrivate` correctly), tight
+   * 5s polling was burning refetches the WS now covers in ms. 30s is
+   * a reasonable safety-net cadence — still well under the user-
+   * perceptible "the app feels frozen" threshold for the rare WS gap.
    */
-  BACKUP_POLLING_INTERVAL: 5000,
+  BACKUP_POLLING_INTERVAL: 30000,
 } as const;
 
 export type QueryConfigType = typeof QUERY_CONFIG;
