@@ -37,7 +37,7 @@ import {
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const LOG_FILE = path.join(__dirname, '../../logs/auto-trading.log');
+const LOG_FILE = path.join(__dirname, '../../logs/trading-engine.log');
 
 export {
     MaintenanceLogBuffer,
