@@ -269,23 +269,6 @@ describe('handleExitFill', () => {
     expect(closedCall?.exitReason).toBe('LIQUIDATION');
   });
 
-  it('should use REST API fees when available', async () => {
-    mockGetPosition.mockResolvedValueOnce(null);
-    mockGetAllTradeFeesForPosition.mockResolvedValueOnce({
-      entryFee: 1.5,
-      exitFee: 1.2,
-    });
-
-    const ctx = createMockCtx();
-    const execution = createMockExecution();
-
-    await handleExitFill(
-      ctx, 'wallet-1', execution as never, 'BTCUSDT', 100, '51000', '51000', '0.1', '0.01', true, false, false
-    );
-
-    expect(mockGetAllTradeFeesForPosition).toHaveBeenCalled();
-  });
-
   it('should fallback to event commission when REST API fails', async () => {
     mockGetPosition.mockResolvedValueOnce(null);
     mockGetAllTradeFeesForPosition.mockRejectedValueOnce(new Error('API error'));
@@ -298,21 +281,6 @@ describe('handleExitFill', () => {
     );
 
     expect(mockEmitPositionClosed).toHaveBeenCalled();
-  });
-
-  it('should fetch entry fee when actualEntryFee is 0 and entryOrderId exists', async () => {
-    mockGetPosition.mockResolvedValueOnce(null);
-    mockGetAllTradeFeesForPosition.mockResolvedValueOnce(null);
-    mockGetOrderEntryFee.mockResolvedValueOnce({ entryFee: 0.8 });
-
-    const ctx = createMockCtx();
-    const execution = createMockExecution({ entryFee: '0', entryOrderId: '12345' });
-
-    await handleExitFill(
-      ctx, 'wallet-1', execution as never, 'BTCUSDT', 100, '51000', '51000', '0.1', '0.5', true, false, false
-    );
-
-    expect(mockGetOrderEntryFee).toHaveBeenCalled();
   });
 
   it('should skip if position already closed by another process', async () => {

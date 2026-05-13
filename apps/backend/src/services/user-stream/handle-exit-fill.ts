@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions } from '../../db/schema';
 import { calculatePnl } from '@marketmind/utils';
-import { getOrderEntryFee, getAllTradeFeesForPosition, getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
+import { getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logHandlerAction, logHandlerError } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
@@ -188,22 +188,9 @@ export async function handleExitFill(
   }
 
   const quantity = closedQty;
-  // Use the WS event's commission as the EXIT fee directly — it IS the
-  // exact commission Binance charged for this fill. The previous shape
-  // re-fetched via `getAllTradeFeesForPosition` (~500-800ms blocking)
-  // just to verify the value, then re-fetched the entry fee on top
-  // (another ~300ms when entryFee was 0). Combined with the now-async
-  // opposite-cancel above, the broadcast goes out in ~50-100ms instead
-  // of the previous 1.5-3s.
-  //
-  // If `execution.entryFee` is 0 (the entry-fill handler didn't have
-  // it) the entry fee defaults to 0 — that produces a small PnL
-  // inaccuracy (typically a few cents on a futures trade). A background
-  // refinement runs after the broadcast and patches the DB with the
-  // accurate fees + emits a follow-up `position:update` if the values
-  // moved materially. The user sees the close near-instantly with a
-  // ballpark PnL, and the precise figure self-corrects within a second
-  // or two.
+  // Use the WS event's `n` (commission) as the EXIT fee directly — it
+  // IS the exact commission Binance charged for this specific fill. No
+  // REST refetch needed.
   const actualExitFee = parseFloat(commission || '0');
   const actualEntryFee = parseFloat(execution.entryFee ?? '0');
 
@@ -372,97 +359,4 @@ export async function handleExitFill(
     }
   })();
 
-  // Background fee refinement — the broadcast above used event-commission
-  // for the exit fee and `execution.entryFee` (possibly 0) for the entry.
-  // Now pull the authoritative fees from Binance and, if they differ
-  // materially, update the DB row + emit a `position:update` so the
-  // renderer's PnL cell self-corrects without the user noticing. This
-  // path is BEST-EFFORT — every failure is logged and swallowed; the
-  // close has already been broadcast with the ballpark figure.
-  void (async () => {
-    try {
-      const feeConnection = ctx.connections.get(walletId);
-      if (!feeConnection) return;
-      const openedAt = execution.openedAt?.getTime() || execution.createdAt.getTime();
-      const allFees = await getAllTradeFeesForPosition(
-        feeConnection.apiClient,
-        symbol,
-        execution.side,
-        openedAt,
-        undefined,
-        execution.entryOrderId,
-        execution.exitOrderId,
-      );
-      let refinedEntryFee = actualEntryFee;
-      let refinedExitFee = actualExitFee;
-      if (allFees) {
-        if (allFees.exitFee > 0) refinedExitFee = allFees.exitFee;
-        if (allFees.entryFee > 0) refinedEntryFee = allFees.entryFee;
-      }
-      if (refinedEntryFee === 0 && execution.entryOrderId) {
-        try {
-          const feeResult = await getOrderEntryFee(feeConnection.apiClient, symbol, execution.entryOrderId);
-          if (feeResult) refinedEntryFee = feeResult.entryFee;
-        } catch (_e) { /* best-effort */ }
-      }
-      const feeDeltaTotal = (refinedEntryFee - actualEntryFee) + (refinedExitFee - actualExitFee);
-      // Only patch if the corrected fees move PnL by more than half a cent.
-      if (Math.abs(feeDeltaTotal) < 0.005) return;
-
-      const refinedPnlResult = calculatePnl({
-        entryPrice,
-        exitPrice,
-        quantity,
-        side: execution.side,
-        marketType: 'FUTURES',
-        leverage,
-        accumulatedFunding,
-        entryFee: refinedEntryFee,
-        exitFee: refinedExitFee,
-      });
-      const refinedPnl = refinedPnlResult.netPnl + partialClosePnl;
-      const refinedTotalFees = refinedEntryFee + refinedExitFee;
-
-      await db
-        .update(tradeExecutions)
-        .set({
-          pnl: refinedPnl.toString(),
-          pnlPercent: refinedPnlResult.pnlPercent.toString(),
-          fees: refinedTotalFees.toString(),
-          entryFee: refinedEntryFee.toString(),
-          exitFee: refinedExitFee.toString(),
-          updatedAt: new Date(),
-        })
-        .where(eq(tradeExecutions.id, execution.id));
-
-      // Also patch the wallet balance with the delta so the running
-      // balance reconciles. The initial broadcast already credited
-      // `pnl` to the wallet; we only need to add the correction.
-      const pnlDelta = refinedPnl - pnl;
-      if (Math.abs(pnlDelta) > 0.005) {
-        await incrementWalletBalanceAndBroadcast(walletId, pnlDelta);
-      }
-
-      const wsServiceBg = getWebSocketService();
-      if (wsServiceBg) {
-        wsServiceBg.emitPositionUpdate(walletId, {
-          id: execution.id,
-          status: 'closed',
-          pnl: refinedPnl.toString(),
-          pnlPercent: refinedPnlResult.pnlPercent.toString(),
-          fees: refinedTotalFees.toString(),
-        });
-      }
-
-      logger.info(
-        { executionId: execution.id, oldPnl: pnl.toFixed(4), newPnl: refinedPnl.toFixed(4), delta: pnlDelta.toFixed(4) },
-        '[FuturesUserStream] Background fee refinement patched PnL',
-      );
-    } catch (err) {
-      logger.warn(
-        { executionId: execution.id, error: serializeError(err) },
-        '[FuturesUserStream] Background fee refinement failed — close already broadcast with ballpark PnL',
-      );
-    }
-  })();
 }

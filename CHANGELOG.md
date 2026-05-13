@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.1] - 2026-05-13
+
+### Changed
+
+- **Dropped background fee refinement in `handle-exit-fill` (#632)** — final WS-silent-era workaround removed. The async block re-fetched authoritative fees via REST (`getAllTradeFeesForPosition` + `getOrderEntryFee`) after every exit-fill broadcast, then patched the DB + emitted a follow-up `position:update` if the corrected fees moved PnL by more than half a cent. Added in #597 (2026-05-11) when the broadcast's "ballpark" PnL was the only thing the user saw until the 30s REST sync caught up. With WS reliable, the broadcast PnL is already precise: `actualExitFee` reads the WS `n` field (Binance's exact commission for that fill) and `actualEntryFee` reads `execution.entryFee` populated at entry time. The refinement only ever fired meaningfully for `entryFee = 0` (paper / very old trades) — for every live trade after the entry-fee tracking feature landed, the delta was below the 0.005 threshold and the patch was a no-op. -142 / +4 lines in `handle-exit-fill.ts`, 2 dead imports removed, 2 stale tests deleted.
+
 ## [1.22.0] - 2026-05-13
 
 ### Fixed
