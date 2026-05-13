@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.1] - 2026-05-13
+
+### Fixed
+
+- **Reverse Position leaves the UI on the old side for ~10 seconds (#608)** — clicking Reverse on a live wallet flipped the position on Binance correctly but the renderer kept showing the pre-reverse side because `futuresTrading.getPositions` is fronted by a 10s `binanceApiCache.POSITIONS` layer. The mutation completed, the renderer's `onSettled` invalidated `getPositions`, and the refetch hit the pre-reverse cache (set by the last poll). The optimistic close-via-positionId patch in `onMutate` doesn't apply on live wallets either since the Binance response shape lacks `id`/`status`. Now every mutation that flips exchange position state (`reversePosition`, `closePosition`, `closePositionAndCancelOrders`, `closeTradeExecution` live-FUTURES, `autoTrading.emergencyStop`, `autoTrading/recovery.recoverPositions`) explicitly invalidates the cache rows before returning.
+- **Today's P&L doesn't auto-refresh after SL/TP close (#608)** — `handle-exit-fill` backgrounds a `syncWalletIncome` call to pull the realized PnL event from Binance's `/fapi/v1/income` and emit a paired `wallet:update` so the renderer's debounced `analytics.getDailyPerformance.invalidate()` runs. But Binance's income endpoint has 1–3s propagation lag and the immediate sync usually returned `inserted: 0`; the previous code only re-emitted the nudge on `inserted > 0`. The widget stayed stale until manual sync or the 5s backup-poll cycle. Now the sync runs twice — once immediate, once after a 3s delay — and unconditionally re-emits `wallet:update` after each attempt.
+- **Cache staleness on every mutation that touches positions/orders (#608)** — full audit; the same 10s lag previously affected the renderer's `getOpenOrders` after `createOrder`, `cancelOrder`, `cancelAllAlgoOrders`, `cancelAllOrders`, `setLeverage`, `setMarginType`, and the live-FUTURES paths of `trading.closeTradeExecution` / `cancelTradeExecution`. All of these now invalidate the relevant `POSITIONS` and/or `OPEN_ORDERS` cache rows before returning. New `binanceApiCache.invalidateAllVariants(type, walletId)` helper drops every per-symbol discriminator in one shot — used by the cancel-all flows that can affect multiple `OPEN_ORDERS:walletId:*` keys at once.
+
 ## [1.20.0] - 2026-05-13
 
 ### Added
