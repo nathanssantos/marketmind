@@ -16,7 +16,6 @@ import {
   setMarginType,
   submitFuturesOrder,
 } from '../../services/binance-futures-client';
-import { binanceApiCache } from '../../services/binance-api-cache';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
@@ -253,15 +252,9 @@ export const orderMutationsRouter = router({
         // capital before the user clicks again.
         const walletSnapshot = await syncLiveWalletSnapshot(ctx, wallet, client);
 
-        // `getOpenOrders` reads from the `orders` table directly now
-        // (Phase 5 of the binance audit — see order-queries.ts), so
-        // no OPEN_ORDERS cache to invalidate. POSITIONS is still
-        // REST-backed though; a MARKET fill changes exposure inline
-        // and the renderer's `getPositions` refetch right after this
-        // mutation would otherwise read the pre-fill cache.
-        if (input.type === 'MARKET') {
-          binanceApiCache.invalidate('POSITIONS', input.walletId);
-        }
+        // Both `getOpenOrders` (Phase 5) and `getPositions` (Phase 6)
+        // now read fresh per call — orders from DB, positions from REST
+        // without a cache layer. No invalidation needed on this path.
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(

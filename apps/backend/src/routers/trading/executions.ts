@@ -4,7 +4,6 @@ import { and, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 import { tradeExecutions } from '../../db/schema';
 import { env } from '../../env';
-import { binanceApiCache } from '../../services/binance-api-cache';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
 import { walletQueries } from '../../services/database/walletQueries';
@@ -362,14 +361,9 @@ export const executionsRouter = router({
         ));
 
       if (shouldExecuteReal && isFutures) {
-        // closeTradeExecution went through Binance — the futures
-        // POSITIONS / OPEN_ORDERS caches need a flush so the renderer's
-        // immediate refetch sees the post-close state instead of the
-        // cached pre-close row. Mirrors what closePosition /
-        // closePositionAndCancelOrders / reversePosition do in
-        // futures-trading/position-mutations.ts. OPEN_ORDERS is now
-        // DB-backed (Phase 5) and self-syncs via the WS handler.
-        binanceApiCache.invalidate('POSITIONS', execution.walletId);
+        // Phase 6 (binance audit): POSITIONS no longer cached; OPEN_ORDERS
+        // is DB-backed (Phase 5) and self-syncs via the WS handler. No
+        // invalidation needed — both refetches see fresh state.
       }
 
       return {

@@ -44,7 +44,7 @@ let cachedFile: string | null = null;
 
 const getLogger = (): pino.Logger => {
   if (isTest) {
-    if (!cachedLogger) cachedLogger = pino({ level: 'silent' });
+    cachedLogger ??= pino({ level: 'silent' });
     return cachedLogger;
   }
   const file = todayFilename();
