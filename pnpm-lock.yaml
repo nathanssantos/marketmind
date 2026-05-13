@@ -81,8 +81,8 @@ importers:
         specifier: ^11.16.0
         version: 11.16.0(typescript@6.0.3)
       binance:
-        specifier: ^3.5.5
-        version: 3.5.5(esbuild@0.27.7)(typescript@6.0.3)
+        specifier: ^3.5.8
+        version: 3.5.8(esbuild@0.27.7)(typescript@6.0.3)
       chalk:
         specifier: ^5.6.2
         version: 5.6.2
@@ -4563,8 +4563,8 @@ packages:
   bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
 
-  binance@3.5.5:
-    resolution: {integrity: sha512-PIPZBRkOadG0f3bHiQTweTxgK4695EgvPL8BM7KV/jO/NL/kLZ9AyX/6aY9ykGNo39KYSe0fbWGB8tz1fmongw==}
+  binance@3.5.8:
+    resolution: {integrity: sha512-j8wPsq5qf2N1B88msAPcTpd7bHewY95fYYB7+EN3xVT+jXSP93iYQfM/hG8AOrk5tHd4IMi02z3w7YJQvXCRpQ==}
 
   binary-extensions@2.3.0:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
@@ -15448,7 +15448,7 @@ snapshots:
 
   bignumber.js@9.3.1: {}
 
-  binance@3.5.5(esbuild@0.27.7)(typescript@6.0.3):
+  binance@3.5.8(esbuild@0.27.7)(typescript@6.0.3):
     dependencies:
       axios: 1.15.2
       isomorphic-ws: 4.0.1(ws@7.5.10)
