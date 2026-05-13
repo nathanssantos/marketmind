@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { tradeExecutions } from '../../db/schema';
 import { calculatePnl } from '@marketmind/utils';
 import { getOrderEntryFee, getAllTradeFeesForPosition, getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
+import { logHandlerAction, logHandlerError } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { emitPositionClosedEvents, incrementWalletBalanceAndBroadcast } from '../wallet-broadcast';
@@ -275,6 +276,14 @@ export async function handleExitFill(
     { walletId, pnl: pnl.toFixed(2), partialClosePnl: partialClosePnl.toFixed(2) },
     '[FuturesUserStream] > Wallet balance updated atomically'
   );
+  logHandlerAction({
+    handler: 'exit-fill',
+    walletId,
+    executionId: execution.id,
+    orderId,
+    action: 'wallet-balance-broadcast',
+    extra: { netPnl: pnlResult.netPnl, symbol, exitReason: determinedExitReason, isLiquidation },
+  });
 
   binancePriceStreamService.invalidateExecutionCache(symbol);
 
@@ -357,6 +366,7 @@ export async function handleExitFill(
     // insert count) so the widget refetches and at least one of the
     // two passes finds the new event.
     const trySync = async (label: string): Promise<void> => {
+      const startedAt = Date.now();
       try {
         const wallet2 = await ctx.getCachedWallet(walletId);
         if (!wallet2) return;
@@ -365,6 +375,14 @@ export async function handleExitFill(
           { walletId, executionId: execution.id, inserted: result.inserted, linked: result.linked, attempt: label },
           '[FuturesUserStream] Post-close income event sync',
         );
+        logHandlerAction({
+          handler: 'exit-fill',
+          walletId,
+          executionId: execution.id,
+          action: `income-sync-${label}`,
+          latencyMs: Date.now() - startedAt,
+          extra: { inserted: result.inserted, linked: result.linked },
+        });
         if (!wsService) return;
         const updatedWallet = await ctx.getCachedWallet(walletId);
         if (!updatedWallet) return;
@@ -378,6 +396,7 @@ export async function handleExitFill(
           { walletId, executionId: execution.id, attempt: label, error: serializeError(err) },
           '[FuturesUserStream] Post-close income sync failed — Today\'s P&L will catch up on next periodic sync',
         );
+        logHandlerError('exit-fill', walletId, err, { executionId: execution.id, attempt: label });
       }
     };
 

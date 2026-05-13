@@ -4,6 +4,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet, silentWsLogger } from './binance-client';
+import { logBinanceEvent } from './binance-event-logger';
 import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
 import { binancePriceStreamService } from './binance-price-stream';
@@ -158,6 +159,10 @@ export class BinanceUserStreamService {
 
   private handleUserDataMessage(walletId: string, data: unknown): void {
     try {
+      // Persist every spot WS event before dispatch — same rationale
+      // as the USDM stream. One JSON line per event in
+      // `logs/binance-events/YYYY-MM-DD.log`.
+      logBinanceEvent(walletId, 'spot', data);
       dispatchUserDataEvent(data, this.handlers, {
         walletId,
         logPrefix: '[SpotUserStream]',

@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../../db';
 import { tradeExecutions } from '../../db/schema';
 import { detectExitReason, isClosingSide } from '../execution-manager';
+import { logHandlerAction, logHandlerError } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
 import { getWebSocketService } from '../websocket';
 import type { UserStreamContext, FuturesOrderUpdate } from './types';
@@ -14,6 +15,7 @@ export async function handleOrderUpdate(
   walletId: string,
   event: FuturesOrderUpdate
 ): Promise<void> {
+  const handlerStartedAt = Date.now();
   try {
     const {
       o: {
@@ -32,6 +34,17 @@ export async function handleOrderUpdate(
         o: orderType,
       },
     } = event;
+
+    logHandlerAction({
+      handler: 'order-update',
+      walletId,
+      orderId,
+      action: 'received',
+      extra: {
+        symbol, orderSide, status, execType, orderType,
+        lastFilledPrice, executedQty, avgPrice, realizedProfit, commission, positionSide,
+      },
+    });
 
     // Binance reports liquidation fills with orderType='LIQUIDATION'.
     // Without this, the fill would be misclassified as TAKE_PROFIT
@@ -293,6 +306,13 @@ export async function handleOrderUpdate(
 
       await handleExitFill(ctx, walletId, execution, symbol, orderId, avgPrice, lastFilledPrice, executedQty, commission, !!isSLOrder, !!isTPOrder, !!isAlgoTriggerFill, isLiquidation);
     }
+    logHandlerAction({
+      handler: 'order-update',
+      walletId,
+      orderId: event.o.i,
+      action: 'completed',
+      latencyMs: Date.now() - handlerStartedAt,
+    });
   } catch (error) {
     logger.error(
       {
@@ -301,5 +321,6 @@ export async function handleOrderUpdate(
       },
       '[FuturesUserStream] Error handling order update'
     );
+    logHandlerError('order-update', walletId, error, { orderId: event.o.i, latencyMs: Date.now() - handlerStartedAt });
   }
 }
