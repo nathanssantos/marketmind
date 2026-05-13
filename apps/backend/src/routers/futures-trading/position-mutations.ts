@@ -281,8 +281,12 @@ export const positionMutationsRouter = router({
         // Invalidate the Binance `POSITIONS` cache so the renderer's
         // immediate `getPositions` refetch sees the flat state instead
         // of the pre-close cached row (TTL is 10s — long enough for the
-        // UI to feel stuck).
+        // UI to feel stuck). closePosition doesn't cancel orders but the
+        // exchange-side trigger orders (TP/SL brackets) on this symbol
+        // become orphaned — drop the per-symbol cache too so a subsequent
+        // poll doesn't keep them around.
         binanceApiCache.invalidate('POSITIONS', input.walletId);
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
@@ -559,7 +563,7 @@ export const positionMutationsRouter = router({
           // flipped. Same reasoning for OPEN_ORDERS (cancel-all happens
           // above) and SYMBOL_LEVERAGE (margin used changed).
           binanceApiCache.invalidate('POSITIONS', input.walletId);
-          binanceApiCache.invalidate('OPEN_ORDERS', input.walletId);
+          binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
 
           const openExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -709,7 +713,7 @@ export const positionMutationsRouter = router({
         // immediately after this mutation hits Binance fresh instead
         // of the pre-close cache.
         binanceApiCache.invalidate('POSITIONS', input.walletId);
-        binanceApiCache.invalidate('OPEN_ORDERS', input.walletId);
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(

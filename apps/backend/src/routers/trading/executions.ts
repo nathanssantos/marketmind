@@ -4,6 +4,7 @@ import { and, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
 import { tradeExecutions } from '../../db/schema';
 import { env } from '../../env';
+import { binanceApiCache } from '../../services/binance-api-cache';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
 import { walletQueries } from '../../services/database/walletQueries';
@@ -360,6 +361,17 @@ export const executionsRouter = router({
           eq(tradeExecutions.status, 'open'),
         ));
 
+      if (shouldExecuteReal && isFutures) {
+        // closeTradeExecution went through Binance — the futures
+        // POSITIONS / OPEN_ORDERS caches need a flush so the renderer's
+        // immediate refetch sees the post-close state instead of the
+        // cached pre-close row. Mirrors what closePosition /
+        // closePositionAndCancelOrders / reversePosition do in
+        // futures-trading/position-mutations.ts.
+        binanceApiCache.invalidate('POSITIONS', execution.walletId);
+        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', execution.walletId);
+      }
+
       return {
         pnl: totalNetPnl.toString(),
         grossPnl: totalGrossPnl.toString(),
@@ -397,6 +409,10 @@ export const executionsRouter = router({
 
         if (isFutures) {
           await cancelFuturesExecutionOrders(execution, wallet);
+          // Drop OPEN_ORDERS cache so the renderer's refetch sees the
+          // cancelled entry/SL/TP gone from Binance instead of waiting
+          // up to 10s for TTL.
+          binanceApiCache.invalidateAllVariants('OPEN_ORDERS', execution.walletId);
         } else {
           await cancelSpotExecutionOrders(execution, wallet);
         }
