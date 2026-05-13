@@ -22,10 +22,11 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
     tpProjectedProfit,
     totalExposure,
     totalMargin,
+    totalFees,
     hasLeverage,
   } = usePortfolioData();
 
-  const { totalPnL, totalPnLPercent, profitableCount, losingCount } = stats;
+  const { totalPnL, totalPnLPercent } = stats;
 
   return (
     <Stack gap={2} flex={1} minH={0}>
@@ -71,12 +72,11 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
           ) : (
             <PortfolioSummary
               positionsCount={positions.length}
-              profitableCount={profitableCount}
-              losingCount={losingCount}
               totalPnL={totalPnL}
               totalPnLPercent={totalPnLPercent}
               totalExposure={totalExposure}
               totalMargin={totalMargin}
+              totalFees={totalFees}
               hasLeverage={hasLeverage}
               walletBalance={activeWallet.walletBalance}
               currency={activeWallet.currency}

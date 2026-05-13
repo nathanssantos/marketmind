@@ -20,6 +20,7 @@ export interface OpenExecutionInput {
   status: string | null;
   marketType?: MarketType | null;
   leverage?: number | null;
+  entryFee?: string | number | null;
 }
 
 const num = (v: string | number | null | undefined, fallback = 0): number => {
@@ -60,6 +61,7 @@ export const buildPortfolioPositions = (
     const totalQty = group.reduce((sum, e) => sum + num(e.quantity), 0);
     const weightedNumerator = group.reduce((sum, e) => sum + num(e.entryPrice) * num(e.quantity), 0);
     const avgPrice = weightedNumerator / (totalQty || 1);
+    const groupEntryFee = group.reduce((sum, e) => sum + num(e.entryFee), 0);
 
     const centralPrice = centralizedPrices[primary.symbol];
     const tickerPrice = tickerPrices[primary.symbol];
@@ -94,6 +96,7 @@ export const buildPortfolioPositions = (
       isAutoTrade: !!primary.setupType,
       count: group.length,
       leverage,
+      entryFee: groupEntryFee,
     });
   }
   return out;
@@ -147,6 +150,33 @@ export const computeTotalMargin = (positions: PortfolioPosition[]): number =>
 /** True if any position has leverage > 1. */
 export const hasLeveragedPosition = (positions: PortfolioPosition[]): boolean =>
   positions.some((pos) => pos.leverage > 1);
+
+/**
+ * Estimated round-trip fees across all positions. Always counts both
+ * sides so the number aligns with the breakeven line (which assumes
+ * round-trip taker fees in its math):
+ *   - entry side: real `entryFee` from the trade-execution row when
+ *     populated; otherwise estimated from `avgPrice × qty × takerRate`.
+ *     Falling back avoids the case where a paper trade or a not-yet-
+ *     synced live trade has `entryFee = 0` and the panel would show
+ *     only the exit side.
+ *   - exit side: always estimated from `currentPrice × qty × takerRate`
+ *     (most exits are MARKET orders → taker).
+ */
+export const computeTotalFees = (
+  positions: PortfolioPosition[],
+  takerRate: number,
+): number => {
+  let total = 0;
+  for (const pos of positions) {
+    const entryNotional = pos.avgPrice * pos.quantity;
+    const exitNotional = pos.currentPrice * pos.quantity;
+    const entryFee = pos.entryFee > 0 ? pos.entryFee : entryNotional * takerRate;
+    const estimatedExitFee = exitNotional * takerRate;
+    total += entryFee + estimatedExitFee;
+  }
+  return total;
+};
 
 /**
  * Effective capital for performance calculations:

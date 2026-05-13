@@ -1352,6 +1352,7 @@
       "exposure": "Exposición",
       "unrealizedPnL": "PyG No Realizado",
       "pnlVsBalance": "PyG vs Saldo",
+      "tradeFees": "Comisiones de Trade",
       "orders": "órdenes",
       "orderCount": "Órdenes",
       "quantity": "Cantidad",

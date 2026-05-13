@@ -1324,6 +1324,7 @@
       "exposure": "Exposição",
       "unrealizedPnL": "L&P Não Realizado",
       "pnlVsBalance": "L&P vs Saldo",
+      "tradeFees": "Taxas do Trade",
       "orders": "ordens",
       "orderCount": "Ordens",
       "quantity": "Quantidade",
