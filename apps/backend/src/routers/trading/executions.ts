@@ -367,9 +367,9 @@ export const executionsRouter = router({
         // immediate refetch sees the post-close state instead of the
         // cached pre-close row. Mirrors what closePosition /
         // closePositionAndCancelOrders / reversePosition do in
-        // futures-trading/position-mutations.ts.
+        // futures-trading/position-mutations.ts. OPEN_ORDERS is now
+        // DB-backed (Phase 5) and self-syncs via the WS handler.
         binanceApiCache.invalidate('POSITIONS', execution.walletId);
-        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', execution.walletId);
       }
 
       return {
@@ -409,10 +409,9 @@ export const executionsRouter = router({
 
         if (isFutures) {
           await cancelFuturesExecutionOrders(execution, wallet);
-          // Drop OPEN_ORDERS cache so the renderer's refetch sees the
-          // cancelled entry/SL/TP gone from Binance instead of waiting
-          // up to 10s for TTL.
-          binanceApiCache.invalidateAllVariants('OPEN_ORDERS', execution.walletId);
+          // No OPEN_ORDERS cache to invalidate — the WS handler updates
+          // the DB rows and `getOpenOrders` reads from there directly
+          // (Phase 5 of the binance audit).
         } else {
           await cancelSpotExecutionOrders(execution, wallet);
         }

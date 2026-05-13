@@ -1724,7 +1724,6 @@ export const autoTradingRouter = router({
       // feel stuck).
       if (!isPaperWallet(wallet)) {
         binanceApiCache.invalidate('POSITIONS', input.walletId);
-        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
       }
 
       log('! EMERGENCY STOP completed', {

@@ -283,10 +283,9 @@ export const positionMutationsRouter = router({
         // of the pre-close cached row (TTL is 10s — long enough for the
         // UI to feel stuck). closePosition doesn't cancel orders but the
         // exchange-side trigger orders (TP/SL brackets) on this symbol
-        // become orphaned — drop the per-symbol cache too so a subsequent
-        // poll doesn't keep them around.
+        // become orphaned — the WS algo-update handler will mark the
+        // DB rows cancelled, and `getOpenOrders` reads from there.
         binanceApiCache.invalidate('POSITIONS', input.walletId);
-        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(
@@ -560,10 +559,10 @@ export const positionMutationsRouter = router({
           // explicit invalidation here, the very next query hits the
           // pre-reverse cache (still LONG) and the UI stays stuck on the
           // old side for up to 10 seconds even though Binance is already
-          // flipped. Same reasoning for OPEN_ORDERS (cancel-all happens
-          // above) and SYMBOL_LEVERAGE (margin used changed).
+          // flipped. SYMBOL_LEVERAGE (margin used changed) and POSITIONS
+          // still need invalidation since they're REST-cached; OPEN_ORDERS
+          // is DB-backed now and self-maintains via the WS handler.
           binanceApiCache.invalidate('POSITIONS', input.walletId);
-          binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
 
           const openExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -711,9 +710,8 @@ export const positionMutationsRouter = router({
 
         // Drop the cached POSITIONS / OPEN_ORDERS rows so the refetch
         // immediately after this mutation hits Binance fresh instead
-        // of the pre-close cache.
+        // of the pre-close cache. OPEN_ORDERS is DB-backed now.
         binanceApiCache.invalidate('POSITIONS', input.walletId);
-        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
 
         const openExecutions = await ctx.db.select().from(tradeExecutions)
           .where(and(

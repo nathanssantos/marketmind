@@ -209,7 +209,6 @@ export const recoveryRouter = router({
       // refetch sees the flat state instead of the pre-stop rows.
       if (!isPaperWallet(wallet) && walletMarketType === 'FUTURES') {
         binanceApiCache.invalidate('POSITIONS', input.walletId);
-        binanceApiCache.invalidateAllVariants('OPEN_ORDERS', input.walletId);
       }
 
       log('! EMERGENCY STOP completed', {
