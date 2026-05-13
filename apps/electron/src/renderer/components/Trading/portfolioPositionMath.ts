@@ -20,6 +20,7 @@ export interface OpenExecutionInput {
   status: string | null;
   marketType?: MarketType | null;
   leverage?: number | null;
+  entryFee?: string | number | null;
 }
 
 const num = (v: string | number | null | undefined, fallback = 0): number => {
@@ -60,6 +61,7 @@ export const buildPortfolioPositions = (
     const totalQty = group.reduce((sum, e) => sum + num(e.quantity), 0);
     const weightedNumerator = group.reduce((sum, e) => sum + num(e.entryPrice) * num(e.quantity), 0);
     const avgPrice = weightedNumerator / (totalQty || 1);
+    const groupEntryFee = group.reduce((sum, e) => sum + num(e.entryFee), 0);
 
     const centralPrice = centralizedPrices[primary.symbol];
     const tickerPrice = tickerPrices[primary.symbol];
@@ -94,6 +96,7 @@ export const buildPortfolioPositions = (
       isAutoTrade: !!primary.setupType,
       count: group.length,
       leverage,
+      entryFee: groupEntryFee,
     });
   }
   return out;
@@ -147,6 +150,24 @@ export const computeTotalMargin = (positions: PortfolioPosition[]): number =>
 /** True if any position has leverage > 1. */
 export const hasLeveragedPosition = (positions: PortfolioPosition[]): boolean =>
   positions.some((pos) => pos.leverage > 1);
+
+/**
+ * Estimated round-trip fees across all positions:
+ *   real entry fees already paid + estimated exit fees at current price
+ *   (priced as taker — most exits are MARKET).
+ */
+export const computeTotalFees = (
+  positions: PortfolioPosition[],
+  takerRate: number,
+): number => {
+  let total = 0;
+  for (const pos of positions) {
+    const exitNotional = pos.currentPrice * pos.quantity;
+    const estimatedExitFee = exitNotional * takerRate;
+    total += pos.entryFee + estimatedExitFee;
+  }
+  return total;
+};
 
 /**
  * Effective capital for performance calculations:

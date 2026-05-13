@@ -5,12 +5,11 @@ import { useTranslation } from 'react-i18next';
 
 interface PortfolioSummaryProps {
   positionsCount: number;
-  profitableCount: number;
-  losingCount: number;
   totalPnL: number;
   totalPnLPercent: number;
   totalExposure: number;
   totalMargin: number;
+  totalFees: number;
   hasLeverage: boolean;
   walletBalance: number;
   currency: string;
@@ -21,12 +20,11 @@ interface PortfolioSummaryProps {
 
 const PortfolioSummaryComponent = ({
   positionsCount,
-  profitableCount,
-  losingCount,
   totalPnL,
   totalPnLPercent,
   totalExposure,
   totalMargin,
+  totalFees,
   hasLeverage,
   walletBalance,
   currency,
@@ -40,17 +38,6 @@ const PortfolioSummaryComponent = ({
     <Box p={3} bg="bg.surface" borderRadius="md" flex={1} minH={0}>
       <Stack gap={2.5} fontSize="xs">
         <>
-            <Flex justify="space-between" align="center">
-              <Text color="fg.muted">{t('trading.portfolio.activePositions')}</Text>
-              <Flex gap={3} align="center">
-                <Text fontWeight="medium">{positionsCount}</Text>
-                <Text color="trading.profit">{profitableCount}W</Text>
-                <Text color="trading.loss">{losingCount}L</Text>
-              </Flex>
-            </Flex>
-
-            <Box h="1px" w="100%" bg="fg.muted" opacity={0.2} />
-
             <Stack gap={1}>
               <Flex justify="space-between">
                 <Text color="fg.muted">{t('trading.portfolio.totalExposure')}</Text>
@@ -86,6 +73,15 @@ const PortfolioSummaryComponent = ({
                 <Text fontWeight="medium" color={totalPnL >= 0 ? 'trading.profit' : 'trading.loss'}>
                   {totalPnL >= 0 ? '+' : ''}{effectiveCapital > 0 ? ((totalPnL / effectiveCapital) * 100).toFixed(2) : '0.00'}%
                 </Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text color="fg.muted">{t('trading.portfolio.tradeFees')}</Text>
+                <Stack gap={0} align="flex-end">
+                  <Text color="fg.muted">
+                    -{currency} {totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({walletBalance > 0 ? ((totalFees / walletBalance) * 100).toFixed(2) : '0.00'}%)
+                  </Text>
+                  <BrlValue usdtValue={-totalFees} />
+                </Stack>
               </Flex>
             </Stack>
 
