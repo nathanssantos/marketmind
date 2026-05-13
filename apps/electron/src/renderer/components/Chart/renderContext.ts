@@ -38,6 +38,8 @@ export interface RenderContext {
   showProfitLossAreas: boolean;
   showBreakevenLines: boolean;
   breakevenTakerRate: number;
+  /** Theme-aware base color for the BE line (typically `colors.text`). Alpha is applied at draw time. */
+  breakevenLineColor: string;
   infoTagBg: string;
   infoTagText: string;
   currentPriceTag: { y: number; height: number } | null;

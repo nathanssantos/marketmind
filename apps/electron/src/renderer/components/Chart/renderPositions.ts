@@ -17,6 +17,8 @@ import type { GroupedPosition } from './orderLineTypes';
 import { PRICE_TAG_WIDTH } from './orderLineTypes';
 import type { RenderContext } from './renderContext';
 
+const BREAKEVEN_DASH_PATTERN: [number, number] = [4, 3];
+
 export const groupActivePositions = (
   activeOrdersList: Order[],
   currentPrice: number
@@ -117,18 +119,40 @@ const renderPositionEntry = (
     });
     if (bePrice !== position.avgPrice) {
       const beY = manager.priceToY(bePrice);
-      const beLineColor = isLong
-        ? ORDER_LINE_COLORS.POSITION_LONG_BE_LINE
-        : ORDER_LINE_COLORS.POSITION_SHORT_BE_LINE;
-      const beFillColor = isLong
-        ? ORDER_LINE_COLORS.POSITION_LONG_BE_FILL
-        : ORDER_LINE_COLORS.POSITION_SHORT_BE_FILL;
-      drawHorizontalLine(ctx, beY, chartWidth, beLineColor, 1, true);
-      rc.priceTags.push({
-        priceText: `BE ${formatChartPrice(bePrice)}`,
-        y: beY,
-        fillColor: beFillColor,
-      });
+      if (beY >= 0 && beY <= chartHeight) {
+        const beDirection: 'up' | 'down' = (isLong !== manager.isFlipped()) ? 'up' : 'down';
+        ctx.save();
+        ctx.strokeStyle = rc.breakevenLineColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash(BREAKEVEN_DASH_PATTERN);
+        ctx.beginPath();
+        ctx.moveTo(0, beY);
+        ctx.lineTo(chartWidth, beY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        setStandardFont(ctx);
+        drawInfoTag(
+          ctx,
+          'BE',
+          beY,
+          rc.breakevenLineColor,
+          rc.infoTagBg,
+          rc.infoTagText,
+          false,
+          null,
+          null,
+          false,
+          0,
+          null,
+          beDirection,
+        );
+        ctx.restore();
+        rc.priceTags.push({
+          priceText: formatChartPrice(bePrice),
+          y: beY,
+          fillColor: rc.breakevenLineColor,
+        });
+      }
     }
   }
 
