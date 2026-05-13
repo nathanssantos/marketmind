@@ -343,38 +343,48 @@ export async function handleExitFill(
   // nudge the renderer's invalidation flush, which causes
   // `getDailyPerformance` to refetch + the widget to repaint.
   void (async () => {
-    try {
-      const { syncWalletIncome } = await import('../income-events/syncFromBinance');
-      const wallet2 = await ctx.getCachedWallet(walletId);
-      if (!wallet2) return;
-      const incomeResult = await syncWalletIncome(wallet2);
-      if (incomeResult.inserted > 0 || incomeResult.linked > 0) {
+    const { syncWalletIncome } = await import('../income-events/syncFromBinance');
+    const wsService = getWebSocketService();
+
+    // Binance's /fapi/v1/income endpoint has observable propagation
+    // lag — the income event for a freshly-filled close can take 1–3s
+    // (sometimes more) to appear. A single sync attempt fired right
+    // after the fill usually returns `inserted: 0`, which leaves the
+    // renderer's Today's P&L widget waiting on the 5s `getDaily-
+    // Performance` polling cycle (or a manual "Sync from Binance"
+    // click) to catch up. So we try twice: once immediate, once after
+    // a delay, and ALWAYS nudge the renderer afterwards (regardless of
+    // insert count) so the widget refetches and at least one of the
+    // two passes finds the new event.
+    const trySync = async (label: string): Promise<void> => {
+      try {
+        const wallet2 = await ctx.getCachedWallet(walletId);
+        if (!wallet2) return;
+        const result = await syncWalletIncome(wallet2);
         logger.info(
-          { walletId, executionId: execution.id, inserted: incomeResult.inserted, linked: incomeResult.linked },
+          { walletId, executionId: execution.id, inserted: result.inserted, linked: result.linked, attempt: label },
           '[FuturesUserStream] Post-close income event sync',
         );
-        // Re-emit wallet:update so the renderer flushes its 500ms
-        // `analytics.getDailyPerformance.invalidate()` debounce. Without
-        // this nudge the widget would only repaint on the next 5s
-        // polling tick (BACKUP_POLLING_INTERVAL).
-        const wsService = getWebSocketService();
-        if (wsService) {
-          const updatedWallet = await ctx.getCachedWallet(walletId);
-          if (updatedWallet) {
-            wsService.emitWalletUpdate(walletId, {
-              walletId,
-              currentBalance: updatedWallet.currentBalance,
-              totalWalletBalance: updatedWallet.totalWalletBalance,
-            });
-          }
-        }
+        if (!wsService) return;
+        const updatedWallet = await ctx.getCachedWallet(walletId);
+        if (!updatedWallet) return;
+        wsService.emitWalletUpdate(walletId, {
+          walletId,
+          currentBalance: updatedWallet.currentBalance,
+          totalWalletBalance: updatedWallet.totalWalletBalance,
+        });
+      } catch (err) {
+        logger.warn(
+          { walletId, executionId: execution.id, attempt: label, error: serializeError(err) },
+          '[FuturesUserStream] Post-close income sync failed — Today\'s P&L will catch up on next periodic sync',
+        );
       }
-    } catch (err) {
-      logger.warn(
-        { walletId, executionId: execution.id, error: serializeError(err) },
-        '[FuturesUserStream] Post-close income sync failed — Today\'s P&L will catch up on next periodic sync',
-      );
-    }
+    };
+
+    await trySync('immediate');
+    // Retry after 3s — wide enough to catch the typical Binance income
+    // propagation delay without making the user perceive any wait.
+    setTimeout(() => { void trySync('retry-3s'); }, 3000);
   })();
 
   // Background fee refinement — the broadcast above used event-commission
