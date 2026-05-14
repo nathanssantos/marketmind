@@ -149,13 +149,22 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     const [freshExec] = await db.select().from(tradeExecutions).where(eq(tradeExecutions.id, existingExecId)).limit(1);
     if (!freshExec) return;
 
-    const existingQty = parseFloat(freshExec.quantity);
-    const existingPrice = parseFloat(freshExec.entryPrice);
-    const newQty = existingQty + addedQty;
-    const newAvgPrice = existingPrice > 0 && newQty > 0
-      ? ((existingQty * existingPrice) + (addedQty * addedPrice)) / newQty
-      : addedPrice;
-
+    // ⚠️ Authoritative qty / entryPrice come from the exchange — NOT from
+    // additive math (`existingQty + addedQty`). The three WS events of a
+    // pyramid fill (TRADE_LITE, ACCOUNT_UPDATE, ORDER_TRADE_UPDATE) arrive
+    // in the same WS frame and dispatch via `void` (parallel). If
+    // `handle-account-events`' syncPositionsFromAccountUpdate wins the
+    // race, it already wrote `quantity = exchangeAbsQty` (the POST-fill
+    // size) before this handler runs. Re-reading `freshExec.quantity`
+    // here and adding `addedQty` then double-counts the fill (e.g.
+    // 0.221 → exchange reports 0.331 → DB now 0.331; merge adds 0.110 →
+    // DB ends at 0.441; next ACCOUNT_UPDATE / position-sync corrects
+    // back to 0.331, but the debounced SL/TP update fires in between
+    // and places a SL sized for the bogus 0.441 — concretely observed
+    // 2026-05-14 04:26 BTCUSDT, algoId 4000001309952396 q=0.441 vs
+    // exchange position 0.331). Trust Binance.
+    let exchangeQty: number | null = null;
+    let exchangeEntryPrice: number | null = null;
     let pyramidLiquidationPrice: string | undefined;
     const pyramidConn = this.connections.get(walletId);
     if (pyramidConn) {
@@ -164,9 +173,25 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
         if (pos) {
           const lp = parseFloat(pos.liquidationPrice || '0');
           if (lp > 0) pyramidLiquidationPrice = lp.toString();
+          const exQty = Math.abs(parseFloat(pos.positionAmt || '0'));
+          const exEp = parseFloat(pos.entryPrice || '0');
+          if (exQty > 0 && exEp > 0) {
+            exchangeQty = exQty;
+            exchangeEntryPrice = exEp;
+          }
         }
-      } catch { /* best-effort */ }
+      } catch { /* best-effort — fall back to additive math below */ }
     }
+
+    const existingQty = parseFloat(freshExec.quantity);
+    const existingPrice = parseFloat(freshExec.entryPrice);
+    const fallbackQty = existingQty + addedQty;
+    const fallbackPrice = existingPrice > 0 && fallbackQty > 0
+      ? ((existingQty * existingPrice) + (addedQty * addedPrice)) / fallbackQty
+      : addedPrice;
+
+    const newQty = exchangeQty ?? fallbackQty;
+    const newAvgPrice = exchangeEntryPrice ?? fallbackPrice;
 
     await db.update(tradeExecutions).set({
       entryPrice: newAvgPrice.toString(),

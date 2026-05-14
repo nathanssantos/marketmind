@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  markPendingExecCancelledByOrderId,
   mergeOrderCancelled,
   mergeOrderCreated,
   mergeOrderUpdate,
@@ -15,6 +16,7 @@ interface Exec {
   quantity?: string;
   entryPrice?: string;
   pnl?: string;
+  entryOrderId?: string | number | null;
 }
 
 interface Ord {
@@ -66,6 +68,47 @@ describe('mergePositionUpdate', () => {
     const next = mergePositionUpdate(pending, { id: 'a', quantity: '0.25' });
     expect(next[0]?.quantity).toBe('0.25');
     expect(next[0]?.status).toBe('pending');
+  });
+});
+
+describe('markPendingExecCancelledByOrderId', () => {
+  const base: Exec[] = [
+    { id: 'p1', status: 'pending', entryOrderId: '111' },
+    { id: 'p2', status: 'pending', entryOrderId: '222' },
+    { id: 'o1', status: 'open', entryOrderId: '111' },
+  ];
+
+  it('returns empty array when prev is undefined', () => {
+    expect(markPendingExecCancelledByOrderId(undefined, '111')).toEqual([]);
+  });
+
+  it('returns same reference when orderId is null/undefined/empty', () => {
+    expect(markPendingExecCancelledByOrderId(base, null)).toBe(base);
+    expect(markPendingExecCancelledByOrderId(base, undefined)).toBe(base);
+    expect(markPendingExecCancelledByOrderId(base, '')).toBe(base);
+  });
+
+  it('flips pending exec with matching entryOrderId to cancelled', () => {
+    const next = markPendingExecCancelledByOrderId(base, '111');
+    expect(next).not.toBe(base);
+    expect(next[0]?.status).toBe('cancelled');
+    expect(next[1]).toBe(base[1]);
+    expect(next[2]).toBe(base[2]);
+  });
+
+  it('does not touch open execs even if entryOrderId matches', () => {
+    const next = markPendingExecCancelledByOrderId(base, '111');
+    expect(next[2]?.status).toBe('open');
+  });
+
+  it('returns same reference when no pending exec matches', () => {
+    const next = markPendingExecCancelledByOrderId(base, '999');
+    expect(next).toBe(base);
+  });
+
+  it('compares orderId as string (numeric input still matches)', () => {
+    const next = markPendingExecCancelledByOrderId(base, 111);
+    expect(next[0]?.status).toBe('cancelled');
   });
 });
 

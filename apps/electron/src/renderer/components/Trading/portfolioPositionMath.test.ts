@@ -285,21 +285,32 @@ describe('computeStopProtectedPnl', () => {
     count: 1,
     leverage: 1,
     marketType: 'FUTURES',
+    entryFee: 0,
     ...overrides,
   });
 
-  it('LONG with stop below entry: negative locked-in PnL (acceptable loss)', () => {
+  it('LONG with stop below entry: NET locked-in loss (gross loss + round-trip fees)', () => {
+    // takerRate=0 isolates the gross-only path: entryFee=0 + 0×exit = 0.
     const out = computeStopProtectedPnl([
       pos({ side: 'LONG', avgPrice: 100, quantity: 1, stopLoss: 95 }),
-    ]);
+    ], 0);
     expect(out.total).toBe(-5);
     expect(out.positionsWithStops).toBe(1);
   });
 
-  it('LONG with stop above entry (trailing): positive locked-in PnL', () => {
+  it('subtracts estimated round-trip fees from the locked-in loss', () => {
+    // takerRate 0.0004 → entry+exit fees = (100+95)*1*0.0004 = 0.078
+    // Net = -5 - 0.078 = -5.078
+    const out = computeStopProtectedPnl([
+      pos({ side: 'LONG', avgPrice: 100, quantity: 1, stopLoss: 95 }),
+    ], 0.0004);
+    expect(out.total).toBeCloseTo(-5.078, 4);
+  });
+
+  it('LONG with stop above entry (trailing): positive locked-in PnL minus fees', () => {
     const out = computeStopProtectedPnl([
       pos({ side: 'LONG', avgPrice: 100, quantity: 1, stopLoss: 110 }),
-    ]);
+    ], 0);
     expect(out.total).toBe(10);
     expect(out.positionsWithStops).toBe(1);
   });
@@ -307,7 +318,7 @@ describe('computeStopProtectedPnl', () => {
   it('SHORT with stop above entry: negative locked-in PnL', () => {
     const out = computeStopProtectedPnl([
       pos({ side: 'SHORT', avgPrice: 100, quantity: 1, stopLoss: 105 }),
-    ]);
+    ], 0);
     expect(out.total).toBe(-5);
   });
 
@@ -315,12 +326,22 @@ describe('computeStopProtectedPnl', () => {
     const out = computeStopProtectedPnl([
       pos({ side: 'LONG', stopLoss: 95 }),
       pos({ side: 'LONG' }),
-    ]);
+    ], 0);
     expect(out.positionsWithStops).toBe(1);
   });
 
+  it('uses real entryFee when present (LIMIT/maker entry)', () => {
+    // Real entryFee = 0.02 (e.g. maker on 100×1 notional = 0.02% × 100 = 0.02).
+    // Exit fee at takerRate 0.0004: 95 × 1 × 0.0004 = 0.038.
+    // Net = (95-100)*1 - (0.02 + 0.038) = -5 - 0.058 = -5.058
+    const out = computeStopProtectedPnl([
+      pos({ side: 'LONG', avgPrice: 100, quantity: 1, stopLoss: 95, entryFee: 0.02 }),
+    ], 0.0004);
+    expect(out.total).toBeCloseTo(-5.058, 4);
+  });
+
   it('empty portfolio returns zero / zero', () => {
-    expect(computeStopProtectedPnl([])).toEqual({ total: 0, positionsWithStops: 0 });
+    expect(computeStopProtectedPnl([], 0)).toEqual({ total: 0, positionsWithStops: 0 });
   });
 });
 
@@ -339,19 +360,30 @@ describe('computeTpProjectedProfit', () => {
     count: 1,
     leverage: 1,
     marketType: 'FUTURES',
+    entryFee: 0,
     ...overrides,
   });
 
-  it('LONG: (tp - avg) × qty', () => {
+  it('LONG: gross (tp - avg) × qty when takerRate=0', () => {
     expect(
-      computeTpProjectedProfit([pos({ side: 'LONG', takeProfit: 110 })]).total,
+      computeTpProjectedProfit([pos({ side: 'LONG', takeProfit: 110 })], 0).total,
     ).toBe(10);
   });
 
-  it('SHORT: (avg - tp) × qty', () => {
+  it('SHORT: gross (avg - tp) × qty when takerRate=0', () => {
     expect(
-      computeTpProjectedProfit([pos({ side: 'SHORT', takeProfit: 90 })]).total,
+      computeTpProjectedProfit([pos({ side: 'SHORT', takeProfit: 90 })], 0).total,
     ).toBe(10);
+  });
+
+  it('subtracts estimated round-trip fees from the projected profit', () => {
+    // entryFee fallback = 100*1*0.0004 = 0.04; exit fee = 110*1*0.0004 = 0.044
+    // Net = 10 - 0.084 = 9.916
+    const out = computeTpProjectedProfit(
+      [pos({ side: 'LONG', takeProfit: 110 })],
+      0.0004,
+    );
+    expect(out.total).toBeCloseTo(9.916, 4);
   });
 
   it('counts only positions with a TP set', () => {
@@ -359,7 +391,7 @@ describe('computeTpProjectedProfit', () => {
       pos({ takeProfit: 110 }),
       pos(),
       pos({ takeProfit: 120 }),
-    ]);
+    ], 0);
     expect(out.positionsWithTp).toBe(2);
     expect(out.total).toBe(30);
   });

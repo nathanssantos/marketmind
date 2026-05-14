@@ -115,8 +115,8 @@ export const usePortfolioData = () => {
   const { positions: filteredPositions, stats } = usePortfolioFilters(positions, filterOption, sortBy);
 
   const effectiveCapital = computeEffectiveCapital(activeWallet);
-  const stopProtectedPnl = useMemo(() => computeStopProtectedPnl(positions), [positions]);
-  const tpProjectedProfit = useMemo(() => computeTpProjectedProfit(positions), [positions]);
+  const stopProtectedPnl = useMemo(() => computeStopProtectedPnl(positions, DEFAULT_TAKER_RATE), [positions]);
+  const tpProjectedProfit = useMemo(() => computeTpProjectedProfit(positions, DEFAULT_TAKER_RATE), [positions]);
   const totalExposure = useMemo(() => computeTotalExposure(positions), [positions]);
   const totalMargin = useMemo(() => computeTotalMargin(positions), [positions]);
   const totalFees = useMemo(() => computeTotalFees(positions, DEFAULT_TAKER_RATE), [positions]);

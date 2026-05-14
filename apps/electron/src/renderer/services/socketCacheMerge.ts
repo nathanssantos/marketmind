@@ -16,6 +16,7 @@
 interface ExecutionLike {
   id: string;
   status?: string | null;
+  entryOrderId?: string | number | null;
   [key: string]: unknown;
 }
 
@@ -56,6 +57,34 @@ export const mergePositionUpdate = <T extends ExecutionLike>(
   const next = prev.slice();
   next[idx] = { ...existing, ...payload };
   return next;
+};
+
+/**
+ * Mark every pending exec for `entryOrderId` as `cancelled` so charts
+ * subscribed to `autoTrading.getActiveExecutions` (status IN (open, pending))
+ * drop the row in the same render frame the `order:cancelled` socket
+ * event arrives — without waiting for the flush-debounced invalidate.
+ *
+ * Specifically targets multi-chart layouts: the chart that drove the
+ * cancel had its optimistic line; the OTHER charts only saw the change
+ * after the ~500ms debounce + refetch. With this patch they update
+ * synchronously alongside the active chart.
+ */
+export const markPendingExecCancelledByOrderId = <T extends ExecutionLike>(
+  prev: T[] | undefined,
+  orderId: string | number | null | undefined,
+): T[] => {
+  if (!prev) return [];
+  if (orderId === null || orderId === undefined || orderId === '') return prev;
+  const targetId = String(orderId);
+  let changed = false;
+  const next = prev.map((e) => {
+    if (e.status !== 'pending') return e;
+    if (String(e.entryOrderId ?? '') !== targetId) return e;
+    changed = true;
+    return { ...e, status: 'cancelled' };
+  });
+  return changed ? next : prev;
 };
 
 /**
