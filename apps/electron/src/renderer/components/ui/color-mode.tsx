@@ -1,9 +1,8 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../../utils/trpc';
 import { exposeColorModeForE2E } from '../../utils/e2eBridge';
-
-type ColorMode = 'light' | 'dark';
+import { ColorModeContext, type ColorMode, type ColorModeContextValue } from './color-mode-context';
 
 const COLOR_MODE_KEY = 'colorMode';
 const DEFAULT_COLOR_MODE: ColorMode = 'dark';
@@ -26,14 +25,6 @@ const getInitialColorModeFromDocument = (): ColorMode => {
   }
   return DEFAULT_COLOR_MODE;
 };
-
-interface ColorModeContextValue {
-  colorMode: ColorMode;
-  toggleColorMode: () => void;
-  setColorMode: (mode: ColorMode) => void;
-}
-
-const ColorModeContext = createContext<ColorModeContextValue | undefined>(undefined);
 
 export const useColorMode = () => {
   const context = useContext(ColorModeContext);
