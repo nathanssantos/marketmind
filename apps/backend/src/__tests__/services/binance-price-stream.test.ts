@@ -343,6 +343,41 @@ describe('BinancePriceStreamService', () => {
 
       expect(mockSubscribeAggregateTrades).not.toHaveBeenCalled();
     });
+
+    // Regression for 2026-05-14 reconnect loop. With no open execs in DB
+    // but the chart subscribed to BTCUSDT via the prices room, resubscribeAll
+    // was routing every symbol to 'spot' (wsKey `main`) instead of 'usdm'
+    // (wsKey `usdmMarket`) — chart never recovered futures prices, Binance
+    // closed the misrouted spot connection, immediate reconnect loop every
+    // ~7s. Fix: resubscribeAll consults getActiveRooms(ROOM_PREFIXES.prices)
+    // the same way reconcileSubscriptions does, treating chart-driven
+    // subscriptions as FUTURES (the only wsKey wired to the renderer's
+    // price-update events).
+    it('routes chart-room subscriptions to usdm on reconnect (no DB execs)', async () => {
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+      mockWebSocketService.getActiveRooms.mockReturnValue(['BTCUSDT', 'ETHUSDT']);
+
+      service.start();
+      service.subscribeSymbol('BTCUSDT');
+      service.subscribeSymbol('ETHUSDT');
+      mockSubscribeAggregateTrades.mockClear();
+
+      const reconnectHandler = mockOn.mock.calls.find((c) => c[0] === 'reconnected')?.[1];
+      reconnectHandler();
+      await vi.runOnlyPendingTimersAsync();
+
+      // Both symbols must resubscribe to 'usdm', NOT 'spot'.
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('btcusdt', 'usdm');
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('ethusdt', 'usdm');
+      expect(mockSubscribeAggregateTrades).not.toHaveBeenCalledWith('btcusdt', 'spot');
+      expect(mockSubscribeAggregateTrades).not.toHaveBeenCalledWith('ethusdt', 'spot');
+
+      mockWebSocketService.getActiveRooms.mockReturnValue([]);
+    });
   });
 
   describe('auto-subscription to active positions', () => {
