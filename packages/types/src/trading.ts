@@ -102,6 +102,10 @@ export interface Order {
   isAutoTrade?: boolean;
   mlConfidence?: number;
   marketType?: MarketType;
+  /** Binance's break-even price (`bep` from ACCOUNT_UPDATE), accounting for
+   *  entry fees already paid. When present, the chart's BE line uses this
+   *  authoritative value instead of computing from a flat round-trip rate. */
+  breakevenPrice?: number;
 }
 
 export interface OrderList {

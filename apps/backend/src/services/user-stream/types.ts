@@ -19,6 +19,12 @@ export interface FuturesAccountUpdate {
       mt: string;
       iw: string;
       ps: string;
+      /** Margin asset (e.g. "USDT"). */
+      ma?: string;
+      /** Binance break-even price — entry price adjusted for the entry fees
+       *  already paid. The exit price at which realizing now nets out the
+       *  entry costs (but NOT the exit fee about to be charged). */
+      bep?: string;
     }>;
   };
 }

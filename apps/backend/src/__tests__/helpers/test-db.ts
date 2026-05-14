@@ -482,6 +482,7 @@ CREATE TABLE IF NOT EXISTS trade_executions (
   fibonacci_projection TEXT,
   entry_fee NUMERIC(20, 8),
   exit_fee NUMERIC(20, 8),
+  breakeven_price NUMERIC(20, 8),
   commission_asset VARCHAR(20),
   trailing_stop_algo_id BIGINT,
   trailing_stop_mode VARCHAR(10),
