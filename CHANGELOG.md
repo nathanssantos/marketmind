@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Dev-only "useColorMode must be used within ColorModeProvider" error during HMR** — `ColorModeContext` was created at the top of `color-mode.tsx` (the same file that exports both `ColorModeProvider` and `useColorMode`). When Vite Fast Refresh re-evaluated that module — either because the file itself was edited, or because any of its imports changed (`trpc`, `QUERY_CONFIG`, `exposeColorModeForE2E`) — `createContext()` ran again and minted a new context object. Already-mounted consumers (`TooltipWrapper`, `ColorModeButton`, etc.) still held the reference to the OLD context object; the freshly-re-rendered `ColorModeProvider` was on the NEW one. `useContext(old)` returned `undefined` and the hook threw, surfacing as the "Something went wrong" ErrorBoundary fallback. Fix: extracted `ColorModeContext` (plus its type defs) into its own tiny `color-mode-context.ts` module. That module has zero component code and rarely changes — Fast Refresh treats it as a stable dependency that doesn't re-evaluate when `color-mode.tsx` or its provider deps mutate.
+
 ## [1.22.6] - 2026-05-14
 
 ### Fixed
