@@ -1,6 +1,5 @@
 import type { QueryClient, Query } from '@tanstack/react-query';
 import {
-  markPendingExecCancelledByOrderId,
   mergePositionClosed,
   mergePositionUpdate,
 } from './socketCacheMerge';
@@ -145,26 +144,3 @@ export const markExecutionClosedInAllCaches = (
   }
 };
 
-/**
- * Mark all pending-status execs matching `entryOrderId == orderId` as
- * `cancelled` across every cache variant. Used by the `order:cancelled`
- * socket handler so multi-chart layouts drop the pending chart line in
- * the same render frame as the active chart, without waiting for the
- * 200ms invalidate-debounce.
- */
-export const markPendingExecCancelledByOrderIdInAllCaches = (
-  qc: QueryClient,
-  walletId: string,
-  orderId: string | number | null | undefined,
-): void => {
-  if (!walletId || orderId === null || orderId === undefined || orderId === '') return;
-  for (const queryKey of executionQueryKeys()) {
-    qc.setQueriesData<ExecutionLike[]>(
-      {
-        queryKey,
-        predicate: (query) => matchesWallet(queryKeyInput(query), walletId),
-      },
-      (prev) => markPendingExecCancelledByOrderId(prev, orderId),
-    );
-  }
-};

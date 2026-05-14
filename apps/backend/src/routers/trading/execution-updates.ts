@@ -229,6 +229,25 @@ export const executionUpdatesRouter = router({
       const oldEntryOrderId = execution.entryOrderId;
 
       if (oldEntryOrderId) {
+        // Detach entryOrderId from the exec BEFORE cancelling on Binance.
+        // The WS `ORDER_TRADE_UPDATE x=CANCELED` that arrives within ms
+        // hits `handle-order-update.ts` CANCELED branch, whose UPDATE
+        // matches `entryOrderId=oldOrderId AND status='pending'` —
+        // without this detach the WHERE clause matches and flips THIS
+        // exec to status='cancelled' (then emits position:update with
+        // status='cancelled'). The mutation continues, sets entryOrderId
+        // to the new orderId BUT does NOT reset status, so the exec
+        // ends up permanently 'cancelled' in the DB and getActiveExecutions
+        // drops it on the next refetch — user sees the chart line vanish
+        // briefly and (worse) the underlying pending exec is gone even
+        // though the order on Binance is live. Detaching here is the
+        // minimum surgical fix: WHERE clause finds no match → no flip,
+        // no spurious position:update.
+        await ctx.db
+          .update(tradeExecutions)
+          .set({ entryOrderId: null, updatedAt: new Date() })
+          .where(eq(tradeExecutions.id, input.id));
+
         try {
           if (isAlgoEntry) {
             await cancelFuturesAlgoOrder(apiClient, oldEntryOrderId);
