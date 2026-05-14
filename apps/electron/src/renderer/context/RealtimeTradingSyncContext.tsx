@@ -97,7 +97,23 @@ export const RealtimeTradingSyncProvider = ({ walletId, allWalletIds, children }
       void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.autoTrading.getExecutionHistory.invalidate();
     }
-    if (keys.has('orders')) void utils.trading.getOrders.invalidate();
+    if (keys.has('orders')) {
+      void utils.trading.getOrders.invalidate();
+      // useOrphanOrders → useChartTradingData reads pending-line state
+      // off futuresTrading.getOpenOrders / getOpenAlgoOrders (Binance
+      // REST) and futuresTrading.getOpenDbOrderIds (local DB). These
+      // are wsBacked with a 10–30s polling fallback, but the WS-event
+      // handlers above only patched/invalidated trading.getOrders —
+      // the chart-side caches stayed stale until the next poll. Symptom
+      // the user saw on 2026-05-14: a STOP_MARKET 0.098 FILLED on
+      // BTCUSDT closed part of the position, but the chart kept the
+      // pending order line for ~30s after the fill. Invalidate the
+      // chart-side caches here so the line drops in the same hot-flush
+      // window as every other order-touching state.
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
+    }
     // wallet.list is patched optimistically by mergeWalletBalanceUpdate
     // with the authoritative post-mutation balance from the DB UPDATE
     // RETURNING. Belt-and-suspenders invalidate covers the cold-cache
