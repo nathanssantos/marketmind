@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.5] - 2026-05-14
+
+### Changed
+
+- **Chart breakeven line now uses Binance's authoritative `bep` (#644)** — the local compute (`entry × (1+r)/(1-r)` with `r = 0.0004` Futures VIP 0 taker, round-trip) over-displaced the BE line for three reasons: (1) users frequently enter via LIMIT (maker rate), not MARKET (taker) — the real entry fee is half of what we assumed; (2) the compute folded in a *future* exit fee that hadn't been charged yet, while Binance's `bep` only reflects fees actually paid (matching every Binance UI convention); (3) pyramided / partial-filled positions carry weighted-average entries with mixed fee tiers, making a flat-rate compute a guess. Concrete case from today's session: chart showed BE at 79599.65 while Binance app showed 79551.91 for the same long 0.202 @ 79536 — diff of ~48 USDT, exactly the maker+entry-only vs taker+round-trip gap. Fix: capture `bep` from `ACCOUNT_UPDATE.P[].bep` in `handle-account-events.ts` and persist on a new `tradeExecutions.breakeven_price` column. Plumbed through `BackendExecution → Order → GroupedPosition` to `renderPositions.ts`, which prefers the Binance value when present and falls back to the local round-trip-taker compute for paper trades and the brief window before the first ACCOUNT_UPDATE arrives.
+
 ## [1.22.4] - 2026-05-14
 
 ### Fixed
