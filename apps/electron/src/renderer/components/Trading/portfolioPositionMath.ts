@@ -103,38 +103,65 @@ export const buildPortfolioPositions = (
 };
 
 /**
- * Sum of how much PnL is "locked in" by stop-loss orders across positions
- * that have a stop set. Negative when stops are below entry (long) / above
- * entry (short). Skips positions without a stop.
+ * Round-trip taker fees for a position at a hypothetical exit price.
+ * Same logic as `computeTotalFees` for one position but parameterised on
+ * the exit price (SL or TP). Uses real `entryFee` when present, falls
+ * back to estimating both legs at `takerRate`.
+ */
+const positionFeesAtExit = (
+  pos: PortfolioPosition,
+  exitPrice: number,
+  takerRate: number,
+): number => {
+  const entryNotional = pos.avgPrice * pos.quantity;
+  const exitNotional = exitPrice * pos.quantity;
+  const entryFee = pos.entryFee > 0 ? pos.entryFee : entryNotional * takerRate;
+  const exitFee = exitNotional * takerRate;
+  return entryFee + exitFee;
+};
+
+/**
+ * Sum of NET P&L "locked in" by stop-loss orders across positions that have
+ * a stop set: gross PnL at SL minus round-trip fees. Subtracting fees here
+ * stops the panel from showing an unrealistic stop loss — the trader's real
+ * downside if every stop fires is the gross PnL plus the fees they'll have
+ * paid by then. Skips positions without a stop.
  */
 export const computeStopProtectedPnl = (
   positions: PortfolioPosition[],
+  takerRate: number,
 ): { total: number; positionsWithStops: number } => {
   let total = 0;
   let positionsWithStops = 0;
   for (const pos of positions) {
     if (!pos.stopLoss) continue;
     positionsWithStops += 1;
-    if (pos.side === 'LONG') total += (pos.stopLoss - pos.avgPrice) * pos.quantity;
-    else total += (pos.avgPrice - pos.stopLoss) * pos.quantity;
+    const gross = pos.side === 'LONG'
+      ? (pos.stopLoss - pos.avgPrice) * pos.quantity
+      : (pos.avgPrice - pos.stopLoss) * pos.quantity;
+    total += gross - positionFeesAtExit(pos, pos.stopLoss, takerRate);
   }
   return { total, positionsWithStops };
 };
 
 /**
- * Sum of profit if all positions with a take-profit hit their TP. Skips
- * positions without a TP.
+ * Sum of NET projected profit if all positions with a take-profit hit their
+ * TP — gross PnL at TP minus round-trip fees. Aligns the panel number with
+ * the breakeven line semantics: "what would I actually walk away with."
  */
 export const computeTpProjectedProfit = (
   positions: PortfolioPosition[],
+  takerRate: number,
 ): { total: number; positionsWithTp: number } => {
   let total = 0;
   let positionsWithTp = 0;
   for (const pos of positions) {
     if (!pos.takeProfit) continue;
     positionsWithTp += 1;
-    if (pos.side === 'LONG') total += (pos.takeProfit - pos.avgPrice) * pos.quantity;
-    else total += (pos.avgPrice - pos.takeProfit) * pos.quantity;
+    const gross = pos.side === 'LONG'
+      ? (pos.takeProfit - pos.avgPrice) * pos.quantity
+      : (pos.avgPrice - pos.takeProfit) * pos.quantity;
+    total += gross - positionFeesAtExit(pos, pos.takeProfit, takerRate);
   }
   return { total, positionsWithTp };
 };
