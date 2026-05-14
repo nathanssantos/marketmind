@@ -231,16 +231,21 @@ async function syncPositionsFromAccountUpdate(
 
       const dbQty = parseFloat(matchingExec.quantity);
       const dbEntryPrice = parseFloat(matchingExec.entryPrice);
+      const dbBep = matchingExec.breakevenPrice ? parseFloat(matchingExec.breakevenPrice) : null;
+      const exchangeBep = pos.bep ? parseFloat(pos.bep) : null;
       const qtyChanged = Math.abs(dbQty - exchangeAbsQty) > QTY_TOLERANCE;
       const priceChanged = Math.abs(dbEntryPrice - exchangeEntryPrice) > PRICE_TOLERANCE;
+      const bepChanged = exchangeBep !== null && exchangeBep > 0
+        && (dbBep === null || Math.abs(dbBep - exchangeBep) > PRICE_TOLERANCE);
 
-      if (!qtyChanged && !priceChanged) continue;
+      if (!qtyChanged && !priceChanged && !bepChanged) continue;
 
       const updated = await db
         .update(tradeExecutions)
         .set({
           ...(qtyChanged ? { quantity: exchangeAbsQty.toString() } : {}),
           ...(priceChanged ? { entryPrice: exchangeEntryPrice.toString() } : {}),
+          ...(bepChanged && exchangeBep !== null ? { breakevenPrice: exchangeBep.toString() } : {}),
           updatedAt: new Date(),
         })
         .where(

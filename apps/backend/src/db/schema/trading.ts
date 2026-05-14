@@ -266,6 +266,10 @@ export const tradeExecutions = pgTable('trade_executions', {
   fibonacciProjection: text('fibonacci_projection'),
   entryFee: numeric('entry_fee', { precision: 20, scale: 8 }),
   exitFee: numeric('exit_fee', { precision: 20, scale: 8 }),
+  // Binance's `bep` (break-even price) from ACCOUNT_UPDATE.P[].bep. Snapshots
+  // post-entry-fees break-even so the chart's BE line matches what the user
+  // sees in Binance's own UI. Computed locally as a fallback when not set.
+  breakevenPrice: numeric('breakeven_price', { precision: 20, scale: 8 }),
   commissionAsset: varchar('commission_asset', { length: 20 }),
   trailingStopAlgoId: varchar('trailing_stop_algo_id', { length: 40 }),
   trailingStopMode: varchar('trailing_stop_mode', { length: 10 }).$type<'local' | 'binance'>(),

@@ -19,6 +19,10 @@ export interface BackendExecution {
   fibonacciProjection?: FibonacciProjectionData | null;
   leverage?: number;
   liquidationPrice?: string | null;
+  /** Binance's break-even price snapshot (captured in handle-account-events
+   *  from ACCOUNT_UPDATE.P[].bep). The chart's BE line prefers this over the
+   *  default round-trip-taker computation when present. */
+  breakevenPrice?: string | null;
 }
 
 export interface OrderCloseButton {
@@ -104,6 +108,10 @@ export interface GroupedPosition {
   totalPnL: number;
   leverage: number;
   liquidationPrice?: number;
+  /** Binance's authoritative break-even price for the position, when known.
+   *  Picked up from the underlying Order's `breakevenPrice` field, which
+   *  flows from ACCOUNT_UPDATE.bep stored on `tradeExecutions`. */
+  breakevenPrice?: number;
 }
 
 export const SLTP_BUTTON = {
