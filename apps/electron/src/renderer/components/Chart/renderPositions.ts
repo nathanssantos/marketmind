@@ -53,7 +53,7 @@ export const groupActivePositions = (
         ? (currentPrice - entryPrice) * quantity
         : (entryPrice - currentPrice) * quantity;
 
-      const typedOrder = order as Order & { leverage?: number; liquidationPrice?: number };
+      const typedOrder = order as Order & { leverage?: number; liquidationPrice?: number; breakevenPrice?: number };
       groupedPositions.set(key, {
         symbol: order.symbol,
         netQuantity: orderQuantity,
@@ -63,6 +63,7 @@ export const groupActivePositions = (
         totalPnL: orderPnL,
         leverage: typedOrder.leverage ?? 1,
         liquidationPrice: typedOrder.liquidationPrice,
+        breakevenPrice: typedOrder.breakevenPrice,
       });
     }
   });
@@ -112,7 +113,15 @@ const renderPositionEntry = (
   drawHorizontalLine(ctx, y, chartWidth, lineColor);
 
   if (rc.showBreakevenLines) {
-    const bePrice = calculateBreakevenPrice({
+    // Prefer Binance's authoritative `bep` (captured from ACCOUNT_UPDATE
+    // and stored on the execution) — it reflects the entry fees actually
+    // paid (which can be maker rate for LIMIT entries, lower than taker).
+    // Fall back to the round-trip-taker compute for paper trades and the
+    // brief window before the first ACCOUNT_UPDATE lands the bep value.
+    const binanceBep = position.breakevenPrice && position.breakevenPrice > 0
+      ? position.breakevenPrice
+      : null;
+    const bePrice = binanceBep ?? calculateBreakevenPrice({
       entryPrice: position.avgPrice,
       side: isLong ? 'LONG' : 'SHORT',
       takerRate: rc.breakevenTakerRate,

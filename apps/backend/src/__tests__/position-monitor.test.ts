@@ -61,6 +61,7 @@ const createMockExecution = (overrides: Partial<TradeExecution> = {}): TradeExec
   lowestPriceSinceTrailingActivation: null,
   opportunityCostAlertSentAt: null,
   partialClosePnl: null,
+  breakevenPrice: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
