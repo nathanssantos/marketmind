@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.4] - 2026-05-14
+
+### Fixed
+
+- **SL/TP fills closing executions with placeholder data (pnl=0, exitPrice=null) — Today's P&L not updating after stop/take (#641)** — root cause of the user-reported "tomei um stop mas a lista de orders não atualizou com PnL nem o Today's P&L". When a position closes, Binance sends three events in the same WS burst (often same epoch millisecond): `ORDER_TRADE_UPDATE x=NEW` (MARKET spawn), `ACCOUNT_UPDATE pa=0` (flat position), and `ORDER_TRADE_UPDATE x=TRADE X=FILLED rp=<real PnL>`. Handlers dispatch via `void` → async race. When `handleAccountUpdate.syncPositionsFromAccountUpdate` wins, it calls `closeExecutionAndBroadcast({ exitPrice: null, pnl: 0, exitReason: 'EXCHANGE_FLAT' })` — placeholders, because ACCOUNT_UPDATE alone doesn't carry the fill data. Then `handleExitFill` arrives, runs its `UPDATE WHERE status='open'` (now 'closed' → 0 rows), short-circuits at the early return — the real pnl / exitPrice / fees / income-sync side effects never happen. The "comment swore the race was benign" because closeExecutionAndBroadcast is status-guarded; it isn't benign in practice, the guard just lets the loser drop the canonical data on the floor. Symptoms apply equally to STOP_LOSS, TAKE_PROFIT, manual close, reverse, and liquidation — all close paths emit the same triple.
+
+  Fix: in `syncPositionsFromAccountUpdate`, when `pa=0` is seen, defer the close by `FLAT_CLOSE_GRACE_MS` (3000ms) via setTimeout. The deferred handler re-checks if the exec is still open; only closes if no `ORDER_TRADE_UPDATE` arrived in the meantime (handleExitFill already wrote canonical data). The race semantic flips from "winner overwrites canonical data with placeholders" to "handleExitFill is canonical; ACCOUNT_UPDATE flat-close is a 3s safety-net". Wallet balance accounting unchanged — the separate `SET currentBalance = wb` path in handleAccountUpdate uses Binance's snapshot and remains authoritative.
+
 ## [1.22.3] - 2026-05-13
 
 ### Fixed
