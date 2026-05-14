@@ -3,6 +3,7 @@ import { generateKlines } from './helpers/klineFixtures';
 import { getTrpcHitCount, installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady } from './helpers/chartTestSetup';
 import { emitSocketEvent, setWsConnected, waitForSocket } from './helpers/socketBridge';
+import { openToolsItem } from './helpers/toolsMenu';
 
 const FAKE_BACKTEST_ID = 'bt-e2e';
 const FAKE_RESULT = {
@@ -119,7 +120,7 @@ const installModalMock = async (
 };
 
 const openModal = async (page: Page) => {
-  await page.getByRole('button', { name: 'Backtest', exact: true }).click();
+  await openToolsItem(page, 'backtest');
   await expect(page.getByRole('dialog', { name: 'Backtest' })).toBeVisible();
 };
 

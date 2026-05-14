@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type LaunchedApp } from './app-launch';
 import { generateKlines } from '../helpers/klineFixtures';
 import { installTrpcMockOnContext } from '../helpers/trpcMock';
+import { openToolsItem } from '../helpers/toolsMenu';
 
 const PRESET_FIXTURE = [
   {
@@ -83,9 +84,9 @@ test.describe('Screener modal — inside packaged Electron app', () => {
   });
 
   test('toolbar trigger opens the modal with header Selects visible', async () => {
-    const trigger = launched.window.getByRole('button', { name: 'Market Screener', exact: true });
-    await expect(trigger).toBeVisible({ timeout: 15_000 });
-    await trigger.click();
+    const toolsBtn = launched.window.locator('[data-testid="toolbar-tools-button"]');
+    await expect(toolsBtn).toBeVisible({ timeout: 15_000 });
+    await openToolsItem(launched.window, 'screener');
 
     const dialog = launched.window.getByRole('dialog', { name: 'Market Screener' });
     await expect(dialog).toBeVisible();
@@ -101,7 +102,7 @@ test.describe('Screener modal — inside packaged Electron app', () => {
   });
 
   test('opening the modal triggers screener.run; clicking a preset triggers runPreset', async () => {
-    await launched.window.getByRole('button', { name: 'Market Screener', exact: true }).click();
+    await openToolsItem(launched.window, 'screener');
     const dialog = launched.window.getByRole('dialog', { name: 'Market Screener' });
     await expect(dialog).toBeVisible();
 
@@ -129,7 +130,7 @@ test.describe('Screener modal — inside packaged Electron app', () => {
   });
 
   test('Escape closes; toolbar trigger reopens with the same dialog', async () => {
-    await launched.window.getByRole('button', { name: 'Market Screener', exact: true }).click();
+    await openToolsItem(launched.window, 'screener');
     const dialog = launched.window.getByRole('dialog', { name: 'Market Screener' });
     await expect(dialog).toBeVisible();
 
