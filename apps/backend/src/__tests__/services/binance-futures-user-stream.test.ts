@@ -1482,4 +1482,146 @@ describe('BinanceFuturesUserStreamService', () => {
       service.stop();
     });
   });
+
+  describe('mergeIntoExistingPosition — pyramid double-count race', () => {
+    // Regression: 2026-05-14 04:26 BTCUSDT. The three WS events of a
+    // pyramid fill (TRADE_LITE + ACCOUNT_UPDATE + ORDER_TRADE_UPDATE)
+    // arrive in the same WS frame and dispatch in parallel via `void`.
+    // If `handle-account-events` syncPositionsFromAccountUpdate wins
+    // the race, it writes `quantity = exchangeAbsQty` (the POST-fill
+    // size) to the DB before `mergeIntoExistingPosition` runs. The old
+    // additive math (`existingQty + addedQty`) then double-counts the
+    // fill — concretely observed: position 0.221 → exchange reports
+    // 0.331 → DB now 0.331; merge adds 0.110 → DB ends at 0.441.
+    // Symptom: the debounced SL/TP update placed a SL sized for the
+    // bogus 0.441 (algoId 4000001309952396 q="0.441") while the real
+    // exchange position was 0.331. Next ACCOUNT_UPDATE / position-sync
+    // corrected the DB but the over-sized SL stayed live until the
+    // next debounced refresh.
+    it('uses exchange positionAmt/entryPrice over additive math (race-safe)', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+        initialBalance: '10000',
+      });
+
+      const executionId = generateEntityId();
+      // Seed the DB in the racy state: handle-account-events already
+      // wrote the post-fill size (0.331) before mergeIntoExistingPosition
+      // got a chance to run.
+      await db.insert(tradeExecutions).values({
+        id: executionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'SHORT',
+        entryPrice: '79305.30966767',
+        quantity: '0.331',
+        status: 'open',
+        marketType: 'FUTURES',
+        leverage: 1,
+        openedAt: new Date(),
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      mockGetPosition.mockResolvedValueOnce({
+        symbol: 'BTCUSDT',
+        positionAmt: '-0.331',
+        entryPrice: '79305.30966767',
+        liquidationPrice: '85000',
+        markPrice: '79300',
+        unrealizedProfit: '0',
+        leverage: 1,
+        positionSide: 'BOTH',
+      });
+
+      await service.mergeIntoExistingPosition(
+        wallet.id,
+        'BTCUSDT',
+        executionId,
+        0.110,
+        79298.9,
+        undefined,
+        'pyramid race test',
+      );
+
+      const [updated] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, executionId));
+
+      // Must be 0.331 (exchange authority) — NOT 0.441 (additive).
+      expect(parseFloat(updated!.quantity)).toBe(0.331);
+      expect(parseFloat(updated!.entryPrice)).toBeCloseTo(79305.30966767, 5);
+
+      mockGetPosition.mockReset();
+      mockGetPosition.mockResolvedValue(null);
+      service.stop();
+    });
+
+    it('falls back to additive math when exchange getPosition fails', async () => {
+      const { user } = await createAuthenticatedUser();
+      const db = getTestDatabase();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'live',
+        apiKey: 'test-api-key',
+        apiSecret: 'test-api-secret',
+        initialBalance: '10000',
+      });
+
+      const executionId = generateEntityId();
+      await db.insert(tradeExecutions).values({
+        id: executionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'SHORT',
+        entryPrice: '79308.5',
+        quantity: '0.221',
+        status: 'open',
+        marketType: 'FUTURES',
+        leverage: 1,
+        openedAt: new Date(),
+      });
+
+      const service = new BinanceFuturesUserStreamService();
+      await service.subscribeWallet(wallet);
+
+      mockGetPosition.mockRejectedValueOnce(new Error('exchange unavailable'));
+
+      await service.mergeIntoExistingPosition(
+        wallet.id,
+        'BTCUSDT',
+        executionId,
+        0.110,
+        79298.9,
+        undefined,
+        'pyramid fallback test',
+      );
+
+      const [updated] = await db
+        .select()
+        .from(tradeExecutions)
+        .where(eq(tradeExecutions.id, executionId));
+
+      // Fallback: 0.221 + 0.110 = 0.331 (additive — exchange unavailable).
+      expect(parseFloat(updated!.quantity)).toBe(0.331);
+      // Fallback entry price is the weighted average.
+      expect(parseFloat(updated!.entryPrice)).toBeCloseTo(
+        ((0.221 * 79308.5) + (0.110 * 79298.9)) / 0.331,
+        4,
+      );
+
+      mockGetPosition.mockReset();
+      mockGetPosition.mockResolvedValue(null);
+      service.stop();
+    });
+  });
 });
