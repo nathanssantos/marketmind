@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.6] - 2026-05-14
+
 ### Fixed
 
 - **Multi-chart layouts lagged ~500 ms when moving a TP or order on one chart** — root cause is the `order:cancelled` socket handler: it patched `trading.getOrders` synchronously, but it did NOT patch `autoTrading.getActiveExecutions`, which is what every chart reads to draw pending-order lines. The non-focused charts had to wait for the safety-net `HOT_FLUSH_MS` debounce + `autoTrading.getActiveExecutions.invalidate()` round-trip before the stale pending line disappeared — perceptible after drag-release as "the other charts froze for half a second". Fix: (1) new `markPendingExecCancelledByOrderIdInAllCaches` helper fans out a synchronous patch across every `autoTrading.getActiveExecutions` cache variant per wallet, flipping the matching pending exec's status to `'cancelled'` in the same render frame as the WS event; (2) `HOT_FLUSH_MS` 500 → 200, so the belt-and-suspenders invalidate (which still drives the appearance of the post-cancel *new* order row that the merge can't derive) lands twice as fast. Net effect: non-focused charts drop the old pending line synchronously and pick up the new one within ~200 ms.
