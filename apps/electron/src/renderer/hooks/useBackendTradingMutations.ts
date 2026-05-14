@@ -131,18 +131,47 @@ export const useBackendTradingMutations = () => {
   });
 
   const updatePendingEntryMutation = trpc.trading.updatePendingEntry.useMutation({
+    onMutate: ({ id }) => {
+      // Drop the OLD orderId from the orphan-classifier REST caches the
+      // instant the drag-release fires — BEFORE the mutation roundtrip
+      // begins. Look up the exec in the autoTrading.getActiveExecutions
+      // cache to read its current entryOrderId.
+      //
+      // Without this drop, during the ~100–500ms cancel+create roundtrip:
+      //   1. The exec's optimistic-patched entryPrice renders the line
+      //      at the NEW price (good).
+      //   2. The OLD order is still in `futuresTrading.getOpenOrders`
+      //      cache (REST hasn't refetched).
+      //   3. If the exec's `entryOrderId` ever drifts away from the OLD
+      //      orderId in cache (backend detach, refetch with NULL during
+      //      the mutation window), the orphan classifier stops skipping
+      //      the OLD order — it surfaces as a `trackedOrder` / `orphan`
+      //      line at the OLD price.
+      //   4. Chart paints both: optimistic NEW + phantom OLD → user sees
+      //      two pending lines until the next refetch reconciles.
+      // Dropping the OLD orderId upfront eliminates the phantom source.
+      const activeExecCaches = queryClient.getQueriesData<Array<{ id: string; entryOrderId?: string | null }>>({
+        queryKey: getQueryKey(trpc.autoTrading.getActiveExecutions),
+      });
+      for (const [, rows] of activeExecCaches) {
+        if (!Array.isArray(rows)) continue;
+        const target = rows.find((r) => r.id === id);
+        if (target?.entryOrderId) {
+          removeOrderFromAllOpenOrderCaches(String(target.entryOrderId));
+          break;
+        }
+      }
+    },
     onSuccess: (data) => {
-      // Drop the cancelled order from getOpenOrders cache immediately
-      // so the chart doesn't paint a "ghost copy" at the old price
-      // while the cache eventually-consistently catches up. Without
-      // this patch, the user sees the old + new entry line side by
-      // side for 200–500ms after each chart drag — long enough to
-      // misclick.
+      // Belt-and-suspenders: the cancel ack from Binance might bring a
+      // new snapshot that re-includes the old order briefly between
+      // onMutate's drop and Binance's actual cancellation. Drop again
+      // on the authoritative server-returned oldOrderId.
       if (data?.oldOrderId) {
         removeOrderFromAllOpenOrderCaches(String(data.oldOrderId));
       }
-      // Belt-and-suspenders refetch — the new orderId only enters
-      // these caches once Binance returns it on the next list call.
+      // The new orderId only enters these caches once Binance returns
+      // it on the next list call.
       void utils.futuresTrading.getOpenOrders.invalidate();
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
     },
