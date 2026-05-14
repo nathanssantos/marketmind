@@ -19,6 +19,7 @@ import {
 } from '../services/socketCacheMerge';
 import {
   markExecutionClosedInAllCaches,
+  markPendingExecCancelledByOrderIdInAllCaches,
   patchExecutionInAllCaches,
 } from '../services/executionCacheSync';
 import { trpc } from '../utils/trpc';
@@ -33,7 +34,9 @@ import { toaster } from '../utils/toaster';
  * event. This invalidate is a *belt-and-suspenders* sweep that fires
  * a few hundred ms later to reconcile any field the merge couldn't
  * derive (e.g. server-side aggregations, related queries we don't
- * patch). 250 ms keeps the safety net out of the hot path.
+ * patch). 200 ms keeps the safety net out of the hot path while
+ * making multi-chart layouts feel responsive — non-focused charts
+ * land within ~200 ms instead of the previous 500 ms.
  *
  * IMPORTANT: scheduleInvalidation does NOT extend the timer on
  * subsequent calls. Earlier behavior cleared+reset the timer on every
@@ -44,7 +47,7 @@ import { toaster } from '../utils/toaster';
  * Now we just accumulate keys into the existing pending set, leaving
  * the original timer intact.
  */
-const HOT_FLUSH_MS = 500;
+const HOT_FLUSH_MS = 200;
 const COLD_FLUSH_MS = 2000;
 
 const COLD_KEYS = new Set(['setupStats', 'equityCurve']);
@@ -94,7 +97,23 @@ export const RealtimeTradingSyncProvider = ({ walletId, allWalletIds, children }
       void utils.autoTrading.getActiveExecutions.invalidate();
       void utils.autoTrading.getExecutionHistory.invalidate();
     }
-    if (keys.has('orders')) void utils.trading.getOrders.invalidate();
+    if (keys.has('orders')) {
+      void utils.trading.getOrders.invalidate();
+      // useOrphanOrders → useChartTradingData reads pending-line state
+      // off futuresTrading.getOpenOrders / getOpenAlgoOrders (Binance
+      // REST) and futuresTrading.getOpenDbOrderIds (local DB). These
+      // are wsBacked with a 10–30s polling fallback, but the WS-event
+      // handlers above only patched/invalidated trading.getOrders —
+      // the chart-side caches stayed stale until the next poll. Symptom
+      // the user saw on 2026-05-14: a STOP_MARKET 0.098 FILLED on
+      // BTCUSDT closed part of the position, but the chart kept the
+      // pending order line for ~30s after the fill. Invalidate the
+      // chart-side caches here so the line drops in the same hot-flush
+      // window as every other order-touching state.
+      void utils.futuresTrading.getOpenOrders.invalidate();
+      void utils.futuresTrading.getOpenAlgoOrders.invalidate();
+      void utils.futuresTrading.getOpenDbOrderIds.invalidate();
+    }
     // wallet.list is patched optimistically by mergeWalletBalanceUpdate
     // with the authoritative post-mutation balance from the DB UPDATE
     // RETURNING. Belt-and-suspenders invalidate covers the cold-cache
@@ -296,6 +315,16 @@ export const RealtimeTradingSyncProvider = ({ walletId, allWalletIds, children }
         { walletId, limit: 100 },
         (prev) => mergeOrderCancelled(prev, data.orderId),
       );
+      // Instant patch on autoTrading.getActiveExecutions across every
+      // cache variant: flip the matching pending exec to 'cancelled' in
+      // the SAME render frame as the socket event. Critical for
+      // multi-chart layouts — without this the non-focused charts kept
+      // the pending chart line until the HOT_FLUSH_MS-debounced
+      // invalidate fired, perceptible as a ~200–500ms lag after dragging
+      // a TP/order on one chart. The schedule below is still the
+      // belt-and-suspenders sweep (covers the post-cancel new-order row
+      // that the merge can't derive).
+      markPendingExecCancelledByOrderIdInAllCaches(queryClient, walletId, data.orderId);
     }
     // Cancelling an open order can free cross-margin reserve; Binance
     // typically pairs with wallet:update but include the schedule key
