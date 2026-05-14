@@ -24,8 +24,9 @@ const buildWallet = (id: string, name: string, agentTradingEnabled: boolean) => 
 });
 
 const openSecurityTab = async (page: Page) => {
-  await page.getByRole('button', { name: 'Account' }).click();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
+  // Settings is a top-level toolbar button — Account-menu → Settings
+  // menuitem was the old path before the toolbar refactor.
+  await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('tab', { name: 'Security' }).click();
   await expect(page.getByText('AI Agent Trading')).toBeVisible();

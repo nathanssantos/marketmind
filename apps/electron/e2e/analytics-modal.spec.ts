@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
 import { getTrpcHitCount, installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady } from './helpers/chartTestSetup';
+import { openToolsItem } from './helpers/toolsMenu';
 
 const WALLET_FIXTURE = [{
   id: 'w1',
@@ -86,10 +87,8 @@ const seedActiveWallet = async (page: Page) => {
   }, 'w1');
 };
 
-const TRIGGER_NAME = 'Analytics';
-
 const openModal = async (page: Page) => {
-  await page.getByRole('button', { name: TRIGGER_NAME, exact: true }).click();
+  await openToolsItem(page, 'analytics');
   await expect(page.getByRole('dialog', { name: /^Analytics/ })).toBeVisible();
 };
 
@@ -101,10 +100,9 @@ test.describe('Analytics modal — full flow', () => {
     await seedActiveWallet(page);
   });
 
-  test('toolbar trigger toggles the dialog open/closed', async ({ page }) => {
-    const trigger = page.getByRole('button', { name: TRIGGER_NAME, exact: true });
+  test('toolbar trigger opens and Escape closes the dialog', async ({ page }) => {
     await expect(page.getByRole('dialog', { name: /^Analytics/ })).toHaveCount(0);
-    await trigger.click();
+    await openToolsItem(page, 'analytics');
     await expect(page.getByRole('dialog', { name: /^Analytics/ })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByRole('dialog', { name: /^Analytics/ })).toHaveCount(0);
@@ -195,7 +193,7 @@ test.describe('Analytics modal — period-aware totalReturn (regression for the 
     await waitForChartReady(page);
     await seedActiveWallet(page);
 
-    await page.getByRole('button', { name: 'Analytics', exact: true }).click();
+    await openToolsItem(page, 'analytics');
     const dialog = page.getByRole('dialog', { name: /^Analytics/ });
     await expect(dialog).toBeVisible();
 
@@ -224,7 +222,7 @@ test.describe('Analytics modal — no wallet', () => {
     await page.goto('/');
     await waitForChartReady(page);
 
-    await page.getByRole('button', { name: 'Analytics', exact: true }).click();
+    await openToolsItem(page, 'analytics');
     const dialog = page.getByRole('dialog', { name: /^Analytics/ });
     await expect(dialog).toBeVisible();
     await expect(

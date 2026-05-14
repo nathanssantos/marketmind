@@ -28,8 +28,9 @@ const SNAPSHOTS_FIXTURE = [
 ];
 
 const openLayoutsSection = async (page: Page) => {
-  await page.getByRole('button', { name: 'Account' }).click();
-  await page.getByRole('menuitem', { name: 'Settings' }).click();
+  // Settings is a top-level toolbar button — Account-menu → Settings
+  // menuitem was the old path before the toolbar refactor.
+  await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('tab', { name: 'Data' }).click();
   await expect(page.getByText('Layout History')).toBeVisible();
