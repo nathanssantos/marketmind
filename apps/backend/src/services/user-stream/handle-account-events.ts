@@ -15,6 +15,11 @@ import { isTransferReason } from '../../constants/income-types';
 // change vs noise. Same thresholds position-sync uses.
 const QTY_TOLERANCE = 0.00001;
 const PRICE_TOLERANCE = 0.01;
+// Grace window for ACCOUNT_UPDATE pa=0 to let the matching ORDER_TRADE_UPDATE
+// arrive and handleExitFill write the canonical exit data. 3s is generous
+// enough for any reasonable WS arrival jitter, short enough that the
+// fallback fires before the 30s periodic position-sync would notice.
+const FLAT_CLOSE_GRACE_MS = 3000;
 import type {
   UserStreamContext,
   FuturesAccountUpdate,
@@ -170,26 +175,51 @@ async function syncPositionsFromAccountUpdate(
         continue;
       }
 
-      // Flat on exchange → close every matching open exec. Use the
-      // side filter when we have a previous side hint; otherwise
-      // close all open execs on this symbol (rare; happens when our
-      // ACCOUNT_UPDATE arrives after a flip + close in quick
-      // succession).
+      // Flat on exchange — the matching `ORDER_TRADE_UPDATE` x=TRADE
+      // event almost always arrives in the same WS burst with the real
+      // exit price, fees, and realized PnL. We defer the close here
+      // for a short grace window so `handleExitFill` gets first crack
+      // at it. Closing immediately on ACCOUNT_UPDATE pa=0 used to win
+      // the race against handleExitFill (each runs async via `void`),
+      // setting `exitPrice=null pnl=0 exitReason='EXCHANGE_FLAT'`. By
+      // the time handleExitFill's `UPDATE WHERE status='open'` runs,
+      // the row's already status='closed' → 0 rows returned → early
+      // return → the real pnl / exitPrice / income-sync side effects
+      // never happen. After the grace window, if the exec is still
+      // open (no ORDER_TRADE_UPDATE arrived — manual close via Binance
+      // UI without a tracked order, liquidation we missed, etc.), the
+      // fallback closeExecutionAndBroadcast runs as the safety net.
       if (exchangeAbsQty === 0) {
         for (const exec of openExecs) {
-          // We don't know exit_price from ACCOUNT_UPDATE alone;
-          // pnl=0 is a placeholder. The handleExitFill path that
-          // arrives in the same event burst computes the real PnL.
-          // The status-guarded UPDATE in closeExecutionAndBroadcast
-          // means whichever path wins, the OTHER one becomes a
-          // no-op (closed: false return).
-          await closeExecutionAndBroadcast(exec, {
-            exitPrice: null,
-            exitReason: 'EXCHANGE_FLAT',
-            exitSource: 'EXCHANGE_SYNC',
-            pnl: 0,
-            pnlPercent: 0,
-          });
+          const execId = exec.id;
+          setTimeout(() => {
+            void (async () => {
+              try {
+                const [stillOpen] = await db
+                  .select({ id: tradeExecutions.id })
+                  .from(tradeExecutions)
+                  .where(and(eq(tradeExecutions.id, execId), eq(tradeExecutions.status, 'open')))
+                  .limit(1);
+                if (!stillOpen) return;
+                await closeExecutionAndBroadcast(exec, {
+                  exitPrice: null,
+                  exitReason: 'EXCHANGE_FLAT',
+                  exitSource: 'EXCHANGE_SYNC',
+                  pnl: 0,
+                  pnlPercent: 0,
+                });
+                logger.warn(
+                  { walletId, executionId: execId, symbol },
+                  '[FuturesUserStream] ACCOUNT_UPDATE flat-close fallback fired — no ORDER_TRADE_UPDATE arrived for this close',
+                );
+              } catch (err) {
+                logger.error(
+                  { walletId, executionId: execId, error: serializeError(err) },
+                  '[FuturesUserStream] Deferred flat-close fallback failed',
+                );
+              }
+            })();
+          }, FLAT_CLOSE_GRACE_MS);
         }
         continue;
       }
