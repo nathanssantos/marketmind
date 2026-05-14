@@ -267,8 +267,12 @@ export const RealtimeTradingSyncProvider = ({ walletId, allWalletIds, children }
     // with an immediate wallet:update event (paper, testnet, lost frame).
     // Schedule the wallet flush as a safety net — the dedup in flushHot
     // collapses it with any paired wallet:update arriving in the same
-    // 500ms window.
-    scheduleRef.current('orders', 'wallet');
+    // 500ms window. We also schedule 'positions' so the
+    // `autoTrading.getActiveExecutions` cache (which the chart reads to
+    // draw pending order lines) refetches after a status change —
+    // without this, a cancelled pending order kept its NEW chart line
+    // until the 30s backup poll or a full reload.
+    scheduleRef.current('orders', 'wallet', 'positions');
   }, !!walletId);
 
   useSocketEvent('order:created', (raw) => {
@@ -295,8 +299,13 @@ export const RealtimeTradingSyncProvider = ({ walletId, allWalletIds, children }
     }
     // Cancelling an open order can free cross-margin reserve; Binance
     // typically pairs with wallet:update but include the schedule key
-    // here as a safety net.
-    scheduleRef.current('orders', 'wallet');
+    // here as a safety net. Also schedule 'positions' so the
+    // `autoTrading.getActiveExecutions` cache refetches the matching
+    // pending-exec row (now status='cancelled'); without this the chart's
+    // pending order line lingered until the 30s backup poll / full reload
+    // — visible to the user when moving an order via drag (cancel+create
+    // shows both old + new lines briefly).
+    scheduleRef.current('orders', 'wallet', 'positions');
   }, !!walletId);
 
   useSocketEvent('wallet:update', (raw) => {
