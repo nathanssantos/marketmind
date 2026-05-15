@@ -57,6 +57,19 @@ const INDICATORS: IndicatorSpec[] = [
   { seedLabel: 'Stoch 14', base: 1.0 },
 ];
 
+// EMA 21 trend filter (v1.22.9). The same TF_WEIGHTS ladder applies,
+// but EMA 21 is only emitted for 15m+ — at 1m/5m, 21 candles of
+// MA is barely a trend, just noise. Stormer's IFR(2) playbook treats
+// `price > MM21` as a binary go/no-go gate; the checklist doesn't
+// support hard vetoes, but stacking high-weight `priceAbove`
+// entries across HTFs reproduces the gate behaviour via score —
+// counter-trend setups can't accumulate enough weight to hit a
+// typical 50% trigger threshold.
+const TREND_FILTER_TIMEFRAMES = ['15m', '1h', '4h', '1d', '1w', '1M'] as const;
+const TREND_FILTERS: { seedLabel: string; base: number }[] = [
+  { seedLabel: 'EMA 21', base: 2.0 },
+];
+
 const buildTemplate = (): ChecklistTemplateEntry[] => {
   const out: ChecklistTemplateEntry[] = [];
   let order = 0;
@@ -71,6 +84,19 @@ const buildTemplate = (): ChecklistTemplateEntry[] => {
       out.push({
         seedLabel: ind.seedLabel, timeframe: tf, op: 'overbought',
         threshold: ind.overbought,
+        tier: 'preferred', side: 'SHORT', weight, enabled: false, order: order++,
+      });
+    }
+  }
+  for (const filter of TREND_FILTERS) {
+    for (const tf of TREND_FILTER_TIMEFRAMES) {
+      const weight = filter.base + TF_WEIGHTS[tf];
+      out.push({
+        seedLabel: filter.seedLabel, timeframe: tf, op: 'priceAbove',
+        tier: 'preferred', side: 'LONG', weight, enabled: false, order: order++,
+      });
+      out.push({
+        seedLabel: filter.seedLabel, timeframe: tf, op: 'priceBelow',
         tier: 'preferred', side: 'SHORT', weight, enabled: false, order: order++,
       });
     }

@@ -32,10 +32,19 @@ import { lttbDownsample } from './lttbDownsample';
  * the right edge in real time.
  */
 
-const DEFAULT_HEIGHT = '140px';
-const Y_DOMAIN: [number, number] = [-100, 100];
-const Y_TICKS = [-100, -50, 0, 50, 100];
-const REFERENCE_LEVELS = [-50, 0, 50] as const;
+const DEFAULT_HEIGHT = '200px';
+// Y axis is clipped to ±50 rather than the score's full ±100 range.
+// In normal trading the net score lives between roughly -30 and +30;
+// allocating the full ±100 wasted ~70% of the vertical space on values
+// that essentially never occur. Clipping at ±50 doubles the visual
+// resolution for the band where the actual signal lives, and any
+// rare spike past ±50 visually pegs the chart's top/bottom edge —
+// itself a useful "this is an extreme reading" cue. The bipolar
+// gradient still anchors on y=0 (the neutral pivot) — half visible
+// height each side.
+const Y_DOMAIN: [number, number] = [-50, 50];
+const Y_TICKS = [-50, -25, 0, 25, 50];
+const REFERENCE_LEVELS = [-25, 0, 25] as const;
 const MARGIN = { top: 4, right: 4, bottom: 0, left: -28 } as const;
 const AXIS_FONT_SIZE = 9;
 const TOOLTIP_FONT_SIZE = '11px';
@@ -132,23 +141,34 @@ export const ChecklistNetScoreArea = ({
         <AreaChart data={transformed} margin={MARGIN}>
           <defs>
             {/*
-              Vertical gradient mapped onto the Area fill: top of the
-              chart (-100..+100 domain → y=0 is at 50% screen height)
-              is profit-tinted, bottom is loss-tinted, both fade to
-              transparent as they approach the midpoint. With
-              `baseValue={0}`, recharts already only fills between the
-              value line and y=0 — the gradient just colors the two
-              halves correctly without a per-point stroke trick.
+              Vertical gradient mapped onto the Area fill. The y-axis
+              is REVERSED below (oscillator convention — oversold at
+              the bottom, overbought at the top), so the gradient
+              stops are flipped accordingly:
+                - top of screen (visual 0%)   → short bias → loss-tinted
+                - bottom of screen (visual 100%) → long bias → profit-tinted
+              The middle (50%) fades both to near-zero so the neutral
+              pivot is clean. With `baseValue={0}` recharts only fills
+              between the data line and y=0 — the gradient just colors
+              the two halves correctly without a per-point stroke trick.
             */}
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={profitColor} stopOpacity={0.55} />
-              <stop offset="50%" stopColor={profitColor} stopOpacity={0.05} />
+              <stop offset="0%" stopColor={lossColor} stopOpacity={0.55} />
               <stop offset="50%" stopColor={lossColor} stopOpacity={0.05} />
-              <stop offset="100%" stopColor={lossColor} stopOpacity={0.55} />
+              <stop offset="50%" stopColor={profitColor} stopOpacity={0.05} />
+              <stop offset="100%" stopColor={profitColor} stopOpacity={0.55} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray={GRID_DASH} stroke={gridColor} />
           <XAxis dataKey="t" hide />
+          {/*
+            `reversed` flips the visual orientation: positive net (long
+            bias) renders at the BOTTOM, negative (short bias) at the
+            TOP — matching the convention every oscillator on this
+            screen uses (oversold at bottom = buy signal, overbought
+            at top = sell signal). The `net = long − short` math is
+            unchanged, only the rendering inverts.
+          */}
           <YAxis
             domain={Y_DOMAIN}
             ticks={Y_TICKS}
@@ -156,6 +176,7 @@ export const ChecklistNetScoreArea = ({
             axisLine={false}
             tickLine={false}
             width={Y_AXIS_WIDTH}
+            reversed
           />
           <Tooltip
             contentStyle={{
