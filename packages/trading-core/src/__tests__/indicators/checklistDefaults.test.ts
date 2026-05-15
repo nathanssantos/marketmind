@@ -50,6 +50,36 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     }
   });
 
+  it('ships EMA 21 trend filter for 15m..1M only, with priceAbove (LONG) / priceBelow (SHORT)', () => {
+    const ema21 = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === 'EMA 21');
+    // 6 TFs × 2 sides = 12 entries
+    expect(ema21).toHaveLength(12);
+
+    // EMA 21 is excluded on 1m / 5m — 21 candles of MA at those TFs is noise, not a trend.
+    const ema21Tfs = new Set(ema21.map((e) => e.timeframe));
+    expect(ema21Tfs).toEqual(new Set(['15m', '1h', '4h', '1d', '1w', '1M']));
+
+    // LONG side uses priceAbove (price ABOVE the moving average = bullish trend filter).
+    // SHORT side uses priceBelow.
+    for (const entry of ema21) {
+      if (entry.side === 'LONG') expect(entry.op).toBe('priceAbove');
+      else expect(entry.op).toBe('priceBelow');
+      // EMA 21 entries don't carry a numeric threshold — the catalog op
+      // compares against live price, not a configured value.
+      expect(entry.threshold).toBeUndefined();
+    }
+
+    // Weights mirror the same TF ladder: base 2.0 + TF_WEIGHTS[tf]
+    //   15m=3.0, 1h=3.5, 4h=4.0, 1d=4.5, 1w=5.0, 1M=5.5
+    const expectedWeights: Record<string, number> = {
+      '15m': 3.0, '1h': 3.5, '4h': 4.0, '1d': 4.5, '1w': 5.0, '1M': 5.5,
+    };
+    for (const [tf, expected] of Object.entries(expectedWeights)) {
+      const long = ema21.find((e) => e.timeframe === tf && e.side === 'LONG')!;
+      expect(long.weight).toBeCloseTo(expected, 5);
+    }
+  });
+
   it('pairs LONG and SHORT entries for direction-aware ops', () => {
     const longEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'LONG');
     const shortEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'SHORT');
@@ -83,11 +113,11 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     }
   });
 
-  it('contains 32 entries (2 indicators × 8 timeframes × 2 sides)', () => {
-    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(32);
+  it('contains 44 entries (2 oscillator indicators × 8 TFs × 2 sides + EMA 21 × 6 TFs × 2 sides)', () => {
+    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(44);
   });
 
-  it('RSI 2 ships tight thresholds (7 oversold / 93 overbought) — Stoch 14 uses evaluator defaults', () => {
+  it('RSI 2 ships tight thresholds (7 oversold / 93 overbought); Stoch 14 + EMA 21 use evaluator/op defaults', () => {
     for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
       if (entry.seedLabel === 'RSI 2') {
         expect(entry.threshold).toBe(entry.op === 'oversold' ? 7 : 93);
@@ -97,13 +127,13 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     }
   });
 
-  it('orders are logically grouped: RSI 2 block → Stoch 14 block, TFs ascending within each', () => {
+  it('orders are logically grouped: RSI 2 → Stoch 14 → EMA 21, TFs ascending within each block', () => {
     const sorted = [...DEFAULT_CHECKLIST_TEMPLATE].sort((a, b) => a.order - b.order);
     const blocks = sorted.reduce<string[]>((acc, e) => {
       if (acc[acc.length - 1] !== e.seedLabel) acc.push(e.seedLabel);
       return acc;
     }, []);
-    expect(blocks).toEqual(['RSI 2', 'Stoch 14']);
+    expect(blocks).toEqual(['RSI 2', 'Stoch 14', 'EMA 21']);
 
     const tfOrder: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5, '1w': 6, '1M': 7 };
     for (const seedLabel of blocks) {

@@ -7,7 +7,7 @@ import { ChecklistNetScoreArea } from './ChecklistNetScoreArea';
 
 const MAX_HISTORY_POINTS = 1000;
 const SEED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
-const CHART_HEIGHT = '140px';
+const CHART_HEIGHT = '200px';
 const BACKFILL_TRIGGER_THRESHOLD = 5;
 const BACKFILL_TRIGGER_SPAN_MS = 24 * 60 * 60 * 1000;
 // Re-emit a "live" point at most every SAME_VALUE_HEARTBEAT_MS even

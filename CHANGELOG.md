@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.9] - 2026-05-15
+
+### Added
+
+- **Default checklist now ships EMA 21 trend filter (15m → 1M, opt-in)** — 12 new template entries (6 timeframes × 2 sides) that compare live price against EMA 21: `priceAbove` on LONG, `priceBelow` on SHORT. Weights stack on the same `base + TF_WEIGHTS[tf]` ladder used by RSI 2 / Stoch 14, with base 2.0 → 15m=3.0 ... 1M=5.5. Captures Stormer's IFR(2) playbook ("only long above the 21 MA, only short below") via score weighting — the checklist still can't hard-veto, but stacking high-weight HTF trend-filter entries makes counter-trend setups unable to clear the trigger threshold in practice. Excluded from 1m/5m on purpose: 21 candles of MA at those TFs is noise, not a trend. All new entries ship `enabled: false` (opt-in, matches the existing template pattern); existing users get them via the idempotent `reconcileUserProfilesChecklist` backfill on the next profile load.
+
+### Changed
+
+- **Checklist net-score chart: y-axis tightened to ±50, height bumped to 200 px, axis flipped to oscillator convention** — the previous `[-100, +100]` domain wasted ~70% of the vertical space on values the net score essentially never reaches (typical magnitude lives between -30 and +30). Clipping to `[-50, +50]` doubles the visual resolution for the band where the signal actually lives; rare spikes past ±50 visually peg the chart's top/bottom edge and become a useful "extreme reading" cue. Reference lines re-tiered to `±25` (conviction zones) + `0` (pivot). Height 140 → 200 px gives more vertical breathing room. Y-axis is now **reversed** (positive net = long bias renders at the BOTTOM, negative = short bias at the TOP) so the chart reads like every other oscillator on the screen — oversold at the bottom = buy signal, overbought at the top = sell signal. Gradient stops swap to match (loss-tinted top, profit-tinted bottom).
+
 ## [1.22.8] - 2026-05-15
 
 ### Changed
