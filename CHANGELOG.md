@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.9] - 2026-05-15
+
 ### Added
 
 - **Default checklist now ships EMA 21 trend filter (15m → 1M, opt-in)** — 12 new template entries (6 timeframes × 2 sides) that compare live price against EMA 21: `priceAbove` on LONG, `priceBelow` on SHORT. Weights stack on the same `base + TF_WEIGHTS[tf]` ladder used by RSI 2 / Stoch 14, with base 2.0 → 15m=3.0 ... 1M=5.5. Captures Stormer's IFR(2) playbook ("only long above the 21 MA, only short below") via score weighting — the checklist still can't hard-veto, but stacking high-weight HTF trend-filter entries makes counter-trend setups unable to clear the trigger threshold in practice. Excluded from 1m/5m on purpose: 21 candles of MA at those TFs is noise, not a trend. All new entries ship `enabled: false` (opt-in, matches the existing template pattern); existing users get them via the idempotent `reconcileUserProfilesChecklist` backfill on the next profile load.
