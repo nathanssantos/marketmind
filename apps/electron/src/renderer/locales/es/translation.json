@@ -1011,6 +1011,8 @@
       "flipVerticalHelper": "Invierte el eje de precio para que las operaciones en corto suban visualmente.",
       "showBreakevenLines": "Líneas de equilibrio",
       "showBreakevenLinesHelper": "Dibuja una línea discontinua al precio en que la posición abierta cerraría neutra tras las comisiones de ida y vuelta (taker × 2). Asume Binance Futures VIP 0.",
+      "riskWarningThresholdPct": "Umbral de aviso de riesgo (% del saldo)",
+      "riskWarningThresholdPctHelper": "En la herramienta de dibujo long/short, muestra un ⚠ junto al Riesgo % proyectado cuando el SL costaría más que ese porcentaje del saldo (incluidas las comisiones taker de ida y vuelta). 2% es un techo común para scalping.",
       "profitLossAreas": "Áreas de Ganancia/Pérdida",
       "fibonacciProjection": "Proyección de Fibonacci",
       "measurementRuler": "Regla de Medición",

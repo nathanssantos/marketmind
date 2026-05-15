@@ -12,7 +12,7 @@ import {
   stringifyEnabledSetupTypes,
 } from '../utils/profile-transformers';
 import { applyProfileFieldsToUpdate } from '../utils/config-field-registry';
-import { materializeDefaultChecklist } from '../services/user-indicators';
+import { materializeDefaultChecklist, reconcileUserProfilesChecklist } from '../services/user-indicators';
 import { tradingProfileQueries } from '../services/database/tradingProfileQueries';
 import { checklistConditionSchema } from '@marketmind/trading-core';
 import { FIB_LEVELS } from '@marketmind/types';
@@ -109,6 +109,11 @@ const importFromBacktestSchema = z.object({
 
 export const tradingProfilesRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
+    // Backfill any new default-template entries (e.g. 1w/1M for RSI 2
+    // and Stoch 14 added in v1.22.8) into every existing profile.
+    // Idempotent — only entries the profile doesn't already have are
+    // appended; user-customized rows are untouched.
+    await reconcileUserProfilesChecklist(ctx.user.id);
     const profiles = await tradingProfileQueries.listByUser(ctx.user.id);
     return profiles.map(transformTradingProfile);
   }),

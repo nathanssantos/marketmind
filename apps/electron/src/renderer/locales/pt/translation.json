@@ -981,6 +981,8 @@
       "flipVerticalHelper": "Inverte o eixo de preço para que operações vendidas subam visualmente.",
       "showBreakevenLines": "Linhas de breakeven",
       "showBreakevenLinesHelper": "Desenha uma linha tracejada no preço em que a posição aberta fecharia zero a zero descontando as taxas de ida e volta (taker × 2). Assume Binance Futures VIP 0.",
+      "riskWarningThresholdPct": "Limite de aviso de risco (% do saldo)",
+      "riskWarningThresholdPctHelper": "Na ferramenta de desenho long/short, exibe um ⚠ ao lado do Risco % projetado quando o SL custaria mais que esse percentual do saldo (incluindo taxas taker de ida e volta). 2% é um teto comum para scalp.",
       "profitLossAreas": "Áreas de Lucro/Prejuízo",
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",
