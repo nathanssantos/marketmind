@@ -19,7 +19,6 @@ import {
 } from '../services/socketCacheMerge';
 import {
   markExecutionClosedInAllCaches,
-  markPendingExecCancelledByOrderIdInAllCaches,
   patchExecutionInAllCaches,
 } from '../services/executionCacheSync';
 import { trpc } from '../utils/trpc';
@@ -315,16 +314,23 @@ export const RealtimeTradingSyncProvider = ({ walletId, allWalletIds, children }
         { walletId, limit: 100 },
         (prev) => mergeOrderCancelled(prev, data.orderId),
       );
-      // Instant patch on autoTrading.getActiveExecutions across every
-      // cache variant: flip the matching pending exec to 'cancelled' in
-      // the SAME render frame as the socket event. Critical for
-      // multi-chart layouts — without this the non-focused charts kept
-      // the pending chart line until the HOT_FLUSH_MS-debounced
-      // invalidate fired, perceptible as a ~200–500ms lag after dragging
-      // a TP/order on one chart. The schedule below is still the
-      // belt-and-suspenders sweep (covers the post-cancel new-order row
-      // that the merge can't derive).
-      markPendingExecCancelledByOrderIdInAllCaches(queryClient, walletId, data.orderId);
+      // NOTE: do NOT flip the matching pending exec to 'cancelled' here.
+      // The order:cancelled event fires for BOTH:
+      //   (1) a pure cancel (user clicks X on the pending line), AND
+      //   (2) the cancel step of a MOVE (drag-release on chart →
+      //       updatePendingEntry → backend cancels old order, then
+      //       creates a new one).
+      // For (1) the canonical flip comes from the backend's
+      // handle-order-update CANCELED branch which UPDATEs the exec
+      // status='cancelled' and emits `position:update` — the
+      // position:update handler above already runs patchExecutionCaches
+      // synchronously across every cache variant, so multi-chart
+      // layouts see the line drop in the same render frame.
+      // For (2) flipping the exec here was wrong: the move flow's
+      // detach-before-cancel keeps the DB exec at status='pending'
+      // (it's getting a new orderId, not being cancelled), but the
+      // helper would still flip the cache, causing the chart line to
+      // disappear for ~200–500ms until the next refetch reverted it.
     }
     // Cancelling an open order can free cross-margin reserve; Binance
     // typically pairs with wallet:update but include the schedule key
