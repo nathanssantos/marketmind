@@ -113,7 +113,10 @@ test.describe('Auto-trading — socket invalidations', () => {
   test('emitting an unrelated event with no listeners does not throw', async ({ page }) => {
     // Sanity: we can call emitSocketEvent for any string, even if no handler listens.
     await emitSocketEvent(page, 'totally:made:up', { foo: 'bar' });
-    // Page still alive
-    await expect(page.getByRole('button', { name: 'Auto Trading', exact: true })).toBeVisible();
+    // Page still alive — the Settings toolbar button is always rendered for
+    // an authenticated user, so use that as the liveness probe (the old
+    // "Auto Trading" toolbar button was removed when auto-trading moved
+    // from a sidebar to layout-based panels).
+    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
   });
 });

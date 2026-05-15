@@ -120,7 +120,9 @@ test.describe('sidebar quick-trade boleta — comprehensive coverage of all 7 fe
     test('Cancel Orders confirm → futuresTrading.cancelAllOrders is hit', async ({ page }) => {
       const before = await getTrpcHitCount(page, 'futuresTrading.cancelAllOrders');
 
-      await page.getByRole('button', { name: 'Toggle advanced' }).click();
+      // Cancel Orders is rendered as an ActionRow directly in the ticket
+      // body now — no "Toggle advanced" button is required since the
+      // boleta's action section is always expanded.
       await page.getByText('Cancel Orders', { exact: true }).first().click();
 
       const dialog = page.getByRole('dialog').filter({ hasText: /Cancel All Orders/i });
@@ -132,28 +134,9 @@ test.describe('sidebar quick-trade boleta — comprehensive coverage of all 7 fe
         .toBe(true);
     });
 
-    test('Reverse / Close rows are visually disabled when there is no open position', async ({ page }) => {
-      await page.getByRole('button', { name: 'Toggle advanced' }).click();
-
-      const reverseRow = page.getByText('Reverse Position', { exact: true }).first();
-      const closeRow = page.getByText('Close Position', { exact: true }).first();
-
-      await expect(reverseRow).toBeVisible();
-      await expect(closeRow).toBeVisible();
-
-      const reverseOpacity = await reverseRow.evaluate((el) => getComputedStyle(el.parentElement!).opacity);
-      const closeOpacity = await closeRow.evaluate((el) => getComputedStyle(el.parentElement!).opacity);
-      expect(parseFloat(reverseOpacity)).toBeLessThan(1);
-      expect(parseFloat(closeOpacity)).toBeLessThan(1);
-    });
-
-    test('Grid Orders + Trailing Stop rows render in the advanced section of the boleta', async ({ page }) => {
-      await page.getByRole('button', { name: 'Toggle advanced' }).click();
-
-      // Wait until React has flushed the advanced section by checking the
-      // (visible) Cancel Orders row appeared. Cancel Orders text is unique to
-      // the boleta — Grid Orders / Trailing Stop also exist as text inside
-      // their own popover content trees.
+    test('Grid Orders + Trailing Stop rows render in the boleta action section', async ({ page }) => {
+      // Action rows are always rendered now — the advanced-toggle gate was
+      // removed when the ticket was simplified.
       await expect(page.getByText('Cancel Orders', { exact: true }).first()).toBeVisible();
 
       // Grid Orders / Trailing Stop labels render once each (the popover
@@ -187,43 +170,9 @@ test.describe('sidebar quick-trade boleta — comprehensive coverage of all 7 fe
     });
   });
 
-  test.describe('with an open LONG position', () => {
-    test.beforeEach(async ({ page }) => {
-      const klines = generateKlines({ count: 300, symbol: 'BTCUSDT', interval: '1h' });
-      await installTrpcMock(page, { klines, overrides: buildBoletaOverrides([POSITION_FIXTURE]) });
-      await page.goto('/');
-      await waitForChartReady(page);
-      await openBoleta(page);
-    });
-
-    test('Reverse Position confirm → futuresTrading.reversePosition is hit', async ({ page }) => {
-      const before = await getTrpcHitCount(page, 'futuresTrading.reversePosition');
-
-      await page.getByRole('button', { name: 'Toggle advanced' }).click();
-      await page.getByText('Reverse Position', { exact: true }).first().click();
-
-      const dialog = page.getByRole('dialog').filter({ hasText: /Reverse Position\?/i });
-      await expect(dialog).toBeVisible();
-      await dialog.getByRole('button', { name: 'Reverse Position', exact: true }).click();
-
-      await expect
-        .poll(async () => (await getTrpcHitCount(page, 'futuresTrading.reversePosition')) > before, { timeout: 5_000 })
-        .toBe(true);
-    });
-
-    test('Close Position confirm → futuresTrading.closePositionAndCancelOrders is hit', async ({ page }) => {
-      const before = await getTrpcHitCount(page, 'futuresTrading.closePositionAndCancelOrders');
-
-      await page.getByRole('button', { name: 'Toggle advanced' }).click();
-      await page.getByText('Close Position', { exact: true }).first().click();
-
-      const dialog = page.getByRole('dialog').filter({ hasText: /Close Position\?/i });
-      await expect(dialog).toBeVisible();
-      await dialog.getByRole('button', { name: 'Close Position', exact: true }).click();
-
-      await expect
-        .poll(async () => (await getTrpcHitCount(page, 'futuresTrading.closePositionAndCancelOrders')) > before, { timeout: 5_000 })
-        .toBe(true);
-    });
-  });
+  // The Reverse / Close Position rows were dropped from the boleta and the
+  // functionality moved to the PositionActionsPopover surfaced from each
+  // open-positions row. Tests for those flows now live with the positions
+  // panel surface (TODO follow-up — track in a separate spec when that UI
+  // pattern stabilizes).
 });

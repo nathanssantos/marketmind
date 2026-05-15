@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **E2E follow-up sweep — auto-trading sidebar specs and Toggle-advanced cliques** — five specs that exercised the now-deleted `AutoTradingSidebar` are removed (`auto-trading-sidebar-toggle`, `auto-trading-logs-tab`, `auto-trading-watchers-tab`, `auto-trading-start-watchers-modal`, `electron/auto-trading-sidebar`); the auto-trading UI was refactored from a single sidebar with 3 tabs to discrete panels (`AutoTradingActivityPanel`, `WatchersPanel`) mounted by layout templates. The dialog/modal/socket coverage they shared moved to `auto-trading-add-watcher-dialog`, `auto-trading-watcher-manager`, and `auto-trading-socket-invalidations` (which also lost a stale `Auto Trading` toolbar-button assertion in its liveness probe). The boleta's "Toggle advanced" button was dropped — every action row (Cancel Orders / Grid Orders / Trailing Stop) is now always rendered in the ticket — so `sidebar-quick-trade` no longer clicks it; the Reverse Position / Close Position tests that lived inside the same describe block were dropped since the functionality moved to `PositionActionsPopover` (surfaced from each open-positions row), to be covered by a positions-panel spec when that pattern stabilizes.
+- **Analytics modal axe-core contrast violation** — `trading.loss` / `trading.short` in dark mode were `#ef4444`, computing to 3.08:1 contrast against the analytics modal's `bg.subtle` (`#161c26`) — below WCAG AA's 4.5:1 threshold. The axe-core probe in `a11y-dialogs.spec.ts` flagged it at `<p>+$0.00</p>` in the NetPnL row of the Long/Short panel. Brightened to `#f87171` (red-400, ~6:1), with `trading.profit` / `trading.long` bumped in parallel from `#22c55e` to `#4ade80` (green-400) to keep the two trading-color tones perceptually balanced.
+
 ## [1.22.7] - 2026-05-14
 
 ### Fixed
