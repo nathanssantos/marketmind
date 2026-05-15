@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { launchApp, closeApp, type LaunchedApp } from './app-launch';
 import { generateKlines } from '../helpers/klineFixtures';
 import { installTrpcMockOnContext } from '../helpers/trpcMock';
+import { openToolsItem } from '../helpers/toolsMenu';
 
 let launched: LaunchedApp;
 
@@ -39,9 +40,9 @@ test.describe('Backtest modal — inside packaged Electron app', () => {
   });
 
   test('toolbar trigger opens the modal with all four tabs visible', async () => {
-    const trigger = launched.window.getByRole('button', { name: 'Backtest', exact: true });
-    await expect(trigger).toBeVisible({ timeout: 15_000 });
-    await trigger.click();
+    const toolsBtn = launched.window.locator('[data-testid="toolbar-tools-button"]');
+    await expect(toolsBtn).toBeVisible({ timeout: 15_000 });
+    await openToolsItem(launched.window, 'backtest');
 
     const dialog = launched.window.getByRole('dialog', { name: 'Backtest' });
     await expect(dialog).toBeVisible();

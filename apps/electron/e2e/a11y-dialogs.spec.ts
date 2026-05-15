@@ -3,6 +3,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
 import { installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady } from './helpers/chartTestSetup';
+import { openToolsItem } from './helpers/toolsMenu';
 
 const WALLET_FIXTURE = [{
   id: 'w1',
@@ -121,22 +122,23 @@ test.describe('Dialog accessibility — axe-core', () => {
   });
 
   test('Settings dialog has no critical/serious axe violations', async ({ page }) => {
-    await page.getByRole('button', { name: 'Account' }).click();
-    await page.getByRole('menuitem', { name: 'Settings' }).click();
+    // Settings is a top-level toolbar button — Account-menu → Settings
+    // menuitem was the old path before the toolbar refactor.
+    await page.getByRole('button', { name: 'Settings' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await auditDialog(page, '[role="dialog"]');
   });
 
   test('Backtest modal has no critical/serious axe violations', async ({ page }) => {
-    await page.getByRole('button', { name: 'Backtest', exact: true }).click();
+    await openToolsItem(page, 'backtest');
     const dialog = page.getByRole('dialog', { name: 'Backtest' });
     await expect(dialog).toBeVisible();
     await auditDialog(page, '[role="dialog"]');
   });
 
   test('Analytics modal has no critical/serious axe violations', async ({ page }) => {
-    await page.getByRole('button', { name: 'Analytics', exact: true }).click();
+    await openToolsItem(page, 'analytics');
     const dialog = page.getByRole('dialog', { name: /^Analytics/ });
     await expect(dialog).toBeVisible();
     await auditDialog(page, '[role="dialog"]');

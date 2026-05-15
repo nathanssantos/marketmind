@@ -2,6 +2,7 @@ import { test, expect, type Page } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
 import { getTrpcHitCount, installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady } from './helpers/chartTestSetup';
+import { openToolsItem } from './helpers/toolsMenu';
 
 interface SavedScreenerFixture {
   id: string;
@@ -240,10 +241,9 @@ const installScreenerMock = async (page: Page, opts: ScreenerMockOpts = {}): Pro
 };
 
 const SCREENER_DIALOG_NAME = 'Market Screener';
-const TRIGGER_NAME = 'Market Screener';
 
 const openModal = async (page: Page) => {
-  await page.getByRole('button', { name: TRIGGER_NAME, exact: true }).first().click();
+  await openToolsItem(page, 'screener');
   await expect(page.getByRole('dialog', { name: SCREENER_DIALOG_NAME })).toBeVisible();
 };
 

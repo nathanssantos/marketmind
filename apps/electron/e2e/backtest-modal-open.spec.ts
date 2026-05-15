@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
 import { installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady } from './helpers/chartTestSetup';
+import { openToolsItem } from './helpers/toolsMenu';
 
 test.describe('Backtest modal — open / close from toolbar', () => {
   test.beforeEach(async ({ page }) => {
@@ -12,12 +13,11 @@ test.describe('Backtest modal — open / close from toolbar', () => {
   });
 
   test('toolbar button opens the modal with the form, escape closes it', async ({ page }) => {
-    const trigger = page.getByRole('button', { name: 'Backtest', exact: true });
-    await expect(trigger).toBeVisible();
+    await expect(page.locator('[data-testid="toolbar-tools-button"]')).toBeVisible();
 
     await expect(page.getByRole('dialog', { name: 'Backtest' })).toHaveCount(0);
 
-    await trigger.click();
+    await openToolsItem(page, 'backtest');
 
     const dialog = page.getByRole('dialog', { name: 'Backtest' });
     await expect(dialog).toBeVisible();
