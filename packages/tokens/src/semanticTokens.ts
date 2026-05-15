@@ -31,8 +31,16 @@ export const semanticTokenColors = {
   'chart.ma.7': { value: { base: '#4f46e5', _dark: '#6366f1' } },
   'chart.ma.8': { value: { base: '#059669', _dark: '#10b981' } },
   ...chartIndicatorTokens,
-  'trading.profit': { value: { base: '#16a34a', _dark: '#22c55e' } },
-  'trading.loss': { value: { base: '#dc2626', _dark: '#ef4444' } },
+  // a11y bump 2026-05-15: dark-mode `loss` was #ef4444 → 3.08:1 contrast
+  // against bg.subtle (#161c26) in the AnalyticsModal NetPnL row, failing
+  // WCAG AA's 4.5:1 threshold for normal text. The Analytics-modal axe
+  // probe in `a11y-dialogs.spec.ts` started failing as a result.
+  // Bumped to #f87171 (red-400) → ~6:1 against the same bg.
+  // `profit` brightened in parallel (#22c55e → #4ade80 = green-400) to
+  // keep the two tones at the same perceptual brightness, matching what
+  // the eye expects from gain/loss colors.
+  'trading.profit': { value: { base: '#16a34a', _dark: '#4ade80' } },
+  'trading.loss': { value: { base: '#dc2626', _dark: '#f87171' } },
   'trading.neutral': { value: { base: '#64748b', _dark: '#94a3b8' } },
   'trading.warning': { value: { base: '#dd6b20', _dark: '#f6ad55' } },
   'trading.info': { value: { base: '#2563eb', _dark: '#3b82f6' } },
@@ -41,8 +49,8 @@ export const semanticTokenColors = {
   // shade literals before being centralized here in v1.4. Resolves to the
   // brand-blue tone in both modes; tweak in one place if the accent shifts.
   'accent.solid': { value: { base: '#3182ce', _dark: '#4299e1' } },
-  'trading.long': { value: { base: '#16a34a', _dark: '#22c55e' } },
-  'trading.short': { value: { base: '#dc2626', _dark: '#ef4444' } },
+  'trading.long': { value: { base: '#16a34a', _dark: '#4ade80' } },
+  'trading.short': { value: { base: '#dc2626', _dark: '#f87171' } },
   'bg.loading': { value: { base: '#f7fafc', _dark: '#1a1a2e' } },
   'bg.error': { value: { base: '#fef2f2', _dark: '#1c1917' } },
   'bg.success': { value: { base: '#f0fdf4', _dark: '#14532d' } },
