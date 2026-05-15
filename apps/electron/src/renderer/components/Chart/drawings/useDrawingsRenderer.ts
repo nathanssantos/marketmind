@@ -25,7 +25,13 @@ import { renderEllipse } from './renderers/renderEllipse';
 import { renderPitchfork } from './renderers/renderPitchfork';
 import { renderGannFan } from './renderers/renderGannFan';
 import { renderText } from './renderers/renderText';
-import { renderPosition, type TicketButtonRef } from './renderers/renderPosition';
+import { renderPosition, type TicketButtonRef, type PositionRiskContext } from './renderers/renderPosition';
+import { computePositionRisk } from './renderers/positionRiskMath';
+import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
+import { useUIPref } from '@renderer/store/preferencesStore';
+import { trpc } from '@renderer/utils/trpc';
+import { getFeeRateForVipLevel } from '@marketmind/types';
 import { renderDrawingHandles } from './drawingHandles';
 import type { OHLCSnapIndicator } from './useDrawingInteraction';
 
@@ -71,6 +77,7 @@ const renderSingleDrawing = (
   colors: { bullish: string; bearish: string; crosshair: string },
   themeColors: ChartThemeColors,
   ticketButtonRef?: TicketButtonRef,
+  riskContextProvider?: (entryPrice: number, stopLossPrice: number) => PositionRiskContext | null,
 ): void => {
   if (!drawing.visible) return;
 
@@ -130,9 +137,11 @@ const renderSingleDrawing = (
       renderGannFan(ctx, drawing, mapper, isSelected, chartWidth, chartHeight);
       break;
     case 'longPosition':
-    case 'shortPosition':
-      renderPosition(ctx, drawing, mapper, isSelected, chartWidth, ticketButtonRef);
+    case 'shortPosition': {
+      const risk = riskContextProvider?.(drawing.entryPrice, drawing.stopLossPrice) ?? null;
+      renderPosition(ctx, drawing, mapper, isSelected, chartWidth, ticketButtonRef, risk);
       break;
+    }
   }
 
   if (isSelected) {
@@ -162,6 +171,9 @@ export interface UseDrawingsRendererResult {
   getClickedTicketButton: (x: number, y: number) => { drawingId: string; rect: { x: number; y: number; width: number; height: number } } | null;
 }
 
+const DEFAULT_RISK_WARNING_THRESHOLD_PCT = 2;
+const TAKER_RATE = getFeeRateForVipLevel('FUTURES', 0, 'TAKER');
+
 export const useDrawingsRenderer = ({
   manager,
   symbol,
@@ -182,6 +194,36 @@ export const useDrawingsRenderer = ({
   // mutate it without forcing a React re-render — the canvas already
   // re-paints when drawings change.
   const ticketButtonsRef = useRef<Array<{ drawingId: string; rect: { x: number; y: number; width: number; height: number } }>>([]);
+
+  // Inputs for the Risk % readout on long/short projection drawings.
+  // Read here (one place) so the renderer doesn't need its own
+  // subscription, and so the renderer stays pure / sync. The values
+  // change relatively infrequently (wallet balance from socket-driven
+  // patches; sizePercent on slider drag; leverage on Binance config
+  // change), so the chart auto-repaints via the existing markDirty
+  // signal when any of them tick. Refs avoid recreating `render` on
+  // every value change.
+  const { activeWallet } = useActiveWallet();
+  const balanceRef = useRef(0);
+  balanceRef.current = parseFloat(activeWallet?.currentBalance ?? '0');
+  const sizePercent = useQuickTradeStore((s) => s.sizePercent);
+  const sizePercentRef = useRef(sizePercent);
+  sizePercentRef.current = sizePercent;
+  const { data: symbolLeverage } = trpc.futuresTrading.getSymbolLeverage.useQuery(
+    { walletId: activeWallet?.id ?? '', symbol },
+    { enabled: !!activeWallet?.id && !!symbol, staleTime: 60_000 },
+  );
+  const leverageRef = useRef(1);
+  leverageRef.current = symbolLeverage?.leverage ?? 1;
+  const [warningThresholdPct] = useUIPref('riskWarningThresholdPct', DEFAULT_RISK_WARNING_THRESHOLD_PCT);
+  const warningThresholdRef = useRef(warningThresholdPct);
+  warningThresholdRef.current = warningThresholdPct;
+
+  // Repaint when any risk input changes — without this, the on-chart
+  // Risk% label wouldn't update as the ticket slider moves.
+  useEffect(() => {
+    if (manager) manager.markDirty('overlays');
+  }, [manager, balanceRef.current, sizePercent, leverageRef.current, warningThresholdPct]);
   useEffect(() => {
     if (!manager || !symbol) return;
     const key = `${symbol}:${interval}`;
@@ -226,6 +268,19 @@ export const useDrawingsRenderer = ({
     ctx.rect(0, 0, dimensions.chartWidth, dimensions.chartHeight);
     ctx.clip();
 
+    const riskContextProvider = (entryPrice: number, stopLossPrice: number): PositionRiskContext | null => {
+      const { exposurePercent } = computePositionRisk({
+        entryPrice,
+        stopLossPrice,
+        sizePercent: sizePercentRef.current,
+        balance: balanceRef.current,
+        leverage: leverageRef.current,
+        takerRate: TAKER_RATE,
+      });
+      if (!Number.isFinite(exposurePercent)) return null;
+      return { exposurePercent, warningThresholdPct: warningThresholdRef.current };
+    };
+
     ticketButtonsRef.current = [];
     for (const raw of sorted) {
       const cacheKey = `${raw.id}-${raw.updatedAt}`;
@@ -239,7 +294,7 @@ export const useDrawingsRenderer = ({
       const ticketBtn: TicketButtonRef | undefined = isPositionDrawing
         ? { x: 0, y: 0, width: 0, height: 0 }
         : undefined;
-      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, ticketBtn);
+      renderSingleDrawing(ctx, drawing, mapper, drawing.id === selectedId, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, ticketBtn, riskContextProvider);
       if (ticketBtn && ticketBtn.width > 0) {
         ticketButtonsRef.current.push({
           drawingId: drawing.id,
@@ -249,7 +304,7 @@ export const useDrawingsRenderer = ({
     }
 
     if (pendingDrawing) {
-      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors);
+      renderSingleDrawing(ctx, pendingDrawing, mapper, false, dimensions.chartHeight, dimensions.chartWidth, colors, themeColors, undefined, riskContextProvider);
     }
 
     ctx.restore();

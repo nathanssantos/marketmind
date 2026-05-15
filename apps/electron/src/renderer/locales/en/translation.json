@@ -893,6 +893,8 @@
       "flipVerticalHelper": "Invert the price axis so short-side setups visually move upward.",
       "showBreakevenLines": "Breakeven lines",
       "showBreakevenLinesHelper": "Draw a dashed line at the price where the open position would close net-flat after round-trip fees (taker × 2). Assumes Binance Futures VIP 0.",
+      "riskWarningThresholdPct": "Risk warning threshold (% of balance)",
+      "riskWarningThresholdPctHelper": "On the long/short position drawing tool, show a ⚠ next to the projected Risk % when the SL would lose more than this fraction of the wallet balance (including round-trip taker fees). 2% is a common scalp ceiling.",
       "profitLossAreas": "Profit/Loss Areas",
       "fibonacciProjection": "Fibonacci Projection",
       "measurementRuler": "Measurement Ruler",

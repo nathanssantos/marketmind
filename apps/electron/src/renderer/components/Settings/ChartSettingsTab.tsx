@@ -11,7 +11,7 @@ import {
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { PALETTE_IDS, getPalette } from '@/renderer/constants/chartPalettes';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { useChartPref } from '@/renderer/store/preferencesStore';
+import { useChartPref, useUIPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
@@ -35,6 +35,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
   const [chartFlipped, setChartFlipped] = useChartPref<boolean>('chartFlipped', false);
   const [liquidityColorMode, setLiquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const [showBreakevenLines, setShowBreakevenLines] = useChartPref<boolean>('showBreakevenLines', false);
+  const [riskWarningThresholdPct, setRiskWarningThresholdPct] = useUIPref<number>('riskWarningThresholdPct', 2);
   const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
   const setEnableShiftAltOrderEntry = useUIStore((state) => state.setEnableShiftAltOrderEntry);
 
@@ -272,6 +273,24 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             {t('settings.chart.enableShiftAltOrderEntryHelper')}
           </Text>
         </Box>
+        <FormRow
+          label={t('chart.controls.riskWarningThresholdPct')}
+          helper={t('chart.controls.riskWarningThresholdPctHelper')}
+        >
+          <NumberInput
+            value={String(riskWarningThresholdPct)}
+            onChange={(e) => {
+              const n = parseFloat(e.target.value);
+              if (Number.isFinite(n) && n > 0) setRiskWarningThresholdPct(n);
+            }}
+            min={0.1}
+            max={100}
+            step={0.5}
+            width="90px"
+            size="sm"
+            data-testid="chart-risk-warning-threshold"
+          />
+        </FormRow>
       </FormSection>
 
     </Stack>
