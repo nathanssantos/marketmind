@@ -32,7 +32,7 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     expect(new Set(orders).size).toBe(orders.length);
   });
 
-  it('covers RSI 2 and Stoch 14 across the full 1m..1d ladder', () => {
+  it('covers RSI 2 and Stoch 14 across the full 1m..1M ladder', () => {
     const seedLabels = DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.seedLabel);
     expect(seedLabels).toContain('RSI 2');
     expect(seedLabels).toContain('Stoch 14');
@@ -40,13 +40,13 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     expect(seedLabels).not.toContain('RSI 14');
 
     const timeframes = new Set(DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.timeframe));
-    expect(timeframes).toEqual(new Set(['1m', '5m', '15m', '1h', '4h', '1d']));
+    expect(timeframes).toEqual(new Set(['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M']));
 
     for (const seedLabel of ['RSI 2', 'Stoch 14']) {
       const tfs = new Set(
         DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === seedLabel).map((e) => e.timeframe),
       );
-      expect(tfs).toEqual(new Set(['1m', '5m', '15m', '1h', '4h', '1d']));
+      expect(tfs).toEqual(new Set(['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M']));
     }
   });
 
@@ -57,10 +57,12 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
   });
 
   it('weights scale strictly monotonically, +0.5 per TF step, with 1m as the floor', () => {
+    const TF_ORDER: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5, '1w': 6, '1M': 7 };
+    const ALL_TFS = ['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M'];
+
     for (const seedLabel of ['RSI 2', 'Stoch 14']) {
       const entries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === seedLabel && e.side === 'LONG');
-      const tfOrder: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5 };
-      const sorted = [...entries].sort((a, b) => tfOrder[a.timeframe]! - tfOrder[b.timeframe]!);
+      const sorted = [...entries].sort((a, b) => TF_ORDER[a.timeframe]! - TF_ORDER[b.timeframe]!);
       for (let i = 1; i < sorted.length; i += 1) {
         expect(sorted[i]!.weight).toBeCloseTo(sorted[i - 1]!.weight + 0.5, 5);
       }
@@ -68,17 +70,21 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
       // 1m is the floor at the indicator's base weight.
       const expectedBase = seedLabel === 'RSI 2' ? 2.0 : 1.0;
       expect(w('1m')).toBe(expectedBase);
+      // 1M caps the ladder at base + 3.5 (1m=0 .. 1M=+3.5, 8 steps total).
+      expect(w('1M')).toBeCloseTo(expectedBase + 3.5, 5);
     }
-    // RSI 2 premium-weighted over Stoch 14 at every timeframe
-    for (const tf of ['1m', '5m', '15m', '1h', '4h', '1d']) {
+    // RSI 2 premium-weighted over Stoch 14 at every timeframe — that's
+    // the invariant the matrix exists to preserve, including on the new
+    // 1w/1M extensions.
+    for (const tf of ALL_TFS) {
       const stoch = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'Stoch 14' && e.timeframe === tf && e.side === 'LONG')!.weight;
       const rsi2 = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'RSI 2' && e.timeframe === tf && e.side === 'LONG')!.weight;
       expect(rsi2).toBeGreaterThan(stoch);
     }
   });
 
-  it('contains 24 entries (2 indicators × 6 timeframes × 2 sides)', () => {
-    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(24);
+  it('contains 32 entries (2 indicators × 8 timeframes × 2 sides)', () => {
+    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(32);
   });
 
   it('RSI 2 ships tight thresholds (7 oversold / 93 overbought) — Stoch 14 uses evaluator defaults', () => {
@@ -99,7 +105,7 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     }, []);
     expect(blocks).toEqual(['RSI 2', 'Stoch 14']);
 
-    const tfOrder: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5 };
+    const tfOrder: Record<string, number> = { '1m': 0, '5m': 1, '15m': 2, '1h': 3, '4h': 4, '1d': 5, '1w': 6, '1M': 7 };
     for (const seedLabel of blocks) {
       const block = sorted.filter((e) => e.seedLabel === seedLabel);
       for (let i = 1; i < block.length; i += 1) {

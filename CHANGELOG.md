@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Checklist defaults extended to 1w + 1M for RSI 2 and Stoch 14** — the confluence ladder now covers `1m → 1M` (was `1m → 1d`), continuing the strict +0.5-per-step weight curve. Resulting ladder, `(weight = base + tfStep)`:
+  ```
+            1m   5m   15m  1h   4h   1d   1w   1M
+  RSI 2:    2.0  2.5  3.0  3.5  4.0  4.5  5.0  5.5
+  Stoch 14: 1.0  1.5  2.0  2.5  3.0  3.5  4.0  4.5
+  ```
+  A confirmation on the weekly or monthly is a much rarer (and more meaningful) signal than the 1d ladder topper — the half-step continuation lets users score it accordingly without an ad-hoc bump. Total default-template entries: 32 (was 24). All new entries ship `enabled: false` so users opt in just like the rest of the ladder.
+- **Existing-user backfill** — new `reconcileUserProfilesChecklist(userId)` service idempotently appends template entries the user's profile doesn't already have (matched by `userIndicatorId + timeframe + op + side`). Existing rows are PRESERVED with whatever customizations the user made (weight, enabled, threshold, tier). Hooked into `tradingProfiles.list` so the reconciliation runs the next time anyone opens trading config — no migration script needed, no user customization lost.
 - **Long/Short position drawing tool polished + on-chart Risk %** — the visual overhaul the user asked for:
   - SL / Entry / TP price labels now sit in dark **pills above** their line (was: text straddling the line, which the line itself crossed through). Pill background is a 55% black so labels stay readable over candles, indicators, or empty space.
   - **Ticket button** is now an icon-only `→` (was a `→ TICKET` pill that overlapped both the entry text and the chart's price-axis tag) anchored to the **right of the entry label**, in a slot reserved by offsetting the entry pill's right edge inward by `TICKET_BTN_SIZE + TICKET_BTN_GAP`. Hovering it gets `cursor: pointer` via the standard `getClickedTicketButton` hit-test pipeline.
