@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { Skeleton } from '@renderer/components/ui';
 import { useMemo } from 'react';
+import { lttbDownsample } from './lttbDownsample';
 
 /**
  * Net-score area chart for the checklist sidebar.
@@ -47,6 +48,18 @@ const Y_AXIS_WIDTH = 32;
 const AREA_STROKE_WIDTH = 1.5;
 
 const GRADIENT_ID_PREFIX = 'checklist-net-score-gradient';
+
+/**
+ * Visible-point cap. The history machinery in ChecklistScoreChart keeps
+ * up to 1000 raw samples for fidelity (server seed + 30s heartbeats +
+ * live appends); rendering all 1000 in a ~400px-wide chart turns into
+ * the jagged, illegible mess the user reported on 2026-05-15. LTTB
+ * downsampling collapses to this cap while preserving the visual
+ * envelope (peaks, troughs, transitions). 100 points across 7 days of
+ * history puts a point roughly every ~100min — comfortable for the eye
+ * without erasing the conviction-zone crossings the chart is for.
+ */
+const VISIBLE_POINT_CAP = 100;
 
 interface ChecklistNetScoreAreaProps {
   data: Array<{ t: number; long: number | null; short: number | null }>;
@@ -90,16 +103,23 @@ export const ChecklistNetScoreArea = ({
   gradientKey,
   tooltipLabelFormatter,
 }: ChecklistNetScoreAreaProps) => {
-  const transformed = useMemo(
-    () =>
-      data.map((p) => ({
-        t: p.t,
-        long: p.long,
-        short: p.short,
-        net: p.long != null && p.short != null ? p.long - p.short : null,
-      })),
-    [data],
-  );
+  const transformed = useMemo(() => {
+    const full = data.map((p) => ({
+      t: p.t,
+      long: p.long,
+      short: p.short,
+      net: p.long != null && p.short != null ? p.long - p.short : null,
+    }));
+    // LTTB downsample for readability — see VISIBLE_POINT_CAP comment.
+    // Drives off `net` (the visual y) so the algorithm picks the points
+    // that define the envelope, not the absolute long/short scores.
+    return lttbDownsample(
+      full,
+      VISIBLE_POINT_CAP,
+      (p) => p.t,
+      (p) => p.net ?? 0,
+    );
+  }, [data]);
 
   if (isLoading) return <Skeleton height={height} />;
   if (transformed.length < 2) return null;
