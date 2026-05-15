@@ -190,6 +190,7 @@ export const useChartInteraction = ({
     const hoveredOrderButton = getClickedOrderId(mouseX, mouseY);
     const hoveredSLTP = getSLTPAtPosition(mouseX, mouseY);
     const hoveredOrder = hoveredSLTP ? null : getHoveredOrder(mouseX, mouseY);
+    const hoveredTicketButton = getClickedTicketButton?.(mouseX, mouseY) ?? null;
 
     const newHoveredId = hoveredOrder?.id ?? null;
     if (newHoveredId !== lastHoveredOrderRef.current && !orderDragHandler.isDragging) {
@@ -198,10 +199,12 @@ export const useChartInteraction = ({
       manager.markDirty('overlays');
     }
 
-    const isOverOrderElement = orderDragHandler.isDragging || (hoveredOrderButton ?? hoveredSLTP ?? hoveredOrder);
+    const isOverOrderElement = orderDragHandler.isDragging || (hoveredOrderButton ?? hoveredSLTP ?? hoveredOrder ?? hoveredTicketButton);
 
     if (orderDragHandler.isDragging) {
       updateCursor('ns-resize');
+    } else if (hoveredTicketButton) {
+      updateCursor('pointer');
     } else if (hoveredOrderButton) {
       updateCursor('pointer');
     } else if (hoveredSLTP) {
@@ -260,7 +263,7 @@ export const useChartInteraction = ({
     canvasRef, manager, klines, advancedConfig, isPanning,
     shiftPressed, altPressed,
     mousePositionRef, orderPreviewRef, hoveredOrderIdRef, lastHoveredOrderRef,
-    getHoveredOrder, getClickedOrderId, getSLTPAtPosition,
+    getHoveredOrder, getClickedOrderId, getClickedTicketButton, getSLTPAtPosition,
     orderDragHandler, gridInteraction, drawingInteraction, cursorManager,
     handleMouseMove, updateCursor, processMouseMoveHover,
   ]);

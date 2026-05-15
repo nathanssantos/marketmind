@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.8] - 2026-05-15
+
+### Changed
+
+- **Checklist score chart collapsed from two competing lines to a bipolar net-score area** — was rendering `long%` (green line) and `short%` (red line) on a `[0, 100]` axis. The user only ever enters one direction at a time, so two lines just multiplied the visual noise of a binary decision ("is the setup pointing long or short right now?"). The new chart plots `net = long − short` on a `[-100, +100]` axis centered on 0, filled with a vertical gradient that's profit-tinted above the zero line and loss-tinted below. The strong reference lines sit at `±50` (conviction zones) and `0` (the neutral pivot). Tooltip preserves the absolute L%/S% breakdown so the per-side nuance stays one hover away; the live `ScoreBadgePair` above the chart still shows the same numbers in real time. New component lives in `ChecklistNetScoreArea.tsx`; `ChecklistScoreChart` is now a thin wrapper that keeps the existing fetch/merge/heartbeat machinery and just hands the merged history off to the new viz.
+- **Checklist score chart downsampled to ~100 points via LTTB** — the history layer keeps up to 1000 raw samples (server seed + 30s heartbeats + live appends), and rendering all 1000 in a ~400-px-wide panel produced the jagged, unreadable line the user reported. New `lttbDownsample.ts` runs the Largest-Triangle-Three-Buckets algorithm (Steinarsson 2013) on the merged history before it reaches recharts; first and last points stay anchored, the visual envelope (peaks, troughs, conviction-zone crossings) is preserved, and the chart drops to a comfortable density. Cap is per-chart (`VISIBLE_POINT_CAP = 100`) — easy to tune if a denser view turns out to be needed later.
+
+### Added
+
+- **Checklist defaults extended to 1w + 1M for RSI 2 and Stoch 14** — the confluence ladder now covers `1m → 1M` (was `1m → 1d`), continuing the strict +0.5-per-step weight curve. Resulting ladder, `(weight = base + tfStep)`:
+  ```
+            1m   5m   15m  1h   4h   1d   1w   1M
+  RSI 2:    2.0  2.5  3.0  3.5  4.0  4.5  5.0  5.5
+  Stoch 14: 1.0  1.5  2.0  2.5  3.0  3.5  4.0  4.5
+  ```
+  A confirmation on the weekly or monthly is a much rarer (and more meaningful) signal than the 1d ladder topper — the half-step continuation lets users score it accordingly without an ad-hoc bump. Total default-template entries: 32 (was 24). All new entries ship `enabled: false` so users opt in just like the rest of the ladder.
+- **Existing-user backfill** — new `reconcileUserProfilesChecklist(userId)` service idempotently appends template entries the user's profile doesn't already have (matched by `userIndicatorId + timeframe + op + side`). Existing rows are PRESERVED with whatever customizations the user made (weight, enabled, threshold, tier). Hooked into `tradingProfiles.list` so the reconciliation runs the next time anyone opens trading config — no migration script needed, no user customization lost.
+- **Long/Short position drawing tool polished + on-chart Risk %** — the visual overhaul the user asked for:
+  - SL / Entry / TP price labels now sit in dark **pills above** their line (was: text straddling the line, which the line itself crossed through). Pill background is a 55% black so labels stay readable over candles, indicators, or empty space.
+  - **Ticket button** is now an icon-only `→` (was a `→ TICKET` pill that overlapped both the entry text and the chart's price-axis tag) anchored to the **right of the entry label**, in a slot reserved by offsetting the entry pill's right edge inward by `TICKET_BTN_SIZE + TICKET_BTN_GAP`. Hovering it gets `cursor: pointer` via the standard `getClickedTicketButton` hit-test pipeline.
+  - **R:R + Risk %** now live in a single dark pill anchored mid-TP-region (was: bare text colliding with the chart's price grid). The new **Risk %** line shows how much of the wallet balance the SL would cost at the ticket's currently configured size, including round-trip taker fees (`getFeeRateForVipLevel('FUTURES', 0, 'TAKER')` — VIP 0). When the projected risk exceeds the configurable warning threshold a ⚠ icon prefixes the Risk text in `#f59e0b` (amber). The label disappears entirely when sizing inputs (active wallet balance, sizePercent, leverage) aren't loaded yet — the renderer never shows a NaN.
+  - New **Settings → Chart → Trading → Risk warning threshold** preference (`riskWarningThresholdPct`, default `2%`). Lives in `ui` prefs so it's app-wide; bound via `useUIPref('riskWarningThresholdPct', 2)`. Localized in en/pt/es/fr.
+  - SHORT % badges fixed — `formatPercent` is now P&L-signed (`+` on the TP for a profitable SHORT, `−` on the SL for a losing one). Previously the badge sign followed raw price-delta, showing `−0.26%` next to a green-tinted SHORT TP region — exactly inverted from the trader's mental model.
+
+### Fixed
+
+- **Long/Short position drawings not persisted across reload/timeframe change** — backend `drawingRouter.create` validated `type` against a zod enum that didn't include `longPosition` / `shortPosition`. The mutation rejected the insert silently in the optimistic-cache window, so the drawing rendered locally but disappeared on the next `listBySymbol` refetch. Added both kinds to `drawingTypeSchema`. The DB schema's `varchar(20)` column already fits the new values.
+
+- **E2E follow-up sweep — auto-trading sidebar specs and Toggle-advanced cliques** — five specs that exercised the now-deleted `AutoTradingSidebar` are removed (`auto-trading-sidebar-toggle`, `auto-trading-logs-tab`, `auto-trading-watchers-tab`, `auto-trading-start-watchers-modal`, `electron/auto-trading-sidebar`); the auto-trading UI was refactored from a single sidebar with 3 tabs to discrete panels (`AutoTradingActivityPanel`, `WatchersPanel`) mounted by layout templates. The dialog/modal/socket coverage they shared moved to `auto-trading-add-watcher-dialog`, `auto-trading-watcher-manager`, and `auto-trading-socket-invalidations` (which also lost a stale `Auto Trading` toolbar-button assertion in its liveness probe). The boleta's "Toggle advanced" button was dropped — every action row (Cancel Orders / Grid Orders / Trailing Stop) is now always rendered in the ticket — so `sidebar-quick-trade` no longer clicks it; the Reverse Position / Close Position tests that lived inside the same describe block were dropped since the functionality moved to `PositionActionsPopover` (surfaced from each open-positions row), to be covered by a positions-panel spec when that pattern stabilizes.
+- **Analytics modal axe-core contrast violation** — `trading.loss` / `trading.short` in dark mode were `#ef4444`, computing to 3.08:1 contrast against the analytics modal's `bg.subtle` (`#161c26`) — below WCAG AA's 4.5:1 threshold. The axe-core probe in `a11y-dialogs.spec.ts` flagged it at `<p>+$0.00</p>` in the NetPnL row of the Long/Short panel. Brightened to `#f87171` (red-400, ~6:1), with `trading.profit` / `trading.long` bumped in parallel from `#22c55e` to `#4ade80` (green-400) to keep the two trading-color tones perceptually balanced.
+
 ## [1.22.7] - 2026-05-14
 
 ### Fixed

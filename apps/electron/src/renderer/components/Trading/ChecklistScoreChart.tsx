@@ -1,21 +1,13 @@
 import type { MarketType } from '@marketmind/types';
 import { Box, Flex, Text, useToken } from '@chakra-ui/react';
-import { MiniLineChart, type MiniLineChartReferenceLine, type MiniLineChartSeries } from '@renderer/components/ui';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChecklistNetScoreArea } from './ChecklistNetScoreArea';
 
 const MAX_HISTORY_POINTS = 1000;
 const SEED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
-// Three guide lines on the L/S score chart: 25 / 50 / 75. The middle
-// line is the "neutral" axis; outer lines mark the conviction zones
-// (above 75 = strong; below 25 = weak). Earlier we shipped a single
-// line at 40, which was an arbitrary threshold neither tied to the
-// scale's midpoint nor to a meaningful trigger level.
-const REFERENCE_LEVELS = [25, 50, 75] as const;
 const CHART_HEIGHT = '140px';
-const Y_DOMAIN: [number, number] = [0, 100];
-const Y_TICKS = [0, 50, 100];
 const BACKFILL_TRIGGER_THRESHOLD = 5;
 const BACKFILL_TRIGGER_SPAN_MS = 24 * 60 * 60 * 1000;
 // Re-emit a "live" point at most every SAME_VALUE_HEARTBEAT_MS even
@@ -73,10 +65,6 @@ const mergePoint = (history: HistoryPoint[], point: HistoryPoint): HistoryPoint[
 };
 
 const formatTooltipTime = (t: unknown): string => new Date(Number(t)).toLocaleTimeString();
-const formatTooltipValue = (value: unknown, name: unknown): [string, string] => [
-  `${Math.round(Number(value))}%`,
-  String(name),
-];
 
 export const ChecklistScoreChart = memo(({
   resetKey,
@@ -215,17 +203,7 @@ export const ChecklistScoreChart = memo(({
   const gridColor = tokens[2] ?? '';
   const axisLabelColor = tokens[3] ?? '';
   const panelBg = tokens[4] ?? '';
-  const referenceColor = tokens[5] ?? '';
-
-  const series = useMemo<MiniLineChartSeries[]>(() => [
-    { dataKey: 'long', name: 'L', color: profitColor },
-    { dataKey: 'short', name: 'S', color: lossColor },
-  ], [profitColor, lossColor]);
-
-  const referenceLines = useMemo<MiniLineChartReferenceLine[]>(
-    () => REFERENCE_LEVELS.map((y) => ({ y, color: referenceColor })),
-    [referenceColor],
-  );
+  const neutralStrokeColor = tokens[5] ?? '';
 
   const isInitialLoading =
     queryEnabled && (historyQuery.isLoading || backfillMutation.isPending) && history.length === 0;
@@ -254,20 +232,18 @@ export const ChecklistScoreChart = memo(({
 
   return (
     <Box mt={1} mx={1} mb={2}>
-      <MiniLineChart
+      <ChecklistNetScoreArea
         data={history}
-        series={series}
-        xKey="t"
-        height={CHART_HEIGHT}
         isLoading={isInitialLoading}
-        yDomain={Y_DOMAIN}
-        yTicks={Y_TICKS}
-        referenceLines={referenceLines}
+        profitColor={profitColor}
+        lossColor={lossColor}
+        neutralStrokeColor={neutralStrokeColor}
         gridColor={gridColor}
         axisLabelColor={axisLabelColor}
         tooltipBg={panelBg}
+        height={CHART_HEIGHT}
+        gradientKey={resetKey}
         tooltipLabelFormatter={formatTooltipTime}
-        tooltipValueFormatter={formatTooltipValue}
       />
     </Box>
   );

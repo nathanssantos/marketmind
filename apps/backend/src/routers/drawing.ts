@@ -8,6 +8,7 @@ const drawingTypeSchema = z.enum([
   'line', 'rectangle', 'pencil', 'fibonacci', 'ruler', 'area', 'arrow', 'text',
   'ray', 'horizontalLine', 'channel',
   'trendLine', 'priceRange', 'verticalLine', 'highlighter', 'ellipse', 'pitchfork', 'gannFan',
+  'longPosition', 'shortPosition',
 ]);
 
 export const drawingRouter = router({
