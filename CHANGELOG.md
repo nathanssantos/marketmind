@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.8] - 2026-05-15
+
 ### Changed
 
 - **Checklist score chart collapsed from two competing lines to a bipolar net-score area** — was rendering `long%` (green line) and `short%` (red line) on a `[0, 100]` axis. The user only ever enters one direction at a time, so two lines just multiplied the visual noise of a binary decision ("is the setup pointing long or short right now?"). The new chart plots `net = long − short` on a `[-100, +100]` axis centered on 0, filled with a vertical gradient that's profit-tinted above the zero line and loss-tinted below. The strong reference lines sit at `±50` (conviction zones) and `0` (the neutral pivot). Tooltip preserves the absolute L%/S% breakdown so the per-side nuance stays one hover away; the live `ScoreBadgePair` above the chart still shows the same numbers in real time. New component lives in `ChecklistNetScoreArea.tsx`; `ChecklistScoreChart` is now a thin wrapper that keeps the existing fetch/merge/heartbeat machinery and just hands the merged history off to the new viz.
