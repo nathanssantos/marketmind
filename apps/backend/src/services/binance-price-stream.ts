@@ -426,6 +426,24 @@ export class BinancePriceStreamService {
         }
       }
 
+      // Chart-driven price subscriptions (every renderer-mounted chart
+      // subscribes to its symbol via `subscribe:prices:batch` →
+      // `ROOM_PREFIXES.prices`) are always FUTURES — only the futures
+      // wsKey (`usdm`) is wired up for the renderer. Without this set,
+      // when a user has no open execs in the DB but is viewing a chart,
+      // the reconnect path defaults every symbol to `'spot'` (wsKey
+      // `main` → `wss://stream.binance.com:9443/stream`) — the chart
+      // never recovers a futures price feed and Binance closes the
+      // misrouted spot subscriptions, triggering an immediate reconnect
+      // loop (every ~7s in production: cancel → 1s → reconnecting).
+      const wsService = getWebSocketService();
+      const activePriceRooms = wsService?.getActiveRooms(ROOM_PREFIXES.prices) ?? [];
+      for (const symbol of activePriceRooms) {
+        const lower = symbol.toLowerCase();
+        if (isCustomSymbol(lower)) continue;
+        futuresSymbols.add(lower);
+      }
+
       for (const symbol of symbols) {
         const market = futuresSymbols.has(symbol) ? 'usdm' : 'spot';
         this.subscribe(symbol, market);
