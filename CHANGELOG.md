@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Checklist score chart collapsed from two competing lines to a bipolar net-score area** — was rendering `long%` (green line) and `short%` (red line) on a `[0, 100]` axis. The user only ever enters one direction at a time, so two lines just multiplied the visual noise of a binary decision ("is the setup pointing long or short right now?"). The new chart plots `net = long − short` on a `[-100, +100]` axis centered on 0, filled with a vertical gradient that's profit-tinted above the zero line and loss-tinted below. The strong reference lines sit at `±50` (conviction zones) and `0` (the neutral pivot). Tooltip preserves the absolute L%/S% breakdown so the per-side nuance stays one hover away; the live `ScoreBadgePair` above the chart still shows the same numbers in real time. New component lives in `ChecklistNetScoreArea.tsx`; `ChecklistScoreChart` is now a thin wrapper that keeps the existing fetch/merge/heartbeat machinery and just hands the merged history off to the new viz.
+- **Checklist score chart downsampled to ~100 points via LTTB** — the history layer keeps up to 1000 raw samples (server seed + 30s heartbeats + live appends), and rendering all 1000 in a ~400-px-wide panel produced the jagged, unreadable line the user reported. New `lttbDownsample.ts` runs the Largest-Triangle-Three-Buckets algorithm (Steinarsson 2013) on the merged history before it reaches recharts; first and last points stay anchored, the visual envelope (peaks, troughs, conviction-zone crossings) is preserved, and the chart drops to a comfortable density. Cap is per-chart (`VISIBLE_POINT_CAP = 100`) — easy to tune if a denser view turns out to be needed later.
+
 ### Added
 
 - **Checklist defaults extended to 1w + 1M for RSI 2 and Stoch 14** — the confluence ladder now covers `1m → 1M` (was `1m → 1d`), continuing the strict +0.5-per-step weight curve. Resulting ladder, `(weight = base + tfStep)`:
