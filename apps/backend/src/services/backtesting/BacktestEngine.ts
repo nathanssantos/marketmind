@@ -246,7 +246,8 @@ export class BacktestEngine {
     const strategyMap = new Map<string, PineStrategy>();
 
     if (setupsToEnable.length > 0) {
-      const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
+      const strategiesDir = config.pineStrategiesDir
+        ?? resolve(__dirname, '../../../strategies/builtin');
       const pineLoader = new PineStrategyLoader([strategiesDir]);
       const allPineStrategies = await pineLoader.loadAll();
 
