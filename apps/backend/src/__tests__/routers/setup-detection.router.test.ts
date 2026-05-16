@@ -55,7 +55,7 @@ vi.mock('../../services/pine/PineStrategyLoader', () => {
 
       loadFromString(source: string) {
         return {
-          metadata: { id: 'inline', name: 'Inline Strategy', version: '1.0.0', description: '', author: '', tags: [], status: 'active', enabled: true, parameters: {}, filters: {} },
+          metadata: { id: 'inline', name: 'Inline Strategy', version: '1.0.0', description: '', author: '', tags: [], status: 'active', enabled: true, parameters: {}, filters: {}, requiresTimeframes: [] },
           source,
           filePath: 'inline',
         };

@@ -1,4 +1,5 @@
 import { Indicator, PineTS } from 'pinets';
+import { PineMarketProvider } from './PineMarketProvider';
 import type { Kline, TradingSetup, SetupDirection } from '@marketmind/types';
 import { EXIT_CALCULATOR } from '../../constants';
 import type {
@@ -119,8 +120,29 @@ export class PineStrategyRunner {
   ): Promise<PineDetectionResult[]> {
     if (klines.length === 0) return [];
 
-    const pineTSKlines = klines.map(mapKlineToPineTS);
-    const pine = new PineTS(pineTSKlines, 'MARKETMIND', '1h');
+    const primaryTimeframe = options?.primaryTimeframe ?? '1h';
+    const hasSecondary = options?.secondaryKlines
+      && Object.keys(options.secondaryKlines).length > 0;
+
+    let pine: PineTS;
+    if (hasSecondary) {
+      // Multi-TF mode: route through a Provider so PineTS can resolve
+      // `request.security(...)` against our pre-loaded HTF klines.
+      // Includes the primary klines under its own label so PineTS's
+      // sub-context initialization works for both directions of TF
+      // comparison (LTF ↔ HTF).
+      const provider = new PineMarketProvider({
+        [primaryTimeframe]: klines,
+        ...options.secondaryKlines,
+      });
+      pine = new PineTS(provider, 'MARKETMIND', primaryTimeframe);
+    } else {
+      // Single-TF backward-compat path: array form is faster
+      // (no Provider setup roundtrip) and identical for strategies
+      // that never call `request.security`.
+      const pineTSKlines = klines.map(mapKlineToPineTS);
+      pine = new PineTS(pineTSKlines, 'MARKETMIND', primaryTimeframe);
+    }
     await pine.ready();
 
     // Strategy parameter overrides: when `parameterOverrides` is set, wrap

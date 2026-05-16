@@ -295,11 +295,40 @@ export class MultiWatcherBacktestEngine {
   }
 
   private async detectSetups(
-    _watcherConfig: WatcherConfig,
+    watcherConfig: WatcherConfig,
     klines: Kline[],
     pineStrategies: PineStrategy[]
   ): Promise<TradingSetup[]> {
     if (pineStrategies.length === 0) return [];
+
+    // Pre-load HTF klines for every `@requires-tf` declared by any of
+    // this watcher's strategies. Matches BacktestEngine.initializeStrategies
+    // — one DB fetch per (symbol, HTF) pair, then handed off to
+    // PineStrategyRunner via secondaryKlines.
+    const requiredTfs = new Set<string>();
+    for (const s of pineStrategies) {
+      for (const tf of s.metadata.requiresTimeframes ?? []) requiredTfs.add(tf);
+    }
+    const secondaryKlines: Record<string, Kline[]> = {};
+    if (requiredTfs.size > 0) {
+      const marketType = watcherConfig.marketType ?? 'FUTURES';
+      const intervalMs = getIntervalMs(watcherConfig.interval);
+      const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+      const htfStartTime = new Date(new Date(this.config.startDate).getTime() - warmupMs);
+      const htfEndTime = new Date(this.config.endDate);
+      for (const tf of requiredTfs) {
+        const htfKlines = await fetchKlinesFromDbWithBackfill(
+          watcherConfig.symbol,
+          tf as Interval,
+          marketType,
+          htfStartTime,
+          htfEndTime,
+          this.config.exchange,
+        );
+        secondaryKlines[tf] = htfKlines;
+        console.log(`[MultiWatcherBacktest] Pre-loaded ${htfKlines.length} klines for HTF=${tf} (${watcherConfig.symbol})`);
+      }
+    }
 
     const setupDetectionService = new SetupDetectionService({
       silent: this.config.silent,
@@ -310,6 +339,8 @@ export class MultiWatcherBacktestEngine {
       strategyParams: this.config.strategyParams,
       minConfidence: this.config.minConfidence,
       minRiskReward: this.config.minRiskRewardRatio,
+      primaryTimeframe: watcherConfig.interval,
+      ...(requiredTfs.size > 0 ? { secondaryKlines } : {}),
     });
 
     for (const strategy of pineStrategies) {

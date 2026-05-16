@@ -847,7 +847,7 @@ describe('FilterValidator', () => {
       } as never);
 
       const strategies: PineStrategy[] = [{
-        metadata: { id: 'larry_williams_9_1', name: 'larry_williams_9_1', version: '1.0.0', description: '', author: 'test', tags: [], status: 'active', enabled: true, parameters: {}, filters: {} },
+        metadata: { id: 'larry_williams_9_1', name: 'larry_williams_9_1', version: '1.0.0', description: '', author: 'test', tags: [], status: 'active', enabled: true, parameters: {}, filters: {}, requiresTimeframes: [] },
         source: '',
         filePath: 'test',
       }];

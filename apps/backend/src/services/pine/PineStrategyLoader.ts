@@ -3,7 +3,9 @@ import { join } from 'node:path';
 import type { PineStrategy, PineStrategyMetadata } from './types';
 
 const PINE_EXTENSION = '.pine';
-const METADATA_REGEX = /^\/\/\s*@(\w+)\s+(.+)$/;
+// Allow hyphens in metadata keys (`@requires-tf`, etc.). Previously
+// `\w+` matched only word chars, so hyphenated tags silently failed to parse.
+const METADATA_REGEX = /^\/\/\s*@([\w-]+)\s+(.+)$/;
 const PARAM_REGEX = /^\/\/\s*@param\s+(\w+)\s+(.+)$/;
 const INPUT_INT_REGEX = /(\w+)\s*=\s*input\.int\(\s*(\d+)/g;
 const INPUT_FLOAT_REGEX = /(\w+)\s*=\s*input\.float\(\s*([\d.]+)/g;
@@ -53,6 +55,13 @@ const parseMetadataLine = (
     case 'volumeType':
       metadata.filters ??= {};
       metadata.filters.volumeType = v;
+      break;
+    case 'requires-tf':
+    case 'requiresTf':
+      metadata.requiresTimeframes = v
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
       break;
     default:
       // Unknown metadata key — ignore silently for forward compatibility
@@ -116,6 +125,23 @@ const parseMetadata = (
     .pop()!
     .replace(PINE_EXTENSION, '');
 
+  // Detect `request.security(..., 'TF', ...)` calls and union with the
+  // declared `@requires-tf` set. The metadata header is authoritative —
+  // we surface a warning to stderr if the source uses request.security
+  // for a timeframe that wasn't declared, since that means the runtime
+  // will fail with "no klines registered" when the strategy runs.
+  const declaredTimeframes = metadata.requiresTimeframes ?? [];
+  const detectedTimeframes = extractRequestedTimeframes(source);
+  for (const detected of detectedTimeframes) {
+    if (!declaredTimeframes.includes(detected)) {
+      process.stderr.write(
+        `[PineStrategyLoader] ${fileBasename}: strategy calls request.security('${detected}', ...) `
+        + `but does NOT declare '@requires-tf ${detected}'. Backtest + live runtime will fail with `
+        + `"no klines registered" unless this is fixed.\n`,
+      );
+    }
+  }
+
   return {
     id: metadata.id ?? fileBasename,
     name: metadata.name ?? fileBasename,
@@ -127,7 +153,23 @@ const parseMetadata = (
     enabled: metadata.enabled ?? true,
     parameters: metadata.parameters ?? {},
     filters: metadata.filters ?? {},
+    requiresTimeframes: declaredTimeframes,
   };
+};
+
+// Matches `request.security(<symbol>, 'TF', ...)` and `request.security(<symbol>,"TF",...)`.
+// We extract the second positional argument (timeframe string literal).
+// Variable references for the TF arg are NOT extracted — strategies that
+// build TF strings dynamically must use the explicit `@requires-tf`
+// header to opt in.
+const REQUEST_SECURITY_REGEX = /request\.security\s*\(\s*[^,]+,\s*['"]([^'"]+)['"]/g;
+
+const extractRequestedTimeframes = (source: string): string[] => {
+  const out = new Set<string>();
+  for (const m of source.matchAll(REQUEST_SECURITY_REGEX)) {
+    if (m[1]) out.add(m[1]);
+  }
+  return Array.from(out);
 };
 
 export class PineStrategyLoader {

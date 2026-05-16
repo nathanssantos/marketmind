@@ -14,6 +14,16 @@ export interface PineStrategyMetadata {
   recommendedTimeframes?: PineRecommendedTimeframes;
   backtestSummary?: Record<string, unknown>;
   education?: Record<string, unknown>;
+  /**
+   * Higher timeframes this strategy reads via `request.security(...)`.
+   * Parsed from the `@requires-tf 4h, 1d` metadata header. Used by:
+   *   - BacktestEngine + MultiWatcherBacktestEngine to pre-load HTF klines
+   *     from the DB before invoking PineStrategyRunner
+   *   - WatcherManager (live runtime) to subscribe to the right
+   *     kline streams alongside the watcher's primary interval
+   * Empty when the strategy doesn't use multi-TF data.
+   */
+  requiresTimeframes: string[];
 }
 
 export interface PineParameterMeta {
@@ -71,6 +81,24 @@ export interface PineRunOptions {
   parameterOverrides?: Record<string, number | string | boolean>;
   minConfidence?: number;
   minRiskReward?: number;
+  /**
+   * Primary timeframe label (e.g. '1h', '15m', '4h'). Required when the
+   * strategy uses `request.security(...)` — PineTS compares the primary
+   * TF index against the requested TF index to decide HTF vs LTF direction.
+   * Defaults to '1h' for backward compatibility with single-TF strategies.
+   */
+  primaryTimeframe?: string;
+  /**
+   * Secondary kline data, keyed by timeframe label ('4h', '1d', etc.).
+   * When provided, PineStrategyRunner switches from array-mode PineTS
+   * (which silently NaN's on `request.security`) to a custom Provider
+   * that resolves secondary-TF lookups against these pre-loaded klines.
+   *
+   * The map MUST include all timeframes the strategy reads via
+   * `request.security(...)` — see the strategy's `@requires-tf` metadata
+   * for the declared dependency set.
+   */
+  secondaryKlines?: Record<string, import('@marketmind/types').Kline[]>;
 }
 
 export interface PineDetectionResult {
