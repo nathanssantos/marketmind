@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Order/SL/TP drag now propagates to every chart panel in the same render frame** — previously, dragging an SL or TP on one chart (say the 1m) updated only THAT chart immediately; sibling charts (5m, 15m) kept showing the old value until the WS `position:update` event patched the canonical tRPC cache or the 30s polling fallback fired. Visible symptom: 1m showed `-0.78%`, sibling 5m/15m still rendered `-0.97%` even after the mutation had landed server-side. Root cause: each `useChartTradingData` instance held its own `useRef<Map>` for optimistic overrides. Lifted that state into a new `OptimisticOrderOverridesProvider` so every chart consumer reads/writes the same Map — a drag patch now lands across all panels in the same render tick.
+
+### Changed
+
+- **Confluence chart data line thinned to 1 px** — was 1.5 px, slightly bolder than necessary. Tightening to 1 px makes the line read more precisely against the gradient zones without losing legibility.
+
 ## [1.22.10] - 2026-05-16
 
 ### Added

@@ -8,14 +8,12 @@ import { useIndicatorVisibility } from '@renderer/hooks/useIndicatorVisibility';
 import { useSocketEvent } from '@renderer/hooks/socket';
 import { trpc } from '@renderer/utils/trpc';
 import { QUERY_CONFIG } from '@shared/constants/queryConfig';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BackendExecution, TrailingStopLineConfig } from '../useOrderLinesRenderer';
-
-interface OptimisticOverride {
-  patches: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice' | 'status'>>;
-  previousValues: Partial<Pick<BackendExecution, 'stopLoss' | 'takeProfit' | 'entryPrice' | 'status'>>;
-  timestamp: number;
-}
+import {
+  useOptimisticOrderOverrides,
+  type OptimisticOverride,
+} from '@renderer/context/OptimisticOrderOverridesContext';
 
 // Hard safety cap for optimistic overrides — after this, give up and let
 // the real cache speak. v1.6 Track F: was 5s, but Binance's open-orders
@@ -55,35 +53,17 @@ export const useChartTradingData = ({
   const closingSnapshotsRef = useRef<Map<string, BackendExecution>>(new Map());
   const [closingVersion, setClosingVersion] = useState(0);
 
-  const optimisticOverridesRef = useRef<Map<string, OptimisticOverride>>(new Map());
-  const [overrideVersion, setOverrideVersion] = useState(0);
-
-  const applyOptimistic = useCallback((
-    id: string,
-    patches: OptimisticOverride['patches'],
-    previousValues: OptimisticOverride['previousValues']
-  ) => {
-    const existing = optimisticOverridesRef.current.get(id);
-    optimisticOverridesRef.current.set(id, {
-      patches: existing ? { ...existing.patches, ...patches } : patches,
-      previousValues: existing ? existing.previousValues : previousValues,
-      timestamp: Date.now(),
-    });
-    setOverrideVersion(v => v + 1);
-  }, []);
-
-  const clearOptimistic = useCallback((id: string, expectedPatches?: OptimisticOverride['patches']) => {
-    if (expectedPatches) {
-      const current = optimisticOverridesRef.current.get(id);
-      if (current) {
-        const patchKeys = Object.keys(expectedPatches) as (keyof OptimisticOverride['patches'])[];
-        const stillMatches = patchKeys.every(k => current.patches[k] === expectedPatches[k]);
-        if (!stillMatches) return;
-      }
-    }
-    optimisticOverridesRef.current.delete(id);
-    setOverrideVersion(v => v + 1);
-  }, []);
+  // Optimistic SL/TP/entryPrice overrides live in a shared context now —
+  // a drag on one chart panel needs to paint the new value on every
+  // sibling chart in the same render frame, not just the chart that
+  // dispatched the mutation.
+  const {
+    optimisticOverridesRef,
+    overrideVersion,
+    bumpOverrideVersion,
+    applyOptimistic,
+    clearOptimistic,
+  } = useOptimisticOrderOverrides();
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
 
@@ -273,8 +253,8 @@ export const useChartTradingData = ({
       //    the override so the user's optimistic intent stays on screen
       //    until the server catches up (or the hard cap fires).
     }
-    if (changed) setOverrideVersion(v => v + 1);
-  }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions]);
+    if (changed) bumpOverrideVersion();
+  }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions, bumpOverrideVersion, optimisticOverridesRef]);
 
   // Snapshot the closing position so the chart can play the
   // "line fades out + flash" animation for ~800 ms even if the query
