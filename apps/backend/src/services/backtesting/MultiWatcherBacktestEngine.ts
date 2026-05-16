@@ -306,6 +306,10 @@ export class MultiWatcherBacktestEngine {
       maxFibonacciEntryProgressPercentLong: this.config.maxFibonacciEntryProgressPercentLong,
       maxFibonacciEntryProgressPercentShort: this.config.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: this.config.fibonacciSwingRange,
+      initialStopMode: this.config.initialStopMode,
+      strategyParams: this.config.strategyParams,
+      minConfidence: this.config.minConfidence,
+      minRiskReward: this.config.minRiskRewardRatio,
     });
 
     for (const strategy of pineStrategies) {
@@ -450,6 +454,7 @@ export class MultiWatcherBacktestEngine {
     );
     if (!filterResult.passed) {
       watcher.stats.tradesSkipped++;
+      watcher.stats.skippedReasons['indicatorFilter'] = (watcher.stats.skippedReasons['indicatorFilter'] ?? 0) + 1;
       return;
     }
 
@@ -744,41 +749,27 @@ export class MultiWatcherBacktestEngine {
   }
 
   private getEffectiveTakeProfit(setup: TradingSetup): { takeProfit: number | undefined; rejected: boolean; reason?: string } {
-    if (this.config.tpCalculationMode === 'fibonacci') {
-      if (!setup.fibonacciProjection) {
-        return {
-          takeProfit: undefined,
-          rejected: true,
-          reason: 'no-trend-structure',
-        };
-      }
-
+    // Fibo target path: ONLY usable when the setup actually carries a
+    // fibonacci projection. Pine strategies don't compute projections
+    // during detection (only enrichers like the trailing-stop path do),
+    // so for the vast majority of strategies this branch is a no-op —
+    // we then fall back to the strategy-emitted `setup.takeProfit`,
+    // mirroring `TradeExecutor.calculateTradeLevels` in the single-engine
+    // path. Pre-fix this rejected every Pine setup with
+    // `no-trend-structure` and the UI silently got 0 trades.
+    if (this.config.tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
       const fibTarget = this.getFibonacciTargetPrice(setup.fibonacciProjection, setup.direction, setup.entryPrice);
 
-      if (fibTarget === null) {
-        return {
-          takeProfit: undefined,
-          rejected: true,
-          reason: 'fibonacci-invalid',
-        };
+      if (fibTarget !== null) {
+        const isValidTarget = setup.direction === 'LONG'
+          ? fibTarget > setup.entryPrice
+          : fibTarget < setup.entryPrice;
+        if (isValidTarget) {
+          return { takeProfit: fibTarget, rejected: false };
+        }
       }
-
-      const isValidTarget = setup.direction === 'LONG'
-        ? fibTarget > setup.entryPrice
-        : fibTarget < setup.entryPrice;
-
-      if (!isValidTarget) {
-        return {
-          takeProfit: undefined,
-          rejected: true,
-          reason: 'fibonacci-wrong-direction',
-        };
-      }
-
-      return {
-        takeProfit: fibTarget,
-        rejected: false,
-      };
+      // Fibo target invalid/wrong-direction — fall through to strategy TP
+      // rather than rejecting outright. Same as TradeExecutor.
     }
 
     return {
