@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **EMA / SMA / Bollinger / Ichimoku price tags vanished on charts without an open trade** — regression from #456's collision-system migration (May 5, 2026), which moved overlay-indicator tags from direct draw into a buffer drained by `renderPriceTags`. That drain runs inside `useOrderLinesRenderer.renderOrderLines`, which early-returns when there are no active orders or pending setups — so any chart without a live position dropped its indicator tags silently. Added `peekPriceTagBufferSize` and relaxed the early-return to keep running when the buffer has indicator tags. Regression test in `useOrderLinesRenderer.test.ts`.
+
 ## [1.22.13] - 2026-05-16
 
 The "make multi-TF actually work end-to-end" release. 8 PRs (#678–#685) build out the native multi-timeframe runtime (Pine `request.security` resolves against pre-loaded klines), close every gap from setup detection to live auto-trader, harden the backtest engines with full parity coverage, and surface the new capabilities in the UI.

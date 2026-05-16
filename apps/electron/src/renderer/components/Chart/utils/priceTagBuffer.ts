@@ -44,6 +44,10 @@ export const drainPriceTagBuffer = (manager: CanvasManager): BufferedPriceTag[] 
   return getBuffer(manager).slice();
 };
 
+export const peekPriceTagBufferSize = (manager: CanvasManager): number => {
+  return buffers.get(manager)?.length ?? 0;
+};
+
 export const clearPriceTagBuffer = (manager: CanvasManager): void => {
   const b = buffers.get(manager);
   if (b) b.length = 0;
