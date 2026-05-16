@@ -128,6 +128,14 @@ export const simpleBacktestInputSchema = z.object({
 
   strategyParams: z.record(z.string(), z.number()).optional(),
 
+  /**
+   * Cap on simultaneously-open positions. When omitted, BacktestEngine
+   * applies `FilterManager.maxConcurrentPositions = 10`. Set to 1 to
+   * match `MultiWatcherBacktestEngine`'s single-watcher portfolio model
+   * (one position at a time on the same watcher).
+   */
+  maxConcurrentPositions: z.number().int().min(1).max(100).optional(),
+
   usePartialExits: z.boolean().optional(),
   partialExitLevels: z.array(partialExitLevelSchema).optional(),
   lockProfitsAfterFirstExit: z.boolean().optional(),
