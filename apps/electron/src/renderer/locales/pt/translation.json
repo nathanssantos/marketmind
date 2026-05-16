@@ -2350,6 +2350,8 @@
       "showExperimental": "Mostrar experimentais",
       "intervalMismatchTitle": "Intervalo não recomendado",
       "intervalMismatchBody": "As estratégias selecionadas não recomendam o intervalo {{interval}}.",
+      "htfBadge": "HTF: {{tfs}}",
+      "paramsTitle": "Parâmetros da estratégia (sobrescreve defaults do .pine)",
       "loadFailed": "Falha ao carregar estratégias.",
       "empty": "Nenhuma estratégia para o filtro atual."
     },

@@ -1,5 +1,5 @@
-import { Box, Flex, HStack, Text, VStack } from '@chakra-ui/react';
-import { Badge, Button, Callout, Checkbox, LoadingSpinner, Switch } from '@renderer/components/ui';
+import { Box, Flex, Grid, HStack, Text, VStack } from '@chakra-ui/react';
+import { Badge, Button, Callout, Checkbox, Field, LoadingSpinner, NumberInput, Switch } from '@renderer/components/ui';
 import { DEFAULT_ENABLED_SETUP_IDS, type SimpleBacktestInput } from '@marketmind/types';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,6 +41,18 @@ export const StrategiesTab = ({ state, setField }: StrategiesTabProps) => {
     if (next.has(id)) next.delete(id);
     else next.add(id);
     setField('setupTypes', Array.from(next));
+  };
+
+  // Override one strategy parameter. Writes to `state.strategyParams`
+  // (a flat record keyed by param name; collisions across strategies
+  // are accepted — the optimizer assumes param names are unique within
+  // an active strategy set, which is fine because each .pine declares
+  // its own `input.*` namespace).
+  const setStrategyParam = (key: string, value: number | undefined) => {
+    const next = { ...(state.strategyParams ?? {}) };
+    if (value === undefined || Number.isNaN(value)) delete next[key];
+    else next[key] = value;
+    setField('strategyParams', Object.keys(next).length > 0 ? next : undefined);
   };
 
   const selectAll = () => {
@@ -128,7 +140,14 @@ export const StrategiesTab = ({ state, setField }: StrategiesTabProps) => {
                 />
                 <VStack align="stretch" flex={1} gap={1}>
                   <HStack justify="space-between">
-                    <Text fontSize="sm" fontWeight="medium">{s.name}</Text>
+                    <HStack gap={2} flex={1} minW={0}>
+                      <Text fontSize="sm" fontWeight="medium">{s.name}</Text>
+                      {s.requiresTimeframes && s.requiresTimeframes.length > 0 && (
+                        <Badge colorPalette="purple" size="xs" data-testid={`htf-badge-${s.id}`}>
+                          {t('backtest.strategies.htfBadge', { tfs: s.requiresTimeframes.join(', ') })}
+                        </Badge>
+                      )}
+                    </HStack>
                     <Badge colorPalette={STATUS_PALETTE[s.status] ?? 'gray'} size="xs">{s.status}</Badge>
                   </HStack>
                   {s.description && (
@@ -140,6 +159,50 @@ export const StrategiesTab = ({ state, setField }: StrategiesTabProps) => {
                         <Badge key={tag} size="xs" variant="subtle">{tag}</Badge>
                       ))}
                     </HStack>
+                  )}
+                  {/*
+                    Per-param editor — only renders when:
+                      (1) the strategy is selected, AND
+                      (2) it actually declares `input.*` parameters.
+                    Each input writes to `state.strategyParams[key]`,
+                    overriding the .pine default. Empty value (the
+                    user clears the field) deletes the override so the
+                    strategy falls back to its declared default.
+                  */}
+                  {selected.has(s.id) && s.parameters && s.parameters.length > 0 && (
+                    <Box
+                      mt={1}
+                      pt={2}
+                      borderTopWidth="1px"
+                      borderColor="border"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Text fontSize="2xs" color="fg.muted" textTransform="uppercase" mb={1.5}>
+                        {t('backtest.strategies.paramsTitle')}
+                      </Text>
+                      <Grid templateColumns="repeat(2, 1fr)" gap={2}>
+                        {s.parameters.map((p) => {
+                          const override = state.strategyParams?.[p.key];
+                          return (
+                            <Field key={p.key} label={p.key} helperText={p.description ?? undefined}>
+                              <NumberInput
+                                value={override ?? p.default}
+                                onChange={(e) => {
+                                  const raw = e.target.value;
+                                  if (raw === '') setStrategyParam(p.key, undefined);
+                                  else setStrategyParam(p.key, Number(raw));
+                                }}
+                                min={p.min}
+                                max={p.max}
+                                step={p.step ?? 1}
+                                size="xs"
+                                data-testid={`param-${s.id}-${p.key}`}
+                              />
+                            </Field>
+                          );
+                        })}
+                      </Grid>
+                    </Box>
                   )}
                 </VStack>
               </HStack>
