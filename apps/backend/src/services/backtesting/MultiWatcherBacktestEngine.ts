@@ -54,6 +54,11 @@ export class MultiWatcherBacktestEngine {
   private btcKlinesCache: Map<string, Kline[]> = new Map();
   private htfKlinesCache: Map<string, Kline[]> = new Map();
   private stochasticHtfKlinesCache: Map<string, Kline[]> = new Map();
+  // Shared HTF cache for `@requires-tf` strategies — keyed by
+  // `${symbol}_${tf}`. Reused across watchers in the same backtest
+  // so e.g. 3 watchers on BTC/ETH/SOL all sharing a 4h HTF
+  // requirement → 3 fetches (one per symbol), not 3 × N strategies.
+  private requiresTfKlinesCache: Map<string, Kline[]> = new Map();
 
   constructor(private config: MultiWatcherBacktestConfig) {}
 
@@ -317,16 +322,21 @@ export class MultiWatcherBacktestEngine {
       const htfStartTime = new Date(new Date(this.config.startDate).getTime() - warmupMs);
       const htfEndTime = new Date(this.config.endDate);
       for (const tf of requiredTfs) {
-        const htfKlines = await fetchKlinesFromDbWithBackfill(
-          watcherConfig.symbol,
-          tf as Interval,
-          marketType,
-          htfStartTime,
-          htfEndTime,
-          this.config.exchange,
-        );
+        const cacheKey = `${watcherConfig.symbol}_${tf}`;
+        let htfKlines = this.requiresTfKlinesCache.get(cacheKey);
+        if (!htfKlines) {
+          htfKlines = await fetchKlinesFromDbWithBackfill(
+            watcherConfig.symbol,
+            tf as Interval,
+            marketType,
+            htfStartTime,
+            htfEndTime,
+            this.config.exchange,
+          );
+          this.requiresTfKlinesCache.set(cacheKey, htfKlines);
+          console.log(`[MultiWatcherBacktest] Pre-loaded ${htfKlines.length} klines for HTF=${tf} (${watcherConfig.symbol})`);
+        }
         secondaryKlines[tf] = htfKlines;
-        console.log(`[MultiWatcherBacktest] Pre-loaded ${htfKlines.length} klines for HTF=${tf} (${watcherConfig.symbol})`);
       }
     }
 

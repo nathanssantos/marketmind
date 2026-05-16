@@ -89,6 +89,16 @@ vi.mock('../../../constants', () => ({
   UNIT_MS: { m: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000 },
   AUTO_TRADING_RETRY: { MAX_RETRIES: 3, INITIAL_DELAY_MS: 1000, MAX_DELAY_MS: 10000, BACKOFF_MULTIPLIER: 2 },
   PROTECTION_ORDER_RETRY: { MAX_RETRIES: 3, INITIAL_DELAY_MS: 500, MAX_DELAY_MS: 5000, BACKOFF_MULTIPLIER: 2 },
+  // Used by `signal-helpers.ts` for the HTF kline warmup window in
+  // the new multi-TF live wiring. Value matches the production
+  // constant so the mock doesn't change behavior.
+  BACKTEST_ENGINE: { EMA200_WARMUP_BARS: 200 },
+  // Pulled in transitively via `kline-fetcher → binance-historical` once
+  // the live multi-TF path started using `fetchKlinesFromDbWithBackfill`.
+  // Mock with safe defaults — the multi-TF tests in this file don't
+  // exercise the backfill code path, but the imports resolve at module
+  // load time so they must exist.
+  AUTO_TRADING_API: { MAX_LIMIT: 1000 },
 }));
 
 vi.mock('../../../db', () => ({
