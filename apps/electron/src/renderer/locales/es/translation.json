@@ -1801,8 +1801,8 @@
       "riskManagement": "Gestión de Riesgo",
       "riskManagementDescription": "Anular dimensionamiento de posición y límites de riesgo",
       "riskDescription": "Anular configuración de riesgo de la billetera para este perfil",
-      "checklist": "Pre-trade checklist",
-      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
+      "confluence": "Confluencia pre-trade",
+      "confluenceDescription": "Condiciones evaluadas antes de cada entrada. Las obligatorias deben pasar todas; las preferidas contribuyen al puntaje."
     },
     "overrides": {
       "usingGlobalDefault": "Usando valor global predeterminado",
@@ -2935,21 +2935,21 @@
       "overbought": "Sobrecomprado"
     }
   },
-  "checklist": {
+  "confluence": {
     "section": {
       "long": "Long",
       "short": "Short",
       "both": "Ambos",
       "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
       "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
-      "error": "Checklist error",
-      "dedupExcluded": "Not counted — same as another condition for this timeframe",
-      "title": "Checklist",
-      "empty": "No conditions evaluated.",
-      "options": "Opciones del checklist",
+      "error": "Error de confluencia",
+      "dedupExcluded": "No contabilizado — misma condición en otro timeframe",
+      "title": "Confluencia",
+      "empty": "Sin condiciones evaluadas.",
+      "options": "Opciones de la confluencia",
       "showChart": "Mostrar gráfico de puntaje",
       "hideChart": "Ocultar gráfico de puntaje",
-      "editProfile": "Editar perfil (checklist)",
+      "editProfile": "Editar perfil (confluencia)",
       "collectingHistory": "Recopilando historial…"
     },
     "editor": {
@@ -2957,7 +2957,7 @@
       "moveDown": "Mover abajo",
       "add": "Add condition",
       "emptyTitle": "No conditions",
-      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "emptyDescription": "Agrega indicadores para armar tu confluencia pre-trade.",
       "missing": "Missing indicator",
       "unknownCatalog": "(unknown indicator type)"
     },

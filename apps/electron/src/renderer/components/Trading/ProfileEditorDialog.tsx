@@ -13,7 +13,7 @@ import {
 import type { DialogControlProps, TradingProfile } from '@marketmind/types';
 import { useUserIndicators } from '@renderer/hooks';
 import { useTranslation } from 'react-i18next';
-import { ChecklistEditor } from './ChecklistEditor';
+import { ConfluenceEditor } from './ConfluenceEditor';
 import { DIRECTION_MODE_OPTIONS, MODE_KEYS, TRADING_MODE_OPTIONS } from './profileEditorConstants';
 import { OverrideBadge, OverrideRow, ovStr } from './profileEditorUtils';
 import { ProfileFibEntrySection } from './ProfileFibEntrySection';
@@ -197,20 +197,20 @@ export const ProfileEditorDialog = ({ isOpen, onClose, profile }: ProfileEditorD
               </CollapsibleSection>
 
               <CollapsibleSection
-                title={t('tradingProfiles.sections.checklist')}
-                description={t('tradingProfiles.sections.checklistDescription')}
+                title={t('tradingProfiles.sections.confluence')}
+                description={t('tradingProfiles.sections.confluenceDescription')}
                 badge={
-                  <Badge size="sm" colorPalette={form.checklistConditions.length > 0 ? 'blue' : 'gray'}>
-                    {form.checklistConditions.length}
+                  <Badge size="sm" colorPalette={form.confluenceConditions.length > 0 ? 'blue' : 'gray'}>
+                    {form.confluenceConditions.length}
                   </Badge>
                 }
                 size="lg"
       variant="static"
               >
-                <ChecklistEditor
-                  conditions={form.checklistConditions}
+                <ConfluenceEditor
+                  conditions={form.confluenceConditions}
                   availableIndicators={availableIndicators}
-                  onChange={form.setChecklistConditions}
+                  onChange={form.setConfluenceConditions}
                   isSaving={form.isSubmitting}
                 />
               </CollapsibleSection>

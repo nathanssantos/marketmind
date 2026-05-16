@@ -213,7 +213,7 @@ export const tradingProfiles = pgTable('trading_profiles', {
   volumeFilterObvLookbackShort: integer('volume_filter_obv_lookback_short'),
   useObvCheckLong: boolean('use_obv_check_long'),
   useObvCheckShort: boolean('use_obv_check_short'),
-  checklistConditions: text('checklist_conditions').default('[]').notNull(),
+  confluenceConditions: text('confluence_conditions').default('[]').notNull(),
   createdAt: timestamp('created_at', { mode: 'date' }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
@@ -486,15 +486,15 @@ export type SymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inf
 export type NewSymbolTrailingStopOverride = typeof symbolTrailingStopOverrides.$inferInsert;
 
 /**
- * Rolling history of checklist L/S scores keyed by (user, profile,
+ * Rolling history of confluence L/S scores keyed by (user, profile,
  * symbol, interval, marketType, recordedAt). Each call to
- * `evaluateChecklist` writes a row; backfill scripts can populate
+ * `evaluateConfluence` writes a row; backfill scripts can populate
  * historical rows by simulating the evaluator at past kline closes.
  *
- * Used to seed the checklist score chart on mount so the user sees
+ * Used to seed the confluence score chart on mount so the user sees
  * trend across days, not just the live polling window.
  */
-export const checklistScoreHistory = pgTable('checklist_score_history', {
+export const confluenceScoreHistory = pgTable('confluence_score_history', {
   id: serial('id').primaryKey(),
   userId: varchar('user_id', { length: 255 })
     .notNull()
@@ -510,13 +510,13 @@ export const checklistScoreHistory = pgTable('checklist_score_history', {
   recordedAt: timestamp('recorded_at', { mode: 'date' }).defaultNow().notNull(),
   source: varchar({ length: 20 }).default('live').notNull(),
 }, (table) => ({
-  scopeRecordedAtIdx: index('checklist_score_history_scope_idx').on(
+  scopeRecordedAtIdx: index('confluence_score_history_scope_idx').on(
     table.profileId, table.symbol, table.interval, table.marketType, table.recordedAt,
   ),
-  uniqRow: uniqueIndex('checklist_score_history_unique_idx').on(
+  uniqRow: uniqueIndex('confluence_score_history_unique_idx').on(
     table.profileId, table.symbol, table.interval, table.marketType, table.recordedAt,
   ),
 }));
 
-export type ChecklistScoreHistoryRow = typeof checklistScoreHistory.$inferSelect;
-export type NewChecklistScoreHistoryRow = typeof checklistScoreHistory.$inferInsert;
+export type ConfluenceScoreHistoryRow = typeof confluenceScoreHistory.$inferSelect;
+export type NewConfluenceScoreHistoryRow = typeof confluenceScoreHistory.$inferInsert;

@@ -59,7 +59,7 @@ const SCENARIOS: ScenarioLayout[] = [
     name: 'kitchen sink: 2 charts + every panel kind',
     charts: 1,
     panels: [
-      'ticket', 'checklist', 'orders', 'portfolio', 'positions',
+      'ticket', 'confluence', 'orders', 'portfolio', 'positions',
       'orderBook', 'orderFlowMetrics',
       'watchers', 'autoTradingSetup', 'autoTradingActivity',
       'marketFearGreed', 'marketBtcDominance', 'marketMvrv',

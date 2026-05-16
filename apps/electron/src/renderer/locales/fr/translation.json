@@ -1790,8 +1790,8 @@
       "riskManagement": "Gestion des Risques",
       "riskManagementDescription": "Remplacer le dimensionnement des positions et les limites de risque",
       "riskDescription": "Remplacer les paramètres de risque du portefeuille pour ce profil",
-      "checklist": "Pre-trade checklist",
-      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
+      "confluence": "Confluence pré-trade",
+      "confluenceDescription": "Conditions évaluées avant chaque entrée. Les obligatoires doivent toutes passer; les préférées contribuent au score."
     },
     "overrides": {
       "usingGlobalDefault": "Utilise la valeur globale par défaut",
@@ -2924,21 +2924,21 @@
       "overbought": "Suracheté"
     }
   },
-  "checklist": {
+  "confluence": {
     "section": {
       "long": "Long",
       "short": "Short",
       "both": "Les deux",
       "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
       "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
-      "error": "Checklist error",
-      "dedupExcluded": "Not counted — same as another condition for this timeframe",
-      "title": "Checklist",
-      "empty": "No conditions evaluated.",
-      "options": "Options de la checklist",
+      "error": "Erreur de confluence",
+      "dedupExcluded": "Non compté — même condition sur un autre timeframe",
+      "title": "Confluence",
+      "empty": "Aucune condition évaluée.",
+      "options": "Options de la confluence",
       "showChart": "Afficher le graphique de score",
       "hideChart": "Masquer le graphique de score",
-      "editProfile": "Modifier le profil (checklist)",
+      "editProfile": "Modifier le profil (confluence)",
       "collectingHistory": "Collecte de l'historique…"
     },
     "editor": {
@@ -2946,7 +2946,7 @@
       "moveDown": "Déplacer vers le bas",
       "add": "Add condition",
       "emptyTitle": "No conditions",
-      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "emptyDescription": "Ajoutez des indicateurs pour construire votre confluence pré-trade.",
       "missing": "Missing indicator",
       "unknownCatalog": "(unknown indicator type)"
     },

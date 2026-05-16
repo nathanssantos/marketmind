@@ -3,7 +3,7 @@ import { Box, Flex, Text, useToken } from '@chakra-ui/react';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChecklistNetScoreArea } from './ChecklistNetScoreArea';
+import { ConfluenceNetScoreArea } from './ConfluenceNetScoreArea';
 
 const MAX_HISTORY_POINTS = 1000;
 const SEED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -25,7 +25,7 @@ const SAME_VALUE_HEARTBEAT_MS = 30_000;
 // snapshots stay visible in the chart.
 const SERVER_LOCAL_MERGE_TOLERANCE_MS = 5_000;
 
-interface ChecklistScoreChartProps {
+interface ConfluenceScoreChartProps {
   resetKey: string;
   longScore: number | null | undefined;
   shortScore: number | null | undefined;
@@ -66,7 +66,7 @@ const mergePoint = (history: HistoryPoint[], point: HistoryPoint): HistoryPoint[
 
 const formatTooltipTime = (t: unknown): string => new Date(Number(t)).toLocaleTimeString();
 
-export const ChecklistScoreChart = memo(({
+export const ConfluenceScoreChart = memo(({
   resetKey,
   longScore,
   shortScore,
@@ -74,7 +74,7 @@ export const ChecklistScoreChart = memo(({
   symbol,
   interval,
   marketType,
-}: ChecklistScoreChartProps) => {
+}: ConfluenceScoreChartProps) => {
   const { t } = useTranslation();
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const lastResetKeyRef = useRef(resetKey);
@@ -112,7 +112,7 @@ export const ChecklistScoreChart = memo(({
   //
   // Merge-strategy: we MUST NOT just replace local history with
   // serverPoints + tail. The backend's write-through fires on each
-  // `evaluateChecklist` call (every ~15s); local live-appends fire
+  // `evaluateConfluence` call (every ~15s); local live-appends fire
   // every time longScore/shortScore change in React state, which
   // can be more frequent. So local state can hold transient peaks
   // that happened BETWEEN backend snapshots. If we replace and
@@ -223,7 +223,7 @@ export const ChecklistScoreChart = memo(({
       <Box mt={1} mx={1} mb={2} h={CHART_HEIGHT}>
         <Flex h="100%" align="center" justify="center">
           <Text fontSize="2xs" color="fg.muted">
-            {t('checklist.section.collectingHistory')}
+            {t('confluence.section.collectingHistory')}
           </Text>
         </Flex>
       </Box>
@@ -232,7 +232,7 @@ export const ChecklistScoreChart = memo(({
 
   return (
     <Box mt={1} mx={1} mb={2}>
-      <ChecklistNetScoreArea
+      <ConfluenceNetScoreArea
         data={history}
         isLoading={isInitialLoading}
         profitColor={profitColor}
@@ -249,4 +249,4 @@ export const ChecklistScoreChart = memo(({
   );
 });
 
-ChecklistScoreChart.displayName = 'ChecklistScoreChart';
+ConfluenceScoreChart.displayName = 'ConfluenceScoreChart';

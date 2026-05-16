@@ -1,7 +1,7 @@
 import {
-  DEFAULT_CHECKLIST_TEMPLATE,
+  DEFAULT_CONFLUENCE_TEMPLATE,
   DEFAULT_USER_INDICATOR_SEEDS,
-  type ChecklistCondition,
+  type ConfluenceCondition,
 } from '@marketmind/trading-core';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
@@ -11,7 +11,7 @@ import { DEFAULT_ENABLED_SETUPS } from '../constants';
 import { generateEntityId } from '../utils/id';
 import {
   parseIndicatorParams,
-  stringifyChecklistConditions,
+  stringifyConfluenceConditions,
   stringifyEnabledSetupTypes,
   stringifyIndicatorParams,
 } from '../utils/profile-transformers';
@@ -67,7 +67,7 @@ export const seedDefaultUserIndicators = async (userId: string): Promise<void> =
   }
 };
 
-export const materializeDefaultChecklist = async (userId: string): Promise<ChecklistCondition[]> => {
+export const materializeDefaultConfluence = async (userId: string): Promise<ConfluenceCondition[]> => {
   await seedDefaultUserIndicators(userId);
 
   const rows = await db
@@ -77,8 +77,8 @@ export const materializeDefaultChecklist = async (userId: string): Promise<Check
 
   const byLabel = new Map(rows.map((r) => [r.label, r.id]));
 
-  const conditions: ChecklistCondition[] = [];
-  for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+  const conditions: ConfluenceCondition[] = [];
+  for (const entry of DEFAULT_CONFLUENCE_TEMPLATE) {
     const userIndicatorId = byLabel.get(entry.seedLabel);
     if (!userIndicatorId) continue;
     conditions.push({
@@ -99,25 +99,25 @@ export const materializeDefaultChecklist = async (userId: string): Promise<Check
 };
 
 /**
- * Backfill the default checklist template into every profile the user
+ * Backfill the default confluence template into every profile the user
  * already has. Existing entries are PRESERVED (with whatever
  * customizations the user made — weight, enabled, threshold, tier);
- * only entries missing from a given profile's checklist are appended.
+ * only entries missing from a given profile's confluence are appended.
  *
  * The match key is `userIndicatorId + timeframe + op + side` — the
- * tuple that uniquely identifies a row in the checklist UI. Adding
- * new timeframes to `DEFAULT_CHECKLIST_TEMPLATE` (e.g. the v1.22.8
+ * tuple that uniquely identifies a row in the confluence UI. Adding
+ * new timeframes to `DEFAULT_CONFLUENCE_TEMPLATE` (e.g. the v1.22.8
  * 1w / 1M extension for RSI 2 + Stoch 14) makes those rows appear
- * on the next call without resetting the rest of the user's checklist.
+ * on the next call without resetting the rest of the user's confluence.
  *
  * Called from `tradingProfilesRouter.list` so the reconciliation runs
  * each time the user opens the trading config — idempotent, cheap
  * (one SELECT + at most one UPDATE per profile), and lets template
  * extensions land automatically for existing users.
  */
-export const reconcileUserProfilesChecklist = async (userId: string): Promise<void> => {
+export const reconcileUserProfilesConfluence = async (userId: string): Promise<void> => {
   const profiles = await db
-    .select({ id: tradingProfiles.id, checklistConditions: tradingProfiles.checklistConditions })
+    .select({ id: tradingProfiles.id, confluenceConditions: tradingProfiles.confluenceConditions })
     .from(tradingProfiles)
     .where(eq(tradingProfiles.userId, userId));
   if (profiles.length === 0) return;
@@ -125,21 +125,21 @@ export const reconcileUserProfilesChecklist = async (userId: string): Promise<vo
   // Materialize once per user — the userIndicator rows are shared across
   // all that user's profiles. Lazy-seeds the user-indicator rows for
   // any indicator added to DEFAULT_USER_INDICATOR_SEEDS too.
-  const defaultChecklist = await materializeDefaultChecklist(userId);
-  if (defaultChecklist.length === 0) return;
+  const defaultConfluence = await materializeDefaultConfluence(userId);
+  if (defaultConfluence.length === 0) return;
 
   const now = new Date();
   for (const profile of profiles) {
-    let existing: ChecklistCondition[];
+    let existing: ConfluenceCondition[];
     try {
-      existing = JSON.parse(profile.checklistConditions) as ChecklistCondition[];
+      existing = JSON.parse(profile.confluenceConditions) as ConfluenceCondition[];
     } catch {
       existing = [];
     }
     const key = (c: { userIndicatorId: string; timeframe: string; op: string; side: string }): string =>
       `${c.userIndicatorId}::${c.timeframe}::${c.op}::${c.side}`;
     const seen = new Set(existing.map(key));
-    const missing = defaultChecklist.filter((d) => !seen.has(key(d)));
+    const missing = defaultConfluence.filter((d) => !seen.has(key(d)));
     if (missing.length === 0) continue;
     // Re-number `order` so the appended entries continue the sequence.
     const maxOrder = existing.reduce((m, c) => Math.max(m, c.order ?? 0), -1);
@@ -147,7 +147,7 @@ export const reconcileUserProfilesChecklist = async (userId: string): Promise<vo
     const next = [...existing, ...appended];
     await db
       .update(tradingProfiles)
-      .set({ checklistConditions: stringifyChecklistConditions(next), updatedAt: now })
+      .set({ confluenceConditions: stringifyConfluenceConditions(next), updatedAt: now })
       .where(eq(tradingProfiles.id, profile.id));
   }
 };
@@ -161,16 +161,16 @@ export const seedDefaultTradingProfile = async (userId: string): Promise<void> =
 
   if (existing.length > 0) return;
 
-  const checklist = await materializeDefaultChecklist(userId);
+  const confluence = await materializeDefaultConfluence(userId);
 
   const values: NewTradingProfileRow = {
     id: generateEntityId(),
     userId,
     name: 'Default Profile',
-    description: 'Auto-generated default profile with standard checklist',
+    description: 'Auto-generated default profile with standard confluence',
     enabledSetupTypes: stringifyEnabledSetupTypes([...DEFAULT_ENABLED_SETUPS]),
     isDefault: true,
-    checklistConditions: stringifyChecklistConditions(checklist),
+    confluenceConditions: stringifyConfluenceConditions(confluence),
   };
 
   await db.insert(tradingProfiles).values(values);

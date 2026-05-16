@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { eq } from 'drizzle-orm';
 import { db } from '../../src/db';
 import { tradingProfiles, userIndicators, users } from '../../src/db/schema';
-import { parseChecklistConditions } from '../../src/utils/profile-transformers';
+import { parseConfluenceConditions } from '../../src/utils/profile-transformers';
 
 const email = process.argv[2] ?? 'dev@marketmind.local';
 const [user] = await db.select().from(users).where(eq(users.email, email));
@@ -15,7 +15,7 @@ const profiles = await db.select().from(tradingProfiles).where(eq(tradingProfile
 const def = profiles.find((p) => p.isDefault) ?? profiles[0];
 if (!def) { console.log('no profile'); process.exit(1); }
 
-const conds = parseChecklistConditions(def.checklistConditions ?? '[]');
+const conds = parseConfluenceConditions(def.confluenceConditions ?? '[]');
 console.log(`\nUser: ${email}  Profile: ${def.name}  Conditions: ${conds.length}\n`);
 const rows = conds
   .map((c) => ({

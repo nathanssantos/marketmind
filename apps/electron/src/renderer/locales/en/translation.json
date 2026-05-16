@@ -1651,8 +1651,8 @@
       "riskManagement": "Risk Management",
       "riskManagementDescription": "Override position sizing and risk limits",
       "riskDescription": "Override wallet risk settings for this profile",
-      "checklist": "Pre-trade checklist",
-      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
+      "confluence": "Pre-trade confluence",
+      "confluenceDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
     },
     "overrides": {
       "usingGlobalDefault": "Using global default",
@@ -2785,21 +2785,21 @@
       "overbought": "Overbought"
     }
   },
-  "checklist": {
+  "confluence": {
     "section": {
       "long": "Long",
       "short": "Short",
       "both": "Both",
       "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
       "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
-      "error": "Checklist error",
+      "error": "Confluence error",
       "dedupExcluded": "Not counted — same as another condition for this timeframe",
-      "title": "Checklist",
+      "title": "Confluence",
       "empty": "No conditions evaluated.",
-      "options": "Checklist options",
+      "options": "Confluence options",
       "showChart": "Show score chart",
       "hideChart": "Hide score chart",
-      "editProfile": "Edit profile (checklist)",
+      "editProfile": "Edit profile (confluence)",
       "collectingHistory": "Collecting history…"
     },
     "editor": {
@@ -2807,7 +2807,7 @@
       "moveDown": "Move down",
       "add": "Add condition",
       "emptyTitle": "No conditions",
-      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "emptyDescription": "Add indicators to build your pre-trade confluence.",
       "missing": "Missing indicator",
       "unknownCatalog": "(unknown indicator type)"
     },
@@ -2902,8 +2902,8 @@
     "ticket": {
       "title": "Ticket"
     },
-    "checklist": {
-      "title": "Checklist"
+    "confluence": {
+      "title": "Confluence"
     },
     "orders": {
       "title": "Orders"

@@ -69,7 +69,7 @@ const createNamedPanel = (
  * "Trading 2" from the Trading template).
  *
  * The trading variants share an identical panel anatomy (1 primary chart,
- * 2 secondary timeframe charts on the right, ticket / checklist / positions
+ * 2 secondary timeframe charts on the right, ticket / confluence / positions
  * / orders / portfolio rail) — only the chart timeframes differ. The user
  * built and validated this set hand-tuned to the 192-col / 8-row grid.
  */
@@ -92,7 +92,7 @@ interface LayoutTemplate {
   buildGrid: () => GridPanelConfig[];
 }
 
-/** Standard trading layout — 3 chart timeframes + ticket / checklist / positions / orders / portfolio rail. */
+/** Standard trading layout — 3 chart timeframes + ticket / confluence / positions / orders / portfolio rail. */
 const buildTradingGrid = (
   primary: string,
   secondary: string,
@@ -103,7 +103,7 @@ const buildTradingGrid = (
   createDefaultPanel(tertiary, { x: 122, y: 44, w: 37, h: 38 }),
   createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
   createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 9 }),
-  createNamedPanel('checklist', { x: 159, y: 44, w: 33, h: 38 }),
+  createNamedPanel('confluence', { x: 159, y: 44, w: 33, h: 38 }),
   createNamedPanel('positions', { x: 0, y: 82, w: 96, h: 32 }),
   createNamedPanel('orders', { x: 96, y: 82, w: 96, h: 32 }),
 ];
@@ -223,7 +223,7 @@ interface LayoutActions {
   setPanelWindowState: (layoutId: string, panelId: string, state: PanelWindowState) => void;
   updatePanelConfig: (layoutId: string, panelId: string, updates: Partial<GridPanelConfig>) => void;
   addPanel: (layoutId: string, timeframe: string) => void;
-  /** v1.10 — add a single-instance named panel (Ticket, Checklist, etc.) by kind. No-ops if the kind is already on this layout (cardinality enforcement). */
+  /** v1.10 — add a single-instance named panel (Ticket, Confluence, etc.) by kind. No-ops if the kind is already on this layout (cardinality enforcement). */
   addNamedPanel: (layoutId: string, kind: Exclude<PanelKind, 'chart'>) => void;
   removePanel: (layoutId: string, panelId: string) => void;
   /** v1.10 — does this layout already contain a panel of this kind? Used by `+ Add panel` menu to grey-out single-instance entries. */
@@ -508,6 +508,21 @@ export const migrateGridGranularity = (
   }));
 };
 
+// v1.22.10 — the 'checklist' panel kind was renamed to 'confluence' across
+// the codebase. Existing persisted layouts still reference the old kind
+// and would throw "Unknown panel kind: checklist" at the panel registry
+// lookup. The DB migration handles server-side rows; this client-side
+// migration is the safety net for any layout payload that bypassed it
+// (in-memory caches, half-applied migrations, fresh hydration races).
+export const migrateRenamedPanelKinds = (presets: LayoutPreset[]): LayoutPreset[] =>
+  presets.map((preset) => ({
+    ...preset,
+    grid: preset.grid.map((panel) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy kind from old persisted payload
+      (panel as any).kind === 'checklist' ? { ...panel, kind: 'confluence' as const } : panel,
+    ),
+  }));
+
 export const hydrateLayoutStore = async (): Promise<void> => {
   try {
     const saved = await trpc.layout.get.query();
@@ -518,7 +533,7 @@ export const hydrateLayoutStore = async (): Promise<void> => {
           ? (saved as { gridVersion: number }).gridVersion
           : 1;
       const migratedPresets = saved.layoutPresets
-        ? migrateGridGranularity(saved.layoutPresets, savedVersion)
+        ? migrateRenamedPanelKinds(migrateGridGranularity(saved.layoutPresets, savedVersion))
         : undefined;
 
       // v1.5 — `activeLayoutId` lifted from per-tab to top-level. If

@@ -1,6 +1,6 @@
 import type { ConditionOp, ConditionSide, ConditionThreshold, ConditionTier } from './types';
 
-export interface ChecklistTemplateEntry {
+export interface ConfluenceTemplateEntry {
   seedLabel: string;
   timeframe: string;
   op: ConditionOp;
@@ -45,7 +45,7 @@ const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M'] as const;
 // RSI 14 was dropped from the default seed in v1.13.x — the validated
 // strategy treats RSI 14 as redundant alongside the faster RSI 2 (same
 // indicator family, different periods). Users who want it can still add
-// it manually via the checklist editor.
+// it manually via the confluence editor.
 type IndicatorSpec = {
   seedLabel: string;
   base: number;
@@ -60,7 +60,7 @@ const INDICATORS: IndicatorSpec[] = [
 // EMA 21 trend filter (v1.22.9). The same TF_WEIGHTS ladder applies,
 // but EMA 21 is only emitted for 15m+ — at 1m/5m, 21 candles of
 // MA is barely a trend, just noise. Stormer's IFR(2) playbook treats
-// `price > MM21` as a binary go/no-go gate; the checklist doesn't
+// `price > MM21` as a binary go/no-go gate; the confluence doesn't
 // support hard vetoes, but stacking high-weight `priceAbove`
 // entries across HTFs reproduces the gate behaviour via score —
 // counter-trend setups can't accumulate enough weight to hit a
@@ -70,8 +70,8 @@ const TREND_FILTERS: { seedLabel: string; base: number }[] = [
   { seedLabel: 'EMA 21', base: 2.0 },
 ];
 
-const buildTemplate = (): ChecklistTemplateEntry[] => {
-  const out: ChecklistTemplateEntry[] = [];
+const buildTemplate = (): ConfluenceTemplateEntry[] => {
+  const out: ConfluenceTemplateEntry[] = [];
   let order = 0;
   for (const ind of INDICATORS) {
     for (const tf of TIMEFRAMES) {
@@ -104,4 +104,4 @@ const buildTemplate = (): ChecklistTemplateEntry[] => {
   return out;
 };
 
-export const DEFAULT_CHECKLIST_TEMPLATE: ChecklistTemplateEntry[] = buildTemplate();
+export const DEFAULT_CONFLUENCE_TEMPLATE: ConfluenceTemplateEntry[] = buildTemplate();

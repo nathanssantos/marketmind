@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CHECKLIST_TEMPLATE } from '../../indicators/checklistDefaults';
+import { DEFAULT_CONFLUENCE_TEMPLATE } from '../../indicators/confluenceDefaults';
 import { DEFAULT_USER_INDICATOR_SEEDS } from '../../indicators/defaults';
 import { INDICATOR_CATALOG } from '../../indicators/catalog';
 
-describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
+describe('DEFAULT_CONFLUENCE_TEMPLATE', () => {
   it('every template entry resolves to a default seed', () => {
     const seedLabels = new Set(DEFAULT_USER_INDICATOR_SEEDS.map((s) => s.label));
-    for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+    for (const entry of DEFAULT_CONFLUENCE_TEMPLATE) {
       expect(seedLabels.has(entry.seedLabel), `missing seed: ${entry.seedLabel}`).toBe(true);
     }
   });
 
   it('every referenced seed has a valid catalog entry supporting the op', () => {
     const seedByLabel = new Map(DEFAULT_USER_INDICATOR_SEEDS.map((s) => [s.label, s]));
-    for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+    for (const entry of DEFAULT_CONFLUENCE_TEMPLATE) {
       const seed = seedByLabel.get(entry.seedLabel)!;
       const def = INDICATOR_CATALOG[seed.catalogType]!;
       expect(def, `no catalog entry for ${seed.catalogType}`).toBeDefined();
@@ -22,36 +22,36 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
   });
 
   it('all entries are disabled by default (opt-in)', () => {
-    for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+    for (const entry of DEFAULT_CONFLUENCE_TEMPLATE) {
       expect(entry.enabled).toBe(false);
     }
   });
 
   it('orders are unique', () => {
-    const orders = DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.order);
+    const orders = DEFAULT_CONFLUENCE_TEMPLATE.map((e) => e.order);
     expect(new Set(orders).size).toBe(orders.length);
   });
 
   it('covers RSI 2 and Stoch 14 across the full 1m..1M ladder', () => {
-    const seedLabels = DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.seedLabel);
+    const seedLabels = DEFAULT_CONFLUENCE_TEMPLATE.map((e) => e.seedLabel);
     expect(seedLabels).toContain('RSI 2');
     expect(seedLabels).toContain('Stoch 14');
-    // RSI 14 was dropped from the seed in v1.13.x — see checklistDefaults.ts
+    // RSI 14 was dropped from the seed in v1.13.x — see confluenceDefaults.ts
     expect(seedLabels).not.toContain('RSI 14');
 
-    const timeframes = new Set(DEFAULT_CHECKLIST_TEMPLATE.map((e) => e.timeframe));
+    const timeframes = new Set(DEFAULT_CONFLUENCE_TEMPLATE.map((e) => e.timeframe));
     expect(timeframes).toEqual(new Set(['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M']));
 
     for (const seedLabel of ['RSI 2', 'Stoch 14']) {
       const tfs = new Set(
-        DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === seedLabel).map((e) => e.timeframe),
+        DEFAULT_CONFLUENCE_TEMPLATE.filter((e) => e.seedLabel === seedLabel).map((e) => e.timeframe),
       );
       expect(tfs).toEqual(new Set(['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M']));
     }
   });
 
   it('ships EMA 21 trend filter for 15m..1M only, with priceAbove (LONG) / priceBelow (SHORT)', () => {
-    const ema21 = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === 'EMA 21');
+    const ema21 = DEFAULT_CONFLUENCE_TEMPLATE.filter((e) => e.seedLabel === 'EMA 21');
     // 6 TFs × 2 sides = 12 entries
     expect(ema21).toHaveLength(12);
 
@@ -81,8 +81,8 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
   });
 
   it('pairs LONG and SHORT entries for direction-aware ops', () => {
-    const longEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'LONG');
-    const shortEntries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.side === 'SHORT');
+    const longEntries = DEFAULT_CONFLUENCE_TEMPLATE.filter((e) => e.side === 'LONG');
+    const shortEntries = DEFAULT_CONFLUENCE_TEMPLATE.filter((e) => e.side === 'SHORT');
     expect(longEntries.length).toBe(shortEntries.length);
   });
 
@@ -91,7 +91,7 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     const ALL_TFS = ['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M'];
 
     for (const seedLabel of ['RSI 2', 'Stoch 14']) {
-      const entries = DEFAULT_CHECKLIST_TEMPLATE.filter((e) => e.seedLabel === seedLabel && e.side === 'LONG');
+      const entries = DEFAULT_CONFLUENCE_TEMPLATE.filter((e) => e.seedLabel === seedLabel && e.side === 'LONG');
       const sorted = [...entries].sort((a, b) => TF_ORDER[a.timeframe]! - TF_ORDER[b.timeframe]!);
       for (let i = 1; i < sorted.length; i += 1) {
         expect(sorted[i]!.weight).toBeCloseTo(sorted[i - 1]!.weight + 0.5, 5);
@@ -107,18 +107,18 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
     // the invariant the matrix exists to preserve, including on the new
     // 1w/1M extensions.
     for (const tf of ALL_TFS) {
-      const stoch = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'Stoch 14' && e.timeframe === tf && e.side === 'LONG')!.weight;
-      const rsi2 = DEFAULT_CHECKLIST_TEMPLATE.find((e) => e.seedLabel === 'RSI 2' && e.timeframe === tf && e.side === 'LONG')!.weight;
+      const stoch = DEFAULT_CONFLUENCE_TEMPLATE.find((e) => e.seedLabel === 'Stoch 14' && e.timeframe === tf && e.side === 'LONG')!.weight;
+      const rsi2 = DEFAULT_CONFLUENCE_TEMPLATE.find((e) => e.seedLabel === 'RSI 2' && e.timeframe === tf && e.side === 'LONG')!.weight;
       expect(rsi2).toBeGreaterThan(stoch);
     }
   });
 
   it('contains 44 entries (2 oscillator indicators × 8 TFs × 2 sides + EMA 21 × 6 TFs × 2 sides)', () => {
-    expect(DEFAULT_CHECKLIST_TEMPLATE).toHaveLength(44);
+    expect(DEFAULT_CONFLUENCE_TEMPLATE).toHaveLength(44);
   });
 
   it('RSI 2 ships tight thresholds (7 oversold / 93 overbought); Stoch 14 + EMA 21 use evaluator/op defaults', () => {
-    for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+    for (const entry of DEFAULT_CONFLUENCE_TEMPLATE) {
       if (entry.seedLabel === 'RSI 2') {
         expect(entry.threshold).toBe(entry.op === 'oversold' ? 7 : 93);
       } else {
@@ -128,7 +128,7 @@ describe('DEFAULT_CHECKLIST_TEMPLATE', () => {
   });
 
   it('orders are logically grouped: RSI 2 → Stoch 14 → EMA 21, TFs ascending within each block', () => {
-    const sorted = [...DEFAULT_CHECKLIST_TEMPLATE].sort((a, b) => a.order - b.order);
+    const sorted = [...DEFAULT_CONFLUENCE_TEMPLATE].sort((a, b) => a.order - b.order);
     const blocks = sorted.reduce<string[]>((acc, e) => {
       if (acc[acc.length - 1] !== e.seedLabel) acc.push(e.seedLabel);
       return acc;

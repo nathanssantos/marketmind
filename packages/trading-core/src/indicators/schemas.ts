@@ -30,7 +30,7 @@ export const conditionThresholdSchema = z.union([
   z.tuple([z.number(), z.number()]),
 ]);
 
-export const checklistConditionSchema = z.object({
+export const confluenceConditionSchema = z.object({
   id: z.string(),
   userIndicatorId: z.string(),
   timeframe: z.string(),
