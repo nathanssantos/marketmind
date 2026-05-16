@@ -525,7 +525,9 @@
       "enableShiftAltOrderEntry": "Activer la Saisie d'Ordres Shift/Alt",
       "enableShiftAltOrderEntryHelper": "Maintenez Shift pour prévisualiser les ordres long ou Alt/Option pour prévisualiser les ordres short en cliquant sur le graphique",
       "liquidityIntensity": "Carte de liquidité par intensité",
-      "liquidityIntensityHelper": "Utilise une seule rampe chaude pour bid et ask — les cellules plus claires indiquent plus de liquidité ; le côté est déduit par la position relative au prix"
+      "liquidityIntensityHelper": "Utilise une seule rampe chaude pour bid et ask — les cellules plus claires indiquent plus de liquidité ; le côté est déduit par la position relative au prix",
+      "confluenceScoreChart": "Graphique de confluence",
+      "confluenceScoreChartHelper": "Seuils de conviction par côté rendus sur le graphique de net score. La bande entre eux est ombrée comme zone neutre pour rendre évident qu'il faut éviter les setups intermédiaires."
     },
     "tradingSimulator": {
       "title": "Paramètres du Simulateur de Trading",
@@ -1002,6 +1004,10 @@
       "showBreakevenLinesHelper": "Dessine une ligne pointillée au prix auquel la position ouverte clôturerait à l'équilibre après frais aller-retour (taker × 2). Hypothèse : Binance Futures VIP 0.",
       "riskWarningThresholdPct": "Seuil d'avertissement de risque (% du solde)",
       "riskWarningThresholdPctHelper": "Sur l'outil de dessin long/short, affiche un ⚠ à côté du Risque % projeté lorsque le SL coûterait plus que ce pourcentage du solde (frais taker aller-retour inclus). 2% est un plafond courant pour le scalping.",
+      "confluenceLongThreshold": "Seuil d'entrée long",
+      "confluenceLongThresholdHelper": "Net score absolu nécessaire pour marquer la ligne de biais long sur le graphique de confluence. La bande entre les deux seuils est ombrée comme zone neutre pour rendre évident qu'il faut éviter les setups intermédiaires.",
+      "confluenceShortThreshold": "Seuil d'entrée short",
+      "confluenceShortThresholdHelper": "Net score absolu nécessaire pour marquer la ligne de biais short (rendue du côté négatif du graphique). Même sémantique de zone neutre que le seuil long.",
       "profitLossAreas": "Zones de Profit/Perte",
       "fibonacciProjection": "Projection de Fibonacci",
       "measurementRuler": "Règle de Mesure",
