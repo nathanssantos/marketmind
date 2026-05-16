@@ -525,7 +525,9 @@
       "enableShiftAltOrderEntry": "Habilitar Entrada de Ordens com Shift/Alt",
       "enableShiftAltOrderEntryHelper": "Segure Shift para visualizar ordens long ou Alt/Option para visualizar ordens short ao clicar no gráfico",
       "liquidityIntensity": "Mapa de liquidez por intensidade",
-      "liquidityIntensityHelper": "Usa uma única rampa quente para bid e ask — células mais claras indicam maior liquidez; o lado é inferido pela posição em relação ao preço"
+      "liquidityIntensityHelper": "Usa uma única rampa quente para bid e ask — células mais claras indicam maior liquidez; o lado é inferido pela posição em relação ao preço",
+      "confluenceScoreChart": "Gráfico de confluência",
+      "confluenceScoreChartHelper": "Limites de convicção por lado renderizados no gráfico de net score. A faixa entre eles é sombreada como zona neutra para deixar visualmente óbvio que setups medianos devem ser evitados."
     },
     "tradingSimulator": {
       "title": "Configurações do Simulador de Trading",
@@ -983,6 +985,10 @@
       "showBreakevenLinesHelper": "Desenha uma linha tracejada no preço em que a posição aberta fecharia zero a zero descontando as taxas de ida e volta (taker × 2). Assume Binance Futures VIP 0.",
       "riskWarningThresholdPct": "Limite de aviso de risco (% do saldo)",
       "riskWarningThresholdPctHelper": "Na ferramenta de desenho long/short, exibe um ⚠ ao lado do Risco % projetado quando o SL custaria mais que esse percentual do saldo (incluindo taxas taker de ida e volta). 2% é um teto comum para scalp.",
+      "confluenceLongThreshold": "Limite para entrada long",
+      "confluenceLongThresholdHelper": "Net score absoluto necessário para marcar a linha de viés long no gráfico de confluência. A faixa entre os dois limites é sombreada como zona neutra para deixar visualmente óbvio que setups medianos devem ser evitados.",
+      "confluenceShortThreshold": "Limite para entrada short",
+      "confluenceShortThresholdHelper": "Net score absoluto necessário para marcar a linha de viés short (renderizada no lado negativo do gráfico). Mesma semântica de zona neutra do limite long.",
       "profitLossAreas": "Áreas de Lucro/Prejuízo",
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",

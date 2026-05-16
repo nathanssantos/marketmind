@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Configurable per-side conviction thresholds on the confluence chart** — two new prefs (`confluenceLongThreshold` / `confluenceShortThreshold`, default 25 each) surface in Settings → Chart → Confluence score chart. Each is rendered as a solid horizontal line on the bipolar net-score chart (profit-tinted at `+long`, loss-tinted at `-short`); the band between them is shaded as a subtle "no-trade zone" so middling setups are visually obvious to skip. Replaces the previously-hardcoded ±25 dashed reference lines — same visual default for users who don't touch Settings, but a clear opt-in path for traders running tighter or looser conviction rules.
+
+### Changed
+
+- **Confluence chart fill split into per-side gradients** — was a single bipolar gradient applied to the Area's fill bounding box. When the data line spiked one direction, the fill's bbox became asymmetric and the gradient's "neutral middle" got pulled away from the zero line, painting (say) green a few pixels above center just because the bbox was lopsided. Now there are two separate Areas (`netPositive` / `netNegative`) with their own profit/loss gradients clamped to one side of zero each, plus a third transparent Area for the continuous stroke. Saturation now ties to how far the data is from zero, not the bbox size — which is the visual property the trader is actually reading.
+
 ## [1.22.9] - 2026-05-15
 
 ### Added

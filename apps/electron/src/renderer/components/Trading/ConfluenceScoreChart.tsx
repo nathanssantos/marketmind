@@ -3,7 +3,13 @@ import { Box, Flex, Text, useToken } from '@chakra-ui/react';
 import { trpc } from '@renderer/utils/trpc';
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useUIPref } from '@renderer/store/preferencesStore';
 import { ConfluenceNetScoreArea } from './ConfluenceNetScoreArea';
+
+// Defaults match the previous hardcoded ±25 reference lines so anyone
+// who never opens Settings sees the same chart they had before.
+const DEFAULT_LONG_THRESHOLD = 25;
+const DEFAULT_SHORT_THRESHOLD = 25;
 
 const MAX_HISTORY_POINTS = 1000;
 const SEED_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -204,6 +210,12 @@ export const ConfluenceScoreChart = memo(({
   const axisLabelColor = tokens[3] ?? '';
   const panelBg = tokens[4] ?? '';
   const neutralStrokeColor = tokens[5] ?? '';
+  const [longThreshold] = useUIPref<number>(
+    'confluenceLongThreshold', DEFAULT_LONG_THRESHOLD,
+  );
+  const [shortThreshold] = useUIPref<number>(
+    'confluenceShortThreshold', DEFAULT_SHORT_THRESHOLD,
+  );
 
   const isInitialLoading =
     queryEnabled && (historyQuery.isLoading || backfillMutation.isPending) && history.length === 0;
@@ -244,6 +256,8 @@ export const ConfluenceScoreChart = memo(({
         height={CHART_HEIGHT}
         gradientKey={resetKey}
         tooltipLabelFormatter={formatTooltipTime}
+        longThreshold={longThreshold}
+        shortThreshold={shortThreshold}
       />
     </Box>
   );
