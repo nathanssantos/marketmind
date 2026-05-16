@@ -31,12 +31,24 @@ const { mapDbKlinesToApi } = await import('../../src/utils/kline-mapper.js');
 const { smartBackfillKlines } = await import('../../src/services/binance-historical.js');
 const { BACKTEST_ENGINE, ABSOLUTE_MINIMUM_KLINES } = await import('../../src/constants/index.js');
 
-const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
-const TIMEFRAME = '1h';
-const INTERVAL_MS = 3600000;
+// CLI overrides — accept `--symbols=BTCUSDT,ETHUSDT`, `--timeframe=1h`,
+// `--start=YYYY-MM-DD`, `--end=YYYY-MM-DD`, `--strategy=foo` for ad-hoc
+// runs without editing the script. Defaults match the production sweep
+// (BTC/ETH/SOL × 1h × 3y). The `--strategy=` flag restricts the run to
+// a single strategy id — handy for quick regression checks.
+const parseArg = (name: string): string | undefined => {
+  const prefix = `--${name}=`;
+  const found = process.argv.find((a) => a.startsWith(prefix));
+  return found?.slice(prefix.length);
+};
 
-const START_DATE = '2023-02-18';
-const END_DATE = '2026-02-18';
+const SYMBOLS = (parseArg('symbols') ?? 'BTCUSDT,ETHUSDT,SOLUSDT').split(',').map(s => s.trim());
+const TIMEFRAME = parseArg('timeframe') ?? '1h';
+const INTERVAL_MS = TIMEFRAME === '1h' ? 3600000 : 60000 * parseInt(TIMEFRAME, 10);
+
+const START_DATE = parseArg('start') ?? '2023-02-18';
+const END_DATE = parseArg('end') ?? '2026-02-18';
+const STRATEGY_FILTER = parseArg('strategy');
 
 const STRATEGIES_DIR = resolve(__dirname, '../../strategies/builtin');
 
@@ -450,7 +462,15 @@ const generateReport = (results: StrategyResult[]): void => {
 
 const main = async (): Promise<void> => {
   const startTime = Date.now();
-  const allStrategies = loadAllStrategyIds();
+  const rawStrategies = loadAllStrategyIds();
+  const allStrategies = STRATEGY_FILTER
+    ? rawStrategies.filter((id) => id === STRATEGY_FILTER)
+    : rawStrategies;
+  if (STRATEGY_FILTER && allStrategies.length === 0) {
+    log(`No strategy named '${STRATEGY_FILTER}' found in ${STRATEGIES_DIR}.`);
+    log(`Available: ${rawStrategies.slice(0, 10).join(', ')}…`);
+    process.exit(1);
+  }
 
   log('='.repeat(80));
   log('STRATEGY RANKING - Backtest All Strategies');

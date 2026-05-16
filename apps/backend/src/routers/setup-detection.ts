@@ -68,6 +68,21 @@ export const setupDetectionRouter = router({
         status: strategy.metadata.status,
         enabled: strategy.metadata.enabled,
         recommendedTimeframes: strategy.metadata.recommendedTimeframes,
+        // Surface multi-TF dependencies so the UI can render a "HTF: 4h"
+        // badge and the user knows extra kline data will load on each
+        // backtest tick.
+        requiresTimeframes: strategy.metadata.requiresTimeframes ?? [],
+        // Tunable parameters for the strategyParams override editor in
+        // BacktestDialog. Each entry mirrors the `input.int/float(...)`
+        // signature from the .pine source.
+        parameters: Object.entries(strategy.metadata.parameters ?? {}).map(([key, def]) => ({
+          key,
+          default: def.default,
+          min: def.min,
+          max: def.max,
+          step: def.step,
+          description: def.description,
+        })),
       }));
     }),
 

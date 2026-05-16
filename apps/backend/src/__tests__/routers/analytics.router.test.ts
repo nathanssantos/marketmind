@@ -266,7 +266,7 @@ describe('Analytics Router', () => {
       const wallet = await createTestWallet({ userId: user.id, walletType: 'paper' });
       const caller = createAuthenticatedCaller(user, session);
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
       const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
       const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
@@ -331,7 +331,7 @@ describe('Analytics Router', () => {
       });
       const caller = createAuthenticatedCaller(user, session);
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
 
@@ -383,7 +383,7 @@ describe('Analytics Router', () => {
       });
       const caller = createAuthenticatedCaller(user, session);
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const recent = new Date(now.getTime() - 60 * 60 * 1000);
 
       await createTestTradeExecution({
@@ -442,7 +442,7 @@ describe('Analytics Router', () => {
       const caller = createAuthenticatedCaller(user, session);
       const db = getTestDatabase();
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const recent = new Date(now.getTime() - 60 * 60 * 1000);
 
       // Per-trade rows show inflated fees + a positive net.
@@ -515,7 +515,7 @@ describe('Analytics Router', () => {
       const caller = createAuthenticatedCaller(user, session);
       const db = getTestDatabase();
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const recent = new Date(now.getTime() - 60 * 60 * 1000);
 
       // Realized profit of +$100 from a closed trade.
@@ -565,7 +565,7 @@ describe('Analytics Router', () => {
       });
       const caller = createAuthenticatedCaller(user, session);
 
-      const today = new Date();
+      const today = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       // Insert a closed trade today with realized pnl=300 — but NO matching
       // incomeEvents row, simulating the "just closed, sync hasn't run" gap.
       await createTestTradeExecution({
@@ -615,7 +615,7 @@ describe('Analytics Router', () => {
       const caller = createAuthenticatedCaller(user, session);
       const db = getTestDatabase();
 
-      const today = new Date();
+      const today = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       // 3 closed trades — DB pnl sum 90 (excludes funding/fees).
       await createTestTradeExecution({
         userId: user.id, walletId: wallet.id, status: 'closed',
@@ -682,7 +682,7 @@ describe('Analytics Router', () => {
       });
       const caller = createAuthenticatedCaller(user, session);
 
-      const today = new Date();
+      const today = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       // One clean trade — pnl=50, exitPrice populated.
       await createTestTradeExecution({
         userId: user.id, walletId: wallet.id, status: 'closed',
@@ -720,7 +720,7 @@ describe('Analytics Router', () => {
       const caller = createAuthenticatedCaller(user, session);
       const db = getTestDatabase();
 
-      const today = new Date();
+      const today = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       await db.insert(incomeEvents).values({
         userId: user.id, walletId: wallet.id, binanceTranId: 99,
         incomeType: 'FUNDING_FEE', amount: '-3.5', asset: 'USDT',
@@ -1207,7 +1207,7 @@ describe('Analytics Router', () => {
       });
       const caller = createAuthenticatedCaller(user, session);
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const day = (daysAgo: number) =>
         new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, 12);
 
@@ -1240,7 +1240,7 @@ describe('Analytics Router', () => {
       });
       const caller = createAuthenticatedCaller(user, session);
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const day = (daysAgo: number) =>
         new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, 12);
 
@@ -1267,7 +1267,7 @@ describe('Analytics Router', () => {
       });
       const caller = createAuthenticatedCaller(user, session);
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const day = (daysAgo: number) =>
         new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo, 12);
 
@@ -1322,7 +1322,7 @@ describe('Analytics Router', () => {
       const caller = createAuthenticatedCaller(user, session);
       const db = getTestDatabase();
 
-      const now = new Date();
+      const now = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       const dayAt = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12);
 
       await db.insert(incomeEvents).values([

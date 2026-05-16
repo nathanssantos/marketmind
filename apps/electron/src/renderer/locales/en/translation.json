@@ -2230,6 +2230,8 @@
       "showExperimental": "Show experimental",
       "intervalMismatchTitle": "Strategy / interval mismatch",
       "intervalMismatchBody": "Selected strategies don't recommend interval {{interval}}.",
+      "htfBadge": "HTF: {{tfs}}",
+      "paramsTitle": "Strategy parameters (override .pine defaults)",
       "loadFailed": "Failed to load strategies.",
       "empty": "No strategies match the current filter."
     },
