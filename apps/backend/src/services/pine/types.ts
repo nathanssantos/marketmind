@@ -62,7 +62,13 @@ export interface PinePlotEntry {
 }
 
 export interface PineRunOptions {
-  parameterOverrides?: Record<string, number>;
+  /**
+   * Strategy-input overrides forwarded to PineTS via the `Indicator(source,
+   * inputs)` wrapper. Keys must match `input.*` variable names declared in
+   * the Pine source. Values may be number/string/boolean — PineTS supports
+   * `input.int`, `input.float`, `input.bool`, `input.string` overrides.
+   */
+  parameterOverrides?: Record<string, number | string | boolean>;
   minConfidence?: number;
   minRiskReward?: number;
 }

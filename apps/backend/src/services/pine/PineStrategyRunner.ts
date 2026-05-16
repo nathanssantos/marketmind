@@ -1,4 +1,4 @@
-import { PineTS } from 'pinets';
+import { Indicator, PineTS } from 'pinets';
 import type { Kline, TradingSetup, SetupDirection } from '@marketmind/types';
 import { EXIT_CALCULATOR } from '../../constants';
 import type {
@@ -123,7 +123,17 @@ export class PineStrategyRunner {
     const pine = new PineTS(pineTSKlines, 'MARKETMIND', '1h');
     await pine.ready();
 
-    const ctx = await pine.run(strategy.source);
+    // Strategy parameter overrides: when `parameterOverrides` is set, wrap
+    // the source in an `Indicator(source, inputs)` so PineTS substitutes
+    // the matching `input.int/float/bool/string` defaults at runtime. Used
+    // both for backtest config-driven sweeps (optimization) and for
+    // backtest pipeline smoke tests where the strategy's built-in
+    // thresholds are too tight for a meaningful sample size.
+    const overrides = options?.parameterOverrides;
+    const runnable = overrides && Object.keys(overrides).length > 0
+      ? new Indicator(strategy.source, overrides)
+      : strategy.source;
+    const ctx = await pine.run(runnable);
     const plots = ctx.plots as Record<string, PinePlotResult | PinePlotEntry[]>;
 
     const minConfidence = options?.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
