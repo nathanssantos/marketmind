@@ -52,7 +52,7 @@ const TOOLTIP_PADDING = '4px 8px';
 const THRESHOLD_STROKE_WIDTH = 1;
 const GRID_DASH = '2 4';
 const Y_AXIS_WIDTH = 32;
-const AREA_STROKE_WIDTH = 1.5;
+const AREA_STROKE_WIDTH = 1;
 // Neutral-band fill stays subtle on purpose — the band is the "no
 // entry" zone but the trader is staring at the SCORE LINE, not the
 // band. Anything > 0.04 starts competing for visual weight with the

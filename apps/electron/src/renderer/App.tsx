@@ -15,6 +15,7 @@ import { UpdateNotification } from './components/Update/UpdateNotification';
 import { DEFAULT_TIMEFRAME } from './constants/defaults';
 import { ChartProvider } from './context/ChartContext';
 import { RealtimeTradingSyncProvider } from './context/RealtimeTradingSyncContext';
+import { OptimisticOrderOverridesProvider } from './context/OptimisticOrderOverridesContext';
 import { trpc } from './utils/trpc';
 import { useKlinePagination } from './hooks/useKlinePagination';
 import { useKlineLiveStream } from './hooks/useKlineLiveStream';
@@ -43,7 +44,9 @@ function RealtimeSyncWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <RealtimeTradingSyncProvider walletId={activeWalletId} allWalletIds={allWalletIds}>
-      {children}
+      <OptimisticOrderOverridesProvider>
+        {children}
+      </OptimisticOrderOverridesProvider>
     </RealtimeTradingSyncProvider>
   );
 }
