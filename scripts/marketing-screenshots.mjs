@@ -137,6 +137,29 @@ const scenes = [
     },
     capture: async () => captureFullPage({ label: 'screenshot-6', theme: 'dark' }),
   },
+  // screenshot-7 (Fibonacci retracement overlay) was dropped from the
+  // automation because the Fibo drawing tool needs two mouse anchors
+  // on the canvas — programming that via Playwright is brittle
+  // (depends on chart pan/zoom state + kline density at capture
+  // time). The placeholder we used was visually identical to scene 2
+  // (swing layout), which produced a duplicate on the site. If you
+  // want a Fibo-overlay scene back, capture manually and drop it in
+  // as screenshot-7.png, then re-add it to Screenshots.tsx.
+  {
+    name: 'screenshot-8',
+    title: 'Wallets dialog',
+    setup: async () => {
+      await closeAll();
+      await switchLayout('15m / 1h / 4h');
+      await setTheme('dark');
+      const page = await getPage();
+      await page.evaluate(() => {
+        window.__uiStore?.getState?.().setWalletsDialogOpen?.(true);
+      });
+      await page.waitForTimeout(1200);
+    },
+    capture: async () => captureFullPage({ label: 'screenshot-8', theme: 'dark' }),
+  },
 ];
 
 await mkdir(OUT_DIR, { recursive: true });

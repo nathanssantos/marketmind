@@ -21,8 +21,9 @@ App repo (`marketmind/`):
 
 Landing site repo (`../marketmind-site/`) — **separate repo, separate commit, EASY TO FORGET**:
 - [ ] `src/config/site.ts` → `stats.version`
+- [ ] `public/images/screenshot-{0..8}.png` → regenerated via `node scripts/marketing-screenshots.mjs` (see §8a) — **regenerate on every release that ships UI changes**; skip ONLY for backend-only or doc-only releases
 
-If a release ships and the site still shows the old version, this checklist was skipped.
+If a release ships and the site still shows the old version or stale UI screenshots, this checklist was skipped.
 
 ## Steps
 
@@ -118,20 +119,27 @@ gh pr merge --admin --merge   # merge commit preserves develop history on main
 
 ### 8. Update landing site (separate repo — DO NOT SKIP)
 
-#### 8a. Refresh marketing screenshots
+#### 8a. Refresh marketing screenshots (DO NOT SKIP for UI-touching releases)
 
 ```bash
 # 1) Boot the renderer dev server (separate terminal, leave running)
 pnpm --filter @marketmind/electron dev:web
 # Confirm it answers on http://localhost:5174 (the script's default).
 
-# 2) Build the screenshot package
+# 2) Build the screenshot package (REQUIRED if shared types/components changed
+#    since the last screenshot pass — the script imports compiled dist/)
 pnpm --filter @marketmind/mcp-screenshot build
 
-# 3) Run the curated marketing pass — captures 7 scenes at 4K (3840x2160)
-#    dark theme + writes to ../marketmind-site/public/images/screenshot-{0..N}.png
+# 3) Run the curated marketing pass — captures 9 scenes at 4K (3840x2160)
+#    dark theme + writes to ../marketmind-site/public/images/screenshot-{0..8}.png
 node scripts/marketing-screenshots.mjs
 ```
+
+Then **visually inspect each PNG** before staging. Common breakage:
+- A layout preset got renamed (`switchLayout(...)` throws) — fix the script
+- A panel kind got renamed (e.g. `'checklist'` → `'confluence'` in v1.22.10) —
+  fixtures may be stale, rebuild mcp-screenshot AND update `layoutFixture.json`
+- A modal id changed (e.g. `setTradingProfilesDialogOpen` → ...) — update setup
 
 Stage the regenerated PNGs from the marketmind-site repo together with the
 version bump in step 8b — keeps the deploy a single commit.
