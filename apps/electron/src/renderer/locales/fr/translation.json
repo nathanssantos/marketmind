@@ -2369,6 +2369,8 @@
       "showExperimental": "Afficher les expérimentales",
       "intervalMismatchTitle": "Intervalle non recommandé",
       "intervalMismatchBody": "Les stratégies sélectionnées ne recommandent pas l'intervalle {{interval}}.",
+      "htfBadge": "HTF: {{tfs}}",
+      "paramsTitle": "Paramètres de stratégie (override les défauts du .pine)",
       "loadFailed": "Échec du chargement des stratégies.",
       "empty": "Aucune stratégie ne correspond au filtre."
     },
@@ -2490,6 +2492,8 @@
       "slippagePercent": "Slippage",
       "minRiskRewardRatioLong": "R:R LONG min",
       "minRiskRewardRatioShort": "R:R SHORT min",
+      "maxConcurrentPositions": "Maximum de positions simultanées",
+      "maxConcurrentPositionsHelper": "Limite de trades ouverts simultanément. Mettez 1 pour correspondre au modèle de l'auto-trader live (une position par watcher). Valeurs supérieures permettent à des signaux superposés d'ouvrir tous.",
       "minProfitPercent": "Profit min %",
       "useAlgorithmicLevels": "Utiliser SL/TP de la stratégie",
       "stopLossPercent": "Stop loss %",

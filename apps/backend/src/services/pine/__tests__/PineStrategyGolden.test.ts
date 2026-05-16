@@ -135,6 +135,15 @@ describe('Pine strategy golden snapshots', () => {
         const strategy = await loader.loadFile(
           join(STRATEGIES_DIR, filename),
         );
+        // Multi-TF strategies (those declaring `@requires-tf`) need HTF
+        // klines passed via secondaryKlines — they're covered by the
+        // multi-TF specific tests in PineStrategyRunner.test.ts. Skip
+        // here to avoid crashing on `syminfo.tickerid` (which only
+        // resolves when the strategy is run through the Provider path,
+        // not the array-form fixture klines this suite uses).
+        if (strategy.metadata.requiresTimeframes.length > 0) {
+          return;
+        }
         const detections = await runner.detectSignals(strategy, klines);
         const snapshot = serializeDetections(strategy.metadata.id, detections);
         expect(snapshot).toMatchSnapshot();

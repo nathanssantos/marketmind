@@ -86,6 +86,18 @@ export const RiskTab = ({ state, setField, fieldErrors }: RiskTabProps) => {
               min={0} step={0.1} size="sm"
             />
           </Field>
+          <Field
+            label={t('backtest.risk.maxConcurrentPositions')}
+            invalid={!!fieldErrors['maxConcurrentPositions']}
+            errorText={fieldErrors['maxConcurrentPositions']}
+            helperText={t('backtest.risk.maxConcurrentPositionsHelper')}
+          >
+            <NumberInput
+              value={state.maxConcurrentPositions ?? 10}
+              onChange={(e) => setField('maxConcurrentPositions', Number(e.target.value))}
+              min={1} max={100} step={1} size="sm"
+            />
+          </Field>
           <Field label={t('backtest.risk.minProfitPercent')} invalid={!!fieldErrors['minProfitPercent']} errorText={fieldErrors['minProfitPercent']}>
             <NumberInput
               value={state.minProfitPercent ?? 0}

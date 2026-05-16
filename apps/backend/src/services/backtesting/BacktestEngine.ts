@@ -242,27 +242,69 @@ export class BacktestEngine {
       console.log(`[Backtest] Max Fibonacci entry progress: LONG=${config.maxFibonacciEntryProgressPercentLong}% SHORT=${config.maxFibonacciEntryProgressPercentShort}%`);
     }
 
-    const setupDetectionService = new SetupDetectionService({
-      maxFibonacciEntryProgressPercentLong: config.maxFibonacciEntryProgressPercentLong,
-      maxFibonacciEntryProgressPercentShort: config.maxFibonacciEntryProgressPercentShort,
-      fibonacciSwingRange: config.fibonacciSwingRange,
-      initialStopMode: config.initialStopMode,
-    });
-
     const loadedStrategies: PineStrategy[] = [];
     const strategyMap = new Map<string, PineStrategy>();
 
     if (setupsToEnable.length > 0) {
-      const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
+      const strategiesDir = config.pineStrategiesDir
+        ?? resolve(__dirname, '../../../strategies/builtin');
       const pineLoader = new PineStrategyLoader([strategiesDir]);
       const allPineStrategies = await pineLoader.loadAll();
 
       for (const pineStrategy of allPineStrategies) {
         if (setupsToEnable.includes(pineStrategy.metadata.id)) {
-          setupDetectionService.loadPineStrategy(pineStrategy);
+          loadedStrategies.push(pineStrategy);
+          strategyMap.set(pineStrategy.metadata.id, pineStrategy);
           console.log(`[Backtest] Loaded Pine strategy: ${pineStrategy.metadata.id}`);
         }
       }
+    }
+
+    // Pre-load HTF klines for any strategy that declares `@requires-tf`.
+    // Union all unique higher-timeframes across enabled strategies, fetch
+    // each once, and pass via `secondaryKlines` so PineStrategyRunner can
+    // route them into PineMarketProvider. Without this, a multi-TF
+    // strategy's `request.security(...)` call would either fail (with
+    // the explicit "no klines registered" error) or hit our DB on every
+    // bar (catastrophically slow). One pre-load = one DB round-trip per
+    // (symbol, HTF) pair for the entire backtest.
+    const requiredTfs = new Set<string>();
+    for (const s of loadedStrategies) {
+      for (const tf of s.metadata.requiresTimeframes ?? []) requiredTfs.add(tf);
+    }
+    const secondaryKlines: Record<string, Kline[]> = {};
+    if (requiredTfs.size > 0) {
+      const marketType = config.marketType ?? 'FUTURES';
+      const intervalMs = getIntervalMs(config.interval);
+      const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+      const htfStartTime = new Date(new Date(config.startDate).getTime() - warmupMs);
+      const htfEndTime = new Date(config.endDate);
+      for (const tf of requiredTfs) {
+        const klines = await fetchKlinesFromDbWithBackfill(
+          config.symbol,
+          tf as Interval,
+          marketType,
+          htfStartTime,
+          htfEndTime,
+          config.exchange,
+        );
+        secondaryKlines[tf] = klines;
+        console.log(`[Backtest] Pre-loaded ${klines.length} klines for HTF=${tf}`);
+      }
+    }
+
+    const setupDetectionService = new SetupDetectionService({
+      maxFibonacciEntryProgressPercentLong: config.maxFibonacciEntryProgressPercentLong,
+      maxFibonacciEntryProgressPercentShort: config.maxFibonacciEntryProgressPercentShort,
+      fibonacciSwingRange: config.fibonacciSwingRange,
+      initialStopMode: config.initialStopMode,
+      strategyParams: config.strategyParams,
+      primaryTimeframe: config.interval,
+      ...(requiredTfs.size > 0 ? { secondaryKlines } : {}),
+    });
+
+    for (const s of loadedStrategies) {
+      setupDetectionService.loadPineStrategy(s);
     }
 
     return { setupDetectionService, loadedStrategies, strategyMap };

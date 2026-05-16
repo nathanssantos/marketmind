@@ -1,7 +1,9 @@
 import type { BacktestEquityPoint, BacktestTrade, ConflictStats, FibonacciProjectionData, Interval, Kline, MultiWatcherBacktestConfig, MultiWatcherBacktestResult, PositionSide, TimelineEvent, TradingSetup, WatcherConfig, WatcherStats } from '@marketmind/types';
 import { calculateTotalFees } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
+import { FILTER_DEFAULTS } from '@marketmind/types';
 import { BACKTEST_DEFAULTS } from '../../constants';
+import { applyFilterDefaults } from '../../utils/filters/filter-registry';
 import {
   FILTER_REGISTRY,
   getHigherTimeframe,
@@ -54,8 +56,28 @@ export class MultiWatcherBacktestEngine {
   private btcKlinesCache: Map<string, Kline[]> = new Map();
   private htfKlinesCache: Map<string, Kline[]> = new Map();
   private stochasticHtfKlinesCache: Map<string, Kline[]> = new Map();
+  // Shared HTF cache for `@requires-tf` strategies — keyed by
+  // `${symbol}_${tf}`. Reused across watchers in the same backtest
+  // so e.g. 3 watchers on BTC/ETH/SOL all sharing a 4h HTF
+  // requirement → 3 fetches (one per symbol), not 3 × N strategies.
+  private requiresTfKlinesCache: Map<string, Kline[]> = new Map();
 
-  constructor(private config: MultiWatcherBacktestConfig) {}
+  constructor(rawConfig: MultiWatcherBacktestConfig) {
+    // Apply `FILTER_DEFAULTS` so undefined filter flags resolve the same
+    // way they do in `BacktestEngine.buildEffectiveConfig`. Previously
+    // MultiWatcher left them as undefined → treated as false → a permissive
+    // run; BacktestEngine applied defaults → trend/adx/vwap/choppiness
+    // active → a more restrictive run. Same config in CLI vs programmatic
+    // MultiWatcher diverged silently. UI always sends explicit values via
+    // `getDefaultBacktestInput()`, so this only changes behavior for
+    // programmatic callers that left flags undefined — which they
+    // shouldn't have, per the type-level defaults.
+    this.config = applyFilterDefaults(
+      rawConfig as unknown as Record<string, unknown>,
+      FILTER_DEFAULTS,
+    ) as unknown as MultiWatcherBacktestConfig;
+  }
+  private config: MultiWatcherBacktestConfig;
 
   async run(reporter?: BacktestProgressReporter): Promise<MultiWatcherBacktestResult> {
     const backtestId = generateEntityId();
@@ -176,7 +198,8 @@ export class MultiWatcherBacktestEngine {
   }
 
   private async initializeWatchers(): Promise<void> {
-    const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
+    const strategiesDir = this.config.pineStrategiesDir
+      ?? resolve(__dirname, '../../../strategies/builtin');
     const pineLoader = new PineStrategyLoader([strategiesDir]);
     const allPineStrategies = await pineLoader.loadAll();
 
@@ -295,17 +318,57 @@ export class MultiWatcherBacktestEngine {
   }
 
   private async detectSetups(
-    _watcherConfig: WatcherConfig,
+    watcherConfig: WatcherConfig,
     klines: Kline[],
     pineStrategies: PineStrategy[]
   ): Promise<TradingSetup[]> {
     if (pineStrategies.length === 0) return [];
+
+    // Pre-load HTF klines for every `@requires-tf` declared by any of
+    // this watcher's strategies. Matches BacktestEngine.initializeStrategies
+    // — one DB fetch per (symbol, HTF) pair, then handed off to
+    // PineStrategyRunner via secondaryKlines.
+    const requiredTfs = new Set<string>();
+    for (const s of pineStrategies) {
+      for (const tf of s.metadata.requiresTimeframes ?? []) requiredTfs.add(tf);
+    }
+    const secondaryKlines: Record<string, Kline[]> = {};
+    if (requiredTfs.size > 0) {
+      const marketType = watcherConfig.marketType ?? 'FUTURES';
+      const intervalMs = getIntervalMs(watcherConfig.interval);
+      const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * intervalMs;
+      const htfStartTime = new Date(new Date(this.config.startDate).getTime() - warmupMs);
+      const htfEndTime = new Date(this.config.endDate);
+      for (const tf of requiredTfs) {
+        const cacheKey = `${watcherConfig.symbol}_${tf}`;
+        let htfKlines = this.requiresTfKlinesCache.get(cacheKey);
+        if (!htfKlines) {
+          htfKlines = await fetchKlinesFromDbWithBackfill(
+            watcherConfig.symbol,
+            tf as Interval,
+            marketType,
+            htfStartTime,
+            htfEndTime,
+            this.config.exchange,
+          );
+          this.requiresTfKlinesCache.set(cacheKey, htfKlines);
+          console.log(`[MultiWatcherBacktest] Pre-loaded ${htfKlines.length} klines for HTF=${tf} (${watcherConfig.symbol})`);
+        }
+        secondaryKlines[tf] = htfKlines;
+      }
+    }
 
     const setupDetectionService = new SetupDetectionService({
       silent: this.config.silent,
       maxFibonacciEntryProgressPercentLong: this.config.maxFibonacciEntryProgressPercentLong,
       maxFibonacciEntryProgressPercentShort: this.config.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: this.config.fibonacciSwingRange,
+      initialStopMode: this.config.initialStopMode,
+      strategyParams: this.config.strategyParams,
+      minConfidence: this.config.minConfidence,
+      minRiskReward: this.config.minRiskRewardRatio,
+      primaryTimeframe: watcherConfig.interval,
+      ...(requiredTfs.size > 0 ? { secondaryKlines } : {}),
     });
 
     for (const strategy of pineStrategies) {
@@ -450,6 +513,7 @@ export class MultiWatcherBacktestEngine {
     );
     if (!filterResult.passed) {
       watcher.stats.tradesSkipped++;
+      watcher.stats.skippedReasons['indicatorFilter'] = (watcher.stats.skippedReasons['indicatorFilter'] ?? 0) + 1;
       return;
     }
 
@@ -744,41 +808,27 @@ export class MultiWatcherBacktestEngine {
   }
 
   private getEffectiveTakeProfit(setup: TradingSetup): { takeProfit: number | undefined; rejected: boolean; reason?: string } {
-    if (this.config.tpCalculationMode === 'fibonacci') {
-      if (!setup.fibonacciProjection) {
-        return {
-          takeProfit: undefined,
-          rejected: true,
-          reason: 'no-trend-structure',
-        };
-      }
-
+    // Fibo target path: ONLY usable when the setup actually carries a
+    // fibonacci projection. Pine strategies don't compute projections
+    // during detection (only enrichers like the trailing-stop path do),
+    // so for the vast majority of strategies this branch is a no-op —
+    // we then fall back to the strategy-emitted `setup.takeProfit`,
+    // mirroring `TradeExecutor.calculateTradeLevels` in the single-engine
+    // path. Pre-fix this rejected every Pine setup with
+    // `no-trend-structure` and the UI silently got 0 trades.
+    if (this.config.tpCalculationMode === 'fibonacci' && setup.fibonacciProjection) {
       const fibTarget = this.getFibonacciTargetPrice(setup.fibonacciProjection, setup.direction, setup.entryPrice);
 
-      if (fibTarget === null) {
-        return {
-          takeProfit: undefined,
-          rejected: true,
-          reason: 'fibonacci-invalid',
-        };
+      if (fibTarget !== null) {
+        const isValidTarget = setup.direction === 'LONG'
+          ? fibTarget > setup.entryPrice
+          : fibTarget < setup.entryPrice;
+        if (isValidTarget) {
+          return { takeProfit: fibTarget, rejected: false };
+        }
       }
-
-      const isValidTarget = setup.direction === 'LONG'
-        ? fibTarget > setup.entryPrice
-        : fibTarget < setup.entryPrice;
-
-      if (!isValidTarget) {
-        return {
-          takeProfit: undefined,
-          rejected: true,
-          reason: 'fibonacci-wrong-direction',
-        };
-      }
-
-      return {
-        takeProfit: fibTarget,
-        rejected: false,
-      };
+      // Fibo target invalid/wrong-direction — fall through to strategy TP
+      // rather than rejecting outright. Same as TradeExecutor.
     }
 
     return {
