@@ -50,9 +50,15 @@ const { MultiWatcherBacktestEngine } = await import('../../src/services/backtest
 const { fetchKlinesFromDbWithBackfill } = await import('../../src/services/backtesting/kline-fetcher.js');
 const { BACKTEST_ENGINE } = await import('../../src/constants/index.js');
 
-const STRATEGY_ID = 'rsi2-extreme-reversal';
+// Phase 0a smoke runs `rsi2-extreme-reversal` (single-TF baseline).
+// Set MULTI_TF=true to switch to `rsi2-htf-trigger` (multi-TF), which
+// pre-loads HTF klines via `@requires-tf 4h` and routes them through
+// the PineMarketProvider — the Phase 0b end-to-end path.
+const MULTI_TF = process.env['MULTI_TF'] === 'true';
+const STRATEGY_ID = MULTI_TF ? 'rsi2-htf-trigger' : 'rsi2-extreme-reversal';
 const SYMBOL = 'BTCUSDT';
-const TIMEFRAME = '1h' as const;
+const TIMEFRAME = (MULTI_TF ? '15m' : '1h') as '15m' | '1h';
+const INTERVAL_MS_FOR_TF = TIMEFRAME === '15m' ? 15 * 60 * 1000 : 3600000;
 const START_DATE = '2025-11-15';
 const END_DATE = '2026-05-15';
 const OUTPUT_PATH = '/tmp/validate-pipeline-cli.json';
@@ -63,7 +69,7 @@ const pct = (n: number): string => `${n >= 0 ? '+' : ''}${fmt(n)}%`;
 log('━'.repeat(72));
 log('Phase 0a — Pipeline smoke test');
 log('━'.repeat(72));
-log(`Strategy:  ${STRATEGY_ID}`);
+log(`Strategy:  ${STRATEGY_ID}${MULTI_TF ? ' (MULTI-TF mode)' : ''}`);
 log(`Symbol:    ${SYMBOL} (FUTURES)`);
 log(`Interval:  ${TIMEFRAME}`);
 log(`Period:    ${START_DATE} → ${END_DATE} (~6 months)`);
@@ -76,8 +82,7 @@ const t0 = Date.now();
 // Without this BacktestEngine scans from index=warmup onwards which
 // effectively skips the first ~143 bars of the actual user period
 // (because BacktestEngine assumes klines start with warmup data).
-const INTERVAL_MS = 3600000;
-const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * INTERVAL_MS;
+const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * INTERVAL_MS_FOR_TF;
 const startTime = new Date(new Date(START_DATE).getTime() - warmupMs);
 const endTime = new Date(END_DATE);
 
@@ -107,16 +112,10 @@ const config = {
   leverage: 1,
   marginType: 'CROSSED' as const,
   setupTypes: [STRATEGY_ID],
-  // Loosen RSI(2) thresholds so we get enough trades for a meaningful
-  // smoke test. Default 5/95 fires only on the most violent extremes
-  // (got 2 trades in 6mo); 25/75 is a classic mean-reversion band that
-  // still selects oversold/overbought territory but gives ~30-60 trades.
-  // This is a SMOKE test config — for real strategy validation we'd
-  // sweep these via the optimizer.
-  strategyParams: {
-    rsiOversold: 25,
-    rsiOverbought: 75,
-  },
+  // For rsi2-extreme-reversal: loosen RSI(2) thresholds (5/95 → 25/75)
+  // so we get enough trades for a meaningful smoke. Multi-TF path
+  // (rsi2-htf-trigger) already defaults to 25/75; no override needed.
+  ...(MULTI_TF ? {} : { strategyParams: { rsiOversold: 25, rsiOverbought: 75 } }),
   minConfidence: 50,
   useAlgorithmicLevels: true,
   tpCalculationMode: 'fibonacci' as const,

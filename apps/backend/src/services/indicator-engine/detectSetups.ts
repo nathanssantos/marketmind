@@ -31,8 +31,22 @@ export const detectSetups = async (input: {
   strategies: PineStrategy[];
   currentIndex?: number;
   config: DetectSetupsConfig;
+  /**
+   * Pre-loaded HTF klines for multi-TF strategies (those declaring
+   * `@requires-tf`). Keyed by timeframe label ('4h', '1d'). Live
+   * callers (auto-trader watcher loop) must fetch + maintain these
+   * alongside the primary klines; backtest callers route via
+   * BacktestEngine.initializeStrategies which does the fetch.
+   *
+   * TODO(phase-0b-followup): the live watcher loop in signal-helpers.ts
+   * doesn't yet load HTF klines on its own — multi-TF strategies need
+   * the caller to pre-load and pass them here. Until then,
+   * `@requires-tf` strategies will throw at runtime when the auto-trader
+   * tries to run them. Backtest path is fully wired.
+   */
+  secondaryKlines?: Record<string, Kline[]>;
 }): Promise<DetectSetupsResult[]> => {
-  const { klines, strategies, config } = input;
+  const { klines, strategies, config, secondaryKlines } = input;
   const currentIndex = input.currentIndex ?? klines.length - 1;
   const results: DetectSetupsResult[] = [];
   const runner = new PineStrategyRunner();
@@ -40,6 +54,10 @@ export const detectSetups = async (input: {
   const pineOptions: PineRunOptions = {
     minConfidence: config.minConfidence,
     minRiskReward: config.minRiskReward,
+    ...(config.interval ? { primaryTimeframe: config.interval } : {}),
+    ...(secondaryKlines && Object.keys(secondaryKlines).length > 0
+      ? { secondaryKlines }
+      : {}),
   };
 
   for (const strategy of strategies) {

@@ -1,0 +1,43 @@
+// @id rsi2-htf-trigger
+// @name RSI 2 HTF Trigger
+// @version 0.1.0
+// @description Multi-TF smoke strategy: HTF RSI(2) oversold/overbought confirms LONG/SHORT entries on the LTF. Validates the request.security pipeline end-to-end + serves as the seed for the htf-extreme-ltf-reversal strategy. Stop = ATR-based; target = ATR×3 (no Fibo dependency for the smoke).
+// @author MarketMind
+// @tags multi-tf,rsi2,smoke,bidirectional
+// @strategyType MEAN_REVERSION
+// @momentumType REVERSAL
+// @requires-tf 4h
+// @param htfTimeframe HTF timeframe (default 4h — must match @requires-tf header)
+// @param rsiPeriod RSI period on HTF
+// @param rsiOversold RSI oversold threshold for LONG
+// @param rsiOverbought RSI overbought threshold for SHORT
+// @param atrPeriod ATR period for stop/target sizing on LTF
+// @param atrStopMult ATR multiplier for stop distance
+// @param atrTargetMult ATR multiplier for target distance
+
+//@version=5
+indicator('RSI 2 HTF Trigger', overlay=true)
+
+htfTimeframe = input.string('4h', 'htfTimeframe')
+rsiPeriod = input.int(2, 'rsiPeriod', minval=2, maxval=14, step=1)
+rsiOversold = input.int(25, 'rsiOversold', minval=5, maxval=40, step=1)
+rsiOverbought = input.int(75, 'rsiOverbought', minval=60, maxval=95, step=1)
+atrPeriod = input.int(14, 'atrPeriod', minval=5, maxval=50, step=1)
+atrStopMult = input.float(1.5, 'atrStopMult', minval=0.5, maxval=5, step=0.1)
+atrTargetMult = input.float(3.0, 'atrTargetMult', minval=1, maxval=10, step=0.5)
+
+htfRsi = request.security(syminfo.tickerid, htfTimeframe, ta.rsi(close, rsiPeriod), lookahead=barmerge.lookahead_off)
+ltfAtr = ta.atr(atrPeriod)
+
+longEntry = htfRsi < rsiOversold
+shortEntry = htfRsi > rsiOverbought
+
+sig = longEntry ? 1 : shortEntry ? -1 : 0
+sl = longEntry ? close - ltfAtr * atrStopMult : shortEntry ? close + ltfAtr * atrStopMult : na
+tp = longEntry ? close + ltfAtr * atrTargetMult : shortEntry ? close - ltfAtr * atrTargetMult : na
+conf = longEntry or shortEntry ? 75 : 0
+
+plot(sig, 'signal', display=display.none)
+plot(sl, 'stopLoss', display=display.none)
+plot(tp, 'takeProfit', display=display.none)
+plot(conf, 'confidence', display=display.none)

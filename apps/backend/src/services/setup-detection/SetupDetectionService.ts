@@ -21,6 +21,20 @@ export interface SetupDetectionConfig {
    * and by the optimizer for parameter sweeps.
    */
   strategyParams?: Record<string, number | string | boolean>;
+  /**
+   * Primary timeframe label ('1h', '15m', '4h'). Forwarded to PineTS so
+   * `request.security(...)` calls correctly compare primary vs requested
+   * TF. Defaults to '1h' for backward compat.
+   */
+  primaryTimeframe?: string;
+  /**
+   * Higher-timeframe kline data for multi-TF strategies, keyed by
+   * timeframe label. The backtest engine pre-loads HTF klines and
+   * forwards them here; PineStrategyRunner routes them into the
+   * PineMarketProvider so `request.security` resolves against our
+   * own DB-backed data instead of trying to fetch live.
+   */
+  secondaryKlines?: Record<string, import('@marketmind/types').Kline[]>;
   silent?: boolean;
 }
 
@@ -54,6 +68,8 @@ export class SetupDetectionService {
       fibonacciSwingRange: config?.fibonacciSwingRange,
       initialStopMode: config?.initialStopMode,
       strategyParams: config?.strategyParams,
+      primaryTimeframe: config?.primaryTimeframe,
+      secondaryKlines: config?.secondaryKlines,
       silent: config?.silent,
     };
   }
@@ -161,6 +177,10 @@ export class SetupDetectionService {
       minRiskReward: this.config.minRiskReward ?? DEFAULT_MIN_RISK_REWARD,
       ...(this.config.strategyParams && Object.keys(this.config.strategyParams).length > 0
         ? { parameterOverrides: this.config.strategyParams }
+        : {}),
+      ...(this.config.primaryTimeframe ? { primaryTimeframe: this.config.primaryTimeframe } : {}),
+      ...(this.config.secondaryKlines && Object.keys(this.config.secondaryKlines).length > 0
+        ? { secondaryKlines: this.config.secondaryKlines }
         : {}),
     };
 
