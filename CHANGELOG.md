@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.13] - 2026-05-16
+
+The "make multi-TF actually work end-to-end" release. 8 PRs (#678–#685) build out the native multi-timeframe runtime (Pine `request.security` resolves against pre-loaded klines), close every gap from setup detection to live auto-trader, harden the backtest engines with full parity coverage, and surface the new capabilities in the UI.
+
+### Added
+
+- **Native multi-timeframe Pine runtime** (`PineMarketProvider`) — Pine strategies can now use `request.security(syminfo.tickerid, '4h', close)` to read HTF data. The new `@requires-tf` metadata header declares HTF dependencies; loader auto-detects undeclared `request.security` calls and warns. `BacktestEngine`, `MultiWatcherBacktestEngine`, and the live auto-trader (`signal-helpers.ts`) all pre-load matching HTF klines from the DB before invoking the strategy. Lookahead handled via `barmerge.lookahead_off` in user code. (#680, #681)
+- **`BacktestConfig.strategyParams` plumbed to PineTS `Indicator` overrides** — `input.int/float/bool/string` declared in any Pine strategy can now be overridden per-backtest. Used by the optimizer and surfaced in the UI per strategy as a key-value editor in StrategiesTab. (#678, #685)
+- **`BacktestConfig.maxConcurrentPositions`** — caps simultaneously-open trades on a single watcher. Setting to 1 reproduces `MultiWatcherBacktestEngine`'s portfolio model on the CLI/single-engine path. Surfaced in the RiskTab. (#683, #684)
+- **`BacktestConfig.pineStrategiesDir`** — override the strategies folder so integration tests can load synthetic .pine without polluting `strategies/builtin/`. (#683)
+- **Multi-TF requirement badge in StrategiesTab** — purple "HTF: 4h" pill next to each strategy that declares `@requires-tf`. (#685)
+- **`rsi2-htf-trigger.pine`** — minimal multi-TF strategy that exercises the full pipeline end-to-end; serves as the integration test reference. (#680)
+- **Shared HTF kline cache** in MultiWatcherBacktestEngine (dedupe across watchers) + process-local cache in the live auto-trader (16x fewer DB hits for a 15m watcher with a 4h HTF dep). (#681)
+- **`backtest-engine-parity.test.ts`** integration test — proves BacktestEngine and MultiWatcherBacktestEngine produce identical trade counts + win rates for the same config + concurrency cap. Synthetic klines + testcontainers, no network. (#683)
+- **`live-multi-tf-wiring.test.ts`** integration test — proves the full live auto-trader chain (watcher → runSetupDetection → DB fetch → PineMarketProvider → strategy fires) works without throwing. (#684)
+- **`docs/BACKTEST.md`** — end-to-end reference doc for the backtest system. (#681)
+- **CLI args for `rank-strategies.ts`** — `--symbols=`, `--timeframe=`, `--start=`, `--end=`, `--strategy=` flags for ad-hoc runs. (#685)
+
+### Fixed
+
+- **MultiWatcherBacktestEngine silently rejected 100% of Pine setups** in `tpCalculationMode='fibonacci'` — required `setup.fibonacciProjection`, which Pine strategies never compute during detection. Fix: fall back to `setup.takeProfit` when projection is missing, matching `TradeExecutor.calculateTradeLevels` in the CLI engine. (#679)
+- **`strategyParams` was silently ignored on the UI path** — MultiWatcher's `SetupDetectionService` init didn't forward it. Same fix added `initialStopMode`, `minConfidence`, `minRiskReward`. (#679)
+- **`applyIndicatorFilters` skip reasons were unrecorded** in MultiWatcher's watcherStats, making rejection causes invisible. (#679)
+- **Hyphenated `@requires-tf` metadata silently failed to parse** because the loader's regex only accepted `\w+`. Widened to `[\w-]+`. (#680)
+- **MultiWatcherBacktestEngine didn't apply `FILTER_DEFAULTS`** — undefined filter flags stayed undefined (false), while BacktestEngine forced trend/adx/vwap/choppiness to true. Programmatic callers got different behavior across engines. Now MultiWatcher's constructor wraps `rawConfig` through the same helper. (#684)
+- **Analytics test suite was flaky around midnight UTC** — 13 `new Date()` call sites normalized to noon UTC of the current day; the "today" stays current (so service-side period math works) but the time-of-day is pinned far from the boundary. Previous `vi.useFakeTimers({ toFake: ['Date'] })` attempt broke 4 different tests in getEquityCurve. (#685)
+
+### Changed
+
+- **BACKTEST.md** docs updated to reflect the new `maxConcurrentPositions` parity invariant and the resolution status of the previously-open divergence list. (#683, #684)
+
 ## [1.22.12] - 2026-05-16
 
 ### Changed
