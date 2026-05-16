@@ -2,6 +2,14 @@ import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CanvasManager } from '../../utils/canvas/CanvasManager';
 import { useOrderLinesRenderer } from './useOrderLinesRenderer';
+import { clearPriceTagBuffer, queuePriceTag } from './utils/priceTagBuffer';
+
+vi.mock('@renderer/utils/canvas/priceTagUtils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@renderer/utils/canvas/priceTagUtils')>();
+  return { ...actual, drawPriceTag: vi.fn(() => ({ width: 64, height: 18 })) };
+});
+
+import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 
 const createHoveredOrderIdRef = (id: string | null) => ({ current: id });
 
@@ -51,6 +59,18 @@ describe('useOrderLinesRenderer', () => {
     it('should render when trading enabled with no orders', () => {
       const { result } = renderHook(() => useOrderLinesRenderer(mockManager, true, createHoveredOrderIdRef(null)));
       result.current.renderOrderLines();
+    });
+
+    it('should drain buffered indicator price tags even when no orders or pending setups', () => {
+      clearPriceTagBuffer(mockManager);
+      vi.mocked(drawPriceTag).mockClear();
+      queuePriceTag(mockManager, { priceText: '102.50', y: 280, fillColor: '#2196f3', width: 60 });
+
+      const { result } = renderHook(() => useOrderLinesRenderer(mockManager, false, createHoveredOrderIdRef(null)));
+      result.current.renderOrderLines();
+
+      expect(drawPriceTag).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(drawPriceTag).mock.calls[0]?.[1]).toBe('102.50');
     });
 
     it('should render when backend executions provided', () => {

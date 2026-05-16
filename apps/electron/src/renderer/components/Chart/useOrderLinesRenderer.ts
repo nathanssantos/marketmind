@@ -39,6 +39,7 @@ import {
   renderLiquidationLines,
   renderPriceTags,
 } from './orderLineRenderSections';
+import { peekPriceTagBufferSize } from './utils/priceTagBuffer';
 
 export type { BackendExecution, TrailingStopLineConfig } from './orderLineTypes';
 export type { PendingSetup } from './orderLineTypes';
@@ -115,8 +116,10 @@ export const useOrderLinesRenderer = (
     const pendingSetups = pendingSetupsRef?.current ?? [];
     const hasOrders = activeOrders.length > 0;
     const hasPendingSetups = pendingSetups.filter(s => s.visible).length > 0;
-    if (!manager || (!hasOrders && !hasPendingSetups)) return false;
-    if (!hasTradingEnabled && activeOrders.length === 0 && !hasPendingSetups) return false;
+    if (!manager) return false;
+    const hasBufferedIndicatorTags = peekPriceTagBufferSize(manager) > 0;
+    if (!hasOrders && !hasPendingSetups && !hasBufferedIndicatorTags) return false;
+    if (!hasTradingEnabled && activeOrders.length === 0 && !hasPendingSetups && !hasBufferedIndicatorTags) return false;
 
     const ctx = manager.getContext();
     const dimensions = manager.getDimensions();
