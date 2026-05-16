@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.14] - 2026-05-16
+
+Hotfix release. One PR (#688) restoring the right-axis price tag for overlay indicators (EMA / SMA / Bollinger / Ichimoku) on charts that don't have a live trade open — a silent regression introduced 11 days ago by #456's collision-system migration.
+
 ### Fixed
 
-- **EMA / SMA / Bollinger / Ichimoku price tags vanished on charts without an open trade** — regression from #456's collision-system migration (May 5, 2026), which moved overlay-indicator tags from direct draw into a buffer drained by `renderPriceTags`. That drain runs inside `useOrderLinesRenderer.renderOrderLines`, which early-returns when there are no active orders or pending setups — so any chart without a live position dropped its indicator tags silently. Added `peekPriceTagBufferSize` and relaxed the early-return to keep running when the buffer has indicator tags. Regression test in `useOrderLinesRenderer.test.ts`.
+- **EMA / SMA / Bollinger / Ichimoku price tags vanished on charts without an open trade** — regression from #456's collision-system migration (May 5, 2026), which moved overlay-indicator tags from direct draw into a buffer drained by `renderPriceTags`. That drain runs inside `useOrderLinesRenderer.renderOrderLines`, which early-returns when there are no active orders or pending setups — so any chart without a live position dropped its indicator tags silently. Added `peekPriceTagBufferSize` and relaxed the early-return to keep running when the buffer has indicator tags. Regression test in `useOrderLinesRenderer.test.ts`. (#688)
 
 ## [1.22.13] - 2026-05-16
 
