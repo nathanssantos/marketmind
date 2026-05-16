@@ -17,7 +17,8 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

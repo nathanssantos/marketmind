@@ -18,7 +18,8 @@
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@marketmind/types": "workspace:*",
