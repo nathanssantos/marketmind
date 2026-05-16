@@ -125,6 +125,14 @@ export interface BacktestConfig {
   initialStopMode?: 'fibo_target' | 'nearest_swing'; // Stop placement mode (default: 'fibo_target')
 
   silent?: boolean; // Suppress verbose logging in strategy interpreters (useful for batch backtests/optimization)
+
+  /**
+   * Override path to Pine strategy `.pine` files. When omitted, engines
+   * load from `apps/backend/strategies/builtin`. Used by integration
+   * tests to load synthetic strategies from a tmp directory without
+   * polluting the production set.
+   */
+  pineStrategiesDir?: string;
 }
 
 export interface BacktestTrade {

@@ -181,7 +181,8 @@ export class MultiWatcherBacktestEngine {
   }
 
   private async initializeWatchers(): Promise<void> {
-    const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
+    const strategiesDir = this.config.pineStrategiesDir
+      ?? resolve(__dirname, '../../../strategies/builtin');
     const pineLoader = new PineStrategyLoader([strategiesDir]);
     const allPineStrategies = await pineLoader.loadAll();
 

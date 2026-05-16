@@ -38,11 +38,19 @@ Both engines consume the same `BacktestConfig` and run strategies through the sa
 | Aspect | `BacktestEngine` (CLI) | `MultiWatcherBacktestEngine` (UI) |
 |---|---|---|
 | Watchers | one (symbol, interval) | many; portfolio shared across |
-| Concurrent positions | no limit | `maxConcurrentPositions = watchers.length` |
+| Concurrent positions | `maxConcurrentPositions` config (default 10) | always `maxConcurrentPositions = watchers.length` |
 | Default filter values | `FILTER_DEFAULTS` applied (trend/adx/vwap/choppiness = true) | undefined → false |
 | Used by | `rank-strategies.ts`, `run-optimization.ts`, `validate-pipeline.ts` | tRPC `backtest.multiWatcher`, BacktestDialog UI |
 
-For a 1-watcher run, both engines should detect the **same number of setups** (validated by `validate-pipeline.ts`). Trade counts diverge by design — CLI opens overlapping trades, UI enforces sequential entries.
+**Parity verified**: pass the same `maxConcurrentPositions` value + identical filter flags to both, and they produce identical trade counts + win rates (within ±1 trade for synthetic edge-bar effects). Set `pineStrategiesDir` in `BacktestConfig` to override the strategies folder (useful for inline test strategies).
+
+P&L can still drift slightly because BacktestEngine uses a fixed
+`positionSizePercent × initialCapital`-style sizer while MultiWatcher's
+`SharedPortfolioManager` sizes against current equity (compounding-aware).
+Same trade shapes, different notional. This is a position-sizing
+semantic, not a pipeline bug — see `validate-pipeline.ts` for the
+side-by-side comparison and `backtest-engine-parity.test.ts` for the
+CI regression guard.
 
 ## CLI scripts
 
@@ -108,7 +116,12 @@ The full backend suite (`pnpm --filter @marketmind/backend test`) runs everythin
 
 ## Known divergence + follow-up
 
-- **Trade-count divergence between engines** is intentional (concurrency model difference) but visible to users running the same config in CLI vs UI. Long-term: unify on the portfolio model.
-- **`FILTER_DEFAULTS` only applied in `BacktestEngine.buildEffectiveConfig`** — MultiWatcher leaves missing filter flags as `undefined` (treated as false). User passing a minimal config gets a more permissive run via UI than CLI. Should be unified.
-- **Walk-forward optimization** isn't yet enforced in `FullSystemOptimizer` — it does grid sweeps in-sample only. Phase 4 of the multi-TF plan adds walk-forward windows.
+- **`FILTER_DEFAULTS` only applied in `BacktestEngine.buildEffectiveConfig`** — MultiWatcher leaves missing filter flags as `undefined` (treated as false). User passing a minimal config gets a more permissive run via UI than CLI. Workaround: be explicit in CLI configs. Long-term: route both engines through the same effective-config builder.
+- **Position-sizing P&L drift** — BacktestEngine sizes against a static `positionSizePercent`, MultiWatcher's `SharedPortfolioManager` compounds against current equity. Trade outcomes match exactly; cumulative P&L diverges. Acceptable for parity validation; should be unified when porting CLI scripts to the portfolio model.
 - **Live HTF cache TTL** uses one HTF interval (e.g. 4h cache, refresh once per 4h candle). If the cached klines miss the most recent close, the strategy reads a slightly stale HTF; consider tightening to last-closed-HTF-detect when this matters.
+
+## Resolved (was open before v1.22.13)
+
+- ~~Trade-count divergence between engines~~ — both engines now respect the same `maxConcurrentPositions` setting. Pass identical values → identical trade counts. Validated by `backtest-engine-parity.test.ts` in CI.
+- ~~Walk-forward optimization missing~~ — `WalkForwardOptimizer.run(klines, config, params, wfConfig)` exists with a test suite. `FullSystemOptimizer` wires it via the `walkForward: true` preset flag.
+- ~~validate-pipeline.ts not in CI~~ — covered by `backtest-engine-parity.test.ts` (synthetic-klines integration test that asserts the same parity invariant the manual script does, without DB/network).

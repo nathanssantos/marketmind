@@ -112,6 +112,12 @@ const config = {
   leverage: 1,
   marginType: 'CROSSED' as const,
   setupTypes: [STRATEGY_ID],
+  // Match MultiWatcher's per-watcher concurrency limit (= watchers.length
+  // = 1) so single-engine vs multi-engine produce IDENTICAL trade counts
+  // — not just identical setup counts. Without this, BacktestEngine's
+  // default (FilterManager `maxConcurrentPositions = 10`) lets it open
+  // overlapping trades while MultiWatcher rejects with `maxPositions`.
+  maxConcurrentPositions: 1,
   // For rsi2-extreme-reversal: loosen RSI(2) thresholds (5/95 → 25/75)
   // so we get enough trades for a meaningful smoke. Multi-TF path
   // (rsi2-htf-trigger) already defaults to 25/75; no override needed.
@@ -219,43 +225,49 @@ log(row('Max DD %', md.maxDrawdownPercent ?? 0, mm.maxDrawdownPercent ?? 0));
 log(row('Sharpe ratio', md.sharpeRatio ?? 0, mm.sharpeRatio ?? 0));
 log('━'.repeat(72));
 
-// Parity invariant: SETUP DETECTION must match across engines. Setup
-// count is the foundation of every downstream metric — if the
-// pipeline + strategy + filter stack produces different setups across
-// engines, NOTHING else is meaningful.
+// Parity invariants when BOTH engines use the same `maxConcurrentPositions`:
 //
-// Trade count, P&L, etc. are NOT expected to match strictly because
-// the two engines have intentionally different ORCHESTRATION models:
-//
-//   - BacktestEngine (CLI / rank-strategies / optimization scripts):
-//     legacy single-engine model. No concurrent-position limit — can
-//     open overlapping trades on the same watcher.
-//
-//   - MultiWatcherBacktestEngine (UI / tRPC backtest.multiWatcher):
-//     portfolio model with shared exposure. `maxConcurrentPositions
-//     = watchers.length` — one position per watcher at a time.
-//
-// For a 1-watcher backtest, this means MultiWatcher will skip any
-// setup that fires while an earlier trade is still open — which is
-// the more realistic simulation of how the live auto-trader behaves
-// (single-direction watcher, one position at a time). Long-term we
-// should unify on the portfolio model, but that's a separate work
-// stream and not what Phase 0a is testing.
-const setupsMatchD = md.totalTrades; // CLI: setups == trades (no concurrency limit)
-const setupsMatchM = (wstats?.[0]?.totalSetups ?? 0);
-const setupsMatch = setupsMatchD === setupsMatchM;
+//   1. Setup count (UI's watcherStats.totalSetups) must match. This proves
+//      the detection pipeline (PineStrategyRunner → SDS → strategy) is
+//      deterministic across engine paths.
+//   2. Trade count + side breakdown must match. With identical
+//      concurrency caps + identical setups, the skipped-by-portfolio
+//      count is the same in both engines, so the opened trades match
+//      1:1.
+//   3. P&L can still drift because BacktestEngine uses a fixed
+//      `positionSizePercent` (10% of initial capital) while
+//      MultiWatcher uses `SharedPortfolioManager` (% of CURRENT
+//      equity). On a profitable strategy this diverges — same trade
+//      shapes, different notional. That's a position-sizing semantic,
+//      not a pipeline bug.
+const setupsM = (wstats?.[0]?.totalSetups ?? 0);
+// CLI's BacktestEngine doesn't expose detected-setups separately from
+// executed trades, but with maxConcurrentPositions=1 we know
+// `setupsM === setupsCLI` if the pipelines agree, even though only a
+// subset opens. So we use trade-count parity as the strict assertion.
+const tradesMatch = md.totalTrades === mm.totalTrades;
+const longMatch = longD === longM;
+const shortMatch = shortD === shortM;
+const winRateMatch = Math.abs(md.winRate - mm.winRate) < 0.01;
+const allMatch = tradesMatch && longMatch && shortMatch && winRateMatch;
 
-if (setupsMatch) {
-  log('\n✅ PIPELINE PARITY PASSED — both engines detected identical setup counts');
-  log(`   (${setupsMatchD} setups). Trade-count divergence is expected: CLI=${md.totalTrades}, UI=${mm.totalTrades}`);
-  log(`   (MultiWatcher rejects ${mm.totalTrades < md.totalTrades ? md.totalTrades - mm.totalTrades : 0} due to maxConcurrentPositions=1).`);
+if (allMatch) {
+  log('\n✅ PIPELINE PARITY PASSED — both engines produced identical trade outcomes.');
+  log(`   Trades: ${md.totalTrades} (L=${longD} / S=${shortD}), win rate ${md.winRate.toFixed(2)}%.`);
+  log(`   MultiWatcher.totalSetups=${setupsM} (proves detection is deterministic).`);
+  const pnlDelta = mm.totalPnlPercent - md.totalPnlPercent;
+  if (Math.abs(pnlDelta) > 0.01) {
+    log(`   P&L delta ${pnlDelta > 0 ? '+' : ''}${pnlDelta.toFixed(2)}% comes from position-sizing`);
+    log(`   semantics (CLI=fixed-init-capital, UI=current-equity portfolio model).`);
+  }
 } else {
-  log('\n❌ PIPELINE PARITY FAILED — engines detected DIFFERENT setup counts.');
-  log(`   This means the setup-detection pipeline (PineStrategyRunner →`);
-  log(`   SetupDetectionService → strategy logic) produces different results`);
-  log(`   between paths. Investigate before proceeding.`);
-  log(`   CLI setups: ${setupsMatchD}, UI setups: ${setupsMatchM}`);
+  log('\n❌ PIPELINE PARITY FAILED — engine trade outcomes diverged.');
+  if (!tradesMatch) log(`   Trade count: CLI=${md.totalTrades} vs UI=${mm.totalTrades}`);
+  if (!longMatch) log(`   LONG count: CLI=${longD} vs UI=${longM}`);
+  if (!shortMatch) log(`   SHORT count: CLI=${shortD} vs UI=${shortM}`);
+  if (!winRateMatch) log(`   Win rate: CLI=${md.winRate} vs UI=${mm.winRate}`);
 }
+const setupsMatch = allMatch;
 
 const elapsed = Date.now() - t0;
 const dump = {
@@ -269,7 +281,7 @@ const dump = {
     elapsedMs: elapsed,
     capturedAt: new Date().toISOString(),
     source: 'cli/validate-pipeline.ts',
-    parityCheck: { setupsMatch, cliSetups: setupsMatchD, uiSetups: setupsMatchM },
+    parityCheck: { tradesMatch, longMatch, shortMatch, winRateMatch, allMatch },
   },
   cli: { metrics: md, trades: resultDirect.trades },
   ui: { metrics: mm, trades: resultMulti.trades },
