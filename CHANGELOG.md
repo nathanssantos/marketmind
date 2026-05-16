@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.10] - 2026-05-16
+
 ### Added
 
+- **Confluence Panel — renamed from "Checklist"** — the multi-condition pre-trade panel was prototyped as "Checklist" but is, in industry terms (TrendSpider, TC2000), a Confluence panel. Now unified across the whole codebase: DB schema (`checklist_conditions` → `confluence_conditions`, `checklist_score_history` → `confluence_score_history`), tRPC routes (`evaluateChecklist` → `evaluateConfluence`), services / hooks / components, layout panel kind (`'checklist'` → `'confluence'`), and all 4 i18n locales ("Confluence" / "Confluência" / "Confluencia" / "Confluence"). Migration 0042 renames tables/columns/indices/constraints in place + REPLACEs the layout JSON's panel kind — fully data-preserving. A defensive client-side migration in `layoutStore.ts` (`migrateRenamedPanelKinds`) rewrites old `'checklist'` kinds on hydrate so any layout payload that bypassed the SQL migration still loads cleanly. Same feature, same UX, professional name.
 - **Configurable per-side conviction thresholds on the confluence chart** — two new prefs (`confluenceLongThreshold` / `confluenceShortThreshold`, default 25 each) surface in Settings → Chart → Confluence score chart. Each is rendered as a solid horizontal line on the bipolar net-score chart (profit-tinted at `+long`, loss-tinted at `-short`); the band between them is shaded as a subtle "no-trade zone" so middling setups are visually obvious to skip. Replaces the previously-hardcoded ±25 dashed reference lines — same visual default for users who don't touch Settings, but a clear opt-in path for traders running tighter or looser conviction rules.
 
 ### Changed
