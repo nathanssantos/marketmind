@@ -2351,6 +2351,8 @@
       "slippagePercent": "Slippage",
       "minRiskRewardRatioLong": "Min R:R LONG",
       "minRiskRewardRatioShort": "Min R:R SHORT",
+      "maxConcurrentPositions": "Max concurrent positions",
+      "maxConcurrentPositionsHelper": "Cap on simultaneously open trades. Set to 1 to match the live auto-trader's per-watcher model (one position at a time). Higher values let overlapping signals all open.",
       "minProfitPercent": "Min profit %",
       "useAlgorithmicLevels": "Use strategy SL/TP",
       "stopLossPercent": "Stop loss %",

@@ -1,7 +1,9 @@
 import type { BacktestEquityPoint, BacktestTrade, ConflictStats, FibonacciProjectionData, Interval, Kline, MultiWatcherBacktestConfig, MultiWatcherBacktestResult, PositionSide, TimelineEvent, TradingSetup, WatcherConfig, WatcherStats } from '@marketmind/types';
 import { calculateTotalFees } from '@marketmind/types';
 import { calculatePositionSize } from '@marketmind/risk';
+import { FILTER_DEFAULTS } from '@marketmind/types';
 import { BACKTEST_DEFAULTS } from '../../constants';
+import { applyFilterDefaults } from '../../utils/filters/filter-registry';
 import {
   FILTER_REGISTRY,
   getHigherTimeframe,
@@ -60,7 +62,22 @@ export class MultiWatcherBacktestEngine {
   // requirement → 3 fetches (one per symbol), not 3 × N strategies.
   private requiresTfKlinesCache: Map<string, Kline[]> = new Map();
 
-  constructor(private config: MultiWatcherBacktestConfig) {}
+  constructor(rawConfig: MultiWatcherBacktestConfig) {
+    // Apply `FILTER_DEFAULTS` so undefined filter flags resolve the same
+    // way they do in `BacktestEngine.buildEffectiveConfig`. Previously
+    // MultiWatcher left them as undefined → treated as false → a permissive
+    // run; BacktestEngine applied defaults → trend/adx/vwap/choppiness
+    // active → a more restrictive run. Same config in CLI vs programmatic
+    // MultiWatcher diverged silently. UI always sends explicit values via
+    // `getDefaultBacktestInput()`, so this only changes behavior for
+    // programmatic callers that left flags undefined — which they
+    // shouldn't have, per the type-level defaults.
+    this.config = applyFilterDefaults(
+      rawConfig as unknown as Record<string, unknown>,
+      FILTER_DEFAULTS,
+    ) as unknown as MultiWatcherBacktestConfig;
+  }
+  private config: MultiWatcherBacktestConfig;
 
   async run(reporter?: BacktestProgressReporter): Promise<MultiWatcherBacktestResult> {
     const backtestId = generateEntityId();
