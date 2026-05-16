@@ -1,4 +1,4 @@
-import type { Kline, PositionSide, TimeInterval, TradingSetup } from '@marketmind/types';
+import type { Interval, Kline, PositionSide, TimeInterval, TradingSetup } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { TIME_MS, UNIT_MS } from '../../../constants';
 import { db } from '../../../db';
@@ -11,6 +11,95 @@ import type { AutoTradingConfig } from '../../../db/schema';
 import type { ActiveWatcher, SignalProcessorDeps } from '../types';
 import type { PineStrategy } from '../../pine/types';
 import { detectSetups } from '../../indicator-engine';
+import { fetchKlinesFromDbWithBackfill } from '../../backtesting/kline-fetcher';
+import { BACKTEST_ENGINE } from '../../../constants';
+
+/**
+ * Process-local HTF kline cache for the live watcher loop. Keyed by
+ * `${symbol}_${tf}`. Each entry stores the klines + the last-fetched
+ * timestamp; we refresh when the entry's age exceeds the HTF interval
+ * (so each HTF bar gets at most one DB hit per LTF tick window).
+ *
+ * Without this cache the watcher would re-fetch HTF history on EVERY
+ * LTF bar close — for a 15m watcher with a 4h HTF, that's 16 fetches
+ * for the same 4h candle, each pulling ~200 bars of warmup. Cache
+ * brings it to 1 fetch per 4h.
+ */
+interface HtfCacheEntry {
+  klines: Kline[];
+  fetchedAt: number;
+  htfIntervalMs: number;
+}
+const htfCache = new Map<string, HtfCacheEntry>();
+
+const cacheTfKey = (symbol: string, tf: string): string => `${symbol}_${tf}`;
+
+const tfToIntervalMs = (tf: string): number => {
+  const match = tf.match(/^(\d+)([mhdw])$/);
+  if (!match?.[1] || !match[2]) return 4 * TIME_MS.HOUR;
+  const unitMs = UNIT_MS[match[2]];
+  if (!unitMs) return 4 * TIME_MS.HOUR;
+  return parseInt(match[1]) * unitMs;
+};
+
+/**
+ * Fetch HTF klines (with EMA200 warmup) for every timeframe declared
+ * via `@requires-tf` across the given strategies. Returns a map keyed
+ * by TF label, suitable to pass as `detectSetups({ secondaryKlines })`.
+ * Cache-aware: skips the DB roundtrip when the cached entry is fresher
+ * than one HTF bar.
+ */
+const fetchSecondaryKlinesForStrategies = async (
+  symbol: string,
+  marketType: 'SPOT' | 'FUTURES',
+  strategies: PineStrategy[],
+): Promise<Record<string, Kline[]>> => {
+  const requiredTfs = new Set<string>();
+  for (const s of strategies) {
+    for (const tf of s.metadata.requiresTimeframes ?? []) requiredTfs.add(tf);
+  }
+  if (requiredTfs.size === 0) return {};
+
+  const out: Record<string, Kline[]> = {};
+  const now = Date.now();
+
+  for (const tf of requiredTfs) {
+    const cacheKey = cacheTfKey(symbol, tf);
+    const htfIntervalMs = tfToIntervalMs(tf);
+    const cached = htfCache.get(cacheKey);
+
+    if (cached && now - cached.fetchedAt < htfIntervalMs) {
+      out[tf] = cached.klines;
+      continue;
+    }
+
+    // EMA200 warmup so HTF indicators have history. The DB query
+    // includes the live window automatically via end=now.
+    const warmupMs = BACKTEST_ENGINE.EMA200_WARMUP_BARS * htfIntervalMs;
+    const startTime = new Date(now - warmupMs);
+    const endTime = new Date(now);
+
+    const klines = await fetchKlinesFromDbWithBackfill(
+      symbol,
+      tf as Interval,
+      marketType,
+      startTime,
+      endTime,
+    );
+    htfCache.set(cacheKey, { klines, fetchedAt: now, htfIntervalMs });
+    out[tf] = klines;
+  }
+
+  return out;
+};
+
+/**
+ * Test/CLI helper. Strips the live HTF cache so a backtest harness or
+ * vitest suite can run against fresh fetches without process-restart.
+ */
+export const __resetHtfCacheForTests = (): void => {
+  htfCache.clear();
+};
 
 export const getIntervalMs = (interval: string): number => {
   const match = interval.match(/^(\d+)([mhdw])$/);
@@ -37,6 +126,19 @@ export const runSetupDetection = async (
     ? parseFloat(effectiveConfig.minRiskRewardRatioShort)
     : TRADING_DEFAULTS.MIN_RISK_REWARD_RATIO;
 
+  // Multi-TF wiring: if any of the filtered strategies declares
+  // `@requires-tf 4h, 1d` etc., pre-load those HTF klines from the
+  // DB (with EMA200 warmup) before invoking detectSetups. Without
+  // this, the strategy's `request.security(...)` call throws "no
+  // klines registered" at run time. Cached across watcher ticks so
+  // we don't refetch on every 15m close.
+  const marketType: 'SPOT' | 'FUTURES' = (watcher.marketType ?? 'FUTURES') as 'SPOT' | 'FUTURES';
+  const secondaryKlines = await fetchSecondaryKlinesForStrategies(
+    watcher.symbol,
+    marketType,
+    filteredStrategies,
+  );
+
   const detectionResults = await detectSetups({
     klines: closedKlines,
     strategies: filteredStrategies,
@@ -51,6 +153,7 @@ export const runSetupDetection = async (
       maxFibonacciEntryProgressPercentShort: effectiveConfig?.maxFibonacciEntryProgressPercentShort ? parseFloat(effectiveConfig.maxFibonacciEntryProgressPercentShort) : undefined,
       fibonacciSwingRange: (effectiveConfig?.fibonacciSwingRange) ?? undefined,
     },
+    ...(Object.keys(secondaryKlines).length > 0 ? { secondaryKlines } : {}),
   });
 
   const detectedSetups: TradingSetup[] = [];

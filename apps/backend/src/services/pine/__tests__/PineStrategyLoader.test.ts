@@ -191,4 +191,105 @@ plot(0, 'signal')
       expect(strategy.metadata.parameters['atrMultiplier']!.default).toBe(3.0);
     });
   });
+
+  describe('@requires-tf metadata parsing', () => {
+    it('defaults to empty array when strategy declares no HTF dependencies', () => {
+      const loader = new PineStrategyLoader([]);
+      const strategy = loader.loadFromString(`
+// @id single-tf
+// @name Single TF
+//@version=5
+indicator('Test')
+plot(close, 'p')
+`);
+      expect(strategy.metadata.requiresTimeframes).toEqual([]);
+    });
+
+    it('parses single TF from @requires-tf header', () => {
+      const loader = new PineStrategyLoader([]);
+      const strategy = loader.loadFromString(`
+// @id htf-single
+// @requires-tf 4h
+//@version=5
+indicator('Test')
+v = request.security(syminfo.tickerid, '4h', close)
+plot(v, 'p')
+`);
+      expect(strategy.metadata.requiresTimeframes).toEqual(['4h']);
+    });
+
+    it('parses comma-separated TFs from @requires-tf header', () => {
+      const loader = new PineStrategyLoader([]);
+      const strategy = loader.loadFromString(`
+// @id htf-multi
+// @requires-tf 4h, 1d, 1w
+//@version=5
+indicator('Test')
+plot(close, 'p')
+`);
+      expect(strategy.metadata.requiresTimeframes).toEqual(['4h', '1d', '1w']);
+    });
+
+    it('accepts the camelCase alias @requiresTf for tooling that strips hyphens', () => {
+      const loader = new PineStrategyLoader([]);
+      const strategy = loader.loadFromString(`
+// @id alias
+// @requiresTf 4h, 1d
+//@version=5
+indicator('Test')
+plot(close, 'p')
+`);
+      expect(strategy.metadata.requiresTimeframes).toEqual(['4h', '1d']);
+    });
+
+    it('warns via stderr when strategy uses request.security for a TF NOT declared', () => {
+      const loader = new PineStrategyLoader([]);
+      const stderrWrite = process.stderr.write;
+      const captured: string[] = [];
+      process.stderr.write = ((chunk: string) => {
+        captured.push(String(chunk));
+        return true;
+      }) as typeof process.stderr.write;
+      try {
+        loader.loadFromString(`
+// @id undeclared
+// @requires-tf 4h
+//@version=5
+indicator('Test')
+v1 = request.security(syminfo.tickerid, '4h', close)
+v2 = request.security(syminfo.tickerid, '1d', close)
+plot(v1 + v2, 'p')
+`);
+      } finally {
+        process.stderr.write = stderrWrite;
+      }
+      const allOutput = captured.join('');
+      expect(allOutput).toMatch(/request\.security\('1d'/);
+      expect(allOutput).toMatch(/does NOT declare/);
+    });
+
+    it('does NOT warn when every request.security call matches the declared set', () => {
+      const loader = new PineStrategyLoader([]);
+      const stderrWrite = process.stderr.write;
+      const captured: string[] = [];
+      process.stderr.write = ((chunk: string) => {
+        captured.push(String(chunk));
+        return true;
+      }) as typeof process.stderr.write;
+      try {
+        loader.loadFromString(`
+// @id matched
+// @requires-tf 4h, 1d
+//@version=5
+indicator('Test')
+v1 = request.security(syminfo.tickerid, '4h', close)
+v2 = request.security(syminfo.tickerid, '1d', close)
+plot(v1 + v2, 'p')
+`);
+      } finally {
+        process.stderr.write = stderrWrite;
+      }
+      expect(captured.join('')).not.toMatch(/does NOT declare/);
+    });
+  });
 });
