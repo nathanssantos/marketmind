@@ -36,6 +36,8 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
   const [liquidityColorMode, setLiquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const [showBreakevenLines, setShowBreakevenLines] = useChartPref<boolean>('showBreakevenLines', false);
   const [riskWarningThresholdPct, setRiskWarningThresholdPct] = useUIPref<number>('riskWarningThresholdPct', 2);
+  const [confluenceLongThreshold, setConfluenceLongThreshold] = useUIPref<number>('confluenceLongThreshold', 25);
+  const [confluenceShortThreshold, setConfluenceShortThreshold] = useUIPref<number>('confluenceShortThreshold', 25);
   const enableShiftAltOrderEntry = useUIStore((state) => state.enableShiftAltOrderEntry);
   const setEnableShiftAltOrderEntry = useUIStore((state) => state.setEnableShiftAltOrderEntry);
 
@@ -289,6 +291,48 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
             width="90px"
             size="sm"
             data-testid="chart-risk-warning-threshold"
+          />
+        </FormRow>
+      </FormSection>
+
+      <FormSection
+        title={t('settings.chart.confluenceScoreChart')}
+        description={t('settings.chart.confluenceScoreChartHelper')}
+      >
+        <FormRow
+          label={t('chart.controls.confluenceLongThreshold')}
+          helper={t('chart.controls.confluenceLongThresholdHelper')}
+        >
+          <NumberInput
+            value={String(confluenceLongThreshold)}
+            onChange={(e) => {
+              const n = parseInt(e.target.value, 10);
+              if (Number.isFinite(n) && n > 0) setConfluenceLongThreshold(n);
+            }}
+            min={1}
+            max={50}
+            step={1}
+            width="90px"
+            size="sm"
+            data-testid="chart-confluence-long-threshold"
+          />
+        </FormRow>
+        <FormRow
+          label={t('chart.controls.confluenceShortThreshold')}
+          helper={t('chart.controls.confluenceShortThresholdHelper')}
+        >
+          <NumberInput
+            value={String(confluenceShortThreshold)}
+            onChange={(e) => {
+              const n = parseInt(e.target.value, 10);
+              if (Number.isFinite(n) && n > 0) setConfluenceShortThreshold(n);
+            }}
+            min={1}
+            max={50}
+            step={1}
+            width="90px"
+            size="sm"
+            data-testid="chart-confluence-short-threshold"
           />
         </FormRow>
       </FormSection>

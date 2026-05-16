@@ -2,10 +2,10 @@ import type { PositionSide } from '@marketmind/types';
 import { Grid, HStack, VStack } from '@chakra-ui/react';
 import type { ConditionOp, ConditionThreshold } from '@marketmind/trading-core';
 import {
-  CHECKLIST_WEIGHT_MAX,
-  CHECKLIST_WEIGHT_MIN,
-  CHECKLIST_WEIGHT_STEP,
-  getDefaultChecklistWeight,
+  CONFLUENCE_WEIGHT_MAX,
+  CONFLUENCE_WEIGHT_MIN,
+  CONFLUENCE_WEIGHT_STEP,
+  getDefaultConfluenceWeight,
 } from '@marketmind/types';
 import { Radio, RadioGroup } from '@renderer/components/ui';
 import { useTranslation } from 'react-i18next';
@@ -23,7 +23,7 @@ const requiresThreshold = (op: ConditionOp): boolean =>
   op === 'oversold' ||
   op === 'overbought';
 
-export interface ChecklistFieldsValue {
+export interface ConfluenceFieldsValue {
   timeframe: string;
   op: ConditionOp;
   threshold?: ConditionThreshold;
@@ -32,28 +32,28 @@ export interface ChecklistFieldsValue {
   weight: number;
 }
 
-export interface ChecklistFieldsProps {
-  value: ChecklistFieldsValue;
+export interface ConfluenceFieldsProps {
+  value: ConfluenceFieldsValue;
   availableOps: ConditionOp[];
-  onChange: (next: ChecklistFieldsValue) => void;
+  onChange: (next: ConfluenceFieldsValue) => void;
 }
 
-export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFieldsProps) => {
+export const ConfluenceFields = ({ value, availableOps, onChange }: ConfluenceFieldsProps) => {
   const { t } = useTranslation();
 
   const timeframeOptions = TIMEFRAMES.map((tf) => ({
     value: tf,
-    label: t(`checklist.timeframes.${tf}`, { defaultValue: tf }),
+    label: t(`confluence.timeframes.${tf}`, { defaultValue: tf }),
   }));
 
   const opOptions = availableOps.map((op) => ({
     value: op,
-    label: t(`checklist.ops.${op}`, { defaultValue: op }),
+    label: t(`confluence.ops.${op}`, { defaultValue: op }),
   }));
 
-  const thresholdLabel = t('checklist.threshold');
-  const lowLabel = t('checklist.thresholdLow');
-  const highLabel = t('checklist.thresholdHigh');
+  const thresholdLabel = t('confluence.threshold');
+  const lowLabel = t('confluence.thresholdLow');
+  const highLabel = t('confluence.thresholdHigh');
 
   const thresholdPair: [number, number] = Array.isArray(value.threshold)
     ? value.threshold
@@ -64,15 +64,15 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
     <VStack gap={3} align="stretch" w="100%">
       <Grid templateColumns="1fr 1fr" gap={3}>
         <SelectField
-          label={t('checklist.timeframe')}
+          label={t('confluence.timeframe')}
           value={value.timeframe}
           options={timeframeOptions}
           onChange={(tf) =>
-            onChange({ ...value, timeframe: tf, weight: getDefaultChecklistWeight(tf) })
+            onChange({ ...value, timeframe: tf, weight: getDefaultConfluenceWeight(tf) })
           }
         />
         <SelectField
-          label={t('checklist.operator')}
+          label={t('confluence.operator')}
           value={value.op}
           options={opOptions}
           onChange={(op) => onChange({ ...value, op: op as ConditionOp })}
@@ -80,11 +80,11 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
       </Grid>
 
       <NumberField
-        label={t('checklist.weight')}
+        label={t('confluence.weight')}
         value={value.weight}
-        min={CHECKLIST_WEIGHT_MIN}
-        max={CHECKLIST_WEIGHT_MAX}
-        step={CHECKLIST_WEIGHT_STEP}
+        min={CONFLUENCE_WEIGHT_MIN}
+        max={CONFLUENCE_WEIGHT_MAX}
+        step={CONFLUENCE_WEIGHT_STEP}
         onChange={(v) => onChange({ ...value, weight: v })}
       />
 
@@ -119,8 +119,8 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
           }
         >
           <HStack gap={4}>
-            <Radio value="required">{t('checklist.tier.required')}</Radio>
-            <Radio value="preferred">{t('checklist.tier.preferred')}</Radio>
+            <Radio value="required">{t('confluence.tier.required')}</Radio>
+            <Radio value="preferred">{t('confluence.tier.preferred')}</Radio>
           </HStack>
         </RadioGroup>
       </HStack>
@@ -133,9 +133,9 @@ export const ChecklistFields = ({ value, availableOps, onChange }: ChecklistFiel
           }
         >
           <HStack gap={4}>
-            <Radio value="LONG">{t('checklist.side.long')}</Radio>
-            <Radio value="SHORT">{t('checklist.side.short')}</Radio>
-            <Radio value="BOTH">{t('checklist.side.both')}</Radio>
+            <Radio value="LONG">{t('confluence.side.long')}</Radio>
+            <Radio value="SHORT">{t('confluence.side.short')}</Radio>
+            <Radio value="BOTH">{t('confluence.side.both')}</Radio>
           </HStack>
         </RadioGroup>
       </HStack>

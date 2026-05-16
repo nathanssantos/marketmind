@@ -526,6 +526,8 @@
       "enableShiftAltOrderEntryHelper": "Mantén Shift para previsualizar órdenes long o Alt/Option para previsualizar órdenes short al hacer clic en el gráfico",
       "liquidityIntensity": "Mapa de liquidez por intensidad",
       "liquidityIntensityHelper": "Usa una única rampa cálida para bid y ask — las celdas más brillantes indican mayor liquidez; el lado se deduce por la posición respecto al precio",
+      "confluenceScoreChart": "Gráfico de confluencia",
+      "confluenceScoreChartHelper": "Umbrales de convicción por lado renderizados en el gráfico de net score. La banda entre ellos se sombrea como zona neutra para que sea obvio evitar setups intermedios.",
       "patternExtensions": "Extensiones de Patrones",
       "showAllExtensions": "Activar Todas las Extensiones",
       "showAllExtensionsHelper": "Control maestro para extender patrones más allá de la última vela",
@@ -1013,6 +1015,10 @@
       "showBreakevenLinesHelper": "Dibuja una línea discontinua al precio en que la posición abierta cerraría neutra tras las comisiones de ida y vuelta (taker × 2). Asume Binance Futures VIP 0.",
       "riskWarningThresholdPct": "Umbral de aviso de riesgo (% del saldo)",
       "riskWarningThresholdPctHelper": "En la herramienta de dibujo long/short, muestra un ⚠ junto al Riesgo % proyectado cuando el SL costaría más que ese porcentaje del saldo (incluidas las comisiones taker de ida y vuelta). 2% es un techo común para scalping.",
+      "confluenceLongThreshold": "Umbral de entrada long",
+      "confluenceLongThresholdHelper": "Net score absoluto necesario para marcar la línea de sesgo long en el gráfico de confluencia. La banda entre los dos umbrales se sombrea como zona neutra para que sea obvio evitar setups intermedios.",
+      "confluenceShortThreshold": "Umbral de entrada short",
+      "confluenceShortThresholdHelper": "Net score absoluto necesario para marcar la línea de sesgo short (renderizada en el lado negativo del gráfico). Misma semántica de zona neutra que el umbral long.",
       "profitLossAreas": "Áreas de Ganancia/Pérdida",
       "fibonacciProjection": "Proyección de Fibonacci",
       "measurementRuler": "Regla de Medición",
@@ -1801,8 +1807,8 @@
       "riskManagement": "Gestión de Riesgo",
       "riskManagementDescription": "Anular dimensionamiento de posición y límites de riesgo",
       "riskDescription": "Anular configuración de riesgo de la billetera para este perfil",
-      "checklist": "Pre-trade checklist",
-      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
+      "confluence": "Confluencia pre-trade",
+      "confluenceDescription": "Condiciones evaluadas antes de cada entrada. Las obligatorias deben pasar todas; las preferidas contribuyen al puntaje."
     },
     "overrides": {
       "usingGlobalDefault": "Usando valor global predeterminado",
@@ -2935,21 +2941,21 @@
       "overbought": "Sobrecomprado"
     }
   },
-  "checklist": {
+  "confluence": {
     "section": {
       "long": "Long",
       "short": "Short",
       "both": "Ambos",
       "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
       "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
-      "error": "Checklist error",
-      "dedupExcluded": "Not counted — same as another condition for this timeframe",
-      "title": "Checklist",
-      "empty": "No conditions evaluated.",
-      "options": "Opciones del checklist",
+      "error": "Error de confluencia",
+      "dedupExcluded": "No contabilizado — misma condición en otro timeframe",
+      "title": "Confluencia",
+      "empty": "Sin condiciones evaluadas.",
+      "options": "Opciones de la confluencia",
       "showChart": "Mostrar gráfico de puntaje",
       "hideChart": "Ocultar gráfico de puntaje",
-      "editProfile": "Editar perfil (checklist)",
+      "editProfile": "Editar perfil (confluencia)",
       "collectingHistory": "Recopilando historial…"
     },
     "editor": {
@@ -2957,7 +2963,7 @@
       "moveDown": "Mover abajo",
       "add": "Add condition",
       "emptyTitle": "No conditions",
-      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "emptyDescription": "Agrega indicadores para armar tu confluencia pre-trade.",
       "missing": "Missing indicator",
       "unknownCatalog": "(unknown indicator type)"
     },

@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test';
 
 export type PanelKindLite =
   | 'ticket'
-  | 'checklist'
+  | 'confluence'
   | 'orders'
   | 'portfolio'
   | 'positions'
@@ -73,7 +73,7 @@ export const waitForPanelsMounted = async (
 ): Promise<void> => {
   const PANEL_SELECTORS: Record<PanelKindLite, string> = {
     ticket: '[data-panel-kind="ticket"]',
-    checklist: '[data-panel-kind="checklist"]',
+    confluence: '[data-panel-kind="confluence"]',
     orders: '[data-panel-kind="orders"]',
     portfolio: '[data-panel-kind="portfolio"]',
     positions: '[data-panel-kind="positions"]',

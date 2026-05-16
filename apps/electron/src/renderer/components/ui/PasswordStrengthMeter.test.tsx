@@ -17,7 +17,7 @@ describe('PasswordStrengthMeter', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('shows the rule checklist for any non-empty password', () => {
+  it('shows the rule confluence for any non-empty password', () => {
     renderWithProvider(<PasswordStrengthMeter password="abc" />);
     expect(screen.getByText('auth.passwordPolicy.tooShort')).toBeInTheDocument();
     expect(screen.getByText('auth.passwordPolicy.noUppercase')).toBeInTheDocument();

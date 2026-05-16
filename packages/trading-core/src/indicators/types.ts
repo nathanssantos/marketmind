@@ -85,7 +85,7 @@ export interface UserIndicator {
   isCustom: boolean;
 }
 
-export interface ChecklistCondition {
+export interface ConfluenceCondition {
   id: string;
   userIndicatorId: string;
   timeframe: string;
@@ -103,7 +103,7 @@ export interface ConditionEvaluationResult {
   value: number | null;
 }
 
-export interface ChecklistScoreBreakdown {
+export interface ConfluenceScoreBreakdown {
   requiredTotal: number;
   requiredPassed: number;
   requiredWeightTotal: number;

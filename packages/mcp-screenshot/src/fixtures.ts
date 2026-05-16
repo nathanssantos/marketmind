@@ -320,7 +320,7 @@ const DAILY_PERFORMANCE = closedExecutions
   .sort((a, b) => a.date.localeCompare(b.date));
 
 // User indicator instances — one per default seed in trading-core. Stable
-// IDs so checklist conditions can reference them.
+// IDs so confluence conditions can reference them.
 const USER_INDICATORS = [
   { id: 'ui-ema9', userId: 'e2e-user', catalogType: 'ema', label: 'EMA 9', params: '{"period":9,"color":"#ff00ff","lineWidth":1}', isCustom: false, createdAt: NOW, updatedAt: NOW },
   { id: 'ui-ema21', userId: 'e2e-user', catalogType: 'ema', label: 'EMA 21', params: '{"period":21,"color":"#00e676","lineWidth":1}', isCustom: false, createdAt: NOW, updatedAt: NOW },
@@ -331,12 +331,12 @@ const USER_INDICATORS = [
   { id: 'ui-vp', userId: 'e2e-user', catalogType: 'volumeProfile', label: 'Volume Profile', params: '{"numBuckets":100,"maxBarWidth":120,"opacity":30}', isCustom: false, createdAt: NOW, updatedAt: NOW },
 ];
 
-// Mirrors the v1.13.x default checklist (RSI 2 + Stoch 14 ladder across
+// Mirrors the v1.13.x default confluence (RSI 2 + Stoch 14 ladder across
 // 1m..1d, LONG = oversold, SHORT = overbought). Weights match the formula
-// in @marketmind/trading-core/checklistDefaults.ts.
+// in @marketmind/trading-core/confluenceDefaults.ts.
 const TF_WEIGHTS: Record<string, number> = { '1m': 0, '5m': 0.5, '15m': 1.0, '1h': 1.5, '4h': 2.0, '1d': 2.5 };
 const TIMEFRAMES = ['1m', '5m', '15m', '1h', '4h', '1d'] as const;
-const buildChecklistConditions = () => {
+const buildConfluenceConditions = () => {
   const conditions: Array<Record<string, unknown>> = [];
   let order = 0;
   for (const ind of [
@@ -345,7 +345,7 @@ const buildChecklistConditions = () => {
   ]) {
     for (const tf of TIMEFRAMES) {
       const weight = ind.base + (TF_WEIGHTS[tf] ?? 0);
-      // ~70% of conditions enabled so the checklist panel renders a
+      // ~70% of conditions enabled so the confluence panel renders a
       // mix of evaluated rows + a few greyed-out (visual variety).
       const enabled = (order % 4) !== 3;
       conditions.push({
@@ -363,12 +363,12 @@ const buildChecklistConditions = () => {
   return conditions;
 };
 
-const CHECKLIST_CONDITIONS = buildChecklistConditions();
+const CONFLUENCE_CONDITIONS = buildConfluenceConditions();
 
 // Synthetic evaluation result — each condition gets `evaluated: true` and
 // a mock value/passed state so the panel paints check/X icons + numeric
 // values instead of the empty-state placeholder.
-const buildChecklistEvaluation = () => {
+const buildConfluenceEvaluation = () => {
   const indicatorLabelByUid: Record<string, string> = {
     'ui-rsi2': 'RSI 2',
     'ui-stoch14': 'Stoch 14',
@@ -377,7 +377,7 @@ const buildChecklistEvaluation = () => {
     'ui-rsi2': 'rsi',
     'ui-stoch14': 'stoch',
   };
-  const results = CHECKLIST_CONDITIONS.map((c, i) => {
+  const results = CONFLUENCE_CONDITIONS.map((c, i) => {
     const uid = c.userIndicatorId as string;
     const tf = c.timeframe as string;
     const side = c.side as string;
@@ -440,7 +440,7 @@ const buildChecklistEvaluation = () => {
     scoreShort,
   };
 };
-const CHECKLIST_EVALUATION = buildChecklistEvaluation();
+const CONFLUENCE_EVALUATION = buildConfluenceEvaluation();
 
 const TRADING_PROFILES = [
   {
@@ -450,7 +450,7 @@ const TRADING_PROFILES = [
     description: 'RSI 2 + Stoch 14 multi-timeframe ladder',
     isDefault: true,
     enabledSetupTypes: ['breakout-retest', 'golden-cross-sma', 'pin-inside-combo'],
-    checklistConditions: CHECKLIST_CONDITIONS,
+    confluenceConditions: CONFLUENCE_CONDITIONS,
     riskPerTradePercent: '1.0',
     maxConcurrentPositions: 3,
     minRRLong: '1.8',
@@ -643,7 +643,7 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   { path: 'trading.getOrders', value: [] },
   { path: 'trading.getPositions', value: OPEN_EXECUTIONS },
   { path: 'trading.getTradeExecutions', value: ALL_EXECUTIONS },
-  { path: 'trading.evaluateChecklist', value: CHECKLIST_EVALUATION },
+  { path: 'trading.evaluateConfluence', value: CONFLUENCE_EVALUATION },
   { path: 'trading.getTickerPrices', value: Object.fromEntries(DAILY_TICKERS.map((t) => [t.symbol, t.lastPrice])) },
   { path: 'futuresTrading.getOpenOrders', value: [] },
   { path: 'futuresTrading.getOpenAlgoOrders', value: [] },
@@ -722,8 +722,8 @@ export const VISUAL_REVIEW_FIXTURES: Fixture[] = [
   // Trading profiles + watchers
   { path: 'tradingProfiles.list', value: TRADING_PROFILES },
   { path: 'tradingProfiles.getDefault', value: TRADING_PROFILES[0] },
-  // Checklist score history — drives the L/S area chart in the
-  // ChecklistSection. Without this fixture, the renderer's tRPC mock
+  // Confluence score history — drives the L/S area chart in the
+  // ConfluenceSection. Without this fixture, the renderer's tRPC mock
   // returns null, the chart's `historyQuery.data` stays empty, and
   // the chart panel renders with no line. We synthesize ~96 points
   // (one per 15 min over the last 24h) with long/short oscillating

@@ -1,12 +1,12 @@
 import 'dotenv/config';
 import { eq } from 'drizzle-orm';
-import { DEFAULT_CHECKLIST_TEMPLATE } from '@marketmind/trading-core';
+import { DEFAULT_CONFLUENCE_TEMPLATE } from '@marketmind/trading-core';
 import { db } from '../../src/db';
 import { tradingProfiles, userIndicators, users } from '../../src/db/schema';
 import { generateEntityId } from '../../src/utils/id';
 import {
-  parseChecklistConditions,
-  stringifyChecklistConditions,
+  parseConfluenceConditions,
+  stringifyConfluenceConditions,
 } from '../../src/utils/profile-transformers';
 import { seedDefaultUserIndicators } from '../../src/services/user-indicators';
 
@@ -43,7 +43,7 @@ const main = async (): Promise<void> => {
         id: tradingProfiles.id,
         name: tradingProfiles.name,
         isDefault: tradingProfiles.isDefault,
-        checklistConditions: tradingProfiles.checklistConditions,
+        confluenceConditions: tradingProfiles.confluenceConditions,
       })
       .from(tradingProfiles)
       .where(eq(tradingProfiles.userId, user.id));
@@ -54,7 +54,7 @@ const main = async (): Promise<void> => {
       continue;
     }
 
-    const existing = parseChecklistConditions(defaultProfile.checklistConditions ?? '[]');
+    const existing = parseConfluenceConditions(defaultProfile.confluenceConditions ?? '[]');
     const existingByKey = new Map(
       existing.map((c) => [buildKey(c.userIndicatorId, c.timeframe, c.op, c.side), c]),
     );
@@ -65,7 +65,7 @@ const main = async (): Promise<void> => {
     let updated = 0;
     let reordered = 0;
 
-    for (const entry of DEFAULT_CHECKLIST_TEMPLATE) {
+    for (const entry of DEFAULT_CONFLUENCE_TEMPLATE) {
       const userIndicatorId = idByLabel.get(entry.seedLabel);
       if (!userIndicatorId) continue;
       const key = buildKey(userIndicatorId, entry.timeframe, entry.op, entry.side);
@@ -113,7 +113,7 @@ const main = async (): Promise<void> => {
 
     // Reorder: template entries get their canonical template.order, non-template
     // entries (kept when --prune is off) go after, appended in their existing order.
-    const templateMax = DEFAULT_CHECKLIST_TEMPLATE.length;
+    const templateMax = DEFAULT_CONFLUENCE_TEMPLATE.length;
     const withOrder = [...kept, ...additions].map((c) => {
       const tplOrder = templateOrder.get(buildKey(c.userIndicatorId, c.timeframe, c.op, c.side));
       return { ...c, order: tplOrder ?? templateMax + c.order };
@@ -124,7 +124,7 @@ const main = async (): Promise<void> => {
     await db
       .update(tradingProfiles)
       .set({
-        checklistConditions: stringifyChecklistConditions(merged),
+        confluenceConditions: stringifyConfluenceConditions(merged),
         updatedAt: new Date(),
       })
       .where(eq(tradingProfiles.id, defaultProfile.id));

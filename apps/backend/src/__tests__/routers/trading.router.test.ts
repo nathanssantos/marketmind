@@ -1123,11 +1123,11 @@ describe('Trading Router', () => {
     });
   });
 
-  describe('evaluateChecklist', () => {
+  describe('evaluateConfluence', () => {
     it('should require authentication', async () => {
       const caller = createUnauthenticatedCaller();
       await expect(
-        caller.trading.evaluateChecklist({
+        caller.trading.evaluateConfluence({
           symbol: 'BTCUSDT',
           interval: '1h',
           marketType: 'FUTURES',
@@ -1140,7 +1140,7 @@ describe('Trading Router', () => {
       const { user, session } = await createAuthenticatedUser();
       const caller = createAuthenticatedCaller(user, session);
 
-      const result = await caller.trading.evaluateChecklist({
+      const result = await caller.trading.evaluateConfluence({
         symbol: 'BTCUSDT',
         interval: '1h',
         marketType: 'FUTURES',
@@ -1158,7 +1158,7 @@ describe('Trading Router', () => {
       const caller = createAuthenticatedCaller(user, session);
 
       await expect(
-        caller.trading.evaluateChecklist({
+        caller.trading.evaluateConfluence({
           symbol: 'BTCUSDT',
           interval: '1h',
           marketType: 'FUTURES',
@@ -1174,7 +1174,7 @@ describe('Trading Router', () => {
       const caller = createAuthenticatedCaller(user, session);
 
       await expect(
-        caller.trading.evaluateChecklist({
+        caller.trading.evaluateConfluence({
           symbol: 'BTCUSDT',
           interval: '1h',
           marketType: 'FUTURES',

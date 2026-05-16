@@ -1,19 +1,19 @@
-import { checklistConditionSchema, conditionSideSchema } from '@marketmind/trading-core';
+import { confluenceConditionSchema, conditionSideSchema } from '@marketmind/trading-core';
 import { and, asc, eq, gte, lte, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../../db';
-import { checklistScoreHistory, klines as klinesTable } from '../../db/schema';
+import { confluenceScoreHistory, klines as klinesTable } from '../../db/schema';
 import { tradingProfileQueries } from '../../services/database/tradingProfileQueries';
-import { evaluateChecklist } from '../../services/checklist/evaluate-checklist';
+import { evaluateConfluence } from '../../services/confluence/evaluate-confluence';
 import { logger, serializeError } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
-import { parseChecklistConditions } from '../../utils/profile-transformers';
+import { parseConfluenceConditions } from '../../utils/profile-transformers';
 
 const MAX_BACKFILL_SAMPLES = 100;
 const DEFAULT_BACKFILL_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
-export const checklistRouter = router({
-  evaluateChecklist: protectedProcedure
+export const confluenceRouter = router({
+  evaluateConfluence: protectedProcedure
     .input(
       z
         .object({
@@ -22,7 +22,7 @@ export const checklistRouter = router({
           marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
           side: conditionSideSchema.optional(),
           profileId: z.string().optional(),
-          conditions: z.array(checklistConditionSchema).optional(),
+          conditions: z.array(confluenceConditionSchema).optional(),
         })
         .refine((v) => v.profileId !== undefined || v.conditions !== undefined, {
           message: 'Either profileId or conditions must be provided',
@@ -33,10 +33,10 @@ export const checklistRouter = router({
 
       if (!conditions && input.profileId) {
         const profile = await tradingProfileQueries.getByIdAndUser(input.profileId, ctx.user.id);
-        conditions = parseChecklistConditions(profile.checklistConditions);
+        conditions = parseConfluenceConditions(profile.confluenceConditions);
       }
 
-      const result = await evaluateChecklist({
+      const result = await evaluateConfluence({
         userId: ctx.user.id,
         symbol: input.symbol,
         interval: input.interval,
@@ -54,7 +54,7 @@ export const checklistRouter = router({
       if (input.profileId && Number.isFinite(result.scoreLong.score) && Number.isFinite(result.scoreShort.score)) {
         try {
           await db
-            .insert(checklistScoreHistory)
+            .insert(confluenceScoreHistory)
             .values({
               userId: ctx.user.id,
               profileId: input.profileId,
@@ -69,7 +69,7 @@ export const checklistRouter = router({
         } catch (e) {
           logger.warn(
             { error: serializeError(e), profileId: input.profileId, symbol: input.symbol },
-            '[checklist] history write-through failed',
+            '[confluence] history write-through failed',
           );
         }
       }
@@ -93,23 +93,23 @@ export const checklistRouter = router({
 
       const rows = await db
         .select({
-          recordedAt: checklistScoreHistory.recordedAt,
-          scoreLong: checklistScoreHistory.scoreLong,
-          scoreShort: checklistScoreHistory.scoreShort,
-          source: checklistScoreHistory.source,
+          recordedAt: confluenceScoreHistory.recordedAt,
+          scoreLong: confluenceScoreHistory.scoreLong,
+          scoreShort: confluenceScoreHistory.scoreShort,
+          source: confluenceScoreHistory.source,
         })
-        .from(checklistScoreHistory)
+        .from(confluenceScoreHistory)
         .where(
           and(
-            eq(checklistScoreHistory.userId, ctx.user.id),
-            eq(checklistScoreHistory.profileId, input.profileId),
-            eq(checklistScoreHistory.symbol, input.symbol),
-            eq(checklistScoreHistory.interval, input.interval),
-            eq(checklistScoreHistory.marketType, input.marketType),
-            gte(checklistScoreHistory.recordedAt, since),
+            eq(confluenceScoreHistory.userId, ctx.user.id),
+            eq(confluenceScoreHistory.profileId, input.profileId),
+            eq(confluenceScoreHistory.symbol, input.symbol),
+            eq(confluenceScoreHistory.interval, input.interval),
+            eq(confluenceScoreHistory.marketType, input.marketType),
+            gte(confluenceScoreHistory.recordedAt, since),
           ),
         )
-        .orderBy(sql`${checklistScoreHistory.recordedAt} ASC`)
+        .orderBy(sql`${confluenceScoreHistory.recordedAt} ASC`)
         .limit(input.limit);
 
       return rows.map((r) => ({
@@ -133,7 +133,7 @@ export const checklistRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const profile = await tradingProfileQueries.getByIdAndUser(input.profileId, ctx.user.id);
-      const conditions = parseChecklistConditions(profile.checklistConditions);
+      const conditions = parseConfluenceConditions(profile.confluenceConditions);
       if (conditions.length === 0) return { sampled: 0, inserted: 0 };
 
       const lookback = input.lookbackMs ?? DEFAULT_BACKFILL_LOOKBACK_MS;
@@ -163,7 +163,7 @@ export const checklistRouter = router({
       let inserted = 0;
       for (const t of sampleTimes) {
         try {
-          const result = await evaluateChecklist({
+          const result = await evaluateConfluence({
             userId: ctx.user.id,
             symbol: input.symbol,
             interval: input.interval,
@@ -173,7 +173,7 @@ export const checklistRouter = router({
           });
           if (!Number.isFinite(result.scoreLong.score) || !Number.isFinite(result.scoreShort.score)) continue;
           const inserts = await db
-            .insert(checklistScoreHistory)
+            .insert(confluenceScoreHistory)
             .values({
               userId: ctx.user.id,
               profileId: input.profileId,
@@ -186,12 +186,12 @@ export const checklistRouter = router({
               source: 'backfill',
             })
             .onConflictDoNothing()
-            .returning({ id: checklistScoreHistory.id });
+            .returning({ id: confluenceScoreHistory.id });
           if (inserts.length > 0) inserted += 1;
         } catch (e) {
           logger.warn(
             { error: serializeError(e), profileId: input.profileId, symbol: input.symbol, t },
-            '[checklist] backfill sample failed',
+            '[confluence] backfill sample failed',
           );
         }
       }

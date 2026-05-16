@@ -501,7 +501,9 @@
       "enableShiftAltOrderEntry": "Enable Shift/Alt Order Entry",
       "enableShiftAltOrderEntryHelper": "Hold Shift to preview long orders or Alt/Option to preview short orders when clicking on the chart",
       "liquidityIntensity": "Intensity-based liquidity heatmap",
-      "liquidityIntensityHelper": "Use a single warm color ramp for both bid and ask — brighter cells mean higher liquidity; side is inferred from position relative to price"
+      "liquidityIntensityHelper": "Use a single warm color ramp for both bid and ask — brighter cells mean higher liquidity; side is inferred from position relative to price",
+      "confluenceScoreChart": "Confluence score chart",
+      "confluenceScoreChartHelper": "Per-side conviction thresholds rendered on the net-score chart. The band between them is shaded as a no-trade zone so middling setups are obvious to skip."
     },
     "tradingSimulator": {
       "title": "Trading Simulator Settings",
@@ -895,6 +897,10 @@
       "showBreakevenLinesHelper": "Draw a dashed line at the price where the open position would close net-flat after round-trip fees (taker × 2). Assumes Binance Futures VIP 0.",
       "riskWarningThresholdPct": "Risk warning threshold (% of balance)",
       "riskWarningThresholdPctHelper": "On the long/short position drawing tool, show a ⚠ next to the projected Risk % when the SL would lose more than this fraction of the wallet balance (including round-trip taker fees). 2% is a common scalp ceiling.",
+      "confluenceLongThreshold": "Long entry threshold",
+      "confluenceLongThresholdHelper": "Absolute net-score needed to mark the long-bias entry line on the confluence chart. The band between the two thresholds is shaded as a no-trade zone so middling setups are obvious to skip.",
+      "confluenceShortThreshold": "Short entry threshold",
+      "confluenceShortThresholdHelper": "Absolute net-score needed to mark the short-bias entry line (rendered on the negative side of the chart). Same dead-zone semantics as the long threshold.",
       "profitLossAreas": "Profit/Loss Areas",
       "fibonacciProjection": "Fibonacci Projection",
       "measurementRuler": "Measurement Ruler",
@@ -1651,8 +1657,8 @@
       "riskManagement": "Risk Management",
       "riskManagementDescription": "Override position sizing and risk limits",
       "riskDescription": "Override wallet risk settings for this profile",
-      "checklist": "Pre-trade checklist",
-      "checklistDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
+      "confluence": "Pre-trade confluence",
+      "confluenceDescription": "Conditions evaluated before each entry. Required must all pass; preferred contributes to the score."
     },
     "overrides": {
       "usingGlobalDefault": "Using global default",
@@ -2785,21 +2791,21 @@
       "overbought": "Overbought"
     }
   },
-  "checklist": {
+  "confluence": {
     "section": {
       "long": "Long",
       "short": "Short",
       "both": "Both",
       "requiredAllPassed": "All required conditions passed ({{p}}/{{t}})",
       "requiredFailed": "Required conditions failing ({{p}}/{{t}})",
-      "error": "Checklist error",
+      "error": "Confluence error",
       "dedupExcluded": "Not counted — same as another condition for this timeframe",
-      "title": "Checklist",
+      "title": "Confluence",
       "empty": "No conditions evaluated.",
-      "options": "Checklist options",
+      "options": "Confluence options",
       "showChart": "Show score chart",
       "hideChart": "Hide score chart",
-      "editProfile": "Edit profile (checklist)",
+      "editProfile": "Edit profile (confluence)",
       "collectingHistory": "Collecting history…"
     },
     "editor": {
@@ -2807,7 +2813,7 @@
       "moveDown": "Move down",
       "add": "Add condition",
       "emptyTitle": "No conditions",
-      "emptyDescription": "Add indicators to build your pre-trade checklist.",
+      "emptyDescription": "Add indicators to build your pre-trade confluence.",
       "missing": "Missing indicator",
       "unknownCatalog": "(unknown indicator type)"
     },
@@ -2902,8 +2908,8 @@
     "ticket": {
       "title": "Ticket"
     },
-    "checklist": {
-      "title": "Checklist"
+    "confluence": {
+      "title": "Confluence"
     },
     "orders": {
       "title": "Orders"

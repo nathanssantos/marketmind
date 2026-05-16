@@ -1,20 +1,20 @@
 import type { PositionSide, MarketType } from '@marketmind/types';
 import { Box, Flex, HStack, Portal, Stack, Text } from '@chakra-ui/react';
 import { Badge, IconButton, Menu, TooltipWrapper } from '@renderer/components/ui';
-import { useChecklistEvaluation } from '@renderer/hooks/useChecklistEvaluation';
+import { useConfluenceEvaluation } from '@renderer/hooks/useConfluenceEvaluation';
 import { useTradingProfiles } from '@renderer/hooks/useTradingProfiles';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { useUIStore } from '@renderer/store/uiStore';
 import { trpc } from '@renderer/utils/trpc';
-import { calculateChecklistScore, type ChecklistCondition } from '@marketmind/trading-core';
-import { getDefaultChecklistWeight } from '@marketmind/types';
+import { calculateConfluenceScore, type ConfluenceCondition } from '@marketmind/trading-core';
+import { getDefaultConfluenceWeight } from '@marketmind/types';
 import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuCheck, LuEllipsisVertical, LuTriangle, LuX } from 'react-icons/lu';
-import { ChecklistScoreChart } from './ChecklistScoreChart';
+import { ConfluenceScoreChart } from './ConfluenceScoreChart';
 
-interface ChecklistSectionProps {
+interface ConfluenceSectionProps {
   symbol: string;
   interval: string;
   marketType: MarketType;
@@ -58,11 +58,11 @@ const ScoreBadgePair = ({
   const { t } = useTranslation();
   if (!score) return null;
   const tooltip = score.requiredAllPassed
-    ? t('checklist.section.requiredAllPassed', {
+    ? t('confluence.section.requiredAllPassed', {
         p: score.requiredPassed,
         t: score.requiredTotal,
       })
-    : t('checklist.section.requiredFailed', {
+    : t('confluence.section.requiredFailed', {
         p: score.requiredPassed,
         t: score.requiredTotal,
       });
@@ -76,21 +76,21 @@ const ScoreBadgePair = ({
   );
 };
 
-export const ChecklistSection = memo(({ symbol, interval, marketType }: ChecklistSectionProps) => {
+export const ConfluenceSection = memo(({ symbol, interval, marketType }: ConfluenceSectionProps) => {
   const { t } = useTranslation();
   const { getDefaultProfile, isLoadingProfiles } = useTradingProfiles();
-  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('checklistScoreChartVisible', true);
+  const [showScoreChart, setShowScoreChart] = useUIPref<boolean>('confluenceScoreChartVisible', true);
 
   const defaultProfile = getDefaultProfile();
   const hasCurrentTimeframeCondition = useMemo(
-    () => (defaultProfile?.checklistConditions ?? []).some(
-      (c: ChecklistCondition) => c.enabled && c.timeframe === 'current',
+    () => (defaultProfile?.confluenceConditions ?? []).some(
+      (c: ConfluenceCondition) => c.enabled && c.timeframe === 'current',
     ),
-    [defaultProfile?.checklistConditions],
+    [defaultProfile?.confluenceConditions],
   );
 
   // Subscribing to focusedInterval would re-render and re-fetch the
-  // checklist on every focus change. We only need it when at least one
+  // confluence on every focus change. We only need it when at least one
   // condition resolves against the current chart timeframe — otherwise
   // the eval/persisted-history bucket is stable on the prop interval and
   // focus changes should be a no-op.
@@ -103,7 +103,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
   const effectiveInterval = focusedInterval ?? interval;
   const queryEnabled = Boolean(defaultProfile?.id) && Boolean(symbol) && Boolean(effectiveInterval);
 
-  const checklistQuery = trpc.trading.evaluateChecklist.useQuery(
+  const confluenceQuery = trpc.trading.evaluateConfluence.useQuery(
     {
       symbol,
       interval: effectiveInterval,
@@ -117,22 +117,22 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
     },
   );
 
-  const isLoading = checklistQuery.isLoading;
-  const isError = checklistQuery.isError;
+  const isLoading = confluenceQuery.isLoading;
+  const isError = confluenceQuery.isError;
 
-  const checklistConditions = useMemo<ChecklistCondition[]>(
-    () => (defaultProfile?.checklistConditions ?? []),
-    [defaultProfile?.checklistConditions],
+  const confluenceConditions = useMemo<ConfluenceCondition[]>(
+    () => (defaultProfile?.confluenceConditions ?? []),
+    [defaultProfile?.confluenceConditions],
   );
-  const clientResults = useChecklistEvaluation({
+  const clientResults = useConfluenceEvaluation({
     symbol,
     interval: effectiveInterval,
     marketType,
-    conditions: checklistConditions,
+    conditions: confluenceConditions,
   });
 
   const mergedData = useMemo(() => {
-    const backendData = checklistQuery.data;
+    const backendData = confluenceQuery.data;
     if (!backendData) return null;
     if (clientResults.size === 0) return backendData;
 
@@ -154,7 +154,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       const w =
         typeof r.weight === 'number' && Number.isFinite(r.weight) && r.weight > 0
           ? r.weight
-          : getDefaultChecklistWeight(r.timeframe ?? 'current');
+          : getDefaultConfluenceWeight(r.timeframe ?? 'current');
       if (r.countedLong) {
         if (r.tier === 'required') {
           longRequiredTotal += 1;
@@ -190,7 +190,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         }
       }
     }
-    const scoreLong = calculateChecklistScore({
+    const scoreLong = calculateConfluenceScore({
       requiredTotal: longRequiredTotal,
       requiredPassed: longRequiredPassed,
       requiredWeightTotal: longRequiredWeightTotal,
@@ -200,7 +200,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       preferredWeightTotal: longPreferredWeightTotal,
       preferredWeightPassed: longPreferredWeightPassed,
     });
-    const scoreShort = calculateChecklistScore({
+    const scoreShort = calculateConfluenceScore({
       requiredTotal: shortRequiredTotal,
       requiredPassed: shortRequiredPassed,
       requiredWeightTotal: shortRequiredWeightTotal,
@@ -211,7 +211,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       preferredWeightPassed: shortPreferredWeightPassed,
     });
     return { ...backendData, results: mergedResults, scoreLong, scoreShort };
-  }, [checklistQuery.data, clientResults]);
+  }, [confluenceQuery.data, clientResults]);
 
   const longScore = mergedData?.scoreLong;
   const shortScore = mergedData?.scoreShort;
@@ -231,14 +231,14 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
 
   if (isLoadingProfiles || !defaultProfile) return null;
 
-  const checklistCount = defaultProfile.checklistConditions?.length ?? 0;
-  if (checklistCount === 0) return null;
+  const confluenceCount = defaultProfile.confluenceConditions?.length ?? 0;
+  if (confluenceCount === 0) return null;
 
   if (isError) {
     return (
       <HStack gap={1} px={1} py={0.5} fontSize="2xs" color="red.fg">
         <LuTriangle size={10} />
-        <Text>{t('checklist.section.error')}</Text>
+        <Text>{t('confluence.section.error')}</Text>
       </HStack>
     );
   }
@@ -249,14 +249,14 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         ? <LuCheck color="var(--chakra-colors-green-500)" size={10} />
         : <LuX color="var(--chakra-colors-red-500)" size={10} />
       : <LuTriangle color="var(--chakra-colors-orange-500)" size={10} />;
-    const opLabel = t(`checklist.ops.${r.op}`, { defaultValue: r.op });
+    const opLabel = t(`confluence.ops.${r.op}`, { defaultValue: r.op });
     const tfLabel = r.timeframe
-      ? t(`checklist.timeframes.${r.timeframe}`, { defaultValue: r.timeframe })
+      ? t(`confluence.timeframes.${r.timeframe}`, { defaultValue: r.timeframe })
       : null;
     const isExcluded =
       r.countedLong === false && r.countedShort === false;
     const dedupTooltip = isExcluded
-      ? t('checklist.section.dedupExcluded')
+      ? t('confluence.section.dedupExcluded')
       : undefined;
     return (
       <Flex
@@ -277,7 +277,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
           </Badge>
         )}
         <Badge size="xs" variant="outline" colorPalette={r.tier === 'required' ? 'orange' : 'blue'}>
-          {t(`checklist.tier.${r.tier}Short`, {
+          {t(`confluence.tier.${r.tier}Short`, {
             defaultValue: r.tier === 'required' ? 'req' : 'pref',
           })}
         </Badge>
@@ -317,7 +317,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
 
   const hasAnyResults = groups.long.length + groups.short.length + groups.both.length > 0;
 
-  const scoreBadges = isLoading && !checklistQuery.data ? (
+  const scoreBadges = isLoading && !confluenceQuery.data ? (
     <Text fontSize="2xs" color="fg.muted">
       …
     </Text>
@@ -336,7 +336,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         <IconButton
           size="2xs"
           variant="ghost"
-          aria-label={t('checklist.section.options')}
+          aria-label={t('confluence.section.options')}
           h="14px"
           minW="14px"
         >
@@ -347,10 +347,10 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
         <Menu.Positioner>
           <Menu.Content minW="180px">
             <Menu.Item value="toggle-chart" onClick={() => setShowScoreChart(!showScoreChart)}>
-              {showScoreChart ? t('checklist.section.hideChart') : t('checklist.section.showChart')}
+              {showScoreChart ? t('confluence.section.hideChart') : t('confluence.section.showChart')}
             </Menu.Item>
             <Menu.Item value="edit-profile" onClick={openProfileEditor}>
-              {t('checklist.section.editProfile')}
+              {t('confluence.section.editProfile')}
             </Menu.Item>
           </Menu.Content>
         </Menu.Positioner>
@@ -367,7 +367,7 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
             {scoreBadges}
             {optionsMenu}
           </Flex>
-          <ChecklistScoreChart
+          <ConfluenceScoreChart
             resetKey={`${defaultProfile?.id ?? 'no-profile'}:${symbol}:${effectiveInterval}:${marketType}`}
             longScore={longScore?.score}
             shortScore={shortScore?.score}
@@ -388,13 +388,13 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
       <Stack gap={1.5} px={1} pb={1}>
         {!hasAnyResults ? (
           <Text fontSize="2xs" color="fg.muted" px={1}>
-            {t('checklist.section.empty')}
+            {t('confluence.section.empty')}
           </Text>
         ) : (
           <>
-            {renderGroup(groups.long, 'checklist.section.long', 'Long')}
-            {renderGroup(groups.short, 'checklist.section.short', 'Short')}
-            {renderGroup(groups.both, 'checklist.section.both', 'Both')}
+            {renderGroup(groups.long, 'confluence.section.long', 'Long')}
+            {renderGroup(groups.short, 'confluence.section.short', 'Short')}
+            {renderGroup(groups.both, 'confluence.section.both', 'Both')}
           </>
         )}
       </Stack>
@@ -402,4 +402,4 @@ export const ChecklistSection = memo(({ symbol, interval, marketType }: Checklis
   );
 });
 
-ChecklistSection.displayName = 'ChecklistSection';
+ConfluenceSection.displayName = 'ConfluenceSection';

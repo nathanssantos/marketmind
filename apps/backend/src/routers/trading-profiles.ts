@@ -8,13 +8,13 @@ import type { NewTradingProfileRow } from '../db/schema';
 import { generateEntityId } from '../utils/id';
 import {
   transformTradingProfile,
-  stringifyChecklistConditions,
+  stringifyConfluenceConditions,
   stringifyEnabledSetupTypes,
 } from '../utils/profile-transformers';
 import { applyProfileFieldsToUpdate } from '../utils/config-field-registry';
-import { materializeDefaultChecklist, reconcileUserProfilesChecklist } from '../services/user-indicators';
+import { materializeDefaultConfluence, reconcileUserProfilesConfluence } from '../services/user-indicators';
 import { tradingProfileQueries } from '../services/database/tradingProfileQueries';
-import { checklistConditionSchema } from '@marketmind/trading-core';
+import { confluenceConditionSchema } from '@marketmind/trading-core';
 import { FIB_LEVELS } from '@marketmind/types';
 import { DEFAULT_ENABLED_SETUPS } from '../constants';
 
@@ -113,7 +113,7 @@ export const tradingProfilesRouter = router({
     // and Stoch 14 added in v1.22.8) into every existing profile.
     // Idempotent — only entries the profile doesn't already have are
     // appended; user-customized rows are untouched.
-    await reconcileUserProfilesChecklist(ctx.user.id);
+    await reconcileUserProfilesConfluence(ctx.user.id);
     const profiles = await tradingProfileQueries.listByUser(ctx.user.id);
     return profiles.map(transformTradingProfile);
   }),
@@ -125,8 +125,8 @@ export const tradingProfilesRouter = router({
       return transformTradingProfile(profile);
     }),
 
-  getDefaultChecklistTemplate: protectedProcedure.query(async ({ ctx }) => {
-    return materializeDefaultChecklist(ctx.user.id);
+  getDefaultConfluenceTemplate: protectedProcedure.query(async ({ ctx }) => {
+    return materializeDefaultConfluence(ctx.user.id);
   }),
 
   create: protectedProcedure.input(createProfileSchema).mutation(async ({ ctx, input }) => {
@@ -139,7 +139,7 @@ export const tradingProfilesRouter = router({
         .where(and(eq(tradingProfiles.userId, ctx.user.id), eq(tradingProfiles.isDefault, true)));
     }
 
-    const defaultChecklist = await materializeDefaultChecklist(ctx.user.id);
+    const defaultConfluence = await materializeDefaultConfluence(ctx.user.id);
     const existingCount = (await tradingProfileQueries.listByUser(ctx.user.id)).length;
     const profileName = input.name?.trim() ?? `Profile ${existingCount + 1}`;
     const profileSetups = input.enabledSetupTypes && input.enabledSetupTypes.length > 0
@@ -155,7 +155,7 @@ export const tradingProfilesRouter = router({
       maxPositionSize: input.maxPositionSize?.toString() ?? null,
       maxConcurrentPositions: input.maxConcurrentPositions ?? null,
       isDefault: input.isDefault ?? false,
-      checklistConditions: stringifyChecklistConditions(defaultChecklist),
+      confluenceConditions: stringifyConfluenceConditions(defaultConfluence),
     };
 
     const configFieldKeys = Object.keys(profileConfigFields) as (keyof typeof profileConfigFields)[];
@@ -191,15 +191,15 @@ export const tradingProfilesRouter = router({
     return transformTradingProfile(profile);
   }),
 
-  updateChecklist: protectedProcedure
-    .input(z.object({ id: z.string(), checklistConditions: z.array(checklistConditionSchema) }))
+  updateConfluence: protectedProcedure
+    .input(z.object({ id: z.string(), confluenceConditions: z.array(confluenceConditionSchema) }))
     .mutation(async ({ ctx, input }) => {
       await tradingProfileQueries.getByIdAndUser(input.id, ctx.user.id);
 
       await db
         .update(tradingProfiles)
         .set({
-          checklistConditions: stringifyChecklistConditions(input.checklistConditions),
+          confluenceConditions: stringifyConfluenceConditions(input.confluenceConditions),
           updatedAt: new Date(),
         })
         .where(eq(tradingProfiles.id, input.id));
@@ -238,7 +238,7 @@ export const tradingProfilesRouter = router({
     .input(importFromBacktestSchema)
     .mutation(async ({ ctx, input }) => {
       const id = generateEntityId();
-      const defaultChecklist = await materializeDefaultChecklist(ctx.user.id);
+      const defaultConfluence = await materializeDefaultConfluence(ctx.user.id);
 
       const values: NewTradingProfileRow = {
         id,
@@ -247,7 +247,7 @@ export const tradingProfilesRouter = router({
         description: input.description ?? null,
         enabledSetupTypes: stringifyEnabledSetupTypes(input.enabledSetupTypes),
         isDefault: false,
-        checklistConditions: stringifyChecklistConditions(defaultChecklist),
+        confluenceConditions: stringifyConfluenceConditions(defaultConfluence),
       };
 
       const configFieldKeys = Object.keys(profileConfigFields) as (keyof typeof profileConfigFields)[];

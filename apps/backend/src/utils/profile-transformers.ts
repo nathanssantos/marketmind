@@ -1,6 +1,6 @@
 import type { FibLevel } from '@marketmind/types';
-import { getDefaultChecklistWeight } from '@marketmind/types';
-import type { ChecklistCondition, IndicatorParamValue } from '@marketmind/trading-core';
+import { getDefaultConfluenceWeight } from '@marketmind/types';
+import type { ConfluenceCondition, IndicatorParamValue } from '@marketmind/trading-core';
 import type { tradingProfiles, autoTradingConfig } from '../db/schema';
 
 type TradingProfileRow = typeof tradingProfiles.$inferSelect;
@@ -20,10 +20,10 @@ export interface TransformedTradingProfile extends Omit<TradingProfileRow,
   | 'trailingStopMode' | 'trailingDistanceMode'
   | 'trailingActivationModeLong' | 'trailingActivationModeShort'
   | 'tradingMode' | 'directionMode'
-  | 'checklistConditions'
+  | 'confluenceConditions'
 > {
   enabledSetupTypes: string[];
-  checklistConditions: ChecklistCondition[];
+  confluenceConditions: ConfluenceCondition[];
   maxPositionSize: number | null;
   positionSizePercent: number | null;
   maxFibonacciEntryProgressPercentLong: number | null;
@@ -66,24 +66,24 @@ export const stringifyEnabledSetupTypes = (types: string[]): string => {
   return JSON.stringify(types);
 };
 
-export const parseChecklistConditions = (json: string | null | undefined): ChecklistCondition[] => {
+export const parseConfluenceConditions = (json: string | null | undefined): ConfluenceCondition[] => {
   if (!json) return [];
   try {
     const parsed = JSON.parse(json) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return (parsed as ChecklistCondition[]).map((c) => ({
+    return (parsed as ConfluenceCondition[]).map((c) => ({
       ...c,
       weight:
         typeof c.weight === 'number' && Number.isFinite(c.weight) && c.weight > 0
           ? c.weight
-          : getDefaultChecklistWeight(c.timeframe),
+          : getDefaultConfluenceWeight(c.timeframe),
     }));
   } catch {
     return [];
   }
 };
 
-export const stringifyChecklistConditions = (conditions: ChecklistCondition[]): string => {
+export const stringifyConfluenceConditions = (conditions: ConfluenceCondition[]): string => {
   return JSON.stringify(conditions);
 };
 
@@ -115,7 +115,7 @@ const parseNumericField = (value: string | null | undefined): number | null => {
 export const transformTradingProfile = (profile: TradingProfileRow): TransformedTradingProfile => ({
   ...profile,
   enabledSetupTypes: parseEnabledSetupTypes(profile.enabledSetupTypes),
-  checklistConditions: parseChecklistConditions(profile.checklistConditions),
+  confluenceConditions: parseConfluenceConditions(profile.confluenceConditions),
   maxPositionSize: parseNumericField(profile.maxPositionSize),
   positionSizePercent: parseNumericField(profile.positionSizePercent),
   maxFibonacciEntryProgressPercentLong: parseNumericField(profile.maxFibonacciEntryProgressPercentLong),

@@ -129,7 +129,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         },
         {
           "id": "seed-1m-5m-15min-p2",
-          "kind": "checklist",
+          "kind": "confluence",
           "gridPosition": {
             "x": 159,
             "y": 44,
@@ -236,7 +236,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         },
         {
           "id": "seed-5m-15m-1h-p2",
-          "kind": "checklist",
+          "kind": "confluence",
           "gridPosition": {
             "x": 159,
             "y": 44,
@@ -343,7 +343,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         },
         {
           "id": "seed-15m-1h-4h-p2",
-          "kind": "checklist",
+          "kind": "confluence",
           "gridPosition": {
             "x": 159,
             "y": 44,
@@ -444,7 +444,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         },
         {
           "id": "seed-1h-4h-1d-p2",
-          "kind": "checklist",
+          "kind": "confluence",
           "gridPosition": {
             "x": 159,
             "y": 44,
@@ -545,7 +545,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         },
         {
           "id": "seed-4h-1d-1w-p2",
-          "kind": "checklist",
+          "kind": "confluence",
           "gridPosition": {
             "x": 159,
             "y": 44,
@@ -652,7 +652,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
         },
         {
           "id": "seed-1d-1w-1m-p2",
-          "kind": "checklist",
+          "kind": "confluence",
           "gridPosition": {
             "x": 159,
             "y": 44,

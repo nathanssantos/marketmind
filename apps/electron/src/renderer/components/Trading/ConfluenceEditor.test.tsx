@@ -1,7 +1,7 @@
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ChecklistEditor } from './ChecklistEditor';
+import { ConfluenceEditor } from './ConfluenceEditor';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -9,14 +9,14 @@ vi.mock('react-i18next', () => ({
   }),
 }));
 
-describe('ChecklistEditor', () => {
+describe('ConfluenceEditor', () => {
   it('renders the empty-state when conditions is empty', () => {
     render(
       <ChakraProvider value={defaultSystem}>
-        <ChecklistEditor conditions={[]} availableIndicators={[]} onChange={vi.fn()} />
+        <ConfluenceEditor conditions={[]} availableIndicators={[]} onChange={vi.fn()} />
       </ChakraProvider>,
     );
-    expect(screen.getByText('checklist.editor.emptyTitle')).toBeDefined();
-    expect(screen.getByText('checklist.editor.emptyDescription')).toBeDefined();
+    expect(screen.getByText('confluence.editor.emptyTitle')).toBeDefined();
+    expect(screen.getByText('confluence.editor.emptyDescription')).toBeDefined();
   });
 });

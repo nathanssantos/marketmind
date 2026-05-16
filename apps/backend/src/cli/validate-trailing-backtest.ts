@@ -351,7 +351,7 @@ Example:
     logger.info('');
   }
 
-  logger.info('========== VALIDATION CHECKLIST ==========');
+  logger.info('========== VALIDATION CONFLUENCE ==========');
   logger.info(`[${mainKlines.length >= 20 ? 'OK' : 'FAIL'}] Main klines loaded: ${mainKlines.length}`);
   logger.info(`[${granularKlines.length >= 100 ? 'OK' : 'FAIL'}] Granular klines loaded: ${granularKlines.length}`);
   logger.info(`[${granularIndex.size > 0 ? 'OK' : 'FAIL'}] Granular index created: ${granularIndex.size} entries`);
