@@ -13,6 +13,14 @@ export interface SetupDetectionConfig {
   maxFibonacciEntryProgressPercentShort?: number;
   fibonacciSwingRange?: 'extended' | 'nearest';
   initialStopMode?: 'fibo_target' | 'nearest_swing';
+  /**
+   * Strategy-input overrides forwarded to PineTS at run time. Keys must
+   * match the `input.int/float/bool/string` variable names declared inside
+   * the Pine strategy source (e.g. `{ rsiOversold: 10, rsiOverbought: 90 }`).
+   * Used by the backtest engine to forward `BacktestConfig.strategyParams`
+   * and by the optimizer for parameter sweeps.
+   */
+  strategyParams?: Record<string, number | string | boolean>;
   silent?: boolean;
 }
 
@@ -45,6 +53,7 @@ export class SetupDetectionService {
       maxFibonacciEntryProgressPercentShort: config?.maxFibonacciEntryProgressPercentShort,
       fibonacciSwingRange: config?.fibonacciSwingRange,
       initialStopMode: config?.initialStopMode,
+      strategyParams: config?.strategyParams,
       silent: config?.silent,
     };
   }
@@ -150,6 +159,9 @@ export class SetupDetectionService {
     const pineOptions: PineRunOptions = {
       minConfidence: this.config.minConfidence ?? DEFAULT_MIN_CONFIDENCE,
       minRiskReward: this.config.minRiskReward ?? DEFAULT_MIN_RISK_REWARD,
+      ...(this.config.strategyParams && Object.keys(this.config.strategyParams).length > 0
+        ? { parameterOverrides: this.config.strategyParams }
+        : {}),
     };
 
     for (const [strategyId, pineStrategy] of this.pineStrategies) {
