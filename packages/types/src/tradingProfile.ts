@@ -62,7 +62,7 @@ export interface ProfileConfigOverrides {
   useObvCheckShort?: boolean | null;
 }
 
-export type ChecklistConditionOp =
+export type ConfluenceConditionOp =
   | 'gt'
   | 'lt'
   | 'between'
@@ -76,11 +76,11 @@ export type ChecklistConditionOp =
   | 'priceAbove'
   | 'priceBelow';
 
-export interface ChecklistConditionDto {
+export interface ConfluenceConditionDto {
   id: string;
   userIndicatorId: string;
   timeframe: string;
-  op: ChecklistConditionOp;
+  op: ConfluenceConditionOp;
   threshold?: number | [number, number];
   tier: 'required' | 'preferred';
   side: PositionSide | 'BOTH';
@@ -89,7 +89,7 @@ export interface ChecklistConditionDto {
   order: number;
 }
 
-export const CHECKLIST_TIMEFRAME_WEIGHTS: Record<string, number> = {
+export const CONFLUENCE_TIMEFRAME_WEIGHTS: Record<string, number> = {
   current: 1,
   '1m': 0.5,
   '5m': 0.75,
@@ -106,12 +106,12 @@ export const CHECKLIST_TIMEFRAME_WEIGHTS: Record<string, number> = {
   '1w': 4,
 };
 
-export const CHECKLIST_WEIGHT_MIN = 0.1;
-export const CHECKLIST_WEIGHT_MAX = 5;
-export const CHECKLIST_WEIGHT_STEP = 0.25;
+export const CONFLUENCE_WEIGHT_MIN = 0.1;
+export const CONFLUENCE_WEIGHT_MAX = 5;
+export const CONFLUENCE_WEIGHT_STEP = 0.25;
 
-export const getDefaultChecklistWeight = (timeframe: string): number =>
-  CHECKLIST_TIMEFRAME_WEIGHTS[timeframe] ?? 1;
+export const getDefaultConfluenceWeight = (timeframe: string): number =>
+  CONFLUENCE_TIMEFRAME_WEIGHTS[timeframe] ?? 1;
 
 export interface TradingProfile extends ProfileConfigOverrides {
   id: string;
@@ -119,7 +119,7 @@ export interface TradingProfile extends ProfileConfigOverrides {
   name: string;
   description?: string | null;
   enabledSetupTypes: string[];
-  checklistConditions: ChecklistConditionDto[];
+  confluenceConditions: ConfluenceConditionDto[];
   maxPositionSize?: number | null;
   maxConcurrentPositions?: number | null;
   isDefault: boolean;

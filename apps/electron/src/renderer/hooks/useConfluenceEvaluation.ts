@@ -1,5 +1,5 @@
 import type { Kline, MarketType } from '@marketmind/types';
-import type { ChecklistCondition } from '@marketmind/trading-core';
+import type { ConfluenceCondition } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG, evaluateCondition } from '@marketmind/trading-core';
 import {
   buildChartLiveDataKey,
@@ -8,7 +8,7 @@ import {
 } from '@renderer/store/chartLiveDataStore';
 import { useEffect, useRef, useState } from 'react';
 
-export interface ClientChecklistResult {
+export interface ClientConfluenceResult {
   conditionId: string;
   evaluated: boolean;
   passed: boolean;
@@ -16,11 +16,11 @@ export interface ClientChecklistResult {
   catalogType: string;
 }
 
-interface UseChecklistEvaluationProps {
+interface UseConfluenceEvaluationProps {
   symbol: string;
   interval: string;
   marketType: MarketType;
-  conditions: ChecklistCondition[];
+  conditions: ConfluenceCondition[];
 }
 
 const closeSeriesFromKlines = (klines: Kline[]): (number | null)[] =>
@@ -33,7 +33,7 @@ const resolveTimeframe = (conditionTf: string, currentInterval: string): string 
   conditionTf === 'current' ? currentInterval : conditionTf;
 
 // Oscillators are gated on candle close — the last element of the live series/klines
-// array is the currently-forming bar, so we drop it to prevent the checklist from
+// array is the currently-forming bar, so we drop it to prevent the confluence from
 // flipping mid-bar. Trend/price indicators (EMA, price vs level) keep the live last
 // element so they update in real time against the current price.
 const CLOSE_ONLY_CATALOG_TYPES = new Set(['rsi', 'stoch', 'stochRsi', 'macd']);
@@ -42,10 +42,10 @@ const dropOpenBar = <T>(series: T[]): T[] =>
   series.length > 1 ? series.slice(0, -1) : series;
 
 const evaluateOne = (
-  cond: ChecklistCondition,
+  cond: ConfluenceCondition,
   entry: ChartLiveDataEntry,
   closeSeries: (number | null)[],
-): ClientChecklistResult | null => {
+): ClientConfluenceResult | null => {
   const indicator = entry.indicators.get(cond.userIndicatorId);
   if (!indicator) return null;
 
@@ -84,12 +84,12 @@ const evaluateOne = (
 
 const computeResults = (
   entries: Map<string, ChartLiveDataEntry>,
-  conditions: ChecklistCondition[],
+  conditions: ConfluenceCondition[],
   symbol: string,
   interval: string,
   marketType: MarketType,
-): Map<string, ClientChecklistResult> => {
-  const out = new Map<string, ClientChecklistResult>();
+): Map<string, ClientConfluenceResult> => {
+  const out = new Map<string, ClientConfluenceResult>();
   const closeSeriesCache = new Map<string, (number | null)[]>();
   for (const cond of conditions) {
     if (!cond.enabled) continue;
@@ -108,8 +108,8 @@ const computeResults = (
 };
 
 const resultsEqual = (
-  a: Map<string, ClientChecklistResult>,
-  b: Map<string, ClientChecklistResult>,
+  a: Map<string, ClientConfluenceResult>,
+  b: Map<string, ClientConfluenceResult>,
 ): boolean => {
   if (a.size !== b.size) return false;
   for (const [k, va] of a) {
@@ -120,17 +120,17 @@ const resultsEqual = (
   return true;
 };
 
-const EMPTY: Map<string, ClientChecklistResult> = new Map();
+const EMPTY: Map<string, ClientConfluenceResult> = new Map();
 const THROTTLE_MS = 250;
 
-export const useChecklistEvaluation = ({
+export const useConfluenceEvaluation = ({
   symbol,
   interval,
   marketType,
   conditions,
-}: UseChecklistEvaluationProps): Map<string, ClientChecklistResult> => {
-  const [results, setResults] = useState<Map<string, ClientChecklistResult>>(EMPTY);
-  const latestResultsRef = useRef<Map<string, ClientChecklistResult>>(EMPTY);
+}: UseConfluenceEvaluationProps): Map<string, ClientConfluenceResult> => {
+  const [results, setResults] = useState<Map<string, ClientConfluenceResult>>(EMPTY);
+  const latestResultsRef = useRef<Map<string, ClientConfluenceResult>>(EMPTY);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;

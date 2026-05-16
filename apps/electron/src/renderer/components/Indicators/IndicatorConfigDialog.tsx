@@ -1,7 +1,7 @@
 import type { DialogControlProps, PositionSide } from '@marketmind/types';
 import { VStack } from '@chakra-ui/react';
 import type {
-  ChecklistCondition,
+  ConfluenceCondition,
   ConditionOp,
   IndicatorCategory,
   IndicatorDefinition,
@@ -13,18 +13,18 @@ import {
   INDICATOR_CATALOG,
   getDefaultParamsForType,
 } from '@marketmind/trading-core';
-import { getDefaultChecklistWeight } from '@marketmind/types';
+import { getDefaultConfluenceWeight } from '@marketmind/types';
 import type { SelectOption } from '@renderer/components/ui';
 import { Field, FormDialog, Input } from '@renderer/components/ui';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChecklistFields } from './fields/ChecklistFields';
-import type { ChecklistFieldsValue } from './fields/ChecklistFields';
+import { ConfluenceFields } from './fields/ConfluenceFields';
+import type { ConfluenceFieldsValue } from './fields/ConfluenceFields';
 import { ParamFields } from './fields/ParamFields';
 import { SelectField } from './fields/SelectField';
 import { ThresholdsFields } from './fields/ThresholdsFields';
 
-export type IndicatorConfigMode = 'create' | 'edit' | 'checklist-condition';
+export type IndicatorConfigMode = 'create' | 'edit' | 'confluence-condition';
 
 type ParamRecord = Record<string, IndicatorParamValue>;
 
@@ -42,8 +42,8 @@ export interface IndicatorConfigEditResult {
   params: ParamRecord;
 }
 
-export interface IndicatorConfigChecklistResult {
-  mode: 'checklist-condition';
+export interface IndicatorConfigConfluenceResult {
+  mode: 'confluence-condition';
   userIndicatorId: string;
   timeframe: string;
   op: ConditionOp;
@@ -56,7 +56,7 @@ export interface IndicatorConfigChecklistResult {
 export type IndicatorConfigResult =
   | IndicatorConfigCreateResult
   | IndicatorConfigEditResult
-  | IndicatorConfigChecklistResult;
+  | IndicatorConfigConfluenceResult;
 
 const EMPTY_INDICATORS: UserIndicator[] = [];
 
@@ -64,7 +64,7 @@ export interface IndicatorConfigDialogProps extends DialogControlProps {
   mode: IndicatorConfigMode;
   instance?: UserIndicator;
   availableIndicators?: UserIndicator[];
-  initialCondition?: Partial<ChecklistCondition>;
+  initialCondition?: Partial<ConfluenceCondition>;
   categoryFilter?: IndicatorCategory;
   isLoading?: boolean;
   onSubmit: (result: IndicatorConfigResult) => void;
@@ -120,7 +120,7 @@ export const IndicatorConfigDialog = ({
   const [userIndicatorId, setUserIndicatorId] = useState<string>(
     initialCondition?.userIndicatorId ?? availableIndicators[0]?.id ?? '',
   );
-  const [condition, setCondition] = useState<ChecklistFieldsValue>({
+  const [condition, setCondition] = useState<ConfluenceFieldsValue>({
     timeframe: initialCondition?.timeframe ?? 'current',
     op: initialCondition?.op ?? 'gt',
     threshold: initialCondition?.threshold,
@@ -129,7 +129,7 @@ export const IndicatorConfigDialog = ({
     weight:
       typeof initialCondition?.weight === 'number' && initialCondition.weight > 0
         ? initialCondition.weight
-        : getDefaultChecklistWeight(initialCondition?.timeframe ?? 'current'),
+        : getDefaultConfluenceWeight(initialCondition?.timeframe ?? 'current'),
   });
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export const IndicatorConfigDialog = ({
       return;
     }
 
-    if (mode === 'checklist-condition') {
+    if (mode === 'confluence-condition') {
       setUserIndicatorId(initialCondition?.userIndicatorId ?? availableIndicators[0]?.id ?? '');
       const initialTimeframe = initialCondition?.timeframe ?? 'current';
       setCondition({
@@ -166,13 +166,13 @@ export const IndicatorConfigDialog = ({
         weight:
           typeof initialCondition?.weight === 'number' && initialCondition.weight > 0
             ? initialCondition.weight
-            : getDefaultChecklistWeight(initialTimeframe),
+            : getDefaultConfluenceWeight(initialTimeframe),
       });
     }
   }, [isOpen, mode, instance, initialCondition, availableIndicators, catalogEntries]);
 
   const selectedDefinition: IndicatorDefinition | undefined = useMemo(() => {
-    if (mode === 'checklist-condition') {
+    if (mode === 'confluence-condition') {
       const pickedIndicator = availableIndicators.find((i) => i.id === userIndicatorId);
       return pickedIndicator ? INDICATOR_CATALOG[pickedIndicator.catalogType] : undefined;
     }
@@ -210,7 +210,7 @@ export const IndicatorConfigDialog = ({
 
   const submitDisabled = useMemo(() => {
     if (mode === 'create' || mode === 'edit') return label.trim().length === 0;
-    if (mode === 'checklist-condition') return !userIndicatorId;
+    if (mode === 'confluence-condition') return !userIndicatorId;
     return false;
   }, [mode, label, userIndicatorId]);
 
@@ -223,9 +223,9 @@ export const IndicatorConfigDialog = ({
       onSubmit({ mode: 'edit', id: instance.id, label: label.trim(), params });
       return;
     }
-    if (mode === 'checklist-condition') {
+    if (mode === 'confluence-condition') {
       onSubmit({
-        mode: 'checklist-condition',
+        mode: 'confluence-condition',
         userIndicatorId,
         timeframe: condition.timeframe,
         op: condition.op,
@@ -262,7 +262,7 @@ export const IndicatorConfigDialog = ({
           />
         )}
 
-        {mode === 'checklist-condition' && (
+        {mode === 'confluence-condition' && (
           <SelectField
             label={t('indicators.dialog.indicator')}
             value={userIndicatorId}
@@ -297,8 +297,8 @@ export const IndicatorConfigDialog = ({
           </>
         )}
 
-        {mode === 'checklist-condition' && selectedDefinition && (
-          <ChecklistFields
+        {mode === 'confluence-condition' && selectedDefinition && (
+          <ConfluenceFields
             value={condition}
             availableOps={selectedDefinition.conditionOps}
             onChange={setCondition}

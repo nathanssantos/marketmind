@@ -40,7 +40,7 @@ const buildBoletaOverrides = (positions: unknown[] = []): Record<string, () => u
   'trading.getTradeExecutions': () => positions,
   'trading.getTickerPrices': () => ({ BTCUSDT: '50000' }),
   'trading.getSymbolTrailingConfig': () => null,
-  'trading.evaluateChecklist': () => null,
+  'trading.evaluateConfluence': () => null,
   'tradingProfiles.list': () => [],
   'autoTrading.getConfig': () => null,
   'autoTrading.getActiveExecutions': () => [],

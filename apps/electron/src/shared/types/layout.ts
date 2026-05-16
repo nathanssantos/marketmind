@@ -14,7 +14,7 @@ export interface GridPosition {
 /**
  * v1.10 Track 1 — every grid panel is now a discriminated union by `kind`.
  * Charts (the only multi-instance kind) live alongside named single-instance
- * panels (Ticket, Checklist, Orders, Portfolio, Positions, Exposure,
+ * panels (Ticket, Confluence, Orders, Portfolio, Positions, Exposure,
  * Watchers, Indicators, etc.) — the migration from sidebars to grid panels.
  *
  * For backwards compat, persisted layouts saved before v1.10 lack the `kind`
@@ -24,7 +24,7 @@ export type PanelKind =
   | 'chart'
   // Trading group
   | 'ticket'
-  | 'checklist'
+  | 'confluence'
   | 'orders'
   | 'portfolio'
   | 'positions'

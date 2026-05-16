@@ -135,7 +135,7 @@ describe('IndicatorConfigDialog', () => {
     });
   });
 
-  describe('checklist-condition mode', () => {
+  describe('confluence-condition mode', () => {
     const indicators: UserIndicator[] = [
       {
         id: 'rsi-1',
@@ -152,7 +152,7 @@ describe('IndicatorConfigDialog', () => {
       renderWithChakra(
         <IndicatorConfigDialog
           isOpen
-          mode="checklist-condition"
+          mode="confluence-condition"
           availableIndicators={indicators}
           onClose={vi.fn()}
           onSubmit={onSubmit}
@@ -163,7 +163,7 @@ describe('IndicatorConfigDialog', () => {
 
       expect(onSubmit).toHaveBeenCalledWith(
         expect.objectContaining({
-          mode: 'checklist-condition',
+          mode: 'confluence-condition',
           userIndicatorId: 'rsi-1',
           timeframe: 'current',
           tier: 'required',
@@ -176,7 +176,7 @@ describe('IndicatorConfigDialog', () => {
       renderWithChakra(
         <IndicatorConfigDialog
           isOpen
-          mode="checklist-condition"
+          mode="confluence-condition"
           availableIndicators={[]}
           onClose={vi.fn()}
           onSubmit={vi.fn()}

@@ -3,8 +3,8 @@ import { eq } from 'drizzle-orm';
 import { db } from '../../src/db';
 import { tradingProfiles, userIndicators, users } from '../../src/db/schema';
 import {
-  parseChecklistConditions,
-  stringifyChecklistConditions,
+  parseConfluenceConditions,
+  stringifyConfluenceConditions,
 } from '../../src/utils/profile-transformers';
 
 const main = async (): Promise<void> => {
@@ -25,7 +25,7 @@ const main = async (): Promise<void> => {
         id: tradingProfiles.id,
         name: tradingProfiles.name,
         isDefault: tradingProfiles.isDefault,
-        checklistConditions: tradingProfiles.checklistConditions,
+        confluenceConditions: tradingProfiles.confluenceConditions,
       })
       .from(tradingProfiles)
       .where(eq(tradingProfiles.userId, user.id));
@@ -33,7 +33,7 @@ const main = async (): Promise<void> => {
     const defaultProfile = profiles.find((p) => p.isDefault) ?? profiles[0];
     if (!defaultProfile) continue;
 
-    const existing = parseChecklistConditions(defaultProfile.checklistConditions ?? '[]');
+    const existing = parseConfluenceConditions(defaultProfile.confluenceConditions ?? '[]');
     let toggled = 0;
     const updated = existing.map((c) => {
       if (c.userIndicatorId === stochId && !c.enabled) {
@@ -51,7 +51,7 @@ const main = async (): Promise<void> => {
     await db
       .update(tradingProfiles)
       .set({
-        checklistConditions: stringifyChecklistConditions(updated),
+        confluenceConditions: stringifyConfluenceConditions(updated),
         updatedAt: new Date(),
       })
       .where(eq(tradingProfiles.id, defaultProfile.id));

@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import type {
-  ChecklistConditionDto,
+  ConfluenceConditionDto,
   CreateTradingProfileInput,
   UpdateTradingProfileInput,
 } from '@marketmind/types';
@@ -23,7 +23,7 @@ export const useTradingProfiles = () => {
     },
   });
 
-  const updateChecklistMutation = trpc.tradingProfiles.updateChecklist.useMutation({
+  const updateConfluenceMutation = trpc.tradingProfiles.updateConfluence.useMutation({
     onSuccess: () => {
       void utils.tradingProfiles.list.invalidate();
     },
@@ -62,11 +62,11 @@ export const useTradingProfiles = () => {
     [updateProfileMutation]
   );
 
-  const updateChecklist = useCallback(
-    async (id: string, checklistConditions: ChecklistConditionDto[]) => {
-      return updateChecklistMutation.mutateAsync({ id, checklistConditions });
+  const updateConfluence = useCallback(
+    async (id: string, confluenceConditions: ConfluenceConditionDto[]) => {
+      return updateConfluenceMutation.mutateAsync({ id, confluenceConditions });
     },
-    [updateChecklistMutation]
+    [updateConfluenceMutation]
   );
 
   const deleteProfile = useCallback(
@@ -106,7 +106,7 @@ export const useTradingProfiles = () => {
     isLoadingProfiles,
     createProfile,
     updateProfile,
-    updateChecklist,
+    updateConfluence,
     deleteProfile,
     duplicateProfile,
     assignToWatcher,
@@ -114,13 +114,13 @@ export const useTradingProfiles = () => {
     getDefaultProfile,
     isCreatingProfile: createProfileMutation.isPending,
     isUpdatingProfile: updateProfileMutation.isPending,
-    isUpdatingChecklist: updateChecklistMutation.isPending,
+    isUpdatingConfluence: updateConfluenceMutation.isPending,
     isDeletingProfile: deleteProfileMutation.isPending,
     isDuplicatingProfile: duplicateProfileMutation.isPending,
     isAssigningToWatcher: assignToWatcherMutation.isPending,
     createProfileError: createProfileMutation.error,
     updateProfileError: updateProfileMutation.error,
-    updateChecklistError: updateChecklistMutation.error,
+    updateConfluenceError: updateConfluenceMutation.error,
     deleteProfileError: deleteProfileMutation.error,
     duplicateProfileError: duplicateProfileMutation.error,
     assignToWatcherError: assignToWatcherMutation.error,

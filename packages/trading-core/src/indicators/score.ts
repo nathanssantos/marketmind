@@ -1,4 +1,4 @@
-import type { ChecklistScoreBreakdown } from './types';
+import type { ConfluenceScoreBreakdown } from './types';
 
 export interface ScoreInput {
   requiredTotal: number;
@@ -14,7 +14,7 @@ export interface ScoreInput {
 const REQUIRED_TIER_MULTIPLIER = 2;
 const PREFERRED_TIER_MULTIPLIER = 1;
 
-export const calculateChecklistScore = (input: ScoreInput): ChecklistScoreBreakdown => {
+export const calculateConfluenceScore = (input: ScoreInput): ConfluenceScoreBreakdown => {
   const {
     requiredTotal,
     requiredPassed,

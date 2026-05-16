@@ -87,17 +87,17 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
         default: m.TicketPanel,
       })),
   },
-  checklist: {
-    kind: 'checklist',
+  confluence: {
+    kind: 'confluence',
     group: 'trading',
-    titleKey: 'panels.checklist.title',
+    titleKey: 'panels.confluence.title',
     icon: LuListChecks,
     cardinality: 'single',
     shellMode: 'bare',
     defaultLayout: TRADING_DEFAULT,
     load: () =>
-      import('@renderer/components/Trading/panels/ChecklistPanel').then((m) => ({
-        default: m.ChecklistPanel,
+      import('@renderer/components/Trading/panels/ConfluencePanel').then((m) => ({
+        default: m.ConfluencePanel,
       })),
   },
   orders: {

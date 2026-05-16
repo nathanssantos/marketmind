@@ -1,5 +1,5 @@
 import type {
-  ChecklistConditionDto,
+  ConfluenceConditionDto,
   CreateTradingProfileInput,
   TradingProfile,
   UpdateTradingProfileInput,
@@ -16,13 +16,13 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
   const {
     createProfile,
     updateProfile,
-    updateChecklist,
+    updateConfluence,
     isCreatingProfile,
     isUpdatingProfile,
-    isUpdatingChecklist,
+    isUpdatingConfluence,
   } = useTradingProfiles();
   const { setups: availableSetups, isLoading: isLoadingSetups } = useAvailableSetups();
-  const { data: defaultChecklistTemplate } = trpc.tradingProfiles.getDefaultChecklistTemplate.useQuery(undefined, {
+  const { data: defaultConfluenceTemplate } = trpc.tradingProfiles.getDefaultConfluenceTemplate.useQuery(undefined, {
     enabled: isOpen && profile === null,
     staleTime: 5 * 60 * 1000,
   });
@@ -36,7 +36,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
   const [overridePositionSize, setOverridePositionSize] = useState(false);
   const [overrideConcurrentPositions, setOverrideConcurrentPositions] = useState(false);
   const [co, setCo] = useState<Record<string, unknown>>({});
-  const [checklistConditions, setChecklistConditions] = useState<ChecklistConditionDto[]>([]);
+  const [confluenceConditions, setConfluenceConditions] = useState<ConfluenceConditionDto[]>([]);
 
   const isEditing = profile !== null;
 
@@ -51,7 +51,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
       setOverridePositionSize(profile.maxPositionSize !== null && profile.maxPositionSize !== undefined);
       setOverrideConcurrentPositions(profile.maxConcurrentPositions !== null && profile.maxConcurrentPositions !== undefined);
       setCo(extractConfigOverrides(profile));
-      setChecklistConditions(profile.checklistConditions ?? []);
+      setConfluenceConditions(profile.confluenceConditions ?? []);
     } else {
       setName('');
       setDescription('');
@@ -62,9 +62,9 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
       setOverridePositionSize(false);
       setOverrideConcurrentPositions(false);
       setCo({});
-      setChecklistConditions(defaultChecklistTemplate ?? []);
+      setConfluenceConditions(defaultConfluenceTemplate ?? []);
     }
-  }, [profile, isOpen, defaultChecklistTemplate, availableSetups]);
+  }, [profile, isOpen, defaultConfluenceTemplate, availableSetups]);
 
   const isActive = useCallback((key: string) => co[key] !== undefined, [co]);
 
@@ -127,7 +127,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
         ...overridesPayload,
       };
       await updateProfile(profile.id, data);
-      await updateChecklist(profile.id, checklistConditions);
+      await updateConfluence(profile.id, confluenceConditions);
     } else {
       const data: CreateTradingProfileInput = {
         name: name.trim() || undefined,
@@ -139,18 +139,18 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
         ...overridesPayload,
       };
       const created = await createProfile(data);
-      if (checklistConditions.length > 0 && created?.id) {
-        await updateChecklist(created.id, checklistConditions);
+      if (confluenceConditions.length > 0 && created?.id) {
+        await updateConfluence(created.id, confluenceConditions);
       }
     }
 
     onClose();
   };
 
-  const isSubmitting = isCreatingProfile || isUpdatingProfile || isUpdatingChecklist;
+  const isSubmitting = isCreatingProfile || isUpdatingProfile || isUpdatingConfluence;
   const canSubmit = isEditing
     ? name.trim().length > 0 && enabledSetupTypes.length > 0 && !isSubmitting
-    : checklistConditions.length > 0 && !isSubmitting;
+    : confluenceConditions.length > 0 && !isSubmitting;
   const allSetupsEnabled = availableSetups.length > 0 && availableSetups.every((s) => enabledSetupTypes.includes(s.id));
   const enabledCount = enabledSetupTypes.length;
 
@@ -163,7 +163,7 @@ export const useProfileEditorForm = (profile: TradingProfile | null, isOpen: boo
     maxPositionSize, setMaxPositionSize,
     maxConcurrentPositions, setMaxConcurrentPositions,
     isDefault, setIsDefault,
-    checklistConditions, setChecklistConditions,
+    confluenceConditions, setConfluenceConditions,
     overridePositionSize, setOverridePositionSize,
     overrideConcurrentPositions, setOverrideConcurrentPositions,
     isEditing,

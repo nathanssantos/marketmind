@@ -1,7 +1,7 @@
 import { Box, Flex, HStack, Stack, Text } from '@chakra-ui/react';
-import type { ChecklistCondition, UserIndicator } from '@marketmind/trading-core';
+import type { ConfluenceCondition, UserIndicator } from '@marketmind/trading-core';
 import { INDICATOR_CATALOG } from '@marketmind/trading-core';
-import type { ChecklistConditionDto } from '@marketmind/types';
+import type { ConfluenceConditionDto } from '@marketmind/types';
 import {
   Badge,
   Button,
@@ -21,39 +21,39 @@ const generateConditionId = (): string =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-export interface ChecklistEditorProps {
-  conditions: ChecklistConditionDto[];
+export interface ConfluenceEditorProps {
+  conditions: ConfluenceConditionDto[];
   availableIndicators: UserIndicator[];
-  onChange: (next: ChecklistConditionDto[]) => void;
+  onChange: (next: ConfluenceConditionDto[]) => void;
   isSaving?: boolean;
 }
 
 interface EditorState {
   mode: 'create' | 'edit';
   conditionId?: string;
-  initialCondition?: Partial<ChecklistCondition>;
+  initialCondition?: Partial<ConfluenceCondition>;
 }
 
-const sortByOrder = (a: ChecklistConditionDto, b: ChecklistConditionDto): number => a.order - b.order;
+const sortByOrder = (a: ConfluenceConditionDto, b: ConfluenceConditionDto): number => a.order - b.order;
 
-const thresholdLabel = (threshold: ChecklistConditionDto['threshold']): string => {
+const thresholdLabel = (threshold: ConfluenceConditionDto['threshold']): string => {
   if (threshold === undefined) return '';
   if (Array.isArray(threshold)) return `[${threshold[0]}, ${threshold[1]}]`;
   return String(threshold);
 };
 
-const sideColor = (side: ChecklistConditionDto['side']): 'green' | 'red' | 'gray' => {
+const sideColor = (side: ConfluenceConditionDto['side']): 'green' | 'red' | 'gray' => {
   if (side === 'LONG') return 'green';
   if (side === 'SHORT') return 'red';
   return 'gray';
 };
 
-export const ChecklistEditor = ({
+export const ConfluenceEditor = ({
   conditions,
   availableIndicators,
   onChange,
   isSaving,
-}: ChecklistEditorProps) => {
+}: ConfluenceEditorProps) => {
   const { t } = useTranslation();
   const [editorState, setEditorState] = useState<EditorState | null>(null);
 
@@ -66,7 +66,7 @@ export const ChecklistEditor = ({
   }, [availableIndicators]);
 
   const commit = useCallback(
-    (next: ChecklistConditionDto[]) => {
+    (next: ConfluenceConditionDto[]) => {
       const normalized = next.map((c, idx) => ({ ...c, order: idx }));
       onChange(normalized);
     },
@@ -117,7 +117,7 @@ export const ChecklistEditor = ({
   };
 
   const handleDialogSubmit = (result: IndicatorConfigResult) => {
-    if (result.mode !== 'checklist-condition') return;
+    if (result.mode !== 'confluence-condition') return;
 
     if (editorState?.mode === 'edit' && editorState.conditionId) {
       commit(
@@ -137,7 +137,7 @@ export const ChecklistEditor = ({
         ),
       );
     } else {
-      const newCondition: ChecklistConditionDto = {
+      const newCondition: ConfluenceConditionDto = {
         id: generateConditionId(),
         userIndicatorId: result.userIndicatorId,
         timeframe: result.timeframe,
@@ -165,23 +165,23 @@ export const ChecklistEditor = ({
           disabled={availableIndicators.length === 0}
         >
           <LuPlus />
-          {t('checklist.editor.add')}
+          {t('confluence.editor.add')}
         </Button>
       </Flex>
 
       {sorted.length === 0 ? (
         <EmptyState
-          title={t('checklist.editor.emptyTitle')}
-          description={t('checklist.editor.emptyDescription')}
+          title={t('confluence.editor.emptyTitle')}
+          description={t('confluence.editor.emptyDescription')}
         />
       ) : (
         <Stack gap={2}>
           {sorted.map((cond, idx) => {
             const indicator = indicatorMap.get(cond.userIndicatorId);
             const catalogDef = indicator ? INDICATOR_CATALOG[indicator.catalogType] : undefined;
-            const label = indicator?.label ?? t('checklist.editor.missing');
-            const opLabel = t(`checklist.ops.${cond.op}`, { defaultValue: cond.op });
-            const tfLabel = t(`checklist.timeframes.${cond.timeframe}`, { defaultValue: cond.timeframe });
+            const label = indicator?.label ?? t('confluence.editor.missing');
+            const opLabel = t(`confluence.ops.${cond.op}`, { defaultValue: cond.op });
+            const tfLabel = t(`confluence.timeframes.${cond.timeframe}`, { defaultValue: cond.timeframe });
 
             return (
               <Box
@@ -200,12 +200,12 @@ export const ChecklistEditor = ({
                         {label}
                       </Text>
                       <Badge size="sm" colorPalette={cond.tier === 'required' ? 'orange' : 'blue'}>
-                        {t(`checklist.tier.${cond.tier}Short`, {
+                        {t(`confluence.tier.${cond.tier}Short`, {
                           defaultValue: cond.tier === 'required' ? 'req' : 'pref',
                         })}
                       </Badge>
                       <Badge size="sm" colorPalette={sideColor(cond.side)}>
-                        {t(`checklist.side.${cond.side.toLowerCase()}`, { defaultValue: cond.side })}
+                        {t(`confluence.side.${cond.side.toLowerCase()}`, { defaultValue: cond.side })}
                       </Badge>
                       <Badge size="sm" variant="outline">
                         {tfLabel}
@@ -218,7 +218,7 @@ export const ChecklistEditor = ({
                       {opLabel} {thresholdLabel(cond.threshold)}
                       {!catalogDef && indicator && (
                         <Text as="span" ml={2} color="red.fg">
-                          {t('checklist.editor.unknownCatalog')}
+                          {t('confluence.editor.unknownCatalog')}
                         </Text>
                       )}
                     </Text>
@@ -231,13 +231,13 @@ export const ChecklistEditor = ({
                       size="sm"
                     />
                     <TooltipWrapper
-                      label={t('checklist.editor.moveUp')}
+                      label={t('confluence.editor.moveUp')}
                       showArrow
                     >
                       <IconButton
                         size="2xs"
                         variant="ghost"
-                        aria-label={t('checklist.editor.moveUp')}
+                        aria-label={t('confluence.editor.moveUp')}
                         onClick={() => handleMove(cond.id, -1)}
                         disabled={idx === 0 || isSaving}
                       >
@@ -245,13 +245,13 @@ export const ChecklistEditor = ({
                       </IconButton>
                     </TooltipWrapper>
                     <TooltipWrapper
-                      label={t('checklist.editor.moveDown')}
+                      label={t('confluence.editor.moveDown')}
                       showArrow
                     >
                       <IconButton
                         size="2xs"
                         variant="ghost"
-                        aria-label={t('checklist.editor.moveDown')}
+                        aria-label={t('confluence.editor.moveDown')}
                         onClick={() => handleMove(cond.id, 1)}
                         disabled={idx === sorted.length - 1 || isSaving}
                       >
@@ -289,7 +289,7 @@ export const ChecklistEditor = ({
         <IndicatorConfigDialog
           isOpen
           onClose={() => setEditorState(null)}
-          mode="checklist-condition"
+          mode="confluence-condition"
           availableIndicators={availableIndicators}
           initialCondition={editorState.initialCondition}
           onSubmit={handleDialogSubmit}

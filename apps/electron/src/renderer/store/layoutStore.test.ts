@@ -50,7 +50,7 @@ describe('layoutStore — addLayout', () => {
     expect(created.grid[0]?.kind).toBe('chart');
   });
 
-  it('creates a layout from a trading variant template (3 charts + ticket / checklist / orders / portfolio / positions)', () => {
+  it('creates a layout from a trading variant template (3 charts + ticket / confluence / orders / portfolio / positions)', () => {
     const { result } = renderHook(() => useLayoutStore());
     act(() => {
       result.current.addLayout('Trading 2', 'tradingSwing');
@@ -58,7 +58,7 @@ describe('layoutStore — addLayout', () => {
     const created = result.current.layoutPresets.at(-1)!;
     expect(created.name).toBe('Trading 2');
     const kinds = created.grid.map((p) => p.kind).sort();
-    expect(kinds).toEqual(['chart', 'chart', 'chart', 'checklist', 'orders', 'portfolio', 'positions', 'ticket']);
+    expect(kinds).toEqual(['chart', 'chart', 'chart', 'confluence', 'orders', 'portfolio', 'positions', 'ticket']);
     const charts = created.grid.filter((p) => p.kind === 'chart') as ChartPanelConfig[];
     expect(charts.map((c) => c.timeframe).sort()).toEqual(['15m', '1h', '4h']);
   });

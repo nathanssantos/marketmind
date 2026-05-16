@@ -15,7 +15,7 @@ interface GridPanelBaseProps {
   /**
    * Whether this panel is the focused one. The focus highlight border was
    * dropped since one symbol per layout makes the visual hint redundant —
-   * the focusedPanelId tracking is still kept so the Checklist can follow
+   * the focusedPanelId tracking is still kept so the Confluence can follow
    * whichever chart the user clicked last.
    */
   isFocused: boolean;

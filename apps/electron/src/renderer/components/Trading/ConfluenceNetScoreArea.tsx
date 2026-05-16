@@ -14,7 +14,7 @@ import { useMemo } from 'react';
 import { lttbDownsample } from './lttbDownsample';
 
 /**
- * Net-score area chart for the checklist sidebar.
+ * Net-score area chart for the confluence sidebar.
  *
  * Replaces the two-line `L%` / `S%` chart with a single `net = long − short`
  * area that's tinted green above the zero axis (long bias) and red below
@@ -56,10 +56,10 @@ const GRID_DASH = '2 4';
 const Y_AXIS_WIDTH = 32;
 const AREA_STROKE_WIDTH = 1.5;
 
-const GRADIENT_ID_PREFIX = 'checklist-net-score-gradient';
+const GRADIENT_ID_PREFIX = 'confluence-net-score-gradient';
 
 /**
- * Visible-point cap. The history machinery in ChecklistScoreChart keeps
+ * Visible-point cap. The history machinery in ConfluenceScoreChart keeps
  * up to 1000 raw samples for fidelity (server seed + 30s heartbeats +
  * live appends); rendering all 1000 in a ~400px-wide chart turns into
  * the jagged, illegible mess the user reported on 2026-05-15. LTTB
@@ -70,7 +70,7 @@ const GRADIENT_ID_PREFIX = 'checklist-net-score-gradient';
  */
 const VISIBLE_POINT_CAP = 100;
 
-interface ChecklistNetScoreAreaProps {
+interface ConfluenceNetScoreAreaProps {
   data: Array<{ t: number; long: number | null; short: number | null }>;
   isLoading?: boolean;
   profitColor: string;
@@ -99,7 +99,7 @@ const formatNet = (value: unknown, original: { long: number | null; short: numbe
   return `${sign}${Math.round(n)}% (L ${Math.round(long)}% · S ${Math.round(short)}%)`;
 };
 
-export const ChecklistNetScoreArea = ({
+export const ConfluenceNetScoreArea = ({
   data,
   isLoading,
   profitColor,
@@ -111,7 +111,7 @@ export const ChecklistNetScoreArea = ({
   height = DEFAULT_HEIGHT,
   gradientKey,
   tooltipLabelFormatter,
-}: ChecklistNetScoreAreaProps) => {
+}: ConfluenceNetScoreAreaProps) => {
   const transformed = useMemo(() => {
     const full = data.map((p) => ({
       t: p.t,

@@ -2,7 +2,7 @@ export * from './schemas';
 export * from './types';
 export * from './catalog';
 export * from './defaults';
-export * from './checklistDefaults';
+export * from './confluenceDefaults';
 export * from './evaluator';
 export * from './score';
 export * from './paramValidation';

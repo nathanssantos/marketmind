@@ -1,12 +1,12 @@
 import type { Kline, MarketType, PositionSide } from '@marketmind/types';
-import { getDefaultChecklistWeight } from '@marketmind/types';
+import { getDefaultConfluenceWeight } from '@marketmind/types';
 import {
   INDICATOR_CATALOG,
-  calculateChecklistScore,
+  calculateConfluenceScore,
   evaluateCondition,
   getNativeSeriesEvaluator,
-  type ChecklistCondition,
-  type ChecklistScoreBreakdown,
+  type ConfluenceCondition,
+  type ConfluenceScoreBreakdown,
   type ConditionEvaluationResult,
   type IndicatorDefinition,
 } from '@marketmind/trading-core';
@@ -20,17 +20,17 @@ import { PineIndicatorService } from '../pine/PineIndicatorService';
 
 const pineService = new PineIndicatorService();
 
-const CHECKLIST_KLINE_LOOKBACK = 500;
+const CONFLUENCE_KLINE_LOOKBACK = 500;
 
-export interface EvaluateChecklistInput {
+export interface EvaluateConfluenceInput {
   userId: string;
   symbol: string;
   interval: string;
   marketType: MarketType;
-  conditions: ChecklistCondition[];
+  conditions: ConfluenceCondition[];
   side?: PositionSide | 'BOTH';
   /**
-   * Evaluate the checklist as of this point in time (epoch ms). When set,
+   * Evaluate the confluence as of this point in time (epoch ms). When set,
    * the kline series is truncated to closes at-or-before this timestamp
    * and the live exchange prefetch is skipped. Used by the score-history
    * backfill to reconstruct historical scores.
@@ -38,16 +38,16 @@ export interface EvaluateChecklistInput {
   referenceTime?: number;
 }
 
-export interface EvaluateChecklistConditionResult {
+export interface EvaluateConfluenceConditionResult {
   conditionId: string;
   userIndicatorId: string;
   indicatorLabel: string;
   catalogType: string;
   timeframe: string;
   resolvedTimeframe: string;
-  op: ChecklistCondition['op'];
-  tier: ChecklistCondition['tier'];
-  side: ChecklistCondition['side'];
+  op: ConfluenceCondition['op'];
+  tier: ConfluenceCondition['tier'];
+  side: ConfluenceCondition['side'];
   weight: number;
   enabled: boolean;
   evaluated: boolean;
@@ -58,11 +58,11 @@ export interface EvaluateChecklistConditionResult {
   error?: string;
 }
 
-export interface EvaluateChecklistResult {
-  results: EvaluateChecklistConditionResult[];
-  score: ChecklistScoreBreakdown;
-  scoreLong: ChecklistScoreBreakdown;
-  scoreShort: ChecklistScoreBreakdown;
+export interface EvaluateConfluenceResult {
+  results: EvaluateConfluenceConditionResult[];
+  score: ConfluenceScoreBreakdown;
+  scoreLong: ConfluenceScoreBreakdown;
+  scoreShort: ConfluenceScoreBreakdown;
 }
 
 interface UserIndicatorRow {
@@ -96,7 +96,7 @@ const fetchKlinesForTimeframe = async (
   referenceTime?: number,
 ): Promise<Kline[]> => {
   if (referenceTime == null) {
-    await prefetchKlines({ symbol, interval, targetCount: CHECKLIST_KLINE_LOOKBACK, marketType });
+    await prefetchKlines({ symbol, interval, targetCount: CONFLUENCE_KLINE_LOOKBACK, marketType });
   }
 
   const baseWhere = [
@@ -109,7 +109,7 @@ const fetchKlinesForTimeframe = async (
   const rows = await db.query.klines.findMany({
     where: and(...baseWhere),
     orderBy: [desc(klinesTable.openTime)],
-    limit: CHECKLIST_KLINE_LOOKBACK,
+    limit: CONFLUENCE_KLINE_LOOKBACK,
   });
 
   rows.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
@@ -171,16 +171,16 @@ const indicatorComputeKey = (
   timeframe: string,
 ): string => `${userIndicatorId}::${timeframe}`;
 
-const dedupKey = (cond: ChecklistCondition, resolvedTf: string): string =>
+const dedupKey = (cond: ConfluenceCondition, resolvedTf: string): string =>
   `${cond.userIndicatorId}::${resolvedTf}::${cond.op}::${JSON.stringify(cond.threshold ?? null)}`;
 
 interface CountableCondition {
-  cond: ChecklistCondition;
+  cond: ConfluenceCondition;
   isExplicitTimeframe: boolean;
 }
 
 const pickRepresentativeConditions = (
-  conditions: ChecklistCondition[],
+  conditions: ConfluenceCondition[],
   interval: string,
 ): Map<string, CountableCondition> => {
   const byKey = new Map<string, CountableCondition>();
@@ -201,18 +201,18 @@ const pickRepresentativeConditions = (
 };
 
 const conditionAppliesToSide = (
-  cond: ChecklistCondition,
+  cond: ConfluenceCondition,
   side: PositionSide,
 ): boolean => cond.side === side || cond.side === 'BOTH';
 
-export const evaluateChecklist = async (
-  input: EvaluateChecklistInput,
-): Promise<EvaluateChecklistResult> => {
+export const evaluateConfluence = async (
+  input: EvaluateConfluenceInput,
+): Promise<EvaluateConfluenceResult> => {
   const { userId, symbol, interval, marketType, conditions, side, referenceTime } = input;
 
   const enabledConditions = conditions.filter((c) => c.enabled);
 
-  const emptyScore = calculateChecklistScore({
+  const emptyScore = calculateConfluenceScore({
     requiredTotal: 0,
     requiredPassed: 0,
     requiredWeightTotal: 0,
@@ -270,7 +270,7 @@ export const evaluateChecklist = async (
   const longRepIds = new Set(Array.from(longRepresentatives.values()).map((v) => v.cond.id));
   const shortRepIds = new Set(Array.from(shortRepresentatives.values()).map((v) => v.cond.id));
 
-  const results: EvaluateChecklistConditionResult[] = [];
+  const results: EvaluateConfluenceConditionResult[] = [];
   let longRequiredTotal = 0;
   let longRequiredPassed = 0;
   let longRequiredWeightTotal = 0;
@@ -295,7 +295,7 @@ export const evaluateChecklist = async (
     const condWeight =
       typeof cond.weight === 'number' && Number.isFinite(cond.weight) && cond.weight > 0
         ? cond.weight
-        : getDefaultChecklistWeight(cond.timeframe);
+        : getDefaultConfluenceWeight(cond.timeframe);
 
     const userIndicator = indicatorMap.get(cond.userIndicatorId);
     if (!userIndicator) {
@@ -469,7 +469,7 @@ export const evaluateChecklist = async (
     });
   }
 
-  const scoreLong = calculateChecklistScore({
+  const scoreLong = calculateConfluenceScore({
     requiredTotal: longRequiredTotal,
     requiredPassed: longRequiredPassed,
     requiredWeightTotal: longRequiredWeightTotal,
@@ -479,7 +479,7 @@ export const evaluateChecklist = async (
     preferredWeightTotal: longPreferredWeightTotal,
     preferredWeightPassed: longPreferredWeightPassed,
   });
-  const scoreShort = calculateChecklistScore({
+  const scoreShort = calculateConfluenceScore({
     requiredTotal: shortRequiredTotal,
     requiredPassed: shortRequiredPassed,
     requiredWeightTotal: shortRequiredWeightTotal,
