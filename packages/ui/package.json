@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.35.0",

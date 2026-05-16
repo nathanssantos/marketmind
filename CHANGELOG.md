@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`pnpm dev:all` now watches the 9 shared packages alongside backend + electron** — previously the only way to pick up package changes during dev was to manually re-run `pnpm --filter @marketmind/types build` (or whichever package) and restart the dev server. Each watch-eligible package (`types`, `trading-core`, `utils`, `fibonacci`, `chart-studies`, `logger`, `risk`, `tokens`, `ui`) now exposes a `dev` script that runs `tsc --watch --preserveWatchOutput`; `pnpm dev:all` parallelizes all of them with the apps. `pnpm dev` (default, no package watch) stays unchanged for sessions where you're not touching package code. Trade-off: `dev:all` adds ~9 idle `tsc --watch` processes (~80-120 MB RAM extra) — incremental rebuilds are fast so CPU impact is negligible.
+
 ## [1.22.11] - 2026-05-16
 
 ### Fixed

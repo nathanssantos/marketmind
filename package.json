@@ -30,7 +30,7 @@
     "dev:web": "pnpm --filter @marketmind/electron dev:web",
     "dev:backend": "pnpm --filter @marketmind/backend dev",
     "dev:frontend": "pnpm --filter @marketmind/electron dev",
-    "dev:all": "pnpm --parallel dev",
+    "dev:all": "pnpm --parallel --filter @marketmind/backend --filter @marketmind/electron --filter @marketmind/types --filter @marketmind/trading-core --filter @marketmind/utils --filter @marketmind/fibonacci --filter @marketmind/chart-studies --filter @marketmind/logger --filter @marketmind/risk --filter @marketmind/tokens --filter @marketmind/ui dev",
     "build": "pnpm --filter @marketmind/electron build",
     "build:web": "pnpm --filter @marketmind/electron build:web",
     "build:backend": "pnpm --filter @marketmind/backend build",
