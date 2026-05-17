@@ -1,0 +1,85 @@
+name: Bug report
+description: Report something that's broken or behaving unexpectedly.
+title: "bug: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in the form below so we can reproduce it quickly.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One or two sentences describing what's wrong.
+      placeholder: "Selecting BTCUSDT 1h freezes the chart for ~5 seconds before candles render."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that consistently trigger the bug.
+      placeholder: |
+        1. Open MarketMind, navigate to the Trading dashboard.
+        2. Switch to symbol BTCUSDT, timeframe 1h.
+        3. Wait — chart stays blank for ~5s before candles appear.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Chart renders within ~500ms (matches behavior on 4h timeframe)."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: "Blank chart area, then candles appear after a ~5s freeze."
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: MarketMind version
+      description: See the version badge in the app's About panel or the README.
+      placeholder: "v1.22.14"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows
+        - Linux
+        - Web (browser)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Attach relevant console logs, error messages, or screenshots.
+      placeholder: "Paste log lines or drop a screenshot here."
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched existing issues and didn't find a duplicate.
+          required: true
+        - label: I'm on the latest release.
+          required: true
