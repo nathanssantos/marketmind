@@ -1,0 +1,59 @@
+name: Feature request
+description: Suggest a new feature or improvement.
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion. Fill in the form so we can evaluate it against the roadmap.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What's the pain point this would solve? Describe the situation, not the solution.
+      placeholder: "When backtesting on multiple symbols, I have to rerun the same config one symbol at a time."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How would you like to see it work?
+      placeholder: "A multi-select symbol field in the Backtest dialog that runs the same config across all selected symbols and merges the results."
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      placeholder: "Running each backtest manually + a CSV export to merge offline."
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backtesting
+        - Auto-trading
+        - Chart / drawings
+        - Indicators / patterns
+        - Strategies
+        - UI / layout
+        - Settings / preferences
+        - Backend / data
+        - MCP / agents
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched existing issues + discussions and didn't find this proposal.
+          required: true
