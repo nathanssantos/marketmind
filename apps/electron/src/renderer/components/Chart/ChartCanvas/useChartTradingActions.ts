@@ -3,6 +3,8 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
+import { useQueryClient } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
 import { ORDER_LINE_ANIMATION } from '@shared/constants';
 import { getKlineClose, roundTradingPrice } from '@shared/utils';
 import type { MutableRefObject } from 'react';
@@ -57,6 +59,36 @@ export const useChartTradingActions = ({
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
+
+  // Drop a single orderId from every variant of getOpenOrders /
+  // getOpenAlgoOrders the renderer holds. Mirrors the helper in
+  // useBackendTradingMutations.ts — duplicated here to keep this hook
+  // independent. Used by cancelFuturesOrderMutation.onMutate so the
+  // old exchange order vanishes from `useOrphanOrders` the instant the
+  // drag-release fires, not after the 100–500ms Binance cancel ack.
+  // Without this, a drag-to-move briefly painted the order at BOTH the
+  // origin (stale cache) and destination (optimistic) until the cache
+  // invalidation completed.
+  const removeOrderFromAllOpenOrderCaches = useCallback(
+    (orderIdToRemove: string) => {
+      const removeFn = (data: unknown): unknown => {
+        if (!Array.isArray(data)) return data;
+        return (data as Array<{ orderId?: string | number; id?: string }>).filter(
+          (o) => String(o.orderId ?? o.id) !== orderIdToRemove,
+        );
+      };
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },
+        removeFn,
+      );
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders) },
+        removeFn,
+      );
+    },
+    [queryClient],
+  );
 
   const updateTsConfig = trpc.trading.updateSymbolTrailingConfig.useMutation({
     onSuccess: () => {
@@ -68,6 +100,9 @@ export const useChartTradingActions = ({
   });
 
   const cancelFuturesOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
+    onMutate: ({ orderId }) => {
+      if (orderId) removeOrderFromAllOpenOrderCaches(String(orderId));
+    },
     onSuccess: (data) => {
       if (data.openExecutions) {
         const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
@@ -356,6 +391,18 @@ export const useChartTradingActions = ({
       // the cancelled-status filter and render a duplicate next to the
       // new optimistic). The NEW optimistic at the new price IS the
       // user-visible "moving" order, with its own loading + flash keys.
+      //
+      // Drop the OLD exchange orderId from the open-orders / open-algo
+      // caches BEFORE the mutation begins. Without this, the orphan
+      // classifier in `useOrphanOrders` keeps surfacing the old order
+      // at the origin price during the 100–500ms cancel ack window,
+      // and the chart paints both origin (cache) AND destination
+      // (optimistic). `cancelFuturesOrderMutation.onMutate` also drops
+      // it, but doing it here too is defense-in-depth — the move flow
+      // composes two mutations so a single onMutate timing race is
+      // enough to leak the phantom.
+      removeOrderFromAllOpenOrderCaches(exchangeOrderId);
+
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(id, cancelPatches, { status: 'pending' });
 
@@ -453,7 +500,7 @@ export const useChartTradingActions = ({
         manager?.markDirty('overlays');
       });
     }
-  }, [updateExecutionSLTP, updatePendingEntry, manager, backendWalletId, symbol, allExecutions, cancelFuturesOrderMutation, addBackendOrder, toastError, t, applyOptimistic, clearOptimistic, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions]);
+  }, [updateExecutionSLTP, updatePendingEntry, manager, backendWalletId, symbol, allExecutions, cancelFuturesOrderMutation, addBackendOrder, toastError, t, applyOptimistic, clearOptimistic, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, removeOrderFromAllOpenOrderCaches, utils]);
 
   const handleGridConfirm = useCallback(async (prices: number[], side: 'BUY' | 'SELL') => {
     if (!backendWalletId || !symbol) return;

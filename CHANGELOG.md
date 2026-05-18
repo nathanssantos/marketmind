@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Dragged exchange order briefly painted at BOTH origin AND destination before disappearing from destination** — `futuresTrading.cancelOrder` mutation was the only cancel path without an `onMutate` hook to drop the orderId from the `getOpenOrders`/`getOpenAlgoOrders` caches. During the 100–500ms cancel ack window, `useOrphanOrders` kept reading the stale cache and surfaced the old order as a `trackedOrder` line at the origin, while the optimistic execution rendered at the destination. If Binance was slow to list the new orderId, the optimistic's 7s TTL fired before the real order arrived → it vanished from the destination too. Added `onMutate` + an upfront `removeOrderFromAllOpenOrderCaches` call in the exchange-move flow (defense-in-depth — the move composes two mutations so a single onMutate timing race is enough to leak the phantom).
+
 ## [1.22.14] - 2026-05-16
 
 Hotfix release. One PR (#688) restoring the right-axis price tag for overlay indicators (EMA / SMA / Bollinger / Ichimoku) on charts that don't have a live trade open — a silent regression introduced 11 days ago by #456's collision-system migration.
