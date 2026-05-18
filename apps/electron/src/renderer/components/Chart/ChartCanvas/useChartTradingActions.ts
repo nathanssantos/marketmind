@@ -35,6 +35,8 @@ export interface UseChartTradingActionsProps {
   setClosingVersion: React.Dispatch<React.SetStateAction<number>>;
   applyOptimistic: (id: string, patches: OptimisticOverride['patches'], previousValues: OptimisticOverride['previousValues']) => void;
   clearOptimistic: (id: string, expectedPatches?: OptimisticOverride['patches']) => void;
+  blockOrderId: (orderId: string) => void;
+  unblockOrderId: (orderId: string) => void;
   latestKlinesPriceRef: MutableRefObject<number>;
   setOrderToClose: (id: string | null) => void;
 }
@@ -53,6 +55,8 @@ export const useChartTradingActions = ({
   setClosingVersion,
   applyOptimistic,
   clearOptimistic,
+  blockOrderId,
+  unblockOrderId,
   latestKlinesPriceRef,
   setOrderToClose,
 }: UseChartTradingActionsProps) => {
@@ -393,15 +397,14 @@ export const useChartTradingActions = ({
       // user-visible "moving" order, with its own loading + flash keys.
       //
       // Drop the OLD exchange orderId from the open-orders / open-algo
-      // caches BEFORE the mutation begins. Without this, the orphan
-      // classifier in `useOrphanOrders` keeps surfacing the old order
-      // at the origin price during the 100–500ms cancel ack window,
-      // and the chart paints both origin (cache) AND destination
-      // (optimistic). `cancelFuturesOrderMutation.onMutate` also drops
-      // it, but doing it here too is defense-in-depth — the move flow
-      // composes two mutations so a single onMutate timing race is
-      // enough to leak the phantom.
+      // caches AND add it to the pendingCancel block-list. The cache
+      // drop alone is not enough — WS-triggered refetches during the
+      // cancel ack window can re-fetch from Binance (which still
+      // lists the old order) and put it back in the cache. The
+      // block-list survives those refetches and is cleared on
+      // mutation settle (with a safety TTL fallback).
       removeOrderFromAllOpenOrderCaches(exchangeOrderId);
+      blockOrderId(exchangeOrderId);
 
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(id, cancelPatches, { status: 'pending' });
@@ -409,6 +412,11 @@ export const useChartTradingActions = ({
       setOptimisticExecutions(prev => [...prev, optimisticExecution]);
       orderLoadingMapRef.current.set(optimisticExecution.id, Date.now());
       manager?.markDirty('overlays');
+
+      // Safety TTL: if the mutation hangs or the resolution path forgets
+      // to unblock, drop the block-list entry after 30s so the chart
+      // can speak the truth again.
+      const blockTtl = setTimeout(() => unblockOrderId(exchangeOrderId), 30_000);
 
       cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
         .then(() => addBackendOrder({
@@ -439,6 +447,8 @@ export const useChartTradingActions = ({
         })
         .finally(() => {
           orderLoadingMapRef.current.delete(optimisticExecution.id);
+          clearTimeout(blockTtl);
+          unblockOrderId(exchangeOrderId);
           manager?.markDirty('overlays');
         });
       return;
@@ -451,6 +461,33 @@ export const useChartTradingActions = ({
       const patches = { entryPrice: newPrice };
       applyOptimistic(id, patches, prevValues);
       orderLoadingMapRef.current.set(id, Date.now());
+
+      // Look up the old entryOrderId from the autoTrading exec cache.
+      // The backend cancels this orderId on Binance and creates a new
+      // one. Block-list it so any concurrent refetch of getOpenOrders
+      // can't re-surface the old order at the origin price (Binance
+      // is eventually-consistent — the cancelled orderId can still
+      // appear for several seconds in the open-orders listing).
+      // useBackendTradingMutations also clears the orderId from the
+      // open-orders cache on onMutate, but that's a one-shot — the
+      // block-list survives every refetch until we unblock.
+      let blockedEntryOrderId: string | null = null;
+      const activeExecCaches = queryClient.getQueriesData<Array<{ id: string; entryOrderId?: string | null }>>({
+        queryKey: getQueryKey(trpc.autoTrading.getActiveExecutions),
+      });
+      for (const [, rows] of activeExecCaches) {
+        if (!Array.isArray(rows)) continue;
+        const target = rows.find((r) => r.id === id);
+        if (target?.entryOrderId) {
+          blockedEntryOrderId = String(target.entryOrderId);
+          blockOrderId(blockedEntryOrderId);
+          break;
+        }
+      }
+      const blockTtl = blockedEntryOrderId
+        ? setTimeout(() => unblockOrderId(blockedEntryOrderId!), 30_000)
+        : null;
+
       manager?.markDirty('overlays');
 
       updatePendingEntry({ id, newPrice: updates.entryPrice }).then(() => {
@@ -460,6 +497,10 @@ export const useChartTradingActions = ({
         toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
       }).finally(() => {
         orderLoadingMapRef.current.delete(id);
+        if (blockedEntryOrderId) {
+          if (blockTtl) clearTimeout(blockTtl);
+          unblockOrderId(blockedEntryOrderId);
+        }
         manager?.markDirty('overlays');
       });
       return;

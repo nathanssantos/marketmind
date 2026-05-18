@@ -37,6 +37,20 @@ interface OptimisticOrderOverridesContextValue {
     previousValues: OptimisticOverride['previousValues'],
   ) => void;
   clearOptimistic: (id: string, expectedPatches?: OptimisticOverride['patches']) => void;
+  /**
+   * Block-list of exchange orderIds that the chart should ignore from
+   * `getOpenOrders` / `getOpenAlgoOrders` even if Binance still lists
+   * them. Used during the cancel+create round-trip of a drag-to-move
+   * so a concurrent WS-triggered refetch can't re-surface the old
+   * order as a phantom line at the origin price.
+   *
+   * Entries are added at mutation onMutate, removed when the mutation
+   * resolves (or after a safety TTL — see useChartTradingData).
+   */
+  pendingCancelOrderIdsRef: RefObject<Set<string>>;
+  pendingCancelVersion: number;
+  blockOrderId: (orderId: string) => void;
+  unblockOrderId: (orderId: string) => void;
 }
 
 const OptimisticOrderOverridesContext = createContext<OptimisticOrderOverridesContextValue | null>(null);
@@ -44,6 +58,21 @@ const OptimisticOrderOverridesContext = createContext<OptimisticOrderOverridesCo
 export function OptimisticOrderOverridesProvider({ children }: { children: ReactNode }) {
   const optimisticOverridesRef = useRef<Map<string, OptimisticOverride>>(new Map());
   const [overrideVersion, setOverrideVersion] = useState(0);
+
+  const pendingCancelOrderIdsRef = useRef<Set<string>>(new Set());
+  const [pendingCancelVersion, setPendingCancelVersion] = useState(0);
+
+  const blockOrderId = useCallback((orderId: string) => {
+    if (pendingCancelOrderIdsRef.current.has(orderId)) return;
+    pendingCancelOrderIdsRef.current.add(orderId);
+    setPendingCancelVersion((v) => v + 1);
+  }, []);
+
+  const unblockOrderId = useCallback((orderId: string) => {
+    if (!pendingCancelOrderIdsRef.current.has(orderId)) return;
+    pendingCancelOrderIdsRef.current.delete(orderId);
+    setPendingCancelVersion((v) => v + 1);
+  }, []);
 
   const bumpOverrideVersion = useCallback(() => {
     setOverrideVersion((v) => v + 1);
@@ -85,8 +114,12 @@ export function OptimisticOrderOverridesProvider({ children }: { children: React
       bumpOverrideVersion,
       applyOptimistic,
       clearOptimistic,
+      pendingCancelOrderIdsRef,
+      pendingCancelVersion,
+      blockOrderId,
+      unblockOrderId,
     }),
-    [overrideVersion, bumpOverrideVersion, applyOptimistic, clearOptimistic],
+    [overrideVersion, bumpOverrideVersion, applyOptimistic, clearOptimistic, pendingCancelVersion, blockOrderId, unblockOrderId],
   );
 
   return (

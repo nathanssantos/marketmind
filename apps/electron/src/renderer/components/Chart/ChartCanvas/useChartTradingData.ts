@@ -63,6 +63,10 @@ export const useChartTradingData = ({
     bumpOverrideVersion,
     applyOptimistic,
     clearOptimistic,
+    pendingCancelOrderIdsRef,
+    pendingCancelVersion,
+    blockOrderId,
+    unblockOrderId,
   } = useOptimisticOrderOverrides();
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
@@ -145,40 +149,52 @@ export const useChartTradingData = ({
       }));
   }, [backendExecutions, symbol, marketType]);
 
+  // Drop orphan/tracked entries whose Binance orderId is currently
+  // block-listed by an in-flight drag-to-move mutation. The block list
+  // survives concurrent refetches that would otherwise re-surface the
+  // old order as a phantom line at the origin price during the
+  // cancel+create round-trip. See pendingCancelOrderIds in
+  // OptimisticOrderOverridesContext.
+  const blockedOrderIds = pendingCancelOrderIdsRef.current;
+
   const orphanOrderExecutions = useMemo((): BackendExecution[] =>
-    orphanOrdersRaw.map((o) => ({
-      id: o.id,
-      symbol: o.symbol,
-      side: o.side === 'BUY' ? 'LONG' as const : 'SHORT' as const,
-      entryPrice: o.price,
-      quantity: o.quantity,
-      stopLoss: null,
-      takeProfit: null,
-      status: 'pending' as const,
-      setupType: null,
-      marketType: 'FUTURES' as const,
-      openedAt: o.createdAt,
-      entryOrderType: o.type as BackendExecution['entryOrderType'],
-    })),
-    [orphanOrdersRaw]
+    orphanOrdersRaw
+      .filter((o) => !blockedOrderIds.has(o.exchangeOrderId))
+      .map((o) => ({
+        id: o.id,
+        symbol: o.symbol,
+        side: o.side === 'BUY' ? 'LONG' as const : 'SHORT' as const,
+        entryPrice: o.price,
+        quantity: o.quantity,
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending' as const,
+        setupType: null,
+        marketType: 'FUTURES' as const,
+        openedAt: o.createdAt,
+        entryOrderType: o.type as BackendExecution['entryOrderType'],
+      })),
+    [orphanOrdersRaw, blockedOrderIds, pendingCancelVersion]
   );
 
   const trackedOrderExecutions = useMemo((): BackendExecution[] =>
-    trackedOrdersRaw.map((o) => ({
-      id: o.id,
-      symbol: o.symbol,
-      side: o.side === 'BUY' ? 'LONG' as const : 'SHORT' as const,
-      entryPrice: o.price,
-      quantity: o.quantity,
-      stopLoss: null,
-      takeProfit: null,
-      status: 'pending' as const,
-      setupType: null,
-      marketType: 'FUTURES' as const,
-      openedAt: o.createdAt,
-      entryOrderType: o.type as BackendExecution['entryOrderType'],
-    })),
-    [trackedOrdersRaw]
+    trackedOrdersRaw
+      .filter((o) => !blockedOrderIds.has(o.exchangeOrderId))
+      .map((o) => ({
+        id: o.id,
+        symbol: o.symbol,
+        side: o.side === 'BUY' ? 'LONG' as const : 'SHORT' as const,
+        entryPrice: o.price,
+        quantity: o.quantity,
+        stopLoss: null,
+        takeProfit: null,
+        status: 'pending' as const,
+        setupType: null,
+        marketType: 'FUTURES' as const,
+        openedAt: o.createdAt,
+        entryOrderType: o.type as BackendExecution['entryOrderType'],
+      })),
+    [trackedOrdersRaw, blockedOrderIds, pendingCancelVersion]
   );
 
   const allExecutions = useMemo((): BackendExecution[] => {
@@ -366,6 +382,8 @@ export const useChartTradingData = ({
     overrideVersion,
     applyOptimistic,
     clearOptimistic,
+    blockOrderId,
+    unblockOrderId,
     symbolFiltersData,
     exchangeOpenOrders,
     exchangeAlgoOrders,
