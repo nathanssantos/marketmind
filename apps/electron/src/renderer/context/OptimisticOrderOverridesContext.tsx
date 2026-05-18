@@ -51,6 +51,7 @@ interface OptimisticOrderOverridesContextValue {
   pendingCancelVersion: number;
   blockOrderId: (orderId: string) => void;
   unblockOrderId: (orderId: string) => void;
+  bumpPendingCancelVersion: () => void;
 }
 
 const OptimisticOrderOverridesContext = createContext<OptimisticOrderOverridesContextValue | null>(null);
@@ -71,6 +72,10 @@ export function OptimisticOrderOverridesProvider({ children }: { children: React
   const unblockOrderId = useCallback((orderId: string) => {
     if (!pendingCancelOrderIdsRef.current.has(orderId)) return;
     pendingCancelOrderIdsRef.current.delete(orderId);
+    setPendingCancelVersion((v) => v + 1);
+  }, []);
+
+  const bumpPendingCancelVersion = useCallback(() => {
     setPendingCancelVersion((v) => v + 1);
   }, []);
 
@@ -118,8 +123,9 @@ export function OptimisticOrderOverridesProvider({ children }: { children: React
       pendingCancelVersion,
       blockOrderId,
       unblockOrderId,
+      bumpPendingCancelVersion,
     }),
-    [overrideVersion, bumpOverrideVersion, applyOptimistic, clearOptimistic, pendingCancelVersion, blockOrderId, unblockOrderId],
+    [overrideVersion, bumpOverrideVersion, applyOptimistic, clearOptimistic, pendingCancelVersion, blockOrderId, unblockOrderId, bumpPendingCancelVersion],
   );
 
   return (

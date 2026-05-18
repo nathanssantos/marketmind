@@ -67,6 +67,7 @@ export const useChartTradingData = ({
     pendingCancelVersion,
     blockOrderId,
     unblockOrderId,
+    bumpPendingCancelVersion,
   } = useOptimisticOrderOverrides();
 
   const { watcherStatus } = useBackendAutoTrading(backendWalletId ?? '');
@@ -271,6 +272,31 @@ export const useChartTradingData = ({
     }
     if (changed) bumpOverrideVersion();
   }, [filteredBackendExecutions, orphanOrderExecutions, trackedOrderExecutions, bumpOverrideVersion, optimisticOverridesRef]);
+
+  // Auto-cleanup for the pending-cancel block-list: once Binance stops
+  // listing a blocked orderId in `getOpenOrders` / `getOpenAlgoOrders`,
+  // the cancel has truly propagated and the block can be lifted. The
+  // 30s TTL in useChartTradingActions is the safety fallback for
+  // hung/lost cancels.
+  useEffect(() => {
+    const blocked = pendingCancelOrderIdsRef.current;
+    if (blocked.size === 0) return;
+    const liveOrderIds = new Set<string>();
+    (exchangeOpenOrders ?? []).forEach((o: { orderId?: string | number }) => {
+      if (o.orderId !== undefined) liveOrderIds.add(String(o.orderId));
+    });
+    (exchangeAlgoOrders ?? []).forEach((o: { algoId?: string | number }) => {
+      if (o.algoId !== undefined) liveOrderIds.add(String(o.algoId));
+    });
+    let changed = false;
+    for (const id of blocked) {
+      if (!liveOrderIds.has(id)) {
+        blocked.delete(id);
+        changed = true;
+      }
+    }
+    if (changed) bumpPendingCancelVersion();
+  }, [exchangeOpenOrders, exchangeAlgoOrders, pendingCancelOrderIdsRef, bumpPendingCancelVersion]);
 
   // Snapshot the closing position so the chart can play the
   // "line fades out + flash" animation for ~800 ms even if the query

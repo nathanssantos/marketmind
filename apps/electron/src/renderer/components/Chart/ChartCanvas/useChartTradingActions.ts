@@ -413,10 +413,14 @@ export const useChartTradingActions = ({
       orderLoadingMapRef.current.set(optimisticExecution.id, Date.now());
       manager?.markDirty('overlays');
 
-      // Safety TTL: if the mutation hangs or the resolution path forgets
-      // to unblock, drop the block-list entry after 30s so the chart
-      // can speak the truth again.
-      const blockTtl = setTimeout(() => unblockOrderId(exchangeOrderId), 30_000);
+      // Block lasts UNTIL the orderId disappears from getOpenOrders /
+      // getOpenAlgoOrders for real (auto-cleanup effect in
+      // useChartTradingData watches the cache), or hits the 30s TTL.
+      // We do NOT unblock in .finally() — Binance is eventually-consistent
+      // and keeps listing the cancelled orderId for a few seconds after
+      // our backend reports success; unblocking immediately re-exposes
+      // the phantom.
+      setTimeout(() => unblockOrderId(exchangeOrderId), 30_000);
 
       cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
         .then(() => addBackendOrder({
@@ -447,8 +451,6 @@ export const useChartTradingActions = ({
         })
         .finally(() => {
           orderLoadingMapRef.current.delete(optimisticExecution.id);
-          clearTimeout(blockTtl);
-          unblockOrderId(exchangeOrderId);
           manager?.markDirty('overlays');
         });
       return;
@@ -484,9 +486,15 @@ export const useChartTradingActions = ({
           break;
         }
       }
-      const blockTtl = blockedEntryOrderId
-        ? setTimeout(() => unblockOrderId(blockedEntryOrderId!), 30_000)
-        : null;
+      // Block lasts UNTIL the orderId disappears from getOpenOrders /
+      // getOpenAlgoOrders (auto-cleanup effect in useChartTradingData
+      // watches the cache), or hits the 30s TTL. We do NOT unblock in
+      // .finally() — Binance is eventually-consistent and keeps listing
+      // the cancelled orderId for a few seconds after our backend
+      // reports success; unblocking immediately re-exposes the phantom.
+      if (blockedEntryOrderId) {
+        setTimeout(() => unblockOrderId(blockedEntryOrderId!), 30_000);
+      }
 
       manager?.markDirty('overlays');
 
@@ -497,10 +505,6 @@ export const useChartTradingActions = ({
         toastError(t('trading.order.entryUpdateFailed'), error instanceof Error ? error.message : undefined);
       }).finally(() => {
         orderLoadingMapRef.current.delete(id);
-        if (blockedEntryOrderId) {
-          if (blockTtl) clearTimeout(blockTtl);
-          unblockOrderId(blockedEntryOrderId);
-        }
         manager?.markDirty('overlays');
       });
       return;
