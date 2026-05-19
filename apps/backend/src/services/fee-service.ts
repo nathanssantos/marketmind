@@ -2,7 +2,7 @@ import { getFuturesClient, getSpotClient } from '../exchange';
 import { logger, serializeError } from './logger';
 import type { Wallet } from '../db/schema';
 import type { MarketType, FeeOrderType, MarketFees } from '@marketmind/types';
-import { BINANCE_FEES, getDefaultFee, applyBnbDiscount, getFeeRateForVipLevel } from '@marketmind/types';
+import { BINANCE_FEES, getDefaultFee, applyBnbDiscount, getFeeRateForVipLevel, getFuturesVIPLevelFromRates } from '@marketmind/types';
 import { TIME_MS } from '../constants';
 
 const MIN_BNB_FOR_DISCOUNT = 0.001;
@@ -119,12 +119,27 @@ export const fetchFuturesFeesWithAccountInfo = async (wallet: Wallet): Promise<F
     const bnbBalance = bnbAsset ? parseFloat(String(bnbAsset.walletBalance)) : 0;
     const hasBnbDiscount = bnbBalance >= MIN_BNB_FOR_DISCOUNT;
 
+    // Resolve vipLevel with three fallbacks, in order:
+    //   1. account.feeTier (preferred, authoritative). /fapi/v3/account
+    //      omits this for some users despite the TS type promising it,
+    //      so `Number(undefined)` → NaN.
+    //   2. Reverse-lookup from the observed maker/taker rates against
+    //      our BINANCE_FUTURES_VIP_LEVELS table — covers the case
+    //      where rates are known but feeTier is missing.
+    //   3. Default to 0 (VIP 0) — the conservative floor.
+    // The serialization layer would otherwise emit `null` for NaN,
+    // which breaks the UI's vipLevel display.
+    const parsedFeeTier = Number(accountInfo.feeTier);
+    const vipLevel = Number.isFinite(parsedFeeTier)
+      ? parsedFeeTier
+      : (getFuturesVIPLevelFromRates(commissionRate.makerCommissionRate, commissionRate.takerCommissionRate) ?? 0);
+
     return {
       fees: {
         maker: commissionRate.makerCommissionRate,
         taker: commissionRate.takerCommissionRate,
       },
-      vipLevel: Number(accountInfo.feeTier),
+      vipLevel,
       hasBnbDiscount,
     };
   } catch (error) {

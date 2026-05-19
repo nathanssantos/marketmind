@@ -169,6 +169,8 @@ const ChartCanvasInternal = ({
     setClosingVersion,
     applyOptimistic,
     clearOptimistic,
+    blockOrderId,
+    unblockOrderId,
     symbolFiltersData,
     exchangeOpenOrders,
     exchangeAlgoOrders,
@@ -310,6 +312,7 @@ const ChartCanvasInternal = ({
     backendExecutions: backendExecutions as unknown as BackendExecution[] | undefined, allExecutions,
     setOptimisticExecutions, orderLoadingMapRef, orderFlashMapRef,
     closingSnapshotsRef, setClosingVersion, applyOptimistic, clearOptimistic,
+    blockOrderId, unblockOrderId,
     latestKlinesPriceRef, setOrderToClose,
   });
 
