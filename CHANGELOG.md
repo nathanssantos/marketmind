@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.15] - 2026-05-18
+
+Order-drag ghost finally squashed + Binance Futures fee correctness pass. The drag-to-move flow no longer briefly renders the order at both origin and destination during the cancel+create roundtrip, and the VIP 0 taker rate now reflects Binance's current 0.05% (was stuck at the old 0.04%).
+
 ### Fixed
 
 - **`vipLevel: null` for live wallets** — Binance's `/fapi/v3/account` endpoint omits `feeTier` for some users despite the SDK type claiming it's always present, so `Number(undefined)` → NaN → serialized as null. Fee-service now falls back to reverse-lookup against the `BINANCE_FUTURES_VIP_LEVELS` table from the observed maker/taker rates; final fallback is VIP 0.
