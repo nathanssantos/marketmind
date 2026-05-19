@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.16] - 2026-05-18
+
+Order-phantom audit — applied the pending-cancel block-list pattern (introduced in v1.22.15 for the drag-to-move flow) to every Binance cancel path in the app, so no single-X-click cancel can flicker the order back on screen before the second click.
+
+### Fixed
+
+- **Click-X on pending order flickered the line back on briefly before the second click** — same race as the drag-to-move ghost: Binance is eventually-consistent and keeps listing the cancelled order in `getOpenOrders` for several seconds after our backend ACK; any concurrent WS refetch in that window re-pulled the still-listed order into the cache, where `useOrphanOrders` turned it into a phantom line. Centralized the fix by adding the block-list to every mutation hook that issues a cancel: `futuresTrading.cancelOrder.onMutate`, `futuresTrading.cancelAllOrders.onMutate`, `futuresTrading.reversePosition.onMutate`, `trading.cancelOrder.onMutate`, `trading.cancelTradeExecution.onMutate`, `trading.cancelIndividualProtectionOrder.onMutate`, and `trading.updateTradeExecutionSLTP.onMutate`. Every UI that uses these hooks (chart X-click, OrdersList, Portfolio orphan cancel, TradeTicket bulk cancel, SL/TP drag) now gets the protection for free. Removed the duplicate block calls from the chart's per-action handlers (no longer needed — they ran twice).
+
 ## [1.22.15] - 2026-05-18
 
 Order-drag ghost finally squashed + Binance Futures fee correctness pass. The drag-to-move flow no longer briefly renders the order at both origin and destination during the cancel+create roundtrip, and the VIP 0 taker rate now reflects Binance's current 0.05% (was stuck at the old 0.04%).
