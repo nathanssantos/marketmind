@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
 import { trpc } from '../utils/trpc';
 import { replaceOpenExecutionsInAllCaches } from '../services/executionCacheSync';
+import { useOptimisticOrderOverrides } from '../context/OptimisticOrderOverridesContext';
 
 // Mutation onSuccess invalidations are scoped narrowly: trading caches
 // (executions, orders, positions, wallet balance) are kept in sync via
@@ -18,6 +19,7 @@ import { replaceOpenExecutionsInAllCaches } from '../services/executionCacheSync
 export const useBackendTradingMutations = () => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
+  const { blockOrderId, unblockOrderId } = useOptimisticOrderOverrides();
 
   // Drop a cancelled order from every cached variant of
   // getOpenOrders / getOpenAlgoOrders, regardless of input shape.
@@ -87,7 +89,17 @@ export const useBackendTradingMutations = () => {
       // chart's pending lines, etc.). Without this the cancelled
       // order's entry line lingers on the chart for the 200–500ms
       // refetch round-trip after the cancel ACKs.
-      if (orderId) removeOrderFromAllOpenOrderCaches(String(orderId));
+      // Also block-list the orderId so any concurrent refetch during
+      // the Binance cancel ack window (it's eventually-consistent and
+      // keeps listing the cancelled order for several seconds) can't
+      // re-surface the order via useOrphanOrders. Auto-cleanup effect
+      // in useChartTradingData unblocks when Binance stops listing it;
+      // 30s safety TTL backstops a hung cancel.
+      if (orderId) {
+        removeOrderFromAllOpenOrderCaches(String(orderId));
+        blockOrderId(String(orderId));
+        setTimeout(() => unblockOrderId(String(orderId)), 30_000);
+      }
     },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
@@ -103,6 +115,41 @@ export const useBackendTradingMutations = () => {
   });
 
   const cancelExecutionMutation = trpc.trading.cancelTradeExecution.useMutation({
+    onMutate: ({ id }) => {
+      // Look up the exec's underlying entry/SL/TP orderIds in the
+      // autoTrading cache and block-list them. Without this, a
+      // concurrent refetch of getOpenOrders/getOpenAlgoOrders during
+      // the cancel ack window re-pulls the still-listed orders from
+      // Binance (eventually-consistent) and the chart renders them as
+      // orphan/tracked lines until the cancel fully propagates.
+      const activeExecCaches = queryClient.getQueriesData<Array<{
+        id: string;
+        entryOrderId?: string | null;
+        stopLossOrderId?: string | null;
+        stopLossAlgoId?: string | null;
+        takeProfitOrderId?: string | null;
+        takeProfitAlgoId?: string | null;
+      }>>({
+        queryKey: getQueryKey(trpc.autoTrading.getActiveExecutions),
+      });
+      for (const [, rows] of activeExecCaches) {
+        if (!Array.isArray(rows)) continue;
+        const target = rows.find((r) => r.id === id);
+        if (!target) continue;
+        const idsToBlock = [
+          target.entryOrderId,
+          target.stopLossOrderId,
+          target.stopLossAlgoId,
+          target.takeProfitOrderId,
+          target.takeProfitAlgoId,
+        ].filter((x): x is string => !!x).map(String);
+        for (const oid of idsToBlock) {
+          blockOrderId(oid);
+          setTimeout(() => unblockOrderId(oid), 30_000);
+        }
+        break;
+      }
+    },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
       invalidateTradingAnalytics();
@@ -110,6 +157,32 @@ export const useBackendTradingMutations = () => {
   });
 
   const updateExecutionSLTPMutation = trpc.trading.updateTradeExecutionSLTP.useMutation({
+    onMutate: ({ id }) => {
+      // SL/TP move = backend cancels the old algo + creates a new one.
+      // Block-list the OLD SL/TP algoIds so concurrent refetches during
+      // the cancel ack window can't surface them as phantom lines.
+      const activeExecCaches = queryClient.getQueriesData<Array<{
+        id: string;
+        stopLossOrderId?: string | null;
+        stopLossAlgoId?: string | null;
+        takeProfitOrderId?: string | null;
+        takeProfitAlgoId?: string | null;
+      }>>({
+        queryKey: getQueryKey(trpc.autoTrading.getActiveExecutions),
+      });
+      for (const [, rows] of activeExecCaches) {
+        if (!Array.isArray(rows)) continue;
+        const target = rows.find((r) => r.id === id);
+        if (!target) continue;
+        const ids = [target.stopLossOrderId, target.stopLossAlgoId, target.takeProfitOrderId, target.takeProfitAlgoId]
+          .filter((x): x is string => !!x).map(String);
+        for (const oid of ids) {
+          blockOrderId(oid);
+          setTimeout(() => unblockOrderId(oid), 30_000);
+        }
+        break;
+      }
+    },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
       // SL/TP changes mutate algo-orders that have no socket coverage
@@ -123,6 +196,35 @@ export const useBackendTradingMutations = () => {
   });
 
   const cancelProtectionOrderMutation = trpc.trading.cancelIndividualProtectionOrder.useMutation({
+    onMutate: ({ executionIds, type }) => {
+      // Block the SL/TP algoId for each exec being patched. Same race
+      // as cancelOrder — Binance keeps listing the cancelled algo for
+      // a few seconds; without blocking, a concurrent refetch turns
+      // it into a phantom orphan order line on the chart.
+      const activeExecCaches = queryClient.getQueriesData<Array<{
+        id: string;
+        stopLossOrderId?: string | null;
+        stopLossAlgoId?: string | null;
+        takeProfitOrderId?: string | null;
+        takeProfitAlgoId?: string | null;
+      }>>({
+        queryKey: getQueryKey(trpc.autoTrading.getActiveExecutions),
+      });
+      for (const [, rows] of activeExecCaches) {
+        if (!Array.isArray(rows)) continue;
+        for (const execId of executionIds) {
+          const target = rows.find((r) => r.id === execId);
+          if (!target) continue;
+          const ids = type === 'stopLoss'
+            ? [target.stopLossOrderId, target.stopLossAlgoId]
+            : [target.takeProfitOrderId, target.takeProfitAlgoId];
+          for (const oid of ids.filter((x): x is string => !!x).map(String)) {
+            blockOrderId(oid);
+            setTimeout(() => unblockOrderId(oid), 30_000);
+          }
+        }
+      }
+    },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
       void utils.futuresTrading.getOpenAlgoOrders.invalidate();
@@ -157,7 +259,12 @@ export const useBackendTradingMutations = () => {
         if (!Array.isArray(rows)) continue;
         const target = rows.find((r) => r.id === id);
         if (target?.entryOrderId) {
-          removeOrderFromAllOpenOrderCaches(String(target.entryOrderId));
+          const oid = String(target.entryOrderId);
+          removeOrderFromAllOpenOrderCaches(oid);
+          // Block-list survives concurrent refetches that re-pull the
+          // still-listed cancelled orderId from Binance.
+          blockOrderId(oid);
+          setTimeout(() => unblockOrderId(oid), 30_000);
           break;
         }
       }
