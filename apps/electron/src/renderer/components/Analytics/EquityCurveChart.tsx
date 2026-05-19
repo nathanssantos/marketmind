@@ -98,9 +98,10 @@ export const EquityCurveChart = memo(({ walletId, currency }: EquityCurveChartPr
     [equityCurve, initialCapital]
   );
 
-  const formatCurrency = (value: number, showSign = false) => {
-    const sign = showSign && value >= 0 ? '+' : '';
-    return `${sign}${currency} ${value.toLocaleString(undefined, {
+  const formatCurrency = (value: number | null | undefined, showSign = false) => {
+    const v = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    const sign = showSign && v >= 0 ? '+' : '';
+    return `${sign}${currency} ${v.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;

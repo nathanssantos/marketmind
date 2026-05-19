@@ -215,7 +215,7 @@ describe('FuturesBacktestEngine', () => {
     it('should have correct default values', () => {
       expect(FUTURES_DEFAULTS.LEVERAGE).toBe(1);
       expect(FUTURES_DEFAULTS.MARGIN_TYPE).toBe('ISOLATED');
-      expect(FUTURES_DEFAULTS.TAKER_FEE).toBe(0.0004);
+      expect(FUTURES_DEFAULTS.TAKER_FEE).toBe(0.0005);
       expect(FUTURES_DEFAULTS.MAKER_FEE).toBe(0.0002);
       expect(FUTURES_DEFAULTS.LIQUIDATION_FEE).toBe(0.015);
       expect(FUTURES_DEFAULTS.MAINTENANCE_MARGIN_RATE).toBe(0.004);

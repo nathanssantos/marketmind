@@ -51,7 +51,12 @@ const LayoutSnapshotsSection = () => {
   const { success: toastSuccess, error: toastError } = useToast();
   const utils = trpc.useUtils();
 
-  const { data: snapshots = [], isLoading } = trpc.layout.listSnapshots.useQuery();
+  // `data: snapshots = []` destructure only defaults `undefined`, not `null`.
+  // Visual-regression fixtures return `data: null` for unmocked paths, which
+  // crashed `snapshots.length` and broke every gallery run from this tab onward
+  // (the ErrorBoundary left React in a state where later dialogs wouldn't mount).
+  const { data: snapshotsRaw, isLoading } = trpc.layout.listSnapshots.useQuery();
+  const snapshots = snapshotsRaw ?? [];
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   const restoreMutation = trpc.layout.restoreSnapshot.useMutation({
@@ -122,7 +127,11 @@ const LayoutSnapshotsSection = () => {
 const HeatmapAlwaysCollectSection = () => {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
-  const { data: symbols = [] } = trpc.heatmap.getAlwaysCollectSymbols.useQuery();
+  // Destructure default only catches `undefined`, not `null` (which the
+  // visual-regression tRPC fixture returns for unmocked paths). See the
+  // analogous note in LayoutSnapshotsSection above.
+  const { data: symbolsRaw } = trpc.heatmap.getAlwaysCollectSymbols.useQuery();
+  const symbols = symbolsRaw ?? [];
   const [newSymbol, setNewSymbol] = useState('');
 
   const addMutation = trpc.heatmap.addAlwaysCollectSymbol.useMutation({

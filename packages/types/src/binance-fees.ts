@@ -6,7 +6,7 @@ export const BINANCE_FEES = {
     VIP_0: { maker: 0.001, taker: 0.001 } as MarketFees,
   },
   FUTURES: {
-    VIP_0: { maker: 0.0002, taker: 0.0004 } as MarketFees,
+    VIP_0: { maker: 0.0002, taker: 0.0005 } as MarketFees,
   },
   BNB_DISCOUNT: 0.25,
   MIN_NOTIONAL_VALUE: 10,
@@ -47,7 +47,7 @@ export const BINANCE_SPOT_VIP_LEVELS = [
 ] as const;
 
 export const BINANCE_FUTURES_VIP_LEVELS = [
-  { level: 0, maker: 0.0002, taker: 0.0004 },
+  { level: 0, maker: 0.0002, taker: 0.0005 },
   { level: 1, maker: 0.00016, taker: 0.0004 },
   { level: 2, maker: 0.00014, taker: 0.00035 },
   { level: 3, maker: 0.00012, taker: 0.00032 },
@@ -64,6 +64,25 @@ export const BINANCE_VIP_LEVELS = BINANCE_SPOT_VIP_LEVELS;
 export const getVIPLevelFromCommission = (commissionBps: number): number => {
   const match = BINANCE_VIP_LEVELS.find((v) => v.commissionBps === commissionBps);
   return match?.level ?? 0;
+};
+
+/**
+ * Reverse-lookup VIP level from observed Futures commission rates.
+ * Tolerance is 1e-6 (one ten-thousandth of a basis point) to absorb
+ * floating-point noise from Binance's API. Returns null when no row
+ * matches — caller can decide whether to surface "unknown" or fall
+ * back to VIP 0. Used as a fallback for `account.feeTier` when the
+ * /fapi/v3/account endpoint omits the field.
+ */
+export const getFuturesVIPLevelFromRates = (
+  makerRate: number,
+  takerRate: number,
+): number | null => {
+  const TOLERANCE = 1e-6;
+  const match = BINANCE_FUTURES_VIP_LEVELS.find(
+    (v) => Math.abs(v.maker - makerRate) < TOLERANCE && Math.abs(v.taker - takerRate) < TOLERANCE,
+  );
+  return match?.level ?? null;
 };
 
 export const getFeeRateForVipLevel = (

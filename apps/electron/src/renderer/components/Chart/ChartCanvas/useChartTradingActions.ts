@@ -3,6 +3,8 @@ import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMut
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
 import { useToast } from '@renderer/hooks/useToast';
 import { trpc } from '@renderer/utils/trpc';
+import { useQueryClient } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
 import { ORDER_LINE_ANIMATION } from '@shared/constants';
 import { getKlineClose, roundTradingPrice } from '@shared/utils';
 import type { MutableRefObject } from 'react';
@@ -33,6 +35,8 @@ export interface UseChartTradingActionsProps {
   setClosingVersion: React.Dispatch<React.SetStateAction<number>>;
   applyOptimistic: (id: string, patches: OptimisticOverride['patches'], previousValues: OptimisticOverride['previousValues']) => void;
   clearOptimistic: (id: string, expectedPatches?: OptimisticOverride['patches']) => void;
+  blockOrderId: (orderId: string) => void;
+  unblockOrderId: (orderId: string) => void;
   latestKlinesPriceRef: MutableRefObject<number>;
   setOrderToClose: (id: string | null) => void;
 }
@@ -51,12 +55,44 @@ export const useChartTradingActions = ({
   setClosingVersion,
   applyOptimistic,
   clearOptimistic,
+  blockOrderId,
+  unblockOrderId,
   latestKlinesPriceRef,
   setOrderToClose,
 }: UseChartTradingActionsProps) => {
   const { t } = useTranslation();
   const { warning, error: toastError } = useToast();
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
+
+  // Drop a single orderId from every variant of getOpenOrders /
+  // getOpenAlgoOrders the renderer holds. Mirrors the helper in
+  // useBackendTradingMutations.ts — duplicated here to keep this hook
+  // independent. Used by cancelFuturesOrderMutation.onMutate so the
+  // old exchange order vanishes from `useOrphanOrders` the instant the
+  // drag-release fires, not after the 100–500ms Binance cancel ack.
+  // Without this, a drag-to-move briefly painted the order at BOTH the
+  // origin (stale cache) and destination (optimistic) until the cache
+  // invalidation completed.
+  const removeOrderFromAllOpenOrderCaches = useCallback(
+    (orderIdToRemove: string) => {
+      const removeFn = (data: unknown): unknown => {
+        if (!Array.isArray(data)) return data;
+        return (data as Array<{ orderId?: string | number; id?: string }>).filter(
+          (o) => String(o.orderId ?? o.id) !== orderIdToRemove,
+        );
+      };
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },
+        removeFn,
+      );
+      queryClient.setQueriesData(
+        { queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders) },
+        removeFn,
+      );
+    },
+    [queryClient],
+  );
 
   const updateTsConfig = trpc.trading.updateSymbolTrailingConfig.useMutation({
     onSuccess: () => {
@@ -68,6 +104,9 @@ export const useChartTradingActions = ({
   });
 
   const cancelFuturesOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
+    onMutate: ({ orderId }) => {
+      if (orderId) removeOrderFromAllOpenOrderCaches(String(orderId));
+    },
     onSuccess: (data) => {
       if (data.openExecutions) {
         const wId = data.walletId ?? data.openExecutions[0]?.walletId ?? '';
@@ -356,12 +395,32 @@ export const useChartTradingActions = ({
       // the cancelled-status filter and render a duplicate next to the
       // new optimistic). The NEW optimistic at the new price IS the
       // user-visible "moving" order, with its own loading + flash keys.
+      //
+      // Drop the OLD exchange orderId from the open-orders / open-algo
+      // caches AND add it to the pendingCancel block-list. The cache
+      // drop alone is not enough — WS-triggered refetches during the
+      // cancel ack window can re-fetch from Binance (which still
+      // lists the old order) and put it back in the cache. The
+      // block-list survives those refetches and is cleared on
+      // mutation settle (with a safety TTL fallback).
+      removeOrderFromAllOpenOrderCaches(exchangeOrderId);
+      blockOrderId(exchangeOrderId);
+
       const cancelPatches = { status: 'cancelled' as const };
       applyOptimistic(id, cancelPatches, { status: 'pending' });
 
       setOptimisticExecutions(prev => [...prev, optimisticExecution]);
       orderLoadingMapRef.current.set(optimisticExecution.id, Date.now());
       manager?.markDirty('overlays');
+
+      // Block lasts UNTIL the orderId disappears from getOpenOrders /
+      // getOpenAlgoOrders for real (auto-cleanup effect in
+      // useChartTradingData watches the cache), or hits the 30s TTL.
+      // We do NOT unblock in .finally() — Binance is eventually-consistent
+      // and keeps listing the cancelled orderId for a few seconds after
+      // our backend reports success; unblocking immediately re-exposes
+      // the phantom.
+      setTimeout(() => unblockOrderId(exchangeOrderId), 30_000);
 
       cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: exchangeOrderId })
         .then(() => addBackendOrder({
@@ -404,6 +463,39 @@ export const useChartTradingActions = ({
       const patches = { entryPrice: newPrice };
       applyOptimistic(id, patches, prevValues);
       orderLoadingMapRef.current.set(id, Date.now());
+
+      // Look up the old entryOrderId from the autoTrading exec cache.
+      // The backend cancels this orderId on Binance and creates a new
+      // one. Block-list it so any concurrent refetch of getOpenOrders
+      // can't re-surface the old order at the origin price (Binance
+      // is eventually-consistent — the cancelled orderId can still
+      // appear for several seconds in the open-orders listing).
+      // useBackendTradingMutations also clears the orderId from the
+      // open-orders cache on onMutate, but that's a one-shot — the
+      // block-list survives every refetch until we unblock.
+      let blockedEntryOrderId: string | null = null;
+      const activeExecCaches = queryClient.getQueriesData<Array<{ id: string; entryOrderId?: string | null }>>({
+        queryKey: getQueryKey(trpc.autoTrading.getActiveExecutions),
+      });
+      for (const [, rows] of activeExecCaches) {
+        if (!Array.isArray(rows)) continue;
+        const target = rows.find((r) => r.id === id);
+        if (target?.entryOrderId) {
+          blockedEntryOrderId = String(target.entryOrderId);
+          blockOrderId(blockedEntryOrderId);
+          break;
+        }
+      }
+      // Block lasts UNTIL the orderId disappears from getOpenOrders /
+      // getOpenAlgoOrders (auto-cleanup effect in useChartTradingData
+      // watches the cache), or hits the 30s TTL. We do NOT unblock in
+      // .finally() — Binance is eventually-consistent and keeps listing
+      // the cancelled orderId for a few seconds after our backend
+      // reports success; unblocking immediately re-exposes the phantom.
+      if (blockedEntryOrderId) {
+        setTimeout(() => unblockOrderId(blockedEntryOrderId!), 30_000);
+      }
+
       manager?.markDirty('overlays');
 
       updatePendingEntry({ id, newPrice: updates.entryPrice }).then(() => {
@@ -453,7 +545,7 @@ export const useChartTradingActions = ({
         manager?.markDirty('overlays');
       });
     }
-  }, [updateExecutionSLTP, updatePendingEntry, manager, backendWalletId, symbol, allExecutions, cancelFuturesOrderMutation, addBackendOrder, toastError, t, applyOptimistic, clearOptimistic, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions]);
+  }, [updateExecutionSLTP, updatePendingEntry, manager, backendWalletId, symbol, allExecutions, cancelFuturesOrderMutation, addBackendOrder, toastError, t, applyOptimistic, clearOptimistic, orderLoadingMapRef, orderFlashMapRef, setOptimisticExecutions, removeOrderFromAllOpenOrderCaches, utils]);
 
   const handleGridConfirm = useCallback(async (prices: number[], side: 'BUY' | 'SELL') => {
     if (!backendWalletId || !symbol) return;

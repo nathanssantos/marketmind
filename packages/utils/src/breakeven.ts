@@ -4,7 +4,7 @@ import { getFeeRateForVipLevel } from '@marketmind/types';
 export interface BreakevenParams {
   entryPrice: number;
   side: PositionSide;
-  /** Single-side taker fee rate. Defaults to Binance Futures VIP 0 (0.0004). */
+  /** Single-side taker fee rate. Defaults to Binance Futures VIP 0 (0.0005). */
   takerRate?: number;
 }
 

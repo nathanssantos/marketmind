@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.22.15] - 2026-05-18
+
+Order-drag ghost finally squashed + Binance Futures fee correctness pass. The drag-to-move flow no longer briefly renders the order at both origin and destination during the cancel+create roundtrip, and the VIP 0 taker rate now reflects Binance's current 0.05% (was stuck at the old 0.04%).
+
+### Fixed
+
+- **`vipLevel: null` for live wallets** — Binance's `/fapi/v3/account` endpoint omits `feeTier` for some users despite the SDK type claiming it's always present, so `Number(undefined)` → NaN → serialized as null. Fee-service now falls back to reverse-lookup against the `BINANCE_FUTURES_VIP_LEVELS` table from the observed maker/taker rates; final fallback is VIP 0.
+- **Stale Binance Futures VIP 0 taker rate** — table had 0.040% but Binance currently charges 0.050% at VIP 0 (confirmed via live API for a real account). Updated `BINANCE_FUTURES_VIP_LEVELS[0].taker` and `BINANCE_FEES.FUTURES.VIP_0.taker` to 0.0005. `FUTURES_DEFAULTS.TAKER_FEE` and the breakeven default propagate automatically.
+- **Dragged order briefly painted at BOTH origin AND destination before disappearing from destination** — TWO compounded races. First fix: `futuresTrading.cancelOrder` mutation was missing an `onMutate` cache-drop, so during the 100–500ms cancel ack window the old order surfaced via `useOrphanOrders → trackedOrders` at the origin price. Second (deeper) fix: even with the cache drop, concurrent WS-triggered refetches of `getOpenOrders` would re-fetch from Binance — which is eventually-consistent and still listed the cancelled order — and put it back in cache. Solution: a pending-cancellation **block-list** lives in `OptimisticOrderOverridesContext` (Set of orderIds), populated `onMutate` and cleared on settle (with 30s TTL fallback). `useChartTradingData` filters `orphanOrderExecutions` and `trackedOrderExecutions` against this set, so the old orderId is invisible to the chart regardless of how many times the cache re-fetches during the cancel+create round-trip. Both the autoTrading `updatePendingEntry` path AND the raw `futuresTrading.cancelOrder` exchange-move path are now block-listed at dispatch time.
+
 ## [1.22.14] - 2026-05-16
 
 Hotfix release. One PR (#688) restoring the right-axis price tag for overlay indicators (EMA / SMA / Bollinger / Ichimoku) on charts that don't have a live trade open — a silent regression introduced 11 days ago by #456's collision-system migration.

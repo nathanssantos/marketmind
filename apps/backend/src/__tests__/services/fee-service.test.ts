@@ -276,7 +276,7 @@ describe('FeeService', () => {
       const result = await fetchFuturesFees(wallet);
 
       expect(result.maker).toBe(0.0002);
-      expect(result.taker).toBe(0.0004);
+      expect(result.taker).toBe(0.0005);
       expect(mockGetAccountCommissionRate).toHaveBeenCalledWith({ symbol: 'BTCUSDT' });
     });
 
@@ -326,7 +326,7 @@ describe('FeeService', () => {
       expect(result.spot.maker).toBe(0.001);
       expect(result.spot.taker).toBe(0.001);
       expect(result.futures.maker).toBe(0.0002);
-      expect(result.futures.taker).toBe(0.0004);
+      expect(result.futures.taker).toBe(0.0005);
       expect(result.vipLevel).toBe(0);
       expect(result.hasBnbDiscount).toBe(false);
 
