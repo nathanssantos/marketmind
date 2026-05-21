@@ -11,6 +11,15 @@ interface OHLCSnapResult {
   snappedPrice: number;
   snapped: boolean;
   ohlcType: 'open' | 'high' | 'low' | 'close' | null;
+  /**
+   * Pixel distance from the cursor to the snapped OHLC vertex (or
+   * `Infinity` when nothing snapped). Surfaced so the caller can
+   * compare against the drawing-handle snap distance and pick the
+   * truly-closest target instead of relying on a hard priority that
+   * makes handle always win even when a candle vertex is half the
+   * distance away. See `useDrawingInteraction.getIndexAndPrice`.
+   */
+  distance: number;
 }
 
 interface UseOHLCMagnetProps {
@@ -22,20 +31,20 @@ interface UseOHLCMagnetProps {
 export const useOHLCMagnet = ({ manager, klines, enabled }: UseOHLCMagnetProps) => {
   const snap = useCallback((mouseX: number, mouseY: number): OHLCSnapResult => {
     if (!enabled || !manager || klines.length === 0) {
-      if (!manager) return { snappedIndex: 0, snappedPrice: 0, snapped: false, ohlcType: null };
+      if (!manager) return { snappedIndex: 0, snappedPrice: 0, snapped: false, ohlcType: null, distance: Infinity };
       const viewport = manager.getViewport();
       const dimensions = manager.getDimensions();
-      if (!viewport || !dimensions) return { snappedIndex: 0, snappedPrice: 0, snapped: false, ohlcType: null };
+      if (!viewport || !dimensions) return { snappedIndex: 0, snappedPrice: 0, snapped: false, ohlcType: null, distance: Infinity };
 
       const rawIndex = viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start);
       const index = Math.round(rawIndex);
       const price = manager.yToPrice(mouseY);
-      return { snappedIndex: index, snappedPrice: price, snapped: false, ohlcType: null };
+      return { snappedIndex: index, snappedPrice: price, snapped: false, ohlcType: null, distance: Infinity };
     }
 
     const viewport = manager.getViewport();
     const dimensions = manager.getDimensions();
-    if (!viewport || !dimensions) return { snappedIndex: 0, snappedPrice: 0, snapped: false, ohlcType: null };
+    if (!viewport || !dimensions) return { snappedIndex: 0, snappedPrice: 0, snapped: false, ohlcType: null, distance: Infinity };
 
     const rawIndex = viewport.start + (mouseX / dimensions.chartWidth) * (viewport.end - viewport.start);
     const centerIndex = Math.round(rawIndex);
@@ -80,6 +89,7 @@ export const useOHLCMagnet = ({ manager, klines, enabled }: UseOHLCMagnetProps) 
       snappedPrice: bestType ? bestPrice : manager.yToPrice(mouseY),
       snapped: bestType !== null,
       ohlcType: bestType,
+      distance: bestType ? bestDist : Infinity,
     };
   }, [manager, klines, enabled]);
 

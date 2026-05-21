@@ -2,6 +2,7 @@ import type { FibonacciDrawing, CoordinateMapper } from '@marketmind/chart-studi
 import { DRAWING_COLORS } from '@marketmind/chart-studies';
 import { getLevelColor as getFibLevelColor, FIBONACCI_DEFAULT_COLOR } from '@marketmind/fibonacci';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
+import { resolveDrawingIndex } from '@renderer/utils/canvas/canvasHelpers';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { CANVAS_FONTS, INDICATOR_COLORS, LINE_DASHES } from '@shared/constants';
 
@@ -24,12 +25,14 @@ export const renderFibonacci = (
   chartWidth: number,
   themeColors?: ChartThemeColors,
 ): void => {
-  const lowX = mapper.indexToCenterX(drawing.swingLowIndex);
+  const resolvedLowIndex = resolveDrawingIndex(drawing.swingLowIndex, drawing.swingLowTime, mapper);
+  const resolvedHighIndex = resolveDrawingIndex(drawing.swingHighIndex, drawing.swingHighTime, mapper);
+  const lowX = mapper.indexToCenterX(resolvedLowIndex);
   const lowY = mapper.priceToY(drawing.swingLowPrice);
-  const highX = mapper.indexToCenterX(drawing.swingHighIndex);
+  const highX = mapper.indexToCenterX(resolvedHighIndex);
   const highY = mapper.priceToY(drawing.swingHighPrice);
 
-  const isUpwardLeg = drawing.swingHighIndex > drawing.swingLowIndex;
+  const isUpwardLeg = resolvedHighIndex > resolvedLowIndex;
   const fibStartX = isUpwardLeg ? lowX : highX;
 
   ctx.save();

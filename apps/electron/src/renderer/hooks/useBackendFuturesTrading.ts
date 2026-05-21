@@ -7,10 +7,12 @@ import { trpc } from '../utils/trpc';
 import { usePricesForSymbols } from '../store/priceStore';
 import { replaceOpenExecutionsInAllCaches } from '../services/executionCacheSync';
 import { usePollingInterval } from './usePollingInterval';
+import { useOptimisticOrderOverrides } from '../context/OptimisticOrderOverridesContext';
 
 export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
+  const { blockOrderId, unblockOrderId } = useOptimisticOrderOverrides();
 
   // Optimistic-remove helper: drops an orderId from every variant of
   // futuresTrading.getOpenOrders / getOpenAlgoOrders cache so the
@@ -143,7 +145,16 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
 
   const cancelOrderMutation = trpc.futuresTrading.cancelOrder.useMutation({
     onMutate: ({ orderId }) => {
-      if (orderId) dropOrderFromCaches(String(orderId));
+      if (orderId) {
+        dropOrderFromCaches(String(orderId));
+        // Block-list the orderId so refetches during the cancel ack
+        // window can't re-surface the order via useOrphanOrders.
+        // Auto-cleanup effect in useChartTradingData unblocks when
+        // Binance stops listing the order; 30s safety TTL backstops
+        // a hung cancel.
+        blockOrderId(String(orderId));
+        setTimeout(() => unblockOrderId(String(orderId)), 30_000);
+      }
     },
     onSuccess: (data) => {
       fanOutOpenExecutions(data);
@@ -188,6 +199,30 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       // caches the moment the user confirms. This kills the lingering
       // order lines on the chart in the same render frame as the click,
       // instead of waiting for the 200–500ms refetch round-trip.
+      // Block-list every orderId in cache so a refetch during the
+      // Binance cancel ack window can't re-surface any of them.
+      const openOrdersCaches = queryClient.getQueriesData<Array<{ orderId?: string | number }>>({
+        queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders),
+      });
+      const algoCaches = queryClient.getQueriesData<Array<{ algoId?: string | number; orderId?: string | number }>>({
+        queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders),
+      });
+      const idsToBlock = new Set<string>();
+      for (const [, rows] of openOrdersCaches) {
+        if (!Array.isArray(rows)) continue;
+        for (const r of rows) if (r.orderId !== undefined) idsToBlock.add(String(r.orderId));
+      }
+      for (const [, rows] of algoCaches) {
+        if (!Array.isArray(rows)) continue;
+        for (const r of rows) {
+          const oid = r.algoId ?? r.orderId;
+          if (oid !== undefined) idsToBlock.add(String(oid));
+        }
+      }
+      for (const oid of idsToBlock) {
+        blockOrderId(oid);
+        setTimeout(() => unblockOrderId(oid), 30_000);
+      }
       const emptyArray = (data: unknown): unknown => (Array.isArray(data) ? [] : data);
       queryClient.setQueriesData(
         { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },
@@ -328,6 +363,31 @@ export const useBackendFuturesTrading = (walletId: string, symbol?: string) => {
       // immediately so all pending entry / SL / TP lines vanish from
       // the chart in the same render frame as the click. Refetches
       // below confirm with Binance.
+      // Also block-list every orderId/algoId we know about, so a
+      // refetch during the Binance cancel ack window can't re-surface
+      // any of them (eventually-consistent listings).
+      const openOrdersCaches = queryClient.getQueriesData<Array<{ orderId?: string | number }>>({
+        queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders),
+      });
+      const algoCaches = queryClient.getQueriesData<Array<{ algoId?: string | number; orderId?: string | number }>>({
+        queryKey: getQueryKey(trpc.futuresTrading.getOpenAlgoOrders),
+      });
+      const idsToBlock = new Set<string>();
+      for (const [, rows] of openOrdersCaches) {
+        if (!Array.isArray(rows)) continue;
+        for (const r of rows) if (r.orderId !== undefined) idsToBlock.add(String(r.orderId));
+      }
+      for (const [, rows] of algoCaches) {
+        if (!Array.isArray(rows)) continue;
+        for (const r of rows) {
+          const oid = r.algoId ?? r.orderId;
+          if (oid !== undefined) idsToBlock.add(String(oid));
+        }
+      }
+      for (const oid of idsToBlock) {
+        blockOrderId(oid);
+        setTimeout(() => unblockOrderId(oid), 30_000);
+      }
       const emptyArray = (data: unknown): unknown => (Array.isArray(data) ? [] : data);
       queryClient.setQueriesData(
         { queryKey: getQueryKey(trpc.futuresTrading.getOpenOrders) },

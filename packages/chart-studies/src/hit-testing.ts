@@ -1,5 +1,12 @@
 import { HIT_THRESHOLD, HANDLE_HIT_RADIUS, PENCIL_HIT_THRESHOLD, GANN_ANGLES } from './constants';
+import { resolveDrawingIndex } from './resolveIndex';
 import type { Drawing, CoordinateMapper, DrawingHandle } from './types';
+
+const xAt = (
+  mapper: CoordinateMapper,
+  index: number,
+  time: number | undefined,
+): number => mapper.indexToCenterX(resolveDrawingIndex(index, time, mapper));
 
 export const pointToLineDistance = (
   px: number, py: number,
@@ -91,9 +98,9 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
     case 'priceRange':
     case 'ellipse':
     case 'gannFan': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sx = xAt(mapper, drawing.startIndex, drawing.startTime);
       const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ex = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ey = mapper.priceToY(drawing.endPrice);
       return [
         { drawingId: drawing.id, handleType: 'start', x: sx, y: sy },
@@ -101,9 +108,9 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
       ];
     }
     case 'fibonacci': {
-      const lowX = mapper.indexToCenterX(drawing.swingLowIndex);
+      const lowX = xAt(mapper, drawing.swingLowIndex, drawing.swingLowTime);
       const lowY = mapper.priceToY(drawing.swingLowPrice);
-      const highX = mapper.indexToCenterX(drawing.swingHighIndex);
+      const highX = xAt(mapper, drawing.swingHighIndex, drawing.swingHighTime);
       const highY = mapper.priceToY(drawing.swingHighPrice);
       return [
         { drawingId: drawing.id, handleType: 'swingLow', x: lowX, y: lowY },
@@ -116,24 +123,24 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
       const first = drawing.points[0]!;
       const last = drawing.points[drawing.points.length - 1]!;
       return [
-        { drawingId: drawing.id, handleType: 'start', x: mapper.indexToCenterX(first.index), y: mapper.priceToY(first.price) },
-        { drawingId: drawing.id, handleType: 'end', x: mapper.indexToCenterX(last.index), y: mapper.priceToY(last.price) },
+        { drawingId: drawing.id, handleType: 'start', x: xAt(mapper, first.index, first.time), y: mapper.priceToY(first.price) },
+        { drawingId: drawing.id, handleType: 'end', x: xAt(mapper, last.index, last.time), y: mapper.priceToY(last.price) },
       ];
     }
     case 'text': {
-      const tx = mapper.indexToCenterX(drawing.index);
+      const tx = xAt(mapper, drawing.index, drawing.time);
       const ty = mapper.priceToY(drawing.price);
       return [{ drawingId: drawing.id, handleType: 'start', x: tx, y: ty }];
     }
     case 'horizontalLine':
     case 'verticalLine': {
-      const hx = mapper.indexToCenterX(drawing.index);
+      const hx = xAt(mapper, drawing.index, drawing.time);
       const hy = mapper.priceToY(drawing.price);
       return [{ drawingId: drawing.id, handleType: 'start', x: hx, y: hy }];
     }
     case 'longPosition':
     case 'shortPosition': {
-      const ex = mapper.indexToCenterX(drawing.entryIndex);
+      const ex = xAt(mapper, drawing.entryIndex, drawing.entryTime);
       const entryY = mapper.priceToY(drawing.entryPrice);
       const slY = mapper.priceToY(drawing.stopLossPrice);
       const tpY = mapper.priceToY(drawing.takeProfitPrice);
@@ -145,11 +152,11 @@ const getHandlesForDrawing = (drawing: Drawing, mapper: CoordinateMapper): Drawi
     }
     case 'channel':
     case 'pitchfork': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sx = xAt(mapper, drawing.startIndex, drawing.startTime);
       const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ex = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ey = mapper.priceToY(drawing.endPrice);
-      const wx = mapper.indexToCenterX(drawing.widthIndex);
+      const wx = xAt(mapper, drawing.widthIndex, drawing.widthTime);
       const wy = mapper.priceToY(drawing.widthPrice);
       return [
         { drawingId: drawing.id, handleType: 'start', x: sx, y: sy },
@@ -188,18 +195,18 @@ export const hitTestDrawing = (
     case 'ruler':
     case 'arrow':
     case 'ray': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sx = xAt(mapper, drawing.startIndex, drawing.startTime);
       const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ex = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ey = mapper.priceToY(drawing.endPrice);
       const dist = pointToLineDistance(px, py, sx, sy, ex, ey);
       if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
       break;
     }
     case 'trendLine': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sx = xAt(mapper, drawing.startIndex, drawing.startTime);
       const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ex = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ey = mapper.priceToY(drawing.endPrice);
       const dx = ex - sx;
       const dy = ey - sy;
@@ -214,7 +221,7 @@ export const hitTestDrawing = (
       const entryY = mapper.priceToY(drawing.entryPrice);
       const slY = mapper.priceToY(drawing.stopLossPrice);
       const tpY = mapper.priceToY(drawing.takeProfitPrice);
-      const x1 = mapper.indexToCenterX(drawing.entryIndex);
+      const x1 = xAt(mapper, drawing.entryIndex, drawing.entryTime);
       const minY = Math.min(entryY, slY, tpY);
       const maxY = Math.max(entryY, slY, tpY);
       if (px >= x1 - 20 && py >= minY - HIT_THRESHOLD && py <= maxY + HIT_THRESHOLD) {
@@ -229,9 +236,9 @@ export const hitTestDrawing = (
     case 'area':
     case 'priceRange':
     case 'ellipse': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sx = xAt(mapper, drawing.startIndex, drawing.startTime);
       const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ex = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ey = mapper.priceToY(drawing.endPrice);
       if (pointInRect(px, py, sx, sy, ex, ey)) return { drawingId: drawing.id, handleType: 'body', distance: 0 };
       if (pointNearRectBorder(px, py, sx, sy, ex, ey)) return { drawingId: drawing.id, handleType: null, distance: 0 };
@@ -240,16 +247,16 @@ export const hitTestDrawing = (
     case 'pencil':
     case 'highlighter': {
       const screenPoints = drawing.points.map(p => ({
-        x: mapper.indexToCenterX(p.index),
+        x: xAt(mapper, p.index, p.time),
         y: mapper.priceToY(p.price),
       }));
       if (pointNearPath(px, py, screenPoints)) return { drawingId: drawing.id, handleType: null, distance: 0 };
       break;
     }
     case 'fibonacci': {
-      const lowX = mapper.indexToCenterX(drawing.swingLowIndex);
+      const lowX = xAt(mapper, drawing.swingLowIndex, drawing.swingLowTime);
       const lowY = mapper.priceToY(drawing.swingLowPrice);
-      const highX = mapper.indexToCenterX(drawing.swingHighIndex);
+      const highX = xAt(mapper, drawing.swingHighIndex, drawing.swingHighTime);
       const highY = mapper.priceToY(drawing.swingHighPrice);
       const dist = pointToLineDistance(px, py, lowX, lowY, highX, highY);
       if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
@@ -267,7 +274,7 @@ export const hitTestDrawing = (
       break;
     }
     case 'text': {
-      const tx = mapper.indexToCenterX(drawing.index);
+      const tx = xAt(mapper, drawing.index, drawing.time);
       const ty = mapper.priceToY(drawing.price);
       const w = drawing.text.length * drawing.fontSize * 0.6;
       const h = drawing.fontSize * 1.2;
@@ -281,17 +288,17 @@ export const hitTestDrawing = (
       break;
     }
     case 'verticalLine': {
-      const vx = mapper.indexToCenterX(drawing.index);
+      const vx = xAt(mapper, drawing.index, drawing.time);
       const dist = Math.abs(px - vx);
       if (dist <= HIT_THRESHOLD) return { drawingId: drawing.id, handleType: null, distance: dist };
       break;
     }
     case 'channel': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sx = xAt(mapper, drawing.startIndex, drawing.startTime);
       const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ex = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ey = mapper.priceToY(drawing.endPrice);
-      const wx = mapper.indexToCenterX(drawing.widthIndex);
+      const wx = xAt(mapper, drawing.widthIndex, drawing.widthTime);
       const wy = mapper.priceToY(drawing.widthPrice);
       const dx = ex - sx;
       const dy = ey - sy;
@@ -302,11 +309,11 @@ export const hitTestDrawing = (
       break;
     }
     case 'pitchfork': {
-      const sx = mapper.indexToCenterX(drawing.startIndex);
+      const sx = xAt(mapper, drawing.startIndex, drawing.startTime);
       const sy = mapper.priceToY(drawing.startPrice);
-      const ex = mapper.indexToCenterX(drawing.endIndex);
+      const ex = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ey = mapper.priceToY(drawing.endPrice);
-      const wx = mapper.indexToCenterX(drawing.widthIndex);
+      const wx = xAt(mapper, drawing.widthIndex, drawing.widthTime);
       const wy = mapper.priceToY(drawing.widthPrice);
       const mx = (ex + wx) / 2;
       const my = (ey + wy) / 2;
@@ -321,9 +328,9 @@ export const hitTestDrawing = (
       break;
     }
     case 'gannFan': {
-      const ox = mapper.indexToCenterX(drawing.startIndex);
+      const ox = xAt(mapper, drawing.startIndex, drawing.startTime);
       const oy = mapper.priceToY(drawing.startPrice);
-      const rx = mapper.indexToCenterX(drawing.endIndex);
+      const rx = xAt(mapper, drawing.endIndex, drawing.endTime);
       const ry = mapper.priceToY(drawing.endPrice);
       const refDx = rx - ox;
       const refDy = ry - oy;

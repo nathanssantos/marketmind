@@ -8,9 +8,18 @@ import { INDICATOR_COLORS } from '@shared/constants';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useCallback, useEffect, useRef } from 'react';
 import { useOHLCMagnet } from './useOHLCMagnet';
-import { getHandlePoints } from './drawingHandles';
+import { getHandlePoints, type HandlePoint } from './drawingHandles';
 
 const DRAWING_HANDLE_SNAP_PIXEL_THRESHOLD = 12;
+
+// Pixel bias applied to drawing-handle distance when comparing against
+// an OHLC vertex distance. A deliberate anchor the user placed should
+// still win when the two targets are roughly equidistant — without the
+// bias, sub-pixel jitter would oscillate between handle and candle
+// vertex. With it, OHLC only wins when it is clearly the closer
+// target (visually obvious to the user), which is the right behaviour
+// when a candle high happens to land near someone else's old endpoint.
+const HANDLE_BIAS_PX = 4;
 
 type InteractionPhase = 'idle' | 'placing-first' | 'placing-second' | 'placing-third' | 'drawing-freeform' | 'dragging';
 
@@ -222,6 +231,48 @@ export const useDrawingInteraction = ({
   const dragStartRef = useRef<{ x: number; y: number; handleType: string | null; originalDrawing: Drawing } | null>(null);
   const lastSnapRef = useRef<OHLCSnapIndicator | null>(null);
 
+  // Held-modifier flag for momentary magnet bypass. Cmd on macOS, Ctrl
+  // elsewhere — both `metaKey` and `ctrlKey` are honoured so users on a
+  // cross-platform setup don't have to retrain muscle memory. Tracked
+  // on a ref (not state) because the snap callbacks read it inside
+  // mouse handlers that fire outside React's render cycle; a state
+  // update would race the next mousemove and the cursor would visibly
+  // jump as the bypass took effect a frame late. Shift / Alt are
+  // already taken by the long/short order-entry shortcuts (see
+  // `useTradingShortcuts`), so they can't be reused here.
+  const bypassMagnetRef = useRef(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) bypassMagnetRef.current = true;
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (!e.metaKey && !e.ctrlKey) {
+        bypassMagnetRef.current = false;
+        // Drop the snap indicator immediately — without this the dot
+        // from the last snapped position would linger until the next
+        // mousemove repainted the overlay, making the bypass feel
+        // sluggish.
+        lastSnapRef.current = null;
+      }
+    };
+    // Window-blur safety: if the user Cmd-tabs away mid-bypass, the
+    // keyup never fires here. Clear the flag so the magnet doesn't
+    // stay off when they come back.
+    const handleBlur = () => {
+      bypassMagnetRef.current = false;
+      lastSnapRef.current = null;
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
   useEffect(() => {
     phaseRef.current = 'idle';
     pendingDrawingRef.current = null;
@@ -243,9 +294,10 @@ export const useDrawingInteraction = ({
   // drawing creation went through plain OHLC magnet only, so a click
   // that visually snapped to a handle still placed the new drawing at
   // the raw cursor position (the bug user reported).
-  const findDrawingHandleSnap = useCallback((x: number, y: number): { x: number; y: number; index: number; price: number; time?: number } | null => {
+  const findDrawingHandleSnap = useCallback((x: number, y: number): { x: number; y: number; index: number; price: number; time?: number; distance: number } | null => {
     if (!manager) return null;
     if (!useDrawingStore.getState().magnetEnabled) return null;
+    if (bypassMagnetRef.current) return null;
 
     const store = useDrawingStore.getState();
     const drawings = store.drawingsByKey[compositeKey(symbol, interval)] ?? [];
@@ -254,7 +306,7 @@ export const useDrawingInteraction = ({
     const mapper = createDrawingMapper(manager);
     const draggingId = dragStartRef.current?.originalDrawing.id;
     let bestDist = DRAWING_HANDLE_SNAP_PIXEL_THRESHOLD;
-    let bestPoint: { x: number; y: number } | null = null;
+    let bestPoint: HandlePoint | null = null;
 
     for (const drawing of drawings) {
       if (!drawing.visible) continue;
@@ -276,24 +328,62 @@ export const useDrawingInteraction = ({
 
     if (!bestPoint) return null;
 
-    const index = manager.xToIndex(bestPoint.x);
-    const price = manager.yToPrice(bestPoint.y);
-    const roundedIdx = Math.round(index);
-    const time = roundedIdx >= 0 && roundedIdx < klines.length ? klines[roundedIdx]?.openTime : undefined;
-    return { x: bestPoint.x, y: bestPoint.y, index, price, time };
+    // Reuse the source drawing's exact `index`/`price`/`time` instead
+    // of reverse-mapping `bestPoint.x` through `manager.xToIndex` — the
+    // inverse adds a `+0.5` bar offset that converts an integer index
+    // like `10` into `10.5`, so a snap "to" an existing endpoint
+    // actually lands a half-bar off and the two drawings render at
+    // different X positions. Copying the source value keeps them
+    // pixel-perfect, which is what enables stacking multiple drawings
+    // on the same candle vertex or chaining segments end-to-start.
+    return {
+      x: bestPoint.x,
+      y: bestPoint.y,
+      index: bestPoint.index,
+      price: bestPoint.price,
+      time: bestPoint.time,
+      distance: bestDist,
+    };
   }, [manager, klines, symbol, interval]);
 
   const getIndexAndPrice = useCallback((x: number, y: number): { index: number; price: number; time?: number } => {
     if (!manager) return { index: 0, price: 0 };
+
+    // Cmd/Ctrl held → magnet off for this move. Return the raw cursor
+    // position so the user can place an anchor "slightly separated"
+    // from an existing handle or candle vertex without the snap radius
+    // pulling it back. Re-engaged as soon as the modifier is released.
+    if (bypassMagnetRef.current) {
+      const dimensions = manager.getDimensions();
+      const viewport = manager.getViewport();
+      if (!dimensions || !viewport) return { index: 0, price: 0 };
+      const rawIndex = viewport.start + (x / dimensions.chartWidth) * (viewport.end - viewport.start);
+      const flooredIdx = Math.floor(rawIndex);
+      const time = flooredIdx >= 0 && flooredIdx < klines.length ? klines[flooredIdx]?.openTime : undefined;
+      return { index: rawIndex, price: manager.yToPrice(y), time };
+    }
+
+    // Closest-wins between drawing-handle and OHLC vertex. The earlier
+    // "handle ALWAYS beats OHLC" priority swallowed cases where the
+    // user was clearly aiming at a candle vertex that happened to sit
+    // a few pixels closer than someone else's handle — the magnet kept
+    // pulling to the handle and there was no way to pick the OHLC
+    // short of toggling magnet off. We bias toward handle by
+    // HANDLE_BIAS_PX so a deliberate anchor still wins on ties, but
+    // an OHLC vertex that's clearly closer (≥ ~5px advantage) wins.
     const handleSnap = findDrawingHandleSnap(x, y);
-    if (handleSnap) {
+    const ohlc = snap(x, y);
+
+    const handleScore = handleSnap ? handleSnap.distance - HANDLE_BIAS_PX : Infinity;
+    const ohlcScore = ohlc.snapped ? ohlc.distance : Infinity;
+
+    if (handleSnap && handleScore <= ohlcScore) {
       return { index: handleSnap.index, price: handleSnap.price, time: handleSnap.time };
     }
-    const result = snap(x, y);
-    const idx = result.snappedIndex;
+    const idx = ohlc.snappedIndex;
     const roundedIdx = Math.round(idx);
     const time = roundedIdx >= 0 && roundedIdx < klines.length ? klines[roundedIdx]?.openTime : undefined;
-    return { index: idx, price: result.snappedPrice, time };
+    return { index: idx, price: ohlc.snappedPrice, time };
   }, [manager, snap, klines, findDrawingHandleSnap]);
 
   /**
@@ -735,20 +825,28 @@ export const useDrawingInteraction = ({
       return { x, y, snapped: false };
     }
 
-    // Drawing-handle magnet pass — when the cursor is near another
-    // drawing's anchor (corner / endpoint / fib swing / position
-    // entry-SL-TP), prefer that snap target over OHLC. The user
-    // wants to snap to an existing drawing's anchor more often than
-    // to a candle vertex when both are nearby; the explicit anchor
-    // is what the user placed deliberately. Same visual indicator as
-    // OHLC snap, just no letter label.
+    // Magnet off (Cmd/Ctrl held) — drop the indicator and return the
+    // raw cursor so the visible crosshair shows the user the exact
+    // position the next click will use.
+    if (bypassMagnetRef.current) {
+      lastSnapRef.current = null;
+      return { x, y, snapped: false };
+    }
+
+    // Closest-wins between a drawing-handle and an OHLC candle vertex
+    // (with HANDLE_BIAS_PX favouring the deliberate anchor on ties).
+    // See `getIndexAndPrice` for the rationale.
     const handleSnap = findDrawingHandleSnap(x, y);
-    if (handleSnap) {
+    const result = snap(x, y);
+
+    const handleScore = handleSnap ? handleSnap.distance - HANDLE_BIAS_PX : Infinity;
+    const ohlcScore = result.snapped && result.ohlcType ? result.distance : Infinity;
+
+    if (handleSnap && handleScore <= ohlcScore) {
       lastSnapRef.current = { x: handleSnap.x, y: handleSnap.y, ohlcType: 'handle' };
       return { x: handleSnap.x, y: handleSnap.y, snapped: true };
     }
 
-    const result = snap(x, y);
     if (!result.snapped || !result.ohlcType) {
       lastSnapRef.current = null;
       return { x, y, snapped: false };

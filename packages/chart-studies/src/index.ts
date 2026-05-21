@@ -58,3 +58,4 @@ export {
 export type { KlineTimeLookup, TimeToIndexLookup } from './serialization';
 
 export { resolveDrawingIndices } from './resolveIndices';
+export { resolveDrawingIndex } from './resolveIndex';

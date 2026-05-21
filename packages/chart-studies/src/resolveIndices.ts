@@ -12,6 +12,17 @@ const SINGLE_POINT_TYPES = new Set(['horizontalLine', 'verticalLine']);
 export const resolveDrawingIndices = (drawing: Drawing, klines: KlineWithTime[]): Drawing => {
   if (klines.length === 0) return drawing;
 
+  // Exact-match only: when `time` isn't present in the current klines
+  // (e.g. pagination hasn't reached far enough yet, or hydration ran
+  // mid-stream against a partial window), return the stored fallback
+  // index instead of snapping silently to the nearest neighbour. A
+  // snapped index becomes a sticky lie — the drawing renders at a
+  // bar that has nothing to do with the user's anchor, and the user
+  // sees the line "jump" relative to its original time. The renderer
+  // re-runs this resolution every time the klines array shifts, so
+  // dropping back to `fallbackIdx` for one frame is fine; once the
+  // real bar is loaded the exact-match branch wins and the drawing
+  // re-anchors to its true position.
   const timeToIdx = (time: number | undefined, fallbackIdx: number): number => {
     if (time === undefined) return fallbackIdx;
     let lo = 0;
@@ -23,7 +34,7 @@ export const resolveDrawingIndices = (drawing: Drawing, klines: KlineWithTime[])
       else if (mt > time) hi = mid - 1;
       else return mid;
     }
-    return Math.max(0, lo);
+    return fallbackIdx;
   };
 
   if (TWO_POINT_TYPES.has(drawing.type)) {

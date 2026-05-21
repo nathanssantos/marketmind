@@ -13,14 +13,17 @@ vi.mock('@marketmind/chart-studies', async () => {
   };
 });
 
+let mockOHLCSnap = (x: number, y: number) => ({
+  snappedIndex: x / 10,
+  snappedPrice: 100 - y / 10,
+  snapped: false,
+  ohlcType: null as 'open' | 'high' | 'low' | 'close' | null,
+  distance: Infinity,
+});
+
 vi.mock('./useOHLCMagnet', () => ({
   useOHLCMagnet: () => ({
-    snap: (x: number, y: number) => ({
-      snappedIndex: x / 10,
-      snappedPrice: 100 - y / 10,
-      snapped: false,
-      ohlcType: null,
-    }),
+    snap: (x: number, y: number) => mockOHLCSnap(x, y),
   }),
 }));
 
@@ -422,5 +425,183 @@ describe('useDrawingInteraction — state machine', () => {
       expect(result.current.pendingDrawingRef.current).toBeNull();
       expect(drawingsForSymbol()).toHaveLength(0);
     });
+  });
+});
+
+describe('useDrawingInteraction — magnet snap composition', () => {
+  beforeEach(() => {
+    useDrawingStore.setState({
+      drawingsByKey: {},
+      activeTool: null,
+      selectedDrawingId: null,
+      magnetEnabled: true,
+    });
+    hitTestDrawingsMock.mockReset();
+    mockOHLCSnap = (x: number, y: number) => ({
+      snappedIndex: x / 10,
+      snappedPrice: 100 - y / 10,
+      snapped: false,
+      ohlcType: null,
+      distance: Infinity,
+    });
+  });
+
+  afterEach(() => {
+    useDrawingStore.setState({ drawingsByKey: {}, activeTool: null, selectedDrawingId: null });
+  });
+
+  const seedExistingLine = () => {
+    // Existing line with endpoint that the renderer will paint at
+    // pixel (100, 500) under the test mapper: indexToCenterX(10)=100,
+    // priceToY(50)=500.
+    const line: Drawing = {
+      id: 'existing-line',
+      type: 'line',
+      symbol: 'BTCUSDT',
+      interval: '1h',
+      createdAt: 0,
+      updatedAt: 0,
+      visible: true,
+      locked: false,
+      zIndex: 0,
+      startIndex: 10, startPrice: 50,
+      endIndex: 20, endPrice: 60,
+    };
+    useDrawingStore.setState({
+      drawingsByKey: { 'BTCUSDT:1h': [line] },
+    });
+  };
+
+  it('uses the closer target when a candle vertex is clearly nearer than a drawing handle (OHLC wins)', () => {
+    // Existing handle at (100, 500). Mock OHLC says a candle vertex sits
+    // 2px from the cursor with distance=2; the handle is 11px from the
+    // cursor. With HANDLE_BIAS_PX=4, handle score = 7, OHLC score = 2 →
+    // OHLC wins. New drawing must anchor on the candle, not the handle.
+    seedExistingLine();
+    mockOHLCSnap = () => ({
+      snappedIndex: 30,
+      snappedPrice: 99,
+      snapped: true,
+      ohlcType: 'high',
+      distance: 2,
+    });
+    useDrawingStore.setState({ activeTool: 'line' });
+
+    const { result } = setup();
+    act(() => {
+      // Click 11px away from existing handle (within 12px threshold)
+      // but the OHLC mock says the vertex is much closer.
+      result.current.handleMouseDown(108, 503);
+    });
+
+    const pending = result.current.pendingDrawingRef.current;
+    expect(pending).not.toBeNull();
+    // The pending drawing's first anchor came from the OHLC mock,
+    // NOT the existing-line handle at index 10.
+    expect((pending as Drawing & { startIndex: number }).startIndex).toBe(30);
+  });
+
+  it('handle wins on near-ties because of HANDLE_BIAS_PX (deliberate anchor preserved)', () => {
+    // Both targets at ~3px from cursor. Without the bias they'd be a
+    // coin flip; with the bias, the handle wins. This preserves the
+    // original "deliberate anchor first" intent without the rigid
+    // priority that caused the reported bug.
+    seedExistingLine();
+    mockOHLCSnap = () => ({
+      snappedIndex: 30,
+      snappedPrice: 99,
+      snapped: true,
+      ohlcType: 'high',
+      distance: 3,
+    });
+    useDrawingStore.setState({ activeTool: 'line' });
+
+    const { result } = setup();
+    act(() => {
+      // Click 3px from the existing handle (101, 503): handle dist = √(1²+3²)=~3.16.
+      result.current.handleMouseDown(101, 503);
+    });
+
+    const pending = result.current.pendingDrawingRef.current;
+    expect(pending).not.toBeNull();
+    // Anchor came from the existing handle (index 10), not OHLC (index 30).
+    expect((pending as Drawing & { startIndex: number }).startIndex).toBe(10);
+  });
+
+  it('Cmd/Ctrl held → both magnet passes are skipped, raw cursor wins', () => {
+    // Even with an existing handle right under the cursor AND an OHLC
+    // vertex saying it snapped, the bypass returns raw position so the
+    // user can place an anchor "slightly separated" without the snap
+    // pulling it back to either target.
+    seedExistingLine();
+    mockOHLCSnap = () => ({
+      snappedIndex: 30,
+      snappedPrice: 99,
+      snapped: true,
+      ohlcType: 'high',
+      distance: 1,
+    });
+    useDrawingStore.setState({ activeTool: 'line' });
+
+    const { result } = setup();
+
+    // Simulate Cmd press.
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true }));
+    });
+
+    act(() => {
+      // Click directly on the existing handle position (100, 500).
+      result.current.handleMouseDown(100, 500);
+    });
+
+    const pending = result.current.pendingDrawingRef.current;
+    expect(pending).not.toBeNull();
+    // Raw cursor → index = 100 / 10 = 10 from the viewport math;
+    // critically NOT from OHLC (would be 30) and NOT from handle
+    // (would be xToIndex(100) = 10 from the existing line — same
+    // numeric value but the magnet path was bypassed). The OHLC
+    // index 30 NOT being chosen is the proof the bypass worked.
+    expect((pending as Drawing & { startIndex: number }).startIndex).not.toBe(30);
+
+    // Release Cmd.
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keyup', { metaKey: false, ctrlKey: false }));
+    });
+  });
+
+  it('window blur clears the bypass flag so magnet returns after Cmd-tab', () => {
+    seedExistingLine();
+    mockOHLCSnap = () => ({
+      snappedIndex: 30,
+      snappedPrice: 99,
+      snapped: true,
+      ohlcType: 'high',
+      distance: 1,
+    });
+    useDrawingStore.setState({ activeTool: 'line' });
+
+    const { result } = setup();
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { metaKey: true }));
+    });
+    // User Cmd-tabs away — keyup never fires for the modifier, but
+    // blur does. Without the blur listener the flag would stay set
+    // and the magnet would remain off when they came back.
+    act(() => {
+      window.dispatchEvent(new Event('blur'));
+    });
+
+    act(() => {
+      // Cursor 8.5px from handle (100, 500), OHLC mock says distance=1.
+      // Handle score = 8.5 - 4 (bias) = 4.5; OHLC < handle → OHLC wins,
+      // proving magnet is back on after the blur cleared the bypass flag.
+      result.current.handleMouseDown(108, 503);
+    });
+
+    const pending = result.current.pendingDrawingRef.current;
+    expect(pending).not.toBeNull();
+    expect((pending as Drawing & { startIndex: number }).startIndex).toBe(30);
   });
 });

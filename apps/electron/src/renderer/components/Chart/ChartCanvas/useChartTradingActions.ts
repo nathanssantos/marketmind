@@ -244,6 +244,8 @@ export const useChartTradingActions = ({
         orderFlashMapRef.current.set(target.rawId, performance.now());
         applyOptimistic(target.rawId, cancelPatches, { status: 'pending' });
         orderLoadingMapRef.current.set(target.rawId, Date.now());
+        // The block-list against refetch races is set by
+        // cancelFuturesOrderMutation.onMutate inside useBackendFuturesTrading.
         manager?.markDirty('overlays');
         cancelFuturesOrderMutation.mutateAsync({ walletId: backendWalletId, symbol, orderId: target.exchangeOrderId })
           .then(() => {
@@ -270,6 +272,8 @@ export const useChartTradingActions = ({
           orderFlashMapRef.current.set(exec.id, performance.now());
           applyOptimistic(exec.id, cancelPatches, { status: exec.status });
           orderLoadingMapRef.current.set(exec.id, Date.now());
+          // The block-list of underlying orderIds is set by
+          // cancelExecutionMutation.onMutate in useBackendTradingMutations.
           manager?.markDirty('overlays');
           cancelExecution(exec.id).then(() => {
             manager?.markDirty('overlays');
@@ -493,7 +497,7 @@ export const useChartTradingActions = ({
       // the cancelled orderId for a few seconds after our backend
       // reports success; unblocking immediately re-exposes the phantom.
       if (blockedEntryOrderId) {
-        setTimeout(() => unblockOrderId(blockedEntryOrderId!), 30_000);
+        setTimeout(() => unblockOrderId(blockedEntryOrderId), 30_000);
       }
 
       manager?.markDirty('overlays');

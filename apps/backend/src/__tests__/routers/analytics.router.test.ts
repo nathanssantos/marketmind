@@ -594,18 +594,20 @@ describe('Analytics Router', () => {
       expect(todayBucket?.wins).toBe(1);
     });
 
-    it('prefers Binance income ledger over DB trade pnl when income has synced (matches Binance widget)', async () => {
+    it('prefers Binance income ledger over DB trade pnl once trades are linked (matches Binance widget)', async () => {
       // 2026-05-09 user report: app showed -$750.64 while Binance
       // showed -$962.99 for the same 4 trades. The $212 gap was funding
       // payments + fees Binance counts in REALIZED_PNL but our
       // per-trade `pnl` field excludes (funding sits in
       // `accumulated_funding`, not folded into `pnl`).
       //
-      // Fix: prefer `incomeSum` (REALIZED_PNL + COMMISSION + FUNDING_FEE)
-      // whenever Binance has reported any income today. The previous
-      // behavior of preferring DB pnl was meant to filter phantom
-      // reverse-roll income — that bug is fixed and the ledger is
-      // canonical now. tradesCount still comes from DB metadata.
+      // Fix: once each trade's REALIZED_PNL is linked to the exec
+      // (incomeEvents.executionId populated by syncFromBinance), the
+      // daily query uses `incomeSum` alone for those trades — which
+      // includes COMMISSION + FUNDING_FEE the per-trade `pnl` field
+      // excludes. Unlinked closed trades still fall back to their DB
+      // pnl so the widget updates immediately on close (regression
+      // tested in the previous case). tradesCount still comes from DB.
       const { user, session } = await createAuthenticatedUser();
       const wallet = await createTestWallet({
         userId: user.id,
@@ -617,15 +619,15 @@ describe('Analytics Router', () => {
 
       const today = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })(); // today @ noon UTC — avoids midnight boundary flake without forcing a stale fixed date
       // 3 closed trades — DB pnl sum 90 (excludes funding/fees).
-      await createTestTradeExecution({
+      const t1 = await createTestTradeExecution({
         userId: user.id, walletId: wallet.id, status: 'closed',
         pnl: '20', openedAt: today, closedAt: today,
       });
-      await createTestTradeExecution({
+      const t2 = await createTestTradeExecution({
         userId: user.id, walletId: wallet.id, status: 'closed',
         pnl: '20', openedAt: today, closedAt: today,
       });
-      await createTestTradeExecution({
+      const t3 = await createTestTradeExecution({
         userId: user.id, walletId: wallet.id, status: 'closed',
         pnl: '50', openedAt: today, closedAt: today,
       });
@@ -633,19 +635,35 @@ describe('Analytics Router', () => {
       // Binance income aggregate that includes per-trade pnl + funding +
       // fees — the value the user sees in the Binance widget. 70 here
       // simulates the same trades net of $20 funding + fees combined.
+      // executionId links each REALIZED_PNL row to its trade so the
+      // daily query knows the trade is "synced" and drops its DB pnl
+      // from the unsynced fallback.
       await db.insert(incomeEvents).values([
         {
           userId: user.id, walletId: wallet.id, binanceTranId: 1,
-          incomeType: 'REALIZED_PNL', amount: '90', asset: 'USDT',
+          incomeType: 'REALIZED_PNL', amount: '20', asset: 'USDT',
           symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
+          executionId: t1.id,
         },
         {
           userId: user.id, walletId: wallet.id, binanceTranId: 2,
+          incomeType: 'REALIZED_PNL', amount: '20', asset: 'USDT',
+          symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
+          executionId: t2.id,
+        },
+        {
+          userId: user.id, walletId: wallet.id, binanceTranId: 3,
+          incomeType: 'REALIZED_PNL', amount: '50', asset: 'USDT',
+          symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
+          executionId: t3.id,
+        },
+        {
+          userId: user.id, walletId: wallet.id, binanceTranId: 4,
           incomeType: 'COMMISSION', amount: '-15', asset: 'USDT',
           symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
         },
         {
-          userId: user.id, walletId: wallet.id, binanceTranId: 3,
+          userId: user.id, walletId: wallet.id, binanceTranId: 5,
           incomeType: 'FUNDING_FEE', amount: '-5', asset: 'USDT',
           symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
         },
@@ -662,9 +680,60 @@ describe('Analytics Router', () => {
       const todayBucket = result.find((d) => d.date === todayKey);
       // tradesCount comes from DB metadata.
       expect(todayBucket?.tradesCount).toBe(3);
-      // pnl comes from incomeSum: 90 - 15 - 5 = 70. NOT 90 (the trade-
-      // level sum, which is what the Binance widget would NOT show).
+      // pnl comes from incomeSum alone (all trades linked): 90 - 15 - 5 = 70.
+      // NOT 90 (the trade-level sum, which is what the Binance widget
+      // would NOT show — it counts fees/funding too).
       expect(todayBucket?.pnl).toBeCloseTo(70, 0);
+    });
+
+    it('combines incomeSum with unsynced trade pnl when only some trades are linked (2nd close mid-sync)', async () => {
+      // Reproduces the user's complaint: after a 1st close synced its
+      // REALIZED_PNL into incomeEvents, closing a 2nd trade in the same
+      // day used to leave the widget stuck on the 1st trade's pnl. The
+      // post-close `syncWalletIncome` IIFE in handle-exit-fill takes a
+      // beat to backfill the 2nd trade's income row; in that window the
+      // 2nd trade has `tradeExecutions.pnl` set but no linked income.
+      // The daily query must add the 2nd's DB pnl on top of the 1st's
+      // incomeSum so the widget reflects every close immediately.
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id, walletType: 'paper', initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+      const db = getTestDatabase();
+
+      const today = (() => { const d = new Date(); d.setUTCHours(12, 0, 0, 0); return d; })();
+
+      // Trade 1: closed earlier, income already synced + linked.
+      const t1 = await createTestTradeExecution({
+        userId: user.id, walletId: wallet.id, status: 'closed',
+        pnl: '40', openedAt: today, closedAt: today,
+      });
+      await db.insert(incomeEvents).values({
+        userId: user.id, walletId: wallet.id, binanceTranId: 100,
+        incomeType: 'REALIZED_PNL', amount: '40', asset: 'USDT',
+        symbol: 'BTCUSDT', incomeTime: today, source: 'binance',
+        executionId: t1.id,
+      });
+
+      // Trade 2: just closed — DB has pnl, no income linked yet.
+      await createTestTradeExecution({
+        userId: user.id, walletId: wallet.id, status: 'closed',
+        pnl: '25', openedAt: today, closedAt: today,
+      });
+
+      const result = await caller.analytics.getDailyPerformance({
+        walletId: wallet.id,
+        year: today.getUTCFullYear(),
+        month: today.getUTCMonth() + 1,
+      });
+
+      const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' });
+      const todayKey = fmt.format(today);
+      const todayBucket = result.find((d) => d.date === todayKey);
+      expect(todayBucket?.tradesCount).toBe(2);
+      // incomeSum (40) + unsynced t2 pnl (25) = 65.
+      expect(todayBucket?.pnl).toBeCloseTo(65, 0);
     });
 
     it('excludes orphan execs (exit_price=NULL) from the daily DB sum (regression: phantom -$11k loss in widget)', async () => {

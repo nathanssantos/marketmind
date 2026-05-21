@@ -161,6 +161,20 @@ export interface CoordinateMapper {
    * field so that pagination prepends, kline reloads, or any other
    * array-shifting events don't cause drawings to drift on the time
    * axis. Returns -1 if the manager has no klines loaded yet.
+   *
+   * Note: this is a "best-effort" lookup — when the stored timestamp
+   * is outside the loaded array, the binary search snaps to the
+   * nearest edge. Drawing renderers verify the resolved index via
+   * `getKlineTime` so an out-of-range time falls back to the stored
+   * index instead of silently snapping to bar 0 / N-1.
    */
   timeToIndex: (timestamp: number) => number;
+  /**
+   * Open timestamp of the kline at `index`, or `undefined` when the
+   * index is out of bounds. Used by drawing renderers to confirm the
+   * resolved index of a stored `*Time` actually points at the same
+   * bar — guards against silent edge-snapping when the stored time
+   * isn't present in the current klines array.
+   */
+  getKlineTime: (index: number) => number | undefined;
 }
