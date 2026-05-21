@@ -17,6 +17,7 @@ const createMapper = (): CoordinateMapper => ({
   xToIndex: (x: number) => Math.floor(x / 10),
   indexToCenterX: (index: number) => index * 10 + 5,
   timeToIndex: () => 0,
+  getKlineTime: () => undefined,
 });
 
 const baseDrawing = {

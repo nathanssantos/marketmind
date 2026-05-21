@@ -1,4 +1,5 @@
 import type { CoordinateMapper, LongPositionDrawing, ShortPositionDrawing } from '@marketmind/chart-studies';
+import { resolveDrawingIndex } from '@renderer/utils/canvas/canvasHelpers';
 
 const ENTRY_COLOR = '#2196F3';
 const PROFIT_COLOR = 'rgba(34, 197, 94, 0.15)';
@@ -116,13 +117,13 @@ export const renderPosition = (
   risk?: PositionRiskContext | null,
 ): void => {
   const isLong = drawing.type === 'longPosition';
-  const { entryPrice, stopLossPrice, takeProfitPrice, entryIndex } = drawing;
+  const { entryPrice, stopLossPrice, takeProfitPrice, entryIndex, entryTime } = drawing;
   const color = drawing.color ?? ENTRY_COLOR;
 
   const entryY = mapper.priceToY(entryPrice);
   const slY = mapper.priceToY(stopLossPrice);
   const tpY = mapper.priceToY(takeProfitPrice);
-  const startX = mapper.indexToCenterX(entryIndex);
+  const startX = mapper.indexToCenterX(resolveDrawingIndex(entryIndex, entryTime, mapper));
 
   const isSlProfit = isLong ? stopLossPrice > entryPrice : stopLossPrice < entryPrice;
   const isTpProfit = isLong ? takeProfitPrice > entryPrice : takeProfitPrice < entryPrice;

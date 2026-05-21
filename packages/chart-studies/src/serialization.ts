@@ -118,7 +118,16 @@ export const serializeDrawingData = (drawing: Drawing, getOpenTime?: KlineTimeLo
 };
 
 const resolveIndex = (storedIndex: number, storedTime: number | undefined, timeToIndex?: TimeToIndexLookup): number => {
-  if (storedTime && timeToIndex) return timeToIndex(storedTime);
+  if (storedTime && timeToIndex) {
+    const resolved = timeToIndex(storedTime);
+    // -1 means "stored time not present in current klines" (e.g. the
+    // kline at `storedTime` hasn't loaded yet during a partial-window
+    // hydration). Fall back to the stored index — the renderer's
+    // per-frame `resolveDrawingIndex` will re-anchor against `time`
+    // once it lands in the loaded range, so the drawing snaps back
+    // to its real bar without us having to re-hydrate.
+    if (resolved >= 0) return resolved;
+  }
   return storedIndex;
 };
 

@@ -1,5 +1,11 @@
 import type { Drawing, CoordinateMapper, ChannelDrawing, PitchforkDrawing, PencilDrawing, HighlighterDrawing } from '@marketmind/chart-studies';
-import { HANDLE_RADIUS, DRAWING_COLORS } from '@marketmind/chart-studies';
+import { HANDLE_RADIUS, DRAWING_COLORS, resolveDrawingIndex } from '@marketmind/chart-studies';
+
+const xAt = (
+  mapper: CoordinateMapper,
+  index: number,
+  time: number | undefined,
+): number => mapper.indexToCenterX(resolveDrawingIndex(index, time, mapper));
 
 const FULL_CIRCLE = Math.PI * 2;
 const MAGNET_ANCHOR_RADIUS = 4;
@@ -7,6 +13,20 @@ const MAGNET_ANCHOR_RADIUS = 4;
 export interface HandlePoint {
   x: number;
   y: number;
+  /**
+   * Source kline index for this handle, copied straight from the
+   * drawing field that owns it (e.g. `startIndex` for line-start,
+   * `swingLowIndex` for fib, `entryIndex` for position). The magnet
+   * uses this directly instead of reverse-mapping `x` back through
+   * `xToIndex` — the inverse adds a +0.5 bar offset that turns an
+   * exact integer index like `10` into `10.5`, so a snap "to" an
+   * existing endpoint would actually land half a bar off. Preserving
+   * the source value lets two drawings stack on the same magnet
+   * target with identical anchor coordinates.
+   */
+  index: number;
+  price: number;
+  time?: number;
 }
 
 const TWO_POINT_HANDLE_TYPES = new Set(['line', 'ruler', 'arrow', 'rectangle', 'area', 'ray', 'trendLine', 'priceRange', 'ellipse', 'gannFan']);
@@ -24,27 +44,27 @@ const SINGLE_POINT_HANDLE_TYPES = new Set(['text', 'horizontalLine', 'verticalLi
  */
 export const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): HandlePoint[] => {
   if (TWO_POINT_HANDLE_TYPES.has(drawing.type)) {
-    const d = drawing as Drawing & { startIndex: number; startPrice: number; endIndex: number; endPrice: number };
+    const d = drawing as Drawing & { startIndex: number; startPrice: number; endIndex: number; endPrice: number; startTime?: number; endTime?: number };
     return [
-      { x: mapper.indexToCenterX(d.startIndex), y: mapper.priceToY(d.startPrice) },
-      { x: mapper.indexToCenterX(d.endIndex), y: mapper.priceToY(d.endPrice) },
+      { x: xAt(mapper, d.startIndex, d.startTime), y: mapper.priceToY(d.startPrice), index: d.startIndex, price: d.startPrice, time: d.startTime },
+      { x: xAt(mapper, d.endIndex, d.endTime), y: mapper.priceToY(d.endPrice), index: d.endIndex, price: d.endPrice, time: d.endTime },
     ];
   }
 
   if (THREE_POINT_HANDLE_TYPES.has(drawing.type)) {
     const d = drawing as ChannelDrawing | PitchforkDrawing;
     return [
-      { x: mapper.indexToCenterX(d.startIndex), y: mapper.priceToY(d.startPrice) },
-      { x: mapper.indexToCenterX(d.endIndex), y: mapper.priceToY(d.endPrice) },
-      { x: mapper.indexToCenterX(d.widthIndex), y: mapper.priceToY(d.widthPrice) },
+      { x: xAt(mapper, d.startIndex, d.startTime), y: mapper.priceToY(d.startPrice), index: d.startIndex, price: d.startPrice, time: d.startTime },
+      { x: xAt(mapper, d.endIndex, d.endTime), y: mapper.priceToY(d.endPrice), index: d.endIndex, price: d.endPrice, time: d.endTime },
+      { x: xAt(mapper, d.widthIndex, d.widthTime), y: mapper.priceToY(d.widthPrice), index: d.widthIndex, price: d.widthPrice, time: d.widthTime },
     ];
   }
 
   if (drawing.type === 'fibonacci') {
     const d = drawing;
     return [
-      { x: mapper.indexToCenterX(d.swingLowIndex), y: mapper.priceToY(d.swingLowPrice) },
-      { x: mapper.indexToCenterX(d.swingHighIndex), y: mapper.priceToY(d.swingHighPrice) },
+      { x: xAt(mapper, d.swingLowIndex, d.swingLowTime), y: mapper.priceToY(d.swingLowPrice), index: d.swingLowIndex, price: d.swingLowPrice, time: d.swingLowTime },
+      { x: xAt(mapper, d.swingHighIndex, d.swingHighTime), y: mapper.priceToY(d.swingHighPrice), index: d.swingHighIndex, price: d.swingHighPrice, time: d.swingHighTime },
     ];
   }
 
@@ -54,23 +74,23 @@ export const getHandlePoints = (drawing: Drawing, mapper: CoordinateMapper): Han
     const first = d.points[0]!;
     const last = d.points[d.points.length - 1]!;
     return [
-      { x: mapper.indexToCenterX(first.index), y: mapper.priceToY(first.price) },
-      { x: mapper.indexToCenterX(last.index), y: mapper.priceToY(last.price) },
+      { x: xAt(mapper, first.index, first.time), y: mapper.priceToY(first.price), index: first.index, price: first.price, time: first.time },
+      { x: xAt(mapper, last.index, last.time), y: mapper.priceToY(last.price), index: last.index, price: last.price, time: last.time },
     ];
   }
 
   if (SINGLE_POINT_HANDLE_TYPES.has(drawing.type)) {
-    const d = drawing as Drawing & { index: number; price: number };
-    return [{ x: mapper.indexToCenterX(d.index), y: mapper.priceToY(d.price) }];
+    const d = drawing as Drawing & { index: number; price: number; time?: number };
+    return [{ x: xAt(mapper, d.index, d.time), y: mapper.priceToY(d.price), index: d.index, price: d.price, time: d.time }];
   }
 
   if (drawing.type === 'longPosition' || drawing.type === 'shortPosition') {
     const d = drawing;
-    const x = mapper.indexToCenterX(d.entryIndex);
+    const x = xAt(mapper, d.entryIndex, d.entryTime);
     return [
-      { x, y: mapper.priceToY(d.entryPrice) },
-      { x, y: mapper.priceToY(d.stopLossPrice) },
-      { x, y: mapper.priceToY(d.takeProfitPrice) },
+      { x, y: mapper.priceToY(d.entryPrice), index: d.entryIndex, price: d.entryPrice, time: d.entryTime },
+      { x, y: mapper.priceToY(d.stopLossPrice), index: d.entryIndex, price: d.stopLossPrice, time: d.entryTime },
+      { x, y: mapper.priceToY(d.takeProfitPrice), index: d.entryIndex, price: d.takeProfitPrice, time: d.entryTime },
     ];
   }
 

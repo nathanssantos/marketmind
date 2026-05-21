@@ -2,9 +2,13 @@ import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-const { usePortfolioDataMock, useGlobalActionsOptionalMock } = vi.hoisted(() => ({
+const { usePortfolioDataMock, useGlobalActionsOptionalMock, useBackendWalletMock } = vi.hoisted(() => ({
   usePortfolioDataMock: vi.fn(),
   useGlobalActionsOptionalMock: vi.fn(),
+  useBackendWalletMock: vi.fn(() => ({
+    syncBalance: vi.fn(),
+    syncTransfers: vi.fn(),
+  })),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -17,6 +21,10 @@ vi.mock('./usePortfolioData', () => ({
 
 vi.mock('@renderer/context/GlobalActionsContext', () => ({
   useGlobalActionsOptional: useGlobalActionsOptionalMock,
+}));
+
+vi.mock('@renderer/hooks/useBackendWallet', () => ({
+  useBackendWallet: useBackendWalletMock,
 }));
 
 // Heavy children — neutralize them so we don't pull in their hooks/data.

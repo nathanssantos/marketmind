@@ -5,7 +5,11 @@ import { getHandlePoints, renderDrawingHandles, renderMagnetAnchors } from './dr
 const mapper: CoordinateMapper = {
   priceToY: (p: number) => p * -1,
   yToPrice: (y: number) => y * -1,
+  indexToX: (i: number) => i * 10,
+  xToIndex: (x: number) => x / 10,
   indexToCenterX: (i: number) => i * 10,
+  timeToIndex: () => -1,
+  getKlineTime: () => undefined,
 };
 
 const baseDrawing = {
@@ -23,8 +27,8 @@ describe('getHandlePoints', () => {
   it('returns 2 points for two-point drawings (line)', () => {
     const line: LineDrawing = { ...baseDrawing, type: 'line', startIndex: 1, startPrice: 100, endIndex: 5, endPrice: 200 };
     expect(getHandlePoints(line, mapper)).toEqual([
-      { x: 10, y: -100 },
-      { x: 50, y: -200 },
+      { x: 10, y: -100, index: 1, price: 100, time: undefined },
+      { x: 50, y: -200, index: 5, price: 200, time: undefined },
     ]);
   });
 
@@ -38,7 +42,7 @@ describe('getHandlePoints', () => {
     };
     const pts = getHandlePoints(channel, mapper);
     expect(pts).toHaveLength(3);
-    expect(pts[2]).toEqual({ x: 50, y: -250 });
+    expect(pts[2]).toEqual({ x: 50, y: -250, index: 5, price: 250, time: undefined });
   });
 
   it('returns 2 points for fibonacci (swing low + swing high)', () => {
@@ -51,8 +55,8 @@ describe('getHandlePoints', () => {
       levels: [],
     };
     expect(getHandlePoints(fib, mapper)).toEqual([
-      { x: 0, y: -50 },
-      { x: 100, y: -150 },
+      { x: 0, y: -50, index: 0, price: 50, time: undefined },
+      { x: 100, y: -150, index: 10, price: 150, time: undefined },
     ]);
   });
 
@@ -67,14 +71,14 @@ describe('getHandlePoints', () => {
       ],
     };
     expect(getHandlePoints(pencil, mapper)).toEqual([
-      { x: 0, y: -100 },
-      { x: 100, y: -200 },
+      { x: 0, y: -100, index: 0, price: 100, time: undefined },
+      { x: 100, y: -200, index: 10, price: 200, time: undefined },
     ]);
   });
 
   it('returns single point for horizontalLine', () => {
     const hline: HorizontalLineDrawing = { ...baseDrawing, type: 'horizontalLine', index: 3, price: 75 };
-    expect(getHandlePoints(hline, mapper)).toEqual([{ x: 30, y: -75 }]);
+    expect(getHandlePoints(hline, mapper)).toEqual([{ x: 30, y: -75, index: 3, price: 75, time: undefined }]);
   });
 
   it('returns 3 stacked points for longPosition (entry / SL / TP)', () => {
@@ -87,15 +91,31 @@ describe('getHandlePoints', () => {
       takeProfitPrice: 120,
     };
     expect(getHandlePoints(pos, mapper)).toEqual([
-      { x: 70, y: -100 },
-      { x: 70, y: -90 },
-      { x: 70, y: -120 },
+      { x: 70, y: -100, index: 7, price: 100, time: undefined },
+      { x: 70, y: -90, index: 7, price: 90, time: undefined },
+      { x: 70, y: -120, index: 7, price: 120, time: undefined },
     ]);
   });
 
   it('returns empty array for empty pencil', () => {
     const pencil: PencilDrawing = { ...baseDrawing, type: 'pencil', points: [] };
     expect(getHandlePoints(pencil, mapper)).toEqual([]);
+  });
+
+  it('preserves the source `index` and `price` exactly — no reverse-map drift', () => {
+    // Regression: `findDrawingHandleSnap` used to reverse-map the
+    // matched handle's pixel through `manager.xToIndex(x)`, which
+    // adds a +0.5 bar offset (centerX → indexToCenterX maps integer
+    // N to N*pxPerBar + pxPerBar/2, and xToIndex reverses to N+0.5).
+    // Two lines stacked on the same candle high ended up with
+    // startIndex=10 and startIndex=10.5 — visibly half a bar apart.
+    // `getHandlePoints` now ships the source field verbatim so the
+    // snap can copy it without losing precision.
+    const line: LineDrawing = { ...baseDrawing, type: 'line', startIndex: 10, startPrice: 50_100, endIndex: 20, endPrice: 50_200 };
+    const pts = getHandlePoints(line, mapper);
+    expect(pts[0]?.index).toBe(10);
+    expect(pts[0]?.price).toBe(50_100);
+    expect(pts[1]?.index).toBe(20);
   });
 });
 

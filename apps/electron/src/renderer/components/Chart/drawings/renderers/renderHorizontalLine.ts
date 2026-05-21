@@ -1,6 +1,6 @@
 import type { HorizontalLineDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS } from '@marketmind/chart-studies';
-import { applyDrawingStyle } from '@renderer/utils/canvas/canvasHelpers';
+import { applyDrawingStyle, resolveDrawingIndex } from '@renderer/utils/canvas/canvasHelpers';
 import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 import { LINE_DASHES } from '@shared/constants';
 
@@ -20,7 +20,7 @@ export const renderHorizontalLine = (
   chartWidth: number,
 ): void => {
   const y = mapper.priceToY(drawing.price);
-  const gripX = mapper.indexToCenterX(drawing.index);
+  const gripX = mapper.indexToCenterX(resolveDrawingIndex(drawing.index, drawing.time, mapper));
 
   ctx.save();
   applyDrawingStyle(ctx, drawing, isSelected, DRAWING_COLORS.horizontalLine);

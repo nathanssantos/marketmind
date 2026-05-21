@@ -1,6 +1,6 @@
 import { and, eq, gte, isNotNull, lt } from 'drizzle-orm';
 import { z } from 'zod';
-import { tradeExecutions } from '../../db/schema';
+import { incomeEvents, tradeExecutions } from '../../db/schema';
 import {
   getDailyIncomeSum,
   getEquityCurvePoints,
@@ -165,6 +165,7 @@ export const statsProcedures = {
       // their pre-fix phantom pnl values in the daily widget.
       const monthClosedTrades = await ctx.db
         .select({
+          id: tradeExecutions.id,
           closedAt: tradeExecutions.closedAt,
           pnl: tradeExecutions.pnl,
         })
@@ -180,16 +181,41 @@ export const statsProcedures = {
           ),
         );
 
-      const tradeStatsByDay = new Map<string, { wins: number; losses: number; closedPositions: number; grossProfit: number; grossLoss: number }>();
+      // Set of executionIds whose REALIZED_PNL has already been
+      // ingested from Binance's income ledger this month. Used below
+      // to know which closed trades are still "unsynced" so we can
+      // add their `pnl` on top of `incomeSum` instead of choosing one
+      // or the other — see the daily PnL source comment further down.
+      const monthIncomeLinks = await ctx.db
+        .select({ executionId: incomeEvents.executionId })
+        .from(incomeEvents)
+        .where(
+          and(
+            eq(incomeEvents.walletId, input.walletId),
+            eq(incomeEvents.userId, ctx.user.id),
+            eq(incomeEvents.incomeType, 'REALIZED_PNL'),
+            isNotNull(incomeEvents.executionId),
+            gte(incomeEvents.incomeTime, monthStart),
+            lt(incomeEvents.incomeTime, monthEnd),
+          ),
+        );
+      const syncedExecutionIds = new Set(
+        monthIncomeLinks
+          .map((row) => row.executionId)
+          .filter((id): id is string => !!id),
+      );
+
+      const tradeStatsByDay = new Map<string, { wins: number; losses: number; closedPositions: number; grossProfit: number; grossLoss: number; unsyncedPnl: number }>();
       const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: input.tz, year: 'numeric', month: '2-digit', day: '2-digit' });
       for (const t of monthClosedTrades) {
         if (!t.closedAt) continue;
         const dateKey = fmt.format(t.closedAt);
-        const stats = tradeStatsByDay.get(dateKey) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
+        const stats = tradeStatsByDay.get(dateKey) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0, unsyncedPnl: 0 };
         stats.closedPositions++;
         const pnl = parseFloat(t.pnl ?? '0');
         if (pnl > 0) { stats.wins++; stats.grossProfit += pnl; }
         else if (pnl < 0) { stats.losses++; stats.grossLoss += Math.abs(pnl); }
+        if (!syncedExecutionIds.has(t.id)) stats.unsyncedPnl += pnl;
         tradeStatsByDay.set(dateKey, stats);
       }
 
@@ -210,7 +236,7 @@ export const statsProcedures = {
       let balanceAtStart = runningBalance;
       for (const date of sortedDays) {
         const incomeSum = monthDailySum.get(date) ?? 0;
-        const stats = tradeStatsByDay.get(date) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0 };
+        const stats = tradeStatsByDay.get(date) ?? { wins: 0, losses: 0, closedPositions: 0, grossProfit: 0, grossLoss: 0, unsyncedPnl: 0 };
 
         // Daily PnL source resolution:
         //   - `incomeSum` = REALIZED_PNL + COMMISSION + FUNDING_FEE from
@@ -218,25 +244,23 @@ export const statsProcedures = {
         //     Binance shows in its "Today's Realized PnL" widget exactly,
         //     INCLUDING funding deltas and fees that aren't captured in
         //     the per-trade `pnl` field.
-        //   - `tradeRealizedNet` = sum of `tradeExecutions.pnl` for
-        //     cleanly-closed trades today. Misses funding accrued during
-        //     a position's lifetime (stored in `accumulated_funding` but
-        //     not folded into `pnl`) and any post-close fee adjustments.
+        //   - `unsyncedPnl` = sum of `tradeExecutions.pnl` for trades
+        //     closed today whose REALIZED_PNL row hasn't been ingested
+        //     yet (no incomeEvents row links back via executionId).
+        //     The post-close `syncWalletIncome` IIFE in handle-exit-fill
+        //     runs in the background and can take seconds; in that
+        //     window the trade is closed locally but missing from
+        //     `incomeSum`. Adding the local pnl as a placeholder keeps
+        //     the widget responsive to every close, not just the first.
+        //     Once Binance reports the trade's REALIZED_PNL row, the
+        //     trade is linked, drops from `unsyncedPnl`, and `incomeSum`
+        //     takes over — the displayed value refines by at most a few
+        //     cents (commission/funding rounding) without flickering.
         //   - Execs with NULL `exit_price` are filtered upstream — they
         //     are position-sync orphans (`exit_reason='SYNC_INCOMPLETE'`)
         //     whose pnl was historically miscomputed against exit_price=0
         //     (incident 2026-05-08T17:09).
-        //   - Rule: prefer `incomeSum` whenever Binance has reported any
-        //     income event today — that's the authoritative value the
-        //     user wants to see (and the one Binance UI shows). Fall
-        //     back to `tradeRealizedNet` ONLY when income hasn't synced
-        //     yet (incomeSum === 0 but trades were closed locally) so
-        //     the widget updates immediately on close instead of waiting
-        //     for the next income sync tick. Past concern about reverse-
-        //     roll phantoms over-counting incomeSum no longer applies —
-        //     that bug is fixed and Binance's ledger is canonical.
-        const tradeRealizedNet = stats.grossProfit - stats.grossLoss;
-        const dailyPnl = incomeSum !== 0 ? incomeSum : tradeRealizedNet;
+        const dailyPnl = incomeSum + stats.unsyncedPnl;
 
         results.push({
           date,

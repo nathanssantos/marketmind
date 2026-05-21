@@ -497,7 +497,7 @@ export const useChartTradingActions = ({
       // the cancelled orderId for a few seconds after our backend
       // reports success; unblocking immediately re-exposes the phantom.
       if (blockedEntryOrderId) {
-        setTimeout(() => unblockOrderId(blockedEntryOrderId!), 30_000);
+        setTimeout(() => unblockOrderId(blockedEntryOrderId), 30_000);
       }
 
       manager?.markDirty('overlays');
