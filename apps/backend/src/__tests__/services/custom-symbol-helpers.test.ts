@@ -261,7 +261,11 @@ describe('constants', () => {
     expect(COINGECKO_CACHE_TTL_MS).toBe(5 * 60 * 1000);
   });
 
-  it('KLINE_INTERVALS contains expected intervals', () => {
-    expect(KLINE_INTERVALS).toEqual(['1m', '5m', '15m', '1h', '4h', '1d']);
+  it('KLINE_INTERVALS contains every standard interval the chart can render', () => {
+    expect(KLINE_INTERVALS).toEqual([
+      '1m', '3m', '5m', '15m', '30m',
+      '1h', '2h', '4h', '6h', '8h', '12h',
+      '1d', '3d', '1w',
+    ]);
   });
 });
