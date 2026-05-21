@@ -1,6 +1,6 @@
 import type { ChannelDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS } from '@marketmind/chart-studies';
-import { applyDrawingStyle, extendLineToEdges, hexToRgba, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import { applyDrawingStyle, extendLineToEdges, hexToRgba, mapTwoPointCoords, resolveDrawingIndex } from '@renderer/utils/canvas/canvasHelpers';
 import { FILL_OPACITY, LINE_DASHES } from '@shared/constants';
 
 export const renderChannel = (
@@ -12,7 +12,7 @@ export const renderChannel = (
   chartHeight: number,
 ): void => {
   const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
-  const wx = mapper.indexToCenterX(drawing.widthIndex);
+  const wx = mapper.indexToCenterX(resolveDrawingIndex(drawing.widthIndex, drawing.widthTime, mapper));
   const wy = mapper.priceToY(drawing.widthPrice);
 
   const dx = x2 - x1;

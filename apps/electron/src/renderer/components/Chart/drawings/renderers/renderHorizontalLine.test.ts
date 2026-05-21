@@ -7,6 +7,7 @@ vi.mock('@renderer/utils/canvas/priceTagUtils', () => ({
 
 vi.mock('@renderer/utils/canvas/canvasHelpers', () => ({
   applyDrawingStyle: vi.fn(),
+  resolveDrawingIndex: (storedIndex: number) => storedIndex,
 }));
 
 import { renderHorizontalLine, renderHorizontalLineTag } from './renderHorizontalLine';
@@ -15,7 +16,11 @@ import { drawPriceTag } from '@renderer/utils/canvas/priceTagUtils';
 const mapper: CoordinateMapper = {
   priceToY: (p: number) => 1000 - p,
   yToPrice: (y: number) => 1000 - y,
+  indexToX: (i: number) => i * 10,
+  xToIndex: (x: number) => x / 10,
   indexToCenterX: (i: number) => i * 10,
+  timeToIndex: () => -1,
+  getKlineTime: () => undefined,
 };
 
 // Mapper that always returns an in-bounds y. Used for tests focused on
@@ -24,7 +29,11 @@ const mapper: CoordinateMapper = {
 const alwaysInBoundsMapper: CoordinateMapper = {
   priceToY: () => 500,
   yToPrice: () => 500,
+  indexToX: (i: number) => i * 10,
+  xToIndex: (x: number) => x / 10,
   indexToCenterX: (i: number) => i * 10,
+  timeToIndex: () => -1,
+  getKlineTime: () => undefined,
 };
 
 const baseDrawing: HorizontalLineDrawing = {

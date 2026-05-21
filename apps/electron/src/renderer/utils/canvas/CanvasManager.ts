@@ -495,6 +495,12 @@ export class CanvasManager {
     return this.viewport.start + x / (this.dimensions.chartWidth / visibleRange);
   }
 
+  public getKlineTime(index: number): number | undefined {
+    if (index < 0 || index >= this.klines.length) return undefined;
+    const kline = this.klines[index]!;
+    return typeof kline.openTime === 'number' ? kline.openTime : new Date(kline.openTime).getTime();
+  }
+
   public timeToIndex(timestamp: number): number {
     if (this.klines.length === 0) return -1;
     let left = 0;

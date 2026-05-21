@@ -29,21 +29,15 @@ const buildTimeToIndex = (klines: Kline[]): TimeToIndexLookup => {
     if (k) timeMap.set(k.openTime, i);
   }
 
-  return (time: number): number => {
-    const exact = timeMap.get(time);
-    if (exact !== undefined) return exact;
-
-    let lo = 0;
-    let hi = klines.length - 1;
-    while (lo <= hi) {
-      const mid = (lo + hi) >>> 1;
-      const midTime = klines[mid]?.openTime ?? 0;
-      if (midTime < time) lo = mid + 1;
-      else if (midTime > time) hi = mid - 1;
-      else return mid;
-    }
-    return Math.max(0, lo);
-  };
+  // Returns -1 when the stored timestamp doesn't match any loaded
+  // kline exactly (out-of-range OR a partial-window hydration race
+  // where the bar at `time` hasn't streamed in yet). The deserializer
+  // then keeps the stored `*Index` instead of silently snapping the
+  // drawing to bar 0 / N — a snapped index is a stale anchor that
+  // would survive subsequent klines loads. With -1, the renderer's
+  // per-frame `resolveDrawingIndex` will re-resolve once `time` is
+  // back in range.
+  return (time: number): number => timeMap.get(time) ?? -1;
 };
 
 const buildGetOpenTime = (klines: Kline[]): KlineTimeLookup =>

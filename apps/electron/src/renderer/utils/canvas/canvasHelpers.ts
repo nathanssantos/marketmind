@@ -1,5 +1,5 @@
 import type { Drawing, CoordinateMapper } from '@marketmind/chart-studies';
-import { DRAWING_COLORS, DEFAULT_LINE_WIDTH } from '@marketmind/chart-studies';
+import { DRAWING_COLORS, DEFAULT_LINE_WIDTH, resolveDrawingIndex } from '@marketmind/chart-studies';
 import type { CanvasManager } from './CanvasManager';
 import { CANVAS_EDGE_PADDING, SELECTION_WIDTH_BOOST } from '@shared/constants';
 
@@ -66,13 +66,19 @@ export interface TwoPointCoords {
   y2: number;
 }
 
+export { resolveDrawingIndex };
+
 export const mapTwoPointCoords = (
-  drawing: { startIndex: number; startPrice: number; endIndex: number; endPrice: number },
+  drawing: {
+    startIndex: number; startPrice: number;
+    endIndex: number; endPrice: number;
+    startTime?: number; endTime?: number;
+  },
   mapper: CoordinateMapper,
 ): TwoPointCoords => ({
-  x1: mapper.indexToCenterX(drawing.startIndex),
+  x1: mapper.indexToCenterX(resolveDrawingIndex(drawing.startIndex, drawing.startTime, mapper)),
   y1: mapper.priceToY(drawing.startPrice),
-  x2: mapper.indexToCenterX(drawing.endIndex),
+  x2: mapper.indexToCenterX(resolveDrawingIndex(drawing.endIndex, drawing.endTime, mapper)),
   y2: mapper.priceToY(drawing.endPrice),
 });
 
@@ -88,4 +94,5 @@ export const createDrawingMapper = (manager: CanvasManager): CoordinateMapper =>
   },
   indexToCenterX: (index: number) => manager.indexToCenterX(index),
   timeToIndex: (timestamp: number) => manager.timeToIndex(timestamp),
+  getKlineTime: (index: number) => manager.getKlineTime(index),
 });

@@ -107,6 +107,7 @@ export const usePortfolioData = () => {
     totalDeposits: parseFloat(w.totalDeposits ?? '0'),
     totalWithdrawals: parseFloat(w.totalWithdrawals ?? '0'),
     currency: (w.currency ?? 'USDT'),
+    walletType: w.walletType ?? 'paper',
     createdAt: new Date(w.createdAt),
   }));
 

@@ -1,6 +1,6 @@
 import type { PitchforkDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS } from '@marketmind/chart-studies';
-import { applyDrawingStyle, extendLineToEdges, mapTwoPointCoords } from '@renderer/utils/canvas/canvasHelpers';
+import { applyDrawingStyle, extendLineToEdges, mapTwoPointCoords, resolveDrawingIndex } from '@renderer/utils/canvas/canvasHelpers';
 
 export const renderPitchfork = (
   ctx: CanvasRenderingContext2D,
@@ -11,7 +11,7 @@ export const renderPitchfork = (
   chartHeight: number,
 ): void => {
   const { x1, y1, x2, y2 } = mapTwoPointCoords(drawing, mapper);
-  const x3 = mapper.indexToCenterX(drawing.widthIndex);
+  const x3 = mapper.indexToCenterX(resolveDrawingIndex(drawing.widthIndex, drawing.widthTime, mapper));
   const y3 = mapper.priceToY(drawing.widthPrice);
 
   const mx = (x2 + x3) / 2;

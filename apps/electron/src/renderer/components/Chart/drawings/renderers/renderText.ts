@@ -1,5 +1,6 @@
 import type { TextDrawing, CoordinateMapper } from '@marketmind/chart-studies';
 import { DRAWING_COLORS } from '@marketmind/chart-studies';
+import { resolveDrawingIndex } from '@renderer/utils/canvas/canvasHelpers';
 
 const UNDERLINE_OFFSET = 2;
 const TEXT_LINE_HEIGHT = 1.2;
@@ -12,7 +13,7 @@ export const renderText = (
 ): void => {
   if (!drawing.text) return;
 
-  const x = mapper.indexToCenterX(drawing.index);
+  const x = mapper.indexToCenterX(resolveDrawingIndex(drawing.index, drawing.time, mapper));
   const y = mapper.priceToY(drawing.price);
 
   ctx.save();
