@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **TradeTicket Buy/Sell buttons moved above the Market/Limit selector** (`apps/electron/src/renderer/components/Layout/TradeTicket.tsx`) — order-entry primary action sits at the top; the order-type toggle + limit price input sit underneath with `mt={2}` spacing so the row reads as a sub-detail of the trade rather than a peer.
+- **Portfolio + Today's P&L panels stripped of the wrapping `bg=bg.surface` card** (`apps/electron/src/renderer/components/Trading/Portfolio.tsx`, `PortfolioSummary.tsx`) — replaced with row separators (`1px / fg.muted / opacity 0.2`) and a tight `gap={1}` + `px={1}` so the dense grid reads as a single block. Header row now sits directly on the panel background.
+
 ### Fixed
 
 - **Custom symbols (POLITIFI etc.) stuck — tab ticker frozen and chart didn't auto-update after first paint** — `CustomSymbolService.start()` runs *before* `binancePriceStreamService.start()` in `index.ts`, so the inline `subscribeSymbol(component)` loop inside `subscribeToComponentStreams` silently no-ops against a null WS client (`subscribe()` early-returns when `!this.client`). `reconcileSubscriptions` then only included open executions + active price rooms — components like `WLFIUSDT`/`TRUMPUSDT`/`MELANIAUSDT`/`PEOPLEUSDT`/`PNUTUSDT` were neither, so the basket never received real-time prices and the synthesized POLITIFI ticker/chart sat at the boot snapshot. Fix: `CustomSymbolService.getComponentSymbols()` exposes the active components with their market type; `reconcileSubscriptions` and `resubscribeAll` consume it and add the components to the right (spot/futures) set. `hotLoad`/`remove` now also trigger a reconcile so newly added baskets stream immediately.

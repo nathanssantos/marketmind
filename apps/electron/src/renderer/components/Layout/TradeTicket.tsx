@@ -370,7 +370,18 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
           </IconButton>
         </HStack>
 
-        <HStack gap={1} role="tablist" aria-label={t('chart.quickTrade.orderType')}>
+        <HStack gap={1.5}>
+          <BuySellButtons
+            symbol={symbol}
+            currentPrice={currentPrice}
+            isCreatingOrder={isCreatingOrder}
+            onPlaceOrder={handleQuickOrder}
+            buyLabel={t('chart.quickTrade.buy')}
+            sellLabel={t('chart.quickTrade.sell')}
+          />
+        </HStack>
+
+        <HStack gap={1} mt={2} role="tablist" aria-label={t('chart.quickTrade.orderType')}>
           <Button
             size="2xs"
             fontSize="xs"
@@ -411,17 +422,6 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
               flex={1}
             />
           )}
-        </HStack>
-
-        <HStack gap={1.5}>
-          <BuySellButtons
-            symbol={symbol}
-            currentPrice={currentPrice}
-            isCreatingOrder={isCreatingOrder}
-            onPlaceOrder={handleQuickOrder}
-            buyLabel={t('chart.quickTrade.buy')}
-            sellLabel={t('chart.quickTrade.sell')}
-          />
         </HStack>
 
         <VStack gap={1} align="stretch">
