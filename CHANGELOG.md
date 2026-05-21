@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Custom symbols (POLITIFI etc.) stuck — tab ticker frozen and chart didn't auto-update after first paint** — `CustomSymbolService.start()` runs *before* `binancePriceStreamService.start()` in `index.ts`, so the inline `subscribeSymbol(component)` loop inside `subscribeToComponentStreams` silently no-ops against a null WS client (`subscribe()` early-returns when `!this.client`). `reconcileSubscriptions` then only included open executions + active price rooms — components like `WLFIUSDT`/`TRUMPUSDT`/`MELANIAUSDT`/`PEOPLEUSDT`/`PNUTUSDT` were neither, so the basket never received real-time prices and the synthesized POLITIFI ticker/chart sat at the boot snapshot. Fix: `CustomSymbolService.getComponentSymbols()` exposes the active components with their market type; `reconcileSubscriptions` and `resubscribeAll` consume it and add the components to the right (spot/futures) set. `hotLoad`/`remove` now also trigger a reconcile so newly added baskets stream immediately.
+
 ## [1.23.0] - 2026-05-21
 
 Chart UX overhaul — drawings stay perfectly anchored on the time axis across reloads and paginations, magnet snap works on stacked targets without drifting half a bar, and the Today's P&L widget refreshes itself on every close instead of needing a manual sync. One PR (#698) lands the three threads together.
