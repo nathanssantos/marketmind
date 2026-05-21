@@ -26,7 +26,22 @@ export interface CustomSymbolState {
 }
 
 export const COINGECKO_CACHE_TTL_MS = 5 * 60 * 1000;
-export const KLINE_INTERVALS: Interval[] = ['1m', '5m', '15m', '1h', '4h', '1d'];
+export const KLINE_INTERVALS: Interval[] = [
+  '1m',
+  '3m',
+  '5m',
+  '15m',
+  '30m',
+  '1h',
+  '2h',
+  '4h',
+  '6h',
+  '8h',
+  '12h',
+  '1d',
+  '3d',
+  '1w',
+];
 
 let marketCapCache: { data: Map<string, number>; timestamp: number } | null = null;
 

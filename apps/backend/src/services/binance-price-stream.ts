@@ -22,17 +22,26 @@ import { getWebSocketService } from './websocket';
  * back into the websocket layer and we'd otherwise hit a circular dep at
  * module-eval time.
  */
-let _getCustomSymbolService: (() => { isCustomSymbolSync: (s: string) => boolean } | null) | null = null;
+interface CustomSymbolBridge {
+  isCustomSymbolSync: (s: string) => boolean;
+  getComponentSymbols: () => Array<{ symbol: string; marketType: 'SPOT' | 'FUTURES' }>;
+}
+let _getCustomSymbolService: (() => CustomSymbolBridge | null) | null = null;
 let _customSymbolImportPromise: Promise<void> | null = null;
-const ensureCustomSymbolImport = (): void => {
-  if (_customSymbolImportPromise) return;
+const ensureCustomSymbolImport = (): Promise<void> => {
+  if (_customSymbolImportPromise) return _customSymbolImportPromise;
   _customSymbolImportPromise = import('./custom-symbol-service').then((mod) => {
     _getCustomSymbolService = mod.getCustomSymbolService;
   });
+  return _customSymbolImportPromise;
 };
 const isCustomSymbol = (symbol: string): boolean => {
   if (!_getCustomSymbolService) return false;
   return _getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false;
+};
+const getCustomComponentSymbols = (): Array<{ symbol: string; marketType: 'SPOT' | 'FUTURES' }> => {
+  if (!_getCustomSymbolService) return [];
+  return _getCustomSymbolService()?.getComponentSymbols() ?? [];
 };
 
 export interface PriceUpdate {
@@ -293,7 +302,7 @@ export class BinancePriceStreamService {
 
   public async reconcileSubscriptions(): Promise<void> {
     try {
-      ensureCustomSymbolImport();
+      await ensureCustomSymbolImport();
       const openExecutions = await db
         .select()
         .from(tradeExecutions)
@@ -322,6 +331,20 @@ export class BinancePriceStreamService {
         const lower = symbol.toLowerCase();
         if (isCustomSymbol(lower)) continue;
         futuresSymbols.add(lower);
+      }
+
+      // Components of synthetic baskets (POLITIFI etc.) must be streamed
+      // regardless of execution/viewer state: the renderer only joins the
+      // synthetic room, and `CustomSymbolService.start()` runs *before*
+      // `binancePriceStreamService.start()` in `index.ts` so the inline
+      // `subscribeSymbol` calls during boot silently no-op. Reconcile is
+      // the canonical mechanism.
+      for (const { symbol, marketType } of getCustomComponentSymbols()) {
+        if (marketType === 'FUTURES') {
+          futuresSymbols.add(symbol);
+        } else {
+          spotSymbols.add(symbol);
+        }
       }
 
       const allSymbolsNeeded = new Set([...spotSymbols, ...futuresSymbols]);
@@ -414,6 +437,7 @@ export class BinancePriceStreamService {
     this.subscribedSymbols.clear();
 
     try {
+      await ensureCustomSymbolImport();
       const openExecutions = await db
         .select()
         .from(tradeExecutions)
@@ -442,6 +466,10 @@ export class BinancePriceStreamService {
         const lower = symbol.toLowerCase();
         if (isCustomSymbol(lower)) continue;
         futuresSymbols.add(lower);
+      }
+
+      for (const { symbol, marketType } of getCustomComponentSymbols()) {
+        if (marketType === 'FUTURES') futuresSymbols.add(symbol);
       }
 
       for (const symbol of symbols) {

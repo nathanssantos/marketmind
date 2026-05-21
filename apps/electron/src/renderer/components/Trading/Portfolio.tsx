@@ -1,4 +1,4 @@
-import { Flex, Spinner, Stack, Text } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Stack, Text } from '@chakra-ui/react';
 import { Callout, EmptyState, IconButton, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendWallet } from '@renderer/hooks/useBackendWallet';
@@ -9,6 +9,8 @@ import { LuRefreshCw } from 'react-icons/lu';
 import { PortfolioSummary } from './PortfolioSummary';
 import type { PortfolioProps } from './portfolioTypes';
 import { usePortfolioData } from './usePortfolioData';
+
+const Divider = () => <Box h="1px" w="100%" bg="fg.muted" opacity={0.2} flexShrink={0} />;
 
 const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
   if (perfMonitor.isEnabled()) perfMonitor.recordComponentRender('Portfolio');
@@ -45,10 +47,22 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
     }
   };
 
+  // Match Binance's "Today's Realized PnL" widget: percent is computed
+  // against the CURRENT wallet balance, not the start-of-month
+  // effective-capital basis the backend returns. The backend's
+  // `pnlPercent` is useful for historical day-over-day comparison but
+  // for the live sidebar widget we want what the user sees in Binance.
+  const walletBalance = activeWallet?.walletBalance ?? activeWallet?.balance ?? 0;
+  const todayPnlPercent = todayPnl
+    ? (walletBalance > 0 ? (todayPnl.pnl / walletBalance) * 100 : todayPnl.pnlPercent)
+    : 0;
+  const todayPnlSign = (todayPnl?.pnl ?? 0) >= 0 ? '+' : '';
+  const todayPnlColor = !todayPnl ? 'fg.muted' : (todayPnl.pnl >= 0 ? 'trading.profit' : 'trading.loss');
+
   const { totalPnL, totalPnLPercent } = stats;
 
   return (
-    <Stack gap={2} flex={1} minH={0}>
+    <Stack gap={1} px={1} flex={1} minH={0}>
       {headerContent}
 
       {!activeWallet ? (
@@ -57,7 +71,7 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
         </Callout>
       ) : (
         <>
-          <Flex p={3} bg="bg.surface" borderRadius="md" justify="space-between" align="center" fontSize="xs" flexShrink={0}>
+          <Flex justify="space-between" align="center" fontSize="xs" flexShrink={0}>
             <Stack gap={0}>
               <Text color="fg.muted" fontWeight="medium">{t('trading.portfolio.dailyPnl')}</Text>
               <Text color="fg.muted" fontSize="2xs">{todayPnl?.tradesCount ?? 0} {t('trading.portfolio.trades')}</Text>
@@ -77,25 +91,11 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
                 </TooltipWrapper>
               )}
               <Stack gap={0} align="flex-end">
-                {(() => {
-                  if (!todayPnl) return <Text fontWeight="medium" color="fg.muted">$0.00</Text>;
-                  // Match Binance's "Today's Realized PnL" widget: percent is
-                  // computed against the CURRENT wallet balance, not the
-                  // start-of-month effective-capital basis the backend
-                  // returns. The backend's `pnlPercent` is useful for
-                  // historical day-over-day comparison but for the live
-                  // sidebar widget we want what the user sees in Binance.
-                  const walletBalance = activeWallet?.walletBalance ?? activeWallet?.balance ?? 0;
-                  const pnlPercent = walletBalance > 0
-                    ? (todayPnl.pnl / walletBalance) * 100
-                    : todayPnl.pnlPercent;
-                  const sign = todayPnl.pnl >= 0 ? '+' : '';
-                  return (
-                    <Text fontWeight="medium" color={todayPnl.pnl >= 0 ? 'trading.profit' : 'trading.loss'}>
-                      {sign}{todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({sign}{pnlPercent.toFixed(2)}%)
-                    </Text>
-                  );
-                })()}
+                <Text fontWeight="medium" color={todayPnlColor}>
+                  {todayPnl
+                    ? `${todayPnlSign}${todayPnl.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${todayPnlSign}${todayPnlPercent.toFixed(2)}%)`
+                    : '$0.00'}
+                </Text>
                 <BrlValue usdtValue={todayPnl?.pnl ?? 0} />
               </Stack>
             </Flex>
@@ -104,20 +104,23 @@ const PortfolioComponent = ({ headerContent }: PortfolioProps) => {
           {positions.length === 0 ? (
             <EmptyState size="sm" title={t('trading.portfolio.empty')} />
           ) : (
-            <PortfolioSummary
-              positionsCount={positions.length}
-              totalPnL={totalPnL}
-              totalPnLPercent={totalPnLPercent}
-              totalExposure={totalExposure}
-              totalMargin={totalMargin}
-              totalFees={totalFees}
-              hasLeverage={hasLeverage}
-              walletBalance={activeWallet.walletBalance}
-              currency={activeWallet.currency}
-              effectiveCapital={effectiveCapital}
-              stopProtectedPnl={stopProtectedPnl}
-              tpProjectedProfit={tpProjectedProfit}
-            />
+            <>
+              <Divider />
+              <PortfolioSummary
+                positionsCount={positions.length}
+                totalPnL={totalPnL}
+                totalPnLPercent={totalPnLPercent}
+                totalExposure={totalExposure}
+                totalMargin={totalMargin}
+                totalFees={totalFees}
+                hasLeverage={hasLeverage}
+                walletBalance={activeWallet.walletBalance}
+                currency={activeWallet.currency}
+                effectiveCapital={effectiveCapital}
+                stopProtectedPnl={stopProtectedPnl}
+                tpProjectedProfit={tpProjectedProfit}
+              />
+            </>
           )}
         </>
       )}

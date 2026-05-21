@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.1] - 2026-05-21
+
+Custom-symbol live-update story finished + a small Trading UI polish pass. POLITIFI (and any future synthetic basket) now ticks in real time on every interval and opens the live candle at the same value the last historical bar closed at — no more 14% intra-candle ghost spike.
+
+### Changed
+
+- **TradeTicket Buy/Sell buttons moved above the Market/Limit selector** (`apps/electron/src/renderer/components/Layout/TradeTicket.tsx`) — order-entry primary action sits at the top; the order-type toggle + limit price input sit underneath with `mt={2}` spacing so the row reads as a sub-detail of the trade rather than a peer. (#702)
+- **Portfolio + Today's P&L panels stripped of the wrapping `bg=bg.surface` card** (`apps/electron/src/renderer/components/Trading/Portfolio.tsx`, `PortfolioSummary.tsx`) — replaced with row separators (`1px / fg.muted / opacity 0.2`) and a tight `gap={1}` + `px={1}` so the dense grid reads as a single block. Header row now sits directly on the panel background. (#702)
+
+### Fixed
+
+- **Custom symbols (POLITIFI etc.) stuck — tab ticker frozen and chart didn't auto-update after first paint** — `CustomSymbolService.start()` runs *before* `binancePriceStreamService.start()` in `index.ts`, so the inline `subscribeSymbol(component)` loop inside `subscribeToComponentStreams` silently no-ops against a null WS client (`subscribe()` early-returns when `!this.client`). `reconcileSubscriptions` then only included open executions + active price rooms — components like `WLFIUSDT`/`TRUMPUSDT`/`MELANIAUSDT`/`PEOPLEUSDT`/`PNUTUSDT` were neither, so the basket never received real-time prices and the synthesized POLITIFI ticker/chart sat at the boot snapshot. Fix: `CustomSymbolService.getComponentSymbols()` exposes the active components with their market type; `reconcileSubscriptions` and `resubscribeAll` consume it and add the components to the right (spot/futures) set. `hotLoad`/`remove` now also trigger a reconcile so newly added baskets stream immediately. (#701)
+- **3 min POLITIFI chart never updated** — `KLINE_INTERVALS` in `custom-symbol-helpers.ts` was a 6-entry whitelist (`1m / 5m / 15m / 1h / 4h / 1d`) so `applyTickToKlineBuckets` never opened a bucket for `3m / 30m / 2h / 6h / 8h / 12h / 3d / 1w`. Extended to cover every standard Binance interval our chart can render. (Custom-symbol klines are still capped at `1w` — `1M`/`1y` would require a calendar-aware bucket alignment that we don't have.) (#701)
+- **First-tick spike to ~91.74 with a 14% intra-candle range on POLITIFI 15m/1h** — `initializeBasePricesForState` set `c.currentPrice = c.basePrice` on warm boots (basePrice already in DB). The basket then computed to `baseValue * Σweights` ≈ `100 * 0.9174 = 91.74` (capped market-cap weights don't sum to 1.0). As each component's first stream tick landed it pulled its own ratio away from 1.0 while the others stayed at the synthetic 1.0 anchor, swinging the live bucket from 91.74 down to ~76 then settling at ~78. Fix: fetch live prices for `currentPrice` at boot so the initial computed index is continuous with the last historical bar; `basePrice` (the historical normalization anchor) stays untouched. (#701)
+
+### Notes
+
+- No DB migrations.
+- Backend restart required to pick up the custom-symbol streaming changes (price-stream reconcile only inspects `CustomSymbolService` definitions once at boot — `hotLoad`/`remove` re-reconcile, but the boot-time component set is fixed when the service starts).
+
 ## [1.23.0] - 2026-05-21
 
 Chart UX overhaul — drawings stay perfectly anchored on the time axis across reloads and paginations, magnet snap works on stacked targets without drifting half a bar, and the Today's P&L widget refreshes itself on every close instead of needing a manual sync. One PR (#698) lands the three threads together.
