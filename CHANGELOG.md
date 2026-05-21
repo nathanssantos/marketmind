@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.0] - 2026-05-21
+
+Chart UX overhaul — drawings stay perfectly anchored on the time axis across reloads and paginations, magnet snap works on stacked targets without drifting half a bar, and the Today's P&L widget refreshes itself on every close instead of needing a manual sync. One PR (#698) lands the three threads together.
+
+### Added
+
+- **Sync button on the Today's P&L panel for live/testnet wallets** — same Binance-sync `IconButton` from `WalletManager`, hidden on paper wallets. Calls `syncBalance + syncTransfers` together; spinner replaces the icon while the round-trip is in flight. (#698)
+- **`Cmd` (macOS) / `Ctrl` (Win/Linux) hold momentarily disables the magnet** — for placing an anchor "slightly separated" from an existing one without the snap radius pulling it back. Releasing the modifier re-engages the magnet immediately; window blur resets the flag so a Cmd-Tab in the middle doesn't leave the magnet stuck off. Shift / Alt were already taken by the long/short order-entry shortcuts. (#698)
+- **`resolveDrawingIndex` helper + `CoordinateMapper.getKlineTime`** in `@marketmind/chart-studies` — single per-frame anchor resolver every renderer / hit-tester / drag handle now goes through. Verifies the resolved bar's `openTime` matches the stored `*Time` before trusting it; falls back to the stored index otherwise. (#698)
+- **Time-anchoring regression suite** (`packages/chart-studies/src/__tests__/time-anchoring.test.ts`) — covers pagination-prepends-after-hydration, reload-with-different-window, and out-of-range fallback. (#698)
+- **Magnet composition tests** — 4 new cases prove closest-wins picks the truly nearest target, HANDLE_BIAS_PX still favours deliberate anchors on near-ties, Cmd bypass skips both snap passes, and window-blur safety-nets the modifier-stuck case. (#698)
+
+### Fixed
+
+- **Drawings shifted on the X axis when switching tabs or reloading the app** — every drawing renderer (line / ruler / rectangle / area / arrow / ray / trend-line / price-range / ellipse / gann-fan / channel / pitchfork / fibonacci / pencil / highlighter / horizontal-line / vertical-line / text / long-position / short-position) read `drawing.startIndex` directly even though the stored `startTime` was available and the bulk `resolveDrawingIndices` step was already running. Any kline-array shift (pagination prepends, reload with a different window, real-time append + trim) silently drifted the rendered position. Renderers now resolve through time every frame; hit-test and drag handles consume the same helper so click + drag stay aligned with the rendered position. Out-of-range fallback in `buildTimeToIndex` / `resolveDrawingIndices.timeToIdx` no longer snaps to bar 0 / N — returns the stored index so the renderer re-anchors on the next frame once the time becomes available. (#698)
+- **Couldn't stack two drawings on the same candle vertex / chain segments end-to-start** — `findDrawingHandleSnap` reverse-mapped the matched pixel through `manager.xToIndex(x)`, which adds the `+0.5` center offset and turned an integer index like `10` into `10.5`. A second line snapping "to" the first's endpoint ended up half a bar off. `HandlePoint` now ships the source drawing's `index`/`price`/`time` verbatim and the snap copies them unchanged, so two drawings on the same magnet target end up with byte-identical anchor values. (#698)
+- **"Drawing-handle ALWAYS wins over OHLC" magnet priority** — closed off any nearby candle vertex even when it was clearly the closer target. Replaced with closest-wins comparing both pixel distances; a `HANDLE_BIAS_PX = 4` keeps the deliberate-anchor preference on near-ties, but an OHLC vertex that's clearly closer (≥ ~5px advantage) wins. (#698)
+- **Today's P&L widget stuck on the previous total after a position close** — `getDailyPerformance` used `incomeSum !== 0 ? incomeSum : tradeRealizedNet`, so once today had ANY synced income event, subsequent closes (still waiting on the background `syncWalletIncome` round-trip to Binance) were invisible until the next income sync tick. Now the daily sum is `incomeSum + unsynced trades' pnl` — closed trades whose REALIZED_PNL row hasn't been linked back (`incomeEvents.executionId IS NULL` for that exec) contribute their DB pnl as a placeholder, then drop out cleanly once Binance reports. (#698)
+
+### Changed
+
+- **`OHLCSnapResult.distance`** field added so the closest-wins composition in `useDrawingInteraction` can compare against the drawing-handle snap distance. (#698)
+- **`HandlePoint` extended** with `index` / `price` / `time` source fields. Render paths still only consume `x` / `y` — the new fields are for the magnet's exact-value preservation. (#698)
+- **`buildTimeToIndex` (`useBackendDrawings`)** — exact-match only via the kline-time `Map`. Out-of-range timestamps return `-1` so the deserializer keeps the stored `*Index` instead of snapping to bar 0 / N. (#698)
+
+### Notes
+
+- This release contains no DB migrations.
+- Drive-by: removed an unnecessary non-null assertion in `useChartTradingActions.ts:500` flagged by lint while wiring the release up.
+
 ## [1.22.16] - 2026-05-18
 
 Order-phantom audit — applied the pending-cancel block-list pattern (introduced in v1.22.15 for the drag-to-move flow) to every Binance cancel path in the app, so no single-X-click cancel can flicker the order back on screen before the second click.
