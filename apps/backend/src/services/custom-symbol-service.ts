@@ -74,6 +74,16 @@ export class CustomSymbolService {
     return this.customSymbolSet.has(symbol.toUpperCase());
   }
 
+  getComponentSymbols(): Array<{ symbol: string; marketType: 'SPOT' | 'FUTURES' }> {
+    const out: Array<{ symbol: string; marketType: 'SPOT' | 'FUTURES' }> = [];
+    for (const state of this.definitions.values()) {
+      for (const component of state.components) {
+        out.push({ symbol: component.symbol.toLowerCase(), marketType: component.marketType });
+      }
+    }
+    return out;
+  }
+
   getDefinitions(): CustomSymbolState[] {
     return Array.from(this.definitions.values());
   }
@@ -96,11 +106,18 @@ export class CustomSymbolService {
     this.definitions.set(state.symbol, state);
     this.customSymbolSet.add(state.symbol);
     await this.initializeBasePricesForState(state);
+    await this.reconcilePriceStream();
   }
 
   async remove(symbol: string): Promise<void> {
     this.definitions.delete(symbol.toUpperCase());
     this.customSymbolSet.delete(symbol.toUpperCase());
+    await this.reconcilePriceStream();
+  }
+
+  private async reconcilePriceStream(): Promise<void> {
+    const { binancePriceStreamService } = await import('./binance-price-stream');
+    await binancePriceStreamService.reconcileSubscriptions();
   }
 
   private async loadFromDb(): Promise<void> {
@@ -142,7 +159,22 @@ export class CustomSymbolService {
           logger.warn({ symbol: c.symbol, error: err }, 'Failed to fetch base price');
         }
       } else {
-        c.currentPrice = c.basePrice;
+        // basePrice is the long-lived normalization anchor stored in DB and
+        // is never re-fetched (otherwise historical bars baked with the old
+        // anchor would silently change meaning). currentPrice must be a
+        // *live* fetch — falling back to basePrice produces a basket value
+        // of `baseValue * Σweights` (≈ 91.74 for POLITIFI with capped
+        // weights summing to 0.9174), and the first per-component stream
+        // tick then swings the index wildly because the other components
+        // still report ratio = currentPrice/basePrice = 1.0. Live fetch
+        // here keeps the boot-time index continuous with the last
+        // historical bar.
+        try {
+          c.currentPrice = await fetchBinancePrice(c.symbol);
+        } catch (err) {
+          logger.warn({ symbol: c.symbol, error: err }, 'Failed to fetch current price — falling back to base');
+          c.currentPrice = c.basePrice;
+        }
       }
     }
   }

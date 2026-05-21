@@ -53,6 +53,15 @@ vi.mock('drizzle-orm', () => ({
   inArray: vi.fn((field, values) => ({ field, values })),
 }));
 
+const mockCustomSymbolBridge = {
+  isCustomSymbolSync: vi.fn(() => false),
+  getComponentSymbols: vi.fn(() => [] as Array<{ symbol: string; marketType: 'SPOT' | 'FUTURES' }>),
+};
+
+vi.mock('../../services/custom-symbol-service', () => ({
+  getCustomSymbolService: vi.fn(() => mockCustomSymbolBridge),
+}));
+
 const { BinancePriceStreamService } = await import('../../services/binance-price-stream');
 
 describe('BinancePriceStreamService', () => {
@@ -90,8 +99,9 @@ describe('BinancePriceStreamService', () => {
       expect(mockOn).not.toHaveBeenCalled();
     });
 
-    it('should set up periodic subscription check', () => {
+    it('should set up periodic subscription check', async () => {
       service.start();
+      await vi.runOnlyPendingTimersAsync();
 
       expect(mockDbSelect).toHaveBeenCalled();
     });
@@ -412,6 +422,33 @@ describe('BinancePriceStreamService', () => {
       await vi.runOnlyPendingTimersAsync();
 
       expect(service.getSubscribedSymbols()).not.toContain('ethusdt');
+    });
+
+    // Regression for POLITIFI custom-symbol live updates. Boot order is
+    // CustomSymbolService.start() → fastify.listen → priceStream.start(),
+    // so the inline subscribeSymbol calls inside subscribeToComponentStreams
+    // silently no-op against a null WS client. Reconcile must pull
+    // components from CustomSymbolService and add them to the right market.
+    it('subscribes to custom-symbol components during reconcile', async () => {
+      mockDbSelect.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue([]),
+        }),
+      });
+      mockCustomSymbolBridge.getComponentSymbols.mockReturnValue([
+        { symbol: 'wlfiusdt', marketType: 'FUTURES' },
+        { symbol: 'trumpusdt', marketType: 'FUTURES' },
+        { symbol: 'pnutusdt', marketType: 'FUTURES' },
+      ]);
+
+      service.start();
+      await vi.runOnlyPendingTimersAsync();
+
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('wlfiusdt', 'usdm');
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('trumpusdt', 'usdm');
+      expect(mockSubscribeAggregateTrades).toHaveBeenCalledWith('pnutusdt', 'usdm');
+
+      mockCustomSymbolBridge.getComponentSymbols.mockReturnValue([]);
     });
   });
 });
