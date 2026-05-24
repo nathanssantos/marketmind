@@ -1,4 +1,4 @@
-import type { SetupDirection, TradingSetup } from '@marketmind/types';
+import type { Kline, SetupDirection, TradingSetup } from '@marketmind/types';
 
 export interface PineStrategyMetadata {
   id: string;
@@ -98,7 +98,7 @@ export interface PineRunOptions {
    * `request.security(...)` — see the strategy's `@requires-tf` metadata
    * for the declared dependency set.
    */
-  secondaryKlines?: Record<string, import('@marketmind/types').Kline[]>;
+  secondaryKlines?: Record<string, Kline[]>;
 }
 
 export interface PineDetectionResult {
