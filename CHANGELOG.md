@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`<UnavailableForIndex>` overlay** (`apps/electron/src/renderer/components/ui/UnavailableForIndex.tsx`) — semi-transparent dim + center "Trading not available on indices" badge with tooltip. Wraps the TradeTicket and AutoTrading panels when the active tab points to a custom-symbol basket (POLITIFI etc.). i18n keys: `customSymbols.unavailableForIndex.{label,tooltip}` across EN/PT/ES/FR.
+- **`useIsCustomSymbol(symbol)` hook** (`apps/electron/src/renderer/hooks/useIsCustomSymbol.ts`) — reads `useBackendCustomSymbols.customSymbols.data` and returns whether the given symbol is a basket. Case-insensitive, defensive against pre-load.
+
+### Fixed
+
+- **POLITIFI repeatedly hammered Binance with `getSymbolLeverage` → "Invalid symbol" errors** — `account-config.ts:getSymbolLeverage` + `getLeverageBrackets` now early-return synthetic 1× values for custom symbols, mirroring the `isPaperWallet` short-circuit. Renderer also gates the trpc queries via `useIsCustomSymbol` in `useOrderQuantity`, `LeveragePopover`, and `useDrawingsRenderer` so the request doesn't fire in the first place. Liquidation/breakeven price lines no longer attempt to render on a custom-symbol chart (no positions are possible).
+- **Synthesized POLITIFI bars getting dropped on persistence** — `kline-stream-persistence.ts` ran a Binance REST cross-check (404 for custom symbols) and then triggered the suspicious-volume guard on the by-design `volume: '0'` synthetic bar, SKIPPING the save and silently corrupting the historical series. Skip both checks when the symbol is a custom basket; the basket is already the authoritative source for its own series.
+- **TradeTicket / Auto-Trading panels gated on custom symbols** — quick-trade floating ticket in `ChartWindow` hides entirely when the active symbol is an index; the grid `TicketPanel` + `AutoTradingSetupPanel` overlay their contents with the new `<UnavailableForIndex>` wrapper.
+
 ## [1.23.1] - 2026-05-21
 
 Custom-symbol live-update story finished + a small Trading UI polish pass. POLITIFI (and any future synthetic basket) now ticks in real time on every interval and opens the live candle at the same value the last historical bar closed at — no more 14% intra-candle ghost spike.

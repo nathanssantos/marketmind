@@ -119,3 +119,4 @@ export { PasswordStrengthMeter } from './PasswordStrengthMeter';
 export { PnLDisplay } from './PnLDisplay';
 export { PopoverList, PopoverListHeader, PopoverSectionLabel, PopoverActionItem, PopoverToggleItem } from './popover-list';
 export { TooltipWrapper } from './Tooltip';
+export { UnavailableForIndex } from './UnavailableForIndex';
