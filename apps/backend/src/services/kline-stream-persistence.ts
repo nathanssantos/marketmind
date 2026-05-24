@@ -8,6 +8,24 @@ import { KlineValidator, compareOHLC } from './kline-validator';
 import { logger } from './logger';
 import type { KlineUpdate } from './binance-kline-stream';
 
+// custom-symbol-service imports ReconnectionGuard + persistKline from this
+// file (see CustomSymbolService.persistClosedBucket), so we can't import it
+// at module-eval time without breaking the ESM circular-import diagnostic.
+// Resolve it lazily on first use — same pattern as binance-price-stream.
+let _getCustomSymbolService: (() => { isCustomSymbolSync: (s: string) => boolean } | null) | null = null;
+let _customSymbolImportPromise: Promise<void> | null = null;
+const ensureCustomSymbolImport = (): Promise<void> => {
+  if (_customSymbolImportPromise) return _customSymbolImportPromise;
+  _customSymbolImportPromise = import('./custom-symbol-service').then((mod) => {
+    _getCustomSymbolService = mod.getCustomSymbolService;
+  });
+  return _customSymbolImportPromise;
+};
+const isCustomSymbol = (symbol: string): boolean => {
+  if (!_getCustomSymbolService) return false;
+  return _getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false;
+};
+
 export class ReconnectionGuard {
   private isInGracePeriod = false;
   private readonly GRACE_PERIOD_MS = 10 * 1000;
@@ -160,6 +178,8 @@ export const persistKline = async (
     const openTime = new Date(update.openTime);
     const interval = update.interval as Interval;
 
+    await ensureCustomSymbolImport();
+
     const existing = await db.query.klines.findFirst({
       where: and(
         eq(klines.symbol, update.symbol),
@@ -169,7 +189,15 @@ export const persistKline = async (
       ),
     });
 
-    const restData = await fetchKlineFromREST(update.symbol, update.interval, update.openTime, marketType);
+    // Custom-symbol baskets (POLITIFI etc.) don't exist on Binance — the
+    // REST cross-check would 404, and the suspicious-data fallback would
+    // then trip on the synthesized `volume: '0'` and SKIP the save,
+    // silently dropping every closed bar. Skip both checks; the basket is
+    // already the authoritative source for its own series.
+    const isCustom = isCustomSymbol(update.symbol);
+    const restData = isCustom
+      ? null
+      : await fetchKlineFromREST(update.symbol, update.interval, update.openTime, marketType);
 
     let finalData = {
       open: update.open,
@@ -210,7 +238,7 @@ export const persistKline = async (
           takerBuyQuoteVolume: restData.takerBuyQuoteVolume,
         };
       }
-    } else {
+    } else if (!isCustom) {
       const suspiciousCheck = KlineValidator.isKlineDataSuspicious(update, existing ?? undefined);
       if (!suspiciousCheck.isValid) {
         logger.warn({

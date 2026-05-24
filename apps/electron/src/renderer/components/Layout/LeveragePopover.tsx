@@ -2,6 +2,7 @@ import { Box, Text } from '@chakra-ui/react';
 import { Button, Popover, TooltipWrapper } from '@renderer/components/ui';
 import { LeverageSelector } from '@renderer/components/LeverageSelector';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useIsCustomSymbol } from '@renderer/hooks/useIsCustomSymbol';
 import { trpc } from '@renderer/utils/trpc';
 import { toaster } from '@renderer/utils/toaster';
 import { memo, useCallback, useState } from 'react';
@@ -16,10 +17,11 @@ export const LeveragePopover = memo(({ symbol }: LeveragePopoverProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { activeWallet } = useActiveWallet();
   const walletId = activeWallet?.id;
+  const isCustomSymbol = useIsCustomSymbol(symbol);
 
   const { data: symbolLeverage } = trpc.futuresTrading.getSymbolLeverage.useQuery(
     { walletId: walletId!, symbol },
-    { enabled: !!walletId && !!symbol },
+    { enabled: !!walletId && !!symbol && !isCustomSymbol },
   );
 
   // Use the all-executions query (manual + auto) so the disabled state

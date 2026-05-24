@@ -146,6 +146,10 @@
   },
   "customSymbols": {
     "title": "Symboles Personnalisés",
+    "unavailableForIndex": {
+      "label": "Trading indisponible sur les indices",
+      "tooltip": "Les indices sont en lecture seule — ils agrègent les prix des composants pour les graphiques et l'analyse, mais les ordres, le levier et l'auto-trading ne fonctionnent que sur les vrais symboles de l'exchange."
+    },
     "description": "Créez des indices personnalisés à partir de plusieurs composants avec agrégation pondérée.",
     "dialogDescription": "Composez des indices synthétiques à partir de plusieurs symboles (pondération égale, market-cap, capped, sqrt ou manuelle).",
     "myIndices": "Mes Indices",
