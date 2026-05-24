@@ -33,6 +33,27 @@ const closeAll = async (page: Page): Promise<void> => {
   await page.waitForTimeout(150);
 };
 
+const switchToLayoutWithPanel = async (page: Page, panelKind: string): Promise<boolean> => {
+  const switched = await page.evaluate((kind: string) => {
+    interface LayoutStore {
+      layoutPresets?: Array<{ id: string; name?: string; grid?: Array<{ kind?: string }> }>;
+      setActiveLayout?: (id: string) => void;
+    }
+    const store = (window as { __layoutStore?: { getState?: () => LayoutStore } }).__layoutStore?.getState?.();
+    if (!store) return false;
+    const preset = store.layoutPresets?.find((p) => (p.grid ?? []).some((pn) => pn.kind === kind));
+    if (!preset) return false;
+    store.setActiveLayout?.(preset.id);
+    return true;
+  }, panelKind);
+  if (switched) {
+    // Give the grid panels time to mount + hydrate after the layout swap.
+    // Without this, waitForSelector races the React reconciliation.
+    await page.waitForTimeout(800);
+  }
+  return switched;
+};
+
 const openSettingsTab = async (page: Page, tabId: SettingsTabId): Promise<void> => {
   await page.evaluate((id) => {
     const actions = (window as { __globalActions?: { openSettings?: (tab?: string) => void } }).__globalActions;
@@ -108,7 +129,14 @@ const openModalById = async (page: Page, modalId: ModalId): Promise<void> => {
     return;
   }
   if (modalId === 'startWatchers') {
-    await toggleSidebar(page, 'autoTrading', true);
+    // `trigger-start-watchers` lives inside `<WatchersTab>`, which the
+    // old "autoTrading sidebar" used to host. That sidebar was retired
+    // when v1.10 moved the tab into the grid as a panel kind. The
+    // `toggleSidebar('autoTrading')` preference key is now dead — toggling
+    // it doesn't mount any panel, so the trigger never renders and the
+    // capture pipeline timed out waiting for it. Switch to a layout
+    // preset that has the `watchers` panel before locating the trigger.
+    await switchToLayoutWithPanel(page, 'watchers');
     await page.waitForSelector('[data-testid="trigger-start-watchers"]', { timeout: 5000 });
     await clickTrigger(page, 'trigger-start-watchers');
     return;
