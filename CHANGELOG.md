@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Periodic Binance-alignment audit scheduler** — the boot audit at startup only catches drift accumulated *before* the process came up. New `startPeriodicAuditScheduler` runs the same set of checks (positions / pending / protection / fees / balance) on every live FUTURES wallet on a weekly cadence (`STARTUP_CONFIG.AUDIT_PERIODIC_INTERVAL_MS`, default 7 days, overridable via `AUDIT_PERIODIC_INTERVAL_MS` env). Defaults to `feesCap=1000 feesDays=90 feesRateMs=150` so a typical sweep takes ~6 min per wallet and stays well under the `/fapi/v1/userTrades` budget. Tested for tick cadence, scope-passthrough, transient-error survival, and stop().
+
 ## [1.23.1] - 2026-05-21
 
 Custom-symbol live-update story finished + a small Trading UI polish pass. POLITIFI (and any future synthetic basket) now ticks in real time on every interval and opens the live candle at the same value the last historical bar closed at — no more 14% intra-candle ghost spike.
