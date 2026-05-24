@@ -34,7 +34,7 @@ export interface SetupDetectionConfig {
    * PineMarketProvider so `request.security` resolves against our
    * own DB-backed data instead of trying to fetch live.
    */
-  secondaryKlines?: Record<string, import('@marketmind/types').Kline[]>;
+  secondaryKlines?: Record<string, Kline[]>;
   silent?: boolean;
 }
 
