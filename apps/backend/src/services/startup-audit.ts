@@ -26,6 +26,7 @@ async function auditWallet(
   enabledChecks: Set<AuditCheck>,
   feesCap?: number,
   feesDays?: number,
+  feesRateMs?: number,
 ): Promise<AuditSummary> {
   const start = Date.now();
   const summary: AuditSummary = {
@@ -95,6 +96,7 @@ async function auditWallet(
       accountInfo,
       feesCap,
       feesDays,
+      feesRateMs,
     };
 
     if (enabledChecks.has('positions')) await auditPositions(ctx);
@@ -119,11 +121,13 @@ export async function runStartupAudit(options?: {
   checks?: AuditCheck[];
   feesCap?: number;
   feesDays?: number;
+  feesRateMs?: number;
 }): Promise<AuditSummary[]> {
   const dryRun = options?.dryRun ?? false;
   const filterWalletId = options?.walletId;
   const feesCap = options?.feesCap;
   const feesDays = options?.feesDays;
+  const feesRateMs = options?.feesRateMs;
 
   logger.info({ dryRun, filterWalletId }, '[startup-audit] Starting startup audit');
 
@@ -149,7 +153,7 @@ export async function runStartupAudit(options?: {
   const enabledChecks = new Set(options?.checks ?? ALL_AUDIT_CHECKS);
 
   for (const wallet of targetWallets) {
-    const summary = await auditWallet(wallet, dryRun, enabledChecks, feesCap, feesDays);
+    const summary = await auditWallet(wallet, dryRun, enabledChecks, feesCap, feesDays, feesRateMs);
     summaries.push(summary);
     totalFixed += summary.fixed;
     totalWarnings += summary.warnings.length;

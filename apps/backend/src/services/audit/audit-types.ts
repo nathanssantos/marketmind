@@ -43,6 +43,15 @@ export interface AuditContext {
   feesCap?: number;
   /** Override the default lookback window (days) for the fees check. */
   feesDays?: number;
+  /**
+   * Override the per-trade Binance throttle for the fees check (ms).
+   * Defaults to FEES_RATE_LIMIT_MS (1500ms) which is intentionally
+   * conservative so the auto-on-startup audit doesn't compete with the
+   * live trading engine for /fapi/v1/userTrades capacity. Manual CLI
+   * runs can safely drop this — Binance allows 2400 req/min on the
+   * endpoint, so anything ≥ 100ms stays comfortably under the budget.
+   */
+  feesRateMs?: number;
 }
 
 export function generateExecutionId(): string {
