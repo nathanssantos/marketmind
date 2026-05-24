@@ -43,6 +43,16 @@ vi.mock('../../services/binance-futures-data', () => ({
   })),
 }));
 
+const mockCustomSymbolBridge = {
+  isCustomSymbolSync: vi.fn((symbol: string) => symbol.toUpperCase() === 'POLITIFI'),
+  getComponentSymbols: vi.fn(() => []),
+};
+
+vi.mock('../../services/custom-symbol-service', () => ({
+  getCustomSymbolService: vi.fn(() => mockCustomSymbolBridge),
+  startCustomSymbolService: vi.fn(),
+}));
+
 describe('Futures Trading Router', () => {
   let db: ReturnType<typeof getTestDatabase>;
 
@@ -736,6 +746,36 @@ describe('Futures Trading Router', () => {
       expect(brackets.length).toBeGreaterThan(0);
       expect(brackets[0]).toHaveProperty('initialLeverage');
       expect(brackets[0]).toHaveProperty('maintMarginRatio');
+    });
+
+    it('returns a synthetic 1x bracket for custom symbols without touching Binance', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'live' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const brackets = await caller.futuresTrading.getLeverageBrackets({
+        walletId: wallet.id,
+        symbol: 'POLITIFI',
+      });
+
+      expect(brackets).toEqual([
+        { bracket: 1, initialLeverage: 1, notionalCap: 0, notionalFloor: 0, maintMarginRatio: 0, cum: 0 },
+      ]);
+    });
+  });
+
+  describe('getSymbolLeverage', () => {
+    it('short-circuits to 1x for custom symbols without hitting Binance', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'live' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.futuresTrading.getSymbolLeverage({
+        walletId: wallet.id,
+        symbol: 'POLITIFI',
+      });
+
+      expect(result).toEqual({ leverage: 1 });
     });
   });
 

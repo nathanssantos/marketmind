@@ -1,5 +1,6 @@
 import { Box, ChakraProvider, Flex, Text as ChakraText, Toaster } from '@chakra-ui/react';
 import { IconButton, ToggleIconButton, TooltipWrapper } from '../components/ui';
+import { useIsCustomSymbol } from '../hooks/useIsCustomSymbol';
 import { useCallback, useState, type ReactElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuDollarSign, LuX } from 'react-icons/lu';
@@ -33,6 +34,8 @@ function ChartWindowContent(): ReactElement {
     handleMarketTypeChange,
   } = useLayoutSync();
 
+  const isCustomSymbol = useIsCustomSymbol(effectiveSymbol);
+
   const toggleQuickTrade = useCallback(() => {
     setShowQuickTrade((v) => !v);
   }, []);
@@ -50,16 +53,18 @@ function ChartWindowContent(): ReactElement {
           showNewWindowButton={false}
           showSidebarButtons={false}
           rightExtra={
-            <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
-              <ToggleIconButton
-                active={showQuickTrade}
-                onClick={toggleQuickTrade}
-                aria-label={t('trading.sidebar.title')}
-                size="2xs"
-              >
-                <LuDollarSign />
-              </ToggleIconButton>
-            </TooltipWrapper>
+            isCustomSymbol ? null : (
+              <TooltipWrapper label={t('trading.sidebar.title')} showArrow>
+                <ToggleIconButton
+                  active={showQuickTrade}
+                  onClick={toggleQuickTrade}
+                  aria-label={t('trading.sidebar.title')}
+                  size="2xs"
+                >
+                  <LuDollarSign />
+                </ToggleIconButton>
+              </TooltipWrapper>
+            )
           }
         />
       </Box>
@@ -70,7 +75,7 @@ function ChartWindowContent(): ReactElement {
         <ChartToolsToolbar />
 
         <Flex flex={1} direction="column" overflow="hidden">
-          {effectiveSymbol && showQuickTrade && (
+          {effectiveSymbol && showQuickTrade && !isCustomSymbol && (
             <TradeTicket
               symbol={effectiveSymbol}
               marketType={effectiveMarketType}

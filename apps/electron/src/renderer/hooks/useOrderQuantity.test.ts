@@ -10,6 +10,10 @@ vi.mock('./useActiveWallet', () => ({
   useActiveWallet: () => useActiveWalletMock(),
 }));
 
+vi.mock('./useIsCustomSymbol', () => ({
+  useIsCustomSymbol: () => false,
+}));
+
 vi.mock('../store/quickTradeStore', () => ({
   useQuickTradeStore: (selector: (state: { sizePercent: number }) => unknown) =>
     selector({ sizePercent: useQuickTradeStoreMock() }),
