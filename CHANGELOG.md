@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Paper futures close doubled the wallet balance increment** — `futuresTrading.closePosition` for paper wallets called `incrementWalletBalanceAndBroadcast(wallet, netPnl)` directly *and* then `closeExecutionAndBroadcast(...)`, which itself calls `incrementWalletBalanceAndBroadcast` internally on the matched `tradeExecutions` mirror row. Both increments landed → every paper close added `2 × netPnl` to `wallets.currentBalance` (a $35 win read as +$70, a $35 loss as -$70). The `tradeExecutions.pnl` row itself was correct, so the Today's P&L widget (which sums incomeEvents + unsynced execs) showed the right number — only the live wallet balance and `getOrderQuantity`'s sizing math were inflated. Fix: only the cascade helper does the increment when an exec mirror row exists; the standalone increment is kept as a fallback for the rare case where there's a `positions` row without a `tradeExecutions` mirror. Regression test added to `futures-trading.router.test.ts` ("does not double the wallet balance increment when both positions + tradeExecutions exist") proves the bug surfaces a $390.2 balance instead of $195.1 without the fix.
+
 ## [1.23.1] - 2026-05-21
 
 Custom-symbol live-update story finished + a small Trading UI polish pass. POLITIFI (and any future synthetic basket) now ticks in real time on every interval and opens the live candle at the same value the last historical bar closed at — no more 14% intra-candle ghost spike.
