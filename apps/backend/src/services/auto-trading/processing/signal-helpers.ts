@@ -132,7 +132,7 @@ export const runSetupDetection = async (
   // this, the strategy's `request.security(...)` call throws "no
   // klines registered" at run time. Cached across watcher ticks so
   // we don't refetch on every 15m close.
-  const marketType: 'SPOT' | 'FUTURES' = (watcher.marketType ?? 'FUTURES') as 'SPOT' | 'FUTURES';
+  const marketType: 'SPOT' | 'FUTURES' = watcher.marketType ?? 'FUTURES';
   const secondaryKlines = await fetchSecondaryKlinesForStrategies(
     watcher.symbol,
     marketType,
