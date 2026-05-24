@@ -16,10 +16,11 @@ import {
 } from './audit-types';
 
 export async function auditFees(ctx: AuditContext): Promise<void> {
-  const { wallet, dryRun, summary, client, feesCap, feesDays } = ctx;
+  const { wallet, dryRun, summary, client, feesCap, feesDays, feesRateMs } = ctx;
 
   const cap = feesCap ?? FEES_AUDIT_CAP;
   const days = feesDays ?? FEES_AUDIT_DAYS;
+  const rateMs = feesRateMs ?? FEES_RATE_LIMIT_MS;
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
   const recentClosed = await db
     .select()
@@ -44,7 +45,7 @@ export async function auditFees(ctx: AuditContext): Promise<void> {
     // the execution row). Cheap DB-only operation, no Binance call.
     await recomputeExecutionAccumulatedFunding(exec.id);
 
-    await sleep(FEES_RATE_LIMIT_MS);
+    await sleep(rateMs);
 
     const realFees = await getAllTradeFeesForPosition(
       client,
