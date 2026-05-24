@@ -26,6 +26,7 @@ async function auditWallet(
   enabledChecks: Set<AuditCheck>,
   feesCap?: number,
   feesDays?: number,
+  feesRateMs?: number,
 ): Promise<AuditSummary> {
   const start = Date.now();
   const summary: AuditSummary = {
@@ -95,6 +96,7 @@ async function auditWallet(
       accountInfo,
       feesCap,
       feesDays,
+      feesRateMs,
     };
 
     if (enabledChecks.has('positions')) await auditPositions(ctx);
@@ -119,11 +121,13 @@ export async function runStartupAudit(options?: {
   checks?: AuditCheck[];
   feesCap?: number;
   feesDays?: number;
+  feesRateMs?: number;
 }): Promise<AuditSummary[]> {
   const dryRun = options?.dryRun ?? false;
   const filterWalletId = options?.walletId;
   const feesCap = options?.feesCap;
   const feesDays = options?.feesDays;
+  const feesRateMs = options?.feesRateMs;
 
   logger.info({ dryRun, filterWalletId }, '[startup-audit] Starting startup audit');
 
@@ -149,7 +153,7 @@ export async function runStartupAudit(options?: {
   const enabledChecks = new Set(options?.checks ?? ALL_AUDIT_CHECKS);
 
   for (const wallet of targetWallets) {
-    const summary = await auditWallet(wallet, dryRun, enabledChecks, feesCap, feesDays);
+    const summary = await auditWallet(wallet, dryRun, enabledChecks, feesCap, feesDays, feesRateMs);
     summaries.push(summary);
     totalFixed += summary.fixed;
     totalWarnings += summary.warnings.length;
@@ -161,4 +165,64 @@ export async function runStartupAudit(options?: {
   );
 
   return summaries;
+}
+
+export interface PeriodicAuditSchedulerOptions {
+  /** Interval between runs in ms. Required. */
+  intervalMs: number;
+  /** Audit scope — passed through to runStartupAudit. */
+  feesCap?: number;
+  feesDays?: number;
+  feesRateMs?: number;
+  /** Optional run override (for unit tests). Defaults to runStartupAudit. */
+  runner?: (opts: Parameters<typeof runStartupAudit>[0]) => Promise<AuditSummary[]>;
+}
+
+export interface PeriodicAuditScheduler {
+  stop: () => void;
+}
+
+/**
+ * Periodically reconciles every live FUTURES wallet's DB state with the
+ * exchange. Runs the same set of checks as the boot audit (positions,
+ * pending, protection, fees, balance) — catches drift that accumulates
+ * during long-running sessions (stale fee data, balance creep from any
+ * future double-increment, missed user-stream events, etc.).
+ *
+ * Uses `setInterval` with `.unref()` so the timer doesn't block graceful
+ * shutdown. Each run is wrapped so a single failure (network, Binance
+ * outage) doesn't kill the loop.
+ */
+export function startPeriodicAuditScheduler(
+  options: PeriodicAuditSchedulerOptions,
+): PeriodicAuditScheduler {
+  const { intervalMs, feesCap, feesDays, feesRateMs } = options;
+  const runner = options.runner ?? runStartupAudit;
+
+  logger.info(
+    { intervalMs, feesCap, feesDays, feesRateMs },
+    '[startup-audit] Periodic audit scheduler armed',
+  );
+
+  const tick = (): void => {
+    void (async () => {
+      try {
+        const summaries = await runner({ feesCap, feesDays, feesRateMs });
+        const totalFixed = summaries.reduce((acc, s) => acc + s.fixed, 0);
+        logger.info(
+          { wallets: summaries.length, totalFixed },
+          '[startup-audit] Periodic audit complete',
+        );
+      } catch (err) {
+        logger.error({ err }, '[startup-audit] Periodic audit failed — will retry on next tick');
+      }
+    })();
+  };
+
+  const handle = setInterval(tick, intervalMs);
+  handle.unref();
+
+  return {
+    stop: () => clearInterval(handle),
+  };
 }

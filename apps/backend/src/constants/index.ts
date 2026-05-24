@@ -188,6 +188,17 @@ export const STARTUP_CONFIG = {
    * 2 calls/min).
    */
   POSITION_SYNC_INTERVAL_MS: 30 * TIME_MS.SECOND,
+  /**
+   * Cadence for the periodic Binance-alignment audit (positions, pending,
+   * protection, fees, balance reconciliation against the exchange). The
+   * one-shot AUDIT_DELAY_MS audit catches drift at boot; this interval
+   * catches drift that accumulates during long-running sessions. A full
+   * weekly sweep with `--fees-cap=1000 --fees-days=90 --fees-rate-ms=150`
+   * takes ~6 minutes on a typical wallet; weekly was chosen so it
+   * doesn't compete with the live trading engine for /fapi capacity.
+   * Override at boot via `AUDIT_PERIODIC_INTERVAL_MS` env if needed.
+   */
+  AUDIT_PERIODIC_INTERVAL_MS: 7 * TIME_MS.DAY,
 } as const;
 
 export type StartupConfigConstants = typeof STARTUP_CONFIG;

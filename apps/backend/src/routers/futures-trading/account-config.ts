@@ -11,8 +11,12 @@ import {
   setLeverage,
   setMarginType,
 } from '../../services/binance-futures-client';
+import { getCustomSymbolService } from '../../services/custom-symbol-service';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure, router } from '../../trpc';
+
+const isCustomSymbol = (symbol: string | undefined): boolean =>
+  symbol ? (getCustomSymbolService()?.isCustomSymbolSync(symbol) ?? false) : false;
 
 export const accountConfigRouter = router({
   setLeverage: protectedProcedure
@@ -78,6 +82,11 @@ export const accountConfigRouter = router({
   getSymbolLeverage: protectedProcedure
     .input(z.object({ walletId: z.string(), symbol: z.string() }))
     .query(async ({ input, ctx }) => {
+      // Custom symbols (POLITIFI etc.) aren't tradeable — Binance has no
+      // leverage record for them and a real call returns -1121 "Invalid
+      // symbol". Mirror the paper-wallet short-circuit so the renderer's
+      // standing leverage query doesn't repeatedly hit the exchange.
+      if (isCustomSymbol(input.symbol)) return { leverage: 1 };
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
       if (isPaperWallet(wallet)) return { leverage: 1 };
 
@@ -112,6 +121,13 @@ export const accountConfigRouter = router({
       })
     )
     .query(async ({ input, ctx }) => {
+      // Custom symbols aren't tradeable — return the paper-wallet synthetic
+      // bracket so callers expecting an array don't crash.
+      if (isCustomSymbol(input.symbol)) {
+        return [
+          { bracket: 1, initialLeverage: 1, notionalCap: 0, notionalFloor: 0, maintMarginRatio: 0, cum: 0 },
+        ];
+      }
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {

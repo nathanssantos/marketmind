@@ -145,6 +145,10 @@
   "customSymbols": {
     "title": "Custom Symbols",
     "manage": "Manage",
+    "unavailableForIndex": {
+      "label": "Trading not available on indices",
+      "tooltip": "Indices are read-only — they aggregate component prices for charting and analysis, but orders, leverage, and auto-trading can only target real exchange symbols."
+    },
     "description": "Build custom indices from multiple components with weighted aggregation.",
     "dialogDescription": "Compose synthetic indices from multiple symbols (equal-weight, market-cap, capped, sqrt or manual weighting).",
     "myIndices": "My Indices",

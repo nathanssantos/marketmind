@@ -147,6 +147,10 @@
   "customSymbols": {
     "title": "Símbolos Personalizados",
     "manage": "Gestionar",
+    "unavailableForIndex": {
+      "label": "Trading no disponible en índices",
+      "tooltip": "Los índices son de solo lectura — agregan precios de componentes para gráficos y análisis, pero órdenes, apalancamiento y auto-trading solo funcionan en símbolos reales del exchange."
+    },
     "description": "Crea índices personalizados a partir de múltiples componentes con agregación ponderada.",
     "dialogDescription": "Compón índices sintéticos a partir de múltiples símbolos (peso igual, market-cap, capped, sqrt o manual).",
     "myIndices": "Mis Índices",

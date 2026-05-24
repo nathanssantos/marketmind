@@ -13,6 +13,9 @@ Options:
   --only <checks>        Run specific checks (comma-separated)
   --fees-cap <n>         Override max trades inspected by the fees check (default: 10)
   --fees-days <n>        Override lookback window in days for the fees check (default: 3)
+  --fees-rate-ms <n>     Per-trade throttle for the fees check in ms (default: 1500).
+                         Manual CLI runs can safely drop to ~150 — Binance allows
+                         2400 req/min on /fapi/v1/userTrades.
   --help, -h             Show this help
 
 Available checks:
@@ -61,6 +64,7 @@ const parseNumberFlag = (name: string): number | undefined => {
 
 const feesCap = parseNumberFlag('--fees-cap');
 const feesDays = parseNumberFlag('--fees-days');
+const feesRateMs = parseNumberFlag('--fees-rate-ms');
 
 async function main() {
   console.log('\n' + '='.repeat(80));
@@ -70,10 +74,11 @@ async function main() {
   if (checks) console.log(`  CHECKS: ${checks.join(', ')}`);
   if (feesCap !== undefined) console.log(`  FEES CAP: ${feesCap}`);
   if (feesDays !== undefined) console.log(`  FEES DAYS: ${feesDays}`);
+  if (feesRateMs !== undefined) console.log(`  FEES RATE: ${feesRateMs}ms/trade`);
   console.log('='.repeat(80));
   console.log(`  Time: ${new Date().toISOString()}\n`);
 
-  const summaries = await runStartupAudit({ dryRun, walletId, checks, feesCap, feesDays });
+  const summaries = await runStartupAudit({ dryRun, walletId, checks, feesCap, feesDays, feesRateMs });
 
   if (summaries.length === 0) {
     console.log('No wallets audited.');

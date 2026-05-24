@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.2] - 2026-05-24
+
+Custom-symbol gating + wallet-balance correctness. POLITIFI (and any future synthetic basket) now visibly says "Trading not available on indices" in the ticket and auto-trading panels, the backend stops asking Binance about leverage for symbols Binance doesn't know, and a paper close that doubled the wallet balance is fixed. New periodic Binance-alignment audit catches future drift on its own schedule.
+
+### Added
+
+- **`<UnavailableForIndex>` overlay** (`apps/electron/src/renderer/components/ui/UnavailableForIndex.tsx`) — semi-transparent dim + center "Trading not available on indices" badge with tooltip. Wraps the TradeTicket and AutoTrading panels when the active tab points to a custom-symbol basket (POLITIFI etc.). i18n keys: `customSymbols.unavailableForIndex.{label,tooltip}` across EN/PT/ES/FR. (#705)
+- **`useIsCustomSymbol(symbol)` hook** (`apps/electron/src/renderer/hooks/useIsCustomSymbol.ts`) — reads `useBackendCustomSymbols.customSymbols.data` and returns whether the given symbol is a basket. Case-insensitive, defensive against pre-load. (#705)
+- **`--fees-rate-ms` CLI flag for the startup audit** — the per-trade Binance throttle on the fees check was hard-coded at 1500ms (defensive for the auto-on-startup run so it doesn't compete with the live trading engine for `/fapi/v1/userTrades` capacity). Manual CLI runs can now drop to ~150ms — Binance allows 2400 req/min on the endpoint, so anything ≥ 100ms stays comfortably under budget. Cuts a 90-day / 1000-trade reconciliation from ~25 min to ~6 min. Default stays 1500ms. (#707)
+- **Periodic Binance-alignment audit scheduler** — the boot audit at startup only catches drift accumulated *before* the process came up. New `startPeriodicAuditScheduler` runs the same set of checks (positions / pending / protection / fees / balance) on every live FUTURES wallet on a weekly cadence (`STARTUP_CONFIG.AUDIT_PERIODIC_INTERVAL_MS`, default 7 days, overridable via `AUDIT_PERIODIC_INTERVAL_MS` env). Defaults to `feesCap=1000 feesDays=90 feesRateMs=150` so a typical sweep takes ~6 min per wallet and stays well under the `/fapi/v1/userTrades` budget. Tested for tick cadence, scope-passthrough, transient-error survival, and stop(). (#708)
+
+### Fixed
+
+- **Paper futures close doubled the wallet balance increment** — `futuresTrading.closePosition` for paper wallets called `incrementWalletBalanceAndBroadcast(wallet, netPnl)` directly *and* then `closeExecutionAndBroadcast(...)`, which itself calls `incrementWalletBalanceAndBroadcast` internally on the matched `tradeExecutions` mirror row. Both increments landed → every paper close added `2 × netPnl` to `wallets.currentBalance` (a $35 win read as +$70, a $35 loss as -$70). The `tradeExecutions.pnl` row itself was correct, so the Today's P&L widget (which sums incomeEvents + unsynced execs) showed the right number — only the live wallet balance and `getOrderQuantity`'s sizing math were inflated. Fix: only the cascade helper does the increment when an exec mirror row exists; the standalone increment is kept as a fallback for the rare case where there's a `positions` row without a `tradeExecutions` mirror. Regression test in `futures-trading.router.test.ts` proves the bug surfaces a $390.2 balance instead of $195.1 without the fix. (#706)
+- **POLITIFI repeatedly hammered Binance with `getSymbolLeverage` → "Invalid symbol" errors** — `account-config.ts:getSymbolLeverage` + `getLeverageBrackets` now early-return synthetic 1× values for custom symbols, mirroring the `isPaperWallet` short-circuit. Renderer also gates the trpc queries via `useIsCustomSymbol` in `useOrderQuantity`, `LeveragePopover`, and `useDrawingsRenderer` so the request doesn't fire in the first place. Liquidation/breakeven price lines no longer attempt to render on a custom-symbol chart (no positions are possible). (#705)
+- **Synthesized POLITIFI bars getting dropped on persistence** — `kline-stream-persistence.ts` ran a Binance REST cross-check (404 for custom symbols) and then triggered the suspicious-volume guard on the by-design `volume: '0'` synthetic bar, SKIPPING the save and silently corrupting the historical series. Skip both checks when the symbol is a custom basket; the basket is already the authoritative source for its own series. (#705)
+- **TradeTicket / Auto-Trading panels gated on custom symbols** — quick-trade floating ticket in `ChartWindow` hides entirely when the active symbol is an index; the grid `TicketPanel` + `AutoTradingSetupPanel` overlay their contents with the new `<UnavailableForIndex>` wrapper. (#705)
+
+### Notes
+
+- No DB migrations.
+- Existing live wallets with accumulated fee-column drift will be reconciled on the next periodic audit tick (within 7 days of upgrade) — or run the manual audit immediately with `pnpm --filter @marketmind/backend tsx scripts/audit/startup-audit.ts --fees-cap=1000 --fees-days=90 --fees-rate-ms=150`.
+
 ## [1.23.1] - 2026-05-21
 
 Custom-symbol live-update story finished + a small Trading UI polish pass. POLITIFI (and any future synthetic basket) now ticks in real time on every interval and opens the live candle at the same value the last historical bar closed at — no more 14% intra-candle ghost spike.
