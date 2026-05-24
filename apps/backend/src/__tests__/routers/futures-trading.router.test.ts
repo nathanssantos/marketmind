@@ -43,6 +43,16 @@ vi.mock('../../services/binance-futures-data', () => ({
   })),
 }));
 
+const mockCustomSymbolBridge = {
+  isCustomSymbolSync: vi.fn((symbol: string) => symbol.toUpperCase() === 'POLITIFI'),
+  getComponentSymbols: vi.fn(() => []),
+};
+
+vi.mock('../../services/custom-symbol-service', () => ({
+  getCustomSymbolService: vi.fn(() => mockCustomSymbolBridge),
+  startCustomSymbolService: vi.fn(),
+}));
+
 describe('Futures Trading Router', () => {
   let db: ReturnType<typeof getTestDatabase>;
 
@@ -559,6 +569,90 @@ describe('Futures Trading Router', () => {
         })
       ).rejects.toThrow('Position not found');
     });
+
+    // Regression for the 2026-05-22 user report: paper close with a $35
+    // realized PnL doubled the wallet balance update to $70. Root cause:
+    // the router called `incrementWalletBalanceAndBroadcast(wallet, netPnl)`
+    // directly AND then `closeExecutionAndBroadcast(...)`, which itself
+    // calls `incrementWalletBalanceAndBroadcast` internally on the same
+    // exec. Both increments landed → 2× the realized pnl ended up in
+    // `wallets.currentBalance`. Fix: only the cascade helper does the
+    // increment when a tradeExecutions mirror row exists.
+    it('does not double the wallet balance increment when both positions + tradeExecutions exist', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({
+        userId: user.id,
+        walletType: 'paper',
+        initialBalance: '10000',
+      });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const positionId = generateEntityId();
+      await db.insert(schema.positions).values({
+        id: positionId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '48000',
+        entryQty: '0.1',
+        currentPrice: '50000',
+        status: 'open',
+        marketType: 'FUTURES',
+        leverage: 10,
+        accumulatedFunding: '0',
+      });
+
+      // The tradeExecutions mirror row exists in real flows (paper open
+      // writes to both tables). Without it, the bug doesn't reproduce
+      // because the cascade increment is skipped.
+      const execId = generateEntityId();
+      await db.insert(schema.tradeExecutions).values({
+        id: execId,
+        userId: user.id,
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        side: 'LONG',
+        entryPrice: '48000',
+        quantity: '0.1',
+        marketType: 'FUTURES',
+        leverage: 10,
+        status: 'open',
+        openedAt: new Date(),
+      });
+
+      const result = await caller.futuresTrading.closePosition({
+        walletId: wallet.id,
+        symbol: 'BTCUSDT',
+        positionId,
+      });
+
+      // mock getMarkPrice returns 50000; LONG 0.1 @ 48000 → 50000 ⇒
+      // grossPnl=200, fees ~0.16 with TAKER, no funding. netPnl ≈ 199.84.
+      const expectedDelta = result.pnl ?? 0;
+      expect(expectedDelta).toBeGreaterThan(0);
+
+      const [updatedWallet] = await db
+        .select()
+        .from(schema.wallets)
+        .where(eq(schema.wallets.id, wallet.id))
+        .limit(1);
+      const updatedBalance = parseFloat(updatedWallet!.currentBalance ?? '0');
+      // Initial 10000 + netPnl exactly — NOT 10000 + 2×netPnl.
+      expect(updatedBalance).toBeCloseTo(10000 + expectedDelta, 2);
+      // The returned snapshot is the authoritative post-close balance —
+      // it must match the row, not double it.
+      expect(parseFloat(result.walletSnapshot?.currentBalance ?? '0')).toBeCloseTo(updatedBalance, 2);
+
+      // exec mirror row was closed by the cascade — sanity-check the
+      // wallet increment didn't fire from a stale 'open' status branch.
+      const [updatedExec] = await db
+        .select()
+        .from(schema.tradeExecutions)
+        .where(eq(schema.tradeExecutions.id, execId))
+        .limit(1);
+      expect(updatedExec!.status).toBe('closed');
+    });
   });
 
   describe('getOpenOrders', () => {
@@ -652,6 +746,36 @@ describe('Futures Trading Router', () => {
       expect(brackets.length).toBeGreaterThan(0);
       expect(brackets[0]).toHaveProperty('initialLeverage');
       expect(brackets[0]).toHaveProperty('maintMarginRatio');
+    });
+
+    it('returns a synthetic 1x bracket for custom symbols without touching Binance', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'live' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const brackets = await caller.futuresTrading.getLeverageBrackets({
+        walletId: wallet.id,
+        symbol: 'POLITIFI',
+      });
+
+      expect(brackets).toEqual([
+        { bracket: 1, initialLeverage: 1, notionalCap: 0, notionalFloor: 0, maintMarginRatio: 0, cum: 0 },
+      ]);
+    });
+  });
+
+  describe('getSymbolLeverage', () => {
+    it('short-circuits to 1x for custom symbols without hitting Binance', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const wallet = await createTestWallet({ userId: user.id, walletType: 'live' });
+      const caller = createAuthenticatedCaller(user, session);
+
+      const result = await caller.futuresTrading.getSymbolLeverage({
+        walletId: wallet.id,
+        symbol: 'POLITIFI',
+      });
+
+      expect(result).toEqual({ leverage: 1 });
     });
   });
 

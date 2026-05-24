@@ -28,6 +28,7 @@ import { renderText } from './renderers/renderText';
 import { renderPosition, type TicketButtonRef, type PositionRiskContext } from './renderers/renderPosition';
 import { computePositionRisk } from './renderers/positionRiskMath';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useIsCustomSymbol } from '@renderer/hooks/useIsCustomSymbol';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { trpc } from '@renderer/utils/trpc';
@@ -209,9 +210,10 @@ export const useDrawingsRenderer = ({
   const sizePercent = useQuickTradeStore((s) => s.sizePercent);
   const sizePercentRef = useRef(sizePercent);
   sizePercentRef.current = sizePercent;
+  const isCustomSymbol = useIsCustomSymbol(symbol);
   const { data: symbolLeverage } = trpc.futuresTrading.getSymbolLeverage.useQuery(
     { walletId: activeWallet?.id ?? '', symbol },
-    { enabled: !!activeWallet?.id && !!symbol, staleTime: 60_000 },
+    { enabled: !!activeWallet?.id && !!symbol && !isCustomSymbol, staleTime: 60_000 },
   );
   const leverageRef = useRef(1);
   leverageRef.current = symbolLeverage?.leverage ?? 1;

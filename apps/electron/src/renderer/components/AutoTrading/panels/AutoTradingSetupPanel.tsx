@@ -1,6 +1,7 @@
 import { Box, Flex } from '@chakra-ui/react';
-import { Badge, Callout } from '@renderer/components/ui';
+import { Badge, Callout, UnavailableForIndex } from '@renderer/components/ui';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useIsCustomSymbol } from '@renderer/hooks/useIsCustomSymbol';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { ScalpingDashboard } from '@renderer/components/Trading/ScalpingDashboard';
 import { ScalpingConfigDialog } from '@renderer/components/Trading/ScalpingConfig';
@@ -11,6 +12,7 @@ export const AutoTradingSetupPanel = () => {
   const { t } = useTranslation();
   const { activeWallet } = useActiveWallet();
   const symbol = useLayoutStore((s) => s.getActiveTab()?.symbol ?? 'BTCUSDT');
+  const isCustomSymbol = useIsCustomSymbol(symbol);
   const [configOpen, setConfigOpen] = useState(false);
 
   if (!activeWallet) {
@@ -25,21 +27,23 @@ export const AutoTradingSetupPanel = () => {
 
   return (
     <Box h="100%" overflowY="auto" p={1.5}>
-      <Flex justify="flex-end" px={2} pb={1}>
-        <Badge colorPalette="purple" variant="subtle" size="xs">
-          {t('common.beta')}
-        </Badge>
-      </Flex>
-      <ScalpingDashboard
-        walletId={activeWallet.id}
-        symbol={symbol}
-        onConfigClick={() => setConfigOpen(true)}
-      />
-      <ScalpingConfigDialog
-        walletId={activeWallet.id}
-        isOpen={configOpen}
-        onClose={() => setConfigOpen(false)}
-      />
+      <UnavailableForIndex active={isCustomSymbol}>
+        <Flex justify="flex-end" px={2} pb={1}>
+          <Badge colorPalette="purple" variant="subtle" size="xs">
+            {t('common.beta')}
+          </Badge>
+        </Flex>
+        <ScalpingDashboard
+          walletId={activeWallet.id}
+          symbol={symbol}
+          onConfigClick={() => setConfigOpen(true)}
+        />
+        <ScalpingConfigDialog
+          walletId={activeWallet.id}
+          isOpen={configOpen}
+          onClose={() => setConfigOpen(false)}
+        />
+      </UnavailableForIndex>
     </Box>
   );
 };

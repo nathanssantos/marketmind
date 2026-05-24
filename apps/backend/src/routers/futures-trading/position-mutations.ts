@@ -181,21 +181,10 @@ export const positionMutationsRouter = router({
             })
             .where(eq(positions.id, input.positionId));
 
-          // Wallet update via the broadcast helper so wallet:update
-          // fires for the renderer (paper closes had ZERO WS emits before).
-          // The non-tx call is fine: `incrementWalletBalanceAndBroadcast`
-          // does its own atomic UPDATE ... RETURNING.
-          const broadcast = await incrementWalletBalanceAndBroadcast(wallet.id, netPnl);
-          const newBalance = broadcast?.currentBalance ?? wallet.currentBalance ?? '0';
-          const walletSnapshot = {
-            currentBalance: newBalance,
-            totalWalletBalance: broadcast?.totalWalletBalance ?? newBalance,
-          };
-
-          // Also fire a synthetic position:closed for any tradeExecution
-          // mirror the renderer might be tracking (paper-futures uses
-          // both `positions` and `tradeExecutions`). Find the matching
-          // open exec and run it through the canonical close cascade.
+          // Find the matching `tradeExecutions` mirror row. Paper futures
+          // closes write to BOTH `positions` and `tradeExecutions`, and the
+          // renderer's `wallet.list` / activity feeds key off the exec mirror
+          // via the close cascade in `closeExecutionAndBroadcast`.
           const [paperExec] = await ctx.db
             .select()
             .from(tradeExecutions)
@@ -206,8 +195,19 @@ export const positionMutationsRouter = router({
               eq(tradeExecutions.marketType, 'FUTURES'),
             ))
             .limit(1);
+
+          // `closeExecutionAndBroadcast` already runs
+          // `incrementWalletBalanceAndBroadcast(walletId, netPnl)` + the
+          // `wallet:update` emit internally (see wallet-broadcast.ts:255).
+          // The previous flow also called `incrementWalletBalanceAndBroadcast`
+          // here *and* let the helper do it again → the wallet balance was
+          // incremented twice (every +$35 paper close looked like +$70).
+          // Source the snapshot from the helper's RETURNING when an exec
+          // mirror exists; fall back to a single increment only when there
+          // is no mirror row to drive the cascade.
+          let walletSnapshot: { currentBalance: string; totalWalletBalance: string };
           if (paperExec) {
-            await closeExecutionAndBroadcast(paperExec, {
+            const close = await closeExecutionAndBroadcast(paperExec, {
               exitPrice,
               exitReason: 'MANUAL_CLOSE',
               exitSource: 'MANUAL',
@@ -215,6 +215,21 @@ export const positionMutationsRouter = router({
               pnlPercent,
               fees: totalFees,
             });
+            const fallbackBalance = wallet.currentBalance ?? '0';
+            walletSnapshot = {
+              currentBalance: close.walletBalance?.currentBalance ?? fallbackBalance,
+              totalWalletBalance:
+                close.walletBalance?.totalWalletBalance
+                ?? wallet.totalWalletBalance
+                ?? fallbackBalance,
+            };
+          } else {
+            const broadcast = await incrementWalletBalanceAndBroadcast(wallet.id, netPnl);
+            const newBalance = broadcast?.currentBalance ?? wallet.currentBalance ?? '0';
+            walletSnapshot = {
+              currentBalance: newBalance,
+              totalWalletBalance: broadcast?.totalWalletBalance ?? newBalance,
+            };
           }
 
           logger.info({

@@ -1,6 +1,7 @@
 import type { MarketType } from '@marketmind/types';
 import { useCallback } from 'react';
 import { useActiveWallet } from './useActiveWallet';
+import { useIsCustomSymbol } from './useIsCustomSymbol';
 import { useQuickTradeStore } from '../store/quickTradeStore';
 import { trpc } from '../utils/trpc';
 import { roundTradingQty } from '@shared/utils';
@@ -34,6 +35,7 @@ export const useOrderQuantity = (symbol: string | undefined, marketType: MarketT
 
   const balance = parseFloat(activeWallet?.currentBalance ?? '0');
   const isFutures = marketType === 'FUTURES';
+  const isCustomSymbol = useIsCustomSymbol(symbol);
 
   const {
     data: symbolLeverage,
@@ -41,7 +43,7 @@ export const useOrderQuantity = (symbol: string | undefined, marketType: MarketT
     error: leverageError,
   } = trpc.futuresTrading.getSymbolLeverage.useQuery(
     { walletId: activeWallet?.id!, symbol: symbol ?? '' },
-    { enabled: !!activeWallet?.id && !!symbol && isFutures, retry: 1 },
+    { enabled: !!activeWallet?.id && !!symbol && isFutures && !isCustomSymbol, retry: 1 },
   );
 
   // Symbol filters drive precision: stepSize is the LOT_SIZE step the
