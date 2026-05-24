@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`<UnavailableForIndex>` overlay** (`apps/electron/src/renderer/components/ui/UnavailableForIndex.tsx`) — semi-transparent dim + center "Trading not available on indices" badge with tooltip. Wraps the TradeTicket and AutoTrading panels when the active tab points to a custom-symbol basket (POLITIFI etc.). i18n keys: `customSymbols.unavailableForIndex.{label,tooltip}` across EN/PT/ES/FR.
 - **`useIsCustomSymbol(symbol)` hook** (`apps/electron/src/renderer/hooks/useIsCustomSymbol.ts`) — reads `useBackendCustomSymbols.customSymbols.data` and returns whether the given symbol is a basket. Case-insensitive, defensive against pre-load.
+- **Periodic Binance-alignment audit scheduler** — the boot audit at startup only catches drift accumulated *before* the process came up. New `startPeriodicAuditScheduler` runs the same set of checks (positions / pending / protection / fees / balance) on every live FUTURES wallet on a weekly cadence (`STARTUP_CONFIG.AUDIT_PERIODIC_INTERVAL_MS`, default 7 days, overridable via `AUDIT_PERIODIC_INTERVAL_MS` env). Defaults to `feesCap=1000 feesDays=90 feesRateMs=150` so a typical sweep takes ~6 min per wallet and stays well under the `/fapi/v1/userTrades` budget. Tested for tick cadence, scope-passthrough, transient-error survival, and stop().
 
 ### Fixed
 

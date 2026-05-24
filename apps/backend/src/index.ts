@@ -224,6 +224,26 @@ const start = async (): Promise<void> => {
         });
       }, STARTUP_CONFIG.AUDIT_DELAY_MS);
 
+      // Periodic re-audit. The boot audit catches drift at startup; this
+      // catches drift that accumulates while the process is alive (stale
+      // fee columns, silent missed user-stream events, etc.). Uses the
+      // CLI's wide scope by default — feesCap=1000, feesDays=90 — which
+      // takes ~6 min per wallet at 150ms/trade. Frequency is in
+      // STARTUP_CONFIG.AUDIT_PERIODIC_INTERVAL_MS (default 7 days);
+      // override with the AUDIT_PERIODIC_INTERVAL_MS env to retune
+      // without a redeploy.
+      const periodicAuditInterval =
+        parseInt(process.env['AUDIT_PERIODIC_INTERVAL_MS'] ?? '', 10)
+        || STARTUP_CONFIG.AUDIT_PERIODIC_INTERVAL_MS;
+      void import('./services/startup-audit').then(({ startPeriodicAuditScheduler }) => {
+        startPeriodicAuditScheduler({
+          intervalMs: periodicAuditInterval,
+          feesCap: 1000,
+          feesDays: 90,
+          feesRateMs: 150,
+        });
+      });
+
       const { startIncomeSync } = await import('./services/income-events');
       startIncomeSync({ delayFirstSync: STARTUP_CONFIG.INCOME_SYNC_DELAY_MS });
 
