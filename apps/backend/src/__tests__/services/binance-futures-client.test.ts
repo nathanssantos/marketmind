@@ -241,7 +241,7 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getPositions(client);
 
       expect(result).toHaveLength(1);
@@ -269,7 +269,7 @@ describe('BinanceFuturesClient Service', () => {
       });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getPositions(client);
 
       expect(result[0]!.leverage).toBe(10);
@@ -285,7 +285,7 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getPositions(client);
 
       expect(result[0]!.leverage).toBe(1);
@@ -301,7 +301,7 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getPositions(client);
 
       expect(result[0]!.marginType).toBe('isolated');
@@ -312,8 +312,39 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getPositionsV3.mockRejectedValue(new Error('API error'));
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       await expect(getPositions(client)).rejects.toThrow('API error');
+    });
+
+    it('caches symbolConfig per wallet across getPositions calls (deduped bulk fetch)', async () => {
+      // Regression for the dead WeakMap-keyed-by-client cache: with
+      // per-request clients, symbolConfig refetched on every call. Now
+      // keyed by walletId in binanceApiCache, so two getPositions for the
+      // same wallet within the TTL share one symbolConfig fetch.
+      mockMethods.getPositionsV3.mockResolvedValue([
+        { symbol: 'BTCUSDT', positionAmt: '0.1', entryPrice: '50000', positionSide: 'BOTH', markPrice: '51000', unRealizedProfit: '100', liquidationPrice: '45000', isolatedMargin: '0', notional: '5100', isolatedWallet: '0', updateTime: Date.now() },
+      ]);
+      mockMethods.getFuturesSymbolConfig.mockResolvedValue([
+        { symbol: 'BTCUSDT', marginType: 'CROSSED', isAutoAddMargin: false, leverage: 10, maxNotionalValue: '230000000' },
+      ]);
+      mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
+
+      const walletId = 'wallet-symbolconfig-cache';
+      __resetSymbolConfigCache(walletId);
+      mockMethods.getFuturesSymbolConfig.mockClear();
+
+      const client = createBinanceFuturesClientForPrices();
+      await getPositions(client, { walletId });
+      await getPositions(client, { walletId });
+
+      expect(mockMethods.getFuturesSymbolConfig).toHaveBeenCalledTimes(1);
+
+      // After an explicit reset, the next call refetches.
+      __resetSymbolConfigCache(walletId);
+      await getPositions(client, { walletId });
+      expect(mockMethods.getFuturesSymbolConfig).toHaveBeenCalledTimes(2);
+
+      __resetSymbolConfigCache(walletId);
     });
   });
 
@@ -328,7 +359,7 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getPosition(client, 'BTCUSDT');
 
       expect(result).not.toBeNull();
@@ -349,7 +380,7 @@ describe('BinanceFuturesClient Service', () => {
       });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getPosition(client, 'BTCUSDT');
 
       expect(result!.leverage).toBe(10);
@@ -361,7 +392,7 @@ describe('BinanceFuturesClient Service', () => {
       ]);
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getPosition(client, 'BTCUSDT');
 
       expect(result).toBeNull();
@@ -375,7 +406,7 @@ describe('BinanceFuturesClient Service', () => {
       ]);
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getConfiguredLeverage(client, 'BTCUSDT');
 
       expect(result).toBe(10);
@@ -391,7 +422,7 @@ describe('BinanceFuturesClient Service', () => {
       });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getConfiguredLeverage(client, 'BTCUSDT');
 
       expect(result).toBe(10);
@@ -407,7 +438,7 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
 
       await expect(getConfiguredLeverage(client, 'BTCUSDT')).rejects.toMatchObject({
         name: 'LeverageUnavailableError',
@@ -422,7 +453,7 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getAccountInformationV3.mockResolvedValue({ positions: [] });
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
 
       await expect(getConfiguredLeverage(client, 'BTCUSDT')).rejects.toMatchObject({
         name: 'LeverageUnavailableError',
@@ -455,7 +486,7 @@ describe('BinanceFuturesClient Service', () => {
       mockMethods.getFuturesSymbolConfig.mockResolvedValue([]);
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getAccountInfo(client);
 
       expect(result.canTrade).toBe(true);
@@ -490,7 +521,7 @@ describe('BinanceFuturesClient Service', () => {
       ]);
 
       const client = createBinanceFuturesClientForPrices();
-      __resetSymbolConfigCache(client);
+      __resetSymbolConfigCache();
       const result = await getAccountInfo(client);
 
       expect(result.positions).toHaveLength(1);

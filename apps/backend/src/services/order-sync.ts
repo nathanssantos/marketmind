@@ -145,7 +145,7 @@ export class OrderSyncService {
             )
           ),
         getOpenAlgoOrders(client),
-        getPositions(client),
+        getPositions(client, { walletId: wallet.id }),
         getBinanceOpenOrders(client),
       ]);
 

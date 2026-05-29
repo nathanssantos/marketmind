@@ -82,7 +82,7 @@ export const recoveryRouter = router({
           const minNotionalFilter = getMinNotionalFilterService();
           const symbolFilters = await minNotionalFilter.getSymbolFilters('FUTURES');
 
-          const exchangePositions = await getPositions(client);
+          const exchangePositions = await getPositions(client, { walletId: wallet.id });
           for (const position of exchangePositions) {
             if (parseFloat(position.positionAmt) === 0) continue;
 
