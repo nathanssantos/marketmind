@@ -1,70 +1,41 @@
 /* eslint-disable @typescript-eslint/no-base-to-string -- Binance WS message values are unknown but documented strings; explicit cast at every read would be 50+ lines of noise */
-import { WebsocketClient } from 'binance';
 import type { AggTrade } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
-import { SCALPING_STREAM } from '../constants/scalping';
 import { serializeError } from '../utils/errors';
-import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
 import { db } from '../db';
 import { aggTrades as aggTradesTable } from '../db/schema';
+import { BinanceWebSocketStreamBase } from './binance-ws-stream-base';
 
 type AggTradeObserver = (trade: AggTrade) => void;
 
-export class BinanceAggTradeStreamService {
-  private client: WebsocketClient | null = null;
+export class BinanceAggTradeStreamService extends BinanceWebSocketStreamBase {
+  protected readonly label = 'AggTrade';
   private subscribedSymbols = new Set<string>();
   private observers: AggTradeObserver[] = [];
-  private isReconnecting = false;
   private buffer: AggTrade[] = [];
   private flushTimer: ReturnType<typeof setInterval> | null = null;
   private rollingAvgVolume = new Map<string, { sum: number; count: number }>();
 
-  start(): void {
-    if (this.client) return;
-
-    this.client = new WebsocketClient(
-      { beautify: true, reconnectTimeout: SCALPING_STREAM.RECONNECT_DELAY_MS },
-      silentWsLogger
-    );
-
-    this.client.on('message', (data) => this.handleMessage(data));
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.client as any).on('error', (error: unknown) => {
-      logger.error({ error: serializeError(error) }, 'AggTrade WebSocket error');
-    });
-
-    this.client.on('reconnected', () => {
-      if (this.isReconnecting) return;
-      this.isReconnecting = true;
-      this.resubscribeAll();
-      setTimeout(() => { this.isReconnecting = false; }, 2000);
-    });
-
+  protected override onStart(): void {
     this.flushTimer = setInterval(() => {
       void this.flushBuffer();
     }, SCALPING_DEFAULTS.AGG_TRADE_FLUSH_INTERVAL_MS);
-
-    logger.info('AggTrade stream service started');
   }
 
-  stop(): void {
+  protected override onStop(): void {
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
       this.flushTimer = null;
     }
-
     void this.flushBuffer();
+    this.subscribedSymbols.clear();
+    this.rollingAvgVolume.clear();
+  }
 
-    if (this.client) {
-      this.client.closeAll(true);
-      this.client = null;
-      this.subscribedSymbols.clear();
-      this.rollingAvgVolume.clear();
-      logger.info('AggTrade stream service stopped');
-    }
+  protected onReconnected(): void {
+    this.resubscribeAll();
   }
 
   subscribe(symbol: string): void {
@@ -94,7 +65,7 @@ export class BinanceAggTradeStreamService {
     };
   }
 
-  private handleMessage(data: unknown): void {
+  protected handleMessage(data: unknown): void {
     try {
       if (typeof data !== 'object' || data === null) return;
 
