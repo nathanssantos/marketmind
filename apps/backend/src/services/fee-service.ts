@@ -4,6 +4,7 @@ import type { Wallet } from '../db/schema';
 import type { MarketType, FeeOrderType, MarketFees } from '@marketmind/types';
 import { BINANCE_FEES, getDefaultFee, applyBnbDiscount, getFeeRateForVipLevel, getFuturesVIPLevelFromRates } from '@marketmind/types';
 import { TIME_MS } from '../constants';
+import { KeyedCache } from '../utils/cache';
 
 const MIN_BNB_FOR_DISCOUNT = 0.001;
 
@@ -15,14 +16,12 @@ export interface CachedFees {
   lastUpdated: Date;
 }
 
-interface FeeCache {
-  fees: CachedFees;
-  expiresAt: number;
-}
-
 const CACHE_DURATION_MS = TIME_MS.DAY;
+const MAX_FEE_CACHE_SIZE = 100;
 
-const feeCache = new Map<string, FeeCache>();
+// Shared KeyedCache (TTL + FIFO size cap) instead of a bespoke Map — same
+// 1-day TTL and 100-wallet bound as before, now via the common util.
+const feeCache = new KeyedCache<CachedFees>(CACHE_DURATION_MS, MAX_FEE_CACHE_SIZE);
 
 export const getDefaultFees = (): CachedFees => ({
   spot: { ...BINANCE_FEES.SPOT.VIP_0 },
@@ -32,27 +31,10 @@ export const getDefaultFees = (): CachedFees => ({
   lastUpdated: new Date(),
 });
 
-export const getCachedFees = (walletId: string): CachedFees | null => {
-  const cached = feeCache.get(walletId);
-  if (!cached) return null;
-  if (Date.now() > cached.expiresAt) {
-    feeCache.delete(walletId);
-    return null;
-  }
-  return cached.fees;
-};
-
-const MAX_FEE_CACHE_SIZE = 100;
+export const getCachedFees = (walletId: string): CachedFees | null => feeCache.get(walletId);
 
 export const setCachedFees = (walletId: string, fees: CachedFees): void => {
-  if (feeCache.size >= MAX_FEE_CACHE_SIZE) {
-    const firstKey = feeCache.keys().next().value;
-    if (firstKey) feeCache.delete(firstKey);
-  }
-  feeCache.set(walletId, {
-    fees,
-    expiresAt: Date.now() + CACHE_DURATION_MS,
-  });
+  feeCache.set(walletId, fees);
 };
 
 export const clearFeeCache = (walletId?: string): void => {
