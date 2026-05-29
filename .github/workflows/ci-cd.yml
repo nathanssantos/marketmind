@@ -33,7 +33,12 @@ jobs:
           cache: 'pnpm'
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        # --ignore-scripts: lint + type-check never execute native modules,
+        # so skip node-gyp rebuilds of cpu-features/ssh2 (transitive via
+        # @stoqey/ib) that intermittently hang this job on the runner.
+        # No workspace package has a postinstall/prepare, so nothing else
+        # depends on lifecycle scripts here.
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build shared packages
         run: pnpm --filter "./packages/*" build
