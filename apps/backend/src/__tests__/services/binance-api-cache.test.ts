@@ -184,4 +184,14 @@ describe('guardBinanceCall -1021 self-heal', () => {
     expect(mockRefreshOffset).not.toHaveBeenCalled();
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  it('increments the timestampResyncs stat on a -1021', async () => {
+    const before = binanceApiCache.getStats().timestampResyncs;
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error('ahead of the server'), { code: -1021 }))
+      .mockResolvedValueOnce('ok');
+    await guardBinanceCall(fn);
+    expect(binanceApiCache.getStats().timestampResyncs).toBe(before + 1);
+  });
 });

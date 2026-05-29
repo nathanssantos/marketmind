@@ -209,8 +209,12 @@ export function startPeriodicAuditScheduler(
       try {
         const summaries = await runner({ feesCap, feesDays, feesRateMs });
         const totalFixed = summaries.reduce((acc, s) => acc + s.fixed, 0);
+        // Surface the Binance reliability counters each tick — a climbing
+        // timestampResyncs means the host clock is chronically drifting
+        // (fix NTP), ipBans/networkOutages flag exchange-side trouble.
+        const { binanceApiCache } = await import('./binance-api-cache');
         logger.info(
-          { wallets: summaries.length, totalFixed },
+          { wallets: summaries.length, totalFixed, binanceStats: binanceApiCache.getStats() },
           '[startup-audit] Periodic audit complete',
         );
       } catch (err) {
