@@ -4,6 +4,7 @@ import type { Wallet } from '../db/schema';
 import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { createBinanceClient } from './binance-client';
+import { guardBinanceCall } from './binance-api-cache';
 import { createBinanceFuturesClient, submitFuturesAlgoOrder } from './binance-futures-client';
 import { logger } from './logger';
 import { cancelProtectionOrder } from './protection-orders';
@@ -83,7 +84,7 @@ export class ExchangeTrailingStopService {
         callbackRate: params.callbackRate.toString(),
         ...(formattedActivationPrice && { activationPrice: formattedActivationPrice }),
       };
-      const result = await client.submitNewOrder(orderParams as never);
+      const result = await guardBinanceCall(() => client.submitNewOrder(orderParams as never));
 
       logger.info({
         symbol: params.symbol,
@@ -120,10 +121,10 @@ export class ExchangeTrailingStopService {
     try {
       const client = createBinanceClient(wallet);
 
-      await client.cancelOrder({
+      await guardBinanceCall(() => client.cancelOrder({
         symbol,
         orderId: Number(orderId),
-      });
+      }));
 
       logger.info({
         symbol,
