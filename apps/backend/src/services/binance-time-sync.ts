@@ -46,13 +46,28 @@ const getTimeClient = (): USDMClient => {
  */
 export const getBinanceTimeOffset = (): number => currentOffset;
 
+interface OffsetAwareClient {
+  setTimeOffset: (v: number) => void;
+  getTimeOffset: () => number;
+}
+
 /**
- * Stamp the current offset onto a newly created client. No-op safe: when
- * the offset is still 0 (sync hasn't run yet) the client behaves exactly
- * as before.
+ * Wire a freshly created client to the process-wide offset. Two things:
+ *
+ *  1. Seed `setTimeOffset(currentOffset)` so the very first request is
+ *     already corrected.
+ *  2. Override `getTimeOffset` to read the *live* `currentOffset` rather
+ *     than the snapshot taken at client creation. The SDK signs every
+ *     request with `Date.now() + this.getTimeOffset()` (BaseRestClient),
+ *     so this lets a reactive re-sync (see `refreshBinanceTimeOffset`,
+ *     fired on a -1021) instantly correct an already-created client —
+ *     the subsequent retry of the very same call then succeeds. Stable
+ *     for binance@3.5.x; revisit if the SDK changes how it reads the
+ *     offset during signing.
  */
-export const applyBinanceTimeOffset = (client: { setTimeOffset: (v: number) => void }): void => {
+export const applyBinanceTimeOffset = (client: OffsetAwareClient): void => {
   client.setTimeOffset(currentOffset);
+  client.getTimeOffset = () => currentOffset;
 };
 
 const fetchOffset = async (): Promise<number> => {
@@ -83,6 +98,23 @@ const refresh = async (): Promise<void> => {
     // shouldn't reset us to 0 and reintroduce the drift.
     logger.warn({ error: serializeError(error) }, '[binance-time-sync] Offset refresh failed — keeping last value');
   }
+};
+
+let inFlightResync: Promise<void> | null = null;
+
+/**
+ * Reactively re-sync the offset NOW (used when a request fails with -1021
+ * mid-session, e.g. the clock jumped between the periodic refreshes).
+ * De-duplicated: a burst of concurrent -1021s collapses into one `/time`
+ * fetch. Because clients read the live offset via the overridden
+ * `getTimeOffset`, refreshing here corrects every already-created client
+ * so the immediate retry succeeds.
+ */
+export const refreshBinanceTimeOffset = async (): Promise<void> => {
+  inFlightResync ??= refresh().finally(() => {
+    inFlightResync = null;
+  });
+  return inFlightResync;
 };
 
 /**

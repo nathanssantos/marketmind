@@ -19,6 +19,7 @@ vi.mock('../../services/logger', () => ({
 import {
   applyBinanceTimeOffset,
   getBinanceTimeOffset,
+  refreshBinanceTimeOffset,
   startBinanceTimeSync,
   stopBinanceTimeSync,
 } from '../../services/binance-time-sync';
@@ -66,10 +67,12 @@ describe('binance-time-sync', () => {
     mockGetServerTime.mockResolvedValue(localNow - 800);
     await startBinanceTimeSync();
 
-    const client = { setTimeOffset: vi.fn() };
+    const client = { setTimeOffset: vi.fn(), getTimeOffset: () => 0 };
     applyBinanceTimeOffset(client);
 
     expect(client.setTimeOffset).toHaveBeenCalledWith(-800);
+    // getTimeOffset is overridden to read the LIVE offset, not the seeded snapshot.
+    expect(client.getTimeOffset()).toBe(-800);
   });
 
   it('keeps the last known offset when a refresh fails (no reset to 0)', async () => {
@@ -99,5 +102,23 @@ describe('binance-time-sync', () => {
 
     // Only the first start performs the bootstrap fetch.
     expect(mockGetServerTime).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshBinanceTimeOffset dedupes concurrent re-syncs into one /time fetch', async () => {
+    const localNow = 1_780_000_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(localNow);
+    // Slow fetch so the three calls overlap in-flight.
+    let resolveFetch: (v: number) => void = () => {};
+    mockGetServerTime.mockReturnValue(new Promise<number>((r) => { resolveFetch = r; }));
+
+    const a = refreshBinanceTimeOffset();
+    const b = refreshBinanceTimeOffset();
+    const c = refreshBinanceTimeOffset();
+    resolveFetch(localNow - 700);
+    await Promise.all([a, b, c]);
+
+    // A burst of -1021s must collapse into a single server-time fetch.
+    expect(mockGetServerTime).toHaveBeenCalledTimes(1);
+    expect(getBinanceTimeOffset()).toBe(-700);
   });
 });
