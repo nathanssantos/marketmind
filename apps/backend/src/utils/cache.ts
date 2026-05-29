@@ -40,9 +40,16 @@ export class SimpleCache<T> {
 export class KeyedCache<T> {
   private entries: Map<string, CacheEntry<T>> = new Map();
   private ttl: number;
+  private readonly maxEntries: number;
 
-  constructor(ttlMs: number = 5 * TIME_MS.MINUTE) {
+  /**
+   * @param ttlMs       per-entry TTL.
+   * @param maxEntries  optional cap; when exceeded the oldest-inserted
+   *                    entry is evicted (FIFO). 0 = unbounded.
+   */
+  constructor(ttlMs: number = 5 * TIME_MS.MINUTE, maxEntries = 0) {
     this.ttl = ttlMs;
+    this.maxEntries = maxEntries;
   }
 
   get(key: string): T | null {
@@ -56,6 +63,10 @@ export class KeyedCache<T> {
   }
 
   set(key: string, data: T): void {
+    if (this.maxEntries > 0 && !this.entries.has(key) && this.entries.size >= this.maxEntries) {
+      const oldest = this.entries.keys().next().value;
+      if (oldest !== undefined) this.entries.delete(oldest);
+    }
     this.entries.set(key, { data, timestamp: Date.now() });
   }
 

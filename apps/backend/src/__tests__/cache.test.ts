@@ -212,4 +212,32 @@ describe('KeyedCache', () => {
     vi.advanceTimersByTime(1000);
     expect(cache.get('second')).toBeNull();
   });
+
+  it('evicts the oldest entry (FIFO) when maxEntries is exceeded', () => {
+    const cache = new KeyedCache<string>(60_000, 2);
+    cache.set('a', '1');
+    cache.set('b', '2');
+    cache.set('c', '3'); // exceeds cap → evicts 'a'
+    expect(cache.get('a')).toBeNull();
+    expect(cache.get('b')).toBe('2');
+    expect(cache.get('c')).toBe('3');
+    expect(cache.size()).toBe(2);
+  });
+
+  it('re-setting an existing key does not trigger eviction', () => {
+    const cache = new KeyedCache<string>(60_000, 2);
+    cache.set('a', '1');
+    cache.set('b', '2');
+    cache.set('a', '1-updated'); // same key — no eviction
+    expect(cache.get('a')).toBe('1-updated');
+    expect(cache.get('b')).toBe('2');
+    expect(cache.size()).toBe(2);
+  });
+
+  it('is unbounded when maxEntries is 0 (default)', () => {
+    const cache = new KeyedCache<number>(60_000);
+    for (let i = 0; i < 50; i++) cache.set(`k${i}`, i);
+    expect(cache.size()).toBe(50);
+    expect(cache.get('k0')).toBe(0);
+  });
 });
