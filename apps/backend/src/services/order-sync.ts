@@ -1,7 +1,7 @@
 import { and, eq, or } from 'drizzle-orm';
 import { db } from '../db';
 import { autoTradingConfig, orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
-import { BinanceIpBannedError } from './binance-api-cache';
+import { BinanceIpBannedError, guardBinanceCall } from './binance-api-cache';
 import { createBinanceFuturesClient, getOpenAlgoOrders, getPositions, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
 import { getOpenOrders as getBinanceOpenOrders } from './binance-futures-orders';
 import { clearProtectionOrderIds, syncProtectionOrderIdFromExchange } from './execution-manager';
@@ -540,7 +540,7 @@ export class OrderSyncService {
       let avgPrice = '0';
       let executedQty = '0';
       try {
-        const order = await client.getOrder({ symbol: row.symbol, orderId: Number(row.orderId) });
+        const order = await guardBinanceCall(() => client.getOrder({ symbol: row.symbol, orderId: Number(row.orderId) }));
         const binanceStatus = String(order.status ?? '').toUpperCase();
         if (binanceStatus === 'FILLED') {
           realStatus = 'FILLED';
