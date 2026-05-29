@@ -14,9 +14,13 @@ vi.mock('binance', async () => {
     { symbol: 'BNBUSDT', price: '700.00' },
   ];
   class StubUSDMClient {
+    setTimeOffset() {}
+    getTimeOffset() { return 0; }
     async getSymbolPriceTicker() { return stubTickers; }
   }
   class StubMainClient {
+    setTimeOffset() {}
+    getTimeOffset() { return 0; }
     async getSymbolPriceTicker() { return stubTickers; }
   }
   return { ...actual, USDMClient: StubUSDMClient, MainClient: StubMainClient };

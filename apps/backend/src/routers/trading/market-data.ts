@@ -1,7 +1,10 @@
-import { MainClient, USDMClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { symbolTrailingStopOverrides } from '../../db/schema';
+import {
+  createBinanceClientForPrices,
+  createBinanceFuturesClientForPrices,
+} from '../../services/binance-client';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { walletQueries } from '../../services/database/walletQueries';
 import { logger } from '../../services/logger';
@@ -31,7 +34,7 @@ export const marketDataRouter = router({
           const prices: Record<string, string> = {};
 
           if (input.marketType === 'FUTURES') {
-            const client = new USDMClient({ disableTimeSync: true });
+            const client = createBinanceFuturesClientForPrices();
             const tickers = await client.getSymbolPriceTicker();
             const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
 
@@ -43,7 +46,7 @@ export const marketDataRouter = router({
             return prices;
           }
 
-          const client = new MainClient({ disableTimeSync: true });
+          const client = createBinanceClientForPrices();
           const tickers = await client.getSymbolPriceTicker();
           const tickersArray = Array.isArray(tickers) ? tickers : [tickers];
 
