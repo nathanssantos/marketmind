@@ -179,6 +179,14 @@ const start = async (): Promise<void> => {
       fastify.log.info(`> Binance kline stream service started (SPOT + FUTURES)`);
       fastify.log.info(`> Trading services SKIPPED (demo mode)`);
     } else {
+      // Bootstrap the Binance server-time offset BEFORE any service spins
+      // up an authed client. Signed requests fail with -1021 if the local
+      // clock drifts ahead of Binance; this awaits one `/time` poll so the
+      // first authed call already carries the correct offset, then refreshes
+      // on an interval. See services/binance-time-sync.ts.
+      const { startBinanceTimeSync } = await import('./services/binance-time-sync');
+      await startBinanceTimeSync();
+
       const [
         { positionMonitorService },
         { binanceUserStreamService },

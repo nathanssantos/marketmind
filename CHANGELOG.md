@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Every signed Binance Futures request failed with `-1021` when the host clock drifted ahead** — all REST clients were built with `disableTimeSync: true`, so the SDK never corrected for clock skew. A dev/prod machine whose NTP clock ran even ~1s ahead got `"Timestamp for this request was 1000ms ahead of the server's time"` on every private call (`getPositions`, order placement, etc.), and `recvWindow` can't help in the *ahead* direction. Enabling the SDK's per-client sync wasn't viable — our factories mint a fresh client on each of 34 call sites, which would leak an hourly timer per request and race the first signed call. Fix: a process-wide `binance-time-sync` singleton bootstraps one `/time` offset at startup (awaited before any authed client is created), refreshes every 5 min, and stamps the offset onto each freshly created client via `setTimeOffset`. Clients keep `disableTimeSync: true` so none spin up their own timer. Also unified the four scattered client factories — `binance-futures-client.ts` now re-exports the single source of truth in `binance-client.ts` instead of duplicating construction.
+
 ## [1.23.2] - 2026-05-24
 
 Custom-symbol gating + wallet-balance correctness. POLITIFI (and any future synthetic basket) now visibly says "Trading not available on indices" in the ticket and auto-trading panels, the backend stops asking Binance about leverage for symbols Binance doesn't know, and a paper close that doubled the wallet balance is fixed. New periodic Binance-alignment audit catches future drift on its own schedule.

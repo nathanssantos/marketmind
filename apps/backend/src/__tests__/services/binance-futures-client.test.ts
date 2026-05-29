@@ -42,6 +42,12 @@ vi.mock('binance', () => ({
     cancelAllOpenOrders = mockMethods.cancelAllOpenOrders;
     getAllOpenOrders = mockMethods.getAllOpenOrders;
     getNotionalAndLeverageBrackets = mockMethods.getNotionalAndLeverageBrackets;
+    setTimeOffset = vi.fn();
+    getServerTime = vi.fn().mockResolvedValue(Date.now());
+  },
+  MainClient: class MockMainClient {
+    setTimeOffset = vi.fn();
+    getServerTime = vi.fn().mockResolvedValue(Date.now());
   },
 }));
 

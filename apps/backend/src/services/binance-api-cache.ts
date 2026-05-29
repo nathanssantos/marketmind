@@ -293,6 +293,18 @@ export class BinanceNetworkOutageError extends Error {
   }
 }
 
+// Binance -1021: request timestamp outside the server's recvWindow,
+// almost always because the host clock drifted ahead. Match by code on
+// either the error or its nested `body`, or by message text as a
+// fallback for shapes that don't carry the code.
+const isTimestampError = (error: unknown): boolean => {
+  const e = error as { code?: number; body?: { code?: number }; message?: string; msg?: string } | null;
+  if (!e) return false;
+  if (e.code === -1021 || e.body?.code === -1021) return true;
+  const text = `${e.message ?? ''} ${e.msg ?? ''}`;
+  return text.includes('ahead of the server') || text.includes('recvWindow');
+};
+
 export async function guardBinanceCall<T>(fn: () => Promise<T>): Promise<T> {
   if (binanceApiCache.isBanned()) {
     const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
@@ -307,6 +319,22 @@ export async function guardBinanceCall<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (error) {
+    // Self-heal clock skew: on a -1021, re-sync the process-wide offset
+    // (deduped) and retry once. Clients read the offset live, so the
+    // retry of this very call signs with the corrected timestamp. Guarded
+    // against recursion by only retrying once.
+    if (isTimestampError(error)) {
+      try {
+        const { refreshBinanceTimeOffset } = await import('./binance-time-sync');
+        await refreshBinanceTimeOffset();
+        logger.warn('[binance-api-cache] -1021 timestamp skew — re-synced offset, retrying once');
+        return await fn();
+      } catch (retryError) {
+        binanceApiCache.checkAndSetBan(retryError);
+        binanceApiCache.markNetworkOutage(retryError);
+        throw retryError;
+      }
+    }
     binanceApiCache.checkAndSetBan(error);
     binanceApiCache.markNetworkOutage(error);
     throw error;

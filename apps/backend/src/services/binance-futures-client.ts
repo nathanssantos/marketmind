@@ -1,34 +1,26 @@
 import type { FuturesAccount, FuturesLeverage, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
-import { USDMClient } from 'binance';
-import type { Wallet } from '../db/schema';
+import type { USDMClient } from 'binance';
 import { guardBinanceCall } from './binance-api-cache';
-import { getWalletType, isPaperWallet, type WalletType } from './binance-client';
-import { decryptApiKey } from './encryption';
+import {
+  createBinanceFuturesClient,
+  createBinanceFuturesClientForPrices,
+  getWalletType,
+  isPaperWallet,
+  type WalletType,
+} from './binance-client';
 import { logger, serializeError } from './logger';
 
-export { getWalletType, isPaperWallet, type WalletType };
-
-export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
-  const walletType = getWalletType(wallet);
-
-  if (walletType === 'paper') {
-    throw new Error('Paper wallets cannot execute real orders on Binance Futures');
-  }
-
-  const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-  const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
-
-  return new USDMClient({
-    api_key: apiKey,
-    api_secret: apiSecret,
-    testnet: walletType === 'testnet',
-    disableTimeSync: true,
-  });
-}
-
-export function createBinanceFuturesClientForPrices(): USDMClient {
-  return new USDMClient({ disableTimeSync: true });
-}
+// Re-exported from the unified factory in `binance-client.ts` (single
+// source of truth for client construction + process-wide time-offset
+// stamping). Kept exported here so the many call sites that import from
+// `binance-futures-client` don't all have to move.
+export {
+  createBinanceFuturesClient,
+  createBinanceFuturesClientForPrices,
+  getWalletType,
+  isPaperWallet,
+  type WalletType,
+};
 
 export async function setLeverage(
   client: USDMClient,
