@@ -1,4 +1,4 @@
-import { MainClient } from 'binance';
+import type { MainClient } from 'binance';
 import type {
   CancelOrderResult,
   IExchangeSpotClient,
@@ -10,18 +10,15 @@ import type {
   SpotTradeFees,
 } from '../spot-client';
 import type { ExchangeCredentials, ExchangeId } from '../types';
+import { createBinanceSpotClientFromCredentials } from '../../services/binance-client';
 
 export class BinanceSpotExchangeClient implements IExchangeSpotClient {
   readonly exchangeId: ExchangeId = 'BINANCE';
   private client: MainClient;
 
   constructor(credentials: ExchangeCredentials) {
-    this.client = new MainClient({
-      api_key: credentials.apiKey,
-      api_secret: credentials.apiSecret,
-      testnet: credentials.testnet,
-      disableTimeSync: true,
-    });
+    // Single construction path — applies the process-wide time offset.
+    this.client = createBinanceSpotClientFromCredentials(credentials);
   }
 
   async submitOrder(params: SpotOrderParams): Promise<SpotOrderResult> {

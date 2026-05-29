@@ -17,6 +17,15 @@ interface AuthedClientOptions {
   disableTimeSync: true;
 }
 
+/** Raw credentials for the wallet-creation validation path (no persisted
+ *  wallet row exists yet). Everything else uses {@link createBinanceClient}
+ *  / {@link createBinanceFuturesClient} with a {@link Wallet}. */
+export interface BinanceCredentials {
+  apiKey: string;
+  apiSecret: string;
+  testnet: boolean;
+}
+
 const buildAuthedOptions = (wallet: Wallet, action: string): AuthedClientOptions => {
   const walletType = getWalletType(wallet);
   if (walletType === 'paper') {
@@ -29,6 +38,13 @@ const buildAuthedOptions = (wallet: Wallet, action: string): AuthedClientOptions
     disableTimeSync: true,
   };
 };
+
+const credentialOptions = (creds: BinanceCredentials): AuthedClientOptions => ({
+  api_key: creds.apiKey,
+  api_secret: creds.apiSecret,
+  testnet: creds.testnet,
+  disableTimeSync: true,
+});
 
 const noop = (): void => {};
 
@@ -64,12 +80,36 @@ export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
   return client;
 }
 
+/** Authed spot client from raw credentials — wallet-creation validation
+ *  (no persisted {@link Wallet} row exists yet). Applies the time offset
+ *  so the validation call doesn't -1021 on a skewed clock. */
+export function createBinanceSpotClientFromCredentials(creds: BinanceCredentials): MainClient {
+  const client = new MainClient(credentialOptions(creds));
+  applyBinanceTimeOffset(client);
+  return client;
+}
+
+/** Authed futures client from raw credentials. See
+ *  {@link createBinanceSpotClientFromCredentials}. Also the single
+ *  construction path for the exchange-abstraction layer
+ *  (`exchange/binance/*`), so those clients get the offset too. */
+export function createBinanceFuturesClientFromCredentials(creds: BinanceCredentials): USDMClient {
+  const client = new USDMClient(credentialOptions(creds));
+  applyBinanceTimeOffset(client);
+  return client;
+}
+
 export function createBinanceClientForPrices(): MainClient {
-  // Public endpoints aren't signed, so the offset is irrelevant here —
-  // but applying it is harmless and keeps every client uniform.
-  return new MainClient({ disableTimeSync: true });
+  // Public endpoints aren't signed, so the offset is irrelevant — but we
+  // apply it anyway so every client in the app is uniform (and any future
+  // signed call on this instance is safe).
+  const client = new MainClient({ disableTimeSync: true });
+  applyBinanceTimeOffset(client);
+  return client;
 }
 
 export function createBinanceFuturesClientForPrices(): USDMClient {
-  return new USDMClient({ disableTimeSync: true });
+  const client = new USDMClient({ disableTimeSync: true });
+  applyBinanceTimeOffset(client);
+  return client;
 }

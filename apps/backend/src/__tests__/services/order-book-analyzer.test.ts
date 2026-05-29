@@ -13,6 +13,8 @@ vi.mock('../../services/logger', () => ({
 
 vi.mock('binance', () => ({
   USDMClient: class MockUSDMClient {
+    setTimeOffset() {}
+    getTimeOffset() { return 0; }
     async getOrderBook({ symbol, limit }: { symbol: string; limit: number }) {
       if (symbol === 'ERROR') {
         throw new Error('API Error');
@@ -41,6 +43,8 @@ vi.mock('binance', () => ({
     }
   },
   MainClient: class MockMainClient {
+    setTimeOffset() {}
+    getTimeOffset() { return 0; }
     async getOrderBook({ symbol: _symbol, limit }: { symbol: string; limit: number }) {
       return {
         bids: [

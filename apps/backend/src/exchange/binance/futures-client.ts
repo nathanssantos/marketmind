@@ -1,5 +1,5 @@
 import type { FuturesAccount, FuturesLeverage, FuturesOrder, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
-import { USDMClient } from 'binance';
+import type { USDMClient } from 'binance';
 import type {
   AccountTradeRecord,
   AllTradeFeesResult,
@@ -40,6 +40,7 @@ import {
   submitFuturesAlgoOrder,
   submitFuturesOrder,
 } from '../../services/binance-futures-client';
+import { createBinanceFuturesClientFromCredentials } from '../../services/binance-client';
 
 const MARGIN_MODIFY_TYPE_MAP: Record<string, '0' | '1'> = {
   ADD: '1',
@@ -51,12 +52,10 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
   private client: USDMClient;
 
   constructor(credentials: ExchangeCredentials) {
-    this.client = new USDMClient({
-      api_key: credentials.apiKey,
-      api_secret: credentials.apiSecret,
-      testnet: credentials.testnet,
-      disableTimeSync: true,
-    });
+    // Single construction path — applies the process-wide time offset so
+    // this client signs with a corrected timestamp (was the -1021 source
+    // on the SL/TP path, which builds its client here via getFuturesClient).
+    this.client = createBinanceFuturesClientFromCredentials(credentials);
   }
 
   async getAccountInfo(): Promise<FuturesAccount> {

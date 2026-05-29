@@ -1,7 +1,8 @@
 import type { MarketType } from '@marketmind/types';
-import { USDMClient, MainClient } from 'binance';
+import type { USDMClient, MainClient } from 'binance';
 import { INDICATOR_CACHE, ORDER_BOOK } from '../constants';
 import { KeyedCache } from '../utils/cache';
+import { createBinanceClientForPrices, createBinanceFuturesClientForPrices } from './binance-client';
 import { logger, serializeError } from './logger';
 
 export interface LiquidityWall {
@@ -49,8 +50,8 @@ export class OrderBookAnalyzerService {
   private cache = new KeyedCache<OrderBookAnalysis>(INDICATOR_CACHE.ORDER_BOOK_TTL);
 
   constructor() {
-    this.futuresClient = new USDMClient({ disableTimeSync: true });
-    this.spotClient = new MainClient({ disableTimeSync: true });
+    this.futuresClient = createBinanceFuturesClientForPrices();
+    this.spotClient = createBinanceClientForPrices();
   }
 
   async getOrderBookAnalysis(
