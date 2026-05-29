@@ -6,6 +6,7 @@ import { formatPriceForBinance, formatQuantityForBinance } from '../utils/format
 import { getFuturesClient, getSpotClient } from '../exchange';
 import type { FuturesOrderParams, SpotOrderParams } from '../exchange';
 import { isPaperWallet } from './binance-client';
+import { isBenignMarginTypeError } from './binance-errors';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
 import type { OrderParams } from './auto-trading';
@@ -245,11 +246,11 @@ export const setFuturesMarginType = async (
     await client.setMarginType(symbol, marginType);
     logger.info({ symbol, marginType }, 'Futures margin type set');
   } catch (error) {
-    const errorMsg = serializeError(error);
-    if (errorMsg.includes('No need to change margin type')) {
+    if (isBenignMarginTypeError(error)) {
       logger.info({ symbol, marginType }, 'Margin type already set');
       return;
     }
+    const errorMsg = serializeError(error);
     logger.error({ symbol, marginType, error: errorMsg }, 'Failed to set futures margin type');
     throw new Error(`Failed to set margin type for ${symbol}: ${errorMsg}`, { cause: error });
   }

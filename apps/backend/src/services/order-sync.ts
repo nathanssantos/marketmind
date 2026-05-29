@@ -2,6 +2,7 @@ import { and, eq, or } from 'drizzle-orm';
 import { db } from '../db';
 import { autoTradingConfig, orders, tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { BinanceIpBannedError, guardBinanceCall } from './binance-api-cache';
+import { binanceErrorText, isOrderNotFound } from './binance-errors';
 import { createBinanceFuturesClient, getOpenAlgoOrders, getPositions, isPaperWallet, type FuturesAlgoOrder } from './binance-futures-client';
 import { getOpenOrders as getBinanceOpenOrders } from './binance-futures-orders';
 import { clearProtectionOrderIds, syncProtectionOrderIdFromExchange } from './execution-manager';
@@ -590,12 +591,9 @@ export class OrderSyncService {
         //      the toast on NEW→EXPIRED transition without knowing the
         //      stamp was a fallback. Leave STILL_LIVE so the next reconcile
         //      cycle retries the lookup once the API recovers.
-        const errMsg = serializeError(err).toLowerCase();
-        const isOrderGone =
-          errMsg.includes('unknown order') ||
-          errMsg.includes('order does not exist') ||
-          errMsg.includes('does not exist') ||
-          errMsg.includes('older than');
+        // "older than" is order-history-specific (Binance "order too old to
+        // query") — not a generic not-found, so kept alongside the classifier.
+        const isOrderGone = isOrderNotFound(err) || binanceErrorText(err).includes('older than');
         if (isOrderGone) {
           logger.warn(
             { walletId, orderId: row.orderId, symbol: row.symbol, error: serializeError(err) },

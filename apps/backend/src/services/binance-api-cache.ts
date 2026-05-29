@@ -1,4 +1,5 @@
 import { TIME_MS } from '../constants';
+import { isTimestampError } from './binance-errors';
 import { logger } from './logger';
 
 interface CacheEntry<T> {
@@ -293,17 +294,6 @@ export class BinanceNetworkOutageError extends Error {
   }
 }
 
-// Binance -1021: request timestamp outside the server's recvWindow,
-// almost always because the host clock drifted ahead. Match by code on
-// either the error or its nested `body`, or by message text as a
-// fallback for shapes that don't carry the code.
-const isTimestampError = (error: unknown): boolean => {
-  const e = error as { code?: number; body?: { code?: number }; message?: string; msg?: string } | null;
-  if (!e) return false;
-  if (e.code === -1021 || e.body?.code === -1021) return true;
-  const text = `${e.message ?? ''} ${e.msg ?? ''}`;
-  return text.includes('ahead of the server') || text.includes('recvWindow');
-};
 
 export async function guardBinanceCall<T>(fn: () => Promise<T>): Promise<T> {
   if (binanceApiCache.isBanned()) {

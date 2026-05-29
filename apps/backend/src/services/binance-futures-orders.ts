@@ -7,6 +7,7 @@ import type {
 } from '../exchange/futures-client';
 import { formatQuantityForBinance } from '../utils/formatters';
 import { guardBinanceCall } from './binance-api-cache';
+import { isOrderNotFound } from './binance-errors';
 import { logger, serializeError } from './logger';
 
 export async function submitFuturesOrder(
@@ -88,12 +89,11 @@ export async function cancelFuturesOrder(
   try {
     await guardBinanceCall(() => client.cancelOrder({ symbol, orderId: Number(orderId) }));
   } catch (error) {
-    const msg = serializeError(error);
-    if (msg.includes('Unknown order') || msg.includes('Order does not exist') || msg.includes('not found')) {
+    if (isOrderNotFound(error)) {
       logger.info({ symbol, orderId }, '[Futures] Order already cancelled or does not exist');
       return;
     }
-    logger.error({ error: msg, symbol, orderId }, 'Failed to cancel futures order');
+    logger.error({ error: serializeError(error), symbol, orderId }, 'Failed to cancel futures order');
     throw error;
   }
 }
@@ -235,12 +235,11 @@ export async function cancelFuturesAlgoOrder(
     await guardBinanceCall(() => client.cancelAlgoOrder({ algoId: Number(algoId) }));
     logger.info({ algoId }, '[Futures] Algo order cancelled successfully');
   } catch (error) {
-    const msg = serializeError(error);
-    if (msg.includes('Unknown order') || msg.includes('Order does not exist') || msg.includes('not found')) {
+    if (isOrderNotFound(error)) {
       logger.info({ algoId }, '[Futures] Algo order already cancelled or does not exist');
       return;
     }
-    logger.error({ error: msg, algoId }, '[Futures] Failed to cancel algo order');
+    logger.error({ error: serializeError(error), algoId }, '[Futures] Failed to cancel algo order');
     throw error;
   }
 }

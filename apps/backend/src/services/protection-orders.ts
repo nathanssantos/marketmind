@@ -4,6 +4,7 @@ import { serializeError } from '../utils/errors';
 import { formatPriceForBinance, formatQuantityForBinance } from '../utils/formatters';
 import { getFuturesClient, getSpotClient } from '../exchange';
 import { BinanceIpBannedError } from './binance-api-cache';
+import { isOrderNotFound } from './binance-errors';
 import { logger } from './logger';
 import { getMinNotionalFilterService } from './min-notional-filter';
 import { ALGO_ORDER_DEFAULTS } from '../constants/algo-orders';
@@ -59,12 +60,11 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
         return true;
       } catch (error) {
         if (error instanceof BinanceIpBannedError) throw error;
-        const errorMessage = serializeError(error);
-        if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+        if (isOrderNotFound(error)) {
           logger.info({ algoId, symbol }, '[ProtectionOrders] Futures algo order already executed or cancelled');
           return true;
         }
-        logger.warn({ algoId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel futures algo order');
+        logger.warn({ algoId, symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to cancel futures algo order');
         return false;
       }
     }
@@ -77,12 +77,11 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
         return true;
       } catch (error) {
         if (error instanceof BinanceIpBannedError) throw error;
-        const errorMessage = serializeError(error);
-        if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+        if (isOrderNotFound(error)) {
           logger.info({ orderId, symbol }, '[ProtectionOrders] Futures order already executed or cancelled');
           return true;
         }
-        logger.warn({ orderId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel futures order');
+        logger.warn({ orderId, symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to cancel futures order');
         return false;
       }
     }
@@ -99,12 +98,11 @@ export async function cancelProtectionOrder(params: CancelProtectionOrderParams)
     return true;
   } catch (error) {
     if (error instanceof BinanceIpBannedError) throw error;
-    const errorMessage = serializeError(error);
-    if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+    if (isOrderNotFound(error)) {
       logger.info({ orderId, symbol }, '[ProtectionOrders] Spot order already executed or cancelled');
       return true;
     }
-    logger.warn({ orderId, symbol, error: errorMessage }, '[ProtectionOrders] Failed to cancel spot order');
+    logger.warn({ orderId, symbol, error: serializeError(error) }, '[ProtectionOrders] Failed to cancel spot order');
     return false;
   }
 }
