@@ -7,9 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.3] - 2026-05-29
+
+A deep unification pass over **everything that talks to Binance**. The headline is a clock-skew fix that was silently failing every signed Futures request (`-1021`), but the bulk of the release is structural: one client factory, one error vocabulary, one cache, one WebSocket-stream base, one kline-stream base — replacing definitions that had drifted apart across ~30 call sites and were each doing the same things differently. No behavioral change for the user beyond the bugs fixed; the win is that the next Binance change touches one file, not ten.
+
 ### Fixed
 
-- **Every signed Binance Futures request failed with `-1021` when the host clock drifted ahead** — all REST clients were built with `disableTimeSync: true`, so the SDK never corrected for clock skew. A dev/prod machine whose NTP clock ran even ~1s ahead got `"Timestamp for this request was 1000ms ahead of the server's time"` on every private call (`getPositions`, order placement, etc.), and `recvWindow` can't help in the *ahead* direction. Enabling the SDK's per-client sync wasn't viable — our factories mint a fresh client on each of 34 call sites, which would leak an hourly timer per request and race the first signed call. Fix: a process-wide `binance-time-sync` singleton bootstraps one `/time` offset at startup (awaited before any authed client is created), refreshes every 5 min, and stamps the offset onto each freshly created client via `setTimeOffset`. Clients keep `disableTimeSync: true` so none spin up their own timer. Also unified the four scattered client factories — `binance-futures-client.ts` now re-exports the single source of truth in `binance-client.ts` instead of duplicating construction.
+- **Every signed Binance Futures request failed with `-1021` when the host clock drifted ahead** — all REST clients were built with `disableTimeSync: true`, so the SDK never corrected for clock skew. A dev/prod machine whose NTP clock ran even ~1s ahead got `"Timestamp for this request was 1000ms ahead of the server's time"` on every private call (`getPositions`, order placement, manual SL/TP, etc.), and `recvWindow` can't help in the *ahead* direction. Enabling the SDK's per-client sync wasn't viable — our factories mint a fresh client on each call site, which would leak an hourly timer per request and race the first signed call. Fix: a process-wide `binance-time-sync` singleton bootstraps one `/time` offset at startup (awaited before any authed client is created), refreshes every 5 min, and stamps the live offset onto each freshly created client via `setTimeOffset` + a `getTimeOffset` override so retries re-read it. Clients keep `disableTimeSync: true` so none spin up their own timer. (#715)
+- **Manual chart SL/TP orders still threw `-1021` after the time-sync fix landed** — the exchange-abstraction layer (`exchange/binance/futures-client.ts`) constructed its *own* `new USDMClient` without going through the offset-applying factory, and never wired `getTimeOffset`, so even the self-heal retry couldn't recover. Routing it through `createBinanceFuturesClientFromCredentials` was the actual fix for the order-submission path. (#716)
+- **`guardBinanceCall` -1021 branch couldn't self-heal** — it now triggers a real `refreshBinanceTimeOffset()` (deduped via an in-flight promise) and records the resync, so a transient skew recovers on the next attempt instead of failing the whole call chain. (#717)
+
+### Changed
+
+- **One Binance client factory** — `binance-client.ts` is now the single source of truth for client construction. New `BinanceCredentials` interface + `createBinanceSpotClientFromCredentials` / `createBinanceFuturesClientFromCredentials`, both of which apply the process-wide time offset. The price-only (`*ForPrices`) builders apply it too. `binance-futures-client.ts` and the `exchange/binance/*` wrappers no longer duplicate `new USDMClient(...)` — they all funnel here. (#716)
+- **One Binance error vocabulary** — new `binance-errors.ts` (`binanceErrorCode`, `binanceErrorText`, `isTimestampError`, `isOrderNotFound`, `isBenignMarginTypeError`) replaces ~10 scattered, subtly-different copies of "is this error code -2011 / -4046 / -1021?" parsing. `retry.ts#isRetryableError` is now code-aware (builds its error string from code + text + cause), and the API-cache self-heal imports `isTimestampError` instead of string-matching. (#718, #722)
+- **One Binance response cache** — the bespoke `WeakMap` symbol-config cache in `binance-futures-client.ts` is gone; symbol config now lives in `binanceApiCache` under a new `SYMBOL_CONFIG` TTL (10s), keyed by wallet. `getPositions(client, { symbol?, walletId? })` gained an options shape, and a `__resetSymbolConfigCache(walletId?)` test hook. New `BinanceApiStats` (`timestampResyncs` / `ipBans` / `networkOutages`) exposed via `getStats()`. (#720, #723)
+- **One WebSocket-stream base** — new `BinanceWebSocketStreamBase` abstract class centralizes `start()`/`stop()`, message/error/reconnected wiring, and a 2s reconnect-dedupe. The book-ticker, agg-trade, depth, mark-price, and liquidation streams are now thin subclasses implementing only `handleMessage` / `onReconnected`. (#721, #724)
+- **One kline-stream base** — new `BinanceKlineStreamBase` centralizes the full lifecycle, health watchdog, and persistence shared by the spot and futures kline streams; `binance-kline-stream.ts` is now two ~20-line subclasses (futures adds `onKlineClose` handlers + `autoStartOnSubscribe`). (#726)
+- **Fee cache uses the shared `KeyedCache`** — `KeyedCache` gained a `maxEntries` constructor param (FIFO eviction); `fee-service.ts` dropped its hand-rolled `Map` for it. (#719)
+
+### Removed
+
+- **Dead second rate-limiter** — `binance-rate-limiter.ts` (a never-imported duplicate `BinanceRateLimiter`) deleted. (#718)
+
+### CI
+
+- **Per-job `timeout-minutes`** added to `ci-cd.yml` (lint 15, test 25, browser 20, build 15) so a hung job fails fast instead of burning the full runner budget; the lint job now installs with `--ignore-scripts` to skip the `@stoqey/ib` → `node-gyp` native rebuild that was hanging it for ~2h. (#725)
+
+### Notes
+
+- No DB migrations.
+- Backend restart required (time-sync bootstraps at boot).
+- **Host-clock note:** the app self-heals skew, but if your machine's clock is the root cause, fix NTP at the source — on macOS, `sudo sntp -sS time.apple.com`.
 
 ## [1.23.2] - 2026-05-24
 
