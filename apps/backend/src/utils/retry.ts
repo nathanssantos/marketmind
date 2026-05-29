@@ -1,5 +1,6 @@
 import { AUTO_TRADING_RETRY } from '../constants';
 import { binanceApiCache, binanceRateLimiter, BinanceIpBannedError } from '../services/binance-api-cache';
+import { binanceErrorCode, binanceErrorText } from '../services/binance-errors';
 import { logger } from '../services/logger';
 
 export interface RetryOptions {
@@ -67,8 +68,15 @@ const isRetryableError = (
 ): boolean => {
   if (error instanceof BinanceIpBannedError) return false;
 
+  // Build the searchable string from every shape Binance uses: the
+  // Error message + cause (original case, for mixed-case patterns like
+  // "Service Unavailable"), the numeric code stringified (so '-2011' etc.
+  // match even when the SDK only sets {code} and no message text), and
+  // the shared lowercased text extractor (msg / body.msg / nested cause).
   const cause = 'cause' in error ? String(error.cause) : '';
-  const errorString = error.message + cause;
+  const code = binanceErrorCode(error);
+  const codeStr = code !== undefined ? String(code) : '';
+  const errorString = `${error.message} ${cause} ${codeStr} ${binanceErrorText(error)}`;
 
   if (binanceApiCache.checkAndSetBan(errorString)) return false;
 
