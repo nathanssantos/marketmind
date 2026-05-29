@@ -64,7 +64,7 @@ async function auditWallet(
               eq(tradeExecutions.marketType, 'FUTURES')
             )
           ),
-        getPositions(client),
+        getPositions(client, { walletId: wallet.id }),
         getOpenOrders(client),
         getOpenAlgoOrders(client),
         getAccountInfo(client),

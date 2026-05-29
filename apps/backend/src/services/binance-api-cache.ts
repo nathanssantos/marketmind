@@ -13,6 +13,11 @@ const CACHE_TTL = {
   ALGO_ORDERS: 10 * TIME_MS.SECOND,
   ACCOUNT_INFO: 30 * TIME_MS.SECOND,
   SYMBOL_LEVERAGE: 30 * TIME_MS.SECOND,
+  // Per-wallet /fapi/v1/symbolConfig (leverage + marginType). Short TTL
+  // because it changes when the user adjusts leverage; deduplicates the
+  // bulk fetch across the position-sync / order-sync / audit services that
+  // can run for the same wallet within the same window.
+  SYMBOL_CONFIG: 10 * TIME_MS.SECOND,
   FILTERED_SYMBOLS: 60 * TIME_MS.SECOND,
   SYMBOL_SCORES: 60 * TIME_MS.SECOND,
   TOP_COINS: 5 * TIME_MS.MINUTE,
