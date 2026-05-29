@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { ALGO_ORDER_DEFAULTS } from '../../constants/algo-orders';
 import { orders, tradeExecutions } from '../../db/schema';
 import { isPaperWallet } from '../../services/binance-client';
+import { isOrderNotFound } from '../../services/binance-errors';
 import { getFuturesClient } from '../../exchange';
 import { createMarketClient } from '../../services/market-client-factory';
 import { walletQueries } from '../../services/database/walletQueries';
@@ -601,8 +602,7 @@ export const orderMutationsRouter = router({
             await cancelFuturesAlgoOrder(apiClient, input.orderId);
             cancelSucceeded = true;
           } catch (cancelError) {
-            const msg = (cancelError as Error)?.message ?? '';
-            if (!msg.includes('Unknown order') && !msg.includes('Order does not exist') && !msg.includes('not found')) throw cancelError;
+            if (!isOrderNotFound(cancelError)) throw cancelError;
           }
         } else {
           const marketClient = createMarketClient(wallet, input.marketType);
@@ -610,8 +610,7 @@ export const orderMutationsRouter = router({
             await marketClient.cancelOrder(input.symbol, input.orderId);
             cancelSucceeded = true;
           } catch (cancelError) {
-            const binanceCode = (cancelError as { cause?: { code?: number } })?.cause?.code;
-            if (binanceCode !== -2011) throw cancelError;
+            if (!isOrderNotFound(cancelError)) throw cancelError;
           }
         }
 

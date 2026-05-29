@@ -6,6 +6,8 @@ import { cancelAllProtectionOrders } from '../protection-orders';
 import { clearProtectionOrderIds, type ProtectionOrderField } from '../execution-manager';
 import { logHandlerAction } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
+import { guardBinanceCall } from '../binance-api-cache';
+import { isOrderNotFound } from '../binance-errors';
 import { closeExecutionAndBroadcast } from '../wallet-broadcast';
 import { getWebSocketService } from '../websocket';
 import { applyTransferDelta } from '../wallet-balance';
@@ -521,13 +523,12 @@ export async function cancelPendingEntryOrders(
           if (isAlgoEntry) {
             await cancelFuturesAlgoOrder(apiClient, pending.entryOrderId);
           } else {
-            await apiClient.cancelOrder({ symbol, orderId: Number(pending.entryOrderId) });
+            await guardBinanceCall(() => apiClient.cancelOrder({ symbol, orderId: Number(pending.entryOrderId) }));
           }
           logger.info({ walletId, symbol, entryOrderId: pending.entryOrderId, isAlgoEntry }, '[FuturesUserStream] Cancelled pending entry order');
         } catch (cancelErr) {
-          const msg = serializeError(cancelErr);
-          if (!msg.includes('Unknown order') && !msg.includes('Order does not exist') && !msg.includes('not found'))
-            {logger.warn({ walletId, symbol, entryOrderId: pending.entryOrderId, error: msg }, '[FuturesUserStream] Failed to cancel pending entry order on exchange');}
+          if (!isOrderNotFound(cancelErr))
+            {logger.warn({ walletId, symbol, entryOrderId: pending.entryOrderId, error: serializeError(cancelErr) }, '[FuturesUserStream] Failed to cancel pending entry order on exchange');}
         }
       }
 

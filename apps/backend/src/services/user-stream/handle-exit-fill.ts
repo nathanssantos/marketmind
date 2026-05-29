@@ -5,6 +5,7 @@ import { calculatePnl } from '@marketmind/utils';
 import { getPosition, cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logHandlerAction, logHandlerError } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
+import { isOrderNotFound } from '../binance-errors';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { emitPositionClosedEvents, incrementWalletBalanceAndBroadcast } from '../wallet-broadcast';
 import { getWebSocketService } from '../websocket';
@@ -81,8 +82,7 @@ export async function handleExitFill(
             '[FuturesUserStream] Opposite order cancelled (background)'
           );
         } catch (cancelError) {
-          const errorMessage = serializeError(cancelError);
-          if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist')) {
+          if (isOrderNotFound(cancelError)) {
             cancelSuccess = true;
             logger.info(
               { orderToCancel, isAlgoOrder: oppositeIsAlgo },
@@ -90,13 +90,13 @@ export async function handleExitFill(
             );
           } else if (attempt < maxRetries) {
             logger.warn(
-              { error: errorMessage, orderToCancel, attempt, maxRetries },
+              { error: serializeError(cancelError), orderToCancel, attempt, maxRetries },
               '[FuturesUserStream] Retry cancelling opposite order (background)'
             );
             await new Promise(resolve => setTimeout(resolve, 100 * attempt));
           } else {
             logger.error(
-              { error: errorMessage, orderToCancel, isAlgoOrder: oppositeIsAlgo },
+              { error: serializeError(cancelError), orderToCancel, isAlgoOrder: oppositeIsAlgo },
               '[FuturesUserStream] ! CRITICAL: Failed to cancel opposite order after retries - reconcileOrdersTable will retry, manual check recommended'
             );
           }
