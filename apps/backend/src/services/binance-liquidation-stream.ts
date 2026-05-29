@@ -1,54 +1,28 @@
 /* eslint-disable @typescript-eslint/no-base-to-string -- Binance WS message values are unknown but documented strings; explicit cast at every read would be 50+ lines of noise */
-import { WebsocketClient } from 'binance';
 import type { LiquidityHeatmapLiquidation } from '@marketmind/types';
-import { SCALPING_STREAM } from '../constants/scalping';
 import { serializeError } from '../utils/errors';
-import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
+import { BinanceWebSocketStreamBase } from './binance-ws-stream-base';
 
 type LiquidationObserver = (event: LiquidityHeatmapLiquidation) => void;
 
 const MAX_HISTORY = 500;
 
-export class BinanceLiquidationStreamService {
-  private client: WebsocketClient | null = null;
+export class BinanceLiquidationStreamService extends BinanceWebSocketStreamBase {
+  protected readonly label = 'Liquidation';
   private observers: LiquidationObserver[] = [];
   private history: LiquidityHeatmapLiquidation[] = [];
-  private isReconnecting = false;
 
-  start(): void {
-    if (this.client) return;
-
-    this.client = new WebsocketClient(
-      { beautify: true, reconnectTimeout: SCALPING_STREAM.RECONNECT_DELAY_MS },
-      silentWsLogger
-    );
-
-    this.client.on('message', (data) => this.handleMessage(data));
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.client as any).on('error', (error: unknown) => {
-      logger.error({ error: serializeError(error) }, 'Liquidation WebSocket error');
-    });
-
-    this.client.on('reconnected', () => {
-      if (this.isReconnecting) return;
-      this.isReconnecting = true;
-      void this.client!.subscribeAllLiquidationOrders('usdm');
-      setTimeout(() => { this.isReconnecting = false; }, 2000);
-    });
-
-    void this.client.subscribeAllLiquidationOrders('usdm');
-    logger.info('Liquidation stream service started');
+  protected override onStart(): void {
+    void this.client!.subscribeAllLiquidationOrders('usdm');
   }
 
-  stop(): void {
-    if (this.client) {
-      this.client.closeAll(true);
-      this.client = null;
-      this.history = [];
-      logger.info('Liquidation stream service stopped');
-    }
+  protected override onStop(): void {
+    this.history = [];
+  }
+
+  protected onReconnected(): void {
+    void this.client!.subscribeAllLiquidationOrders('usdm');
   }
 
   onLiquidation(handler: LiquidationObserver): () => void {
@@ -67,7 +41,7 @@ export class BinanceLiquidationStreamService {
     return (this.history as Array<LiquidityHeatmapLiquidation & { _symbol: string }>).filter(e => e._symbol === symbol);
   }
 
-  private handleMessage(data: unknown): void {
+  protected handleMessage(data: unknown): void {
     try {
       if (typeof data !== 'object' || data === null) return;
 
