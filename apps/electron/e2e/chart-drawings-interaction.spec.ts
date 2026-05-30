@@ -17,7 +17,9 @@ const getCanvasRect = async (page: Page) => {
     const canvas = document.querySelector('canvas');
     if (!canvas) return null;
     const r = canvas.getBoundingClientRect();
-    return { left: r.left, top: r.top, width: r.width, height: r.height };
+    const visibleWidth = Math.max(0, Math.min(r.right, window.innerWidth) - r.left);
+    const visibleHeight = Math.max(0, Math.min(r.bottom, window.innerHeight) - r.top);
+    return { left: r.left, top: r.top, width: visibleWidth, height: visibleHeight };
   });
   if (!rect) throw new Error('canvas not found');
   return rect;
@@ -187,7 +189,23 @@ test.describe('Chart drawings — three-point creation (channel)', () => {
     // Click 2: down at p3 — finalizes the channel (sets widthIndex, commits).
     await page.mouse.move(p3.x, p3.y, { steps: 5 });
     await page.mouse.down();
-    await waitForFrames(page, 3);
+    // The store.addDrawing call is synchronous inside handleMouseDown, but the
+    // React synthetic event and the browser's JS turn may not have committed
+    // before the next script tick. Wait for the store to reflect the new drawing
+    // rather than relying on a fixed frame count.
+    await page.waitForFunction(
+      (expectedCount) => {
+        const store = window.__drawingStore?.getState();
+        if (!store) return false;
+        const total = Object.values(store.drawingsByKey ?? {}).reduce(
+          (acc, list) => acc + (list?.length ?? 0),
+          0,
+        );
+        return total >= expectedCount;
+      },
+      before + 1,
+      { timeout: 5_000 },
+    );
 
     expect(await drawingsCount(page)).toBe(before + 1);
     const last = await lastDrawing(page);

@@ -437,7 +437,7 @@ test.describe('Screener modal — full flow coverage', () => {
     await expect(footerSave).toBeEnabled();
 
     await footerSave.click();
-    await expect(page.getByRole('dialog', { name: 'Save Screener' })).toBeVisible();
+    await expect(page.getByRole('dialog', { name: 'Save screener' })).toBeVisible();
   });
 
   test('SaveScreenerDialog: empty name disables submit; non-empty enables and saves', async ({ page }) => {
@@ -447,17 +447,17 @@ test.describe('Screener modal — full flow coverage', () => {
     await dialog.getByRole('button', { name: 'Add Filter' }).click();
     await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 
-    const saveDialog = page.getByRole('dialog', { name: 'Save Screener' });
+    const saveDialog = page.getByRole('dialog', { name: 'Save screener' });
     await expect(saveDialog).toBeVisible();
 
     const submitBtn = saveDialog.getByRole('button', { name: 'Save' });
     await expect(submitBtn).toBeDisabled();
 
-    await saveDialog.getByPlaceholder('Screener name...').fill('My new screen');
+    await saveDialog.getByTestId('save-screener-name-input').fill('My new screen');
     await expect(submitBtn).toBeEnabled();
 
     await submitBtn.click();
-    await expect(page.getByRole('dialog', { name: 'Save Screener' })).toHaveCount(0);
+    await expect(page.getByRole('dialog', { name: 'Save screener' })).toHaveCount(0);
 
     // The new entry shows up after invalidation re-fetch.
     await expect(dialog.getByText('My new screen', { exact: true })).toBeVisible({ timeout: 5_000 });
