@@ -33,6 +33,7 @@ A deep unification pass over **everything that talks to Binance**. The headline 
 ### CI
 
 - **Per-job `timeout-minutes`** added to `ci-cd.yml` (lint 15, test 25, browser 20, build 15) so a hung job fails fast instead of burning the full runner budget; the lint job now installs with `--ignore-scripts` to skip the `@stoqey/ib` → `node-gyp` native rebuild that was hanging it for ~2h. (#725)
+- **Pinned CI to pnpm 10.24.0 (was floating `'9'`) across all four workflows** (`ci-cd`, `desktop-release`, `security`, `visual-regression`) — the actual root cause of the install hangs. pnpm 9 ignores the `onlyBuiltDependencies` allowlist in `pnpm-workspace.yaml`, so on CI it node-gyp-rebuilt `cpu-features` / `unix-dgram` / `ssh2` (transitive `@stoqey/ib` deps we never execute) and re-ran the redundant `@playwright/browser-chromium` postinstall download — one of which stalled the `Install dependencies` step ~24 min until the new timeout killed it. Local dev already runs pnpm 10, which honors the allowlist and builds only `canvas` / `electron` / `electron-winstaller` / `esbuild`; pinning CI to the same version makes the runner match the known-green local environment. (#728)
 
 ### Notes
 
