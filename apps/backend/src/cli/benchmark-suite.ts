@@ -86,7 +86,7 @@ async function runBenchmark(
 async function main() {
   console.log('╔════════════════════════════════════════════════════════════════════════╗');
   console.log('║              BENCHMARK SUITE - MarketMind Backtesting                  ║');
-  console.log('║              Validação contra Benchmarks da Indústria                  ║');
+  console.log('║              Validation Against Industry Benchmarks                    ║');
   console.log('╚════════════════════════════════════════════════════════════════════════╝\n');
 
   const symbol = 'BTCUSDT';
@@ -94,7 +94,7 @@ async function main() {
   const startDate = new Date('2020-01-01');
   const endDate = new Date('2024-10-01');
 
-  console.log(`Configuração:`);
+  console.log(`Configuration:`);
   console.log(`  Symbol: ${symbol}`);
   console.log(`  Interval: ${interval}`);
   console.log(`  Period: ${startDate.toISOString().slice(0, 10)} to ${endDate.toISOString().slice(0, 10)}`);
@@ -119,10 +119,10 @@ async function main() {
   }
 
   console.log('\n\n╔════════════════════════════════════════════════════════════════════════╗');
-  console.log('║                      COMPARAÇÃO COM BENCHMARKS                         ║');
+  console.log('║                      COMPARISON WITH BENCHMARKS                        ║');
   console.log('╚════════════════════════════════════════════════════════════════════════╝\n');
 
-  console.log('Tolerâncias: Win Rate ±5%, Profit Factor ±0.5\n');
+  console.log('Tolerances: Win Rate ±5%, Profit Factor ±0.5\n');
 
   console.log('┌─────────────────────┬───────────┬───────────┬────────────┬───────────┬────────────┐');
   console.log('│ Strategy            │ Trades    │ WR Actual │ WR Expected│ PF Actual │ PF Expected│');
@@ -143,7 +143,7 @@ async function main() {
 
   console.log('└─────────────────────┴───────────┴───────────┴────────────┴───────────┴────────────┘');
 
-  console.log('\n\n═══ ANÁLISE DE RESULTADOS ═══\n');
+  console.log('\n\n═══ RESULTS ANALYSIS ═══\n');
 
   let passedWR = 0;
   let passedPF = 0;
@@ -167,23 +167,23 @@ async function main() {
     console.log('');
   }
 
-  console.log('\n═══ RESUMO FINAL ═══\n');
-  console.log(`Estratégias testadas: ${results.length}`);
-  console.log(`Win Rate dentro da tolerância: ${passedWR}/${results.length}`);
-  console.log(`Profit Factor dentro da tolerância: ${passedPF}/${results.length}`);
+  console.log('\n═══ FINAL SUMMARY ═══\n');
+  console.log(`Strategies tested: ${results.length}`);
+  console.log(`Win Rate within tolerance: ${passedWR}/${results.length}`);
+  console.log(`Profit Factor within tolerance: ${passedPF}/${results.length}`);
 
   const overallPass = passedWR >= results.length * 0.6 && passedPF >= results.length * 0.6;
-  console.log(`\n${overallPass ? '✓ VALIDAÇÃO APROVADA' : '! ALGUNS BENCHMARKS FORA DA TOLERÂNCIA'}`);
+  console.log(`\n${overallPass ? '✓ VALIDATION PASSED' : '! SOME BENCHMARKS OUTSIDE TOLERANCE'}`);
 
   if (overallPass) {
-    console.log('\nO sistema de backtesting MarketMind produz resultados');
-    console.log('consistentes com benchmarks conhecidos da indústria.');
+    console.log('\nThe MarketMind backtesting system produces results');
+    console.log('consistent with known industry benchmarks.');
   } else {
-    console.log('\nAlgumas estratégias apresentam diferenças significativas.');
-    console.log('Isso pode ser devido a:');
-    console.log('  - Diferenças no ativo testado (BTCUSDT vs S&P 500)');
-    console.log('  - Diferenças nas regras de entrada/saída');
-    console.log('  - Condições de mercado diferentes');
+    console.log('\nSome strategies show significant differences.');
+    console.log('This may be due to:');
+    console.log('  - Differences in the tested asset (BTCUSDT vs S&P 500)');
+    console.log('  - Differences in entry/exit rules');
+    console.log('  - Different market conditions');
   }
 }
 

@@ -45,7 +45,7 @@ These are the rules the rewrite enforces. They become part of `@marketmind/ui`'s
 4. **Width is a token, not a number.** `sm` (~400px) for confirmation/single-field, `md` (~560px) for standard form, `lg` (~840px) for data viewer or 2-column form, `xl` (~1100px / 90vw) for workflow modal, `full` for fullscreen. Set via `<DialogShell size={...}>`. No raw `maxW` on modals.
 5. **Title typography is fixed.** One size, one weight. The header may also carry an optional one-line description below the title and an optional inline action (e.g. "Reset to defaults") on the right.
 6. **Footer convention is fixed.** Always `borderTop`. Buttons right-aligned. Cancel is ghost / secondary, primary action is the rightmost `colorPalette={primary}`. Loading state on the primary disables both. Destructive primary uses `colorPalette="red"`.
-7. **Empty / loading / error states are primitives, never bespoke text.** `<EmptyState>`, the standard panel spinner (`MM.spinner.panel`), and `<Callout tone="danger">` at the top of the body. No "Carregando..." inline text, no "Nada por aqui" hand-typed strings.
+7. **Empty / loading / error states are primitives, never bespoke text.** `<EmptyState>`, the standard panel spinner (`MM.spinner.panel`), and `<Callout tone="danger">` at the top of the body. No "Loading..." inline text, no "Nothing here" hand-typed strings.
 8. **Destructive confirms always go through `<ConfirmationDialog>`.** No inline are-you-sure. The dedicated dialog also enforces consistent destructive-action copy via i18n.
 9. **Esc + click-outside close, except mid-mutation.** When `isLoading` is true, both are blocked so an in-flight `mutateAsync` never gets orphaned. Already supported in `<FormDialog>`; gets formalized in `<DialogShell>`.
 10. **No nested modals more than 1 level deep.** Settings → CreateWallet is fine. ProfileEditor → SubEditor → Confirm is not — flatten.
@@ -392,7 +392,7 @@ Track A (the modal sweep) made every dialog use the same SHELL — same width to
 
 - **Copy**: dialog titles use different verb tenses ("Create wallet" vs "New wallet" vs "Add wallet"); helper text varies in length and tone; CTA labels are inconsistent ("Save" vs "OK" vs "Apply" vs "Confirm").
 - **Field layout**: some forms stack vertically, some use 2-column grids, some mix both with no rule for when.
-- **Empty / loading states**: still bespoke text in places ("Carregando…", "Nada por aqui") instead of the standard primitives.
+- **Empty / loading states**: still bespoke text in places ("Loading…", "Nothing here") instead of the standard primitives.
 - **Confirmation patterns**: destructive actions use `<ConfirmationDialog>` in some places, inline `if (confirm(...))` in others.
 - **Multi-step / wizard flows**: some use tabs, some use sequential steps, some use one giant scrolling form. No rule.
 - **Error display**: some dialogs surface mutation errors as toasts, some as inline `<Callout>`, some as both.
@@ -480,7 +480,7 @@ Plus the **9 Settings tabs** as the post-Track-G follow-up:
 After every dialog ships:
 - `audit-dialog-rules.mjs --strict` already covers the shell-level rules.
 - New `audit-dialog-content.mjs` enforces:
-  - No bespoke "Loading…" / "Carregando…" / "Loading data…" strings in dialog bodies — must use the spinner primitive.
+  - No bespoke "Loading…" / "Loading data…" strings in dialog bodies — must use the spinner primitive.
   - No bespoke "Empty" / "Nothing here" strings — must use `<EmptyState>`.
   - Every dialog has a description xor an explicit "no description needed" annotation.
   - Footer button order: Cancel left of primary, primary rightmost, destructive primary uses `colorPalette="red"`.
@@ -589,7 +589,7 @@ Decided not to ship (cost > benefit):
 
 **Track G — Per-dialog UX rewrite (2026-05-02, in progress)**
 
-User: "voce ainda nao refez todas as modals certo?" / "tudo significa todas as modais do app, uma por uma, pensando os textos e interaçoes e quais componentes usar para os mesmo tipos de situaçao para manter um padrao." / "só as modal por enquanto, mas todas elas".
+User: "you haven't redone all the modals yet, right?" / "everything means all the modals in the app, one by one, thinking about the texts and interactions and which components to use for the same types of situations to maintain a standard." / "just the modals for now, but all of them".
 
 The Track A sweep got the SHELL right but left the INTERIOR drift untouched. Track G goes dialog-by-dialog (18 surfaces) rewriting copy / interactions / component choices for similar situations — the "feels deliberate" difference, not just the "shape is uniform" one. Track G is detailed earlier in this document; the per-dialog status table updates as PRs land.
 

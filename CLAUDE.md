@@ -29,7 +29,7 @@
 7. **Early returns** — prefer over nested ifs
 8. **One-line conditionals** — ternaries / `if (x) return y;` for simple cases
 9. **Responsive design** — mobile/tablet/desktop viewports
-10. **English only** — commits, docs, code
+10. **English only — everywhere** — the entire monorepo is standardized to English: commit messages, docs/READMEs, code identifiers, **comments and JSDoc** (comments are documentation), `console.*` / CLI output, thrown `Error` messages, and test descriptions. Never introduce Portuguese (or any non-English) prose. The **only** allowed non-English text is genuinely language-specific data: language endonyms in the language selector (`Português`, `Español`), proper nouns (`São Paulo`, `B3 Brasil Bolsa Balcão`), timezone IDs (`America/Sao_Paulo`), and the i18n locale files under `locales/<lang>/`. User-facing app strings go through i18n (`t('...')`), never hardcoded.
 11. **Branch workflow** — feature/bugfix branches; never commit to main/develop directly
 12. **Implementation plan** — follow & evolve the active version plan in `docs/V1_X_PLAN.md`
 13. **No watch mode** — always run-once (`pnpm test`, `npm test -- --run`); never `vitest` without `--run`
@@ -144,7 +144,7 @@ marketmind/                         # monorepo root
 - **Generated artifacts are never committed** (gitignored). Canonical homes: backend logs → `apps/backend/logs/`; CLI/backtest output → `apps/backend/output/`. In code resolve them from the package root via `src/utils/runtime-dirs.ts` (`LOGS_DIR`, `OUTPUT_DIR`, `ensureDir`) — never write to cwd-relative `./output`, and never scatter `*.log`/`*.pid`/`results/` into the tree.
 - **Repo root** holds only standard project files (`README`, `CHANGELOG`, `LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`, `QUICK_START`, `CLAUDE.md`) + monorepo config (`package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `eslint.config.js`, `docker-compose.yml`, dotfiles).
 - **Package root** holds only `package.json`, `tsconfig.json`, build/lint config, `.env.example`, `README.md`, and `src/`.
-- The AI-instruction mirrors (`.cursorrules`, `.gemini/instructions.md`, `.github/copilot-instructions.md`) are generated copies of this file — after editing `CLAUDE.md`, run `pnpm sync:ai-docs` so they never drift.
+- **`CLAUDE.md` is the single source of truth for all AI assistants.** The other tools' instruction paths — `.cursorrules` (Cursor), `.gemini/instructions.md` (Gemini), `.github/copilot-instructions.md` (Copilot), `.claude/project-instructions.md` — are **symlinks** to this file. Edit `CLAUDE.md` only; every tool picks it up automatically (no copies, no sync step). Don't replace the symlinks with real files. (Windows contributors need `git config core.symlinks true`.)
 
 ---
 

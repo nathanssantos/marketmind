@@ -1,20 +1,20 @@
 #!/bin/bash
 
 # ============================================================================
-# Script para instalar Git Hooks de proteção
+# Script to install protection Git Hooks
 # ============================================================================
 
 set -e
 
-echo "🔧 Instalando Git Hooks de proteção..."
+echo "🔧 Installing protection Git Hooks..."
 echo ""
 
-# Criar diretório de hooks se não existir
+# Create hooks directory if it does not exist
 mkdir -p .git/hooks
 
-# Copiar pre-push hook
+# Copy pre-push hook
 if [ -f ".git/hooks/pre-push" ]; then
-    echo "✅ Hook pre-push já instalado"
+    echo "✅ pre-push hook already installed"
     exit 0
 fi
 
@@ -22,8 +22,8 @@ cat > .git/hooks/pre-push << 'EOF'
 #!/bin/bash
 
 # Git Hook: pre-push
-# Previne push direto para branch main
-# Instalação: Este arquivo deve estar em .git/hooks/pre-push
+# Prevents direct pushes to the main branch
+# Installation: This file must be at .git/hooks/pre-push
 
 protected_branch='main'
 current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
@@ -31,20 +31,20 @@ current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 if [ "$current_branch" = "$protected_branch" ]; then
     echo ""
     echo "🚫 ================================================================================================"
-    echo "🚫  PUSH BLOQUEADO!"
+    echo "🚫  PUSH BLOCKED!"
     echo "🚫 ================================================================================================"
     echo ""
-    echo "   Você está tentando fazer push diretamente para a branch '$protected_branch'."
+    echo "   You are trying to push directly to the '$protected_branch' branch."
     echo ""
-    echo "   A branch 'main' está protegida e só pode receber mudanças via Pull Request."
+    echo "   The 'main' branch is protected and can only receive changes via Pull Request."
     echo ""
-    echo "   ✅ Fluxo correto:"
-    echo "      1. Trabalhe em uma feature branch: git checkout -b feature/minha-feature"
-    echo "      2. Faça push da feature: git push -u origin feature/minha-feature"
-    echo "      3. Crie um PR: gh pr create --base develop"
-    echo "      4. Faça merge via PR: gh pr merge <numero>"
+    echo "   ✅ Correct workflow:"
+    echo "      1. Work on a feature branch: git checkout -b feature/my-feature"
+    echo "      2. Push the feature: git push -u origin feature/my-feature"
+    echo "      3. Create a PR: gh pr create --base develop"
+    echo "      4. Merge via PR: gh pr merge <number>"
     echo ""
-    echo "   💡 Se você REALMENTE precisa fazer push direto (não recomendado):"
+    echo "   💡 If you REALLY need to push directly (not recommended):"
     echo "      git push --no-verify"
     echo ""
     echo "🚫 ================================================================================================"
@@ -57,11 +57,11 @@ EOF
 
 chmod +x .git/hooks/pre-push
 
-echo "✅ Hook pre-push instalado com sucesso!"
+echo "✅ pre-push hook installed successfully!"
 echo ""
-echo "🔒 A branch 'main' agora está protegida contra pushes diretos."
+echo "🔒 The 'main' branch is now protected against direct pushes."
 echo ""
-echo "Para testar:"
+echo "To test:"
 echo "  git checkout main"
-echo "  git push  # Deve ser bloqueado"
+echo "  git push  # Should be blocked"
 echo ""

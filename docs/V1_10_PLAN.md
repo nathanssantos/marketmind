@@ -4,7 +4,7 @@
 >
 > **Authored:** 2026-05-02 in response to user direction:
 >
-> > "o botão de + no header principal do app vai ter um dropdown menu com gráficos (pode ser mais de um), boleta (que vai continuar com a funcionalidade de poder ser colocada em cima do gráfico), checklist separada da boleta, exposição margin stop protected etc, aquele card do portfolio vai ser outro, lista de posições etc etc. TUDO que hoje está em sidebars vai virar painéis que serão possíveis de colocar no grid junto dos gráficos. gráficos não têm limite, os demais componentes apenas um de cada."
+> > "the + button in the app's main header will have a dropdown menu with charts (can be more than one), ticket (which will keep the ability to be placed on top of the chart), checklist separate from the ticket, exposure margin stop protected etc, that portfolio card will be another one, positions list etc etc. EVERYTHING that today is in sidebars will become panels that can be placed in the grid alongside the charts. charts have no limit, the other components only one each."
 
 ## Vision
 
@@ -294,5 +294,5 @@ After 1-2 cycles of stability (v1.11 or v1.12), drop the flag and the sidebar fa
 
 - Each track ships as one PR off `develop` per the one-branch-at-a-time memory.
 - CHANGELOG entries land in the same PR as the work.
-- Release happens at the end of the cycle (per the user's "vamos deixar a release para o final do plano todo").
+- Release happens at the end of the cycle (per the user's "let's save the release for the end of the whole plan").
 - The big architectural shift means more visual regression diffs than usual — expect to update the baseline often during Track 4.x.

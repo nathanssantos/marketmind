@@ -458,8 +458,8 @@ describe('computeEffectiveCapital', () => {
 });
 
 /**
- * Regression cluster — "ao entrar alavancado, por um momento exibe uma
- * posição muito maior do que a real". Goal: pin the math + filtering
+ * Regression cluster — "when entering a leveraged position, the portfolio
+ * briefly shows a much larger position than the actual one". Goal: pin the math + filtering
  * behavior that protects Portfolio numbers from being briefly inflated
  * during the pending → open transition or by stale/duplicate cache
  * entries that the realtime patch flow could leave behind.

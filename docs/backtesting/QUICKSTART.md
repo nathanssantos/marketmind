@@ -1,8 +1,8 @@
 # 🚀 Quick Start - Backtesting CLI
 
-Guia de 5 minutos para começar a usar o sistema de backtesting.
+5-minute guide to get started with the backtesting system.
 
-## 1️⃣ Teste Sua Primeira Estratégia (30 segundos)
+## 1️⃣ Test Your First Strategy (30 seconds)
 
 ```bash
 npm run backtest:validate -- \
@@ -14,14 +14,14 @@ npm run backtest:validate -- \
   --capital 1000
 ```
 
-**O que acontece:**
-- ✅ Busca dados históricos da Binance (BTCUSDT, 1 hora, Nov 2024)
-- ✅ Simula trades com Setup 9.1
-- ✅ Calcula métricas (win rate, profit factor, Sharpe ratio, etc.)
-- ✅ Mostra interpretação automática dos resultados
-- ✅ Salva resultado em JSON
+**What happens:**
+- ✅ Fetches historical data from Binance (BTCUSDT, 1 hour, Nov 2024)
+- ✅ Simulates trades with Setup 9.1
+- ✅ Calculates metrics (win rate, profit factor, Sharpe ratio, etc.)
+- ✅ Shows automatic interpretation of results
+- ✅ Saves result as JSON
 
-**Resultado esperado:**
+**Expected output:**
 ```
 ╔═══════════════════════════════════════════════╗
 ║        BACKTEST VALIDATION - SETUP91          ║
@@ -47,9 +47,9 @@ Sharpe Ratio: 2.55
 
 ---
 
-## 2️⃣ Otimize os Parâmetros (2 minutos)
+## 2️⃣ Optimize Parameters (2 minutes)
 
-Encontre os melhores parâmetros automaticamente:
+Find the best parameters automatically:
 
 ```bash
 npm run backtest:optimize -- \
@@ -64,13 +64,13 @@ npm run backtest:optimize -- \
   --parallel 4
 ```
 
-**O que acontece:**
-- ✅ Testa **27 combinações** de parâmetros (3×3×3)
-- ✅ Executa 4 backtests em paralelo
-- ✅ Mostra os top 10 melhores resultados
-- ✅ Recomenda a melhor configuração
+**What happens:**
+- ✅ Tests **27 combinations** of parameters (3×3×3)
+- ✅ Runs 4 backtests in parallel
+- ✅ Shows the top 10 best results
+- ✅ Recommends the best configuration
 
-**Resultado esperado:**
+**Expected output:**
 ```
 ╔═══════════════════════════════════════════════╗
 ║         TOP 10 RESULTS (sorted by PnL)        ║
@@ -88,12 +88,12 @@ npm run backtest:optimize -- \
 
 ---
 
-## 3️⃣ Compare Múltiplos Resultados (10 segundos)
+## 3️⃣ Compare Multiple Results (10 seconds)
 
 Compare BTC vs ETH:
 
 ```bash
-# Teste ETH
+# Test ETH
 npm run backtest:validate -- \
   --strategy setup91 \
   --symbol ETHUSDT \
@@ -108,7 +108,7 @@ npm run backtest:compare -- \
   results/validations/setup91_ETHUSDT_*.json
 ```
 
-**Resultado:**
+**Output:**
 ```
 ┌─────────┬─────────┬──────┬────────┬──────┬─────┬──────┐
 │Strategy │ Symbol  │ Int. │ Trades │Win % │ PF  │ PnL% │
@@ -124,9 +124,9 @@ BEST RESULTS:
 
 ---
 
-## 4️⃣ Valide Robustez com Walk-Forward (3 minutos)
+## 4️⃣ Validate Robustness with Walk-Forward (3 minutes)
 
-Evite overfitting validando em períodos out-of-sample:
+Avoid overfitting by validating on out-of-sample periods:
 
 ```bash
 npm run backtest:walkforward -- \
@@ -143,7 +143,7 @@ npm run backtest:walkforward -- \
   --step-months 1
 ```
 
-**Resultado:**
+**Output:**
 ```
 ╔═══════════════════════════════════════════════╗
 ║    WALK-FORWARD ANALYSIS - SETUP91            ║
@@ -170,9 +170,9 @@ Robustness Assessment:
 
 ---
 
-## 5️⃣ Análise Monte Carlo (1 minuto)
+## 5️⃣ Monte Carlo Analysis (1 minute)
 
-Avalie significância estatística dos resultados:
+Assess the statistical significance of results:
 
 ```bash
 npm run backtest:montecarlo -- \
@@ -187,14 +187,14 @@ npm run backtest:montecarlo -- \
   --simulations 1000
 ```
 
-**O que acontece:**
-- ✅ Executa backtest inicial
-- ✅ Embaralha ordem dos trades 1000 vezes
-- ✅ Calcula distribuição estatística dos resultados
-- ✅ Fornece intervalos de confiança (95%)
-- ✅ Estima probabilidades de diferentes cenários
+**What happens:**
+- ✅ Runs the initial backtest
+- ✅ Shuffles the trade order 1000 times
+- ✅ Calculates the statistical distribution of results
+- ✅ Provides confidence intervals (95%)
+- ✅ Estimates probabilities for different scenarios
 
-**Resultado esperado:**
+**Expected output:**
 ```
 ╔═══════════════════════════════════════════════╗
 ║    MONTE CARLO SIMULATION - SETUP91           ║
@@ -243,9 +243,9 @@ ASSESSMENT:
 
 ---
 
-## 6️⃣ Exporte para CSV (5 segundos)
+## 6️⃣ Export to CSV (5 seconds)
 
-Analise em Excel/Google Sheets:
+Analyze in Excel/Google Sheets:
 
 ```bash
 npm run backtest:export -- \
@@ -253,12 +253,12 @@ npm run backtest:export -- \
   --verbose
 ```
 
-**Resultado:**
+**Output:**
 ```
-CSV gerado com:
-- 34 trades individuais (entrada, saída, PnL)
-- Métricas finais (win rate, profit factor, etc.)
-- Salvo em: results/comparisons/*.csv
+CSV generated with:
+- 34 individual trades (entry, exit, PnL)
+- Final metrics (win rate, profit factor, etc.)
+- Saved to: results/comparisons/*.csv
 
 Preview:
 Trade,Type,Entry Date,Entry Price,Exit Price,PnL ($),PnL (%)
@@ -270,9 +270,9 @@ Trade,Type,Entry Date,Entry Price,Exit Price,PnL ($),PnL (%)
 
 ---
 
-## 🎯 Próximos Passos
+## 🎯 Next Steps
 
-### Opção A: Testar Outras Estratégias
+### Option A: Test Other Strategies
 
 ```bash
 # Setup 9.2 (pullback/retest)
@@ -281,15 +281,15 @@ npm run backtest:validate -- --strategy setup92 --symbol BTCUSDT --interval 4h .
 # Breakout Retest
 npm run backtest:validate -- --strategy breakoutRetest --symbol BTCUSDT --interval 1h ...
 
-# Bull Trap (reversão SHORT)
+# Bull Trap (SHORT reversal)
 npm run backtest:validate -- --strategy bullTrap --symbol BTCUSDT --interval 1h ...
 ```
 
-**Estratégias disponíveis (8):**
+**Available strategies (8):**
 - `setup91`, `setup92`, `setup93`, `setup94`
 - `pattern123`, `bullTrap`, `bearTrap`, `breakoutRetest`
 
-### Opção B: Testar Outros Símbolos
+### Option B: Test Other Symbols
 
 ```bash
 # Ethereum
@@ -301,38 +301,38 @@ npm run backtest:validate -- --strategy bullTrap --symbol BTCUSDT --interval 1h 
 # Binance Coin
 --symbol BNBUSDT
 
-# Outros
+# Others
 --symbol ADAUSDT  # Cardano
 --symbol DOGEUSDT # Dogecoin
 --symbol XRPUSDT  # Ripple
 ```
 
-### Opção C: Testar Outros Timeframes
+### Option C: Test Other Timeframes
 
 ```bash
-# Scalping (15 minutos)
+# Scalping (15 minutes)
 --interval 15m
 
-# Day trading (1 hora)
+# Day trading (1 hour)
 --interval 1h
 
-# Swing trading (4 horas ou 1 dia)
+# Swing trading (4 hours or 1 day)
 --interval 4h
 --interval 1d
 ```
 
 ---
 
-## 🛠️ Comandos Úteis
+## 🛠️ Useful Commands
 
-### Ver ajuda completa
+### Show full help
 ```bash
 npm run backtest -- --help
 npm run backtest:validate -- --help
 npm run backtest:optimize -- --help
 ```
 
-### Listar resultados salvos
+### List saved results
 ```bash
 ls -lh results/validations/
 ls -lh results/optimizations/
@@ -341,39 +341,39 @@ ls -lh results/montecarlo/
 ls -lh results/comparisons/
 ```
 
-### Ver resultado específico
+### View a specific result
 ```bash
 cat results/validations/setup91_BTCUSDT_*.json | jq '.metrics'
 ```
 
 ---
 
-## 📖 Documentação Completa
+## 📖 Full Documentation
 
-Para detalhes completos, veja:
-- **[CLI.md](./CLI.md)** - Documentação completa com todos os parâmetros e exemplos
-
----
-
-## 💡 Dicas Rápidas
-
-1. **Comece com períodos curtos** (1 mês) para testes rápidos
-2. **Use --verbose** para ver trades individuais
-3. **Optimize em paralelo** com `--parallel 4` para velocidade
-4. **Filtre resultados** com `--min-win-rate 50 --min-profit-factor 1.5`
-5. **Compare sempre** BTC, ETH e SOL para ver qual funciona melhor
+For full details, see:
+- **[CLI.md](./CLI.md)** - Complete documentation with all parameters and examples
 
 ---
 
-## ⚠️ Avisos
+## 💡 Quick Tips
 
-- ❌ Resultados passados ≠ resultados futuros
-- ❌ Sempre teste em paper trading primeiro
-- ❌ Comissões reais: 0.1% (spot) ou 0.02-0.04% (maker/taker)
-- ❌ Slippage não incluído nos backtests
+1. **Start with short periods** (1 month) for quick tests
+2. **Use --verbose** to see individual trades
+3. **Optimize in parallel** with `--parallel 4` for speed
+4. **Filter results** with `--min-win-rate 50 --min-profit-factor 1.5`
+5. **Always compare** BTC, ETH, and SOL to see which performs best
 
 ---
 
-**Pronto! Em 5 minutos você já está fazendo backtests profissionais! 🚀📈**
+## ⚠️ Warnings
 
-Para mais exemplos, veja [CLI.md](./CLI.md)
+- ❌ Past results ≠ future results
+- ❌ Always test with paper trading first
+- ❌ Real commissions: 0.1% (spot) or 0.02-0.04% (maker/taker)
+- ❌ Slippage is not included in backtests
+
+---
+
+**Ready! In 5 minutes you're already running professional backtests! 🚀📈**
+
+For more examples, see [CLI.md](./CLI.md)

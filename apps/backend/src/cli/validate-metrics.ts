@@ -68,11 +68,11 @@ function calculateMaxDrawdown(trades: MockTrade[], initialCapital: number): { am
 }
 
 function validateWinRate() {
-  console.log('=== VALIDAÇÃO DE WIN RATE ===\n');
+  console.log('=== WIN RATE VALIDATION ===\n');
 
   const trades = createMockTrades();
 
-  console.log('Trades de teste:');
+  console.log('Test trades:');
   trades.forEach((t, i) => {
     console.log(`  Trade ${i + 1}: PnL=${t.pnl.toFixed(2)}, Winner=${t.isWinner}`);
   });
@@ -80,13 +80,13 @@ function validateWinRate() {
   const expectedWinRate = (3 / 5) * 100;
   const calculatedWinRate = calculateWinRate(trades);
 
-  console.log(`\nEsperado: ${expectedWinRate.toFixed(2)}%`);
-  console.log(`Calculado: ${calculatedWinRate.toFixed(2)}%`);
-  console.log(Math.abs(expectedWinRate - calculatedWinRate) < 0.01 ? '✓ WIN RATE CORRETO' : '✗ WIN RATE INCORRETO');
+  console.log(`\nExpected: ${expectedWinRate.toFixed(2)}%`);
+  console.log(`Calculated: ${calculatedWinRate.toFixed(2)}%`);
+  console.log(Math.abs(expectedWinRate - calculatedWinRate) < 0.01 ? '✓ WIN RATE CORRECT' : '✗ WIN RATE INCORRECT');
 }
 
 function validateProfitFactor() {
-  console.log('\n\n=== VALIDAÇÃO DE PROFIT FACTOR ===\n');
+  console.log('\n\n=== PROFIT FACTOR VALIDATION ===\n');
 
   const trades = createMockTrades();
 
@@ -97,43 +97,43 @@ function validateProfitFactor() {
 
   console.log(`Gross Profit: ${grossProfit}`);
   console.log(`Gross Loss: ${grossLoss}`);
-  console.log(`\nEsperado: ${expectedPF.toFixed(2)}`);
-  console.log(`Calculado: ${calculatedPF.toFixed(2)}`);
-  console.log(Math.abs(expectedPF - calculatedPF) < 0.01 ? '✓ PROFIT FACTOR CORRETO' : '✗ PROFIT FACTOR INCORRETO');
+  console.log(`\nExpected: ${expectedPF.toFixed(2)}`);
+  console.log(`Calculated: ${calculatedPF.toFixed(2)}`);
+  console.log(Math.abs(expectedPF - calculatedPF) < 0.01 ? '✓ PROFIT FACTOR CORRECT' : '✗ PROFIT FACTOR INCORRECT');
 }
 
 function validateSharpeRatio() {
-  console.log('\n\n=== VALIDAÇÃO DE SHARPE RATIO ===\n');
+  console.log('\n\n=== SHARPE RATIO VALIDATION ===\n');
 
   const trades = createMockTrades();
 
   const returns = trades.map((t) => t.pnlPercent);
   const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
 
-  console.log(`Retornos: ${  returns.join(', ')}`);
-  console.log(`Média: ${avgReturn.toFixed(4)}`);
+  console.log(`Returns: ${  returns.join(', ')}`);
+  console.log(`Average: ${avgReturn.toFixed(4)}`);
 
   const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / (returns.length - 1);
   const stdDev = Math.sqrt(variance);
-  console.log(`Variância: ${variance.toFixed(4)}`);
-  console.log(`Desvio Padrão: ${stdDev.toFixed(4)}`);
+  console.log(`Variance: ${variance.toFixed(4)}`);
+  console.log(`Standard Deviation: ${stdDev.toFixed(4)}`);
 
   const annualizationFactor = Math.sqrt(252);
   const expectedSharpe = (avgReturn / stdDev) * annualizationFactor;
   const calculatedSharpe = calculateSharpeRatio(trades);
 
-  console.log(`\nEsperado: ${expectedSharpe.toFixed(4)}`);
-  console.log(`Calculado: ${calculatedSharpe.toFixed(4)}`);
-  console.log(Math.abs(expectedSharpe - calculatedSharpe) < 0.01 ? '✓ SHARPE RATIO CORRETO' : '✗ SHARPE RATIO INCORRETO');
+  console.log(`\nExpected: ${expectedSharpe.toFixed(4)}`);
+  console.log(`Calculated: ${calculatedSharpe.toFixed(4)}`);
+  console.log(Math.abs(expectedSharpe - calculatedSharpe) < 0.01 ? '✓ SHARPE RATIO CORRECT' : '✗ SHARPE RATIO INCORRECT');
 }
 
 function validateMaxDrawdown() {
-  console.log('\n\n=== VALIDAÇÃO DE MAX DRAWDOWN ===\n');
+  console.log('\n\n=== MAX DRAWDOWN VALIDATION ===\n');
 
   const trades = createMockTrades();
   const initialCapital = 1000;
 
-  console.log('Evolução do Equity:');
+  console.log('Equity evolution:');
   let equity = initialCapital;
   let peak = initialCapital;
 
@@ -149,15 +149,15 @@ function validateMaxDrawdown() {
   const expectedDDPercent = (20 / 1050) * 100;
   const calculated = calculateMaxDrawdown(trades, initialCapital);
 
-  console.log(`\nEsperado: ${expectedDDAmount.toFixed(2)} USDT (${expectedDDPercent.toFixed(2)}%)`);
-  console.log(`Calculado: ${calculated.amount.toFixed(2)} USDT (${calculated.percent.toFixed(2)}%)`);
-  console.log(Math.abs(expectedDDAmount - calculated.amount) < 0.01 ? '✓ MAX DRAWDOWN CORRETO' : '✗ MAX DRAWDOWN INCORRETO');
+  console.log(`\nExpected: ${expectedDDAmount.toFixed(2)} USDT (${expectedDDPercent.toFixed(2)}%)`);
+  console.log(`Calculated: ${calculated.amount.toFixed(2)} USDT (${calculated.percent.toFixed(2)}%)`);
+  console.log(Math.abs(expectedDDAmount - calculated.amount) < 0.01 ? '✓ MAX DRAWDOWN CORRECT' : '✗ MAX DRAWDOWN INCORRECT');
 }
 
 async function main() {
   console.log('╔════════════════════════════════════════════════════════════╗');
-  console.log('║        VALIDAÇÃO DE MÉTRICAS - MarketMind                  ║');
-  console.log('║        Fase 2 do Plano de Validação                        ║');
+  console.log('║        METRICS VALIDATION - MarketMind                     ║');
+  console.log('║        Phase 2 of the Validation Plan                      ║');
   console.log('╚════════════════════════════════════════════════════════════╝\n');
 
   validateWinRate();
@@ -165,12 +165,12 @@ async function main() {
   validateSharpeRatio();
   validateMaxDrawdown();
 
-  console.log('\n\n=== RESUMO DA VALIDAÇÃO ===');
-  console.log('✓ Win Rate: Cálculo verificado');
-  console.log('✓ Profit Factor: Cálculo verificado');
-  console.log('✓ Sharpe Ratio: Cálculo verificado');
-  console.log('✓ Max Drawdown: Cálculo verificado');
-  console.log('\n> Todas as métricas seguem fórmulas padrão da indústria!');
+  console.log('\n\n=== VALIDATION SUMMARY ===');
+  console.log('✓ Win Rate: Calculation verified');
+  console.log('✓ Profit Factor: Calculation verified');
+  console.log('✓ Sharpe Ratio: Calculation verified');
+  console.log('✓ Max Drawdown: Calculation verified');
+  console.log('\n> All metrics follow standard industry formulas!');
 }
 
 main().catch(console.error);

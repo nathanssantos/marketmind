@@ -1,33 +1,33 @@
-# ✅ BUG RESOLVIDO: Otimização Retorna Apenas 1 Trade
+# ✅ BUG RESOLVED: Optimization Returns Only 1 Trade
 
 ## Status
-✅ **RESOLVIDO** - Fix implementado e testado com sucesso
+✅ **RESOLVED** - Fix implemented and successfully tested
 
-## Problema Original
+## Original Problem
 - **Validate**: 1274 setups → 260 trades ✅
 - **Optimize**: 1274 setups → 1 trade ❌
 
-## Causa Raiz Identificada
-O comando `optimize` não estava passando `stopLossPercent` e `takeProfitPercent` para o `BacktestConfig`, resultando em:
+## Root Cause Identified
+The `optimize` command was not passing `stopLossPercent` and `takeProfitPercent` to the `BacktestConfig`, resulting in:
 
-1. Trades sem SL/TP definidos
-2. Todos os trades saindo em `END_OF_PERIOD` (último candle)
-3. `currentPositionExitTime` setado para o final do período
-4. Todos os setups restantes bloqueados por "overlapping position"
+1. Trades without defined SL/TP
+2. All trades exiting at `END_OF_PERIOD` (last candle)
+3. `currentPositionExitTime` set to the end of the period
+4. All remaining setups blocked by "overlapping position"
 
-## Arquivos Corrigidos
+## Fixed Files
 1. **`src/cli/commands/optimize.ts`**:
-   - Adicionadas opções `stopLoss` e `takeProfit` na interface `OptimizeOptions`
-   - Adicionadas validações `validatePercentage` e `validateRiskReward`
-   - Incluídos `stopLossPercent` e `takeProfitPercent` no `baseConfig`
-   - Importada função `validateRiskReward`
+   - Added `stopLoss` and `takeProfit` options to the `OptimizeOptions` interface
+   - Added `validatePercentage` and `validateRiskReward` validations
+   - Included `stopLossPercent` and `takeProfitPercent` in the `baseConfig`
+   - Imported `validateRiskReward` function
 
 2. **`src/cli/backtest-runner.ts`**:
-   - Adicionadas opções `--stop-loss` e `--take-profit` no comando `optimize`
+   - Added `--stop-loss` and `--take-profit` options to the `optimize` command
 
-## Fix Implementado
+## Implemented Fix
 ```typescript
-// ANTES (optimize.ts)
+// BEFORE (optimize.ts)
 const baseConfig: BacktestConfig = {
   symbol: options.symbol,
   interval: options.interval,
@@ -41,7 +41,7 @@ const baseConfig: BacktestConfig = {
   onlyWithTrend: options.withTrend ?? false,
 };
 
-// DEPOIS (optimize.ts) ✅
+// AFTER (optimize.ts) ✅
 const baseConfig: BacktestConfig = {
   symbol: options.symbol,
   interval: options.interval,
@@ -58,38 +58,38 @@ const baseConfig: BacktestConfig = {
 };
 ```
 
-## Resultados Após Fix
-**Teste com 2 anos de dados (2023-01-01 a 2024-12-31):**
+## Results After Fix
+**Test with 2 years of data (2023-01-01 to 2024-12-31):**
 
 ```bash
 npm run backtest:optimize -- --strategy larry-williams-9-1 --symbol BTCUSDT --interval 1h --start 2023-01-01 --end 2024-12-31 --param volumeMultiplier=0.8,1.0,1.2 --param atrTargetMultiplier=2.0,2.5,3.0
 ```
 
-**Resultados:**
-- ✅ 1274 setups detectados
-- ✅ 260 trades executados (vs 1 trade antes do fix!)
-- ✅ 9 combinações de parâmetros testadas com sucesso
-- ✅ Otimização completa funcional
+**Results:**
+- ✅ 1274 setups detected
+- ✅ 260 trades executed (vs 1 trade before the fix!)
+- ✅ 9 parameter combinations tested successfully
+- ✅ Complete optimization functional
 
-## Comparação Validate vs Optimize
-| Comando | Setups | Trades | Status |
+## Validate vs Optimize Comparison
+| Command | Setups | Trades | Status |
 |---------|--------|--------|--------|
-| `validate` | 1274 | 260 | ✅ Sempre funcionou |
-| `optimize` (ANTES) | 1274 | 1 | ❌ Bug |
-| `optimize` (DEPOIS) | 1274 | 260 | ✅ Corrigido |
+| `validate` | 1274 | 260 | ✅ Always worked |
+| `optimize` (BEFORE) | 1274 | 1 | ❌ Bug |
+| `optimize` (AFTER) | 1274 | 260 | ✅ Fixed |
 
-## Notas Importantes
-1. Os parâmetros otimizados devem corresponder aos nomes definidos em `strategy.parameters`
-2. Exemplo correto para `larry-williams-9-1`:
+## Important Notes
+1. The optimized parameters must match the names defined in `strategy.parameters`
+2. Correct example for `larry-williams-9-1`:
    - ✅ `volumeMultiplier`, `atrTargetMultiplier`, `emaPeriod`, `atrPeriod`, `atrStopMultiplier`
-   - ❌ `smaVolumePeriod`, `targetMultiplier` (não existem nesta estratégia)
+   - ❌ `smaVolumePeriod`, `targetMultiplier` (do not exist in this strategy)
 
-## Commits Relevantes
-- Fix: Adicionar SL/TP ao comando optimize
-- Imports: validateRiskReward no optimize
-- CLI: Adicionar opções --stop-loss e --take-profit
+## Relevant Commits
+- Fix: Add SL/TP to the optimize command
+- Imports: validateRiskReward in optimize
+- CLI: Add --stop-loss and --take-profit options
 
 ---
-**Data de Resolução:** 2025-12-09  
-**Sessão:** Debug onlyWithTrend + Batch Optimization  
-**Status Final:** ✅ Bug crítico resolvido, otimização 100% funcional
+**Resolution Date:** 2025-12-09  
+**Session:** Debug onlyWithTrend + Batch Optimization  
+**Final Status:** ✅ Critical bug resolved, optimization 100% functional

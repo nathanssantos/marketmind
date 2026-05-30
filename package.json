@@ -53,8 +53,6 @@
     "mcp:uninstall": "node scripts/mcp-install.mjs --uninstall",
     "mcp:install:dry-run": "node scripts/mcp-install.mjs --dry-run",
     "mcp:build": "pnpm -r --filter \"@marketmind/mcp-*\" build",
-    "sync:ai-docs": "node scripts/dev/sync-ai-instructions.mjs",
-    "sync:ai-docs:check": "node scripts/dev/sync-ai-instructions.mjs --check",
     "refactor:audit:files": "bash scripts/audit/files.sh",
     "refactor:audit:types": "bash scripts/audit/types.sh",
     "refactor:audit:indicators": "bash scripts/audit/indicators.sh",

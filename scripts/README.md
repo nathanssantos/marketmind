@@ -1,132 +1,132 @@
-# 🚀 Scripts do MarketMind
+# 🚀 MarketMind Scripts
 
-Scripts úteis para gerenciamento do repositório e desenvolvimento.
+Useful scripts for repository management and development.
 
-## ⚡ Setup Rápido (RECOMENDADO)
+## ⚡ Quick Setup (RECOMMENDED)
 
 ```bash
 ./scripts/setup/setup.sh
 ```
 
-**Setup automático completo que:**
-- ✅ Verifica Node.js 20+ e pnpm 9+
-- ✅ Instala dependências do monorepo
-- ✅ Cria arquivos .env (frontend + backend)
-- ✅ Gera keys de segurança automaticamente
-- ✅ Configura PostgreSQL (se disponível)
-- ✅ Executa migrations do banco
-- ✅ Compila packages compartilhados
-- ✅ Roda testes para validar setup
-- ✅ Mostra checklist e próximos passos
+**Fully automated setup that:**
+- ✅ Checks for Node.js 20+ and pnpm 9+
+- ✅ Installs monorepo dependencies
+- ✅ Creates .env files (frontend + backend)
+- ✅ Automatically generates security keys
+- ✅ Configures PostgreSQL (if available)
+- ✅ Runs database migrations
+- ✅ Builds shared packages
+- ✅ Runs tests to validate the setup
+- ✅ Shows checklist and next steps
 
-**Após executar:**
-1. Configure pelo menos 1 API key de IA em `.env`
-2. Inicie backend: `pnpm --filter @marketmind/backend dev`
-3. Inicie frontend: `pnpm --filter @marketmind/electron dev`
+**After running:**
+1. Configure at least 1 AI API key in `.env`
+2. Start backend: `pnpm --filter @marketmind/backend dev`
+3. Start frontend: `pnpm --filter @marketmind/electron dev`
 
-📚 Documentação completa: [docs/SETUP_GUIDE.md](../docs/SETUP_GUIDE.md)
+📚 Full documentation: [docs/SETUP_GUIDE.md](../docs/SETUP_GUIDE.md)
 
 ---
 
-## 📂 Estrutura (scripts agrupados por categoria)
+## 📂 Structure (scripts grouped by category)
 
 ```
 scripts/
-├── audit/      # auditorias de código/UI (shade-literals, dialog-rules, panel-rules, i18n, files, indicators)
-├── visual/     # screenshots e diffs visuais (gallery, diff, marketing-screenshots)
-├── setup/      # setup do ambiente (setup, github, install-hooks, enable-testnet)
+├── audit/      # code/UI audits (shade-literals, dialog-rules, panel-rules, i18n, files, indicators)
+├── visual/     # screenshots and visual diffs (gallery, diff, marketing-screenshots)
+├── setup/      # environment setup (setup, github, install-hooks, enable-testnet)
 ├── perf/       # performance (chart-perf, baselines, monitor-performance)
-├── sql/        # scripts SQL avulsos
-├── backtest/   # runners de backtest no nível do monorepo
+├── sql/        # standalone SQL scripts
+├── backtest/   # backtest runners at the monorepo level
 ├── build/      # build/release (notarize)
-├── dev/        # utilitários de dev (clear-storage, sync-ai-instructions)
-└── mcp-install.mjs   # instalador dos MCP servers (`pnpm mcp:install`)
+├── dev/        # dev utilities (clear-storage, sync-ai-instructions)
+└── mcp-install.mjs   # MCP server installer (`pnpm mcp:install`)
 ```
 
-> Scripts específicos do backend ficam em `apps/backend/scripts/<categoria>/`
-> (trading, debug, maintenance, data, audit, sql, utils). Nunca deixe scripts
-> soltos na raiz de um pacote.
+> Backend-specific scripts live in `apps/backend/scripts/<category>/`
+> (trading, debug, maintenance, data, audit, sql, utils). Never leave scripts
+> loose at a package root.
 
-## 📜 Scripts Disponíveis
+## 📜 Available Scripts
 
 ### `setup/setup.sh` ⭐
 
-Script de setup automático completo do projeto.
+Fully automated project setup script.
 
 ### `clear-storage.mjs`
 
-Script para limpar completamente o storage do Electron (dados persistidos).
+Script to completely clear Electron storage (persisted data).
 
-**O que faz:**
-- ✅ Deleta `config.json` (electron-store)
-- ✅ Remove todos os dados salvos (API keys, conversas, trading data)
-- ✅ Lista arquivos no diretório de storage
-- ✅ Funciona em macOS, Windows e Linux
+**What it does:**
+- ✅ Deletes `config.json` (electron-store)
+- ✅ Removes all saved data (API keys, conversations, trading data)
+- ✅ Lists files in the storage directory
+- ✅ Works on macOS, Windows, and Linux
 
-**Uso:**
+**Usage:**
 
 ```bash
 npm run clear-storage
-# ou
+# or
 node scripts/dev/clear-storage.mjs
 ```
 
-**⚠️ ATENÇÃO:** Isso remove TODOS os dados salvos. Use com cuidado!
+**⚠️ WARNING:** This removes ALL saved data. Use with care!
 
-**Caminhos de storage por plataforma:**
+**Storage paths by platform:**
 - macOS: `~/Library/Application Support/MarketMind/config.json`
 - Windows: `%APPDATA%\MarketMind\config.json`
 - Linux: `~/.config/MarketMind/config.json`
 
 ### `setup-github.sh`
 
-Script automatizado para configurar o repositório no GitHub.
+Automated script to configure the repository on GitHub.
 
 ### `install-hooks.sh`
 
-Script para instalar Git Hooks de proteção local.
+Script to install local protection Git Hooks.
 
 ### `setup/github.sh`
 
-Script para criar e configurar o repositório no GitHub.
+Script to create and configure the repository on GitHub.
 
-**O que faz:**
-- ✅ Verifica instalação do GitHub CLI
-- ✅ Verifica autenticação
-- ✅ Cria repositório no GitHub (público ou privado)
-- ✅ Envia código inicial
-- ✅ Cria e configura branch `develop`
-- ✅ Adiciona tópicos relevantes ao repositório
-- ✅ Opção para configurar proteção de branches
+**What it does:**
+- ✅ Verifies GitHub CLI installation
+- ✅ Verifies authentication
+- ✅ Creates the repository on GitHub (public or private)
+- ✅ Pushes the initial code
+- ✅ Creates and configures the `develop` branch
+- ✅ Adds relevant topics to the repository
+- ✅ Option to configure branch protection
 
-**Uso:**
+**Usage:**
 
 ```bash
 ./scripts/setup/github.sh
 ```
 
-**Pré-requisitos:**
-- GitHub CLI instalado (`brew install gh`)
-- Autenticação configurada (`gh auth login`)
+**Prerequisites:**
+- GitHub CLI installed (`brew install gh`)
+- Authentication configured (`gh auth login`)
 
 ### `install-hooks.sh`
 
-**O que faz:**
-- ✅ Instala Git Hook pre-push
-- ✅ Protege branch `main` contra pushes diretos localmente
-- ✅ Força uso de Pull Requests
+**What it does:**
+- ✅ Installs the pre-push Git Hook
+- ✅ Protects the `main` branch against direct pushes locally
+- ✅ Enforces use of Pull Requests
 
-**Uso:**
+**Usage:**
 
 ```bash
 ./scripts/setup/install-hooks.sh
 ```
 
-**Nota:** Como o repositório é privado, proteção de branches via GitHub requer GitHub Pro. Este hook fornece proteção local.
+**Note:** Since the repository is private, branch protection via GitHub requires GitHub Pro. This hook provides local protection.
 
 ---
 
-## 🛠 Instalação do GitHub CLI
+## 🛠 GitHub CLI Installation
 
 ### macOS
 ```bash
@@ -138,209 +138,209 @@ brew install gh
 winget install GitHub.cli
 ```
 
-Ou baixe em: https://cli.github.com/
+Or download from: https://cli.github.com/
 
-### Autenticação
+### Authentication
 ```bash
 gh auth login
 ```
 
-Escolha:
+Choose:
 1. GitHub.com
 2. HTTPS
 3. Login via browser
 
 ---
 
-## 📚 Comandos Úteis do GitHub CLI
+## 📚 Useful GitHub CLI Commands
 
-### Repositório
+### Repository
 ```bash
-# Ver informações do repo
+# View repo info
 gh repo view
 
-# Abrir repo no navegador
+# Open repo in browser
 gh repo view --web
 
-# Clonar repo
-gh repo clone USUARIO/REPO
+# Clone repo
+gh repo clone USER/REPO
 ```
 
 ### Issues
 ```bash
-# Listar issues
+# List issues
 gh issue list
 
-# Criar issue
+# Create an issue
 gh issue create
 
-# Ver issue específica
-gh issue view NUMERO
+# View a specific issue
+gh issue view NUMBER
 ```
 
 ### Pull Requests
 ```bash
-# Criar PR
+# Create a PR
 gh pr create
 
-# Listar PRs
+# List PRs
 gh pr list
 
-# Ver PR específico
-gh pr view NUMERO
+# View a specific PR
+gh pr view NUMBER
 
-# Fazer checkout de PR
-gh pr checkout NUMERO
+# Checkout a PR
+gh pr checkout NUMBER
 
-# Merge de PR
-gh pr merge NUMERO
+# Merge a PR
+gh pr merge NUMBER
 ```
 
 ### Releases
 ```bash
-# Listar releases
+# List releases
 gh release list
 
-# Criar release
+# Create a release
 gh release create v1.0.0
 
-# Upload de assets
+# Upload assets
 gh release upload v1.0.0 dist/*.dmg dist/*.exe
 ```
 
 ### Workflows (Actions)
 ```bash
-# Listar workflows
+# List workflows
 gh workflow list
 
-# Ver runs de um workflow
+# View runs for a workflow
 gh run list
 
-# Ver detalhes de um run
+# View details of a run
 gh run view RUN_ID
 ```
 
 ---
 
-## 🔄 Fluxo de Trabalho Recomendado
+## 🔄 Recommended Workflow
 
-### 1. Criar uma nova feature
+### 1. Create a new feature
 
 ```bash
-# Atualizar develop
+# Update develop
 git checkout develop
 git pull origin develop
 
-# Criar branch da feature
-git checkout -b feature/minha-feature
+# Create the feature branch
+git checkout -b feature/my-feature
 
-# Desenvolver...
+# Develop...
 git add .
-git commit -m "feat: adiciona minha feature"
+git commit -m "feat: add my feature"
 
-# Enviar para GitHub
-git push -u origin feature/minha-feature
+# Push to GitHub
+git push -u origin feature/my-feature
 
-# Criar PR
-gh pr create --base develop --title "Adiciona minha feature" --body "Descrição..."
+# Create PR
+gh pr create --base develop --title "Add my feature" --body "Description..."
 ```
 
-### 2. Revisar e fazer merge
+### 2. Review and merge
 
 ```bash
-# Ver PR
+# View PR
 gh pr view
 
-# Fazer checkout para testar
-gh pr checkout NUMERO
+# Checkout to test
+gh pr checkout NUMBER
 
-# Aprovar e fazer merge
-gh pr merge NUMERO --merge
+# Approve and merge
+gh pr merge NUMBER --merge
 ```
 
-### 3. Criar release
+### 3. Create a release
 
 ```bash
-# Atualizar main com develop
+# Update main from develop
 git checkout main
 git merge develop
 git push origin main
 
-# Criar tag
+# Create tag
 git tag -a v1.0.0 -m "Release v1.0.0"
 git push origin v1.0.0
 
-# Criar release no GitHub
+# Create release on GitHub
 gh release create v1.0.0 \
-  --title "v1.0.0 - Nome da Release" \
-  --notes "Changelog aqui..." \
+  --title "v1.0.0 - Release Name" \
+  --notes "Changelog here..." \
   dist/*.dmg dist/*.exe
 ```
 
 ---
 
-## 🎯 Commits Semânticos
+## 🎯 Semantic Commits
 
-Use prefixos nos commits para melhor organização:
+Use prefixes in commits for better organization:
 
-- `feat:` - Nova funcionalidade
-- `fix:` - Correção de bug
-- `docs:` - Documentação
-- `style:` - Formatação, ponto e vírgula, etc
-- `refactor:` - Refatoração de código
-- `perf:` - Melhorias de performance
-- `test:` - Adição de testes
-- `chore:` - Tarefas de manutenção
-- `ci:` - Mudanças no CI/CD
-- `build:` - Mudanças no sistema de build
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `docs:` - Documentation
+- `style:` - Formatting, semicolons, etc.
+- `refactor:` - Code refactoring
+- `perf:` - Performance improvements
+- `test:` - Adding tests
+- `chore:` - Maintenance tasks
+- `ci:` - CI/CD changes
+- `build:` - Build system changes
 
-**Exemplos:**
+**Examples:**
 ```bash
-git commit -m "feat: adiciona renderização de kline"
-git commit -m "fix: corrige cálculo de média móvel"
-git commit -m "docs: atualiza README com instruções"
-git commit -m "perf: otimiza renderização de canvas"
+git commit -m "feat: add kline rendering"
+git commit -m "fix: correct moving average calculation"
+git commit -m "docs: update README with instructions"
+git commit -m "perf: optimize canvas rendering"
 ```
 
 ---
 
-## 🌿 Estratégia de Branches
+## 🌿 Branch Strategy
 
 ```
-main (produção - sempre estável)
-  ← develop (integração)
-      ← feature/nome-da-feature
-      ← feature/outra-feature
-      ← bugfix/nome-do-bug
+main (production - always stable)
+  ← develop (integration)
+      ← feature/feature-name
+      ← feature/other-feature
+      ← bugfix/bug-name
 ```
 
-**Regras:**
-- `main` - Código de produção, apenas via PR
-- `develop` - Branch de desenvolvimento principal
-- `feature/*` - Novas funcionalidades
-- `bugfix/*` - Correções de bugs
-- `hotfix/*` - Correções urgentes em produção
+**Rules:**
+- `main` - Production code, only via PR
+- `develop` - Main development branch
+- `feature/*` - New features
+- `bugfix/*` - Bug fixes
+- `hotfix/*` - Urgent production fixes
 
 ---
 
-## 📦 Publicação de Releases
+## 📦 Release Publishing
 
-### Automático (via GitHub Actions)
+### Automatic (via GitHub Actions)
 
-Ao criar uma tag, o CI/CD automaticamente:
-1. Faz build para macOS e Windows
-2. Assina os binários
-3. Cria release no GitHub
-4. Faz upload dos instaladores
-5. Atualiza `latest.yml` para auto-update
+When a tag is created, CI/CD automatically:
+1. Builds for macOS and Windows
+2. Signs the binaries
+3. Creates the release on GitHub
+4. Uploads the installers
+5. Updates `latest.yml` for auto-update
 
 ### Manual
 
 ```bash
-# Build local
+# Local build
 npm run build:all
 
-# Criar release
+# Create release
 gh release create v1.0.0 \
   --title "v1.0.0 - Initial Release" \
   --notes-file CHANGELOG.md \
@@ -354,31 +354,31 @@ gh release create v1.0.0 \
 
 ## 🔧 Troubleshooting
 
-### GitHub CLI não encontrado
+### GitHub CLI not found
 ```bash
-# Verificar instalação
+# Verify installation
 which gh
 
-# Reinstalar
+# Reinstall
 brew reinstall gh
 ```
 
-### Não autenticado
+### Not authenticated
 ```bash
-# Re-autenticar
+# Re-authenticate
 gh auth logout
 gh auth login
 ```
 
-### Erro ao criar repositório
+### Error creating repository
 ```bash
-# Verificar se já existe
-gh repo view USUARIO/REPO
+# Check if it already exists
+gh repo view USER/REPO
 
-# Verificar permissões
+# Check permissions
 gh auth status
 ```
 
 ---
 
-Voltar para [README principal](../README.md)
+Back to [main README](../README.md)

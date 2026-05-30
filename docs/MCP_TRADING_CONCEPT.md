@@ -7,8 +7,8 @@
 
 The user's note (April 2026):
 
-> "para o mcp trading, precisamos de um toggle ou switch para habilitar.
->  mas vamos explorar esse conceito em um plano separado, com calma."
+> "for mcp trading, we need a toggle or switch to enable it.
+>  but let's explore this concept in a separate plan, carefully."
 
 So a trading MCP would let an external agent (Claude Code, ChatGPT
 desktop, custom agents) place / cancel / modify orders on the user's
@@ -157,5 +157,5 @@ Total to first live execution: ~10 days of focused engineering.
 ## What this doc is not
 
 A detailed spec or implementation plan. It captures the design space
-the user wants to "explorar com calma" before any code lands. Updating
+the user wants to "explore carefully" before any code lands. Updating
 this doc as the conversation evolves is the right move.

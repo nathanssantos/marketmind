@@ -16,12 +16,12 @@ const createMockKline = (close: number, index: number): Kline => ({
 });
 
 async function validateEMA() {
-  console.log('=== VALIDAÇÃO DE EMA ===\n');
+  console.log('=== EMA VALIDATION ===\n');
 
   const prices = [100, 102, 104, 103, 105, 107, 106, 108, 110, 109, 111, 113, 112, 114, 116];
   const klines = prices.map((p, i) => createMockKline(p, i));
 
-  console.log('Preços de teste:', prices.join(', '));
+  console.log('Test prices:', prices.join(', '));
   console.log('');
 
   const pineService = new PineIndicatorService();
@@ -45,8 +45,8 @@ async function validateEMA() {
   const manualEMA9Seed = prices.slice(0, 9).reduce((a, b) => a + b, 0) / 9;
   const multiplier = 2 / (9 + 1);
   let manualEMA9 = manualEMA9Seed;
-  console.log(`\n--- Cálculo Manual EMA9 ---`);
-  console.log(`Seed (SMA dos primeiros 9): ${manualEMA9Seed.toFixed(4)}`);
+  console.log(`\n--- Manual EMA9 Calculation ---`);
+  console.log(`Seed (SMA of first 9): ${manualEMA9Seed.toFixed(4)}`);
   console.log(`Multiplier: ${multiplier.toFixed(4)}`);
 
   for (let i = 9; i < prices.length; i++) {
@@ -55,7 +55,7 @@ async function validateEMA() {
     manualEMA9 = (currentPrice - prev) * multiplier + prev;
     const systemEMA = ema9[i] ?? null;
     const match = systemEMA !== null && Math.abs(systemEMA - manualEMA9) < 0.0001 ? '✓' : '✗';
-    console.log(`Index ${i}: Manual=${manualEMA9.toFixed(4)}, Sistema=${systemEMA?.toFixed(4) ?? 'null'}, ${match}`);
+    console.log(`Index ${i}: Manual=${manualEMA9.toFixed(4)}, System=${systemEMA?.toFixed(4) ?? 'null'}, ${match}`);
   }
 
   ema9.slice(8).every((v, i) => {
@@ -63,17 +63,17 @@ async function validateEMA() {
     return true;
   });
 
-  console.log(`\n✓ EMA está CORRETO - usa fórmula padrão da indústria`);
+  console.log(`\n✓ EMA is CORRECT - uses standard industry formula`);
 }
 
 async function validateRSI() {
-  console.log('\n\n=== VALIDAÇÃO DE RSI ===\n');
+  console.log('\n\n=== RSI VALIDATION ===\n');
 
   const prices = [44, 44.34, 44.09, 43.61, 44.33, 44.83, 45.10, 45.42, 45.84, 46.08, 45.89, 46.03, 45.61, 46.28, 46.28, 46.00, 46.03, 46.41, 46.22, 45.64];
 
   const klines = prices.map((p, i) => createMockKline(p, i));
 
-  console.log('Preços de teste (clássico RSI14 de Wilder):');
+  console.log('Test prices (classic Wilder RSI14):');
   console.log(prices.slice(0, 10).join(', '));
   console.log(prices.slice(10).join(', '));
   console.log('');
@@ -82,14 +82,14 @@ async function validateRSI() {
   const rsi14Values = await pineService.compute('rsi', klines, { period: 14 });
   const rsi14 = { values: rsi14Values };
 
-  console.log('--- RSI14 Calculado pelo Sistema ---');
+  console.log('--- RSI14 Calculated by System ---');
   for (let i = 0; i < prices.length; i++) {
     const rsi = rsi14.values[i];
     const price = prices[i] ?? 0;
     console.log(`Index ${i.toString().padStart(2)}: Price=${price.toFixed(2)}, RSI=${rsi?.toFixed(2) ?? 'null'}`);
   }
 
-  console.log('\n--- Cálculo Manual RSI14 (Wilders) ---');
+  console.log('\n--- Manual RSI14 Calculation (Wilders) ---');
 
   const changes: number[] = [];
   for (let i = 1; i < prices.length; i++) {
@@ -98,7 +98,7 @@ async function validateRSI() {
     changes.push(curr - prev);
   }
 
-  console.log('Mudanças de preço:', changes.map((c) => c.toFixed(2)).join(', '));
+  console.log('Price changes:', changes.map((c) => c.toFixed(2)).join(', '));
 
   const gains = changes.slice(0, 14).filter((c) => c > 0);
   const losses = changes.slice(0, 14).filter((c) => c < 0).map((c) => Math.abs(c));
@@ -106,14 +106,14 @@ async function validateRSI() {
   let avgGain = gains.reduce((a, b) => a + b, 0) / 14;
   let avgLoss = losses.reduce((a, b) => a + b, 0) / 14;
 
-  console.log(`\nPrimeira média de ganhos (SMA): ${avgGain.toFixed(4)}`);
-  console.log(`Primeira média de perdas (SMA): ${avgLoss.toFixed(4)}`);
+  console.log(`\nFirst average gain (SMA): ${avgGain.toFixed(4)}`);
+  console.log(`First average loss (SMA): ${avgLoss.toFixed(4)}`);
 
   let rs = avgGain / avgLoss;
   let rsi = 100 - 100 / (1 + rs);
-  console.log(`RSI inicial (index 14): ${rsi.toFixed(2)}`);
+  console.log(`Initial RSI (index 14): ${rsi.toFixed(2)}`);
 
-  console.log('\n--- Comparação Wilders vs Sistema ---');
+  console.log('\n--- Wilder vs System Comparison ---');
   console.log('Index | Wilder RSI | Sistema RSI | Match');
   console.log('------|------------|-------------|------');
 
@@ -143,28 +143,28 @@ async function validateRSI() {
   });
 
   if (allMatch) {
-    console.log('\n✓ RSI está usando Wilders Smoothing CORRETAMENTE!');
-    console.log('    Diferenças < 1.0 são aceitáveis (floating point precision).');
+    console.log('\n✓ RSI is using Wilders Smoothing CORRECTLY!');
+    console.log('    Differences < 1.0 are acceptable (floating point precision).');
   } else {
-    console.log('\n!  RSI ainda tem diferenças significativas!');
-    console.log('    Verificar implementação.');
+    console.log('\n!  RSI still has significant differences!');
+    console.log('    Review implementation.');
   }
 }
 
 async function validateRSI2() {
-  console.log('\n\n=== VALIDAÇÃO DE RSI(2) - Connors RSI2 ===\n');
+  console.log('\n\n=== RSI(2) VALIDATION - Connors RSI2 ===\n');
 
   const prices = [100, 98, 96, 99, 101, 100, 97, 95, 98, 102, 104, 103, 100, 97, 94];
   const klines = prices.map((p, i) => createMockKline(p, i));
 
-  console.log('Preços de teste para RSI(2):');
+  console.log('Test prices for RSI(2):');
   console.log(prices.join(', '));
 
   const pineService = new PineIndicatorService();
   const rsi2Values = await pineService.compute('rsi', klines, { period: 2 });
   const rsi2 = { values: rsi2Values };
 
-  console.log('\n--- RSI(2) Calculado ---');
+  console.log('\n--- RSI(2) Calculated ---');
   for (let i = 0; i < prices.length; i++) {
     const rsi = rsi2.values[i] ?? null;
     const price = prices[i] ?? 0;
@@ -174,27 +174,27 @@ async function validateRSI2() {
     console.log(`Index ${i.toString().padStart(2)}: Price=${price.toString().padStart(3)}, RSI(2)=${rsi?.toFixed(2).padStart(6) ?? 'null'.padStart(6)}${signal}`);
   }
 
-  console.log('\n--- Análise de Sinais RSI(2) ---');
+  console.log('\n--- RSI(2) Signal Analysis ---');
   const buySignals = rsi2.values.filter((v) => v !== null && v < 10).length;
   const sellSignals = rsi2.values.filter((v) => v !== null && v > 90).length;
-  console.log(`Sinais de COMPRA (RSI < 10): ${buySignals}`);
-  console.log(`Sinais de VENDA (RSI > 90): ${sellSignals}`);
+  console.log(`BUY signals (RSI < 10): ${buySignals}`);
+  console.log(`SELL signals (RSI > 90): ${sellSignals}`);
 }
 
 async function main() {
   console.log('╔════════════════════════════════════════════════════════════╗');
-  console.log('║        VALIDAÇÃO DE INDICADORES - MarketMind               ║');
-  console.log('║        Fase 1 do Plano de Validação                        ║');
+  console.log('║        INDICATOR VALIDATION - MarketMind                   ║');
+  console.log('║        Phase 1 of the Validation Plan                      ║');
   console.log('╚════════════════════════════════════════════════════════════╝\n');
 
   await validateEMA();
   await validateRSI();
   await validateRSI2();
 
-  console.log('\n\n=== RESUMO DA VALIDAÇÃO ===');
-  console.log('✓ EMA: Implementação CORRETA (usa fórmula padrão)');
-  console.log('✓ RSI: Implementação CORRETA (usa Wilders Smoothing)');
-  console.log('\n> Indicadores validados com sucesso!');
+  console.log('\n\n=== VALIDATION SUMMARY ===');
+  console.log('✓ EMA: Implementation CORRECT (uses standard formula)');
+  console.log('✓ RSI: Implementation CORRECT (uses Wilders Smoothing)');
+  console.log('\n> Indicators validated successfully!');
 }
 
 main().catch(console.error);

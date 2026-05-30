@@ -21,17 +21,17 @@ interface TestResult {
 }
 
 async function compare() {
-  console.log('=== COMPARAÇÃO: COM vs SEM BTC CORRELATION FILTER (ALTCOINS) ===');
-  console.log('Entry Level: 100% | Timeframe: 12h | Período: 2023-2026');
+  console.log('=== COMPARISON: WITH vs WITHOUT BTC CORRELATION FILTER (ALTCOINS) ===');
+  console.log('Entry Level: 100% | Timeframe: 12h | Period: 2023-2026');
   console.log('Altcoins:', ALTCOINS.join(', '));
   console.log('');
 
   const results: TestResult[] = [];
 
   for (const useBtcFilter of [true, false]) {
-    const filterName = useBtcFilter ? 'COM BTC Filter' : 'SEM BTC Filter';
+    const filterName = useBtcFilter ? 'WITH BTC Filter' : 'WITHOUT BTC Filter';
     console.log(`\n${'═'.repeat(60)}`);
-    console.log(`> Testando: ${filterName}`);
+    console.log(`> Testing: ${filterName}`);
     console.log(`${'═'.repeat(60)}\n`);
 
     const baseConfig = createBaseConfig();
@@ -97,26 +97,26 @@ async function compare() {
     console.log(`LONG:  ${longTrades.length} trades | P&L: $${longPnl.toFixed(2)}`);
     console.log(`SHORT: ${shortTrades.length} trades | P&L: $${shortPnl.toFixed(2)}`);
     console.log('');
-    console.log(`Bloqueados por BTC Trend: ${blockedByBtcTrend}`);
+    console.log(`Blocked by BTC Trend: ${blockedByBtcTrend}`);
 
-    console.log('\n> Por Símbolo:');
+    console.log('\n> By Symbol:');
     for (const ws of result.watcherStats) {
       console.log(
-        `  ${ws.symbol}: ${ws.tradesExecuted} trades | Setups: ${ws.totalSetups} | Bloqueados: ${ws.tradesSkipped}`
+        `  ${ws.symbol}: ${ws.tradesExecuted} trades | Setups: ${ws.totalSetups} | Blocked: ${ws.tradesSkipped}`
       );
     }
     console.log('');
   }
 
   console.log(`\n${  '═'.repeat(60)}`);
-  console.log('> RESUMO COMPARATIVO');
+  console.log('> COMPARATIVE SUMMARY');
   console.log('═'.repeat(60));
   console.log('');
 
   const comFilter = results.find((r) => r.useBtcFilter)!;
   const semFilter = results.find((r) => !r.useBtcFilter)!;
 
-  console.log('| Métrica              | COM Filter    | SEM Filter    | Diferença     |');
+  console.log('| Metric               | WITH Filter   | WITHOUT Filter| Difference    |');
   console.log('|----------------------|---------------|---------------|---------------|');
   console.log(
     `| Total Trades         | ${comFilter.totalTrades.toString().padEnd(13)} | ${semFilter.totalTrades.toString().padEnd(13)} | ${(semFilter.totalTrades - comFilter.totalTrades).toString().padEnd(13)} |`
@@ -134,7 +134,7 @@ async function compare() {
     `| Max Drawdown         | ${comFilter.maxDrawdown.toFixed(1).padEnd(13)}% | ${semFilter.maxDrawdown.toFixed(1).padEnd(13)}% | ${(semFilter.maxDrawdown - comFilter.maxDrawdown).toFixed(1).padEnd(13)}% |`
   );
   console.log(
-    `| Bloqueados BTC Trend | ${comFilter.blockedByBtcTrend.toString().padEnd(13)} | ${semFilter.blockedByBtcTrend.toString().padEnd(13)} | ${(semFilter.blockedByBtcTrend - comFilter.blockedByBtcTrend).toString().padEnd(13)} |`
+    `| Blocked BTC Trend    | ${comFilter.blockedByBtcTrend.toString().padEnd(13)} | ${semFilter.blockedByBtcTrend.toString().padEnd(13)} | ${(semFilter.blockedByBtcTrend - comFilter.blockedByBtcTrend).toString().padEnd(13)} |`
   );
   console.log('');
 
@@ -142,19 +142,19 @@ async function compare() {
   const wrDiff = semFilter.winRate - comFilter.winRate;
 
   if (pnlDiff > 0 && wrDiff >= 0) {
-    console.log('> RECOMENDAÇÃO: DESABILITAR BTC Correlation Filter');
-    console.log(`   Melhoria de P&L: +$${pnlDiff.toFixed(2)} (+${(semFilter.totalPnlPercent - comFilter.totalPnlPercent).toFixed(1)}%)`);
+    console.log('> RECOMMENDATION: DISABLE BTC Correlation Filter');
+    console.log(`   P&L improvement: +$${pnlDiff.toFixed(2)} (+${(semFilter.totalPnlPercent - comFilter.totalPnlPercent).toFixed(1)}%)`);
   } else if (pnlDiff < 0) {
-    console.log('> RECOMENDAÇÃO: MANTER BTC Correlation Filter');
-    console.log(`   Proteção de P&L: $${Math.abs(pnlDiff).toFixed(2)}`);
+    console.log('> RECOMMENDATION: KEEP BTC Correlation Filter');
+    console.log(`   P&L protection: $${Math.abs(pnlDiff).toFixed(2)}`);
   } else {
-    console.log('~ INCONCLUSIVO: Diferença mínima - testar com mais dados');
+    console.log('~ INCONCLUSIVE: Minimal difference - test with more data');
   }
 
   process.exit(0);
 }
 
 compare().catch((err) => {
-  console.error('Erro:', err);
+  console.error('Error:', err);
   process.exit(1);
 });

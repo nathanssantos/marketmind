@@ -1,24 +1,24 @@
-# 🧪 Guia de Testes e Validação - MarketMind Strategies
+# 🧪 Testing and Validation Guide - MarketMind Strategies
 
-## 📊 Comandos Rápidos
+## 📊 Quick Commands
 
-### Otimizar (pipeline completo de 3 estágios)
+### Optimize (full 3-stage pipeline)
 ```bash
 pnpm optimize:full
 ```
-**O que faz:**
-- Stage 1: Sensitivity sweep nos parâmetros (Fibonacci targets, entry progress, R:R)
-- Stage 2: Cross-product das top combinações do Stage 1
-- Stage 3: Trailing stop optimization nos melhores configs
-- Suporta resume (SIGINT/SIGTERM salva progresso)
+**What it does:**
+- Stage 1: Sensitivity sweep on parameters (Fibonacci targets, entry progress, R:R)
+- Stage 2: Cross-product of the top Stage 1 combinations
+- Stage 3: Trailing stop optimization on the best configs
+- Supports resume (SIGINT/SIGTERM saves progress)
 
 **Output:** `/tmp/prod-parity-optimization-run/` (summary.txt, optimal-config.json, CSVs)
 
 ---
 
-## 🎯 Testes Individuais
+## 🎯 Individual Tests
 
-### Validar uma estratégia específica
+### Validate a specific strategy
 ```bash
 npm run backtest:validate -- \
   -s connors-rsi2-original \
@@ -29,7 +29,7 @@ npm run backtest:validate -- \
   --optimized
 ```
 
-### Otimizar parâmetros de uma estratégia
+### Optimize parameters for a strategy
 ```bash
 npm run backtest:optimize -- \
   -s connors-rsi2-original \
@@ -44,7 +44,7 @@ npm run backtest:optimize -- \
   --sort-by profitFactor
 ```
 
-### Análise Walk-Forward
+### Walk-Forward Analysis
 ```bash
 npm run backtest:walkforward -- \
   -s connors-rsi2-original \
@@ -56,7 +56,7 @@ npm run backtest:walkforward -- \
   --test-period 30
 ```
 
-### Simulação Monte Carlo
+### Monte Carlo Simulation
 ```bash
 npm run backtest:montecarlo -- \
   -s connors-rsi2-original \
@@ -69,7 +69,7 @@ npm run backtest:montecarlo -- \
 
 ---
 
-## 📁 Estrutura de Resultados
+## 📁 Results Structure
 
 ```
 results/
@@ -87,75 +87,75 @@ results/
 
 ---
 
-## 📈 Métricas Importantes
+## 📈 Key Metrics
 
-### O que observar nos resultados:
+### What to look at in the results:
 
-1. **Total Trades** - Mínimo 20-30 para ser significativo
+1. **Total Trades** - Minimum 20-30 to be statistically meaningful
 2. **Win Rate** - Ideal 40-60%
-3. **Profit Factor** - Mínimo 1.5, ideal >2.0
-4. **Total PnL %** - Retorno total
-5. **Max Drawdown %** - Risco máximo (ideal <20%)
-6. **Sharpe Ratio** - Retorno ajustado ao risco (ideal >1.0)
+3. **Profit Factor** - Minimum 1.5, ideal >2.0
+4. **Total PnL %** - Total return
+5. **Max Drawdown %** - Maximum risk (ideal <20%)
+6. **Sharpe Ratio** - Risk-adjusted return (ideal >1.0)
 
-### Flags de Atenção:
-- ⚠️ **0 trades** = Condições muito restritivas
-- ⚠️ **Win rate <30%** = Problema na estratégia
-- ⚠️ **Profit Factor <1.0** = Perdendo dinheiro
-- ⚠️ **Max DD >30%** = Risco muito alto
+### Warning Flags:
+- ⚠️ **0 trades** = Conditions are too restrictive
+- ⚠️ **Win rate <30%** = Problem with the strategy
+- ⚠️ **Profit Factor <1.0** = Losing money
+- ⚠️ **Max DD >30%** = Risk is too high
 
 ---
 
 ## 🔧 Troubleshooting
 
 ### "Failed to load strategy"
-- Verificar se indicador existe no IndicatorEngine
-- Conferir nomes dos indicadores (case-sensitive)
-- Ver `STRATEGY_VALIDATION_FIXES.md`
+- Check that the indicator exists in the IndicatorEngine
+- Verify indicator names (case-sensitive)
+- See `STRATEGY_VALIDATION_FIXES.md`
 
 ### "0 trades detected"
-- Parâmetros muito restritivos
-- Período muito curto
-- Tentar ajustar thresholds (RSI, confidence, etc.)
+- Parameters are too restrictive
+- Test period is too short
+- Try adjusting thresholds (RSI, confidence, etc.)
 
 ### Timeout errors
-- Aumentar timeout no script (linha 40)
-- Reduzir período de teste
-- Usar interval maior (1d ao invés de 1h)
+- Increase timeout in the script (line 40)
+- Reduce the test period
+- Use a larger interval (1d instead of 1h)
 
 ---
 
-## ✅ Checklist Antes de Rodar
+## ✅ Pre-Run Checklist
 
-- [ ] Backend compilado (`npm run build`)
-- [ ] Variáveis de ambiente configuradas (`.env`)
-- [ ] Estratégias ativas (`status: "active"`)
-- [ ] Espaço em disco suficiente (~500MB para todos os resultados)
-- [ ] Internet estável (para buscar dados da Binance)
+- [ ] Backend compiled (`npm run build`)
+- [ ] Environment variables configured (`.env`)
+- [ ] Strategies active (`status: "active"`)
+- [ ] Sufficient disk space (~500MB for all results)
+- [ ] Stable internet connection (to fetch Binance data)
 
 ---
 
-## 🚀 Workflow Recomendado
+## 🚀 Recommended Workflow
 
-1. **Otimização completa:**
+1. **Full optimization:**
    ```bash
    pnpm optimize:full
    ```
-   - Roda 3 stages automaticamente
-   - Analisa sensitivity, cross-product e trailing stop
-   - Gera optimal-config.json com melhores parâmetros
+   - Runs 3 stages automatically
+   - Analyzes sensitivity, cross-product, and trailing stop
+   - Generates optimal-config.json with the best parameters
 
-2. **Otimização individual:**
+2. **Individual optimization:**
    ```bash
    pnpm backtest:optimize -- -s connors-rsi2-original ...
    ```
 
-3. **Validação:**
+3. **Validation:**
    ```bash
    pnpm backtest:validate -- -s top-strategy ...
    ```
 
-4. **Análise robustez:**
+4. **Robustness analysis:**
    ```bash
    pnpm backtest:walkforward -- -s top-strategy ...
    pnpm backtest:montecarlo -- -s top-strategy ...
@@ -163,6 +163,6 @@ results/
 
 ---
 
-**Última atualização:** 9 de dezembro de 2025  
-**Estratégias ativas:** 72  
-**Status:** ✅ Pronto para produção
+**Last updated:** December 9, 2025
+**Active strategies:** 72
+**Status:** ✅ Production-ready
