@@ -30,8 +30,7 @@ declare global {
   interface Window {
     __layoutStore?: {
       getState: () => {
-        symbolTabs: Array<{ id: string; activeLayoutId: string }>;
-        activeSymbolTabId: string | null;
+        activeLayoutId: string;
         addPanel: (layoutId: string, timeframe: string) => void;
         addNamedPanel: (layoutId: string, kind: string) => void;
       };
@@ -48,9 +47,9 @@ export const buildLayout = async (page: Page, layout: ScenarioLayout): Promise<v
   await page.evaluate((cfg) => {
     const store = window.__layoutStore?.getState();
     if (!store) throw new Error('__layoutStore not exposed');
-    const tab = store.symbolTabs.find((t) => t.id === store.activeSymbolTabId);
-    if (!tab) throw new Error('no active symbol tab');
-    const layoutId = tab.activeLayoutId;
+    // activeLayoutId was lifted from SymbolTab to the top-level store in v1.5;
+    // ChartGrid renders state.activeLayoutId, so panels must be added there.
+    const layoutId = store.activeLayoutId;
     for (let i = 0; i < cfg.charts; i += 1) {
       store.addPanel(layoutId, ['1m', '5m', '15m', '1h', '4h', '1d'][i] ?? '1h');
     }
@@ -89,10 +88,7 @@ export const waitForPanelsMounted = async (
     marketLongShort: '[data-panel-kind="marketLongShort"]',
   };
   for (const kind of panelKinds) {
-    await page.waitForSelector(PANEL_SELECTORS[kind], { timeout: timeoutMs }).catch(() => {
-      // Tolerate panels without explicit data attributes — fall back
-      // to a known mounted-anywhere check via the layout state.
-    });
+    await page.waitForSelector(PANEL_SELECTORS[kind], { timeout: timeoutMs });
   }
 };
 

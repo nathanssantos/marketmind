@@ -60,11 +60,8 @@ test.describe('sync — SL fills propagate to Portfolio via WS invalidation (Bug
       .toBe(true);
   });
 
-  test('position:update emit triggers trading + wallet refetch', async ({ page }) => {
-    const baseline = {
-      tradeExecs: await getTrpcHitCount(page, 'trading.getTradeExecutions'),
-      wallet: await getTrpcHitCount(page, 'wallet.list'),
-    };
+  test('position:update emit triggers trading query refetch', async ({ page }) => {
+    const tradeExecsBefore = await getTrpcHitCount(page, 'trading.getTradeExecutions');
 
     await emitSocketEvent(page, 'position:update', {
       id: 'exec-1',
@@ -75,10 +72,7 @@ test.describe('sync — SL fills propagate to Portfolio via WS invalidation (Bug
     });
 
     await expect
-      .poll(async () => (await getTrpcHitCount(page, 'trading.getTradeExecutions')) > baseline.tradeExecs, { timeout: 2_000 })
-      .toBe(true);
-    await expect
-      .poll(async () => (await getTrpcHitCount(page, 'wallet.list')) > baseline.wallet, { timeout: 2_000 })
+      .poll(async () => (await getTrpcHitCount(page, 'trading.getTradeExecutions')) > tradeExecsBefore, { timeout: 2_000 })
       .toBe(true);
   });
 

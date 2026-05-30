@@ -1,16 +1,31 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { generateKlines } from './helpers/klineFixtures';
 import { installTrpcMock } from './helpers/trpcMock';
 import { waitForSocket } from './helpers/socketBridge';
 import { waitForChartReady } from './helpers/chartTestSetup';
 import { buildLayout, waitForPanelsMounted } from './helpers/realPanScenario';
 
+const waitForBusListenerCount = (
+  page: Page,
+  event: string,
+  op: 'gt' | 'eq',
+  value: number,
+  timeoutMs = 8_000,
+): Promise<void> =>
+  page.waitForFunction(
+    ({ e, operation, v }: { e: string; operation: string; v: number }) => {
+      const count = window.__socketTestBridge?.getBusListenerCount(e) ?? 0;
+      return operation === 'gt' ? count > v : count === v;
+    },
+    { e: event, operation: op, v: value },
+    { timeout: timeoutMs },
+  ).then(() => undefined);
+
 declare global {
   interface Window {
     __layoutStore?: {
       getState: () => {
-        symbolTabs: Array<{ id: string; activeLayoutId: string }>;
-        activeSymbolTabId: string | null;
+        activeLayoutId: string;
         layoutPresets: Array<{ id: string; grid: Array<{ id: string; kind?: string }> }>;
         addNamedPanel: (layoutId: string, kind: string) => void;
         removePanel: (layoutId: string, panelId: string) => void;
@@ -30,9 +45,8 @@ declare global {
 const findPanelId = async (page: import('@playwright/test').Page, kind: string): Promise<string> =>
   page.evaluate((k) => {
     const store = window.__layoutStore?.getState();
-    if (!store || !store.activeSymbolTabId) throw new Error('layout store not ready');
-    const tab = store.symbolTabs.find((t) => t.id === store.activeSymbolTabId)!;
-    const layout = store.layoutPresets.find((l) => l.id === tab.activeLayoutId)!;
+    if (!store || !store.activeLayoutId) throw new Error('layout store not ready');
+    const layout = store.layoutPresets.find((l) => l.id === store.activeLayoutId)!;
     const panel = layout.grid.find((p) => p.kind === k);
     if (!panel) throw new Error(`no ${k} panel found`);
     return panel.id;
@@ -41,7 +55,7 @@ const findPanelId = async (page: import('@playwright/test').Page, kind: string):
 const layoutId = (page: import('@playwright/test').Page): Promise<string> =>
   page.evaluate(() => {
     const store = window.__layoutStore!.getState();
-    return store.symbolTabs.find((t) => t.id === store.activeSymbolTabId)!.activeLayoutId;
+    return store.activeLayoutId;
   });
 
 test.describe('pauseWhenIdle: WS subscription release on panel unmount', () => {
@@ -60,12 +74,13 @@ test.describe('pauseWhenIdle: WS subscription release on panel unmount', () => {
     // Mount the orderBook panel.
     await buildLayout(page, { name: 'with-orderBook', charts: 0, panels: ['orderBook'] });
     await waitForPanelsMounted(page, ['orderBook']);
-    // Brief settle so the React commit + Suspense lazy import finish.
-    await page.waitForTimeout(500);
+    // Wait deterministically for useDepth → useLiveStream to register the listener.
+    await waitForBusListenerCount(page, 'depth:update', 'gt', 0);
 
-    // Listener count should be ≥1 now (useDepth via useLiveStream).
-    const mounted = await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('depth:update'));
-    expect(mounted, 'depth:update should have at least one listener while orderBook is mounted').toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('depth:update')),
+      'depth:update should have at least one listener while orderBook is mounted',
+    ).toBeGreaterThan(0);
 
     // Minimize the panel — `ChartGrid` filters minimized panels out of
     // `panelsToRender`, so the panel UNMOUNTS. Hooks clean up. The bus
@@ -76,21 +91,21 @@ test.describe('pauseWhenIdle: WS subscription release on panel unmount', () => {
     await page.evaluate(({ layoutId: l, panelId }) => {
       window.__layoutStore!.getState().setPanelWindowState(l, panelId, 'minimized');
     }, { layoutId: lid, panelId: id });
-    await page.waitForTimeout(300);
+    await waitForBusListenerCount(page, 'depth:update', 'eq', 0);
 
     expect(
       await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('depth:update')),
-      'depth:update listener should be released after minimize'
+      'depth:update listener should be released after minimize',
     ).toBe(0);
 
     // Restore — listener comes back.
     await page.evaluate(({ layoutId: l, panelId }) => {
       window.__layoutStore!.getState().setPanelWindowState(l, panelId, 'normal');
     }, { layoutId: lid, panelId: id });
-    await page.waitForTimeout(500);
+    await waitForBusListenerCount(page, 'depth:update', 'gt', 0);
 
     expect(
-      await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('depth:update'))
+      await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('depth:update')),
     ).toBeGreaterThan(0);
   });
 
@@ -110,16 +125,18 @@ test.describe('pauseWhenIdle: WS subscription release on panel unmount', () => {
       panels: ['ticket', 'orderFlowMetrics'],
     });
     await waitForPanelsMounted(page, ['ticket', 'orderFlowMetrics']);
-    await page.waitForTimeout(500);
+    // Wait deterministically for both panels' hooks to register their listeners.
+    await waitForBusListenerCount(page, 'bookTicker:update', 'gt', 0);
+    await waitForBusListenerCount(page, 'scalpingMetrics:update', 'gt', 0);
 
-    const bookTickerListeners = await page.evaluate(
-      () => window.__socketTestBridge!.getBusListenerCount('bookTicker:update'),
-    );
-    const scalpingListeners = await page.evaluate(
-      () => window.__socketTestBridge!.getBusListenerCount('scalpingMetrics:update'),
-    );
-    expect(bookTickerListeners, 'ticket → bookTicker').toBeGreaterThan(0);
-    expect(scalpingListeners, 'orderFlowMetrics → scalpingMetrics').toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('bookTicker:update')),
+      'ticket → bookTicker',
+    ).toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('scalpingMetrics:update')),
+      'orderFlowMetrics → scalpingMetrics',
+    ).toBeGreaterThan(0);
 
     // Remove the ticket panel — bookTicker listener should drop to
     // zero, scalpingMetrics should be untouched.
@@ -128,15 +145,15 @@ test.describe('pauseWhenIdle: WS subscription release on panel unmount', () => {
     await page.evaluate(({ layoutId: l, panelId }) => {
       window.__layoutStore!.getState().removePanel(l, panelId);
     }, { layoutId: lid, panelId: ticketId });
-    await page.waitForTimeout(300);
+    await waitForBusListenerCount(page, 'bookTicker:update', 'eq', 0);
 
     expect(
       await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('bookTicker:update')),
-      'bookTicker should release when ticket unmounts'
+      'bookTicker should release when ticket unmounts',
     ).toBe(0);
     expect(
       await page.evaluate(() => window.__socketTestBridge!.getBusListenerCount('scalpingMetrics:update')),
-      'scalpingMetrics should stay active while orderFlowMetrics is mounted'
+      'scalpingMetrics should stay active while orderFlowMetrics is mounted',
     ).toBeGreaterThan(0);
   });
 });

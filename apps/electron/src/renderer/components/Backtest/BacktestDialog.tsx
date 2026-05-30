@@ -54,7 +54,9 @@ export const BacktestDialog = () => {
       )}
 
       {run.status === 'running' && (
-        <BacktestProgress progress={run.progress} onCancel={() => run.reset()} />
+        <Box data-backtest-id={run.backtestId ?? undefined}>
+          <BacktestProgress progress={run.progress} onCancel={() => run.reset()} />
+        </Box>
       )}
 
       {run.status === 'success' && run.result?.status === 'COMPLETED' && (

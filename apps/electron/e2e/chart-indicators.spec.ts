@@ -3,6 +3,19 @@ import { generateKlines } from './helpers/klineFixtures';
 import { installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady, waitForE2EBridge } from './helpers/chartTestSetup';
 
+declare global {
+  interface Window {
+    __layoutStore?: {
+      getState: () => {
+        focusedPanelId: string | null;
+        activeLayoutId: string;
+        layoutPresets: Array<{ id: string; grid: Array<{ id: string; kind?: string }> }>;
+        setFocusedPanel: (panelId: string) => void;
+      };
+    };
+  }
+}
+
 interface UserIndicatorFixture {
   id: string;
   catalogType: string;
@@ -85,6 +98,19 @@ const goToChart = async (page: Page) => {
   await page.goto('/');
   await waitForChartReady(page);
   await waitForE2EBridge(page);
+  // IndicatorTogglePopoverGeneric.handleToggle guards on focusedPanelId; if
+  // it is null, toggling a checkbox is a no-op. The single-panel auto-focus
+  // effect never fires in the default multi-panel E2E layout, so focus the
+  // chart panel explicitly (and deterministically).
+  await page.evaluate(() => {
+    const store = window.__layoutStore?.getState();
+    if (!store) throw new Error('layout store not ready');
+    const layout = store.layoutPresets.find((l) => l.id === store.activeLayoutId);
+    const chart = layout?.grid.find((p) => p.kind === 'chart');
+    if (!chart) throw new Error('no chart panel in active layout');
+    store.setFocusedPanel(chart.id);
+  });
+  await page.waitForFunction(() => !!window.__layoutStore?.getState()?.focusedPanelId, { timeout: 5_000 });
 };
 
 const getInstances = (page: Page) =>
@@ -123,8 +149,23 @@ test.describe('Chart indicators — toggle popover lifecycle', () => {
 
   test('clicking a popover checkbox adds an instance with all the indicator params', async ({ page }) => {
     await page.getByRole('button', { name: 'Configure Indicators' }).click();
-    // Popover renders; click the EMA 20 checkbox label.
-    await page.getByText('EMA 20').first().click();
+    // PopoverToggleItem renders a Switch (not a checkbox). Clicking the text
+    // paragraph does nothing. The Switch root is a <label> with aria-label set
+    // to the indicator label; getByLabel resolves the hidden input it wraps.
+    await page.getByLabel('EMA 20').click();
+
+    // Wait deterministically for the instance to appear in the store rather
+    // than reading immediately — the store write happens synchronously inside
+    // the React event handler, but React batches state updates and the zustand
+    // subscriber may not have committed before the next JS tick.
+    await page.waitForFunction(
+      (uid) => {
+        const store = window.__indicatorStore?.getState();
+        return !!store?.instances.find((i) => i.userIndicatorId === uid);
+      },
+      'ema-20',
+      { timeout: 5_000 },
+    );
 
     const instance = await findInstance(page, 'ema-20');
     expect(instance).not.toBeNull();
@@ -135,11 +176,30 @@ test.describe('Chart indicators — toggle popover lifecycle', () => {
 
   test('clicking the same checkbox again removes every matching instance', async ({ page }) => {
     await page.getByRole('button', { name: 'Configure Indicators' }).click();
-    const checkbox = page.getByText('EMA 20').first();
-    await checkbox.click();
+    // PopoverToggleItem renders a Switch — target by label, not by text.
+    const toggle = page.getByLabel('EMA 20');
+    await toggle.click();
+    // Wait for the add to land in the store before asserting length.
+    await page.waitForFunction(
+      (uid) => {
+        const store = window.__indicatorStore?.getState();
+        return (store?.instances.filter((i) => i.userIndicatorId === uid).length ?? 0) > 0;
+      },
+      'ema-20',
+      { timeout: 5_000 },
+    );
     expect(await getInstances(page)).toHaveLength(1);
 
-    await checkbox.click();
+    await toggle.click();
+    // Wait for removal to land.
+    await page.waitForFunction(
+      (uid) => {
+        const store = window.__indicatorStore?.getState();
+        return (store?.instances.filter((i) => i.userIndicatorId === uid).length ?? 0) === 0;
+      },
+      'ema-20',
+      { timeout: 5_000 },
+    );
     expect(await getInstances(page)).toHaveLength(0);
   });
 });

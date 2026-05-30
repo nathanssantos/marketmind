@@ -31,26 +31,36 @@ const setupPage = async (page: Page, getActiveRuns: () => unknown) => {
   await waitForChartReady(page);
 };
 
-test.describe('Toolbar — Backtest running indicator (V1_5 E.7)', () => {
+// Backtest moved into the "Tools" toolbar popover (ToolsPopover.tsx). The
+// running indicator is a trailing dot on the Backtest action item, so it is
+// only in the DOM while the popover is open. Open Tools, then assert.
+const openTools = async (page: Page): Promise<void> => {
+  await page.getByTestId('toolbar-tools-button').click();
+  await expect(page.getByTestId('tools-open-backtest')).toBeVisible();
+};
+
+test.describe('Tools popover — Backtest running indicator (V1_5 E.7)', () => {
   test('hides the indicator when no backtests are running', async ({ page }) => {
     await setupPage(page, () => []);
-    await expect(page.getByTestId('toolbar-backtest-button')).toBeVisible();
-    await expect(page.getByTestId('toolbar-backtest-running-indicator')).toHaveCount(0);
+    await openTools(page);
+    await expect(page.getByTestId('tools-backtest-running-indicator')).toHaveCount(0);
   });
 
-  test('shows the indicator dot on the Backtest button when getActiveRuns returns a run', async ({ page }) => {
+  test('shows the indicator dot on the Backtest item when getActiveRuns returns a run', async ({ page }) => {
     await setupPage(page, () => ACTIVE_RUN_FIXTURE);
-    await expect(page.getByTestId('toolbar-backtest-button')).toBeVisible();
-    await expect(page.getByTestId('toolbar-backtest-running-indicator')).toBeVisible();
+    await openTools(page);
+    await expect(page.getByTestId('tools-backtest-running-indicator')).toBeVisible();
   });
 
   test('survives a page reload — indicator re-renders from the server query', async ({ page }) => {
     await setupPage(page, () => ACTIVE_RUN_FIXTURE);
-    await expect(page.getByTestId('toolbar-backtest-running-indicator')).toBeVisible();
+    await openTools(page);
+    await expect(page.getByTestId('tools-backtest-running-indicator')).toBeVisible();
 
     await page.reload();
     await waitForChartReady(page);
 
-    await expect(page.getByTestId('toolbar-backtest-running-indicator')).toBeVisible();
+    await openTools(page);
+    await expect(page.getByTestId('tools-backtest-running-indicator')).toBeVisible();
   });
 });
