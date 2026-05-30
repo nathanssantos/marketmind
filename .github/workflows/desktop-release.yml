@@ -6,7 +6,7 @@ on:
 
 env:
   NODE_VERSION: '24'
-  PNPM_VERSION: '9'
+  PNPM_VERSION: '10.24.0'
 
 permissions:
   contents: write
