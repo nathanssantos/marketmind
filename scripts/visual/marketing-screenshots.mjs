@@ -21,8 +21,8 @@
  */
 import path from 'node:path';
 import { copyFile, mkdir } from 'node:fs/promises';
-import { captureFullPage, captureModal } from '../packages/mcp-screenshot/dist/capture.js';
-import { closeBrowser, getPage, setTheme } from '../packages/mcp-screenshot/dist/browser.js';
+import { captureFullPage, captureModal } from '../../packages/mcp-screenshot/dist/capture.js';
+import { closeBrowser, getPage, setTheme } from '../../packages/mcp-screenshot/dist/browser.js';
 
 process.env.MM_MCP_BASE_URL ??= 'http://localhost:5174';
 process.env.MM_MCP_VIEWPORT ??= '1920x1080';

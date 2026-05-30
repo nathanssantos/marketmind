@@ -8,8 +8,8 @@
  *   MM_MCP_SCALE      — deviceScaleFactor (default 1; bump to 2 for retina)
  *   MM_MCP_FIXTURES   — set to "false" to skip the tRPC mock fixtures
  */
-import { captureGallery } from '../packages/mcp-screenshot/dist/capture.js';
-import { closeBrowser } from '../packages/mcp-screenshot/dist/browser.js';
+import { captureGallery } from '../../packages/mcp-screenshot/dist/capture.js';
+import { closeBrowser } from '../../packages/mcp-screenshot/dist/browser.js';
 
 const result = await captureGallery({
   tabs: 'all',

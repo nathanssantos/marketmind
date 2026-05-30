@@ -28,6 +28,19 @@ export default defineConfig({
       name: 'chromium',
       testDir: './e2e',
       testMatch: /\/e2e\/[^/]+\.spec\.ts$/,
+      // These specs assert on real throttle windows / render fps and need a
+      // dedicated CPU; under parallel oversubscription their wall-clock waits
+      // drift and the exact-count assertions flake. They run in the
+      // `chromium-serial` project (workers: 1) instead.
+      testIgnore: ['**/realistic-pan.spec.ts', '**/live-stream-throttle.spec.ts'],
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'chromium-serial',
+      testDir: './e2e',
+      testMatch: /\/e2e\/(realistic-pan|live-stream-throttle)\.spec\.ts$/,
+      fullyParallel: false,
+      workers: 1,
       use: { ...devices['Desktop Chrome'] },
     },
     {
