@@ -16,12 +16,12 @@
  *                              `isOpen` + `onClose` fields
  *
  * Usage:
- *   node scripts/audit-dialog-rules.mjs           # default: prints
+ *   node scripts/audit/dialog-rules.mjs           # default: prints
  *                                                  per-rule counts and
  *                                                  exits 0 (warnings only)
- *   node scripts/audit-dialog-rules.mjs --strict  # exits 1 on any hit
+ *   node scripts/audit/dialog-rules.mjs --strict  # exits 1 on any hit
  *                                                  (CI gate mode)
- *   node scripts/audit-dialog-rules.mjs --list    # prints every hit
+ *   node scripts/audit/dialog-rules.mjs --list    # prints every hit
  *
  * The default `--warn` mode lets the script ship now and surface drift
  * via CI logs while Track A modal rewrites land. Once the modal sweep

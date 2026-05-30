@@ -100,6 +100,7 @@ gh pr create           # PR to develop
 - [ ] `pnpm --filter @marketmind/backend type-check` — no TS errors (backend)
 - [ ] `pnpm --filter @marketmind/electron lint` — no lint errors
 - [ ] Tests cover new/changed code
+- [ ] No flaky tests — re-run any new/touched suite at least twice locally; if it ever fails, fix the test before commit (not retried, not skipped)
 - [ ] No `console.log` / debug code
 - [ ] No code comments (READMEs/JSDoc on public APIs only)
 - [ ] User-facing text internationalized (no hardcoded strings)
@@ -128,11 +129,22 @@ marketmind/                         # monorepo root
 │       │   └── services/backtesting/                        # BacktestEngine, MultiWatcherBacktestEngine, FilterManager
 │       ├── strategies/builtin/                              # 105 strategy JSON files
 │       └── scripts/backtest/                                # rank-strategies, rank-strategies-with-filters, run-optimization
+│       └── scripts/{trading,debug,maintenance,data,audit,sql,utils}  # backend-only scripts, by category
 ├── packages/                       # 7 shared workspaces: types, indicators, fibonacci, logger, trading-core, risk, utils
 ├── packages/mcp-*                  # 4 MCP servers (screenshot, app, backend, strategy) + mcp-trading (v1.5)
-├── docs/                           # BACKEND_QUICKSTART, MCP_SERVERS, UI_STYLE_GUIDE, BROWSER_TESTING, RELEASE_PROCESS, V1_X_PLAN
+├── docs/                           # MCP_SERVERS, UI_STYLE_GUIDE, BROWSER_TESTING, RELEASE_PROCESS, V1_X_PLAN; backtesting/ guides; archive/ history
+├── scripts/{audit,visual,setup,perf,sql,backtest,build,dev}          # repo-level scripts, by category
 └── pnpm-workspace.yaml
 ```
+
+### 📂 File Placement Conventions (keep the tree clean — never leave loose files at a repo/package root)
+
+- **Docs** → `docs/`. Topic guides group into a subdir (`docs/backtesting/`, …); dated reports, point-in-time analyses, and superseded version plans → `docs/archive/`. A package's own `README.md` stays with it; everything else documentation-like goes under `docs/` — never at a package root.
+- **Scripts** → `scripts/<category>/` at the repo root (`audit/`, `visual/`, `setup/`, `perf/`, `sql/`, `backtest/`, `build/`, `dev/`); backend-only scripts → `apps/backend/scripts/<category>/`. No loose `*.mjs`/`*.sh`/`*.ts` at any package or repo root.
+- **Generated artifacts are never committed** (gitignored). Canonical homes: backend logs → `apps/backend/logs/`; CLI/backtest output → `apps/backend/output/`. In code resolve them from the package root via `src/utils/runtime-dirs.ts` (`LOGS_DIR`, `OUTPUT_DIR`, `ensureDir`) — never write to cwd-relative `./output`, and never scatter `*.log`/`*.pid`/`results/` into the tree.
+- **Repo root** holds only standard project files (`README`, `CHANGELOG`, `LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`, `QUICK_START`, `CLAUDE.md`) + monorepo config (`package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `eslint.config.js`, `docker-compose.yml`, dotfiles).
+- **Package root** holds only `package.json`, `tsconfig.json`, build/lint config, `.env.example`, `README.md`, and `src/`.
+- The AI-instruction mirrors (`.cursorrules`, `.gemini/instructions.md`, `.github/copilot-instructions.md`) are generated copies of this file — after editing `CLAUDE.md`, run `pnpm sync:ai-docs` so they never drift.
 
 ---
 
@@ -386,14 +398,14 @@ docker run -d --name marketmind-postgres \
 **Configuration:** `docs/V1_X_PLAN.md` (active version plan), `README.md`, `apps/backend/.env` (gitignored)
 
 **Documentation:**
-- `docs/BACKEND_QUICKSTART.md` — backend developer guide
+- `apps/backend/README.md` — backend developer guide · `docs/backtesting/` — backtesting CLI, quickstart, optimization & testing guides
 - `docs/MCP_SERVERS.md` / `MCP_AGENT_GUIDE.md` / `MCP_SECURITY.md` — MCP overview, recipes, threat model
 - `docs/UI_STYLE_GUIDE.md` / `UI_DIALOG_PATTERNS.md` / `UI_DESIGN_SYSTEM.md` — UI catalog and patterns
 - `docs/BROWSER_TESTING.md` — Playwright + chart perf + Electron smoke
 - `docs/RELEASE_PROCESS.md` — release checklist (version updated in 6 places)
 - `docs/INFRA_RECOVERY.md` — DB recovery / WAL archiving / PITR runbook
 
-**Scripts:** `scripts/setup-github.sh`, `scripts/install-hooks.sh`, `apps/backend/scripts/backtest/*`
+**Scripts:** `scripts/setup/github.sh`, `scripts/setup/install-hooks.sh`, `apps/backend/scripts/backtest/*`
 
 ---
 

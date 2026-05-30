@@ -34,8 +34,7 @@ apps/backend/
 │   │   └── router.ts           # Main router
 │   ├── env.ts                  # Environment validation
 │   └── index.ts                # Server entry point
-├── test-api.mjs                # Manual API testing
-├── test-integration.mjs        # Integration tests
+├── scripts/                    # CLI & maintenance scripts (debug/, trading/, backtest/, maintenance/, …)
 └── types.ts                    # Type exports
 ```
 
@@ -252,10 +251,10 @@ trpc.trading.closePosition.useMutation({
 
 ```bash
 # Run integration tests
-node apps/backend/test-integration.mjs
+node apps/backend/scripts/debug/test-integration.mjs
 
 # Manual API testing
-node apps/backend/test-api.mjs
+node apps/backend/scripts/debug/test-api.mjs
 ```
 
 ## Frontend Integration

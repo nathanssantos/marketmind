@@ -21,7 +21,7 @@ App repo (`marketmind/`):
 
 Landing site repo (`../marketmind-site/`) — **separate repo, separate commit, EASY TO FORGET**:
 - [ ] `src/config/site.ts` → `stats.version`
-- [ ] `public/images/screenshot-{0..8}.png` → regenerated via `node scripts/marketing-screenshots.mjs` (see §8a) — **regenerate on every release that ships UI changes**; skip ONLY for backend-only or doc-only releases
+- [ ] `public/images/screenshot-{0..8}.png` → regenerated via `node scripts/visual/marketing-screenshots.mjs` (see §8a) — **regenerate on every release that ships UI changes**; skip ONLY for backend-only or doc-only releases
 
 If a release ships and the site still shows the old version or stale UI screenshots, this checklist was skipped.
 
@@ -132,7 +132,7 @@ pnpm --filter @marketmind/mcp-screenshot build
 
 # 3) Run the curated marketing pass — captures 9 scenes at 4K (3840x2160)
 #    dark theme + writes to ../marketmind-site/public/images/screenshot-{0..8}.png
-node scripts/marketing-screenshots.mjs
+node scripts/visual/marketing-screenshots.mjs
 ```
 
 Then **visually inspect each PNG** before staging. Common breakage:

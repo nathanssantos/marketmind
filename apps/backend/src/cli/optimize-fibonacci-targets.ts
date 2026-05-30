@@ -4,6 +4,7 @@ process.env.LOG_LEVEL = 'error';
 
 import * as fs from 'fs';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
+import { OUTPUT_DIR, ensureDir } from '../utils/runtime-dirs';
 import type { WatcherConfig, MultiWatcherBacktestConfig } from '@marketmind/types';
 import { TRADING_DEFAULTS, FILTER_DEFAULTS } from '@marketmind/types';
 import {
@@ -185,8 +186,7 @@ async function runOptimization() {
 
   printResultsTables(results);
 
-  const outputDir = './output';
-  if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+  const outputDir = ensureDir(OUTPUT_DIR);
 
   const outputFile = `${outputDir}/fibonacci-optimization-${symbol}-${interval}-${new Date().toISOString().split('T')[0]}.json`;
   const sortedResults = [...results].sort((a, b) => b.pnl - a.pnl);

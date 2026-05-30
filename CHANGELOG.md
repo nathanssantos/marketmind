@@ -45,6 +45,13 @@ A deep unification pass over **everything that talks to Binance**. The headline 
   - **Socket-invalidation expectations corrected** — `order:created`/`position:update(open)` intentionally do *not* invalidate `wallet.list` (balance-moving events pair with a dedicated `wallet:update`); the tests asserted otherwise. Verified against `RealtimeTradingSyncContext`.
 - **`drawingSyncManager.handleCreate` now null-guards the create response** before reading `.id` — defensive against a null/oddly-shaped `drawing.create` result (also silences a benign E2E console warning).
 
+### Chore — monorepo hygiene
+
+- **Loose files relocated out of package/repo roots** (file moves only, no content rewrites). Backtesting docs left `apps/backend/` root: living guides (CLI, quickstart, optimization workflow, testing) → `docs/backtesting/`, dated reports/resolved-bug docs → `docs/archive/`. Loose backend test/debug scripts (`test-api`, `test-integration`, `test-algo-order`, `test-api.sh`) → `apps/backend/scripts/debug/`; `reset-wallet.sql` → `apps/backend/scripts/sql/`.
+- **Root `scripts/` grouped into categories** — `audit/`, `visual/`, `setup/`, `perf/`, `sql/`, `backtest/`, `build/`, `dev/` (semantic renames drop redundant prefixes, e.g. `audit-shade-literals.mjs` → `audit/shade-literals.mjs`). All references updated (root + electron `package.json`, `visual-regression.yml`, docs); `marketing-screenshots.mjs`'s sibling-repo path corrected for the deeper location.
+- **Generated artifacts now have canonical, gitignored homes** — backend logs → `apps/backend/logs/`, CLI/backtest output → `apps/backend/output/`, resolved from the package root via the new `apps/backend/src/utils/runtime-dirs.ts` (`LOGS_DIR` / `OUTPUT_DIR` / `ensureDir`) instead of cwd-relative `./output`. `.gitignore` hardened (`*.pid`, `/output/`); the stale tracked `optimization.pid` untracked.
+- **File-placement conventions documented** in `CLAUDE.md` (new "File Placement Conventions" block) so this doesn't recur, and a `pnpm sync:ai-docs` script (+ `--check`) keeps the AI-assistant mirrors (`.cursorrules`, `.gemini/instructions.md`, `.github/copilot-instructions.md`) byte-identical to `CLAUDE.md`.
+
 ### Notes
 
 - No DB migrations.

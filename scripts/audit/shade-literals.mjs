@@ -12,8 +12,8 @@
  *   - _dark={{ ... }} overrides (semantic tokens auto-resolve dark/light)
  *
  * Usage:
- *   node scripts/audit-shade-literals.mjs            # exits non-zero on any hit
- *   node scripts/audit-shade-literals.mjs --list     # print every hit (no fail)
+ *   node scripts/audit/shade-literals.mjs            # exits non-zero on any hit
+ *   node scripts/audit/shade-literals.mjs --list     # print every hit (no fail)
  *
  * Files explicitly skipped: test files, primitives in ui/ that wrap Chakra
  * (alert.tsx, slider.tsx) which legitimately use Chakra's own shade scale

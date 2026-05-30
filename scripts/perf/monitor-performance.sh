@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Script de Monitoramento de Performance - MarketMind
-# Uso: ./scripts/monitor-performance.sh [duration_seconds]
+# Uso: ./scripts/perf/monitor-performance.sh [duration_seconds]
 
 DURATION=${1:-300}  # Default: 5 minutos
 INTERVAL=5
-LOG_FILE="performance-monitor-$(date +%Y%m%d-%H%M%S).log"
+mkdir -p logs
+LOG_FILE="logs/performance-monitor-$(date +%Y%m%d-%H%M%S).log"
 
 echo "🔍 Monitorando Performance do MarketMind"
 echo "Duração: ${DURATION}s (${INTERVAL}s por iteração)"

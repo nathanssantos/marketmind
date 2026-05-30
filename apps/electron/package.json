@@ -59,7 +59,7 @@
     "build:main": "VITE_TARGET=electron vite build",
     "bundle:analyze": "ANALYZE=1 pnpm build:web",
     "test:e2e:electron": "pnpm build:main && playwright test --project=electron --reporter=list",
-    "clear-storage": "node ../../scripts/clear-storage.mjs",
+    "clear-storage": "node ../../scripts/dev/clear-storage.mjs",
     "clean": "rm -rf dist dist-web dist-electron node_modules"
   },
   "dependencies": {

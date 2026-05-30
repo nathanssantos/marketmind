@@ -182,7 +182,7 @@ Após otimização bem-sucedida:
 
 2. **Atualizar documentação**
    - Adicionar métricas otimizadas ao README
-   - Atualizar BACKTEST_ANALYSIS_2024.md
+   - Atualizar ../archive/BACKTEST_ANALYSIS_2024.md
 
 3. **Preparar para trading real**
    - Testar com paper trading (simulador)

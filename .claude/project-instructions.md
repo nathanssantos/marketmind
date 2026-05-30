@@ -403,8 +403,8 @@ describe('calculateSMA', () => {
 - `scripts/README.md` - Available scripts documentation
 
 ### Scripts
-- `scripts/setup-github.sh` - GitHub repository setup
-- `scripts/install-hooks.sh` - Git hooks installation
+- `scripts/setup/github.sh` - GitHub repository setup
+- `scripts/setup/install-hooks.sh` - Git hooks installation
 - `apps/backend/test-integration.mjs` - Backend integration tests
 
 ---

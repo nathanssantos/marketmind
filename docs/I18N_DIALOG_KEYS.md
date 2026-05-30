@@ -1,6 +1,6 @@
 # Dialog i18n key convention
 
-> **Authority:** v1.6 Track E.5. CI gate: `scripts/audit-dialog-i18n-keys.mjs`.
+> **Authority:** v1.6 Track E.5. CI gate: `scripts/audit/dialog-i18n-keys.mjs`.
 
 Every dialog-scoped translation key follows the shape:
 
@@ -69,7 +69,7 @@ Predictable shape lets:
 
 ## CI
 
-`scripts/audit-dialog-i18n-keys.mjs` walks every locale's JSON and reports:
+`scripts/audit/dialog-i18n-keys.mjs` walks every locale's JSON and reports:
 
 - **`forbidden-leaf`** — a key under `dialogs.<dialog>.*` that's not in the allowed enum.
 - **`missing-translation`** — a key exists in `en` but not in another locale.
@@ -84,7 +84,7 @@ When a dialog gets rewritten under Track A:
 1. Move every visible string into `<feature>.dialogs.<dialogName>.*` per the shape above.
 2. Delete the old keys.
 3. Update `en` first (canonical), then mirror the structure to `pt/es/fr`.
-4. Run `node scripts/audit-dialog-i18n-keys.mjs` — should report clean.
+4. Run `node scripts/audit/dialog-i18n-keys.mjs` — should report clean.
 5. The dialog itself imports nothing new for i18n; just calls `t(...)` with the new keys.
 
 ## Strictness
@@ -92,5 +92,5 @@ When a dialog gets rewritten under Track A:
 The CI gate (`pnpm lint:audit:dialog-i18n` once wired) defaults to `--strict` mode (exit 1 on any violation). To inspect issues without failing during local development:
 
 ```bash
-node scripts/audit-dialog-i18n-keys.mjs --list
+node scripts/audit/dialog-i18n-keys.mjs --list
 ```

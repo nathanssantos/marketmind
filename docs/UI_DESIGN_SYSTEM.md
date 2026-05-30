@@ -1,6 +1,6 @@
 # MarketMind UI design system
 
-> **Authority:** v1.6 cycle. Audit script: `scripts/audit-dialog-rules.mjs` and `scripts/audit-shade-literals.mjs`.
+> **Authority:** v1.6 cycle. Audit script: `scripts/audit/dialog-rules.mjs` and `scripts/audit/shade-literals.mjs`.
 >
 > **Quick answers**
 > - **Where do primitives live?** `@marketmind/ui` (Tier 1 + Tier 2) or `apps/electron/src/renderer/components/ui/` (Tier 3 — i18n / runtime-coupled). Always import via `@renderer/components/ui` from app-site.
@@ -11,7 +11,7 @@
 
 ## The 13 dialog rules (v1.6)
 
-These are the contracts every dialog honors. Codified by `scripts/audit-dialog-rules.mjs --strict`:
+These are the contracts every dialog honors. Codified by `scripts/audit/dialog-rules.mjs --strict`:
 
 1. **Creation lives in dedicated dialogs, never in tabs.** A "+ Create X" button in a list view opens a dedicated `<DialogShell>`-based dialog for that one action.
 2. **Settings is for *preferences and account state*, not *records you create*.** Wallets, trading profiles, custom symbols, watchers, screener saved sets — those go in dedicated management surfaces.
@@ -81,7 +81,7 @@ These are the contracts every dialog honors. Codified by `scripts/audit-dialog-r
 
 ## Color — semantic tokens only
 
-**Every color in the renderer flows through Chakra's semantic token system.** No `color="red.500"` literals. Audited by `scripts/audit-shade-literals.mjs --strict`.
+**Every color in the renderer flows through Chakra's semantic token system.** No `color="red.500"` literals. Audited by `scripts/audit/shade-literals.mjs --strict`.
 
 ### Domain palettes
 

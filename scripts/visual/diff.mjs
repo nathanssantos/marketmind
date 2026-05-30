@@ -5,8 +5,8 @@
  * `threshold=0.2` (relaxed enough to ignore antialiasing noise).
  *
  * Usage:
- *   node scripts/visual-diff.mjs <session-dir>
- *   node scripts/visual-diff.mjs              # picks the most recent session
+ *   node scripts/visual/diff.mjs <session-dir>
+ *   node scripts/visual/diff.mjs              # picks the most recent session
  *
  * Side effect: writes a PNG diff for every divergent file under
  *   <session-dir>/diffs/<filename>

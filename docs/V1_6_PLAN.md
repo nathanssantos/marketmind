@@ -157,7 +157,7 @@ Trading/
 Smaller dialogs (< 200 LOC) stay flat. The decision goes by complexity, not arbitrary cutoff — but the *target* is that no single `*.tsx` file in the dialog layer exceeds ~200-250 LOC after the sweep.
 
 ### E.9 — Audit script for the new conventions
-`scripts/audit-dialog-rules.mjs` — single script enforcing every Track E + Track A rule that's mechanically checkable. Forbids in `apps/electron/src/renderer/`:
+`scripts/audit/dialog-rules.mjs` — single script enforcing every Track E + Track A rule that's mechanically checkable. Forbids in `apps/electron/src/renderer/`:
 - New files matching `*Modal.tsx` (only `*Dialog.tsx` is allowed; existing `*Modal.tsx` files are tracked in a known-rename list during the sweep, removed once renames land)
 - Hand-rolled `<Dialog.Root>` outside `ui/` (must use `<DialogShell>` or `<FormDialog>`)
 - Raw `maxW=` on a `Dialog.Content`/`DialogContent`

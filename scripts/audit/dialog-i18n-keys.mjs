@@ -16,8 +16,8 @@
  * dialog rewrites land, more subtrees show up and get checked.
  *
  * Usage:
- *   node scripts/audit-dialog-i18n-keys.mjs           # exits non-zero on any violation
- *   node scripts/audit-dialog-i18n-keys.mjs --list    # print every hit (no fail)
+ *   node scripts/audit/dialog-i18n-keys.mjs           # exits non-zero on any violation
+ *   node scripts/audit/dialog-i18n-keys.mjs --list    # print every hit (no fail)
  */
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';

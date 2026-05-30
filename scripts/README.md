@@ -5,7 +5,7 @@ Scripts úteis para gerenciamento do repositório e desenvolvimento.
 ## ⚡ Setup Rápido (RECOMENDADO)
 
 ```bash
-./scripts/setup.sh
+./scripts/setup/setup.sh
 ```
 
 **Setup automático completo que:**
@@ -28,9 +28,28 @@ Scripts úteis para gerenciamento do repositório e desenvolvimento.
 
 ---
 
+## 📂 Estrutura (scripts agrupados por categoria)
+
+```
+scripts/
+├── audit/      # auditorias de código/UI (shade-literals, dialog-rules, panel-rules, i18n, files, indicators)
+├── visual/     # screenshots e diffs visuais (gallery, diff, marketing-screenshots)
+├── setup/      # setup do ambiente (setup, github, install-hooks, enable-testnet)
+├── perf/       # performance (chart-perf, baselines, monitor-performance)
+├── sql/        # scripts SQL avulsos
+├── backtest/   # runners de backtest no nível do monorepo
+├── build/      # build/release (notarize)
+├── dev/        # utilitários de dev (clear-storage, sync-ai-instructions)
+└── mcp-install.mjs   # instalador dos MCP servers (`pnpm mcp:install`)
+```
+
+> Scripts específicos do backend ficam em `apps/backend/scripts/<categoria>/`
+> (trading, debug, maintenance, data, audit, sql, utils). Nunca deixe scripts
+> soltos na raiz de um pacote.
+
 ## 📜 Scripts Disponíveis
 
-### `setup.sh` ⭐
+### `setup/setup.sh` ⭐
 
 Script de setup automático completo do projeto.
 
@@ -49,7 +68,7 @@ Script para limpar completamente o storage do Electron (dados persistidos).
 ```bash
 npm run clear-storage
 # ou
-node scripts/clear-storage.mjs
+node scripts/dev/clear-storage.mjs
 ```
 
 **⚠️ ATENÇÃO:** Isso remove TODOS os dados salvos. Use com cuidado!
@@ -67,29 +86,9 @@ Script automatizado para configurar o repositório no GitHub.
 
 Script para instalar Git Hooks de proteção local.
 
-### `test-gemini.mjs`
+### `setup/github.sh`
 
-Script para testar conexão e funcionalidade da API do Google Gemini.
-
-**O que faz:**
-- ✅ Testa múltiplos modelos Gemini (2.0 Flash Exp, 1.5 Flash, 1.5 Pro)
-- ✅ Verifica se a API key é válida
-- ✅ Testa funcionalidade de chat
-- ✅ Identifica problemas comuns (rate limit, modelo indisponível, etc)
-
-**Uso:**
-
-```bash
-# Com variável de ambiente
-GEMINI_API_KEY=your_key node scripts/test-gemini.mjs
-
-# Ou passando como argumento
-node scripts/test-gemini.mjs your_key
-```
-
-### `test-ai.mjs`
-
-Script para testar todos os provedores de AI (OpenAI, Claude, Gemini).
+Script para criar e configurar o repositório no GitHub.
 
 **O que faz:**
 - ✅ Verifica instalação do GitHub CLI
@@ -103,7 +102,7 @@ Script para testar todos os provedores de AI (OpenAI, Claude, Gemini).
 **Uso:**
 
 ```bash
-./scripts/setup-github.sh
+./scripts/setup/github.sh
 ```
 
 **Pré-requisitos:**
@@ -120,7 +119,7 @@ Script para testar todos os provedores de AI (OpenAI, Claude, Gemini).
 **Uso:**
 
 ```bash
-./scripts/install-hooks.sh
+./scripts/setup/install-hooks.sh
 ```
 
 **Nota:** Como o repositório é privado, proteção de branches via GitHub requer GitHub Pro. Este hook fornece proteção local.
