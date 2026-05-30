@@ -21,9 +21,13 @@ const mockGetAccountCommissionRate = vi.fn();
 vi.mock('binance', () => ({
   MainClient: class MockMainClient {
     getTradeFee = mockGetTradeFee;
+    setTimeOffset = (): void => {};
+    getTimeOffset = (): number => 0;
   },
   USDMClient: class MockUSDMClient {
     getAccountCommissionRate = mockGetAccountCommissionRate;
+    setTimeOffset = (): void => {};
+    getTimeOffset = (): number => 0;
   },
 }));
 

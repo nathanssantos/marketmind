@@ -1,9 +1,12 @@
 import { DEFAULT_CURRENCY } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
-import { MainClient, USDMClient } from 'binance';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { orders, positions, wallets } from '../../db/schema';
+import {
+  createBinanceFuturesClientFromCredentials,
+  createBinanceSpotClientFromCredentials,
+} from '../../services/binance-client';
 import { encryptApiKey } from '../../services/encryption';
 import { getWebSocketService } from '../../services/websocket';
 import { protectedProcedure, router } from '../../trpc';
@@ -93,13 +96,14 @@ export const walletCrudRouter = router({
       try {
         let initialBalance = 0;
 
+        const credentials = {
+          apiKey: input.apiKey,
+          apiSecret: input.apiSecret,
+          testnet: input.walletType === 'testnet',
+        };
+
         if (input.marketType === 'FUTURES') {
-          const client = new USDMClient({
-            api_key: input.apiKey,
-            api_secret: input.apiSecret,
-            testnet: input.walletType === 'testnet',
-            disableTimeSync: true,
-          });
+          const client = createBinanceFuturesClientFromCredentials(credentials);
           const accountInfo = await client.getAccountInformationV3();
 
           if (!accountInfo) throw badRequest('Invalid Binance Futures API credentials');
@@ -107,12 +111,7 @@ export const walletCrudRouter = router({
           const usdtAsset = accountInfo.assets?.find((a) => a.asset === 'USDT');
           initialBalance = usdtAsset?.marginBalance ? parseFloat(String(usdtAsset.marginBalance)) : 0;
         } else {
-          const client = new MainClient({
-            api_key: input.apiKey,
-            api_secret: input.apiSecret,
-            testnet: input.walletType === 'testnet',
-            disableTimeSync: true,
-          });
+          const client = createBinanceSpotClientFromCredentials(credentials);
           const accountInfo = await client.getAccountInformation();
 
           if (!accountInfo) throw badRequest('Invalid Binance API credentials');

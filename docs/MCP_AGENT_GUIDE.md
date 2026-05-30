@@ -216,7 +216,7 @@ app.inspectStore { store: "indicator" }
 If the bug repros only when fixtures are off, that's a load-bearing signal — the failure is in the wiring between renderer, tRPC, and backend, not in the renderer alone. Disable fixtures before driving:
 
 ```bash
-MM_MCP_FIXTURES=false node scripts/visual-gallery.mjs
+MM_MCP_FIXTURES=false node scripts/visual/gallery.mjs
 ```
 
 Anything you can do via MCP tools, a real user can also do — and that constraint keeps the repro honest.

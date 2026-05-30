@@ -1,118 +1,118 @@
-# Sistema de Otimização de Trailing Stop
+# Trailing Stop Optimization System
 
-Este é o **sistema principal de otimização** do MarketMind para encontrar os melhores parâmetros de trailing stop.
+This is the **main optimization system** for MarketMind, used to find the best trailing stop parameters.
 
-## Visão Geral
+## Overview
 
-O sistema testa combinações de parâmetros de trailing stop para LONG e SHORT de forma independente, usando dados históricos granulares (5m) para simular o comportamento real do trailing stop.
+The system tests combinations of trailing stop parameters for LONG and SHORT independently, using granular historical data (5m) to simulate real trailing stop behavior.
 
-## Uso Básico
+## Basic Usage
 
 ```bash
-# Modo rápido (25 combinações, validação)
+# Quick mode (25 combinations, validation)
 pnpm tsx src/cli/optimize-trailing-stop.ts --quick-test
 
-# Modo médio (82,944 combinações, recomendado)
+# Medium mode (82,944 combinations, recommended)
 pnpm tsx src/cli/optimize-trailing-stop.ts --mode=medium
 
-# Modo completo (milhões de combinações, demorado)
+# Full mode (millions of combinations, slow)
 pnpm tsx src/cli/optimize-trailing-stop.ts --mode=full
 ```
 
-## Parâmetros CLI
+## CLI Parameters
 
-| Parâmetro | Default | Descrição |
-|-----------|---------|-----------|
-| `--symbol` | BTCUSDT | Par de trading |
-| `--start` | 2023-01-01 | Data inicial |
-| `--end` | 2026-01-31 | Data final |
-| `--mode` | medium | Modo: quick, medium, full |
-| `--quick-test` | false | Alias para --mode=quick |
-| `--top-n` | 20 | Quantidade de melhores resultados |
-| `--verbose` | false | Log detalhado |
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--symbol` | BTCUSDT | Trading pair |
+| `--start` | 2023-01-01 | Start date |
+| `--end` | 2026-01-31 | End date |
+| `--mode` | medium | Mode: quick, medium, full |
+| `--quick-test` | false | Alias for --mode=quick |
+| `--top-n` | 20 | Number of top results |
+| `--verbose` | false | Detailed logging |
 
-## Modos de Otimização
+## Optimization Modes
 
-### Quick (Validação)
-- **Combinações:** 25
-- **Tempo:** ~1 minuto
-- **Uso:** Validar que o sistema funciona
+### Quick (Validation)
+- **Combinations:** 25
+- **Time:** ~1 minute
+- **Use:** Validate that the system works
 
-### Medium (Recomendado)
-- **Combinações:** 82,944 (288 × 288)
-- **Tempo:** ~80 minutos (3 anos)
-- **Parâmetros:**
+### Medium (Recommended)
+- **Combinations:** 82,944 (288 × 288)
+- **Time:** ~80 minutes (3 years)
+- **Parameters:**
   - Activation: 70-120% (step 10)
   - Distance: 20-50% (step 10)
   - ATR Multiplier: 1.5-3.0 (step 0.5)
   - Breakeven: 0.5-1.5% (step 0.5)
 
-### Full (Extensivo)
-- **Combinações:** 25M+
-- **Tempo:** ~20+ horas
-- **Uso:** Busca exaustiva
+### Full (Exhaustive)
+- **Combinations:** 25M+
+- **Time:** ~20+ hours
+- **Use:** Exhaustive search
 
-## Parâmetros Otimizados
+## Optimized Parameters
 
-### Por Direção (LONG/SHORT independentes)
+### Per Direction (independent LONG/SHORT)
 
-| Parâmetro | Descrição | Range |
-|-----------|-----------|-------|
-| `activationPercent` | % do TP para ativar trailing | 50-150% |
-| `distancePercent` | Distância do trailing após ativação | 10-60% |
-| `atrMultiplier` | Multiplicador ATR para cálculo | 1.0-4.0 |
-| `breakevenProfitThreshold` | Threshold para mover SL para breakeven | 0.5-3.0% |
+| Parameter | Description | Range |
+|-----------|-------------|-------|
+| `activationPercent` | % of TP to activate trailing | 50-150% |
+| `distancePercent` | Trailing distance after activation | 10-60% |
+| `atrMultiplier` | ATR multiplier for calculation | 1.0-4.0 |
+| `breakevenProfitThreshold` | Threshold to move SL to breakeven | 0.5-3.0% |
 
-## Métricas de Score
+## Score Metrics
 
-O sistema usa um score composto para rankear combinações:
+The system uses a composite score to rank combinations:
 
 ```
 Score = PnL × 0.4 + Sharpe × 1000 × 0.4 - MaxDD × 10000 × 0.2
 ```
 
-- **PnL (40%):** Lucro/prejuízo total
-- **Sharpe (40%):** Retorno ajustado ao risco
-- **Max Drawdown (20%):** Penalidade por drawdown alto
+- **PnL (40%):** Total profit/loss
+- **Sharpe (40%):** Risk-adjusted return
+- **Max Drawdown (20%):** Penalty for high drawdown
 
 ## Output
 
-O sistema gera:
-1. **Top N resultados** com configs completas
-2. **JSON da melhor config** pronto para copiar
-3. **Estatísticas de trailing:** ativações e exits
+The system generates:
+1. **Top N results** with full configs
+2. **Best config JSON** ready to copy
+3. **Trailing statistics:** activations and exits
 
-## Arquivos Relacionados
+## Related Files
 
 ```
 apps/backend/src/
 ├── cli/
-│   ├── optimize-trailing-stop.ts    # CLI principal
-│   ├── validate-trailing-backtest.ts # Validação
-│   └── shared-backtest-config.ts    # Config compartilhada
+│   ├── optimize-trailing-stop.ts    # Main CLI
+│   ├── validate-trailing-backtest.ts # Validation
+│   └── shared-backtest-config.ts    # Shared config
 └── services/backtesting/trailing-stop-backtest/
     ├── index.ts                     # Exports
-    ├── types.ts                     # Tipos
-    ├── SafeLogger.ts               # Controle de output
-    ├── GranularPriceIndex.ts       # Índice de preços 5m
-    └── TrailingStopSimulator.ts    # Simulador core
+    ├── types.ts                     # Types
+    ├── SafeLogger.ts               # Output control
+    ├── GranularPriceIndex.ts       # 5m price index
+    └── TrailingStopSimulator.ts    # Core simulator
 ```
 
 ## Performance
 
-| Dados | Combinações | Tempo Estimado |
-|-------|-------------|----------------|
-| 1 mês | 82,944 | ~20 min |
-| 6 meses | 82,944 | ~40 min |
-| 3 anos | 82,944 | ~80 min |
+| Data | Combinations | Estimated Time |
+|------|-------------|----------------|
+| 1 month | 82,944 | ~20 min |
+| 6 months | 82,944 | ~40 min |
+| 3 years | 82,944 | ~80 min |
 
-### Otimizações Futuras
-- [ ] Paralelização com worker threads
-- [ ] Cache de indicadores calculados
-- [ ] Early exit para combinações ruins
-- [ ] Streaming de klines (reduzir memória)
+### Future Optimizations
+- [ ] Parallelization with worker threads
+- [ ] Cache for computed indicators
+- [ ] Early exit for poor combinations
+- [ ] Kline streaming (reduce memory)
 
-## Exemplo de Resultado
+## Example Result
 
 ```json
 {
@@ -133,52 +133,52 @@ apps/backend/src/
 }
 ```
 
-## Teste das 106 Estratégias
+## Testing the 106 Strategies
 
-O sistema possui **106 estratégias** em `strategies/builtin/*.json`. Após encontrar a config ótima de trailing stop:
+The system has **106 strategies** in `strategies/builtin/*.json`. After finding the optimal trailing stop config:
 
 ### Workflow
 
 ```
-1. Otimização Trailing Stop (atual)
-   └── Encontrar melhor config LONG/SHORT
+1. Trailing Stop Optimization (current)
+   └── Find best LONG/SHORT config
 
-2. Screening de Estratégias
-   └── Testar todas 106 com config ótima
-   └── Filtrar: PnL > 0, Trades > 50, WinRate > 40%
-   └── Resultado: ~30 estratégias
+2. Strategy Screening
+   └── Test all 106 with optimal config
+   └── Filter: PnL > 0, Trades > 50, WinRate > 40%
+   └── Result: ~30 strategies
 
 3. Ranking
    └── Score = PnL×0.3 + Sharpe×0.4 + (1-DD)×0.3
-   └── Validar com Walk-Forward
-   └── Resultado: Top 15 estratégias
+   └── Validate with Walk-Forward
+   └── Result: Top 15 strategies
 
-4. Otimização Individual
-   └── Otimizar params específicos de cada estratégia
-   └── Testar combinações de filtros
-   └── Validar com Monte Carlo
+4. Individual Optimization
+   └── Optimize specific params per strategy
+   └── Test filter combinations
+   └── Validate with Monte Carlo
 ```
 
 ### CLI (TODO)
 
 ```bash
-# Testar todas as estratégias
+# Test all strategies
 pnpm tsx src/cli/test-all-strategies.ts \
   --symbol BTCUSDT \
   --interval 2h \
   --start 2023-01-01 \
   --end 2026-01-31
 
-# Otimizar estratégia específica
+# Optimize specific strategy
 pnpm tsx src/cli/optimize-strategy.ts \
   --strategy momentum-breakout-2025 \
   --symbol BTCUSDT
 ```
 
-### Categorias
+### Categories
 
-| Categoria | Exemplos | ~Qtd |
-|-----------|----------|------|
+| Category | Examples | ~Count |
+|----------|----------|--------|
 | Larry Williams | 9.1, 9.2, 9.3, 9.4 | 4 |
 | Momentum | momentum-breakout-2025 | 15 |
 | Mean Reversion | rsi-oversold-bounce | 12 |
@@ -187,14 +187,14 @@ pnpm tsx src/cli/optimize-strategy.ts \
 | Pattern | engulfing, three-bar | 10 |
 | Divergence | rsi-divergence, macd | 8 |
 | Volume/Order Flow | whale-accumulation | 10 |
-| Outros | scalping, grid-trading | 12 |
+| Other | scalping, grid-trading | 12 |
 
 ---
 
-## Próximos Passos
+## Next Steps
 
-1. ✅ Otimização trailing stop (em execução)
-2. [ ] Testar 106 estratégias com config ótima
-3. [ ] Eleger top 15-20 estratégias
-4. [ ] Otimizar estratégias eleitas individualmente
-5. [ ] Aplicar melhor config como default do sistema
+1. ✅ Trailing stop optimization (running)
+2. [ ] Test 106 strategies with optimal config
+3. [ ] Select top 15-20 strategies
+4. [ ] Individually optimize selected strategies
+5. [ ] Apply best config as system default

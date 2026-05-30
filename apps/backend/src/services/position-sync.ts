@@ -148,7 +148,7 @@ export class PositionSyncService {
               eq(tradeExecutions.marketType, 'FUTURES')
             )
           ),
-        getPositions(client),
+        getPositions(client, { walletId: wallet.id }),
       ]);
 
       const exchangePositionsBySymbol = new Map<string, FuturesPosition>(

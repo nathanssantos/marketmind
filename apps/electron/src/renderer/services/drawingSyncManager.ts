@@ -51,8 +51,10 @@ const handleCreate = async (drawing: Drawing, sync: SymbolSync) => {
       zIndex: drawing.zIndex,
     });
 
-    const created = result as BackendDrawing;
-    useDrawingStore.getState().setBackendId(drawing.id, drawing.symbol, drawing.interval, created.id);
+    const created = result as BackendDrawing | null;
+    if (created?.id != null) {
+      useDrawingStore.getState().setBackendId(drawing.id, drawing.symbol, drawing.interval, created.id);
+    }
   } catch (e) {
     console.warn('drawingSync create failed', e);
   } finally {

@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.23.3] - 2026-05-29
+
+A deep unification pass over **everything that talks to Binance**. The headline is a clock-skew fix that was silently failing every signed Futures request (`-1021`), but the bulk of the release is structural: one client factory, one error vocabulary, one cache, one WebSocket-stream base, one kline-stream base — replacing definitions that had drifted apart across ~30 call sites and were each doing the same things differently. No behavioral change for the user beyond the bugs fixed; the win is that the next Binance change touches one file, not ten.
+
+### Fixed
+
+- **Every signed Binance Futures request failed with `-1021` when the host clock drifted ahead** — all REST clients were built with `disableTimeSync: true`, so the SDK never corrected for clock skew. A dev/prod machine whose NTP clock ran even ~1s ahead got `"Timestamp for this request was 1000ms ahead of the server's time"` on every private call (`getPositions`, order placement, manual SL/TP, etc.), and `recvWindow` can't help in the *ahead* direction. Enabling the SDK's per-client sync wasn't viable — our factories mint a fresh client on each call site, which would leak an hourly timer per request and race the first signed call. Fix: a process-wide `binance-time-sync` singleton bootstraps one `/time` offset at startup (awaited before any authed client is created), refreshes every 5 min, and stamps the live offset onto each freshly created client via `setTimeOffset` + a `getTimeOffset` override so retries re-read it. Clients keep `disableTimeSync: true` so none spin up their own timer. (#715)
+- **Manual chart SL/TP orders still threw `-1021` after the time-sync fix landed** — the exchange-abstraction layer (`exchange/binance/futures-client.ts`) constructed its *own* `new USDMClient` without going through the offset-applying factory, and never wired `getTimeOffset`, so even the self-heal retry couldn't recover. Routing it through `createBinanceFuturesClientFromCredentials` was the actual fix for the order-submission path. (#716)
+- **`guardBinanceCall` -1021 branch couldn't self-heal** — it now triggers a real `refreshBinanceTimeOffset()` (deduped via an in-flight promise) and records the resync, so a transient skew recovers on the next attempt instead of failing the whole call chain. (#717)
+
+### Changed
+
+- **One Binance client factory** — `binance-client.ts` is now the single source of truth for client construction. New `BinanceCredentials` interface + `createBinanceSpotClientFromCredentials` / `createBinanceFuturesClientFromCredentials`, both of which apply the process-wide time offset. The price-only (`*ForPrices`) builders apply it too. `binance-futures-client.ts` and the `exchange/binance/*` wrappers no longer duplicate `new USDMClient(...)` — they all funnel here. (#716)
+- **One Binance error vocabulary** — new `binance-errors.ts` (`binanceErrorCode`, `binanceErrorText`, `isTimestampError`, `isOrderNotFound`, `isBenignMarginTypeError`) replaces ~10 scattered, subtly-different copies of "is this error code -2011 / -4046 / -1021?" parsing. `retry.ts#isRetryableError` is now code-aware (builds its error string from code + text + cause), and the API-cache self-heal imports `isTimestampError` instead of string-matching. (#718, #722)
+- **One Binance response cache** — the bespoke `WeakMap` symbol-config cache in `binance-futures-client.ts` is gone; symbol config now lives in `binanceApiCache` under a new `SYMBOL_CONFIG` TTL (10s), keyed by wallet. `getPositions(client, { symbol?, walletId? })` gained an options shape, and a `__resetSymbolConfigCache(walletId?)` test hook. New `BinanceApiStats` (`timestampResyncs` / `ipBans` / `networkOutages`) exposed via `getStats()`. (#720, #723)
+- **One WebSocket-stream base** — new `BinanceWebSocketStreamBase` abstract class centralizes `start()`/`stop()`, message/error/reconnected wiring, and a 2s reconnect-dedupe. The book-ticker, agg-trade, depth, mark-price, and liquidation streams are now thin subclasses implementing only `handleMessage` / `onReconnected`. (#721, #724)
+- **One kline-stream base** — new `BinanceKlineStreamBase` centralizes the full lifecycle, health watchdog, and persistence shared by the spot and futures kline streams; `binance-kline-stream.ts` is now two ~20-line subclasses (futures adds `onKlineClose` handlers + `autoStartOnSubscribe`). (#726)
+- **Fee cache uses the shared `KeyedCache`** — `KeyedCache` gained a `maxEntries` constructor param (FIFO eviction); `fee-service.ts` dropped its hand-rolled `Map` for it. (#719)
+
+### Removed
+
+- **Dead second rate-limiter** — `binance-rate-limiter.ts` (a never-imported duplicate `BinanceRateLimiter`) deleted. (#718)
+
+### CI
+
+- **Per-job `timeout-minutes`** added to `ci-cd.yml` (lint 15, test 25, browser 20, build 15) so a hung job fails fast instead of burning the full runner budget; the lint job now installs with `--ignore-scripts` to skip the `@stoqey/ib` → `node-gyp` native rebuild that was hanging it for ~2h. (#725)
+- **Pinned CI to pnpm 10.24.0 (was floating `'9'`) across all four workflows** (`ci-cd`, `desktop-release`, `security`, `visual-regression`) — the actual root cause of the install hangs. pnpm 9 ignores the `onlyBuiltDependencies` allowlist in `pnpm-workspace.yaml`, so on CI it node-gyp-rebuilt `cpu-features` / `unix-dgram` / `ssh2` (transitive `@stoqey/ib` deps we never execute) and re-ran the redundant `@playwright/browser-chromium` postinstall download — one of which stalled the `Install dependencies` step ~24 min until the new timeout killed it. Local dev already runs pnpm 10, which honors the allowlist and builds only `canvas` / `electron` / `electron-winstaller` / `esbuild`; pinning CI to the same version makes the runner match the known-green local environment. (#728)
+
+### Tests
+
+- **Timing/perf-sensitive E2E specs isolated for precision** — `realistic-pan` (render fps / dropped frames) and `live-stream-throttle` (exact throttle-window flush counts) assert on real wall-clock windows, so under the CI runner's 4-worker oversubscription their waits drifted and the exact-count assertions flaked. They now run in a dedicated `chromium-serial` Playwright project (`workers: 1`, excluded from the parallel `chromium` project), giving them an isolated CPU so timing is accurate. Verified deterministic across repeated serial runs (30/30). No app change — the throttle/pan behavior was already correct.
+- **Fixed `scripts/visual/{gallery,marketing-screenshots}.mjs` imports** broken by the script reorg — their `../packages/mcp-screenshot/...` ESM imports were one level too shallow after moving into `scripts/visual/` (resolved to `scripts/packages/...`); corrected to `../../packages/...`. This unbreaks the Visual Regression workflow.
+- **Playwright E2E suite stabilized — 168/168 green, deterministic across repeated runs.** The Electron E2E job only runs on PRs and had been admin-merged past for many PRs, so ~17 spec failures had accumulated unnoticed (all pre-existing — they reproduce on the v1.23.2 tag, none are regressions from this release). Root causes were stale tests left behind by UI refactors plus a handful of real races, fixed deterministically (signal-based waits — no `.skip`, retries, or timeout padding):
+  - **`buildLayout` test helper wrote panels to the legacy per-tab `activeLayoutId`** — v1.5 lifted `activeLayoutId` to the top-level store (which `ChartGrid` renders), so `orderBook`/`orderFlowMetrics` panels were added to a preset that was never on screen and never mounted. `waitForPanelsMounted` then *silently swallowed* the missing-panel timeout, hiding it. Fixed the helper to target `state.activeLayoutId` and made `waitForPanelsMounted` strict. Fixes `pause-when-idle`, `realistic-pan`, `live-stream-throttle`.
+  - **Backtest progress race** — `useBacktestRun` drops socket events until `backtestId` is set from the (async) mutation response; tests emitted progress before it armed. Added a `data-backtest-id` DOM signal on the running view and made the tests wait for it. Fixes `backtest-modal-flow`.
+  - **Toolbar/Settings/Screener/Wallet refactors** — Backtest/Screener/Analytics moved into the Tools popover; Settings tabs are now rail-driven from `SETTINGS_TAB_DEFS` (the `updates` controls live on the `about` tab; there is no `wallets` tab — creation moved to the Wallets manager dialog); the password policy now requires upper+lower+digit+symbol. Updated the stale specs to match.
+  - **Chart interaction** — indicator popover toggles are `Switch` labels (use `getByLabel`, not the chart-legend text), and the indicator/drawing panels need the chart panel explicitly focused; `getCanvasRect` now clamps to the visible viewport so a final click can't land on the tab bar.
+  - **Socket-invalidation expectations corrected** — `order:created`/`position:update(open)` intentionally do *not* invalidate `wallet.list` (balance-moving events pair with a dedicated `wallet:update`); the tests asserted otherwise. Verified against `RealtimeTradingSyncContext`.
+- **`drawingSyncManager.handleCreate` now null-guards the create response** before reading `.id` — defensive against a null/oddly-shaped `drawing.create` result (also silences a benign E2E console warning).
+
+### Chore — monorepo hygiene
+
+- **Loose files relocated out of package/repo roots** (file moves only, no content rewrites). Backtesting docs left `apps/backend/` root: living guides (CLI, quickstart, optimization workflow, testing) → `docs/backtesting/`, dated reports/resolved-bug docs → `docs/archive/`. Loose backend test/debug scripts (`test-api`, `test-integration`, `test-algo-order`, `test-api.sh`) → `apps/backend/scripts/debug/`; `reset-wallet.sql` → `apps/backend/scripts/sql/`.
+- **Root `scripts/` grouped into categories** — `audit/`, `visual/`, `setup/`, `perf/`, `sql/`, `backtest/`, `build/`, `dev/` (semantic renames drop redundant prefixes, e.g. `audit-shade-literals.mjs` → `audit/shade-literals.mjs`). All references updated (root + electron `package.json`, `visual-regression.yml`, docs); `marketing-screenshots.mjs`'s sibling-repo path corrected for the deeper location.
+- **Generated artifacts now have canonical, gitignored homes** — backend logs → `apps/backend/logs/`, CLI/backtest output → `apps/backend/output/`, resolved from the package root via the new `apps/backend/src/utils/runtime-dirs.ts` (`LOGS_DIR` / `OUTPUT_DIR` / `ensureDir`) instead of cwd-relative `./output`. `.gitignore` hardened (`*.pid`, `/output/`); the stale tracked `optimization.pid` untracked.
+- **File-placement conventions documented** in `CLAUDE.md` (new "File Placement Conventions" block) so this doesn't recur.
+- **English standardized across the whole monorepo** — ~80 mixed PT/EN files translated to English (doc prose, READMEs, comments/JSDoc, CLI `console.*` output, thrown-error text), per `CLAUDE.md` rule #10 (now explicit that comments and CLI output count). The only intentional non-English left is language-specific data: language endonyms in the language selector, proper nouns (`São Paulo`, `B3 Brasil Bolsa Balcão`), timezone IDs, and the i18n `locales/<lang>/` files. type-check + the full backend (4705) and electron (2532) unit suites pass post-translation.
+- **Single source of truth for AI-assistant instructions** — `CLAUDE.md` is now the only real instruction file; `.cursorrules`, `.gemini/instructions.md`, `.github/copilot-instructions.md`, and `.claude/project-instructions.md` (previously a stale 946-line duplicate) are **symlinks** to it. Edit `CLAUDE.md` once; every tool picks it up.
+
+### Notes
+
+- No DB migrations.
+- Backend restart required (time-sync bootstraps at boot).
+- **Host-clock note:** the app self-heals skew, but if your machine's clock is the root cause, fix NTP at the source — on macOS, `sudo sntp -sS time.apple.com`.
+
 ## [1.23.2] - 2026-05-24
 
 Custom-symbol gating + wallet-balance correctness. POLITIFI (and any future synthetic basket) now visibly says "Trading not available on indices" in the ticket and auto-trading panels, the backend stops asking Binance about leverage for symbols Binance doesn't know, and a paper close that doubled the wallet balance is fixed. New periodic Binance-alignment audit catches future drift on its own schedule.

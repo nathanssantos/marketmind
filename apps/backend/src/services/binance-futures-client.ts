@@ -1,34 +1,27 @@
 import type { FuturesAccount, FuturesLeverage, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
-import { USDMClient } from 'binance';
-import type { Wallet } from '../db/schema';
-import { guardBinanceCall } from './binance-api-cache';
-import { getWalletType, isPaperWallet, type WalletType } from './binance-client';
-import { decryptApiKey } from './encryption';
+import type { USDMClient } from 'binance';
+import { binanceApiCache, guardBinanceCall } from './binance-api-cache';
+import {
+  createBinanceFuturesClient,
+  createBinanceFuturesClientForPrices,
+  getWalletType,
+  isPaperWallet,
+  type WalletType,
+} from './binance-client';
+import { isBenignMarginTypeError } from './binance-errors';
 import { logger, serializeError } from './logger';
 
-export { getWalletType, isPaperWallet, type WalletType };
-
-export function createBinanceFuturesClient(wallet: Wallet): USDMClient {
-  const walletType = getWalletType(wallet);
-
-  if (walletType === 'paper') {
-    throw new Error('Paper wallets cannot execute real orders on Binance Futures');
-  }
-
-  const apiKey = decryptApiKey(wallet.apiKeyEncrypted);
-  const apiSecret = decryptApiKey(wallet.apiSecretEncrypted);
-
-  return new USDMClient({
-    api_key: apiKey,
-    api_secret: apiSecret,
-    testnet: walletType === 'testnet',
-    disableTimeSync: true,
-  });
-}
-
-export function createBinanceFuturesClientForPrices(): USDMClient {
-  return new USDMClient({ disableTimeSync: true });
-}
+// Re-exported from the unified factory in `binance-client.ts` (single
+// source of truth for client construction + process-wide time-offset
+// stamping). Kept exported here so the many call sites that import from
+// `binance-futures-client` don't all have to move.
+export {
+  createBinanceFuturesClient,
+  createBinanceFuturesClientForPrices,
+  getWalletType,
+  isPaperWallet,
+  type WalletType,
+};
 
 export async function setLeverage(
   client: USDMClient,
@@ -56,27 +49,12 @@ export async function setMarginType(
   try {
     await guardBinanceCall(() => client.setMarginType({ symbol, marginType }));
   } catch (error: unknown) {
-    // Binance returns the same "wrong" status (-4046 / -4067) regardless of
-    // whether the symbol's margin type already matches the request. The
-    // message can land on .msg (raw Binance SDK error object) OR .message
-    // (Error instance) depending on the call path — extract via serializeError
-    // so both shapes match. Earlier code only checked Error.message and
-    // missed the SDK's `{ code, msg }` form, producing a noisy ERROR log
-    // every time createOrder pre-emptively normalized margin type.
-    const errorCode = (error as { code?: number })?.code;
-    // Some test mocks return non-string from serializeError; coerce
-    // defensively so we never throw on .includes checks below.
-    const rawMsg = serializeError(error);
-    const errorMsg = typeof rawMsg === 'string'
-      ? rawMsg
-      : (error instanceof Error ? error.message : String(rawMsg ?? error));
-    const benign =
-      errorCode === -4046 ||
-      errorCode === -4067 ||
-      errorMsg.includes('No need to change margin type') ||
-      errorMsg.includes('Margin type cannot be changed');
-    if (benign) return;
-    logger.error({ error: errorMsg, symbol, marginType }, 'Failed to set margin type');
+    // Binance returns an error status (-4046 / -4067) even when the
+    // symbol's margin type already matches the request — benign. The
+    // classifier inspects code on every error shape (raw {code,msg},
+    // Error, nested body/cause), replacing the per-call-site string lists.
+    if (isBenignMarginTypeError(error)) return;
+    logger.error({ error: serializeError(error), symbol, marginType }, 'Failed to set margin type');
     throw error;
   }
 }
@@ -194,21 +172,13 @@ const fallbackInfoFromAccountPosition = (ap: AccountPositionLite | undefined): L
 // a short TTL to amortize cost across the 30s position-sync ticks and
 // the per-fill manual-fill handlers that fire several times in quick
 // succession.
-const SYMBOL_CONFIG_TTL_MS = 10_000;
-type CachedSymbolConfigs = {
-  configs: ReadonlyArray<SymbolConfigLite>;
-  fetchedAt: number;
-};
-const symbolConfigCache = new WeakMap<USDMClient, CachedSymbolConfigs>();
-
-export const __resetSymbolConfigCache = (client?: USDMClient) => {
-  if (client) symbolConfigCache.delete(client);
-  // WeakMap has no .clear(); for tests we just rely on per-client deletion.
+export const __resetSymbolConfigCache = (walletId?: string) => {
+  if (walletId) binanceApiCache.invalidate('SYMBOL_CONFIG', walletId);
 };
 
 const fetchSymbolConfigs = async (
   client: USDMClient,
-  options?: { symbol?: string },
+  options?: { symbol?: string; walletId?: string },
 ): Promise<ReadonlyArray<SymbolConfigLite>> => {
   // When asking for a single symbol, hit the API directly — the
   // response is tiny and we don't want to wait for or pollute the
@@ -216,18 +186,27 @@ const fetchSymbolConfigs = async (
   if (options?.symbol) {
     return guardBinanceCall(() => client.getFuturesSymbolConfig({ symbol: options.symbol }));
   }
-  const cached = symbolConfigCache.get(client);
-  if (cached && Date.now() - cached.fetchedAt < SYMBOL_CONFIG_TTL_MS) {
-    return cached.configs;
+  // Bulk fetch: cache per-wallet in the shared binanceApiCache (TTL in
+  // CACHE_TTL.SYMBOL_CONFIG). Was a WeakMap keyed by client instance, but
+  // clients are created per-request now (v1.23 construction unification),
+  // so that key never repeated and the cache never hit. Wallet-scoped
+  // caching deduplicates the bulk symbolConfig fetch across the
+  // position-sync / order-sync / audit services. Callers without a
+  // walletId (the credential-based exchange wrapper) fetch direct.
+  const { walletId } = options ?? {};
+  if (!walletId) {
+    return guardBinanceCall(() => client.getFuturesSymbolConfig({}));
   }
+  const cached = binanceApiCache.get<ReadonlyArray<SymbolConfigLite>>('SYMBOL_CONFIG', walletId);
+  if (cached) return cached;
   const configs = await guardBinanceCall(() => client.getFuturesSymbolConfig({}));
-  symbolConfigCache.set(client, { configs, fetchedAt: Date.now() });
+  binanceApiCache.set('SYMBOL_CONFIG', walletId, configs);
   return configs;
 };
 
 export async function getPositions(
   client: USDMClient,
-  options?: { symbol?: string }
+  options?: { symbol?: string; walletId?: string }
 ): Promise<FuturesPosition[]> {
   try {
     const positionsV3 = await guardBinanceCall(() =>

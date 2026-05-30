@@ -4,6 +4,7 @@ import { tradeExecutions } from '../../db/schema';
 import { createStopLossOrder, createTakeProfitOrder, cancelAllOpenProtectionOrdersOnExchange } from '../protection-orders';
 import type { ProtectionOrderResult } from '../protection-orders';
 import { logger, serializeError } from '../logger';
+import { isOrderNotFound } from '../binance-errors';
 import type { UserStreamContext } from './types';
 
 const placeOrderWithRetry = async (
@@ -15,8 +16,7 @@ const placeOrderWithRetry = async (
   try {
     return await placeFn();
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (msg.includes('Unknown order') || msg.includes('-2011')) {
+    if (isOrderNotFound(e)) {
       await new Promise(r => setTimeout(r, 100));
       try {
         return await placeFn();

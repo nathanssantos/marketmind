@@ -1,4 +1,5 @@
 import { TIME_MS } from '../constants';
+import { isTimestampError } from './binance-errors';
 import { logger } from './logger';
 
 interface CacheEntry<T> {
@@ -12,6 +13,11 @@ const CACHE_TTL = {
   ALGO_ORDERS: 10 * TIME_MS.SECOND,
   ACCOUNT_INFO: 30 * TIME_MS.SECOND,
   SYMBOL_LEVERAGE: 30 * TIME_MS.SECOND,
+  // Per-wallet /fapi/v1/symbolConfig (leverage + marginType). Short TTL
+  // because it changes when the user adjusts leverage; deduplicates the
+  // bulk fetch across the position-sync / order-sync / audit services that
+  // can run for the same wallet within the same window.
+  SYMBOL_CONFIG: 10 * TIME_MS.SECOND,
   FILTERED_SYMBOLS: 60 * TIME_MS.SECOND,
   SYMBOL_SCORES: 60 * TIME_MS.SECOND,
   TOP_COINS: 5 * TIME_MS.MINUTE,
@@ -107,19 +113,40 @@ const NETWORK_ERROR_CODES = new Set([
   'ENETUNREACH', 'ECONNRESET', 'EAI_AGAIN',
 ]);
 
+export interface BinanceApiStats {
+  /** Times a -1021 forced a clock re-sync + retry (chronic = host clock drift). */
+  timestampResyncs: number;
+  /** Times a fresh IP ban was recorded. */
+  ipBans: number;
+  /** Times a fresh network-outage cooldown was armed. */
+  networkOutages: number;
+}
+
 export class BinanceApiCache {
   private cache: Map<string, CacheEntry<unknown>> = new Map();
   private cleanupInterval: ReturnType<typeof setInterval> | null = null;
   private banExpiry = 0;
   private outageExpiry = 0;
+  private stats: BinanceApiStats = { timestampResyncs: 0, ipBans: 0, networkOutages: 0 };
 
   constructor() {
     this.cleanupInterval = setInterval(() => this.cleanup(), 60 * TIME_MS.SECOND);
   }
 
+  /** Snapshot of cumulative reliability counters (surfaced in the periodic audit). */
+  getStats(): BinanceApiStats {
+    return { ...this.stats };
+  }
+
+  /** Called by guardBinanceCall when a -1021 triggers a clock re-sync. */
+  recordTimestampResync(): void {
+    this.stats.timestampResyncs += 1;
+  }
+
   setBanned(expiryTimestamp: number): void {
     if (this.banExpiry > 0 && Date.now() < this.banExpiry) return;
     this.banExpiry = expiryTimestamp;
+    this.stats.ipBans += 1;
     logger.warn({ expiresIn: Math.ceil((expiryTimestamp - Date.now()) / 1000) }, '[BinanceApiCache] IP banned');
   }
 
@@ -150,6 +177,7 @@ export class BinanceApiCache {
     const wasOpen = this.outageExpiry === 0 || Date.now() >= this.outageExpiry;
     this.outageExpiry = Date.now() + OUTAGE_COOLDOWN_MS;
     if (wasOpen) {
+      this.stats.networkOutages += 1;
       logger.warn({ code: detectedCode, cooldownMs: OUTAGE_COOLDOWN_MS }, '[BinanceApiCache] Network outage detected — fast-failing for cooldown');
     }
     return true;
@@ -293,6 +321,7 @@ export class BinanceNetworkOutageError extends Error {
   }
 }
 
+
 export async function guardBinanceCall<T>(fn: () => Promise<T>): Promise<T> {
   if (binanceApiCache.isBanned()) {
     const waitSeconds = Math.ceil(binanceApiCache.getBanExpiresIn() / 1000);
@@ -307,6 +336,23 @@ export async function guardBinanceCall<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (error) {
+    // Self-heal clock skew: on a -1021, re-sync the process-wide offset
+    // (deduped) and retry once. Clients read the offset live, so the
+    // retry of this very call signs with the corrected timestamp. Guarded
+    // against recursion by only retrying once.
+    if (isTimestampError(error)) {
+      try {
+        binanceApiCache.recordTimestampResync();
+        const { refreshBinanceTimeOffset } = await import('./binance-time-sync');
+        await refreshBinanceTimeOffset();
+        logger.warn('[binance-api-cache] -1021 timestamp skew — re-synced offset, retrying once');
+        return await fn();
+      } catch (retryError) {
+        binanceApiCache.checkAndSetBan(retryError);
+        binanceApiCache.markNetworkOutage(retryError);
+        throw retryError;
+      }
+    }
     binanceApiCache.checkAndSetBan(error);
     binanceApiCache.markNetworkOutage(error);
     throw error;

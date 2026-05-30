@@ -5,7 +5,7 @@ After v1.2 (color tokens) and v1.3 (perf, lazy-load, test coverage, doc drains),
 The v1.2 sweep was mechanical — `color="X.500"` → `X.fg`, `_dark={{}}` removal. Visual consistency is structural — `<FormSection>` vs raw `<Stack>`, ad-hoc `<Box bg="green.subtle">` vs `<Callout>`, `<Switch>` floating vs inside `<FormRow>`, inconsistent inner padding/spacing, dialog body widths.
 
 The user's report after seeing the live app:
-> "tem que padronizar... a pior de todas é a de autotrade que nao tem padrão nenhum, cada parte de um jeito diferente, componentes grandes que poderiam ser menores, caixas coloridas que nao deveriam existir, cada aba tem o conteudo de uma largura diferente, tudo misturado estranho e feio."
+> "everything needs to be standardized... the worst is the autotrade tab which has no pattern at all, each part styled differently, oversized components that could be smaller, colored boxes that shouldn't exist, each tab with content at a different width, everything mixed up, strange and ugly."
 
 ## Scope
 
@@ -115,7 +115,7 @@ Phase 1 came in heavier and tighter than the original sequencing — most of it 
 | 258 | Audit `dynamic-shade-pair` rule | Codifies the JSX-expression form in CI. Plus 2 stragglers (`RecentRunsPanel`, `ScreenerResultsTable`). |
 | 256 | EMA/SMA price tag fix (bug) | Restored right-axis price tag dropped in #75; fixed clip-rect bug. |
 
-The AutoTrading tab — the user's "pior carnaval" — is now structurally aligned to V1_4 rules across 5 sweeps (#246, #250, #252, #253, #254).
+The AutoTrading tab — the user's "worst offender" — is now structurally aligned to V1_4 rules across 5 sweeps (#246, #250, #252, #253, #254).
 
 ## Remaining Phase 1 work
 

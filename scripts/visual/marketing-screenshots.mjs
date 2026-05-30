@@ -11,7 +11,7 @@
  *      (must answer on http://localhost:5174 — auth bypass not required, fixtures
  *       inject mock data via Playwright addInitScript).
  *   2. Build the screenshot package: `pnpm --filter @marketmind/mcp-screenshot build`
- *   3. Run this script: `node scripts/marketing-screenshots.mjs`
+ *   3. Run this script: `node scripts/visual/marketing-screenshots.mjs`
  *
  * Env vars honored (defaults match site asset dimensions):
  *   MM_MCP_BASE_URL       — dev server URL (default http://localhost:5174)
@@ -21,8 +21,8 @@
  */
 import path from 'node:path';
 import { copyFile, mkdir } from 'node:fs/promises';
-import { captureFullPage, captureModal } from '../packages/mcp-screenshot/dist/capture.js';
-import { closeBrowser, getPage, setTheme } from '../packages/mcp-screenshot/dist/browser.js';
+import { captureFullPage, captureModal } from '../../packages/mcp-screenshot/dist/capture.js';
+import { closeBrowser, getPage, setTheme } from '../../packages/mcp-screenshot/dist/browser.js';
 
 process.env.MM_MCP_BASE_URL ??= 'http://localhost:5174';
 process.env.MM_MCP_VIEWPORT ??= '1920x1080';
@@ -30,7 +30,7 @@ process.env.MM_MCP_SCALE ??= '2';
 process.env.MM_MCP_SCREENSHOT_DIR ??= '/tmp/marketing-screenshots-session';
 
 const OUT_DIR = process.env.MM_MARKETING_OUT_DIR
-  ?? path.resolve(import.meta.dirname, '..', '..', 'marketmind-site', 'public', 'images');
+  ?? path.resolve(import.meta.dirname, '..', '..', '..', 'marketmind-site', 'public', 'images');
 
 const switchLayout = async (presetName) => {
   const page = await getPage();

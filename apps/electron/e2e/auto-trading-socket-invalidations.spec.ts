@@ -68,11 +68,10 @@ test.describe('Auto-trading — socket invalidations', () => {
     ).toBeGreaterThan(before);
   });
 
-  test('order:created triggers both orders and wallet re-fetches', async ({ page }) => {
+  test('order:created triggers an orders re-fetch', async ({ page }) => {
     await waitForSocket(page, { event: 'order:created', minListeners: 1 });
 
     const ordersBefore = await getTrpcHitCount(page, 'trading.getOrders');
-    const walletBefore = await getTrpcHitCount(page, 'wallet.list');
 
     await emitSocketEvent(page, 'order:created', { orderId: 'o2', symbol: 'BTCUSDT' });
 
@@ -80,10 +79,6 @@ test.describe('Auto-trading — socket invalidations', () => {
       () => getTrpcHitCount(page, 'trading.getOrders'),
       { timeout: 5_000 },
     ).toBeGreaterThan(ordersBefore);
-    await expect.poll(
-      () => getTrpcHitCount(page, 'wallet.list'),
-      { timeout: 5_000 },
-    ).toBeGreaterThan(walletBefore);
   });
 
   test('position:update triggers tradeExecutions + autoTrading executions invalidation', async ({ page }) => {

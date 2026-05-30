@@ -1,5 +1,6 @@
 import type { MarketType } from '@marketmind/types';
 import { createBinanceClientForPrices, createBinanceFuturesClientForPrices } from './binance-client';
+import { guardBinanceCall } from './binance-api-cache';
 
 interface PriceCacheEntry {
   price: number;
@@ -60,11 +61,11 @@ class InMemoryPriceCache {
       let price: number;
       if (marketType === 'FUTURES') {
         const client = createBinanceFuturesClientForPrices();
-        const ticker = await client.getMarkPrice({ symbol });
+        const ticker = await guardBinanceCall(() => client.getMarkPrice({ symbol }));
         price = parseFloat(String(ticker.markPrice));
       } else {
         const client = createBinanceClientForPrices();
-        const ticker = await client.getSymbolPriceTicker({ symbol });
+        const ticker = await guardBinanceCall(() => client.getSymbolPriceTicker({ symbol }));
         price = parseFloat(String(Array.isArray(ticker) ? ticker[0]?.price : ticker.price));
       }
 
@@ -104,7 +105,7 @@ class InMemoryPriceCache {
           this.metrics.apiFetches++;
           try {
             const client = createBinanceClientForPrices();
-            const tickers = await client.getSymbolPriceTicker();
+            const tickers = await guardBinanceCall(() => client.getSymbolPriceTicker());
             const pricesMap = new Map(
               (Array.isArray(tickers) ? tickers : [tickers]).map(t => [t.symbol, parseFloat(String(t.price))])
             );
@@ -133,7 +134,7 @@ class InMemoryPriceCache {
           this.metrics.apiFetches++;
           try {
             const client = createBinanceFuturesClientForPrices();
-            const markPrices = await client.getMarkPrice();
+            const markPrices = await guardBinanceCall(() => client.getMarkPrice());
             const priceMap = new Map(
               (Array.isArray(markPrices) ? markPrices : [markPrices]).map(p => [p.symbol, parseFloat(String(p.markPrice))])
             );

@@ -1,31 +1,31 @@
-# Sistema de Estratégias Dinâmicas
+# Dynamic Strategy System
 
-Este sistema permite definir estratégias de trading em arquivos JSON declarativos, eliminando a necessidade de classes TypeScript hardcoded.
+This system lets you define trading strategies in declarative JSON files, eliminating the need for hardcoded TypeScript classes.
 
-## Estrutura de Diretórios
+## Directory Structure
 
 ```
 strategies/
-├── builtin/           # Estratégias incluídas no sistema
+├── builtin/           # Strategies shipped with the system
 │   ├── ema-crossover.json
 │   ├── mean-reversion-bb-rsi.json
 │   ├── rsi-oversold-bounce.json
 │   └── macd-divergence.json
-├── community/         # Estratégias baixadas/compartilhadas
-└── custom/            # Estratégias criadas pelo usuário
+├── community/         # Downloaded/shared strategies
+└── custom/            # User-created strategies
 ```
 
-## Formato de Definição
+## Definition Format
 
-### Estrutura Básica
+### Basic Structure
 
 ```json
 {
-  "id": "minha-estrategia",
-  "name": "Nome da Estratégia",
+  "id": "my-strategy",
+  "name": "Strategy Name",
   "version": "1.0.0",
-  "description": "Descrição do que a estratégia faz",
-  "author": "Seu Nome",
+  "description": "Description of what the strategy does",
+  "author": "Your Name",
   "tags": ["trend-following", "momentum"],
 
   "parameters": { ... },
@@ -37,33 +37,33 @@ strategies/
 }
 ```
 
-### Campos Obrigatórios
+### Required Fields
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `id` | string | Identificador único (kebab-case) |
-| `name` | string | Nome legível |
-| `version` | string | Versão semântica (ex: 1.0.0) |
-| `parameters` | object | Parâmetros configuráveis |
-| `indicators` | object | Indicadores técnicos usados |
-| `entry` | object | Condições de entrada |
-| `exit` | object | Configuração de stop loss e take profit |
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier (kebab-case) |
+| `name` | string | Human-readable name |
+| `version` | string | Semantic version (e.g. 1.0.0) |
+| `parameters` | object | Configurable parameters |
+| `indicators` | object | Technical indicators used |
+| `entry` | object | Entry conditions |
+| `exit` | object | Stop loss and take profit configuration |
 
-### Campos Opcionais
+### Optional Fields
 
-| Campo | Tipo | Descrição |
-|-------|------|-----------|
-| `description` | string | Descrição detalhada |
-| `author` | string | Autor da estratégia |
-| `tags` | string[] | Tags para categorização |
-| `confidence` | object | Cálculo de confiança |
-| `filters` | object | Filtros mínimos |
+| Field | Type | Description |
+|-------|------|-------------|
+| `description` | string | Detailed description |
+| `author` | string | Strategy author |
+| `tags` | string[] | Tags for categorization |
+| `confidence` | object | Confidence calculation |
+| `filters` | object | Minimum filters |
 
 ---
 
-## Parâmetros
+## Parameters
 
-Defina parâmetros que podem ser otimizados ou ajustados pelo usuário:
+Define parameters that can be optimized or adjusted by the user:
 
 ```json
 "parameters": {
@@ -72,19 +72,19 @@ Defina parâmetros que podem ser otimizados ou ajustados pelo usuário:
     "min": 5,
     "max": 50,
     "step": 1,
-    "description": "Período da EMA"
+    "description": "EMA period"
   },
   "atrMultiplier": {
     "default": 2.0,
     "min": 1.0,
     "max": 4.0,
     "step": 0.5,
-    "description": "Multiplicador do ATR para stop"
+    "description": "ATR multiplier for the stop"
   }
 }
 ```
 
-Use `$nomeParametro` para referenciar valores em outras seções:
+Use `$parameterName` to reference values in other sections:
 
 ```json
 "indicators": {
@@ -97,21 +97,21 @@ Use `$nomeParametro` para referenciar valores em outras seções:
 
 ---
 
-## Indicadores
+## Indicators
 
-### Tipos Suportados
+### Supported Types
 
-| Tipo | Descrição | Parâmetros |
-|------|-----------|------------|
-| `sma` | Média Móvel Simples | `period` |
-| `ema` | Média Móvel Exponencial | `period` |
-| `rsi` | Índice de Força Relativa | `period` |
+| Type | Description | Parameters |
+|------|-------------|------------|
+| `sma` | Simple Moving Average | `period` |
+| `ema` | Exponential Moving Average | `period` |
+| `rsi` | Relative Strength Index | `period` |
 | `macd` | MACD | `fastPeriod`, `slowPeriod`, `signalPeriod` |
-| `bollingerBands` | Bandas de Bollinger | `period`, `stdDev` |
+| `bollingerBands` | Bollinger Bands | `period`, `stdDev` |
 | `atr` | Average True Range | `period` |
-| `stochastic` | Estocástico | `kPeriod`, `dPeriod` |
+| `stochastic` | Stochastic | `kPeriod`, `dPeriod` |
 | `vwap` | Volume Weighted Average Price | - |
-| `pivotPoints` | Pontos de Pivô | `lookback` |
+| `pivotPoints` | Pivot Points | `lookback` |
 | `adx` | Average Directional Index | `period` |
 | `obv` | On-Balance Volume | `smaPeriod` (optional) |
 | `williamsR` | Williams %R | `period` |
@@ -121,7 +121,7 @@ Use `$nomeParametro` para referenciar valores em outras seções:
 | `keltner` | Keltner Channel | `emaPeriod`, `atrPeriod`, `multiplier` |
 | `supertrend` | Supertrend | `period`, `multiplier` |
 
-### Exemplo
+### Example
 
 ```json
 "indicators": {
@@ -144,34 +144,34 @@ Use `$nomeParametro` para referenciar valores em outras seções:
 }
 ```
 
-### Acessando Valores
+### Accessing Values
 
-- Indicador simples: `"rsi"`, `"emaFast"`, `"williamsR"`, `"cci"`, `"mfi"`
-- Indicador composto: `"bb.upper"`, `"bb.middle"`, `"bb.lower"`
+- Simple indicator: `"rsi"`, `"emaFast"`, `"williamsR"`, `"cci"`, `"mfi"`
+- Composite indicator: `"bb.upper"`, `"bb.middle"`, `"bb.lower"`
 - MACD: `"macd.macd"`, `"macd.signal"`, `"macd.histogram"`
 - ADX: `"adx.adx"`, `"adx.plusDI"`, `"adx.minusDI"`
 - OBV: `"obv.obv"`, `"obv.sma"`
 - Donchian: `"donchian.upper"`, `"donchian.middle"`, `"donchian.lower"`
 - Keltner: `"keltner.upper"`, `"keltner.middle"`, `"keltner.lower"`
 - Supertrend: `"supertrend.trend"` (1=up, -1=down), `"supertrend.value"`
-- Preço: `"close"`, `"open"`, `"high"`, `"low"`
+- Price: `"close"`, `"open"`, `"high"`, `"low"`
 - Volume: `"volume"`, `"volume.sma20"`
 
-### Valores Históricos (Previous)
+### Historical Values (Previous)
 
-Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles anteriores:
+Use the suffix `.prev`, `.prev2`, `.prev3`, etc. to access values from earlier candles:
 
-- `"close.prev"` - Fechamento do candle anterior (offset 1)
-- `"close.prev2"` - Fechamento de 2 candles atrás
-- `"ema9.prev"` - EMA9 do candle anterior
-- `"rsi.prev3"` - RSI de 3 candles atrás
-- `"bb.upper.prev"` - Banda superior de Bollinger do candle anterior
-- `"high.prev5"` - Máxima de 5 candles atrás
+- `"close.prev"` - Close of the previous candle (offset 1)
+- `"close.prev2"` - Close from 2 candles ago
+- `"ema9.prev"` - EMA9 of the previous candle
+- `"rsi.prev3"` - RSI from 3 candles ago
+- `"bb.upper.prev"` - Upper Bollinger band of the previous candle
+- `"high.prev5"` - High from 5 candles ago
 
-**Exemplos:**
+**Examples:**
 
 ```json
-// EMA turn: EMA estava caindo, agora está subindo
+// EMA turn: EMA was falling, now it is rising
 {
   "left": "ema9.prev",
   "op": "<=",
@@ -183,14 +183,14 @@ Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles a
   "right": "ema9.prev"
 }
 
-// Preço fechou abaixo da mínima anterior (pullback)
+// Price closed below the previous low (pullback)
 {
   "left": "close",
   "op": "<",
   "right": "low.prev"
 }
 
-// RSI cruzou acima de 30 vindo de baixo
+// RSI crossed above 30 coming from below
 {
   "left": "rsi.prev",
   "op": "<",
@@ -205,9 +205,9 @@ Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles a
 
 ---
 
-## Condições de Entrada
+## Entry Conditions
 
-### Estrutura
+### Structure
 
 ```json
 "entry": {
@@ -226,25 +226,25 @@ Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles a
 }
 ```
 
-### Operadores de Comparação
+### Comparison Operators
 
-| Operador | Descrição |
-|----------|-----------|
-| `>` | Maior que |
-| `<` | Menor que |
-| `>=` | Maior ou igual |
-| `<=` | Menor ou igual |
-| `==` | Igual |
-| `!=` | Diferente |
-| `crossover` | Cruzou para cima |
-| `crossunder` | Cruzou para baixo |
+| Operator | Description |
+|----------|-------------|
+| `>` | Greater than |
+| `<` | Less than |
+| `>=` | Greater than or equal |
+| `<=` | Less than or equal |
+| `==` | Equal |
+| `!=` | Not equal |
+| `crossover` | Crossed up |
+| `crossunder` | Crossed down |
 
-### Operadores Lógicos
+### Logical Operators
 
-- `"operator": "AND"` - Todas as condições devem ser verdadeiras
-- `"operator": "OR"` - Pelo menos uma condição deve ser verdadeira
+- `"operator": "AND"` - All conditions must be true
+- `"operator": "OR"` - At least one condition must be true
 
-### Exemplos
+### Examples
 
 ```json
 // EMA Crossover
@@ -261,14 +261,14 @@ Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles a
   "right": 30
 }
 
-// Preço abaixo da Bollinger inferior
+// Price below the lower Bollinger band
 {
   "left": "close",
   "op": "<=",
   "right": "bb.lower"
 }
 
-// Usando parâmetro
+// Using a parameter
 {
   "left": "rsi",
   "op": "<=",
@@ -278,30 +278,30 @@ Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles a
 
 ---
 
-## Configuração de Saída (Exit)
+## Exit Configuration
 
-### Tipos de Stop Loss / Take Profit
+### Stop Loss / Take Profit Types
 
-| Tipo | Descrição | Campos |
-|------|-----------|--------|
-| `atr` | Baseado em ATR | `multiplier`, `indicator` |
-| `percent` | Percentual do preço | `value` |
-| `fixed` | Valor absoluto | `value` |
-| `indicator` | Valor de indicador | `value` |
-| `riskReward` | Múltiplo do risco | `multiplier` |
+| Type | Description | Fields |
+|------|-------------|--------|
+| `atr` | ATR-based | `multiplier`, `indicator` |
+| `percent` | Percentage of price | `value` |
+| `fixed` | Absolute value | `value` |
+| `indicator` | Indicator value | `value` |
+| `riskReward` | Multiple of risk | `multiplier` |
 
-### Exemplos
+### Examples
 
 ```json
 "exit": {
-  // Stop Loss baseado em ATR
+  // ATR-based Stop Loss
   "stopLoss": {
     "type": "atr",
     "multiplier": 2,
     "indicator": "atr"
   },
 
-  // Take Profit como 2x o risco
+  // Take Profit at 2x the risk
   "takeProfit": {
     "type": "riskReward",
     "multiplier": 2
@@ -311,13 +311,13 @@ Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles a
 
 ```json
 "exit": {
-  // Stop Loss percentual
+  // Percentage Stop Loss
   "stopLoss": {
     "type": "percent",
     "value": 2
   },
 
-  // Take Profit no meio da Bollinger
+  // Take Profit at the Bollinger midline
   "takeProfit": {
     "type": "indicator",
     "value": "bb.middle"
@@ -327,9 +327,9 @@ Use o sufixo `.prev`, `.prev2`, `.prev3`, etc. para acessar valores de candles a
 
 ---
 
-## Cálculo de Confiança
+## Confidence Calculation
 
-Define como a confiança do setup é calculada:
+Defines how the setup confidence is calculated:
 
 ```json
 "confidence": {
@@ -338,12 +338,12 @@ Define como a confiança do setup é calculada:
     {
       "condition": { "left": "rsi", "op": "<", "right": 25 },
       "bonus": 15,
-      "description": "RSI extremamente oversold"
+      "description": "RSI extremely oversold"
     },
     {
       "condition": { "left": "volume", "op": ">", "right": "volume.sma20" },
       "bonus": 10,
-      "description": "Volume acima da média"
+      "description": "Volume above average"
     }
   ],
   "max": 95
@@ -352,9 +352,9 @@ Define como a confiança do setup é calculada:
 
 ---
 
-## Filtros
+## Filters
 
-Define critérios mínimos para aceitar um setup:
+Defines minimum criteria to accept a setup:
 
 ```json
 "filters": {
@@ -365,7 +365,7 @@ Define critérios mínimos para aceitar um setup:
 
 ---
 
-## Exemplos Completos
+## Complete Examples
 
 ### EMA Crossover
 
@@ -374,7 +374,7 @@ Define critérios mínimos para aceitar um setup:
   "id": "ema-crossover",
   "name": "EMA Crossover",
   "version": "1.0.0",
-  "description": "Long quando EMA rápida cruza acima da EMA lenta",
+  "description": "Long when the fast EMA crosses above the slow EMA",
   "tags": ["trend-following", "ema", "crossover"],
 
   "parameters": {
@@ -423,7 +423,7 @@ Define critérios mínimos para aceitar um setup:
   "id": "mean-reversion-bb-rsi",
   "name": "Mean Reversion (Bollinger + RSI)",
   "version": "1.0.0",
-  "description": "Long quando preço toca banda inferior + RSI oversold",
+  "description": "Long when price touches the lower band + RSI oversold",
   "tags": ["mean-reversion", "bollinger-bands", "rsi"],
 
   "parameters": {
@@ -480,9 +480,9 @@ Define critérios mínimos para aceitar um setup:
 
 ---
 
-## Uso Programático
+## Programmatic Usage
 
-### Carregando Estratégias
+### Loading Strategies
 
 ```typescript
 import { StrategyLoader } from './services/setup-detection/dynamic';
@@ -492,18 +492,18 @@ const loader = new StrategyLoader([
   './strategies/custom'
 ]);
 
-// Carregar todas
+// Load all
 const strategies = await loader.loadAll();
 
-// Carregar uma específica
-const strategy = await loader.loadStrategy('./strategies/custom/minha-estrategia.json');
+// Load a specific one
+const strategy = await loader.loadStrategy('./strategies/custom/my-strategy.json');
 
-// Carregar de string (copy/paste)
+// Load from a string (copy/paste)
 const strategyJson = '{ "id": "...", ... }';
 const strategy = loader.loadFromString(strategyJson);
 ```
 
-### Usando com SetupDetectionService
+### Using with SetupDetectionService
 
 ```typescript
 import { SetupDetectionService } from './services/setup-detection';
@@ -514,47 +514,47 @@ const service = new SetupDetectionService({
   dynamicStrategies: []
 });
 
-// Carregar estratégias do diretório
+// Load strategies from a directory
 await service.loadStrategiesFromDirectory('./strategies/custom');
 
-// Carregar uma estratégia específica
-await service.loadStrategy('./strategies/minha-estrategia.json');
+// Load a specific strategy
+await service.loadStrategy('./strategies/my-strategy.json');
 
-// Descarregar uma estratégia
-service.unloadStrategy('minha-estrategia');
+// Unload a strategy
+service.unloadStrategy('my-strategy');
 ```
 
 ### Hot Reload
 
 ```typescript
 loader.watchForChanges((strategies) => {
-  console.log('Estratégias recarregadas:', strategies.map(s => s.id));
+  console.log('Strategies reloaded:', strategies.map(s => s.id));
 });
 
-// Para parar de observar
+// To stop watching
 loader.stopWatching();
 ```
 
 ---
 
-## Validação
+## Validation
 
-O sistema valida automaticamente:
+The system validates automatically:
 
-- Campos obrigatórios presentes
-- Formato do ID (kebab-case)
-- Tipos de indicadores válidos
-- Estrutura de condições
-- Tipos de exit levels
+- Required fields present
+- ID format (kebab-case)
+- Valid indicator types
+- Condition structure
+- Exit level types
 
-Erros de validação impedem o carregamento e são reportados com detalhes.
+Validation errors prevent loading and are reported in detail.
 
 ---
 
-## Dicas
+## Tips
 
-1. **Comece simples** - Inicie com poucas condições e adicione complexidade gradualmente
-2. **Use parâmetros** - Facilita otimização e ajustes
-3. **Teste com backtesting** - Valide a estratégia antes de usar em produção
-4. **Documente** - Use `description` em parâmetros e condições de confiança
-5. **Versionamento** - Atualize a versão ao fazer mudanças significativas
+1. **Start simple** - Begin with a few conditions and add complexity gradually
+2. **Use parameters** - Makes optimization and tuning easier
+3. **Test with backtesting** - Validate the strategy before using it in production
+4. **Document** - Use `description` in parameters and confidence conditions
+5. **Versioning** - Bump the version when making significant changes

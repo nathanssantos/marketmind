@@ -4,6 +4,7 @@ import { orders, tradeExecutions } from '../../db/schema';
 import { cancelFuturesAlgoOrder } from '../binance-futures-client';
 import { logHandlerAction } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
+import { isOrderNotFound } from '../binance-errors';
 import { binancePriceStreamService } from '../binance-price-stream';
 import { getWebSocketService } from '../websocket';
 import type { UserStreamContext, FuturesAlgoOrderUpdate } from './types';
@@ -272,8 +273,7 @@ export async function handleAlgoOrderUpdate(
               '[FuturesUserStream] Opposite algo order cancelled'
             );
           } catch (cancelError) {
-            const errorMessage = serializeError(cancelError);
-            if (errorMessage.includes('Unknown order') || errorMessage.includes('Order does not exist') || errorMessage.includes('not found')) {
+            if (isOrderNotFound(cancelError)) {
               cancelSuccess = true;
               logger.info(
                 { orderToCancel },
@@ -281,13 +281,13 @@ export async function handleAlgoOrderUpdate(
               );
             } else if (attempt < maxRetries) {
               logger.warn(
-                { error: errorMessage, orderToCancel, attempt, maxRetries },
+                { error: serializeError(cancelError), orderToCancel, attempt, maxRetries },
                 '[FuturesUserStream] Retry cancelling opposite algo order'
               );
               await new Promise(resolve => setTimeout(resolve, 100 * attempt));
             } else {
               logger.error(
-                { error: errorMessage, orderToCancel },
+                { error: serializeError(cancelError), orderToCancel },
                 '[FuturesUserStream] ! CRITICAL: Failed to cancel opposite algo order after retries - MANUAL CHECK REQUIRED'
               );
             }

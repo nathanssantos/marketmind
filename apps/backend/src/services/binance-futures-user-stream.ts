@@ -6,6 +6,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { silentWsLogger } from './binance-client';
+import { guardBinanceCall } from './binance-api-cache';
 import { createBinanceFuturesClient, isPaperWallet, getWalletType, getPosition } from './binance-futures-client';
 import { decryptApiKey } from './encryption';
 import { logBinanceEvent } from './binance-event-logger';
@@ -434,7 +435,7 @@ export class BinanceFuturesUserStreamService implements UserStreamContext {
     try {
       const apiClient = createBinanceFuturesClient(wallet);
 
-      const positionMode = await apiClient.getCurrentPositionMode();
+      const positionMode = await guardBinanceCall(() => apiClient.getCurrentPositionMode());
       if (positionMode.dualSidePosition) {
         logger.error(
           { walletId: wallet.id },

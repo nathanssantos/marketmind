@@ -4,6 +4,14 @@ import { generateKlines } from './helpers/klineFixtures';
 import { installTrpcMock } from './helpers/trpcMock';
 import { waitForChartReady } from './helpers/chartTestSetup';
 
+declare global {
+  interface Window {
+    __uiStore?: {
+      getState: () => { setWalletsDialogOpen: (open: boolean) => void };
+    };
+  }
+}
+
 interface MockWallet {
   id: string;
   name: string;
@@ -88,7 +96,7 @@ test.describe('Wallet Selector with existing wallet E2E', () => {
 });
 
 test.describe('Wallet Creation E2E', () => {
-  test('creates paper wallet via Settings → Wallets and it appears in selector', async ({ page }) => {
+  test('creates paper wallet via the wallet manager and it appears in the list', async ({ page }) => {
     const klines = generateKlines({ count: 200, symbol: 'BTCUSDT', interval: '1h' });
     const walletList: MockWallet[] = [];
     await installTrpcMock(page, {
@@ -113,20 +121,16 @@ test.describe('Wallet Creation E2E', () => {
     await page.goto('/');
     await waitForChartReady(page);
 
-    // Settings is a top-level toolbar button — Account-menu → Settings
-    // menuitem was the old path before the toolbar refactor.
-    await page.getByRole('button', { name: 'Settings' }).click();
+    // Wallet creation moved out of Settings into the Wallets manager dialog,
+    // reached from the (empty) wallet selector in the header.
+    await page.getByTestId('wallet-selector-empty').click();
+    await page.getByTestId('wallet-create-trigger').click();
 
-    await expect(page.getByRole('dialog')).toBeVisible();
-    await page.getByRole('tab', { name: 'Wallets' }).click();
+    const createDialog = page.getByRole('dialog').filter({ hasText: 'Create New Wallet' });
+    await expect(createDialog).toBeVisible();
 
-    await page.getByRole('button', { name: 'Create Wallet', exact: true }).first().click();
-    await expect(page.getByText('Create New Wallet')).toBeVisible();
-
-    const nameInput = page.getByRole('textbox').filter({ hasText: '' }).first();
-    await nameInput.fill('E2E Created Wallet');
-
-    await page.getByRole('button', { name: 'Create Wallet', exact: true }).last().click();
+    await createDialog.getByPlaceholder('My Wallet').fill('E2E Created Wallet');
+    await createDialog.getByRole('button', { name: 'Create Wallet', exact: true }).click();
 
     await expect(page.getByText('E2E Created Wallet').first()).toBeVisible();
     expect(walletList).toHaveLength(1);

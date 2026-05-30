@@ -1,6 +1,6 @@
 # Creation flows — where dialogs open from
 
-> **Authority:** v1.6 design rule #1 ("creation lives in dedicated dialogs, never in tabs"). See also `docs/V1_6_PLAN.md` and the audit script `scripts/audit-dialog-rules.mjs`.
+> **Authority:** v1.6 design rule #1 ("creation lives in dedicated dialogs, never in tabs"). See also `docs/V1_6_PLAN.md` and the audit script `scripts/audit/dialog-rules.mjs`.
 
 ## The pattern
 

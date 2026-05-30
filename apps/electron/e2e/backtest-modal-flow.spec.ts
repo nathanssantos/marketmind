@@ -124,6 +124,14 @@ const openModal = async (page: Page) => {
   await expect(page.getByRole('dialog', { name: 'Backtest' })).toBeVisible();
 };
 
+const waitForArmedBacktestId = async (page: Page, backtestId: string): Promise<void> => {
+  await page.waitForFunction(
+    (id) => document.querySelector(`[data-backtest-id="${id}"]`) !== null,
+    backtestId,
+    { timeout: 10_000 },
+  );
+};
+
 test.describe('Backtest modal — full flow coverage', () => {
   test.beforeEach(async ({ page }) => {
     await installModalMock(page);
@@ -188,6 +196,10 @@ test.describe('Backtest modal — full flow coverage', () => {
 
     // Wait for the modal's useSocketEvent subscriptions to register before emitting
     await waitForSocket(page, { event: 'backtest:progress', minListeners: 1 });
+    // Wait until the backtestId from the mutation response has been stored in
+    // state and rendered into the DOM — the drop-on-mismatch guard in
+    // useBacktestRun requires backtestId to be set before events are accepted.
+    await waitForArmedBacktestId(page, FAKE_BACKTEST_ID);
 
     // Drive events
     await emitSocketEvent(page, 'backtest:progress', {
@@ -241,6 +253,7 @@ test.describe('Backtest modal — full flow coverage', () => {
 
     await expect(dialog.getByText('Starting backtest…', { exact: true })).toBeVisible({ timeout: 5_000 });
     await waitForSocket(page, { event: 'backtest:failed', minListeners: 1 });
+    await waitForArmedBacktestId(page, FAKE_BACKTEST_ID);
 
     await emitSocketEvent(page, 'backtest:failed', {
       backtestId: FAKE_BACKTEST_ID,
@@ -358,8 +371,12 @@ test.describe('Backtest modal — full flow coverage', () => {
 
     const before = await getTrpcHitCount(page, 'setupDetection.listStrategies');
 
-    // Toggle Show experimental — query input changes -> new request
-    const showExpRow = dialog.getByText('Show experimental', { exact: true }).locator('xpath=..');
+    // Toggle Show experimental — query input changes -> new request.
+    // The Switch's hidden checkbox may be below the dialog's visible area;
+    // scroll the label into view before force-clicking the hidden input.
+    const showExpLabel = dialog.getByText('Show experimental', { exact: true });
+    await showExpLabel.scrollIntoViewIfNeeded();
+    const showExpRow = showExpLabel.locator('xpath=..');
     await showExpRow.locator('input[type="checkbox"]').click({ force: true });
 
     await expect.poll(
@@ -429,6 +446,7 @@ test.describe('Backtest modal — full flow coverage', () => {
     await dialog.getByRole('button', { name: 'Run backtest' }).click();
     await expect(dialog.getByText('Starting backtest…', { exact: true })).toBeVisible({ timeout: 5_000 });
     await waitForSocket(page, { event: 'backtest:progress', minListeners: 1 });
+    await waitForArmedBacktestId(page, FAKE_BACKTEST_ID);
 
     // First event: etaMs=null (below 5% floor on the backend) — UI shows
     // "calculating ETA…"
@@ -490,6 +508,7 @@ test.describe('Backtest modal — full flow coverage', () => {
 
     await expect(dialog.getByText('Starting backtest…', { exact: true })).toBeVisible({ timeout: 5_000 });
     await waitForSocket(page, { event: 'backtest:progress', minListeners: 1 });
+    await waitForArmedBacktestId(page, FAKE_BACKTEST_ID);
 
     // Emit progress for a DIFFERENT backtestId
     await emitSocketEvent(page, 'backtest:progress', {

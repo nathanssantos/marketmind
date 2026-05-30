@@ -86,10 +86,10 @@ export const formatDuration = (minutes: number): string => {
 };
 
 export const printConfig = () => {
-  console.log('> CONFIGURAÇÃO DO BACKTEST:');
+  console.log('> BACKTEST CONFIGURATION:');
   console.log(`   • Capital: $${formatCurrency(DEFAULT_BACKTEST_PARAMS.initialCapital)}`);
   console.log(`   • Leverage: ${DEFAULT_BACKTEST_PARAMS.leverage}x`);
-  console.log(`   • Setups: ${ENABLED_SETUPS.length} estratégias`);
+  console.log(`   • Setups: ${ENABLED_SETUPS.length} strategies`);
   console.log('   • BTC Correlation Filter: OFF');
   console.log('   • Volume Filter: OFF');
   console.log('   • Momentum Timing Filter: OFF');

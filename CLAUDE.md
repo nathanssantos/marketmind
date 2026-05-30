@@ -29,7 +29,7 @@
 7. **Early returns** — prefer over nested ifs
 8. **One-line conditionals** — ternaries / `if (x) return y;` for simple cases
 9. **Responsive design** — mobile/tablet/desktop viewports
-10. **English only** — commits, docs, code
+10. **English only — everywhere** — the entire monorepo is standardized to English: commit messages, docs/READMEs, code identifiers, **comments and JSDoc** (comments are documentation), `console.*` / CLI output, thrown `Error` messages, and test descriptions. Never introduce Portuguese (or any non-English) prose. The **only** allowed non-English text is genuinely language-specific data: language endonyms in the language selector (`Português`, `Español`), proper nouns (`São Paulo`, `B3 Brasil Bolsa Balcão`), timezone IDs (`America/Sao_Paulo`), and the i18n locale files under `locales/<lang>/`. User-facing app strings go through i18n (`t('...')`), never hardcoded.
 11. **Branch workflow** — feature/bugfix branches; never commit to main/develop directly
 12. **Implementation plan** — follow & evolve the active version plan in `docs/V1_X_PLAN.md`
 13. **No watch mode** — always run-once (`pnpm test`, `npm test -- --run`); never `vitest` without `--run`
@@ -129,11 +129,22 @@ marketmind/                         # monorepo root
 │       │   └── services/backtesting/                        # BacktestEngine, MultiWatcherBacktestEngine, FilterManager
 │       ├── strategies/builtin/                              # 105 strategy JSON files
 │       └── scripts/backtest/                                # rank-strategies, rank-strategies-with-filters, run-optimization
+│       └── scripts/{trading,debug,maintenance,data,audit,sql,utils}  # backend-only scripts, by category
 ├── packages/                       # 7 shared workspaces: types, indicators, fibonacci, logger, trading-core, risk, utils
 ├── packages/mcp-*                  # 4 MCP servers (screenshot, app, backend, strategy) + mcp-trading (v1.5)
-├── docs/                           # BACKEND_QUICKSTART, MCP_SERVERS, UI_STYLE_GUIDE, BROWSER_TESTING, RELEASE_PROCESS, V1_X_PLAN
+├── docs/                           # MCP_SERVERS, UI_STYLE_GUIDE, BROWSER_TESTING, RELEASE_PROCESS, V1_X_PLAN; backtesting/ guides; archive/ history
+├── scripts/{audit,visual,setup,perf,sql,backtest,build,dev}          # repo-level scripts, by category
 └── pnpm-workspace.yaml
 ```
+
+### 📂 File Placement Conventions (keep the tree clean — never leave loose files at a repo/package root)
+
+- **Docs** → `docs/`. Topic guides group into a subdir (`docs/backtesting/`, …); dated reports, point-in-time analyses, and superseded version plans → `docs/archive/`. A package's own `README.md` stays with it; everything else documentation-like goes under `docs/` — never at a package root.
+- **Scripts** → `scripts/<category>/` at the repo root (`audit/`, `visual/`, `setup/`, `perf/`, `sql/`, `backtest/`, `build/`, `dev/`); backend-only scripts → `apps/backend/scripts/<category>/`. No loose `*.mjs`/`*.sh`/`*.ts` at any package or repo root.
+- **Generated artifacts are never committed** (gitignored). Canonical homes: backend logs → `apps/backend/logs/`; CLI/backtest output → `apps/backend/output/`. In code resolve them from the package root via `src/utils/runtime-dirs.ts` (`LOGS_DIR`, `OUTPUT_DIR`, `ensureDir`) — never write to cwd-relative `./output`, and never scatter `*.log`/`*.pid`/`results/` into the tree.
+- **Repo root** holds only standard project files (`README`, `CHANGELOG`, `LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`, `QUICK_START`, `CLAUDE.md`) + monorepo config (`package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `eslint.config.js`, `docker-compose.yml`, dotfiles).
+- **Package root** holds only `package.json`, `tsconfig.json`, build/lint config, `.env.example`, `README.md`, and `src/`.
+- **`CLAUDE.md` is the single source of truth for all AI assistants.** The other tools' instruction paths — `.cursorrules` (Cursor), `.gemini/instructions.md` (Gemini), `.github/copilot-instructions.md` (Copilot), `.claude/project-instructions.md` — are **symlinks** to this file. Edit `CLAUDE.md` only; every tool picks it up automatically (no copies, no sync step). Don't replace the symlinks with real files. (Windows contributors need `git config core.symlinks true`.)
 
 ---
 
@@ -387,14 +398,14 @@ docker run -d --name marketmind-postgres \
 **Configuration:** `docs/V1_X_PLAN.md` (active version plan), `README.md`, `apps/backend/.env` (gitignored)
 
 **Documentation:**
-- `docs/BACKEND_QUICKSTART.md` — backend developer guide
+- `apps/backend/README.md` — backend developer guide · `docs/backtesting/` — backtesting CLI, quickstart, optimization & testing guides
 - `docs/MCP_SERVERS.md` / `MCP_AGENT_GUIDE.md` / `MCP_SECURITY.md` — MCP overview, recipes, threat model
 - `docs/UI_STYLE_GUIDE.md` / `UI_DIALOG_PATTERNS.md` / `UI_DESIGN_SYSTEM.md` — UI catalog and patterns
 - `docs/BROWSER_TESTING.md` — Playwright + chart perf + Electron smoke
 - `docs/RELEASE_PROCESS.md` — release checklist (version updated in 6 places)
 - `docs/INFRA_RECOVERY.md` — DB recovery / WAL archiving / PITR runbook
 
-**Scripts:** `scripts/setup-github.sh`, `scripts/install-hooks.sh`, `apps/backend/scripts/backtest/*`
+**Scripts:** `scripts/setup/github.sh`, `scripts/setup/install-hooks.sh`, `apps/backend/scripts/backtest/*`
 
 ---
 

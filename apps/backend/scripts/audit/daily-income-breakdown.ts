@@ -47,9 +47,9 @@ async function main() {
     console.log(`${d} | ${rs.padEnd(22)} | ${cs.padEnd(22)} | ${fs.padEnd(22)} | ${netPnl.toFixed(2).padStart(10)} | ${total.toFixed(2).padStart(10)}${extra}`);
   }
 
-  console.log('\n--- interpretação ---');
-  console.log('NET = REALIZED_PNL + COMMISSION + FUNDING_FEE (o que o calendário deveria mostrar)');
-  console.log('TOTAL = soma de todos os tipos (inclui TRANSFER/COIN_SWAP se houver)');
+  console.log('\n--- interpretation ---');
+  console.log('NET = REALIZED_PNL + COMMISSION + FUNDING_FEE (what the calendar should show)');
+  console.log('TOTAL = sum of all types (includes TRANSFER/COIN_SWAP if present)');
 
   process.exit(0);
 }

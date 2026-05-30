@@ -1,12 +1,10 @@
 import type { MainClient } from 'binance';
-import { WebsocketClient } from 'binance';
 import type { DepthLevel, DepthUpdate } from '@marketmind/types';
 import { SCALPING_DEFAULTS } from '@marketmind/types';
-import { SCALPING_STREAM } from '../constants/scalping';
 import { serializeError } from '../utils/errors';
-import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
+import { BinanceWebSocketStreamBase } from './binance-ws-stream-base';
 
 type DepthObserver = (update: DepthUpdate) => void;
 
@@ -17,59 +15,40 @@ interface LocalBook {
   lastSnapshotTime: number;
 }
 
-export class BinanceDepthStreamService {
-  private client: WebsocketClient | null = null;
+export class BinanceDepthStreamService extends BinanceWebSocketStreamBase {
+  protected readonly label = 'Depth';
   private restClient: MainClient | null = null;
   private subscribedSymbols = new Set<string>();
   private observers: DepthObserver[] = [];
-  private isReconnecting = false;
   private books = new Map<string, LocalBook>();
   private snapshotTimer: ReturnType<typeof setInterval> | null = null;
 
-  start(restClient: MainClient): void {
-    if (this.client) return;
+  // Optional param keeps the override assignable to the base's `start()`
+  // while every caller passes the REST client (used for periodic depth
+  // snapshots). Captured before the base wires the WS client; base.start()
+  // no-ops if already running.
+  override start(restClient?: MainClient): void {
+    if (restClient) this.restClient = restClient;
+    super.start();
+  }
 
-    this.restClient = restClient;
-
-    this.client = new WebsocketClient(
-      { beautify: true, reconnectTimeout: SCALPING_STREAM.RECONNECT_DELAY_MS },
-      silentWsLogger
-    );
-
-    this.client.on('message', (data) => this.handleMessage(data));
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.client as any).on('error', (error: unknown) => {
-      logger.error({ error: serializeError(error) }, 'Depth WebSocket error');
-    });
-
-    this.client.on('reconnected', () => {
-      if (this.isReconnecting) return;
-      this.isReconnecting = true;
-      this.resubscribeAll();
-      setTimeout(() => { this.isReconnecting = false; }, 2000);
-    });
-
+  protected override onStart(): void {
     this.snapshotTimer = setInterval(() => {
       void this.refreshSnapshots();
     }, SCALPING_DEFAULTS.BOOK_SNAPSHOT_INTERVAL_MS);
-
-    logger.info('Depth stream service started');
   }
 
-  stop(): void {
+  protected override onStop(): void {
     if (this.snapshotTimer) {
       clearInterval(this.snapshotTimer);
       this.snapshotTimer = null;
     }
+    this.subscribedSymbols.clear();
+    this.books.clear();
+  }
 
-    if (this.client) {
-      this.client.closeAll(true);
-      this.client = null;
-      this.subscribedSymbols.clear();
-      this.books.clear();
-      logger.info('Depth stream service stopped');
-    }
+  protected onReconnected(): void {
+    this.resubscribeAll();
   }
 
   subscribe(symbol: string): void {
@@ -117,7 +96,7 @@ export class BinanceDepthStreamService {
     return { bids: book.bids, asks: book.asks };
   }
 
-  private handleMessage(data: unknown): void {
+  protected handleMessage(data: unknown): void {
     try {
       if (typeof data !== 'object' || data === null) return;
 

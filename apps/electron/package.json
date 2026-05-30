@@ -1,6 +1,6 @@
 {
   "name": "@marketmind/electron",
-  "version": "1.23.2",
+  "version": "1.23.3",
   "description": "MarketMind Electron Desktop App",
   "keywords": [
     "trading",
@@ -59,7 +59,7 @@
     "build:main": "VITE_TARGET=electron vite build",
     "bundle:analyze": "ANALYZE=1 pnpm build:web",
     "test:e2e:electron": "pnpm build:main && playwright test --project=electron --reporter=list",
-    "clear-storage": "node ../../scripts/clear-storage.mjs",
+    "clear-storage": "node ../../scripts/dev/clear-storage.mjs",
     "clean": "rm -rf dist dist-web dist-electron node_modules"
   },
   "dependencies": {

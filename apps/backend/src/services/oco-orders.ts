@@ -2,6 +2,7 @@ import type { PositionSide } from '@marketmind/types';
 import { serializeError } from '../utils/errors';
 import type { Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet } from './binance-client';
+import { guardBinanceCall } from './binance-api-cache';
 import { logger } from './logger';
 
 export interface OCOOrderParams {
@@ -77,7 +78,7 @@ export class OCOOrderService {
     try {
       const client = createBinanceClient(wallet);
 
-      const result = await client.submitNewOCO({
+      const result = await guardBinanceCall(() => client.submitNewOCO({
         symbol,
         side: orderSide,
         quantity,
@@ -85,7 +86,7 @@ export class OCOOrderService {
         stopPrice: stopLoss,
         stopLimitPrice: slLimitPrice,
         stopLimitTimeInForce: 'GTC',
-      });
+      }));
 
       const ocoResult = result as unknown as OCOOrderResult;
 
@@ -133,10 +134,10 @@ export class OCOOrderService {
     try {
       const client = createBinanceClient(wallet);
 
-      await client.cancelOCO({
+      await guardBinanceCall(() => client.cancelOCO({
         symbol,
         orderListId: Number(orderListId),
-      });
+      }));
 
       logger.info({
         symbol,
@@ -169,7 +170,7 @@ export class OCOOrderService {
     try {
       const client = createBinanceClient(wallet);
 
-      const result = await client.submitNewOCO({
+      const result = await guardBinanceCall(() => client.submitNewOCO({
         symbol: params.symbol,
         side: params.side,
         quantity: params.quantity,
@@ -177,7 +178,7 @@ export class OCOOrderService {
         stopPrice: params.stopPrice,
         stopLimitPrice: params.stopLimitPrice,
         stopLimitTimeInForce: 'GTC',
-      });
+      }));
 
       const ocoResult = result as unknown as OCOOrderResult;
 

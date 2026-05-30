@@ -6,6 +6,11 @@ import {
   binanceApiCache,
 } from '../../services/binance-api-cache';
 
+const mockRefreshOffset = vi.fn().mockResolvedValue(undefined);
+vi.mock('../../services/binance-time-sync', () => ({
+  refreshBinanceTimeOffset: () => mockRefreshOffset(),
+}));
+
 describe('BinanceApiCache.markNetworkOutage', () => {
   let cache: BinanceApiCache;
 
@@ -134,5 +139,59 @@ describe('guardBinanceCall fast-fail', () => {
     const fn = vi.fn().mockResolvedValue('ok');
     await expect(guardBinanceCall(fn)).resolves.toBe('ok');
     expect(fn).toHaveBeenCalled();
+  });
+});
+
+describe('guardBinanceCall -1021 self-heal', () => {
+  beforeEach(() => {
+    mockRefreshOffset.mockClear();
+  });
+
+  it('on -1021, re-syncs the offset and retries the call once (succeeds on retry)', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error('ahead of the server'), { code: -1021 }))
+      .mockResolvedValueOnce('ok');
+
+    await expect(guardBinanceCall(fn)).resolves.toBe('ok');
+    expect(mockRefreshOffset).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it('detects -1021 nested on error.body too', async () => {
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce({ body: { code: -1021, msg: 'Timestamp for this request was 1000ms ahead of the server\'s time.' } })
+      .mockResolvedValueOnce('recovered');
+
+    await expect(guardBinanceCall(fn)).resolves.toBe('recovered');
+    expect(mockRefreshOffset).toHaveBeenCalledTimes(1);
+  });
+
+  it('only retries once — a persistent -1021 still throws', async () => {
+    const err = Object.assign(new Error('ahead of the server'), { code: -1021 });
+    const fn = vi.fn().mockRejectedValue(err);
+
+    await expect(guardBinanceCall(fn)).rejects.toBe(err);
+    expect(fn).toHaveBeenCalledTimes(2);
+    expect(mockRefreshOffset).toHaveBeenCalledTimes(1);
+  });
+
+  it('does NOT re-sync for unrelated errors', async () => {
+    const fn = vi.fn().mockRejectedValue(Object.assign(new Error('Invalid symbol'), { code: -1121 }));
+
+    await expect(guardBinanceCall(fn)).rejects.toBeDefined();
+    expect(mockRefreshOffset).not.toHaveBeenCalled();
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('increments the timestampResyncs stat on a -1021', async () => {
+    const before = binanceApiCache.getStats().timestampResyncs;
+    const fn = vi
+      .fn()
+      .mockRejectedValueOnce(Object.assign(new Error('ahead of the server'), { code: -1021 }))
+      .mockResolvedValueOnce('ok');
+    await guardBinanceCall(fn);
+    expect(binanceApiCache.getStats().timestampResyncs).toBe(before + 1);
   });
 });

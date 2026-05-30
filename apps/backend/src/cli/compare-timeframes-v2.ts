@@ -14,18 +14,18 @@ function acquireLock(): boolean {
       const pid = fs.readFileSync(LOCK_FILE, 'utf-8').trim();
       try {
         process.kill(parseInt(pid), 0);
-        console.error(`✗ Outro processo já está rodando (PID: ${pid})`);
-        console.error(`   Para forçar, delete: rm ${LOCK_FILE}`);
+        console.error(`✗ Another process is already running (PID: ${pid})`);
+        console.error(`   To force, delete: rm ${LOCK_FILE}`);
         return false;
       } catch {
-        console.log(`!  Lock file órfão encontrado, removendo...`);
+        console.log(`!  Stale lock file found, removing...`);
         fs.unlinkSync(LOCK_FILE);
       }
     }
     fs.writeFileSync(LOCK_FILE, process.pid.toString());
     return true;
   } catch (err) {
-    console.error('Erro ao adquirir lock:', err);
+    console.error('Error acquiring lock:', err);
     return false;
   }
 }
@@ -107,21 +107,21 @@ async function main() {
 
   const startTime = Date.now();
   console.log('═'.repeat(80));
-  console.log('# COMPARAÇÃO DE TIMEFRAMES - TOP 21 ESTRATÉGIAS');
+  console.log('# TIMEFRAME COMPARISON - TOP 21 STRATEGIES');
   console.log('═'.repeat(80));
   console.log('');
-  console.log(`⏰ Iniciado: ${new Date().toISOString()}`);
+  console.log(`⏰ Started: ${new Date().toISOString()}`);
   console.log(`> PID: ${process.pid}`);
   console.log('');
-  console.log('> CONFIGURAÇÃO:');
-  console.log('   • Símbolos:', SYMBOLS.join(', '));
+  console.log('> CONFIGURATION:');
+  console.log('   • Symbols:', SYMBOLS.join(', '));
   console.log('   • Timeframes:', TIMEFRAMES.join(', '));
-  console.log('   • Estratégias:', ENABLED_SETUPS.length);
-  console.log('   • Período: 2023-01-01 a 2026-01-31 (3 anos)');
+  console.log('   • Strategies:', ENABLED_SETUPS.length);
+  console.log('   • Period: 2023-01-01 to 2026-01-31 (3 years)');
   console.log('   • Entry Level: 100% (breakout)');
-  console.log('   • Filtros: BTC Correlation + Volume + Momentum Timing');
+  console.log('   • Filters: BTC Correlation + Volume + Momentum Timing');
   console.log('');
-  console.log('> Estratégias habilitadas:');
+  console.log('> Enabled strategies:');
   ENABLED_SETUPS.forEach((s, i) => console.log(`   ${i + 1}. ${s}`));
   console.log('');
 
@@ -130,23 +130,23 @@ async function main() {
   for (let i = 0; i < TIMEFRAMES.length; i++) {
     const tf = TIMEFRAMES[i]!;
     const tfStart = Date.now();
-    console.log(`\n> [${i + 1}/${TIMEFRAMES.length}] Testando timeframe: ${tf}...`);
+    console.log(`\n> [${i + 1}/${TIMEFRAMES.length}] Testing timeframe: ${tf}...`);
     try {
       const result = await testTimeframe(tf);
       results.push(result);
       const tfElapsed = ((Date.now() - tfStart) / 1000).toFixed(1);
       console.log(`   ✓ ${tf}: P&L $${formatCurrency(result.totalPnl)} | ${result.totalTrades} trades | WR ${result.winRate.toFixed(1)}% | ⏱️ ${tfElapsed}s`);
     } catch (err) {
-      console.error(`   ✗ Erro em ${tf}:`, err);
+      console.error(`   ✗ Error in ${tf}:`, err);
     }
   }
 
   const totalElapsed = ((Date.now() - startTime) / 1000 / 60).toFixed(1);
-  console.log(`\n⏱️ Tempo total: ${totalElapsed} minutos`);
+  console.log(`\n⏱️ Total time: ${totalElapsed} minutes`);
 
   console.log('\n');
   console.log('═'.repeat(100));
-  console.log('> RESULTADOS COMPARATIVOS (ordenado por P&L)');
+  console.log('> COMPARATIVE RESULTS (sorted by P&L)');
   console.log('═'.repeat(100));
   console.log('');
 
@@ -165,7 +165,7 @@ async function main() {
 
   console.log('');
   console.log('═'.repeat(100));
-  console.log('> ANÁLISE');
+  console.log('> ANALYSIS');
   console.log('═'.repeat(100));
   console.log('');
 
@@ -173,9 +173,9 @@ async function main() {
   const best = sortedResults[0];
 
   if (profitable.length > 0 && best) {
-    console.log(`✓ ${profitable.length}/${results.length} timeframes lucrativos`);
+    console.log(`✓ ${profitable.length}/${results.length} profitable timeframes`);
     console.log('');
-    console.log('> MELHOR TIMEFRAME:', best.timeframe);
+    console.log('> BEST TIMEFRAME:', best.timeframe);
     console.log(`   P&L: $${formatCurrency(best.totalPnl)} (${best.totalPnlPercent.toFixed(1)}%)`);
     console.log(`   Trades: ${best.totalTrades}`);
     console.log(`   Win Rate: ${best.winRate.toFixed(1)}%`);
@@ -185,17 +185,17 @@ async function main() {
     console.log(`   LONG P&L: $${formatCurrency(best.longPnl)}`);
     console.log(`   SHORT P&L: $${formatCurrency(best.shortPnl)}`);
   } else {
-    console.log('✗ Nenhum timeframe lucrativo');
+    console.log('✗ No profitable timeframes');
   }
 
   console.log('');
 
   const shortPositive = sortedResults.filter((r) => r.shortPnl > 0);
   if (shortPositive.length > 0) {
-    console.log('> Timeframes com SHORT lucrativo:');
+    console.log('> Timeframes with profitable SHORT:');
     shortPositive.forEach((r) => console.log(`   • ${r.timeframe}: SHORT $${formatCurrency(r.shortPnl)}`));
   } else {
-    console.log('!  Nenhum timeframe tem SHORT lucrativo - considerar LONG-only');
+    console.log('!  No timeframe has a profitable SHORT - consider LONG-only');
   }
 
   console.log('');
@@ -203,6 +203,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Erro:', err);
+  console.error('Error:', err);
   process.exit(1);
 });

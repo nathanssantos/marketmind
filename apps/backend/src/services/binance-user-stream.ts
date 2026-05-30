@@ -4,6 +4,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { tradeExecutions, wallets, type Wallet } from '../db/schema';
 import { createBinanceClient, isPaperWallet, silentWsLogger } from './binance-client';
+import { guardBinanceCall } from './binance-api-cache';
 import { logBinanceEvent } from './binance-event-logger';
 import { logger, serializeError } from './logger';
 import { getWebSocketService } from './websocket';
@@ -84,7 +85,7 @@ export class BinanceUserStreamService {
 
     try {
       const client = createBinanceClient(wallet);
-      const response = await client.getSpotUserDataListenKey();
+      const response = await guardBinanceCall(() => client.getSpotUserDataListenKey());
       const listenKey = response.listenKey;
 
       const wsClient = new WebsocketClient(
@@ -130,7 +131,7 @@ export class BinanceUserStreamService {
   private async refreshListenKey(wallet: Wallet, listenKey: string): Promise<void> {
     try {
       const client = createBinanceClient(wallet);
-      await client.keepAliveSpotUserDataListenKey(listenKey);
+      await guardBinanceCall(() => client.keepAliveSpotUserDataListenKey(listenKey));
       logger.trace({ walletId: wallet.id }, 'Listen key refreshed');
     } catch (error) {
       logger.error({
@@ -296,7 +297,7 @@ export class BinanceUserStreamService {
 
         if (orderToCancel) {
           try {
-            await client.cancelOrder({ symbol, orderId: Number(orderToCancel) });
+            await guardBinanceCall(() => client.cancelOrder({ symbol, orderId: Number(orderToCancel) }));
             logger.info({
               executionId: execution.id,
               cancelledOrderId: orderToCancel,

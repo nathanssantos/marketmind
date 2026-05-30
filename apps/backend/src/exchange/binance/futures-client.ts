@@ -1,5 +1,5 @@
 import type { FuturesAccount, FuturesLeverage, FuturesOrder, FuturesPosition, MarginType, PositionSide } from '@marketmind/types';
-import { USDMClient } from 'binance';
+import type { USDMClient } from 'binance';
 import type {
   AccountTradeRecord,
   AllTradeFeesResult,
@@ -40,6 +40,8 @@ import {
   submitFuturesAlgoOrder,
   submitFuturesOrder,
 } from '../../services/binance-futures-client';
+import { createBinanceFuturesClientFromCredentials } from '../../services/binance-client';
+import { guardBinanceCall } from '../../services/binance-api-cache';
 
 const MARGIN_MODIFY_TYPE_MAP: Record<string, '0' | '1'> = {
   ADD: '1',
@@ -51,12 +53,10 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
   private client: USDMClient;
 
   constructor(credentials: ExchangeCredentials) {
-    this.client = new USDMClient({
-      api_key: credentials.apiKey,
-      api_secret: credentials.apiSecret,
-      testnet: credentials.testnet,
-      disableTimeSync: true,
-    });
+    // Single construction path — applies the process-wide time offset so
+    // this client signs with a corrected timestamp (was the -1021 source
+    // on the SL/TP path, which builds its client here via getFuturesClient).
+    this.client = createBinanceFuturesClientFromCredentials(credentials);
   }
 
   async getAccountInfo(): Promise<FuturesAccount> {
@@ -80,7 +80,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
   }
 
   async setPositionMode(dualSidePosition: boolean): Promise<void> {
-    await this.client.setPositionMode({ dualSidePosition: dualSidePosition ? 'true' : 'false' });
+    await guardBinanceCall(() => this.client.setPositionMode({ dualSidePosition: dualSidePosition ? 'true' : 'false' }));
   }
 
   async modifyIsolatedMargin(
@@ -182,7 +182,7 @@ export class BinanceFuturesExchangeClient implements IExchangeFuturesClient {
   }
 
   async getCommissionRate(): Promise<CommissionRate> {
-    const result = await this.client.getAccountCommissionRate({ symbol: 'BTCUSDT' });
+    const result = await guardBinanceCall(() => this.client.getAccountCommissionRate({ symbol: 'BTCUSDT' }));
     return {
       makerCommissionRate: parseFloat(String(result.makerCommissionRate)),
       takerCommissionRate: parseFloat(String(result.takerCommissionRate)),

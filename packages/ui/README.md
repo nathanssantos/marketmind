@@ -5,7 +5,7 @@ Tier-1 + Tier-2 UI primitives shared across the MarketMind renderer and any futu
 ## Why this package exists
 
 - **One place** to look for "what UI primitives do we have?" — the catalog below + JSDoc on every export.
-- **Theme-agnostic surface**: components consume Chakra's semantic tokens (`fg.muted`, `bg.panel`, `trading.profit`) and `MM.*` design tokens. They don't hardcode shade literals like `red.500` — that rule is enforced by `scripts/audit-shade-literals.mjs`.
+- **Theme-agnostic surface**: components consume Chakra's semantic tokens (`fg.muted`, `bg.panel`, `trading.profit`) and `MM.*` design tokens. They don't hardcode shade literals like `red.500` — that rule is enforced by `scripts/audit/shade-literals.mjs`.
 - **No app-runtime coupling**: nothing in this package imports `trpc`, the renderer's stores, or the i18n provider. Components that need i18n stay in the app under `apps/electron/src/renderer/components/ui/` (Tier 3).
 
 ## What's inside
@@ -101,7 +101,7 @@ import {
 ## Conventions every component follows
 
 1. **`forwardRef`** so the consumer can attach refs to the underlying DOM element.
-2. **Semantic tokens only** — `fg`, `fg.muted`, `bg.panel`, `trading.profit`, etc. Never raw `red.500` / `green.50`. Audited by `scripts/audit-shade-literals.mjs`.
+2. **Semantic tokens only** — `fg`, `fg.muted`, `bg.panel`, `trading.profit`, etc. Never raw `red.500` / `green.50`. Audited by `scripts/audit/shade-literals.mjs`.
 3. **`MM.*` for spacing/typography** — `MM.spacing.row.gap`, `MM.font.sectionTitle.size`, `MM.dialog.bodyPadding`. Consumers shouldn't hardcode `gap={4}` either; pull the matching token.
 4. **Default size = compact** — `size="xs"` for buttons, `size="sm"` for inputs/selects, matching the app's density target.
 5. **No `_dark={{ ... }}` overrides** — semantic tokens auto-resolve light/dark.

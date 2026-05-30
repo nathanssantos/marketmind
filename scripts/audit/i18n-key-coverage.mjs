@@ -17,9 +17,9 @@
  *   tRPC/zod messages are validated separately.
  *
  * Usage:
- *   node scripts/audit-i18n-key-coverage.mjs           # exits non-zero on missing keys (en)
- *   node scripts/audit-i18n-key-coverage.mjs --list    # print every miss + dynamic
- *   node scripts/audit-i18n-key-coverage.mjs --all     # check all 4 locales (en is canonical)
+ *   node scripts/audit/i18n-key-coverage.mjs           # exits non-zero on missing keys (en)
+ *   node scripts/audit/i18n-key-coverage.mjs --list    # print every miss + dynamic
+ *   node scripts/audit/i18n-key-coverage.mjs --all     # check all 4 locales (en is canonical)
  */
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';

@@ -1,4 +1,4 @@
-import { MainClient } from 'binance';
+import type { MainClient } from 'binance';
 import type {
   CancelOrderResult,
   IExchangeSpotClient,
@@ -10,22 +10,20 @@ import type {
   SpotTradeFees,
 } from '../spot-client';
 import type { ExchangeCredentials, ExchangeId } from '../types';
+import { createBinanceSpotClientFromCredentials } from '../../services/binance-client';
+import { guardBinanceCall } from '../../services/binance-api-cache';
 
 export class BinanceSpotExchangeClient implements IExchangeSpotClient {
   readonly exchangeId: ExchangeId = 'BINANCE';
   private client: MainClient;
 
   constructor(credentials: ExchangeCredentials) {
-    this.client = new MainClient({
-      api_key: credentials.apiKey,
-      api_secret: credentials.apiSecret,
-      testnet: credentials.testnet,
-      disableTimeSync: true,
-    });
+    // Single construction path — applies the process-wide time offset.
+    this.client = createBinanceSpotClientFromCredentials(credentials);
   }
 
   async submitOrder(params: SpotOrderParams): Promise<SpotOrderResult> {
-    const order = await this.client.submitNewOrder({
+    const order = await guardBinanceCall(() => this.client.submitNewOrder({
       symbol: params.symbol,
       side: params.side,
       type: params.type as 'LIMIT' | 'MARKET' | 'STOP_LOSS' | 'STOP_LOSS_LIMIT' | 'TAKE_PROFIT' | 'TAKE_PROFIT_LIMIT',
@@ -33,7 +31,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
       price: params.price,
       stopPrice: params.stopPrice,
       timeInForce: params.timeInForce,
-    });
+    }));
 
     return {
       orderId: String(order.orderId),
@@ -51,7 +49,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
   }
 
   async cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult> {
-    const canceledOrder = await this.client.cancelOrder({ symbol, orderId: Number(orderId) });
+    const canceledOrder = await guardBinanceCall(() => this.client.cancelOrder({ symbol, orderId: Number(orderId) }));
     return {
       orderId: String(canceledOrder.orderId),
       symbol: canceledOrder.symbol,
@@ -61,8 +59,8 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
 
   async getOpenOrders(symbol?: string): Promise<SpotOrderResult[]> {
     const orders = symbol
-      ? await this.client.getOpenOrders({ symbol })
-      : await this.client.getOpenOrders();
+      ? await guardBinanceCall(() => this.client.getOpenOrders({ symbol }))
+      : await guardBinanceCall(() => this.client.getOpenOrders());
     return orders.map((order) => ({
       orderId: String(order.orderId),
       symbol: order.symbol,
@@ -79,7 +77,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
   }
 
   async getAllOrders(symbol: string, limit = 100): Promise<SpotOrderResult[]> {
-    const orders = await this.client.getAllOrders({ symbol, limit });
+    const orders = await guardBinanceCall(() => this.client.getAllOrders({ symbol, limit }));
     return orders.map((order) => ({
       orderId: String(order.orderId),
       symbol: order.symbol,
@@ -96,7 +94,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
   }
 
   async submitOcoOrder(params: OcoOrderParams): Promise<OcoOrderResult> {
-    const result = await this.client.submitNewOCO({
+    const result = await guardBinanceCall(() => this.client.submitNewOCO({
       symbol: params.symbol,
       side: params.side,
       quantity: params.quantity,
@@ -104,7 +102,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
       stopPrice: params.stopPrice,
       stopLimitPrice: params.stopLimitPrice,
       stopLimitTimeInForce: params.stopLimitTimeInForce,
-    });
+    }));
     return {
       orderListId: String(result.orderListId),
       contingencyType: result.contingencyType,
@@ -120,7 +118,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
   }
 
   async getAccountInfo(): Promise<SpotAccountInfo> {
-    const account = await this.client.getAccountInformation();
+    const account = await guardBinanceCall(() => this.client.getAccountInformation());
     return {
       makerCommission: account.makerCommission,
       takerCommission: account.takerCommission,
@@ -135,7 +133,7 @@ export class BinanceSpotExchangeClient implements IExchangeSpotClient {
 
   async getTradeFees(symbol?: string): Promise<SpotTradeFees[]> {
     const params = symbol ? { symbol } : undefined;
-    const fees = await this.client.getTradeFee(params);
+    const fees = await guardBinanceCall(() => this.client.getTradeFee(params));
     return fees.map((f) => ({
       symbol: f.symbol,
       makerCommission: parseFloat(String(f.makerCommission)),

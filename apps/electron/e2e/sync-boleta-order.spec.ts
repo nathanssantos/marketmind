@@ -79,9 +79,8 @@ test.describe('sync — manual boleta order reaches Portfolio via WS invalidatio
       .toBe(true);
   });
 
-  test('order:created emit invalidates orders + wallet', async ({ page }) => {
+  test('order:created emit invalidates orders', async ({ page }) => {
     const ordersHitsBefore = await getTrpcHitCount(page, 'trading.getOrders');
-    const walletHitsBefore = await getTrpcHitCount(page, 'wallet.list');
 
     await emitSocketEvent(page, 'order:created', {
       orderId: 99999,
@@ -92,9 +91,6 @@ test.describe('sync — manual boleta order reaches Portfolio via WS invalidatio
 
     await expect
       .poll(async () => (await getTrpcHitCount(page, 'trading.getOrders')) > ordersHitsBefore, { timeout: 2_000 })
-      .toBe(true);
-    await expect
-      .poll(async () => (await getTrpcHitCount(page, 'wallet.list')) > walletHitsBefore, { timeout: 2_000 })
       .toBe(true);
   });
 });

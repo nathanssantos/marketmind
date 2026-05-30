@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-base-to-string -- Binance WS message values are unknown but documented strings; explicit cast at every read would be 50+ lines of noise */
-import { WebsocketClient } from 'binance';
 import type { MarkPriceUpdate } from '@marketmind/types';
-import { SCALPING_STREAM } from '../constants/scalping';
 import { serializeError } from '../utils/errors';
-import { silentWsLogger } from './binance-client';
 import { logger } from './logger';
 import { getWebSocketService } from './websocket';
+import { BinanceWebSocketStreamBase } from './binance-ws-stream-base';
 
 type MarkPriceObserver = (update: MarkPriceUpdate) => void;
 
@@ -32,48 +30,21 @@ interface CachedMarkPrice extends MarkPriceUpdate {
  *  - any future "current funding rate" or "live mark price" widget on
  *    the frontend.
  */
-export class BinanceMarkPriceStreamService {
-  private client: WebsocketClient | null = null;
+export class BinanceMarkPriceStreamService extends BinanceWebSocketStreamBase {
+  protected readonly label = 'MarkPrice';
   private subscribedSymbols = new Set<string>();
   private observers: MarkPriceObserver[] = [];
-  private isReconnecting = false;
   // Per-symbol cache so consumers can read the latest mark/funding
   // values synchronously without an async REST round-trip.
   private cache = new Map<string, CachedMarkPrice>();
 
-  start(): void {
-    if (this.client) return;
-
-    this.client = new WebsocketClient(
-      { beautify: true, reconnectTimeout: SCALPING_STREAM.RECONNECT_DELAY_MS },
-      silentWsLogger
-    );
-
-    this.client.on('message', (data) => this.handleMessage(data));
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.client as any).on('error', (error: unknown) => {
-      logger.error({ error: serializeError(error) }, 'MarkPrice WebSocket error');
-    });
-
-    this.client.on('reconnected', () => {
-      if (this.isReconnecting) return;
-      this.isReconnecting = true;
-      this.resubscribeAll();
-      setTimeout(() => { this.isReconnecting = false; }, 2000);
-    });
-
-    logger.info('MarkPrice stream service started');
+  protected override onStop(): void {
+    this.subscribedSymbols.clear();
+    this.cache.clear();
   }
 
-  stop(): void {
-    if (this.client) {
-      this.client.closeAll(true);
-      this.client = null;
-      this.subscribedSymbols.clear();
-      this.cache.clear();
-      logger.info('MarkPrice stream service stopped');
-    }
+  protected onReconnected(): void {
+    this.resubscribeAll();
   }
 
   subscribe(symbol: string): void {
@@ -124,7 +95,7 @@ export class BinanceMarkPriceStreamService {
     return cached;
   }
 
-  private handleMessage(data: unknown): void {
+  protected handleMessage(data: unknown): void {
     try {
       if (typeof data !== 'object' || data === null) return;
 

@@ -54,9 +54,9 @@ test.describe('Settings overhaul', () => {
     await openSettings(page);
     const tabs = [
       'account', 'security', 'notifications',
-      'general', 'chart',
-      'wallets', 'tradingProfiles', 'autoTrading', 'indicators', 'customSymbols',
-      'data', 'updates', 'about',
+      'chart',
+      'autoTrading', 'indicators',
+      'data', 'about',
     ];
     for (const id of tabs) {
       await expect(page.getByTestId(`settings-tab-${id}`)).toBeVisible();
@@ -82,8 +82,8 @@ test.describe('Settings overhaul', () => {
     await expect(submit).toBeDisabled();
 
     await page.getByTestId('security-current-password').fill('current-pass');
-    await page.getByTestId('security-new-password').fill('newpass123');
-    await page.getByTestId('security-confirm-password').fill('newpass123');
+    await page.getByTestId('security-new-password').fill('NewPass123!');
+    await page.getByTestId('security-confirm-password').fill('NewPass123!');
     await expect(submit).toBeEnabled();
   });
 
@@ -99,8 +99,8 @@ test.describe('Settings overhaul', () => {
     await expect(page.getByTestId('notifications-sound-enabled')).toBeVisible();
   });
 
-  test('Updates tab: renders auto-check / auto-download / check-now controls', async ({ page }) => {
-    await openSettings(page, 'updates');
+  test('About tab: renders auto-check / auto-download / check-now controls', async ({ page }) => {
+    await openSettings(page, 'about');
     await expect(page.getByTestId('updates-auto-check')).toBeVisible();
     await expect(page.getByTestId('updates-auto-download')).toBeVisible();
     await expect(page.getByTestId('updates-check-now')).toBeVisible();
