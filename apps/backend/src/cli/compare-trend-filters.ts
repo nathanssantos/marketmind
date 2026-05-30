@@ -15,7 +15,7 @@ interface FilterConfig {
 
 const FILTER_CONFIGS: FilterConfig[] = [
   {
-    name: 'NENHUM (Baseline)',
+    name: 'NONE (Baseline)',
     useTrendFilter: false,
     useAdxFilter: false,
     useMomentumTimingFilter: false,
@@ -64,7 +64,7 @@ const FILTER_CONFIGS: FilterConfig[] = [
     useMarketRegimeFilter: false,
   },
   {
-    name: 'TODOS (EMA+ADX+Momentum+Regime)',
+    name: 'ALL (EMA+ADX+Momentum+Regime)',
     useTrendFilter: true,
     useAdxFilter: true,
     useMomentumTimingFilter: true,
@@ -89,18 +89,18 @@ interface TestResult {
 }
 
 async function compare() {
-  console.log('=== COMPARAÇÃO: TREND FILTERS ===');
-  console.log('Entry Level: 100% | Timeframe: 12h | Período: 2023-2026');
-  console.log('Símbolos:', SYMBOLS.join(', '));
-  console.log('BTC Correlation Filter: HABILITADO (sempre)');
-  console.log('Volume Filter: HABILITADO (sempre)');
+  console.log('=== COMPARISON: TREND FILTERS ===');
+  console.log('Entry Level: 100% | Timeframe: 12h | Period: 2023-2026');
+  console.log('Symbols:', SYMBOLS.join(', '));
+  console.log('BTC Correlation Filter: ENABLED (always)');
+  console.log('Volume Filter: ENABLED (always)');
   console.log('');
 
   const results: TestResult[] = [];
 
   for (const filterCfg of FILTER_CONFIGS) {
     console.log(`\n${'═'.repeat(60)}`);
-    console.log(`> Testando: ${filterCfg.name}`);
+    console.log(`> Testing: ${filterCfg.name}`);
     console.log(`${'═'.repeat(60)}\n`);
 
     const baseConfig = createBaseConfig();
@@ -180,12 +180,12 @@ async function compare() {
     console.log(`LONG:  ${longTrades.length} trades | P&L: $${longPnl.toFixed(2)}`);
     console.log(`SHORT: ${shortTrades.length} trades | P&L: $${shortPnl.toFixed(2)}`);
     console.log('');
-    console.log(`Bloqueados - Trend: ${blockedByTrend} | ADX: ${blockedByAdx} | Momentum: ${blockedByMomentum} | Regime: ${blockedByRegime}`);
+    console.log(`Blocked - Trend: ${blockedByTrend} | ADX: ${blockedByAdx} | Momentum: ${blockedByMomentum} | Regime: ${blockedByRegime}`);
     console.log('');
   }
 
   console.log(`\n${  '═'.repeat(80)}`);
-  console.log('> RESUMO COMPARATIVO (ordenado por P&L)');
+  console.log('> COMPARATIVE SUMMARY (sorted by P&L)');
   console.log('═'.repeat(80));
   console.log('');
 
@@ -203,7 +203,7 @@ async function compare() {
 
   console.log('');
   console.log('═'.repeat(80));
-  console.log('> ANÁLISE');
+  console.log('> ANALYSIS');
   console.log('═'.repeat(80));
   console.log('');
 
@@ -211,21 +211,21 @@ async function compare() {
   const best = sortedResults[0];
 
   if (!baseline || !best) {
-    console.log('✗ Erro: baseline ou best não encontrado');
+    console.log('✗ Error: baseline or best not found');
   } else if (best.name !== baseline.name) {
     const improvement = best.totalPnl - baseline.totalPnl;
     const improvementPct = ((improvement / baseline.totalPnl) * 100).toFixed(1);
-    console.log(`> MELHOR FILTER: ${best.name}`);
+    console.log(`> BEST FILTER: ${best.name}`);
     console.log(`   P&L: $${best.totalPnl.toFixed(2)} (+$${improvement.toFixed(2)} vs baseline, +${improvementPct}%)`);
     console.log(`   Win Rate: ${best.winRate.toFixed(1)}%`);
     console.log(`   Max Drawdown: ${best.maxDrawdown.toFixed(1)}%`);
     console.log(`   Profit Factor: ${best.profitFactor.toFixed(2)}`);
   } else {
-    console.log('~ Nenhum filter superou o baseline significativamente');
+    console.log('~ No filter significantly outperformed the baseline');
   }
 
   console.log('');
-  console.log('> RECOMENDAÇÕES:');
+  console.log('> RECOMMENDATIONS:');
 
   const emaOnly = results.find((r) => r.name === 'EMA Trend Only');
   const adxOnly = results.find((r) => r.name === 'ADX Only');
@@ -241,19 +241,19 @@ async function compare() {
 
   if (momentumOnly && emaOnly) {
     if (momentumOnly.totalPnl > emaOnly.totalPnl) {
-      console.log(`   - Momentum Timing ($${momentumOnly.totalPnl.toFixed(0)}) supera EMA Trend`);
+      console.log(`   - Momentum Timing ($${momentumOnly.totalPnl.toFixed(0)}) outperforms EMA Trend`);
     }
   }
 
-  const todos = results.find((r) => r.name.includes('TODOS'));
+  const todos = results.find((r) => r.name.includes('ALL'));
   if (todos && best && best.name !== todos.name) {
-    console.log(`   - ! Combinar TODOS os filtros NÃO é a melhor opção (P&L: $${todos.totalPnl.toFixed(0)})`);
+    console.log(`   - ! Combining ALL filters is NOT the best option (P&L: $${todos.totalPnl.toFixed(0)})`);
   }
 
   process.exit(0);
 }
 
 compare().catch((err) => {
-  console.error('Erro:', err);
+  console.error('Error:', err);
   process.exit(1);
 });

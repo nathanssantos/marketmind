@@ -68,11 +68,11 @@ jobs:
           exit 1
 
       - name: Run gallery
-        run: node scripts/visual-gallery.mjs
+        run: node scripts/visual/gallery.mjs
 
       - name: Diff vs baseline
         id: diff
-        run: node scripts/visual-diff.mjs
+        run: node scripts/visual/diff.mjs
 
       - name: Upload diffs on failure
         if: failure() && steps.diff.conclusion == 'failure'

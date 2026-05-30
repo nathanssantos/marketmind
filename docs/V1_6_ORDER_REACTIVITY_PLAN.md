@@ -1,6 +1,6 @@
 # Order/Position chart reactivity — audit + fix plan
 
-> **Trigger:** user reported (2026-05-02) that closing a position via Stop Loss in profit took ~1 minute for the position to disappear from the chart. The order closed correctly on Binance — the lag was renderer-side. Quote: *"a experiencia no grafico foi trágica"*.
+> **Trigger:** user reported (2026-05-02) that closing a position via Stop Loss in profit took ~1 minute for the position to disappear from the chart. The order closed correctly on Binance — the lag was renderer-side. Quote: *"the experience on the chart was terrible"*.
 >
 > This is a v1.6 follow-up. Adding to V1_6_PLAN.md as Track F (order reactivity).
 
@@ -165,7 +165,7 @@ Add the new audit to `pnpm test`'s perf-spec equivalent: an e2e that triggers a 
 
 # Track F (broader scope) — ALL order/position events, not just SL
 
-> **2026-04-30 update.** User: *"veja que a revisao das ordens no grafico nao deve ser só pra SL, revise tudo. TP. ordens limit etc etc"*. The original audit focused on SL because that was the trigger. This section expands the scope to every order/position event that should reflect on the chart — TP fills, limit entry fills, order cancels, order modifies, partial closes, liquidations, pyramiding, trailing-stop activation. The fixes from F.1–F.4 above are reused; what changes is the breadth of paths we audit and the toast/flash matrix we wire up.
+> **2026-04-30 update.** User: *"note that the order review on the chart should not be only for SL, review everything. TP. limit orders etc etc"*. The original audit focused on SL because that was the trigger. This section expands the scope to every order/position event that should reflect on the chart — TP fills, limit entry fills, order cancels, order modifies, partial closes, liquidations, pyramiding, trailing-stop activation. The fixes from F.1–F.4 above are reused; what changes is the breadth of paths we audit and the toast/flash matrix we wire up.
 
 ## Event matrix — what should happen on the chart for each event
 

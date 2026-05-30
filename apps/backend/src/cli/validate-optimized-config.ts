@@ -7,19 +7,19 @@ const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
 
 async function validate() {
   console.log('═'.repeat(70));
-  console.log('> VALIDAÇÃO DA CONFIGURAÇÃO OTIMIZADA');
+  console.log('> OPTIMIZED CONFIGURATION VALIDATION');
   console.log('═'.repeat(70));
   console.log('');
-  console.log('> CONFIGURAÇÃO:');
+  console.log('> CONFIGURATION:');
   console.log('   • Entry Level Fibo: 100% (breakout)');
-  console.log('   • BTC Correlation Filter: HABILITADO');
-  console.log('   • Volume Filter: HABILITADO');
-  console.log('   • Momentum Timing Filter: HABILITADO');
-  console.log('   • EMA Trend Filter: DESABILITADO');
-  console.log('   • ADX Filter: DESABILITADO');
+  console.log('   • BTC Correlation Filter: ENABLED');
+  console.log('   • Volume Filter: ENABLED');
+  console.log('   • Momentum Timing Filter: ENABLED');
+  console.log('   • EMA Trend Filter: DISABLED');
+  console.log('   • ADX Filter: DISABLED');
   console.log('   • Timeframe: 12h');
-  console.log('   • Período: 2023-01-01 a 2026-01-31 (3 anos)');
-  console.log('   • Símbolos:', SYMBOLS.join(', '));
+  console.log('   • Period: 2023-01-01 to 2026-01-31 (3 years)');
+  console.log('   • Symbols:', SYMBOLS.join(', '));
   console.log('');
 
   const baseConfig = createBaseConfig();
@@ -48,7 +48,7 @@ async function validate() {
     silent: true,
   });
 
-  console.log('> Iniciando backtest...\n');
+  console.log('> Starting backtest...\n');
   const startTime = Date.now();
 
   const result = await engine.run();
@@ -63,13 +63,13 @@ async function validate() {
   const shortWins = shortTrades.filter((t) => (t.netPnl || 0) > 0).length;
 
   console.log('═'.repeat(70));
-  console.log('> RESULTADOS');
+  console.log('> RESULTS');
   console.log('═'.repeat(70));
   console.log('');
-  console.log(`⏱️  Tempo de execução: ${elapsed}s`);
+  console.log(`⏱️  Execution time: ${elapsed}s`);
   console.log('');
   console.log('━'.repeat(70));
-  console.log('MÉTRICAS GERAIS');
+  console.log('GENERAL METRICS');
   console.log('━'.repeat(70));
   console.log(`Total Trades:     ${result.metrics.totalTrades}`);
   console.log(`Total P&L:        $${result.metrics.totalPnl.toFixed(2)} (${result.metrics.totalPnlPercent.toFixed(1)}%)`);
@@ -82,13 +82,13 @@ async function validate() {
   console.log(`Largest Loss:     $${result.metrics.largestLoss.toFixed(2)}`);
   console.log('');
   console.log('━'.repeat(70));
-  console.log('POR DIREÇÃO');
+  console.log('BY DIRECTION');
   console.log('━'.repeat(70));
   console.log(`LONG:  ${longTrades.length} trades | P&L: $${longPnl.toFixed(2)} | WR: ${longTrades.length > 0 ? ((longWins / longTrades.length) * 100).toFixed(1) : 0}%`);
   console.log(`SHORT: ${shortTrades.length} trades | P&L: $${shortPnl.toFixed(2)} | WR: ${shortTrades.length > 0 ? ((shortWins / shortTrades.length) * 100).toFixed(1) : 0}%`);
   console.log('');
   console.log('━'.repeat(70));
-  console.log('POR SÍMBOLO');
+  console.log('BY SYMBOL');
   console.log('━'.repeat(70));
 
   for (const ws of result.watcherStats) {
@@ -97,12 +97,12 @@ async function validate() {
       .slice(0, 3)
       .map(([k, v]) => `${k}:${v}`)
       .join(', ');
-    console.log(`${ws.symbol.padEnd(10)} | Trades: ${ws.tradesExecuted.toString().padStart(2)} | Setups: ${ws.totalSetups.toString().padStart(5)} | Bloqueados: ${ws.tradesSkipped.toString().padStart(5)} | Top: ${blockedReasons}`);
+    console.log(`${ws.symbol.padEnd(10)} | Trades: ${ws.tradesExecuted.toString().padStart(2)} | Setups: ${ws.totalSetups.toString().padStart(5)} | Blocked: ${ws.tradesSkipped.toString().padStart(5)} | Top: ${blockedReasons}`);
   }
 
   console.log('');
   console.log('━'.repeat(70));
-  console.log('FILTROS APLICADOS');
+  console.log('APPLIED FILTERS');
   console.log('━'.repeat(70));
 
   let totalBlocked = 0;
@@ -123,7 +123,7 @@ async function validate() {
 
   console.log('');
   console.log('═'.repeat(70));
-  console.log('✓ VALIDAÇÃO CONCLUÍDA');
+  console.log('✓ VALIDATION COMPLETE');
   console.log('═'.repeat(70));
 
   const pnlTarget = 4500;
@@ -142,15 +142,15 @@ async function validate() {
   console.log('');
 
   if (pnlOk && ddOk && wrOk) {
-    console.log('✓ CONFIGURAÇÃO VALIDADA COM SUCESSO!');
+    console.log('✓ CONFIGURATION VALIDATED SUCCESSFULLY!');
   } else {
-    console.log('!  Alguns targets não foram atingidos. Revisar configuração.');
+    console.log('!  Some targets were not met. Review configuration.');
   }
 
   process.exit(0);
 }
 
 validate().catch((err) => {
-  console.error('Erro:', err);
+  console.error('Error:', err);
   process.exit(1);
 });

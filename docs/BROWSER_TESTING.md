@@ -413,10 +413,10 @@ A scripted Playwright run captures a screenshot for every "surface" the app expo
 ```bash
 # Generate a fresh gallery (writes to apps/electron/screenshots/<timestamp>/):
 pnpm --filter @marketmind/electron dev   # one terminal
-node scripts/visual-gallery.mjs           # another
+node scripts/visual/gallery.mjs           # another
 
 # Diff against baseline:
-node scripts/visual-diff.mjs <session>
+node scripts/visual/diff.mjs <session>
 ```
 
 ### Surface contract

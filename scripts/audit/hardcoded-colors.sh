@@ -1,25 +1,25 @@
 #!/bin/bash
 
-# Script para auditar cores hardcoded no projeto MarketMind
-# Executa buscas por padrões de cores que não vêm do tema Chakra
+# Script to audit hardcoded colors in the MarketMind project
+# Searches for color patterns that do not come from the Chakra theme
 
 RENDERER_PATH="apps/electron/src/renderer"
 
-# Arquivos permitidos (cores definidas intencionalmente)
+# Allowed files (colors defined intentionally)
 EXCLUDE_PATTERNS="grep -v '\.test\.' | grep -v 'theme/index.ts' | grep -v 'preReactColors.ts' | grep -v 'constants/defaults.ts' | grep -v 'node_modules'"
 
 echo "=================================="
-echo "MarketMind - Auditoria de Cores Hardcoded"
+echo "MarketMind - Hardcoded Colors Audit"
 echo "=================================="
 echo ""
 
-# Arquivos permitidos:
-# - theme/index.ts - onde os tokens são definidos
-# - constants/preReactColors.ts - cores para estados antes do React carregar
-# - constants/defaults.ts - valores default com fallbacks
-# - *.test.ts - arquivos de teste
+# Allowed files:
+# - theme/index.ts - where tokens are defined
+# - constants/preReactColors.ts - colors for states before React loads
+# - constants/defaults.ts - default values with fallbacks
+# - *.test.ts - test files
 
-echo "1. CORES HEXADECIMAIS (#xxx)"
+echo "1. HEX COLORS (#xxx)"
 echo "----------------------------"
 HEX_COUNT=$(grep -rn --include="*.tsx" --include="*.ts" \
   -E "#[0-9a-fA-F]{3,8}" \
@@ -31,11 +31,11 @@ HEX_COUNT=$(grep -rn --include="*.tsx" --include="*.ts" \
   grep -v "node_modules" | \
   wc -l | tr -d ' ')
 
-echo "Total encontrado: $HEX_COUNT ocorrências"
+echo "Total found: $HEX_COUNT occurrences"
 echo ""
 
 if [ "$HEX_COUNT" -gt 0 ]; then
-  echo "Arquivos com cores hex hardcoded:"
+  echo "Files with hardcoded hex colors:"
   grep -rn --include="*.tsx" --include="*.ts" \
     -E "#[0-9a-fA-F]{3,8}" \
     "$RENDERER_PATH" | \
@@ -48,7 +48,7 @@ if [ "$HEX_COUNT" -gt 0 ]; then
   echo ""
 fi
 
-echo "2. CORES RGBA/RGB"
+echo "2. RGBA/RGB COLORS"
 echo "-----------------"
 RGBA_COUNT=$(grep -rn --include="*.tsx" --include="*.ts" \
   -E "rgba?\([0-9]" \
@@ -60,11 +60,11 @@ RGBA_COUNT=$(grep -rn --include="*.tsx" --include="*.ts" \
   grep -v "node_modules" | \
   wc -l | tr -d ' ')
 
-echo "Total encontrado: $RGBA_COUNT ocorrências"
+echo "Total found: $RGBA_COUNT occurrences"
 echo ""
 
 if [ "$RGBA_COUNT" -gt 0 ]; then
-  echo "Arquivos com cores rgba/rgb hardcoded:"
+  echo "Files with hardcoded rgba/rgb colors:"
   grep -rn --include="*.tsx" --include="*.ts" \
     -E "rgba?\([0-9]" \
     "$RENDERER_PATH" | \
@@ -77,7 +77,7 @@ if [ "$RGBA_COUNT" -gt 0 ]; then
   echo ""
 fi
 
-echo "3. INLINE STYLES COM CORES"
+echo "3. INLINE STYLES WITH COLORS"
 echo "--------------------------"
 INLINE_COUNT=$(grep -rn --include="*.tsx" --include="*.ts" \
   -E "style=\{[^}]*(color|background)" \
@@ -87,33 +87,33 @@ INLINE_COUNT=$(grep -rn --include="*.tsx" --include="*.ts" \
   grep -v "node_modules" | \
   wc -l | tr -d ' ')
 
-echo "Total encontrado: $INLINE_COUNT ocorrências"
+echo "Total found: $INLINE_COUNT occurrences"
 echo ""
 
 echo "=================================="
-echo "RESUMO"
+echo "SUMMARY"
 echo "=================================="
 TOTAL=$((HEX_COUNT + RGBA_COUNT + INLINE_COUNT))
-echo "Total de cores hardcoded: $TOTAL"
+echo "Total hardcoded colors: $TOTAL"
 echo ""
 
 if [ "$TOTAL" -eq 0 ]; then
-  echo "✅ Nenhuma cor hardcoded encontrada!"
+  echo "✅ No hardcoded colors found!"
 else
-  echo "⚠️  Existem cores hardcoded que precisam ser migradas para o tema."
+  echo "⚠️  There are hardcoded colors that need to be migrated to the theme."
   echo ""
-  echo "Para ver detalhes, execute com --verbose:"
+  echo "To see details, run with --verbose:"
   echo "  $0 --verbose"
 fi
 
-# Se --verbose flag passada, mostra todas as ocorrências
+# If --verbose flag is passed, show all occurrences
 if [ "$1" == "--verbose" ]; then
   echo ""
   echo "=================================="
-  echo "DETALHES COMPLETOS"
+  echo "FULL DETAILS"
   echo "=================================="
   echo ""
-  echo "Cores Hexadecimais:"
+  echo "Hex Colors:"
   grep -rn --include="*.tsx" --include="*.ts" \
     -E "#[0-9a-fA-F]{3,8}" \
     "$RENDERER_PATH" | \
@@ -124,7 +124,7 @@ if [ "$1" == "--verbose" ]; then
     grep -v "node_modules"
 
   echo ""
-  echo "Cores RGBA/RGB:"
+  echo "RGBA/RGB Colors:"
   grep -rn --include="*.tsx" --include="*.ts" \
     -E "rgba?\([0-9]" \
     "$RENDERER_PATH" | \
@@ -135,7 +135,7 @@ if [ "$1" == "--verbose" ]; then
     grep -v "node_modules"
 
   echo ""
-  echo "Inline Styles com cores:"
+  echo "Inline Styles with colors:"
   grep -rn --include="*.tsx" --include="*.ts" \
     -E "style=\{[^}]*(color|background)" \
     "$RENDERER_PATH" | \

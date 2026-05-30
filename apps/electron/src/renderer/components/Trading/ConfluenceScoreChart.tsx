@@ -123,8 +123,8 @@ export const ConfluenceScoreChart = memo(({
   // can be more frequent. So local state can hold transient peaks
   // that happened BETWEEN backend snapshots. If we replace and
   // filter by `t > serverMaxT`, those mid-window peaks vanish from
-  // the chart on every refetch — the bug user reported as "vi
-  // valor acima de 25% mas os picos não vão até lá".
+  // the chart on every refetch — the bug user reported as "I saw
+  // values above 25% but the peaks don't reach there".
   //
   // Instead: merge-dedupe with a 5s tolerance window. Server points
   // are canonical for any window they cover; local points outside

@@ -13,7 +13,7 @@ Smaller in scope than v1.6 / v1.7 by design — those were big sweeps; this is t
 ## Track structure
 
 ### Track A — Audit gate + sweep (in flight: PR #406)
-- New `scripts/audit-panel-rules.mjs` with two rules:
+- New `scripts/audit/panel-rules.mjs` with two rules:
   - `bespoke-record-row` — catches `<Box borderWidth=1 borderColor=border borderRadius=md p={N}>` outside `<RecordRow>`
   - `bespoke-loading-text` — catches `<Text>{t('common.loading')}</Text>` next to `<Spinner>`
 - `<RecordRow>` extended with `tone='default'|'muted'|'panel'` and `onClick` (interactive variant) so the primitive can absorb every shape the audit catches.

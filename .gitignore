@@ -219,3 +219,8 @@ optimization-log*.txt
 
 # MCP screenshot output — ignore timestamped session dirs, keep baseline.
 apps/electron/screenshots/[0-9]*/
+
+# Runtime artifacts that must never be committed (canonical homes:
+# apps/backend/logs for logs, apps/backend/output for CLI/backtest output)
+*.pid
+/output/

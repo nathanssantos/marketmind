@@ -1,5 +1,5 @@
 -- Quick validation queries for new features
--- Run: psql $DATABASE_URL -f scripts/validate-new-features.sql
+-- Run: psql $DATABASE_URL -f scripts/sql/validate-new-features.sql
 
 \echo '🔍 Validating New Features'
 \echo '=========================='

@@ -110,7 +110,7 @@ Current token categories:
 - `brand.logo.primary` / `brand.logo.secondary` - Brand-locked logo colors
 - `canvas.*` - Canvas rendering colors
 
-### Forbidden patterns (enforced by `scripts/audit-shade-literals.mjs` in CI)
+### Forbidden patterns (enforced by `scripts/audit/shade-literals.mjs` in CI)
 
 Five patterns the audit rejects automatically. Each entry shows the
 **forbidden form** + the **semantic-token alternative**.
@@ -660,7 +660,7 @@ As of v1.2, `apps/electron/src/renderer/components/` contains **0** hardcoded sh
 | `trading.profit` | PnL gain — prefer over generic `green.fg` for trade values |
 | `trading.loss` | PnL loss — prefer over generic `red.fg` for trade values |
 
-Adding a new shade literal in `renderer/components/` is caught by `pnpm lint:shades` (`scripts/audit-shade-literals.mjs`) and gated in CI. Always prefer a semantic token; if the design needs a new tone, add it to `theme/semanticTokens.ts` first.
+Adding a new shade literal in `renderer/components/` is caught by `pnpm lint:shades` (`scripts/audit/shade-literals.mjs`) and gated in CI. Always prefer a semantic token; if the design needs a new tone, add it to `theme/semanticTokens.ts` first.
 
 ### WCAG AA contrast (v1.3 F.1)
 

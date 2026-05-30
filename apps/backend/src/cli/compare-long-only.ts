@@ -22,10 +22,10 @@ interface TestResult {
 }
 
 async function compare() {
-  console.log('=== COMPARAÇÃO: LONG-ONLY vs LONG+SHORT ===');
-  console.log('Entry Level: 100% | Timeframe: 12h | Período: 2023-2026');
-  console.log('Símbolos:', SYMBOLS.join(', '));
-  console.log('BTC Correlation Filter: HABILITADO');
+  console.log('=== COMPARISON: LONG-ONLY vs LONG+SHORT ===');
+  console.log('Entry Level: 100% | Timeframe: 12h | Period: 2023-2026');
+  console.log('Symbols:', SYMBOLS.join(', '));
+  console.log('BTC Correlation Filter: ENABLED');
   console.log('');
 
   const results: TestResult[] = [];
@@ -33,7 +33,7 @@ async function compare() {
   for (const onlyLong of [false, true]) {
     const modeName = onlyLong ? 'LONG-ONLY' : 'LONG + SHORT';
     console.log(`\n${'═'.repeat(60)}`);
-    console.log(`> Testando: ${modeName}`);
+    console.log(`> Testing: ${modeName}`);
     console.log(`${'═'.repeat(60)}\n`);
 
     const baseConfig = createBaseConfig();
@@ -106,24 +106,24 @@ async function compare() {
     );
     console.log('');
 
-    console.log('> Por Símbolo:');
+    console.log('> By Symbol:');
     for (const ws of result.watcherStats) {
       console.log(
-        `  ${ws.symbol}: ${ws.tradesExecuted} trades | Setups: ${ws.totalSetups} | Bloqueados: ${ws.tradesSkipped}`
+        `  ${ws.symbol}: ${ws.tradesExecuted} trades | Setups: ${ws.totalSetups} | Blocked: ${ws.tradesSkipped}`
       );
     }
     console.log('');
   }
 
   console.log(`\n${  '═'.repeat(60)}`);
-  console.log('> RESUMO COMPARATIVO');
+  console.log('> COMPARATIVE SUMMARY');
   console.log('═'.repeat(60));
   console.log('');
 
   const longShort = results.find((r) => !r.onlyLong)!;
   const longOnly = results.find((r) => r.onlyLong)!;
 
-  console.log('| Métrica              | LONG+SHORT    | LONG-ONLY     | Diferença     |');
+  console.log('| Metric               | LONG+SHORT    | LONG-ONLY     | Difference    |');
   console.log('|----------------------|---------------|---------------|---------------|');
   console.log(
     `| Total Trades         | ${longShort.totalTrades.toString().padEnd(13)} | ${longOnly.totalTrades.toString().padEnd(13)} | ${(longOnly.totalTrades - longShort.totalTrades).toString().padEnd(13)} |`
@@ -155,19 +155,19 @@ async function compare() {
   const ddDiff = longOnly.maxDrawdown - longShort.maxDrawdown;
 
   if (pnlDiff > 0 && ddDiff <= 0) {
-    console.log('> RECOMENDAÇÃO: USAR LONG-ONLY MODE');
-    console.log(`   Melhoria de P&L: +$${pnlDiff.toFixed(2)}`);
-    console.log(`   Melhoria de Drawdown: ${Math.abs(ddDiff).toFixed(1)}%`);
+    console.log('> RECOMMENDATION: USE LONG-ONLY MODE');
+    console.log(`   P&L improvement: +$${pnlDiff.toFixed(2)}`);
+    console.log(`   Drawdown improvement: ${Math.abs(ddDiff).toFixed(1)}%`);
   } else if (pnlDiff < 0 && longShort.shortPnl > 0) {
-    console.log('> RECOMENDAÇÃO: MANTER LONG+SHORT');
-    console.log(`   SHORTs contribuem: +$${longShort.shortPnl.toFixed(2)}`);
-    console.log(`   Win Rate SHORT: ${longShort.shortWinRate.toFixed(1)}%`);
+    console.log('> RECOMMENDATION: KEEP LONG+SHORT');
+    console.log(`   SHORTs contribute: +$${longShort.shortPnl.toFixed(2)}`);
+    console.log(`   SHORT Win Rate: ${longShort.shortWinRate.toFixed(1)}%`);
   } else if (pnlDiff > 0) {
-    console.log('> RECOMENDAÇÃO: USAR LONG-ONLY MODE');
-    console.log(`   Melhoria de P&L: +$${pnlDiff.toFixed(2)}`);
-    if (ddDiff > 0) console.log(`   ! Drawdown aumenta: +${ddDiff.toFixed(1)}%`);
+    console.log('> RECOMMENDATION: USE LONG-ONLY MODE');
+    console.log(`   P&L improvement: +$${pnlDiff.toFixed(2)}`);
+    if (ddDiff > 0) console.log(`   ! Drawdown increases: +${ddDiff.toFixed(1)}%`);
   } else {
-    console.log('~ INCONCLUSIVO: Analisar trade-offs');
+    console.log('~ INCONCLUSIVE: Analyze trade-offs');
     console.log(`   LONG+SHORT P&L: $${longShort.totalPnl.toFixed(2)}`);
     console.log(`   LONG-ONLY P&L: $${longOnly.totalPnl.toFixed(2)}`);
   }
@@ -176,6 +176,6 @@ async function compare() {
 }
 
 compare().catch((err) => {
-  console.error('Erro:', err);
+  console.error('Error:', err);
   process.exit(1);
 });

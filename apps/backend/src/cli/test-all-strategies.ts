@@ -91,13 +91,13 @@ const testStrategy = async (strategyName: string): Promise<StrategyResult | null
 
 async function main() {
   console.log('═'.repeat(80));
-  console.log('> TESTE DE TODAS AS 106 ESTRATÉGIAS');
+  console.log('> TEST ALL 106 STRATEGIES');
   console.log('═'.repeat(80));
   console.log('');
-  console.log('> CONFIGURAÇÃO:');
-  console.log('   • Símbolos:', SYMBOLS.join(', '));
+  console.log('> CONFIGURATION:');
+  console.log('   • Symbols:', SYMBOLS.join(', '));
   console.log('   • Timeframe: 12h');
-  console.log('   • Período: 2023-01-01 a 2026-01-31 (3 anos)');
+  console.log('   • Period: 2023-01-01 to 2026-01-31 (3 years)');
   console.log('   • Entry Level: 100% (breakout)');
   console.log('   • BTC Correlation Filter: ON');
   console.log('   • Volume Filter: ON');
@@ -105,7 +105,7 @@ async function main() {
   console.log('');
 
   const strategies = loadAllStrategies();
-  console.log(`> Total de estratégias: ${strategies.length}`);
+  console.log(`> Total strategies: ${strategies.length}`);
   console.log('');
 
   const results: StrategyResult[] = [];
@@ -113,7 +113,7 @@ async function main() {
 
   for (const strategy of strategies) {
     tested++;
-    process.stdout.write(`\r> Testando ${tested}/${strategies.length}: ${strategy.padEnd(40)}`);
+    process.stdout.write(`\r> Testing ${tested}/${strategies.length}: ${strategy.padEnd(40)}`);
 
     const result = await testStrategy(strategy);
     if (result) {
@@ -128,14 +128,14 @@ async function main() {
   const unprofitable = sortedByPnl.filter((r) => r.totalPnl <= 0);
 
   console.log('═'.repeat(80));
-  console.log(`> RESUMO: ${profitable.length} lucrativas | ${unprofitable.length} não lucrativas`);
+  console.log(`> SUMMARY: ${profitable.length} profitable | ${unprofitable.length} unprofitable`);
   console.log('═'.repeat(80));
   console.log('');
 
-  console.log('> TOP 20 ESTRATÉGIAS (por P&L):');
+  console.log('> TOP 20 STRATEGIES (by P&L):');
   console.log('─'.repeat(120));
   console.log(
-    '| # | Estratégia                          | P&L       | P&L%    | Trades | WR     | PF    | DD     | Sharpe | LONG     | SHORT    |'
+    '| # | Strategy                            | P&L       | P&L%    | Trades | WR     | PF    | DD     | Sharpe | LONG     | SHORT    |'
   );
   console.log('─'.repeat(120));
 
@@ -149,7 +149,7 @@ async function main() {
   console.log('─'.repeat(120));
   console.log('');
 
-  console.log('✗ BOTTOM 10 ESTRATÉGIAS (piores P&L):');
+  console.log('✗ BOTTOM 10 STRATEGIES (worst P&L):');
   console.log('─'.repeat(100));
 
   sortedByPnl.slice(-10).reverse().forEach((r, i) => {
@@ -162,7 +162,7 @@ async function main() {
   console.log('');
 
   console.log('═'.repeat(80));
-  console.log('> ESTRATÉGIAS RECOMENDADAS PARA PRODUÇÃO:');
+  console.log('> RECOMMENDED STRATEGIES FOR PRODUCTION:');
   console.log('═'.repeat(80));
   console.log('');
 
@@ -171,7 +171,7 @@ async function main() {
   );
 
   if (recommended.length > 0) {
-    console.log(`✓ ${recommended.length} estratégias passaram nos critérios:`);
+    console.log(`✓ ${recommended.length} strategies passed the criteria:`);
     console.log('   (P&L > $100, WR > 50%, PF > 1.5, DD < 40%)');
     console.log('');
     recommended.forEach((r, i) => {
@@ -179,8 +179,8 @@ async function main() {
       console.log(`      P&L: $${formatCurrency(r.totalPnl)} | WR: ${r.winRate.toFixed(1)}% | PF: ${r.profitFactor.toFixed(2)} | DD: ${r.maxDrawdown.toFixed(1)}%`);
     });
   } else {
-    console.log('!  Nenhuma estratégia passou em todos os critérios.');
-    console.log('   Considere relaxar os critérios ou usar as top 5 por P&L.');
+    console.log('!  No strategy passed all criteria.');
+    console.log('   Consider relaxing the criteria or using the top 5 by P&L.');
   }
 
   console.log('');
@@ -190,18 +190,18 @@ async function main() {
   const avgPF = results.filter((r) => r.profitFactor < Infinity).reduce((sum, r) => sum + r.profitFactor, 0) / results.length;
 
   console.log('═'.repeat(80));
-  console.log('> ESTATÍSTICAS AGREGADAS:');
+  console.log('> AGGREGATE STATISTICS:');
   console.log('═'.repeat(80));
-  console.log(`   Total P&L (soma): $${formatCurrency(totalAggPnl)}`);
-  console.log(`   Win Rate médio: ${avgWinRate.toFixed(1)}%`);
-  console.log(`   Profit Factor médio: ${avgPF.toFixed(2)}`);
-  console.log(`   Estratégias lucrativas: ${profitable.length}/${results.length} (${((profitable.length / results.length) * 100).toFixed(1)}%)`);
+  console.log(`   Total P&L (sum): $${formatCurrency(totalAggPnl)}`);
+  console.log(`   Average Win Rate: ${avgWinRate.toFixed(1)}%`);
+  console.log(`   Average Profit Factor: ${avgPF.toFixed(2)}`);
+  console.log(`   Profitable strategies: ${profitable.length}/${results.length} (${((profitable.length / results.length) * 100).toFixed(1)}%)`);
   console.log('');
 
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error('Erro:', err);
+  console.error('Error:', err);
   process.exit(1);
 });
