@@ -144,7 +144,16 @@ marketmind/                         # monorepo root
 - **Generated artifacts are never committed** (gitignored). Canonical homes: backend logs → `apps/backend/logs/`; CLI/backtest output → `apps/backend/output/`. In code resolve them from the package root via `src/utils/runtime-dirs.ts` (`LOGS_DIR`, `OUTPUT_DIR`, `ensureDir`) — never write to cwd-relative `./output`, and never scatter `*.log`/`*.pid`/`results/` into the tree.
 - **Repo root** holds only standard project files (`README`, `CHANGELOG`, `LICENSE`, `CONTRIBUTING`, `CODE_OF_CONDUCT`, `SECURITY`, `QUICK_START`, `CLAUDE.md`) + monorepo config (`package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `eslint.config.js`, `docker-compose.yml`, dotfiles).
 - **Package root** holds only `package.json`, `tsconfig.json`, build/lint config, `.env.example`, `README.md`, and `src/`.
-- **`CLAUDE.md` is the single source of truth for all AI assistants.** The other tools' instruction paths — `.cursorrules` (Cursor), `.gemini/instructions.md` (Gemini), `.github/copilot-instructions.md` (Copilot), `.claude/project-instructions.md` — are **symlinks** to this file. Edit `CLAUDE.md` only; every tool picks it up automatically (no copies, no sync step). Don't replace the symlinks with real files. (Windows contributors need `git config core.symlinks true`.)
+- **`CLAUDE.md` is the single source of truth for all AI assistants.** Every other tool's default instruction path is a **symlink** to this file, so each AI finds instructions where it looks by default and there is exactly one file to maintain:
+  - `AGENTS.md` (cross-tool standard: OpenAI Codex, Jules, Zed, Aider, …)
+  - `GEMINI.md` (Gemini CLI) and `.gemini/instructions.md` (Gemini Code Assist)
+  - `.cursorrules` (Cursor)
+  - `.github/copilot-instructions.md` (GitHub Copilot)
+  - `.claude/project-instructions.md` (Claude)
+  - `.windsurfrules` (Windsurf)
+  - `.clinerules` (Cline)
+
+  Edit `CLAUDE.md` only; every tool picks it up automatically (no copies, no sync step). When adding support for a new AI tool, create a **symlink** at its default path → `CLAUDE.md` (root-level: `ln -s CLAUDE.md <path>`; nested: `ln -s ../CLAUDE.md <dir>/<file>`) and add it to this list. Don't replace the symlinks with real files. (Windows contributors need `git config core.symlinks true`.)
 
 ---
 
