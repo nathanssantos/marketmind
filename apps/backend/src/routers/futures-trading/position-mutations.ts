@@ -96,7 +96,12 @@ export const positionMutationsRouter = router({
 
       const positionId = generateEntityId();
       const entryPrice = parseFloat(input.entryPrice);
-      const liquidationPrice = calculateLiquidationPrice(entryPrice, leverage, input.side);
+      const liquidationPrice = calculateLiquidationPrice({
+        entryPrice,
+        quantity: parseFloat(input.entryQty),
+        leverage,
+        side: input.side,
+      });
 
       await ctx.db.insert(positions).values({
         id: positionId,
@@ -396,7 +401,12 @@ export const positionMutationsRouter = router({
 
             const newSide = position.side === 'LONG' ? 'SHORT' : 'LONG';
             const newPositionId = generateEntityId();
-            const newLiquidationPrice = calculateLiquidationPrice(exitPrice, posLeverage, newSide);
+            const newLiquidationPrice = calculateLiquidationPrice({
+              entryPrice: exitPrice,
+              quantity: parseFloat(position.entryQty),
+              leverage: posLeverage,
+              side: newSide,
+            });
 
             await tx.insert(positions).values({
               id: newPositionId,

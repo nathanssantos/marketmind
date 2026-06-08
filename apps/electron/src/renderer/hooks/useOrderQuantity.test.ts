@@ -61,18 +61,18 @@ describe('useOrderQuantity', () => {
     vi.clearAllMocks();
   });
 
-  it('computes FUTURES quantity = (balance × leverage × pct) / price', () => {
+  it('computes FUTURES quantity from the fee-reserved max notional', () => {
     const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
-    // 10000 × 5 × 0.10 / 50000 = 0.1
-    expect(result.current.getQuantity(50_000)).toBe('0.1000');
+    // notionalMax = 10000 / (1/5 + 0.0005) = 49875.31; × 0.10 / 50000 ≈ 0.09975.
+    expect(result.current.getQuantity(50_000)).toBe('0.0998');
     expect(result.current.leverage).toBe(5);
     expect(result.current.balance).toBe(10_000);
     expect(result.current.sizePercent).toBe(10);
   });
 
-  it('SPOT quantity ignores leverage (always 1×)', () => {
+  it('SPOT quantity ignores leverage (always 1×) and reserves the fee', () => {
     const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'SPOT'));
-    // 10000 × 1 × 0.10 / 50000 = 0.02
+    // notionalMax = 10000 / (1 + 0.0005) = 9995.00; × 0.10 / 50000 ≈ 0.019990.
     expect(result.current.getQuantity(50_000)).toBe('0.0200');
     expect(result.current.leverage).toBe(1);
   });
@@ -123,8 +123,8 @@ describe('useOrderQuantity', () => {
   it('reflects sizePercent changes from the store', () => {
     useQuickTradeStoreMock.mockReturnValue(50);
     const { result } = renderHook(() => useOrderQuantity('BTCUSDT', 'FUTURES'));
-    // 10000 × 5 × 0.50 / 50000 = 0.5
-    expect(result.current.getQuantity(50_000)).toBe('0.5000');
+    // notionalMax = 10000 / (1/5 + 0.0005) = 49875.31; × 0.50 / 50000 ≈ 0.49875.
+    expect(result.current.getQuantity(50_000)).toBe('0.4988');
     expect(result.current.sizePercent).toBe(50);
   });
 

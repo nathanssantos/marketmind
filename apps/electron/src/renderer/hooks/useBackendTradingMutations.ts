@@ -79,6 +79,13 @@ export const useBackendTradingMutations = () => {
       // the new entry in the same render frame.
       fanOutOpenExecutions(data);
       invalidateTradingAnalytics();
+      // Refresh the wallet balance immediately on entry. The opening fee
+      // (and, for paper wallets, the locked margin) just changed the
+      // balance, and the exposure/margin percentages in PortfolioSummary
+      // divide by it — without this the user had to click "Sync balance"
+      // before the numbers looked right. The socket `wallet:update` event
+      // still reconciles afterward; this just covers the gap until it lands.
+      void utils.wallet.list.invalidate();
     },
   });
 

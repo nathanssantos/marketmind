@@ -6,6 +6,7 @@ import { useBookTicker } from '@renderer/hooks/useBookTicker';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
+import { useLeverageBrackets } from '@renderer/hooks/useLeverageBrackets';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
@@ -192,6 +193,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
   const currentPrice = usePricesForSymbols(priceSymbols)[symbol] ?? 0;
 
   const { getQuantity, leverage, isReady, notReadyReason } = useOrderQuantity(symbol, marketType);
+  const leverageBrackets = useLeverageBrackets(symbol, marketType === 'FUTURES');
 
   const slPriceNum = useMemo(() => (slEnabled ? parseFloat(slPrice) : NaN), [slEnabled, slPrice]);
   const tpPriceNum = useMemo(() => (tpEnabled ? parseFloat(tpPrice) : NaN), [tpEnabled, tpPrice]);
@@ -512,8 +514,14 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
         const isBuy = pendingOrder.side === 'BUY';
         const totalValue = parseFloat(pendingOrder.quantity) * pendingOrder.price;
         const margin = totalValue / leverage;
-        const liqPrice = calculateLiquidationPrice(pendingOrder.price, leverage, isBuy ? 'LONG' : 'SHORT');
-        const liqPct = Math.abs((liqPrice - pendingOrder.price) / pendingOrder.price * 100);
+        const liqPrice = calculateLiquidationPrice({
+          entryPrice: pendingOrder.price,
+          quantity: parseFloat(pendingOrder.quantity),
+          leverage,
+          side: isBuy ? 'LONG' : 'SHORT',
+          brackets: leverageBrackets,
+        });
+        const liqPct = liqPrice > 0 ? Math.abs((liqPrice - pendingOrder.price) / pendingOrder.price * 100) : 0;
 
         return (
           <ConfirmationDialog

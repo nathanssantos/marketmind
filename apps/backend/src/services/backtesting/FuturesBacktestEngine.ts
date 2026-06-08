@@ -187,7 +187,12 @@ export class FuturesBacktestEngine {
       const marginRequired = positionValue / leverage;
       const side = trade.side;
 
-      const liquidationPrice = calculateLiquidationPrice(entryPrice, leverage, side);
+      const liquidationPrice = calculateLiquidationPrice({
+        entryPrice,
+        quantity: trade.quantity,
+        leverage,
+        side,
+      });
 
       let exitPrice = trade.exitPrice ?? entryPrice;
       let exitTime = trade.exitTime ?? trade.entryTime;

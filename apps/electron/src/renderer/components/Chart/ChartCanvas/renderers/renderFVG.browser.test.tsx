@@ -223,7 +223,7 @@ describe('renderFVG — real browser', () => {
     expect(scanAlpha(ctx2d, CANVAS_W, CANVAS_H)).toBe(0);
   });
 
-  test('gap rectangle extends to effectiveWidth (chartWidth - right margin)', () => {
+  test('gap rectangle extends all the way to the price scale (full chartWidth)', () => {
     const klines: Kline[] = [
       makeKline(0, 100, 101, 99, 100),
       makeKline(1, 100, 101, 99, 100),
@@ -241,11 +241,10 @@ describe('renderFVG — real browser', () => {
     renderFVG(makeCtx(manager), {} as never);
 
     const dims = manager.getDimensions()!;
-    const leftOfMargin = sampleCell(ctx2d, dims.chartWidth - 90, gapMidY);
-    expect(leftOfMargin.a, 'just left of the right margin should still be painted').toBeGreaterThan(0);
-
-    const inMargin = sampleCell(ctx2d, dims.chartWidth - 20, gapMidY);
-    expect(inMargin.a, 'inside right margin should remain clear').toBe(0);
+    // FVG now matches ORB: the zone reaches the price scale instead of
+    // stopping CHART_RIGHT_MARGIN px short.
+    const nearScale = sampleCell(ctx2d, dims.chartWidth - 5, gapMidY);
+    expect(nearScale.a, 'fill should reach the right edge of the chart').toBeGreaterThan(0);
   });
 
   test('skips gaps more than 50 bars beyond the visible end (future-cull)', () => {

@@ -214,8 +214,6 @@ interface WalletCardProps {
   isSyncing?: boolean;
 }
 
-const PERCENT_MULTIPLIER = 100;
-
 const getWalletTypeBadge = (walletType: WalletType) => {
   switch (walletType) {
     case 'testnet':
@@ -233,7 +231,6 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onF
   const { performance } = useBackendAnalytics(wallet.id, 'all');
 
   const netDeposits = wallet.totalDeposits - wallet.totalWithdrawals;
-  const effectiveInitial = wallet.initialBalance + netDeposits;
 
   // Net P&L sourced from Binance income events (same as Analytics modal
   // headline). Earlier this card derived `netPnL = balance − effectiveInitial`,
@@ -245,7 +242,10 @@ const WalletCard = ({ wallet, isActive, onDelete, onViewPerformance, onSync, onF
   const totalFunding = performance?.totalFunding ?? 0;
   const grossPnL = performance?.grossPnL ?? 0;
   const netPnL = performance?.netPnL ?? 0;
-  const netPnLPercent = effectiveInitial > 0 ? (netPnL / effectiveInitial) * PERCENT_MULTIPLIER : 0;
+  // Single source of truth: the backend's totalReturn already divides netPnL
+  // by the deposit-adjusted effectiveCapital, so the card and the Analytics
+  // modal never disagree.
+  const netPnLPercent = performance?.totalReturn ?? 0;
   const isProfitable = netPnL >= 0;
   const totalTrades = performance?.totalTrades ?? 0;
   const winRate = performance?.winRate ?? 0;

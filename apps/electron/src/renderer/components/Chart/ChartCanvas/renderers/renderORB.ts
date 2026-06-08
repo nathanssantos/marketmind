@@ -1,6 +1,7 @@
 import type { Kline, MarketEvent } from '@marketmind/types';
 import { getSessionById } from '@shared/constants/marketSessions';
 import { buildSessionWindows } from './sessionWindows';
+import { drawZoneArea } from './drawZoneArea';
 import type { GenericRenderer } from './types';
 import { getInstanceParam } from './types';
 
@@ -10,11 +11,39 @@ const ORB_MID_ALPHA = 0.3;
 const ORB_LINE_DASH: number[] = [6, 3];
 const ORB_MID_DASH: number[] = [2, 4];
 const ORB_LABEL_FONT = '9px sans-serif';
-const ORB_LABEL_X_TOLERANCE = 30;
-const ORB_LABEL_Y_TOLERANCE = 14;
 const DEFAULT_ORB_PERIOD_MINUTES = 15;
+// Two sessions whose opening range captured the same candles produce
+// identical price bands (e.g. TSE / ASX overlap). They are merged into a
+// single zone so the area and label share one color instead of stacking
+// two differently-colored overlapping rectangles.
+const ORB_PRICE_MERGE_RATIO = 0.0005;
 
-interface ORBZone {
+// ORB uses its own palette (no red/green) so its zones are never confused
+// with green/red area indicators like FVG. Session colors stay untouched
+// for session boundaries and the session selector.
+const ORB_PALETTE = [
+  '#3B82F6',
+  '#6366F1',
+  '#8B5CF6',
+  '#A855F7',
+  '#06B6D4',
+  '#0EA5E9',
+  '#F59E0B',
+  '#EC4899',
+] as const;
+
+const hashSessionId = (sessionId: string): number => {
+  let hash = 0;
+  for (let i = 0; i < sessionId.length; i += 1) hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0;
+  return hash;
+};
+
+export const orbColorForSession = (sessionId: string): string =>
+  ORB_PALETTE[hashSessionId(sessionId) % ORB_PALETTE.length]!;
+
+export const ORB_PALETTE_COLORS: readonly string[] = ORB_PALETTE;
+
+export interface ORBZone {
   sessionId: string;
   high: number;
   low: number;
@@ -24,6 +53,51 @@ interface ORBZone {
   color: string;
   shortName: string;
 }
+
+export interface MergedORBZone {
+  high: number;
+  low: number;
+  mid: number;
+  orbEndTimestamp: number;
+  sessionCloseTimestamp: number;
+  color: string;
+  names: string[];
+}
+
+const pricesMatch = (a: number, b: number): boolean =>
+  Math.abs(a - b) <= Math.max(Math.abs(a), Math.abs(b)) * ORB_PRICE_MERGE_RATIO;
+
+const windowsOverlap = (a: MergedORBZone, b: ORBZone): boolean =>
+  a.orbEndTimestamp <= b.sessionCloseTimestamp && b.orbEndTimestamp <= a.sessionCloseTimestamp;
+
+export const mergeORBZones = (zones: ORBZone[]): MergedORBZone[] => {
+  const merged: MergedORBZone[] = [];
+
+  for (const zone of zones) {
+    const target = merged.find(
+      (m) => pricesMatch(m.high, zone.high) && pricesMatch(m.low, zone.low) && windowsOverlap(m, zone),
+    );
+
+    if (!target) {
+      merged.push({
+        high: zone.high,
+        low: zone.low,
+        mid: zone.mid,
+        orbEndTimestamp: zone.orbEndTimestamp,
+        sessionCloseTimestamp: zone.sessionCloseTimestamp,
+        color: zone.color,
+        names: [zone.shortName],
+      });
+      continue;
+    }
+
+    target.orbEndTimestamp = Math.min(target.orbEndTimestamp, zone.orbEndTimestamp);
+    target.sessionCloseTimestamp = Math.max(target.sessionCloseTimestamp, zone.sessionCloseTimestamp);
+    if (!target.names.includes(zone.shortName)) target.names.push(zone.shortName);
+  }
+
+  return merged;
+};
 
 const getIntervalMinutes = (klines: Kline[]): number => {
   if (klines.length < 2) return 0;
@@ -71,7 +145,7 @@ const buildORBZones = (events: MarketEvent[], klines: Kline[], orbPeriodMinutes:
       mid: (high + low) / 2,
       orbEndTimestamp: orbEndTs,
       sessionCloseTimestamp: win.closeTimestamp,
-      color: win.color,
+      color: orbColorForSession(win.sessionId),
       shortName,
     });
   }
@@ -114,9 +188,9 @@ export const renderORB: GenericRenderer = (ctx, input) => {
   canvasCtx.rect(0, 0, chartWidth, chartHeight);
   canvasCtx.clip();
 
-  const labelGroups: { x: number; y: number; names: string[]; color: string }[] = [];
+  const labels: { x: number; y: number; names: string[]; color: string }[] = [];
 
-  for (const zone of zones) {
+  for (const zone of mergeORBZones(zones)) {
     const orbStartX = manager.timestampToX(zone.orbEndTimestamp, intervalMs);
     const sessionEndX = manager.timestampToX(zone.sessionCloseTimestamp, intervalMs);
 
@@ -126,8 +200,7 @@ export const renderORB: GenericRenderer = (ctx, input) => {
 
     const clampedLeft = Math.max(0, leftX);
     const clampedRight = Math.min(chartWidth, rightX);
-    const drawWidth = clampedRight - clampedLeft;
-    if (drawWidth <= 0) continue;
+    if (clampedRight - clampedLeft <= 0) continue;
 
     const highY = manager.priceToY(zone.high);
     const lowY = manager.priceToY(zone.low);
@@ -136,55 +209,39 @@ export const renderORB: GenericRenderer = (ctx, input) => {
     if (highY < 0 && lowY < 0) continue;
 
     const topY = Math.min(highY, lowY);
-    const bottomY = Math.max(highY, lowY);
-    const zoneHeight = bottomY - topY;
 
-    canvasCtx.globalAlpha = ORB_FILL_ALPHA;
-    canvasCtx.fillStyle = zone.color;
-    canvasCtx.fillRect(clampedLeft, topY, drawWidth, zoneHeight);
-
-    canvasCtx.globalAlpha = ORB_LINE_ALPHA;
-    canvasCtx.strokeStyle = zone.color;
-    canvasCtx.lineWidth = 1;
-    canvasCtx.setLineDash(ORB_LINE_DASH);
-
-    canvasCtx.beginPath();
-    canvasCtx.moveTo(clampedLeft, highY);
-    canvasCtx.lineTo(clampedRight, highY);
-    canvasCtx.stroke();
-
-    canvasCtx.beginPath();
-    canvasCtx.moveTo(clampedLeft, lowY);
-    canvasCtx.lineTo(clampedRight, lowY);
-    canvasCtx.stroke();
+    drawZoneArea(canvasCtx, {
+      left: clampedLeft,
+      right: clampedRight,
+      topY: highY,
+      bottomY: lowY,
+      fillColor: zone.color,
+      fillAlpha: ORB_FILL_ALPHA,
+      borderColor: zone.color,
+      borderAlpha: ORB_LINE_ALPHA,
+      borderDash: ORB_LINE_DASH,
+    });
 
     canvasCtx.globalAlpha = ORB_MID_ALPHA;
+    canvasCtx.strokeStyle = zone.color;
+    canvasCtx.lineWidth = 1;
     canvasCtx.setLineDash(ORB_MID_DASH);
     canvasCtx.beginPath();
     canvasCtx.moveTo(clampedLeft, midY);
     canvasCtx.lineTo(clampedRight, midY);
     canvasCtx.stroke();
+    canvasCtx.setLineDash([]);
 
-    const labelX = clampedLeft + 3;
-    const labelY = topY - 2;
-    const existing = labelGroups.find(
-      (g) => Math.abs(g.x - labelX) < ORB_LABEL_X_TOLERANCE && Math.abs(g.y - labelY) < ORB_LABEL_Y_TOLERANCE,
-    );
-    if (existing) {
-      if (!existing.names.includes(zone.shortName)) existing.names.push(zone.shortName);
-    } else {
-      labelGroups.push({ x: labelX, y: labelY, names: [zone.shortName], color: zone.color });
-    }
+    labels.push({ x: clampedLeft + 3, y: topY - 2, names: zone.names, color: zone.color });
   }
 
-  canvasCtx.setLineDash([]);
   canvasCtx.globalAlpha = ORB_LINE_ALPHA;
   canvasCtx.font = ORB_LABEL_FONT;
   canvasCtx.textBaseline = 'bottom';
   canvasCtx.textAlign = 'left';
-  for (const group of labelGroups) {
-    canvasCtx.fillStyle = group.color;
-    canvasCtx.fillText(`ORB ${group.names.join(' / ')}`, group.x, group.y);
+  for (const label of labels) {
+    canvasCtx.fillStyle = label.color;
+    canvasCtx.fillText(`ORB ${label.names.join(' / ')}`, label.x, label.y);
   }
 
   canvasCtx.restore();
