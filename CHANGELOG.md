@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Versioned `.mcp.json` at the repo root** — the five MarketMind MCP servers (`screenshot`, `app`, `backend`, `strategy`, `trading`) are now declared once in a committed `.mcp.json` using relative paths and `${VAR:-default}` env expansion. Any MCP-aware client (Claude Code, Cursor, Windsurf) picks them up from the project with no per-machine global config, while real secrets still come from the environment. `pnpm mcp:install` remains available for the legacy global-config flow.
+- **`pre-commit` git hook (fast quality gate)** — `scripts/setup/install-hooks.sh` now installs a deterministic, LLM-agnostic pre-commit hook alongside the existing `main`-branch pre-push guard. It runs `type-check` + `lint` only for the packages (`@marketmind/electron`, `@marketmind/backend`) touched by the staged changes; shared `packages/*` edits type-check both apps. The full test suite stays on CI / pre-push. Bypass a single run with `git commit --no-verify`.
+
 ## [1.24.0] - 2026-06-07
 
 Trading-math correctness pass plus indicator-area unification. Liquidation price, max drawdown and 100% sizing now match how exchanges actually compute them, the chart and the order ticket share a single liquidation formula, FVG/ORB area drawing is unified, and wallet exposure refreshes itself after an entry.
