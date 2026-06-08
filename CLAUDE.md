@@ -423,4 +423,4 @@ docker run -d --name marketmind-postgres \
 
 ---
 
-**Last Updated:** May 2026 · **Doc version:** 2.0 · **Project version:** 1.5.0 · **For:** Claude Code, Cursor, Copilot, Gemini, and other AI assistants
+**Last Updated:** June 2026 · **Doc version:** 2.0 · **Project version:** 1.24.0 · **For:** Claude Code, Cursor, Copilot, Gemini, and other AI assistants

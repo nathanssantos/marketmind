@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.24.0] - 2026-06-07
+
+Trading-math correctness pass plus indicator-area unification. Liquidation price, max drawdown and 100% sizing now match how exchanges actually compute them, the chart and the order ticket share a single liquidation formula, FVG/ORB area drawing is unified, and wallet exposure refreshes itself after an entry.
+
+### Fixed
+
+- **Liquidation price was unrealistic and "jumped" on the chart** — the formula added a flat 1.5% liquidation fee to the maintenance buffer, which at 50x left the liq price only ~0.1% from entry. It now uses Binance's real isolated-margin formula with notional-based maintenance brackets (maintenance margin rate + maintenance amount `cum`). The order-confirmation modal, the chart liquidation line, position mutations, auto-trading and the futures backtest engine all call the same `calculateLiquidationPrice`, so the pre-trade estimate matches Binance's authoritative value and the chart line no longer snaps to a different price once the position opens.
+- **Max drawdown was distorted by deposits/withdrawals** — it seeded from the final deposit-adjusted capital and never placed transfers in time. It is now measured on the deposit-neutralized equity curve rebuilt chronologically from income events: a TRANSFER shifts both the running balance and the peak by the same amount, so deposits never look like a recovery and withdrawals never look like a drawdown. The trough is always measured against the prior peak. Shared `computeMaxDrawdown` helper reused by the analytics performance and stats procedures.
+- **FVG area was cut off before the price scale** while ORB extended fully — both now reach the price scale via a shared `drawZoneArea` helper.
+- **ORB merged sessions showed mismatched colors** — collided sessions (e.g. TSE / ASX with the same opening range) painted the area in one color and the label in another. They now merge into a single zone with one color for both. ORB also uses a dedicated palette with no red/green, so its zones can't be confused with FVG.
+- **100% on the ticket under-deployed capital** — sizing now reserves only the opening taker fee (`notionalMax = balance / (1/leverage + takerFee)`), maximizing deployed capital instead of leaving a large lot-rounding gap.
+- **Balance/exposure required a manual "Sync" after entering a position** — creating an order now refreshes the wallet balance immediately, so exposure and margin percentages are correct without clicking refresh.
+
+### Changed
+
+- **Wallet card P&L %** now reuses the backend's `totalReturn` (deposit-adjusted) instead of recomputing it on the client, so the card and the Analytics modal can never disagree.
+- `calculateLiquidationPrice` now takes an options object (`{ entryPrice, quantity, leverage, side, brackets?, walletBalance? }`) and selects the maintenance bracket from notional. New `MaintenanceMarginBracket`, `DEFAULT_MAINTENANCE_MARGIN_BRACKETS` and `selectMaintenanceMarginBracket` exports in `@marketmind/types`.
+
+### Added
+
+- Regression tests: liquidation bracket math (LONG/SHORT, high-notional brackets), max-drawdown transfer neutralization, ORB zone merge + safe palette, FVG extent to the price scale, and fee-aware order sizing.
+
 ## [1.23.3] - 2026-05-29
 
 A deep unification pass over **everything that talks to Binance**. The headline is a clock-skew fix that was silently failing every signed Futures request (`-1021`), but the bulk of the release is structural: one client factory, one error vocabulary, one cache, one WebSocket-stream base, one kline-stream base — replacing definitions that had drifted apart across ~30 call sites and were each doing the same things differently. No behavioral change for the user beyond the bugs fixed; the win is that the next Binance change touches one file, not ten.
