@@ -4,10 +4,10 @@ import { incomeEvents, tradeExecutions } from '../../db/schema';
 import {
   getDailyIncomeSum,
   getEquityCurvePoints,
+  EQUITY_CURVE_TYPES,
 } from '../../services/income-events';
 import { walletQueries } from '../../services/database/walletQueries';
 import { protectedProcedure } from '../../trpc';
-import type { IncomeType } from '../../constants/income-types';
 import { startOfDayAgoInTz } from '../../utils/tz-bucket';
 
 // Mirrors trades.ts — keep the period semantics in sync across procedures.
@@ -28,13 +28,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // and capital movements (deposit/withdraw). Renderer plots each as a
 // separate cumulative series so the user can see whether equity is
 // drifting from PnL itself or from fees/funding/transfers.
-const EQUITY_CURVE_TYPES: readonly IncomeType[] = [
-  'REALIZED_PNL',
-  'COMMISSION',
-  'FUNDING_FEE',
-  'TRANSFER',
-];
-
 export const statsProcedures = {
   getSetupStats: protectedProcedure
     .input(

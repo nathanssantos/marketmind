@@ -1,6 +1,10 @@
 import { calculateFVG } from '@renderer/lib/indicators/fvg';
-import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
+import { INDICATOR_COLORS } from '@shared/constants';
+import { drawZoneArea } from './drawZoneArea';
 import type { GenericRenderer } from './types';
+
+const FVG_BORDER_DASH: number[] = [4, 2];
+const FVG_VISIBLE_LOOKAHEAD = 50;
 
 export const renderFVG: GenericRenderer = (ctx, _input) => {
   const { manager, colors } = ctx;
@@ -16,7 +20,6 @@ export const renderFVG: GenericRenderer = (ctx, _input) => {
 
   const viewport = manager.getViewport();
   const { chartWidth, chartHeight } = dimensions;
-  const effectiveWidth = chartWidth - CHART_CONFIG.CHART_RIGHT_MARGIN;
 
   canvasCtx.save();
   canvasCtx.beginPath();
@@ -27,38 +30,30 @@ export const renderFVG: GenericRenderer = (ctx, _input) => {
 
   for (const gap of fvgData.gaps) {
     if (gap.filled) continue;
-    if (gap.index > visibleEndIndex + 50) continue;
+    if (gap.index > visibleEndIndex + FVG_VISIBLE_LOOKAHEAD) continue;
 
-    const rawStartX = manager.indexToX(gap.index);
-    const startX = Math.max(0, rawStartX);
-    const drawWidth = effectiveWidth - startX;
-    if (drawWidth <= 0) continue;
+    const startX = Math.max(0, manager.indexToX(gap.index));
+    if (chartWidth - startX <= 0) continue;
 
     const topY = manager.priceToY(gap.high);
     const bottomY = manager.priceToY(gap.low);
-    const height = Math.abs(bottomY - topY);
-
     if (topY > chartHeight || bottomY < 0) continue;
 
     const isBullish = gap.type === 'bullish';
-    canvasCtx.fillStyle = isBullish
-      ? (colors.fvg?.bullish ?? INDICATOR_COLORS.FVG_BULLISH)
-      : (colors.fvg?.bearish ?? INDICATOR_COLORS.FVG_BEARISH);
 
-    canvasCtx.fillRect(startX, Math.min(topY, bottomY), drawWidth, height);
-
-    canvasCtx.strokeStyle = isBullish
-      ? (colors.fvg?.bullishBorder ?? INDICATOR_COLORS.FVG_BULLISH_BORDER)
-      : (colors.fvg?.bearishBorder ?? INDICATOR_COLORS.FVG_BEARISH_BORDER);
-    canvasCtx.lineWidth = 1;
-    canvasCtx.setLineDash([4, 2]);
-    canvasCtx.beginPath();
-    canvasCtx.moveTo(startX, topY);
-    canvasCtx.lineTo(effectiveWidth, topY);
-    canvasCtx.moveTo(startX, bottomY);
-    canvasCtx.lineTo(effectiveWidth, bottomY);
-    canvasCtx.stroke();
-    canvasCtx.setLineDash([]);
+    drawZoneArea(canvasCtx, {
+      left: startX,
+      right: chartWidth,
+      topY,
+      bottomY,
+      fillColor: isBullish
+        ? (colors.fvg?.bullish ?? INDICATOR_COLORS.FVG_BULLISH)
+        : (colors.fvg?.bearish ?? INDICATOR_COLORS.FVG_BEARISH),
+      borderColor: isBullish
+        ? (colors.fvg?.bullishBorder ?? INDICATOR_COLORS.FVG_BULLISH_BORDER)
+        : (colors.fvg?.bearishBorder ?? INDICATOR_COLORS.FVG_BEARISH_BORDER),
+      borderDash: FVG_BORDER_DASH,
+    });
   }
 
   canvasCtx.restore();
