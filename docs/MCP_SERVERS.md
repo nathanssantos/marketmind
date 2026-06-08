@@ -11,7 +11,16 @@ MarketMind ships four Model Context Protocol servers that expose its dev surface
 
 All four are dev-only by design — they require either the renderer running with `VITE_E2E_BYPASS_AUTH=true`, the backend Postgres reachable, or both.
 
-## One-shot install
+## Project config (`.mcp.json`) — recommended
+
+The repo ships a versioned `.mcp.json` at the root declaring all five servers with **relative paths** and `${VAR:-default}` env expansion. Any MCP-aware client (Claude Code, Cursor, Windsurf) launched from the project root picks them up automatically — no global config, no per-machine paths. Real secrets (`DATABASE_URL`, `MM_MCP_SESSION_COOKIE`) come from your environment; the committed defaults only cover local dev. You only need to build the servers once:
+
+```bash
+pnpm install
+pnpm mcp:build
+```
+
+## Global install (legacy / per-user)
 
 ```bash
 pnpm install
@@ -19,7 +28,7 @@ pnpm mcp:build
 pnpm mcp:install
 ```
 
-This auto-detects every `packages/mcp-*` workspace, builds them, and registers them in `~/.claude.json` under the `mcpServers` map. Restart your MCP client to pick them up.
+This auto-detects every `packages/mcp-*` workspace, builds them, and registers them in `~/.claude.json` under the `mcpServers` map with absolute paths. Restart your MCP client to pick them up. Prefer the project `.mcp.json` above unless you specifically want a user-global registration.
 
 To preview what would change:
 ```bash
