@@ -320,11 +320,11 @@ The `pretest` script in backend runs `bash scripts/ensure-docker.sh` — backend
 
 ## 📊 Current Development Phase
 
-**Version:** v1.5.0
+**Version:** v1.24.0 (production). `CHANGELOG.md` is the source of truth for per-release history — this section only summarizes the latest release and the standing system status. (Older `V1_X_PLAN` docs are archived in `docs/archive/`.)
 
-v1.5 is the largest feature drop since v1.0 — 28 commits headlined by `@marketmind/mcp-trading` (paper-trade execution for MCP agents behind a per-wallet toggle, hard-gated with audit log), the layout-durability story closing (snapshot list/restore UI + WAL archiving for PITR), `@marketmind/tokens` extracted into its own package, centralized keyboard registry + `?` help modal, backtest runs persisting across backend restart, and an axe-core dialog regression spec gating CI. v1.4 + earlier plans archived in `docs/archive/`.
+**v1.24.0** — trading-math correctness pass + chart indicator-area unification. Liquidation price now uses Binance's real isolated-margin formula with notional maintenance brackets (one shared `calculateLiquidationPrice` across the order modal, chart line, position mutations, auto-trading and the futures backtest engine); max drawdown is measured on the deposit-neutralized equity curve (TRANSFER shifts balance + peak together); FVG areas reach the price scale via a shared `drawZoneArea` helper; ORB merges same-band sessions into one zone with a non-red/green palette; 100% sizing reserves only the opening taker fee; balance/exposure refresh immediately after entry. Also: AI instructions consolidated to a single `CLAUDE.md` with symlinks at every other tool's default path.
 
-### System Status (v1.5.0)
+### System Status (v1.24.0)
 - ✅ Backend infrastructure (Fastify 5.6.2 + tRPC 11.7.2)
 - ✅ Database (PostgreSQL 17 + TimescaleDB 2.23.1)
 - ✅ Authentication (Argon2 + sessions)
@@ -341,9 +341,9 @@ v1.5 is the largest feature drop since v1.0 — 28 commits headlined by `@market
 ### DEFAULT_ENABLED_SETUPS (13 strategies)
 `7day-momentum-crypto`, `breakout-retest`, `bull-trap`, `cumulative-rsi-r3`, `divergence-rsi-macd`, `golden-cross-sma`, `hull-ma-trend`, `liquidity-sweep`, `macd-divergence`, `momentum-breakout-2025`, `nr7-breakout`, `pin-inside-combo`, `triple-ema-confluence`
 
-### Testing Status (~8,400 total tests)
-- **Backend:** 5,416 passing across 204 files + 40 skipped (IB integration tests requiring Gateway)
-- **Frontend:** 2,239 unit (182 files) + 27 browser
+### Testing Status (~9,000 total tests)
+- **Backend:** 5,668 passing across 227 files (plus IB integration tests skipped without a live Gateway)
+- **Frontend:** 2,545 unit (219 files) + 108 browser (9 files)
 - **Indicators:** 722 across 60 files
 - **Visual regression:** 44-PNG baseline (`apps/electron/screenshots/baseline/`) + CI gate (`.github/workflows/visual-regression.yml`, pixelmatch `maxDiffPixels=40000` ≈ 3.1%, `threshold=0.2`)
 - **Standardization:** 0 hardcoded shade literals (`color="X.500"`, `bg="X.50"`) and 0 `_dark={{}}` overrides remaining in `apps/electron/src/renderer/components/`. All colors flow through semantic tokens (`X.fg/.subtle/.muted/.solid`, `bg.panel/.muted`, `fg.muted`, `trading.profit/.loss`).
