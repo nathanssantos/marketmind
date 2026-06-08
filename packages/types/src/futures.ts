@@ -173,18 +173,71 @@ export const FUTURES_DEFAULTS = {
   MAINTENANCE_MARGIN_RATE: 0.004,
 } as const;
 
-export const calculateLiquidationPrice = (
-  entryPrice: number,
-  leverage: number,
-  side: PositionSide,
-  maintenanceMarginRate: number = FUTURES_DEFAULTS.MAINTENANCE_MARGIN_RATE,
-  liquidationFee: number = FUTURES_DEFAULTS.LIQUIDATION_FEE
-): number => {
-  const buffer = maintenanceMarginRate + liquidationFee;
+export interface MaintenanceMarginBracket {
+  notionalFloor: number;
+  notionalCap: number;
+  maintMarginRatio: number;
+  cum: number;
+}
 
-  return side === 'LONG'
-    ? entryPrice * (1 - 1 / leverage + buffer)
-    : entryPrice * (1 + 1 / leverage - buffer);
+/**
+ * Binance USDT-M default maintenance-margin brackets (paper-wallet table).
+ * Real per-symbol brackets come from `/fapi/v1/leverageBracket`; this is the
+ * fallback when live brackets are unavailable (paper wallets, pre-trade
+ * estimates before the symbol's brackets are fetched).
+ */
+export const DEFAULT_MAINTENANCE_MARGIN_BRACKETS: MaintenanceMarginBracket[] = [
+  { notionalFloor: 0, notionalCap: 50_000, maintMarginRatio: 0.004, cum: 0 },
+  { notionalFloor: 50_000, notionalCap: 250_000, maintMarginRatio: 0.005, cum: 50 },
+  { notionalFloor: 250_000, notionalCap: 1_000_000, maintMarginRatio: 0.01, cum: 1_300 },
+];
+
+export const selectMaintenanceMarginBracket = (
+  notional: number,
+  brackets: MaintenanceMarginBracket[] = DEFAULT_MAINTENANCE_MARGIN_BRACKETS
+): MaintenanceMarginBracket => {
+  const sorted = [...brackets].sort((a, b) => a.notionalFloor - b.notionalFloor);
+  let selected = sorted[0] ?? DEFAULT_MAINTENANCE_MARGIN_BRACKETS[0]!;
+  for (const bracket of sorted) {
+    if (notional >= bracket.notionalFloor) selected = bracket;
+  }
+  return selected;
+};
+
+export interface LiquidationPriceParams {
+  entryPrice: number;
+  quantity: number;
+  leverage: number;
+  side: PositionSide;
+  /** Per-symbol brackets; defaults to the Binance USDT-M default table. */
+  brackets?: MaintenanceMarginBracket[];
+  /** Isolated margin allocated to the position; defaults to notional / leverage. */
+  walletBalance?: number;
+}
+
+/**
+ * Binance USDT-M isolated-margin liquidation price.
+ *
+ * Liquidation happens when margin balance == maintenance margin:
+ *   isolatedMargin + unrealizedPnL = notional_at_liq * MMR - cum
+ * Solving for the liquidation price yields:
+ *   LONG:  (isolatedMargin - qty*EP + cum) / (qty * (MMR - 1))
+ *   SHORT: (isolatedMargin + qty*EP + cum) / (qty * (MMR + 1))
+ * where MMR / cum are the maintenance-margin bracket selected by notional.
+ */
+export const calculateLiquidationPrice = (params: LiquidationPriceParams): number => {
+  const { entryPrice, quantity, leverage, side, brackets, walletBalance } = params;
+  if (entryPrice <= 0 || quantity <= 0 || leverage <= 0) return 0;
+
+  const notional = quantity * entryPrice;
+  const { maintMarginRatio, cum } = selectMaintenanceMarginBracket(notional, brackets);
+  const isolatedMargin = walletBalance ?? notional / leverage;
+
+  const liquidationPrice = side === 'LONG'
+    ? (isolatedMargin - notional + cum) / (quantity * (maintMarginRatio - 1))
+    : (isolatedMargin + notional + cum) / (quantity * (maintMarginRatio + 1));
+
+  return liquidationPrice > 0 ? liquidationPrice : 0;
 };
 
 export const calculateLeveragedPnl = (

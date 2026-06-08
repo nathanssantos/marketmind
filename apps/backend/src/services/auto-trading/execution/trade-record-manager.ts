@@ -185,7 +185,12 @@ export const createAndExecuteTrade = async (
     const leverage = config.leverage ?? 1;
     const isFutures = watcher.marketType === 'FUTURES';
     const liqPrice = isFutures && leverage > 1
-      ? calculateLiquidationPrice(actualEntryPrice, leverage, setup.direction).toString()
+      ? calculateLiquidationPrice({
+          entryPrice: actualEntryPrice,
+          quantity: actualQuantity,
+          leverage,
+          side: setup.direction,
+        }).toString()
       : undefined;
 
     await db.insert(tradeExecutions).values({

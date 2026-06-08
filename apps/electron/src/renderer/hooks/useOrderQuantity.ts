@@ -4,7 +4,7 @@ import { useActiveWallet } from './useActiveWallet';
 import { useIsCustomSymbol } from './useIsCustomSymbol';
 import { useQuickTradeStore } from '../store/quickTradeStore';
 import { trpc } from '../utils/trpc';
-import { roundTradingQty } from '@shared/utils';
+import { computeOrderQuantity } from './orderSizing';
 
 export interface UseOrderQuantityResult {
   getQuantity: (price: number) => string;
@@ -75,10 +75,7 @@ export const useOrderQuantity = (symbol: string | undefined, marketType: MarketT
 
   const getQuantity = useCallback((price: number): string => {
     if (!isReady) return '0';
-    const pct = sizePercent / 100;
-    const marginPower = isFutures ? balance * leverage : balance;
-    const qty = marginPower > 0 && price > 0 ? (marginPower * pct) / price : 0;
-    return roundTradingQty(qty, stepSize > 0 ? stepSize : undefined);
+    return computeOrderQuantity({ balance, leverage, isFutures, sizePercent, price, stepSize });
   }, [balance, sizePercent, leverage, isFutures, stepSize, isReady]);
 
   return {

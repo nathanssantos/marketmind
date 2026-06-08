@@ -41,3 +41,5 @@ export {
   emitPositionClose,
   type EmitPositionCloseInput,
 } from './emitPositionClose';
+
+export { computeMaxDrawdown, EQUITY_CURVE_TYPES } from './maxDrawdown';

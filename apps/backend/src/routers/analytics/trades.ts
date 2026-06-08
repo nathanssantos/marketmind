@@ -3,7 +3,12 @@ import { z } from 'zod';
 import { db } from '../../db';
 import { incomeEvents, tradeExecutions } from '../../db/schema';
 import { walletQueries } from '../../services/database/walletQueries';
-import { getDailyIncomeSum } from '../../services/income-events';
+import {
+  getDailyIncomeSum,
+  getEquityCurvePoints,
+  computeMaxDrawdown,
+  EQUITY_CURVE_TYPES,
+} from '../../services/income-events';
 import { protectedProcedure } from '../../trpc';
 import { startOfDayAgoInTz } from '../../utils/tz-bucket';
 
@@ -256,23 +261,34 @@ export const tradeProcedures = {
         ? Math.min(...losingTrades.map((t) => parseFloat(t.pnl ?? '0')))
         : 0;
 
+      // Max drawdown is measured on the deposit-neutralized equity curve
+      // (income events seeded at initialBalance) so deposits/withdrawals
+      // never register as gains or drawdowns, and the trough is always
+      // measured against the prior peak. Falls back to the per-trade curve
+      // when the wallet has no income events (paper wallets without sync).
       let maxDrawdown = 0;
-      let peak = effectiveCapital;
-      let runningBalance = effectiveCapital;
-
-      for (const trade of trades.sort(
-        (a, b) => new Date(a.closedAt!).getTime() - new Date(b.closedAt!).getTime()
-      )) {
-        const pnl = trade.pnl ? parseFloat(trade.pnl) : 0;
-        runningBalance += pnl;
-
-        if (runningBalance > peak) {
-          peak = runningBalance;
-        }
-
-        const drawdown = peak > 0 ? ((peak - runningBalance) / peak) * 100 : 0;
-        if (drawdown > maxDrawdown) {
-          maxDrawdown = drawdown;
+      if (wallet && hasIncomeEvents) {
+        const equityPoints = await getEquityCurvePoints({
+          walletId: input.walletId,
+          userId: ctx.user.id,
+          from: wallet.createdAt,
+          to: new Date(),
+          tz: input.tz,
+          types: EQUITY_CURVE_TYPES,
+        });
+        const measureFrom =
+          input.period !== 'all' ? periodStart(input.period, input.tz).getTime() : undefined;
+        maxDrawdown = computeMaxDrawdown(equityPoints, initialBalance, measureFrom);
+      } else {
+        let peak = effectiveCapital;
+        let runningBalance = effectiveCapital;
+        for (const trade of trades.sort(
+          (a, b) => new Date(a.closedAt!).getTime() - new Date(b.closedAt!).getTime()
+        )) {
+          runningBalance += trade.pnl ? parseFloat(trade.pnl) : 0;
+          if (runningBalance > peak) peak = runningBalance;
+          const drawdown = peak > 0 ? ((peak - runningBalance) / peak) * 100 : 0;
+          if (drawdown > maxDrawdown) maxDrawdown = drawdown;
         }
       }
 

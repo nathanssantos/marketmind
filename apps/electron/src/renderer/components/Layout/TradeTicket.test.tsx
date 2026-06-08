@@ -41,6 +41,10 @@ vi.mock('@renderer/hooks/useOrderQuantity', () => ({
   useOrderQuantity: (symbol: string, marketType: string) => useOrderQuantityMock(symbol, marketType),
 }));
 
+vi.mock('@renderer/hooks/useLeverageBrackets', () => ({
+  useLeverageBrackets: () => undefined,
+}));
+
 vi.mock('@renderer/hooks/useToast', () => ({
   useToast: () => useToastMock(),
 }));

@@ -179,32 +179,30 @@ describe('FuturesBacktestEngine', () => {
   });
 
   describe('Liquidation price calculations', () => {
+    const quantity = 0.1;
+
     it('should calculate correct liquidation price for LONG', () => {
       const entryPrice = 50000;
-      const leverage = 10;
-
-      const liqPrice = calculateLiquidationPrice(entryPrice, leverage, 'LONG');
+      const liqPrice = calculateLiquidationPrice({ entryPrice, quantity, leverage: 10, side: 'LONG' });
 
       expect(liqPrice).toBeLessThan(entryPrice);
-      expect(liqPrice).toBeCloseTo(45950, 0);
+      expect(liqPrice).toBeCloseTo(45180.72, 1);
     });
 
     it('should calculate correct liquidation price for SHORT', () => {
       const entryPrice = 50000;
-      const leverage = 10;
-
-      const liqPrice = calculateLiquidationPrice(entryPrice, leverage, 'SHORT');
+      const liqPrice = calculateLiquidationPrice({ entryPrice, quantity, leverage: 10, side: 'SHORT' });
 
       expect(liqPrice).toBeGreaterThan(entryPrice);
-      expect(liqPrice).toBeCloseTo(54050, 0);
+      expect(liqPrice).toBeCloseTo(54780.88, 1);
     });
 
     it('should have tighter liquidation with higher leverage', () => {
       const entryPrice = 50000;
 
-      const liq5x = calculateLiquidationPrice(entryPrice, 5, 'LONG');
-      const liq10x = calculateLiquidationPrice(entryPrice, 10, 'LONG');
-      const liq20x = calculateLiquidationPrice(entryPrice, 20, 'LONG');
+      const liq5x = calculateLiquidationPrice({ entryPrice, quantity, leverage: 5, side: 'LONG' });
+      const liq10x = calculateLiquidationPrice({ entryPrice, quantity, leverage: 10, side: 'LONG' });
+      const liq20x = calculateLiquidationPrice({ entryPrice, quantity, leverage: 20, side: 'LONG' });
 
       expect(liq20x).toBeGreaterThan(liq10x);
       expect(liq10x).toBeGreaterThan(liq5x);
