@@ -123,6 +123,15 @@ const closeAll = async () => {
   await page.waitForTimeout(200);
 };
 
+// Dialogs move focus to their close button on open; the browser treats that
+// programmatic focus as :focus-visible, so the close (X) shows a focus ring.
+// Drop focus before capturing so modal screenshots don't show the ring.
+const blurActive = async () => {
+  const page = await getPage();
+  await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
+  await page.waitForTimeout(150);
+};
+
 const scenes = [
   {
     name: 'screenshot-0',
@@ -186,6 +195,7 @@ const scenes = [
         window.__uiStore?.getState?.().setTradingProfilesDialogOpen?.(true);
       });
       await page.waitForTimeout(1200);
+      await blurActive();
     },
     capture: async () => captureFullPage('screenshot-5', 'dark'),
   },
@@ -219,6 +229,7 @@ const scenes = [
         window.__uiStore?.getState?.().setWalletsDialogOpen?.(true);
       });
       await page.waitForTimeout(1200);
+      await blurActive();
     },
     capture: async () => captureFullPage('screenshot-8', 'dark'),
   },
@@ -250,11 +261,14 @@ const scenes = [
     title: 'Settings — Chart palette config',
     setup: async () => {
       await closeAll();
-      await switchLayout('15m / 1h / 4h');
+      // Theme before layout so the chart behind the modal mounts dark — its
+      // price-scale gutter must not stay light from the prior light scene.
       await setTheme('dark');
+      await switchLayout('15m / 1h / 4h');
       const page = await getPage();
       await page.evaluate(() => window.__globalActions?.openSettings?.('chart'));
       await page.waitForTimeout(1500);
+      await blurActive();
     },
     capture: async () => captureFullPage('screenshot-12', 'dark'),
   },
@@ -277,14 +291,32 @@ const scenes = [
 
 await mkdir(OUT_DIR, { recursive: true });
 
+// One fresh browser per scene. 4K full-page captures accumulate renderer
+// memory and the headless tab eventually crashes mid-run ("Target page …
+// closed"); a clean browser per scene also guarantees no cross-scene state
+// bleed (theme / chart palette / open dialogs). Costs a relaunch per scene
+// but makes the pass deterministic and crash-free. One retry absorbs a rare
+// cold-launch flake without aborting the whole run.
 for (const scene of scenes) {
   console.log(`▶ ${scene.title}`);
-  await scene.setup();
-  const result = await scene.capture();
-  const dest = path.join(OUT_DIR, `${scene.name}.png`);
-  await copyFile(result.path, dest);
-  console.log(`  → ${dest}`);
+  let lastErr;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      await scene.setup();
+      const result = await scene.capture();
+      const dest = path.join(OUT_DIR, `${scene.name}.png`);
+      await copyFile(result.path, dest);
+      console.log(`  → ${dest}`);
+      lastErr = undefined;
+      break;
+    } catch (err) {
+      lastErr = err;
+      console.log(`  ! attempt ${attempt} failed: ${err.message}`);
+      await closeBrowser();
+    }
+  }
+  if (lastErr) throw lastErr;
+  await closeBrowser();
 }
 
-await closeBrowser();
 console.log(`\nDone. ${scenes.length} screenshots written to ${OUT_DIR}`);

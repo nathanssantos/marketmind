@@ -8,7 +8,11 @@
  */
 import LAYOUT_FIXTURE from './layoutFixture.json' with { type: 'json' };
 
-const NOW = new Date().toISOString();
+// Deterministic by default so the visual-regression baseline is stable across
+// runs. The marketing-screenshot pass sets MM_FIXTURE_NOW to the current time
+// so the candle-close countdown and "today" data look live.
+const NOW = process.env.MM_FIXTURE_NOW ?? '2026-04-27T19:00:00.000Z';
+const NOW_MS = new Date(NOW).getTime();
 
 // Synthetic kline generator — deterministic seeded RNG so screenshots are
 // reproducible across runs. Mirrors the e2e helper in
@@ -198,8 +202,8 @@ const closedExecutions = [
 ];
 
 const TRADE_EXECUTIONS = closedExecutions.map((t, i) => {
-  const closedAt = new Date(Date.now() - t.daysAgo * 86_400_000).toISOString();
-  const openedAt = new Date(Date.now() - t.daysAgo * 86_400_000 - 3_600_000).toISOString();
+  const closedAt = new Date(NOW_MS - t.daysAgo * 86_400_000).toISOString();
+  const openedAt = new Date(NOW_MS - t.daysAgo * 86_400_000 - 3_600_000).toISOString();
   return {
     id: `exec-${String(i + 1).padStart(3, '0')}`,
     userId: 'e2e-user',
@@ -254,9 +258,9 @@ const OPEN_EXECUTIONS = [
     stopLoss: '65900',
     takeProfit: '68800',
     exitReason: null,
-    openedAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
+    openedAt: new Date(NOW_MS - 3 * 3_600_000).toISOString(),
     closedAt: null,
-    createdAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
+    createdAt: new Date(NOW_MS - 3 * 3_600_000).toISOString(),
     updatedAt: NOW,
   },
   {
@@ -282,9 +286,9 @@ const OPEN_EXECUTIONS = [
     stopLoss: '3605',
     takeProfit: '3400',
     exitReason: null,
-    openedAt: new Date(Date.now() - 1 * 3_600_000).toISOString(),
+    openedAt: new Date(NOW_MS - 1 * 3_600_000).toISOString(),
     closedAt: null,
-    createdAt: new Date(Date.now() - 1 * 3_600_000).toISOString(),
+    createdAt: new Date(NOW_MS - 1 * 3_600_000).toISOString(),
     updatedAt: NOW,
   },
 ];
@@ -319,7 +323,7 @@ const EQUITY_POINTS = TRADE_EXECUTIONS
 
 const DAILY_PERFORMANCE = closedExecutions
   .map((t) => {
-    const closedAt = new Date(Date.now() - t.daysAgo * 86_400_000);
+    const closedAt = new Date(NOW_MS - t.daysAgo * 86_400_000);
     const date = closedAt.toISOString().slice(0, 10);
     const pnl = t.pnl;
     return {
@@ -488,7 +492,7 @@ const TRADING_PROFILES = [
 const SCORE_HISTORY_POINTS = 96;
 const SCORE_HISTORY_INTERVAL_MS = 15 * 60 * 1000;
 const SCORE_HISTORY = (() => {
-  const now = Date.now();
+  const now = NOW_MS;
   const start = now - SCORE_HISTORY_POINTS * SCORE_HISTORY_INTERVAL_MS;
   const out: Array<{ t: number; long: number; short: number }> = [];
   for (let i = 0; i < SCORE_HISTORY_POINTS; i++) {
@@ -512,7 +516,7 @@ const ACTIVE_WATCHERS = [
     profileName: 'Conservative Breakout',
     marketType: 'FUTURES' as const,
     isActive: true,
-    lastUpdate: new Date(Date.now() - 5 * 60_000).toISOString(),
+    lastUpdate: new Date(NOW_MS - 5 * 60_000).toISOString(),
     setupsDetected24h: 2,
   },
   {
@@ -523,7 +527,7 @@ const ACTIVE_WATCHERS = [
     profileName: 'Conservative Breakout',
     marketType: 'FUTURES' as const,
     isActive: true,
-    lastUpdate: new Date(Date.now() - 10 * 60_000).toISOString(),
+    lastUpdate: new Date(NOW_MS - 10 * 60_000).toISOString(),
     setupsDetected24h: 1,
   },
   {
@@ -534,7 +538,7 @@ const ACTIVE_WATCHERS = [
     profileName: 'Conservative Breakout',
     marketType: 'FUTURES' as const,
     isActive: true,
-    lastUpdate: new Date(Date.now() - 15 * 60_000).toISOString(),
+    lastUpdate: new Date(NOW_MS - 15 * 60_000).toISOString(),
     setupsDetected24h: 0,
   },
 ];
@@ -559,7 +563,7 @@ export interface Fixture {
 }
 
 const buildHistory = (count: number, base: number, jitter: number): Array<{ timestamp: string; value: number }> => {
-  const now = Date.now();
+  const now = NOW_MS;
   const dayMs = 86_400_000;
   return Array.from({ length: count }, (_, i) => ({
     timestamp: new Date(now - (count - i) * dayMs).toISOString(),
