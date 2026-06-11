@@ -227,8 +227,11 @@ const scenes = [
     title: 'Trading dashboard — light theme',
     setup: async () => {
       await closeAll();
-      await switchLayout('15m / 1h / 4h');
+      // Set the theme before switching layout so the chart canvas mounts in
+      // light mode — the price-scale gutter/axis paints light too (a post-mount
+      // theme switch leaves the gutter dark).
       await setTheme('light');
+      await switchLayout('15m / 1h / 4h');
     },
     capture: async () => captureFullPage('screenshot-9', 'light'),
   },
@@ -237,10 +240,23 @@ const scenes = [
     title: 'Market Indicators — light theme',
     setup: async () => {
       await closeAll();
-      await switchLayout('Market Indicators');
       await setTheme('light');
+      await switchLayout('Market Indicators');
     },
     capture: async () => captureFullPage('screenshot-10', 'light'),
+  },
+  {
+    name: 'screenshot-12',
+    title: 'Settings — Chart palette config',
+    setup: async () => {
+      await closeAll();
+      await switchLayout('15m / 1h / 4h');
+      await setTheme('dark');
+      const page = await getPage();
+      await page.evaluate(() => window.__globalActions?.openSettings?.('chart'));
+      await page.waitForTimeout(1500);
+    },
+    capture: async () => captureFullPage('screenshot-12', 'dark'),
   },
   // Kept last so the Classic B&W chart palette doesn't bleed into other scenes.
   {

@@ -6,7 +6,7 @@ import {
   formatTimerText,
 } from '@renderer/utils/canvas/priceTagUtils';
 import { formatChartPrice } from '@renderer/utils/formatters';
-import { CHART_CONFIG, INDICATOR_COLORS, INDICATOR_LINE_WIDTHS } from '@shared/constants';
+import { CHART_CONFIG, INDICATOR_LINE_WIDTHS } from '@shared/constants';
 import { getKlineClose } from '@shared/utils';
 import { useCallback } from 'react';
 import { isKlineBullishInclusive } from './utils/klineColor';
@@ -108,7 +108,6 @@ export const useCurrentPriceLineRenderer = ({
       chartWidth,
       bgColor,
       CHART_CONFIG.CANVAS_PADDING_RIGHT,
-      INDICATOR_COLORS.LABEL_TEXT
     );
   }, [manager, colors, timeframe, manager?.getKlines()]);
 
