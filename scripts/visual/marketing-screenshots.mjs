@@ -48,8 +48,18 @@ const switchLayout = async (presetName) => {
     throw new Error(`switchLayout: preset "${presetName}" not found in layoutPresets`);
   }
   // Give the canvas time to mount, hydrate kline data via the trpc
-  // mock, and run a few rAF frames so candles actually render.
-  await page.waitForTimeout(3000);
+  // mock, run rAF frames, and — critically — let the throttled portfolio
+  // panel re-render against the settled price-store mark so open-position
+  // unrealized P&L reflects the current price (not a transient load value).
+  await page.waitForTimeout(5000);
+};
+
+const setChartPalette = async (paletteId) => {
+  const page = await getPage();
+  await page.evaluate((id) => {
+    window.__preferencesStore?.getState?.().set?.('chart', 'chartColorPalette', id);
+  }, paletteId);
+  await page.waitForTimeout(800);
 };
 
 const closeAll = async () => {
@@ -70,7 +80,7 @@ const scenes = [
       await switchLayout('15m / 1h / 4h');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-0', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-0', 'dark'),
   },
   {
     name: 'screenshot-1',
@@ -80,7 +90,7 @@ const scenes = [
       await switchLayout('1m / 5m / 15min');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-1', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-1', 'dark'),
   },
   {
     name: 'screenshot-2',
@@ -90,7 +100,7 @@ const scenes = [
       await switchLayout('1h / 4h / 1d');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-2', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-2', 'dark'),
   },
   {
     name: 'screenshot-3',
@@ -100,7 +110,7 @@ const scenes = [
       await switchLayout('Auto-Trading');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-3', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-3', 'dark'),
   },
   {
     name: 'screenshot-4',
@@ -110,7 +120,7 @@ const scenes = [
       await switchLayout('Auto-Scalping');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-4', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-4', 'dark'),
   },
   {
     name: 'screenshot-5',
@@ -125,7 +135,7 @@ const scenes = [
       });
       await page.waitForTimeout(1200);
     },
-    capture: async () => captureFullPage({ label: 'screenshot-5', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-5', 'dark'),
   },
   {
     name: 'screenshot-6',
@@ -135,7 +145,7 @@ const scenes = [
       await switchLayout('Market Indicators');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-6', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-6', 'dark'),
   },
   // screenshot-7 (Fibonacci retracement overlay) was dropped from the
   // automation because the Fibo drawing tool needs two mouse anchors
@@ -158,7 +168,39 @@ const scenes = [
       });
       await page.waitForTimeout(1200);
     },
-    capture: async () => captureFullPage({ label: 'screenshot-8', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-8', 'dark'),
+  },
+  {
+    name: 'screenshot-9',
+    title: 'Trading dashboard — light theme',
+    setup: async () => {
+      await closeAll();
+      await switchLayout('15m / 1h / 4h');
+      await setTheme('light');
+    },
+    capture: async () => captureFullPage('screenshot-9', 'light'),
+  },
+  {
+    name: 'screenshot-10',
+    title: 'Market Indicators — light theme',
+    setup: async () => {
+      await closeAll();
+      await switchLayout('Market Indicators');
+      await setTheme('light');
+    },
+    capture: async () => captureFullPage('screenshot-10', 'light'),
+  },
+  // Kept last so the Classic B&W chart palette doesn't bleed into other scenes.
+  {
+    name: 'screenshot-11',
+    title: 'Swing layout — Classic B&W chart palette',
+    setup: async () => {
+      await closeAll();
+      await switchLayout('1h / 4h / 1d');
+      await setTheme('dark');
+      await setChartPalette('classic');
+    },
+    capture: async () => captureFullPage('screenshot-11', 'dark'),
   },
 ];
 
