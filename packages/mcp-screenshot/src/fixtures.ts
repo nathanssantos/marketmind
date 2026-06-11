@@ -8,7 +8,11 @@
  */
 import LAYOUT_FIXTURE from './layoutFixture.json' with { type: 'json' };
 
-const NOW = '2026-04-27T19:00:00.000Z';
+// Deterministic by default so the visual-regression baseline is stable across
+// runs. The marketing-screenshot pass sets MM_FIXTURE_NOW to the current time
+// so the candle-close countdown and "today" data look live.
+const NOW = process.env.MM_FIXTURE_NOW ?? '2026-04-27T19:00:00.000Z';
+const NOW_MS = new Date(NOW).getTime();
 
 // Synthetic kline generator — deterministic seeded RNG so screenshots are
 // reproducible across runs. Mirrors the e2e helper in
@@ -55,7 +59,7 @@ const generateKlines = (
   symbol: string,
   interval: string,
   count: number,
-  basePrice: number,
+  endPrice: number,
   seed: number,
   volatility = 0.004,
 ): SyntheticKline[] => {
@@ -63,7 +67,7 @@ const generateKlines = (
   const endTime = Math.floor(new Date(NOW).getTime() / intervalMs) * intervalMs;
   const rng = mulberry32(seed);
   const klines: SyntheticKline[] = [];
-  let price = basePrice;
+  let price = endPrice;
   // Mild upward drift so the chart looks alive (slight uptrend bias).
   const driftBias = 0.0003;
   for (let i = 0; i < count; i++) {
@@ -96,6 +100,21 @@ const generateKlines = (
     });
     price = close;
   }
+  // Pin the latest close to endPrice (the symbol's "current" price) while
+  // preserving the generated shape, so every interval of a symbol ends at the
+  // same price as the ticker and open-position lines sit on the chart.
+  const lastClose = klines[klines.length - 1]?.close ?? endPrice;
+  const scale = endPrice / lastClose;
+  if (scale !== 1) {
+    for (const k of klines) {
+      k.open *= scale;
+      k.high *= scale;
+      k.low *= scale;
+      k.close *= scale;
+      k.quoteVolume = k.volume * ((k.open + k.close) / 2);
+      k.takerBuyQuoteVolume = k.takerBuyBaseVolume * ((k.open + k.close) / 2);
+    }
+  }
   return klines;
 };
 
@@ -104,28 +123,28 @@ const generateKlines = (
 // symbol so the curves don't visually align across panels.
 const SYNTHETIC_KLINES: Record<string, Record<string, SyntheticKline[]>> = {
   BTCUSDT: {
-    '1m': generateKlines('BTCUSDT', '1m', 500, 67_000, 1001),
-    '5m': generateKlines('BTCUSDT', '5m', 500, 66_000, 1002),
-    '15m': generateKlines('BTCUSDT', '15m', 500, 65_000, 1003),
-    '1h': generateKlines('BTCUSDT', '1h', 500, 62_000, 1004),
-    '4h': generateKlines('BTCUSDT', '4h', 500, 55_000, 1005),
-    '1d': generateKlines('BTCUSDT', '1d', 500, 35_000, 1006, 0.012),
+    '1m': generateKlines('BTCUSDT', '1m', 500, 67_450, 1001),
+    '5m': generateKlines('BTCUSDT', '5m', 500, 67_450, 1002),
+    '15m': generateKlines('BTCUSDT', '15m', 500, 67_450, 1003),
+    '1h': generateKlines('BTCUSDT', '1h', 500, 67_450, 1004),
+    '4h': generateKlines('BTCUSDT', '4h', 500, 67_450, 1005),
+    '1d': generateKlines('BTCUSDT', '1d', 500, 67_450, 1006, 0.012),
   },
   ETHUSDT: {
-    '1m': generateKlines('ETHUSDT', '1m', 500, 3_460, 2001),
-    '5m': generateKlines('ETHUSDT', '5m', 500, 3_400, 2002),
-    '15m': generateKlines('ETHUSDT', '15m', 500, 3_350, 2003),
-    '1h': generateKlines('ETHUSDT', '1h', 500, 3_200, 2004),
-    '4h': generateKlines('ETHUSDT', '4h', 500, 2_900, 2005),
-    '1d': generateKlines('ETHUSDT', '1d', 500, 2_400, 2006, 0.012),
+    '1m': generateKlines('ETHUSDT', '1m', 500, 3_478, 2001),
+    '5m': generateKlines('ETHUSDT', '5m', 500, 3_478, 2002),
+    '15m': generateKlines('ETHUSDT', '15m', 500, 3_478, 2003),
+    '1h': generateKlines('ETHUSDT', '1h', 500, 3_478, 2004),
+    '4h': generateKlines('ETHUSDT', '4h', 500, 3_478, 2005),
+    '1d': generateKlines('ETHUSDT', '1d', 500, 3_478, 2006, 0.012),
   },
   SOLUSDT: {
-    '1m': generateKlines('SOLUSDT', '1m', 500, 171, 3001),
-    '5m': generateKlines('SOLUSDT', '5m', 500, 168, 3002),
-    '15m': generateKlines('SOLUSDT', '15m', 500, 165, 3003),
-    '1h': generateKlines('SOLUSDT', '1h', 500, 158, 3004),
-    '4h': generateKlines('SOLUSDT', '4h', 500, 140, 3005),
-    '1d': generateKlines('SOLUSDT', '1d', 500, 110, 3006, 0.012),
+    '1m': generateKlines('SOLUSDT', '1m', 500, 171.4, 3001),
+    '5m': generateKlines('SOLUSDT', '5m', 500, 171.4, 3002),
+    '15m': generateKlines('SOLUSDT', '15m', 500, 171.4, 3003),
+    '1h': generateKlines('SOLUSDT', '1h', 500, 171.4, 3004),
+    '4h': generateKlines('SOLUSDT', '4h', 500, 171.4, 3005),
+    '1d': generateKlines('SOLUSDT', '1d', 500, 171.4, 3006, 0.012),
   },
 };
 
@@ -166,23 +185,25 @@ const PAPER_BTC_WALLET = {
 };
 
 const closedExecutions = [
-  { sym: 'BTCUSDT', side: 'long', qty: 0.05, entry: 67_200, exit: 68_350, pnl: 57.5, daysAgo: 1 },
-  { sym: 'ETHUSDT', side: 'long', qty: 1.2, entry: 3_410, exit: 3_465, pnl: 66.0, daysAgo: 2 },
-  { sym: 'SOLUSDT', side: 'short', qty: 8, entry: 178.4, exit: 174.2, pnl: 33.6, daysAgo: 3 },
-  { sym: 'BTCUSDT', side: 'long', qty: 0.04, entry: 66_900, exit: 66_410, pnl: -19.6, daysAgo: 4 },
-  { sym: 'ETHUSDT', side: 'short', qty: 0.8, entry: 3_525, exit: 3_488, pnl: 29.6, daysAgo: 5 },
-  { sym: 'BNBUSDT', side: 'long', qty: 2, entry: 612.3, exit: 624.7, pnl: 24.8, daysAgo: 6 },
-  { sym: 'SOLUSDT', side: 'long', qty: 6, entry: 168.2, exit: 172.9, pnl: 28.2, daysAgo: 7 },
-  { sym: 'BTCUSDT', side: 'short', qty: 0.03, entry: 68_100, exit: 67_540, pnl: 16.8, daysAgo: 9 },
-  { sym: 'ETHUSDT', side: 'long', qty: 1, entry: 3_400, exit: 3_348, pnl: -52.0, daysAgo: 11 },
-  { sym: 'BTCUSDT', side: 'long', qty: 0.06, entry: 65_800, exit: 67_120, pnl: 79.2, daysAgo: 14 },
-  { sym: 'SOLUSDT', side: 'short', qty: 10, entry: 175, exit: 169, pnl: 60, daysAgo: 18 },
-  { sym: 'BNBUSDT', side: 'long', qty: 1.5, entry: 605, exit: 615, pnl: 15, daysAgo: 21 },
+  { sym: 'BTCUSDT', side: 'LONG', qty: 0.05, entry: 66_900, exit: 67_380, pnl: 24.0, daysAgo: 0 },
+  { sym: 'ETHUSDT', side: 'LONG', qty: 0.5, entry: 3_450, exit: 3_478, pnl: 14.0, daysAgo: 0 },
+  { sym: 'BTCUSDT', side: 'LONG', qty: 0.05, entry: 67_200, exit: 68_350, pnl: 57.5, daysAgo: 1 },
+  { sym: 'ETHUSDT', side: 'LONG', qty: 1.2, entry: 3_410, exit: 3_465, pnl: 66.0, daysAgo: 2 },
+  { sym: 'SOLUSDT', side: 'SHORT', qty: 8, entry: 178.4, exit: 174.2, pnl: 33.6, daysAgo: 3 },
+  { sym: 'BTCUSDT', side: 'LONG', qty: 0.04, entry: 66_900, exit: 66_410, pnl: -19.6, daysAgo: 4 },
+  { sym: 'ETHUSDT', side: 'SHORT', qty: 0.8, entry: 3_525, exit: 3_488, pnl: 29.6, daysAgo: 5 },
+  { sym: 'BNBUSDT', side: 'LONG', qty: 2, entry: 612.3, exit: 624.7, pnl: 24.8, daysAgo: 6 },
+  { sym: 'SOLUSDT', side: 'LONG', qty: 6, entry: 168.2, exit: 172.9, pnl: 28.2, daysAgo: 7 },
+  { sym: 'BTCUSDT', side: 'SHORT', qty: 0.03, entry: 68_100, exit: 67_540, pnl: 16.8, daysAgo: 9 },
+  { sym: 'ETHUSDT', side: 'LONG', qty: 1, entry: 3_400, exit: 3_348, pnl: -52.0, daysAgo: 11 },
+  { sym: 'BTCUSDT', side: 'LONG', qty: 0.06, entry: 65_800, exit: 67_120, pnl: 79.2, daysAgo: 14 },
+  { sym: 'SOLUSDT', side: 'SHORT', qty: 10, entry: 175, exit: 169, pnl: 60, daysAgo: 18 },
+  { sym: 'BNBUSDT', side: 'LONG', qty: 1.5, entry: 605, exit: 615, pnl: 15, daysAgo: 21 },
 ];
 
 const TRADE_EXECUTIONS = closedExecutions.map((t, i) => {
-  const closedAt = new Date(Date.now() - t.daysAgo * 86_400_000).toISOString();
-  const openedAt = new Date(Date.now() - t.daysAgo * 86_400_000 - 3_600_000).toISOString();
+  const closedAt = new Date(NOW_MS - t.daysAgo * 86_400_000).toISOString();
+  const openedAt = new Date(NOW_MS - t.daysAgo * 86_400_000 - 3_600_000).toISOString();
   return {
     id: `exec-${String(i + 1).padStart(3, '0')}`,
     userId: 'e2e-user',
@@ -221,12 +242,12 @@ const OPEN_EXECUTIONS = [
     setupId: 'breakout-retest',
     setupType: 'breakout-retest',
     symbol: 'BTCUSDT',
-    side: 'long',
-    entryPrice: '67200',
+    side: 'LONG',
+    entryPrice: '66600',
     exitPrice: null,
     quantity: '0.08',
-    pnl: '124.0',
-    pnlPercent: '2.31',
+    pnl: '68.0',
+    pnlPercent: '1.28',
     fees: '0.25',
     entryFee: '0.25',
     exitFee: null,
@@ -234,12 +255,12 @@ const OPEN_EXECUTIONS = [
     leverage: 10,
     marketType: 'FUTURES',
     status: 'open',
-    stopLoss: '66800',
-    takeProfit: '68500',
+    stopLoss: '65900',
+    takeProfit: '68800',
     exitReason: null,
-    openedAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
+    openedAt: new Date(NOW_MS - 3 * 3_600_000).toISOString(),
     closedAt: null,
-    createdAt: new Date(Date.now() - 3 * 3_600_000).toISOString(),
+    createdAt: new Date(NOW_MS - 3 * 3_600_000).toISOString(),
     updatedAt: NOW,
   },
   {
@@ -249,12 +270,12 @@ const OPEN_EXECUTIONS = [
     setupId: 'pin-inside-combo',
     setupType: 'pin-inside-combo',
     symbol: 'ETHUSDT',
-    side: 'short',
-    entryPrice: '3478',
+    side: 'SHORT',
+    entryPrice: '3540',
     exitPrice: null,
     quantity: '0.6',
-    pnl: '18.6',
-    pnlPercent: '0.89',
+    pnl: '37.2',
+    pnlPercent: '1.75',
     fees: '0.20',
     entryFee: '0.20',
     exitFee: null,
@@ -262,12 +283,12 @@ const OPEN_EXECUTIONS = [
     leverage: 5,
     marketType: 'FUTURES',
     status: 'open',
-    stopLoss: '3520',
-    takeProfit: '3420',
+    stopLoss: '3605',
+    takeProfit: '3400',
     exitReason: null,
-    openedAt: new Date(Date.now() - 1 * 3_600_000).toISOString(),
+    openedAt: new Date(NOW_MS - 1 * 3_600_000).toISOString(),
     closedAt: null,
-    createdAt: new Date(Date.now() - 1 * 3_600_000).toISOString(),
+    createdAt: new Date(NOW_MS - 1 * 3_600_000).toISOString(),
     updatedAt: NOW,
   },
 ];
@@ -302,7 +323,7 @@ const EQUITY_POINTS = TRADE_EXECUTIONS
 
 const DAILY_PERFORMANCE = closedExecutions
   .map((t) => {
-    const closedAt = new Date(Date.now() - t.daysAgo * 86_400_000);
+    const closedAt = new Date(NOW_MS - t.daysAgo * 86_400_000);
     const date = closedAt.toISOString().slice(0, 10);
     const pnl = t.pnl;
     return {
@@ -471,7 +492,7 @@ const TRADING_PROFILES = [
 const SCORE_HISTORY_POINTS = 96;
 const SCORE_HISTORY_INTERVAL_MS = 15 * 60 * 1000;
 const SCORE_HISTORY = (() => {
-  const now = Date.now();
+  const now = NOW_MS;
   const start = now - SCORE_HISTORY_POINTS * SCORE_HISTORY_INTERVAL_MS;
   const out: Array<{ t: number; long: number; short: number }> = [];
   for (let i = 0; i < SCORE_HISTORY_POINTS; i++) {
@@ -495,7 +516,7 @@ const ACTIVE_WATCHERS = [
     profileName: 'Conservative Breakout',
     marketType: 'FUTURES' as const,
     isActive: true,
-    lastUpdate: '2026-04-27T18:55:00.000Z',
+    lastUpdate: new Date(NOW_MS - 5 * 60_000).toISOString(),
     setupsDetected24h: 2,
   },
   {
@@ -506,7 +527,7 @@ const ACTIVE_WATCHERS = [
     profileName: 'Conservative Breakout',
     marketType: 'FUTURES' as const,
     isActive: true,
-    lastUpdate: '2026-04-27T18:50:00.000Z',
+    lastUpdate: new Date(NOW_MS - 10 * 60_000).toISOString(),
     setupsDetected24h: 1,
   },
   {
@@ -517,7 +538,7 @@ const ACTIVE_WATCHERS = [
     profileName: 'Conservative Breakout',
     marketType: 'FUTURES' as const,
     isActive: true,
-    lastUpdate: '2026-04-27T18:45:00.000Z',
+    lastUpdate: new Date(NOW_MS - 15 * 60_000).toISOString(),
     setupsDetected24h: 0,
   },
 ];
@@ -542,7 +563,7 @@ export interface Fixture {
 }
 
 const buildHistory = (count: number, base: number, jitter: number): Array<{ timestamp: string; value: number }> => {
-  const now = Date.now();
+  const now = NOW_MS;
   const dayMs = 86_400_000;
   return Array.from({ length: count }, (_, i) => ({
     timestamp: new Date(now - (count - i) * dayMs).toISOString(),
@@ -558,7 +579,7 @@ const MARKET_INDICATORS = {
   btcDominance: {
     current: 56.4,
     change24h: 0.42,
-    history: buildHistory(30, 56, 1.5),
+    history: buildHistory(30, 56, 1.5).map(({ timestamp, value }) => ({ timestamp, dominance: value })),
   },
   mvrv: {
     current: 2.1,

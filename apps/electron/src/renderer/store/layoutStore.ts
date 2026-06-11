@@ -102,8 +102,8 @@ const buildTradingGrid = (
   createDefaultPanel(secondary, { x: 122, y: 0, w: 37, h: 44 }),
   createDefaultPanel(tertiary, { x: 122, y: 44, w: 37, h: 38 }),
   createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
-  createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 9 }),
-  createNamedPanel('confluence', { x: 159, y: 44, w: 33, h: 38 }),
+  createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 10 }),
+  createNamedPanel('confluence', { x: 159, y: 45, w: 33, h: 37 }),
   createNamedPanel('positions', { x: 0, y: 82, w: 96, h: 32 }),
   createNamedPanel('orders', { x: 96, y: 82, w: 96, h: 32 }),
 ];
