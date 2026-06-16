@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Versioned `.mcp.json` at the repo root** — the five MarketMind MCP servers (`screenshot`, `app`, `backend`, `strategy`, `trading`) are now declared once in a committed `.mcp.json` using relative paths and `${VAR:-default}` env expansion. Any MCP-aware client (Claude Code, Cursor, Windsurf) picks them up from the project with no per-machine global config, while real secrets still come from the environment. A `postinstall` guard (`scripts/ensure-mcp-build.mjs`) builds the servers automatically on a fresh `pnpm install` only when a `dist/` is missing — instant skip otherwise, and skipped entirely in CI — so `.mcp.json` works out of the box without slowing installs. `pnpm mcp:install` remains available for the legacy global-config flow.
 - **`pre-commit` git hook (fast quality gate)** — `scripts/setup/install-hooks.sh` now installs a deterministic, LLM-agnostic pre-commit hook alongside the existing `main`-branch pre-push guard. It runs `type-check` + `lint` only for the packages (`@marketmind/electron`, `@marketmind/backend`) touched by the staged changes; shared `packages/*` edits type-check both apps. The full test suite stays on CI / pre-push. Bypass a single run with `git commit --no-verify`.
+- **Individual market-indicator panels** — the aggregate "Market Indicators" panel was split into four standalone grid panels: **Altcoin Season**, **ADX Trend Strength** (both charted), **Order Book Pressure** (bid/ask volume split + spread/walls) and **Funding Rates** (per-symbol magnitude bars). They join the existing Fear & Greed / BTC Dominance / MVRV / Production Cost / Open Interest / Long-Short panels, so the default **Market Indicators** layout now seeds all ten as resizable, individually-placeable panels. The order-book *analysis* panel (`marketOrderBook`, "Order Book Pressure") is distinct from the live depth-ladder **Order Book** panel (`orderBook`) used in Auto-Scalping.
+
+### Changed
+
+- The aggregate `marketIndicators` panel and its `MarketIndicatorsTab`/sections were removed; persisted layouts referencing it are migrated (the panel is dropped) and the renderer skips any unknown panel kind instead of throwing.
 
 ## [1.24.0] - 2026-06-07
 

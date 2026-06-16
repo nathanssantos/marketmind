@@ -19,23 +19,6 @@ export const useContainerWidth = () => {
 
 export const POPULAR_FUNDING_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT'];
 
-const DEFAULT_HALF_INTERVAL = 2 * 60 * 60 * 1000;
-const MIN_REFRESH_INTERVAL = 5 * 60 * 1000;
-
-export const getRefreshIntervals = (halfIntervalMs: number) => ({
-  fearGreed: Math.max(halfIntervalMs, 30 * 60 * 1000),
-  btcDominance: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
-  onChain: Math.max(halfIntervalMs, 30 * 60 * 1000),
-  openInterest: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
-  longShortRatio: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
-  fundingRates: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
-  altcoinSeason: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
-  adxTrendStrength: Math.max(halfIntervalMs, MIN_REFRESH_INTERVAL),
-  orderBook: Math.max(Math.floor(halfIntervalMs / 4), 60 * 1000),
-});
-
-export { DEFAULT_HALF_INTERVAL };
-
 export const TOOLTIP_STYLE = {
   backgroundColor: 'var(--chakra-colors-bg-muted)',
   border: '1px solid var(--chakra-colors-border)',

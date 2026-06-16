@@ -915,8 +915,8 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "gridPosition": {
             "x": 0,
             "y": 0,
-            "w": 64,
-            "h": 41
+            "w": 48,
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -924,10 +924,10 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "id": "1777994060026-uiyde1",
           "kind": "marketBtcDominance",
           "gridPosition": {
-            "x": 64,
+            "x": 48,
             "y": 0,
-            "w": 64,
-            "h": 41
+            "w": 48,
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -935,10 +935,10 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "id": "1777994070337-j8trax",
           "kind": "marketMvrv",
           "gridPosition": {
-            "x": 128,
+            "x": 96,
             "y": 0,
-            "w": 64,
-            "h": 41
+            "w": 48,
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -946,10 +946,10 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "id": "1777994075260-63ob7a",
           "kind": "marketProductionCost",
           "gridPosition": {
-            "x": 0,
-            "y": 104,
-            "w": 64,
-            "h": 41
+            "x": 144,
+            "y": 0,
+            "w": 48,
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -957,10 +957,10 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "id": "1777994078035-8tctgp",
           "kind": "marketOpenInterest",
           "gridPosition": {
-            "x": 64,
-            "y": 104,
-            "w": 64,
-            "h": 41
+            "x": 0,
+            "y": 38,
+            "w": 48,
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -968,21 +968,54 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "id": "1777994088543-85pddx",
           "kind": "marketLongShort",
           "gridPosition": {
-            "x": 128,
-            "y": 104,
-            "w": 64,
-            "h": 41
+            "x": 48,
+            "y": 38,
+            "w": 48,
+            "h": 38
           },
           "windowState": "normal"
         },
         {
-          "id": "1777994326165-xrehzc",
-          "kind": "marketIndicators",
+          "id": "1777994326165-altsea",
+          "kind": "marketAltcoinSeason",
+          "gridPosition": {
+            "x": 96,
+            "y": 38,
+            "w": 48,
+            "h": 38
+          },
+          "windowState": "normal"
+        },
+        {
+          "id": "1777994326166-adxtrd",
+          "kind": "marketAdx",
+          "gridPosition": {
+            "x": 144,
+            "y": 38,
+            "w": 48,
+            "h": 38
+          },
+          "windowState": "normal"
+        },
+        {
+          "id": "1777994326167-obpres",
+          "kind": "marketOrderBook",
           "gridPosition": {
             "x": 0,
-            "y": 41,
-            "w": 192,
-            "h": 63
+            "y": 76,
+            "w": 96,
+            "h": 38
+          },
+          "windowState": "normal"
+        },
+        {
+          "id": "1777994326168-fundng",
+          "kind": "marketFundingRates",
+          "gridPosition": {
+            "x": 96,
+            "y": 76,
+            "w": 96,
+            "h": 38
           },
           "windowState": "normal"
         }

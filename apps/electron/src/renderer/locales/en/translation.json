@@ -2100,7 +2100,10 @@
       "topTraders": "Top Traders",
       "today": "Today",
       "yesterday": "Yesterday",
-      "lastWeek": "7d ago"
+      "lastWeek": "7d ago",
+      "altcoinSeason": "Altcoin Season",
+      "adx": "ADX Trend Strength",
+      "orderBookPressure": "Order Book Pressure"
     },
     "fearGreed": {
       "extremeFear": "Extreme Fear",
@@ -2928,9 +2931,6 @@
     "positions": {
       "title": "Positions"
     },
-    "marketIndicators": {
-      "title": "Market Indicators"
-    },
     "marketFearGreed": {
       "title": "Fear & Greed"
     },
@@ -2958,11 +2958,23 @@
     "autoTradingActivity": {
       "title": "Logs"
     },
-    "orderBook": {
-      "title": "Order Book"
-    },
     "orderFlowMetrics": {
       "title": "Order Flow Metrics"
+    },
+    "marketAltcoinSeason": {
+      "title": "Altcoin Season"
+    },
+    "marketAdx": {
+      "title": "ADX Trend Strength"
+    },
+    "marketOrderBook": {
+      "title": "Order Book Pressure"
+    },
+    "marketFundingRates": {
+      "title": "Funding Rates"
+    },
+    "orderBook": {
+      "title": "Order Book"
     }
   }
 }
