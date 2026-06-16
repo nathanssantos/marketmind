@@ -139,24 +139,9 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
         default: m.PositionsPanel,
       })),
   },
-  marketIndicators: {
-    kind: 'marketIndicators',
-    group: 'market',
-    titleKey: 'panels.marketIndicators.title',
-    icon: LuActivity,
-    cardinality: 'single',
-    shellMode: 'bare',
-    defaultLayout: MARKET_DEFAULT,
-    load: () =>
-      import('@renderer/components/MarketSidebar/panels/MarketIndicatorsPanel').then((m) => ({
-        default: m.MarketIndicatorsPanel,
-      })),
-  },
-  // Individual market-indicator panels — split out of the aggregate
-  // dashboard so the user can resize each chart independently and
-  // place them anywhere on the grid. Aggregate `marketIndicators` is
-  // kept registered for back-compat with stored layouts but its body
-  // (MarketIndicatorsTab) renders only the indicators NOT split out.
+  // Individual market-indicator panels — each fetches its own data and
+  // renders one chart/metric in `MarketIndicatorPanelShell`, so the user
+  // can resize and place each independently on the grid.
   marketFearGreed: {
     kind: 'marketFearGreed',
     group: 'market',
@@ -233,6 +218,58 @@ export const PANEL_REGISTRY: Record<PanelKind, PanelDef> = {
     load: () =>
       import('@renderer/components/MarketSidebar/panels/individual/LongShortPanel').then((m) => ({
         default: m.LongShortPanel,
+      })),
+  },
+  marketAltcoinSeason: {
+    kind: 'marketAltcoinSeason',
+    group: 'market',
+    titleKey: 'panels.marketAltcoinSeason.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/AltcoinSeasonPanel').then((m) => ({
+        default: m.AltcoinSeasonPanel,
+      })),
+  },
+  marketAdx: {
+    kind: 'marketAdx',
+    group: 'market',
+    titleKey: 'panels.marketAdx.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/AdxPanel').then((m) => ({
+        default: m.AdxPanel,
+      })),
+  },
+  marketOrderBook: {
+    kind: 'marketOrderBook',
+    group: 'market',
+    titleKey: 'panels.marketOrderBook.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/OrderBookAnalysisPanel').then((m) => ({
+        default: m.OrderBookAnalysisPanel,
+      })),
+  },
+  marketFundingRates: {
+    kind: 'marketFundingRates',
+    group: 'market',
+    titleKey: 'panels.marketFundingRates.title',
+    icon: LuActivity,
+    cardinality: 'single',
+    shellMode: 'bare',
+    defaultLayout: MARKET_DEFAULT,
+    load: () =>
+      import('@renderer/components/MarketSidebar/panels/individual/FundingRatesPanel').then((m) => ({
+        default: m.FundingRatesPanel,
       })),
   },
   watchers: {
@@ -317,6 +354,16 @@ export const getPanelDef = (kind: PanelKind): PanelDef => {
   if (!def) throw new Error(`Unknown panel kind: ${kind}`);
   return def;
 };
+
+/**
+ * Non-throwing lookup for the render path: a persisted layout may still
+ * reference a panel kind that has since been removed (e.g. the old
+ * `marketIndicators` aggregate or `orderBook` DOM ladder). The hydration
+ * migration strips those, but this is the defense-in-depth so a stale
+ * payload renders nothing instead of crashing the whole grid.
+ */
+export const getPanelDefSafe = (kind: string): PanelDef | undefined =>
+  (PANEL_REGISTRY as Record<string, PanelDef>)[kind];
 
 export const groupedPanelDefs = (): Array<{ group: PanelGroup; defs: PanelDef[] }> =>
   PANEL_GROUP_ORDER.map((group) => ({

@@ -1,6 +1,6 @@
 import { Flex, Spinner } from '@chakra-ui/react';
 import { GridPanel } from '@renderer/components/ui';
-import { getPanelDef } from '@renderer/grid/panel-registry';
+import { getPanelDefSafe } from '@renderer/grid/panel-registry';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import type { NamedPanelConfig } from '@shared/types/layout';
 import { Suspense, lazy, memo, useCallback, useMemo } from 'react';
@@ -13,10 +13,11 @@ interface NamedPanelRendererProps {
 
 const LazyByKind = new Map<string, ReturnType<typeof lazy>>();
 
-const getLazyForKind = (kind: NamedPanelConfig['kind']): ReturnType<typeof lazy> => {
+const getLazyForKind = (kind: NamedPanelConfig['kind']): ReturnType<typeof lazy> | null => {
   let component = LazyByKind.get(kind);
   if (!component) {
-    const def = getPanelDef(kind);
+    const def = getPanelDefSafe(kind);
+    if (!def) return null; // removed/unknown kind from a stale persisted layout — skip
     component = lazy(def.load);
     LazyByKind.set(kind, component);
   }
@@ -39,6 +40,8 @@ export const NamedPanelRenderer = memo(({ panelConfig, layoutId }: NamedPanelRen
   const handleClose = useCallback((id: string) => removePanel(layoutId, id), [removePanel, layoutId]);
 
   const Body = useMemo(() => getLazyForKind(panelConfig.kind), [panelConfig.kind]);
+
+  if (!Body) return null;
 
   return (
     <GridPanel

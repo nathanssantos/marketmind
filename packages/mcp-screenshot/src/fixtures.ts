@@ -601,7 +601,7 @@ const MARKET_INDICATORS = {
     globalHistory: buildHistory(30, 0.58, 0.05),
   },
   altcoinSeason: {
-    seasonType: 'Bitcoin Season',
+    seasonType: 'BTC_SEASON',
     altSeasonIndex: 38,
     change24h: -2.1,
     altsOutperformingBtc: 19,
@@ -626,7 +626,7 @@ const MARKET_INDICATORS = {
     history: buildHistory(30, 25, 4),
   },
   orderBook: {
-    pressure: 'Buy',
+    pressure: 'BUYING',
     imbalanceRatio: 1.18,
     bidVolume: 48_500_000,
     askVolume: 41_200_000,
@@ -638,7 +638,8 @@ const MARKET_INDICATORS = {
     { symbol: 'BTCUSDT', rate: 0.0001, isExtreme: false },
     { symbol: 'ETHUSDT', rate: 0.00012, isExtreme: false },
     { symbol: 'SOLUSDT', rate: 0.00031, isExtreme: false },
-    { symbol: 'BNBUSDT', rate: 0.00008, isExtreme: false },
+    { symbol: 'XRPUSDT', rate: -0.00008, isExtreme: false },
+    { symbol: 'DOGEUSDT', rate: 0.00055, isExtreme: true },
   ],
 };
 

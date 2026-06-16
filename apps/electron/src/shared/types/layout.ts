@@ -29,13 +29,16 @@ export type PanelKind =
   | 'portfolio'
   | 'positions'
   // Market group
-  | 'marketIndicators' // legacy aggregate (kept for back-compat with stored layouts)
   | 'marketFearGreed'
   | 'marketBtcDominance'
   | 'marketMvrv'
   | 'marketProductionCost'
   | 'marketOpenInterest'
   | 'marketLongShort'
+  | 'marketAltcoinSeason'
+  | 'marketAdx'
+  | 'marketOrderBook'
+  | 'marketFundingRates'
   // Auto-Trading group
   | 'watchers'
   | 'autoTradingSetup'
