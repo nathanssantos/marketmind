@@ -588,7 +588,11 @@ const MARKET_INDICATORS = {
   btcProductionCost: {
     currentCost: 41_500,
     currentPrice: 67_450,
-    history: buildHistory(30, 67_000, 1_200),
+    history: buildHistory(30, 41_500, 700).map(({ timestamp, value }, i) => ({
+      timestamp,
+      productionCost: value,
+      btcPrice: 66_500 + Math.sin(i / 4) * 1_600,
+    })),
   },
   openInterest: {
     current: 28_400_000_000,
@@ -598,7 +602,11 @@ const MARKET_INDICATORS = {
   longShortRatio: {
     global: { longAccount: 0.58, shortAccount: 0.42 },
     topTraders: { longAccount: 0.61, shortAccount: 0.39 },
-    globalHistory: buildHistory(30, 0.58, 0.05),
+    globalHistory: buildHistory(30, 0.58, 0.05).map(({ timestamp, value }) => ({
+      timestamp,
+      longAccount: value,
+      shortAccount: 1 - value,
+    })),
   },
   altcoinSeason: {
     seasonType: 'BTC_SEASON',
