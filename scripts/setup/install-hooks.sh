@@ -1,29 +1,94 @@
 #!/bin/bash
 
 # ============================================================================
-# Script to install protection Git Hooks
+# Script to install protection + quality Git Hooks
 # ============================================================================
+# Installs two LLM-agnostic, deterministic hooks for every contributor:
+#   - pre-commit : fast quality gate (lint + type-check) on the packages that
+#                  have staged changes. Heavy work (full test suite, needs
+#                  Docker) stays on CI / pre-push.
+#   - pre-push   : blocks direct pushes to the protected 'main' branch.
+# Both are rewritten on every run so the repo stays the single source of truth.
 
 set -e
 
-echo "🔧 Installing protection Git Hooks..."
+echo "🔧 Installing MarketMind Git Hooks..."
 echo ""
 
-# Create hooks directory if it does not exist
 mkdir -p .git/hooks
 
-# Copy pre-push hook
-if [ -f ".git/hooks/pre-push" ]; then
-    echo "✅ pre-push hook already installed"
+# ----------------------------------------------------------------------------
+# pre-commit: fast quality gate scoped to staged packages
+# ----------------------------------------------------------------------------
+cat > .git/hooks/pre-commit << 'EOF'
+#!/bin/bash
+
+# Git Hook: pre-commit
+# Fast, deterministic quality gate: type-check + lint only for the packages
+# touched by the staged changes. Bypass (not recommended): git commit --no-verify
+
+set -euo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+touched_electron=false
+touched_backend=false
+touched_packages=false
+
+while IFS= read -r file; do
+    case "$file" in
+        apps/electron/*) touched_electron=true ;;
+        apps/backend/*)  touched_backend=true ;;
+        packages/*)      touched_packages=true ;;
+    esac
+done <<< "$staged"
+
+# Shared packages feed both apps — type-check both to catch cross-package breakage.
+if [ "$touched_packages" = true ]; then
+    touched_electron=true
+    touched_backend=true
+fi
+
+if [ "$touched_electron" = false ] && [ "$touched_backend" = false ]; then
     exit 0
 fi
 
+run() {
+    echo "▶ $*"
+    if ! "$@"; then
+        echo ""
+        echo "🚫 pre-commit failed: $*"
+        echo "   Fix the errors above, or bypass with: git commit --no-verify"
+        exit 1
+    fi
+}
+
+echo "🔍 pre-commit quality gate (staged packages)..."
+
+if [ "$touched_electron" = true ]; then
+    run pnpm --filter @marketmind/electron type-check
+    run pnpm --filter @marketmind/electron lint
+fi
+
+if [ "$touched_backend" = true ]; then
+    run pnpm --filter @marketmind/backend type-check
+fi
+
+echo "✅ pre-commit checks passed."
+EOF
+
+chmod +x .git/hooks/pre-commit
+echo "✅ pre-commit hook installed (type-check + lint on staged packages)."
+
+# ----------------------------------------------------------------------------
+# pre-push: protect the 'main' branch from direct pushes
+# ----------------------------------------------------------------------------
 cat > .git/hooks/pre-push << 'EOF'
 #!/bin/bash
 
 # Git Hook: pre-push
 # Prevents direct pushes to the main branch
-# Installation: This file must be at .git/hooks/pre-push
 
 protected_branch='main'
 current_branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
@@ -56,12 +121,8 @@ exit 0
 EOF
 
 chmod +x .git/hooks/pre-push
+echo "✅ pre-push hook installed (protects the 'main' branch)."
 
-echo "✅ pre-push hook installed successfully!"
 echo ""
-echo "🔒 The 'main' branch is now protected against direct pushes."
-echo ""
-echo "To test:"
-echo "  git checkout main"
-echo "  git push  # Should be blocked"
+echo "🔒 Hooks active. Bypass a single run with --no-verify if ever needed."
 echo ""

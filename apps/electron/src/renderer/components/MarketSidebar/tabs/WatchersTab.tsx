@@ -64,7 +64,7 @@ const WatchersTabComponent = () => {
   };
 
   return (
-    <Stack gap={MM.spacing.section.gap} p={MM.spacing.dialogPadding}>
+    <Stack gap={MM.spacing.section.gap}>
       <Flex justify="space-between" align="center">
         <Flex align="center" gap={2}>
           <Text fontSize="sm" fontWeight="bold">

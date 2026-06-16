@@ -102,8 +102,8 @@ const buildTradingGrid = (
   createDefaultPanel(secondary, { x: 122, y: 0, w: 37, h: 44 }),
   createDefaultPanel(tertiary, { x: 122, y: 44, w: 37, h: 38 }),
   createNamedPanel('portfolio', { x: 159, y: 0, w: 33, h: 35 }),
-  createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 9 }),
-  createNamedPanel('confluence', { x: 159, y: 44, w: 33, h: 38 }),
+  createNamedPanel('ticket', { x: 159, y: 35, w: 33, h: 10 }),
+  createNamedPanel('confluence', { x: 159, y: 45, w: 33, h: 37 }),
   createNamedPanel('positions', { x: 0, y: 82, w: 96, h: 32 }),
   createNamedPanel('orders', { x: 96, y: 82, w: 96, h: 32 }),
 ];
@@ -174,13 +174,20 @@ export const LAYOUT_TEMPLATES: LayoutTemplate[] = [
     key: 'marketIndicators',
     defaultName: 'Market Indicators',
     buildGrid: () => [
-      createNamedPanel('marketIndicators', { x: 0, y: 0, w: 192, h: 63 }),
-      createNamedPanel('marketFearGreed', { x: 0, y: 63, w: 64, h: 41 }),
-      createNamedPanel('marketBtcDominance', { x: 64, y: 63, w: 64, h: 41 }),
-      createNamedPanel('marketMvrv', { x: 128, y: 63, w: 64, h: 41 }),
-      createNamedPanel('marketProductionCost', { x: 0, y: 104, w: 64, h: 41 }),
-      createNamedPanel('marketOpenInterest', { x: 64, y: 104, w: 64, h: 41 }),
-      createNamedPanel('marketLongShort', { x: 128, y: 104, w: 64, h: 41 }),
+      // 3 rows × h:38 = 114 units, fits the visible grid height.
+      // Row 1 — sentiment / valuation (4 × 48)
+      createNamedPanel('marketFearGreed', { x: 0, y: 0, w: 48, h: 38 }),
+      createNamedPanel('marketBtcDominance', { x: 48, y: 0, w: 48, h: 38 }),
+      createNamedPanel('marketMvrv', { x: 96, y: 0, w: 48, h: 38 }),
+      createNamedPanel('marketProductionCost', { x: 144, y: 0, w: 48, h: 38 }),
+      // Row 2 — positioning / trend (4 × 48)
+      createNamedPanel('marketOpenInterest', { x: 0, y: 38, w: 48, h: 38 }),
+      createNamedPanel('marketLongShort', { x: 48, y: 38, w: 48, h: 38 }),
+      createNamedPanel('marketAltcoinSeason', { x: 96, y: 38, w: 48, h: 38 }),
+      createNamedPanel('marketAdx', { x: 144, y: 38, w: 48, h: 38 }),
+      // Row 3 — microstructure (2 × 96)
+      createNamedPanel('marketOrderBook', { x: 0, y: 76, w: 96, h: 38 }),
+      createNamedPanel('marketFundingRates', { x: 96, y: 76, w: 96, h: 38 }),
     ],
   },
 ];
@@ -508,19 +515,26 @@ export const migrateGridGranularity = (
   }));
 };
 
-// v1.22.10 — the 'checklist' panel kind was renamed to 'confluence' across
-// the codebase. Existing persisted layouts still reference the old kind
-// and would throw "Unknown panel kind: checklist" at the panel registry
-// lookup. The DB migration handles server-side rows; this client-side
-// migration is the safety net for any layout payload that bypassed it
-// (in-memory caches, half-applied migrations, fresh hydration races).
+// Reconcile persisted layouts with panel kinds that have since been renamed
+// or removed, so the registry lookup never throws "Unknown panel kind":
+//   - 'checklist' → 'confluence' (renamed in v1.22.10)
+//   - 'marketIndicators' (the aggregate dashboard) was removed when its
+//     sections were split into individual `marketX` panels — drop it.
+// The DB migration handles server-side rows; this client-side pass is the
+// safety net for payloads that bypass it (in-memory caches, half-applied
+// migrations, fresh hydration races).
+const REMOVED_PANEL_KINDS = new Set(['marketIndicators']);
+
 export const migrateRenamedPanelKinds = (presets: LayoutPreset[]): LayoutPreset[] =>
   presets.map((preset) => ({
     ...preset,
-    grid: preset.grid.map((panel) =>
+    grid: preset.grid
+      .map((panel) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy kind from old persisted payload
+        (panel as any).kind === 'checklist' ? { ...panel, kind: 'confluence' as const } : panel,
+      )
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy kind from old persisted payload
-      (panel as any).kind === 'checklist' ? { ...panel, kind: 'confluence' as const } : panel,
-    ),
+      .filter((panel) => !REMOVED_PANEL_KINDS.has((panel as any).kind)),
   }));
 
 export const hydrateLayoutStore = async (): Promise<void> => {

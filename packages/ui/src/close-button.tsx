@@ -5,8 +5,7 @@ import { forwardRef } from 'react';
 export interface CloseButtonProps extends ChakraCloseButtonProps {}
 
 export const CloseButton = forwardRef<HTMLButtonElement, CloseButtonProps>((props, ref) => {
-  // @ts-expect-error
-  return <ChakraCloseButton ref={ref} {...props} />;
+  return <ChakraCloseButton ref={ref} css={{ '&:focus:not(:focus-visible)': { outline: 'none', boxShadow: 'none' } }} {...props} />;
 });
 
 CloseButton.displayName = 'CloseButton';

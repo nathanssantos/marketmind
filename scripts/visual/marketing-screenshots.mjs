@@ -48,8 +48,70 @@ const switchLayout = async (presetName) => {
     throw new Error(`switchLayout: preset "${presetName}" not found in layoutPresets`);
   }
   // Give the canvas time to mount, hydrate kline data via the trpc
-  // mock, and run a few rAF frames so candles actually render.
-  await page.waitForTimeout(3000);
+  // mock, and run rAF frames so candles actually render.
+  await page.waitForTimeout(3500);
+  await pinTickerPrices();
+  await emitLiveData();
+};
+
+// Order-book ladder and order-flow metrics are fed by socket streams
+// (`depth:update` / `scalpingMetrics:update`), not tRPC — so the fixture
+// fetch-patch can't populate them and the panels render empty/zero. Push a
+// realistic snapshot through the e2e socket bridge for the active symbol.
+const emitLiveData = async () => {
+  const page = await getPage();
+  await page.evaluate(() => {
+    const bridge = window.__socketTestBridge;
+    if (!bridge?.emit) return;
+    const symbol = window.__layoutStore?.getState?.().getActiveTab?.()?.symbol ?? 'BTCUSDT';
+    const mid = window.__priceStore?.getState?.().getPrice?.(symbol) ?? 67450;
+    const tick = mid > 1000 ? 5 : mid > 10 ? 0.05 : 0.001;
+    const rng = (seed) => { let s = seed; return () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; }; };
+    const r = rng(Math.round(mid));
+    const bids = Array.from({ length: 14 }, (_, i) => ({ price: +(mid - tick * (i + 1)).toFixed(2), quantity: +(0.4 + r() * 4).toFixed(3) }));
+    const asks = Array.from({ length: 14 }, (_, i) => ({ price: +(mid + tick * (i + 1)).toFixed(2), quantity: +(0.4 + r() * 4).toFixed(3) }));
+    bridge.emit('depth:update', { symbol, bids, asks, lastUpdateId: 1, timestamp: 0 });
+    bridge.emit('scalpingMetrics:update', {
+      cvd: 1240.5, imbalanceRatio: 1.18, microprice: +(mid + tick * 0.3).toFixed(2),
+      spread: tick * 1.6, spreadPercent: 0.012, largeBuyVol: 32.4, largeSellVol: 27.1,
+      absorptionScore: 0.62, exhaustionScore: 0.34, timestamp: 0,
+    });
+  });
+  await page.waitForTimeout(700);
+};
+
+// The chart emits its price into the priceStore as candles load; the shape-
+// preserving kline fixtures can briefly surface a non-final mid-series price,
+// which the throttled position-price hook can latch — inflating open-position
+// unrealized P&L. Pin the position symbols to their ticker values right
+// before capture so the portfolio mark is always the symbol's current price.
+const pinTickerPrices = async () => {
+  const page = await getPage();
+  await page.evaluate(() => {
+    const ps = window.__priceStore?.getState?.();
+    if (!ps?.updatePriceBatch) return;
+    ps.updatePriceBatch(new Map([
+      ['BTCUSDT', 67450.5],
+      ['ETHUSDT', 3478.2],
+      ['SOLUSDT', 171.4],
+      ['BNBUSDT', 618.9],
+    ]));
+  });
+  await page.waitForTimeout(1200);
+};
+
+// Apply a chart color palette through the Settings dialog (Chart tab), the
+// same path a real user takes — the modal's swatch click triggers the chart
+// canvas repaint that a bare store write doesn't. Palette affects the chart
+// only; the rest of the UI keeps the active light/dark theme.
+const setChartPalette = async (paletteId) => {
+  const page = await getPage();
+  await page.evaluate(() => window.__globalActions?.openSettings?.('chart'));
+  await page.waitForTimeout(1500);
+  await page.click(`[data-testid="chart-palette-${paletteId}"]`, { timeout: 5000 });
+  await page.waitForTimeout(600);
+  await page.evaluate(() => window.__globalActions?.closeAll?.());
+  await page.waitForTimeout(1800);
 };
 
 const closeAll = async () => {
@@ -61,6 +123,15 @@ const closeAll = async () => {
   await page.waitForTimeout(200);
 };
 
+// Dialogs move focus to their close button on open; the browser treats that
+// programmatic focus as :focus-visible, so the close (X) shows a focus ring.
+// Drop focus before capturing so modal screenshots don't show the ring.
+const blurActive = async () => {
+  const page = await getPage();
+  await page.evaluate(() => (document.activeElement instanceof HTMLElement ? document.activeElement.blur() : undefined));
+  await page.waitForTimeout(150);
+};
+
 const scenes = [
   {
     name: 'screenshot-0',
@@ -70,7 +141,7 @@ const scenes = [
       await switchLayout('15m / 1h / 4h');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-0', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-0', 'dark'),
   },
   {
     name: 'screenshot-1',
@@ -80,7 +151,7 @@ const scenes = [
       await switchLayout('1m / 5m / 15min');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-1', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-1', 'dark'),
   },
   {
     name: 'screenshot-2',
@@ -90,7 +161,7 @@ const scenes = [
       await switchLayout('1h / 4h / 1d');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-2', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-2', 'dark'),
   },
   {
     name: 'screenshot-3',
@@ -100,7 +171,7 @@ const scenes = [
       await switchLayout('Auto-Trading');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-3', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-3', 'dark'),
   },
   {
     name: 'screenshot-4',
@@ -110,7 +181,7 @@ const scenes = [
       await switchLayout('Auto-Scalping');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-4', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-4', 'dark'),
   },
   {
     name: 'screenshot-5',
@@ -124,8 +195,9 @@ const scenes = [
         window.__uiStore?.getState?.().setTradingProfilesDialogOpen?.(true);
       });
       await page.waitForTimeout(1200);
+      await blurActive();
     },
-    capture: async () => captureFullPage({ label: 'screenshot-5', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-5', 'dark'),
   },
   {
     name: 'screenshot-6',
@@ -135,7 +207,7 @@ const scenes = [
       await switchLayout('Market Indicators');
       await setTheme('dark');
     },
-    capture: async () => captureFullPage({ label: 'screenshot-6', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-6', 'dark'),
   },
   // screenshot-7 (Fibonacci retracement overlay) was dropped from the
   // automation because the Fibo drawing tool needs two mouse anchors
@@ -157,21 +229,94 @@ const scenes = [
         window.__uiStore?.getState?.().setWalletsDialogOpen?.(true);
       });
       await page.waitForTimeout(1200);
+      await blurActive();
     },
-    capture: async () => captureFullPage({ label: 'screenshot-8', theme: 'dark' }),
+    capture: async () => captureFullPage('screenshot-8', 'dark'),
+  },
+  {
+    name: 'screenshot-9',
+    title: 'Trading dashboard — light theme',
+    setup: async () => {
+      await closeAll();
+      // Set the theme before switching layout so the chart canvas mounts in
+      // light mode — the price-scale gutter/axis paints light too (a post-mount
+      // theme switch leaves the gutter dark).
+      await setTheme('light');
+      await switchLayout('15m / 1h / 4h');
+    },
+    capture: async () => captureFullPage('screenshot-9', 'light'),
+  },
+  {
+    name: 'screenshot-10',
+    title: 'Market Indicators — light theme',
+    setup: async () => {
+      await closeAll();
+      await setTheme('light');
+      await switchLayout('Market Indicators');
+    },
+    capture: async () => captureFullPage('screenshot-10', 'light'),
+  },
+  {
+    name: 'screenshot-12',
+    title: 'Settings — Chart palette config',
+    setup: async () => {
+      await closeAll();
+      // Theme before layout so the chart behind the modal mounts dark — its
+      // price-scale gutter must not stay light from the prior light scene.
+      await setTheme('dark');
+      await switchLayout('15m / 1h / 4h');
+      const page = await getPage();
+      await page.evaluate(() => window.__globalActions?.openSettings?.('chart'));
+      await page.waitForTimeout(1500);
+      await blurActive();
+    },
+    capture: async () => captureFullPage('screenshot-12', 'dark'),
+  },
+  // Kept last so the Classic B&W chart palette doesn't bleed into other scenes.
+  {
+    name: 'screenshot-11',
+    title: 'Swing layout — Classic B&W chart palette',
+    setup: async () => {
+      await closeAll();
+      await setTheme('dark');
+      // Set the palette BEFORE switching layout so the chart canvas mounts
+      // already reading the Classic B&W palette (setting it post-mount
+      // doesn't force a repaint).
+      await setChartPalette('classic');
+      await switchLayout('1h / 4h / 1d');
+    },
+    capture: async () => captureFullPage('screenshot-11', 'dark'),
   },
 ];
 
 await mkdir(OUT_DIR, { recursive: true });
 
+// One fresh browser per scene. 4K full-page captures accumulate renderer
+// memory and the headless tab eventually crashes mid-run ("Target page …
+// closed"); a clean browser per scene also guarantees no cross-scene state
+// bleed (theme / chart palette / open dialogs). Costs a relaunch per scene
+// but makes the pass deterministic and crash-free. One retry absorbs a rare
+// cold-launch flake without aborting the whole run.
 for (const scene of scenes) {
   console.log(`▶ ${scene.title}`);
-  await scene.setup();
-  const result = await scene.capture();
-  const dest = path.join(OUT_DIR, `${scene.name}.png`);
-  await copyFile(result.path, dest);
-  console.log(`  → ${dest}`);
+  let lastErr;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      await scene.setup();
+      const result = await scene.capture();
+      const dest = path.join(OUT_DIR, `${scene.name}.png`);
+      await copyFile(result.path, dest);
+      console.log(`  → ${dest}`);
+      lastErr = undefined;
+      break;
+    } catch (err) {
+      lastErr = err;
+      console.log(`  ! attempt ${attempt} failed: ${err.message}`);
+      await closeBrowser();
+    }
+  }
+  if (lastErr) throw lastErr;
+  await closeBrowser();
 }
 
-await closeBrowser();
 console.log(`\nDone. ${scenes.length} screenshots written to ${OUT_DIR}`);

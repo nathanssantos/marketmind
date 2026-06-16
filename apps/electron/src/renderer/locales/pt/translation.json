@@ -2220,7 +2220,10 @@
       "topTraders": "Top Traders",
       "today": "Hoje",
       "yesterday": "Ontem",
-      "lastWeek": "7d atrás"
+      "lastWeek": "7d atrás",
+      "altcoinSeason": "Altcoin Season",
+      "adx": "Força de Tendência ADX",
+      "orderBookPressure": "Pressão do Order Book"
     },
     "fearGreed": {
       "extremeFear": "Medo Extremo",

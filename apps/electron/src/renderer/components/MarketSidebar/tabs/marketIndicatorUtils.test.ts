@@ -10,37 +10,7 @@ import {
   getFearGreedLevel,
   getMvrvColor,
   getOrderBookPressureColor,
-  getRefreshIntervals,
 } from './marketIndicatorUtils';
-
-describe('getRefreshIntervals', () => {
-  it('clamps every interval to its individual minimum when the half-interval is too small', () => {
-    const out = getRefreshIntervals(1_000); // 1s
-    expect(out.fearGreed).toBe(30 * 60 * 1000);
-    expect(out.btcDominance).toBe(5 * 60 * 1000);
-    expect(out.onChain).toBe(30 * 60 * 1000);
-    expect(out.openInterest).toBe(5 * 60 * 1000);
-    expect(out.longShortRatio).toBe(5 * 60 * 1000);
-    expect(out.fundingRates).toBe(5 * 60 * 1000);
-    expect(out.altcoinSeason).toBe(5 * 60 * 1000);
-    expect(out.adxTrendStrength).toBe(5 * 60 * 1000);
-    expect(out.orderBook).toBe(60 * 1000);
-  });
-
-  it('lets the half-interval win when it exceeds every minimum', () => {
-    const halfInterval = 60 * 60 * 1000; // 1h
-    const out = getRefreshIntervals(halfInterval);
-    expect(out.fearGreed).toBe(halfInterval);
-    expect(out.onChain).toBe(halfInterval);
-    expect(out.btcDominance).toBe(halfInterval);
-    expect(out.orderBook).toBe(Math.floor(halfInterval / 4));
-  });
-
-  it('orderBook is half-interval / 4, but never below 60s', () => {
-    expect(getRefreshIntervals(60 * 1000).orderBook).toBe(60 * 1000);
-    expect(getRefreshIntervals(8 * 60 * 1000).orderBook).toBe(2 * 60 * 1000);
-  });
-});
 
 describe('formatTooltipDate', () => {
   it('formats the first payload entry timestamp as a locale date', () => {

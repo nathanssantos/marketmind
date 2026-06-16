@@ -602,6 +602,19 @@ const ChartCanvasInternal = ({
     manager.markDirty('all');
   }, [manager, advancedConfig?.paddingTop, advancedConfig?.paddingBottom]);
 
+  // A theme/palette switch changes every canvas-drawn color — grid, axis ticks
+  // and the price-scale gutter background. Those live in the cached base-layer
+  // snapshot, which is only rebuilt on klines/viewport/dimensions changes; an
+  // overlay-only frame restores the stale snapshot, so the gutter keeps the old
+  // theme's colors (e.g. dark scales in light mode) until the next tick. Drop
+  // the snapshot and force a full base re-render so the canvas tracks the theme
+  // as instantly as the CSS chart background does.
+  useEffect(() => {
+    if (!manager) return;
+    manager.invalidateBaseLayer();
+    manager.markDirty('all');
+  }, [manager, colors]);
+
   useEffect(() => {
     if (!manager) return;
     manager.setFlipped(chartFlipped);
