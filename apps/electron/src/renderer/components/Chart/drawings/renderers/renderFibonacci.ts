@@ -14,7 +14,7 @@ const LABEL_OFFSET_X = 4;
 const LABEL_OFFSET_Y = 10;
 const HIDDEN_LEVELS = new Set([0.886, 1.382]);
 const GOLDEN_LEVEL = 1.618;
-const KEY_LEVELS = new Set([0, 0.5, 1]);
+const KEY_LEVELS = new Set([0, 0.382, 1]);
 
 export const renderFibonacci = (
   ctx: CanvasRenderingContext2D,
