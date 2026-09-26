@@ -15,6 +15,7 @@ describe('embedded resources', () => {
     const resources = resolveEmbeddedResources({ resourcesPath: '/App/Contents/Resources', appRoot: '/ignored', isPackaged: true, platform: 'darwin', arch: 'arm64' });
     expect(resources).toEqual({
       backendEntry: '/App/Contents/Resources/backend/index.js',
+      backendVendorDir: '/App/Contents/Resources/backend/vendor',
       migrationsDir: '/App/Contents/Resources/backend/migrations',
       builtinStrategiesDir: '/App/Contents/Resources/backend/strategies/builtin',
       rendererDir: '/App/Contents/Resources/renderer',
@@ -49,7 +50,7 @@ describe('embedded resources', () => {
       mkdirSync(path.join(dir, 'backend', 'migrations'), { recursive: true });
       writeFileSync(path.join(dir, 'backend', 'index.js'), '');
       const resources = resolveEmbeddedResources({ resourcesPath: dir, appRoot: '/b', isPackaged: true, platform: 'darwin', arch: 'arm64' });
-      expect(missingResources(resources)).toEqual([resources.builtinStrategiesDir, resources.rendererDir, resources.postgresBinDir]);
+      expect(missingResources(resources)).toEqual([resources.backendVendorDir, resources.builtinStrategiesDir, resources.rendererDir, resources.postgresBinDir]);
     });
   });
 });

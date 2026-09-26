@@ -40,13 +40,22 @@ export class BackendProcess {
     this.stopping = false;
     this.openLog();
     this.spawn();
-    await this.waitUntilHealthy();
+    try {
+      await this.waitUntilHealthy();
+    } catch (error) {
+      await this.stop();
+      throw error;
+    }
   }
 
   async stop(): Promise<void> {
     this.stopping = true;
     const child = this.child;
-    if (!child) return;
+    if (!child) {
+      this.logStream?.end();
+      this.logStream = null;
+      return;
+    }
     const exited = new Promise<void>((resolve) => child.once('exit', () => resolve()));
     child.postMessage({ type: 'shutdown' });
     const timeout = sleep(SHUTDOWN_GRACE_MS).then(() => {

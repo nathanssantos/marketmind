@@ -9,12 +9,13 @@ const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 const outDir = path.join(backendRoot, 'dist-embedded');
 
 const NATIVE_PACKAGES = ['@node-rs/argon2'];
+const VENDOR_DIR = 'vendor';
 const EXTERNALS = [...NATIVE_PACKAGES, 'pg-native', 'bufferutil', 'utf-8-validate', 'pino-pretty'];
 
 const copyPackage = (packageName, resolveFrom = [backendRoot]) => {
   const packageJsonPath = require.resolve(`${packageName}/package.json`, { paths: resolveFrom });
   const sourceDir = path.dirname(packageJsonPath);
-  const targetDir = path.join(outDir, 'node_modules', packageName);
+  const targetDir = path.join(outDir, VENDOR_DIR, packageName);
   mkdirSync(path.dirname(targetDir), { recursive: true });
   cpSync(sourceDir, targetDir, { recursive: true, dereference: true });
   const manifest = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
@@ -51,4 +52,4 @@ cpSync(path.join(backendRoot, 'src', 'db', 'migrations'), path.join(outDir, 'mig
 
 const userStrategiesDir = path.join(backendRoot, 'strategies', 'user');
 if (existsSync(userStrategiesDir)) console.log(`Note: ${userStrategiesDir} is not bundled; user strategies load from the data folder.`);
-console.log(`Embedded backend written to ${outDir}`);
+console.log(`Embedded backend written to ${outDir} (native packages under ${VENDOR_DIR}/, resolved through NODE_PATH)`);

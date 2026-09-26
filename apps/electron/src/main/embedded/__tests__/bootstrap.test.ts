@@ -5,6 +5,7 @@ import type { EmbeddedResources } from '../resources';
 
 const resources: EmbeddedResources = {
   backendEntry: '/res/backend/index.js',
+  backendVendorDir: '/res/backend/vendor',
   migrationsDir: '/res/backend/migrations',
   builtinStrategiesDir: '/res/backend/strategies/builtin',
   rendererDir: '/res/renderer',
@@ -48,6 +49,7 @@ describe('backendEnvironment', () => {
       MM_USER_STRATEGIES_DIR: path.join('/userData', 'data', 'strategies', 'user'),
       MM_DATA_DIR: path.join('/userData', 'data'),
       npm_package_version: '1.28.0',
+      NODE_PATH: '/res/backend/vendor',
     });
     expect(env['DATABASE_URL']).toBe('postgresql://marketmind:pw@127.0.0.1:54329/marketmind');
     expect(Object.keys(env)).not.toContain('VITE_DEV_SERVER_URL');
