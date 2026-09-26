@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 export interface EmbeddedSecrets {
@@ -48,13 +48,28 @@ export interface LoadSecretsOptions {
   cipher: SecretCipher;
 }
 
-export const loadOrCreateSecrets = ({ filePath, cipher }: LoadSecretsOptions): EmbeddedSecrets => {
-  if (existsSync(filePath)) {
-    const file = JSON.parse(readFileSync(filePath, 'utf8')) as SecretsFile;
-    return deserialize(file, cipher);
+const readSecretsFile = (filePath: string): SecretsFile | null => {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8')) as SecretsFile;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw error;
   }
+};
+
+export const loadOrCreateSecrets = ({ filePath, cipher }: LoadSecretsOptions): EmbeddedSecrets => {
+  const existing = readSecretsFile(filePath);
+  if (existing) return deserialize(existing, cipher);
+
   const secrets = generateSecrets();
   mkdirSync(path.dirname(filePath), { recursive: true });
-  writeFileSync(filePath, JSON.stringify(serialize(secrets, cipher)), { mode: OWNER_READ_WRITE });
+  try {
+    writeFileSync(filePath, JSON.stringify(serialize(secrets, cipher)), { mode: OWNER_READ_WRITE, flag: 'wx' });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    const written = readSecretsFile(filePath);
+    if (written) return deserialize(written, cipher);
+    throw error;
+  }
   return secrets;
 };

@@ -51,6 +51,14 @@ describe('embedded secrets', () => {
     expect(JSON.parse(Buffer.from(file.payload, 'base64').toString('utf8'))).toEqual(secrets);
   });
 
+  it('keeps a file written by another instance instead of overwriting it', () => {
+    const filePath = path.join(dir, 'secrets.json');
+    const first = loadOrCreateSecrets({ filePath, cipher: reversingCipher(true) });
+    const again = loadOrCreateSecrets({ filePath: path.join(dir, 'secrets.json'), cipher: reversingCipher(true) });
+    expect(again).toEqual(first);
+    expect(JSON.parse(readFileSync(filePath, 'utf8')).version).toBe(1);
+  });
+
   it('writes the file readable by the owner only', () => {
     if (process.platform === 'win32') return;
     const filePath = path.join(dir, 'secrets.json');
