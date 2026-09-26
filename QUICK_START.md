@@ -2,6 +2,8 @@
 
 Get MarketMind up and running in 5 minutes.
 
+> Want to **use** the app rather than work on it? Download the installer from the [latest release](https://github.com/nathanssantos/marketmind/releases/latest). It ships the backend and PostgreSQL and needs nothing else. This guide is the developer path.
+
 ## 📋 Prerequisites
 
 - **Node.js** 24+ ([Download](https://nodejs.org/))

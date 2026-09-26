@@ -1641,11 +1641,11 @@
     "features": "Fonctionnalités",
     "featuresList": {
       "marketData": "Données de marché de cryptomonnaies en temps réel (Binance)",
-      "charts": "Graphiques en chandeliers avancés avec 25+ indicateurs",
-      "strategies": "20 stratégies de trading algorithmique",
+      "charts": "Graphiques en bougies avancés avec plus de 45 indicateurs",
+      "strategies": "107 stratégies de trading en Pine Script",
       "autoTrading": "Exécution automatique des trades avec ordres OCO",
       "backtesting": "Moteur de backtesting complet avec optimisation",
-      "security": "Stockage sécurisé des clés API avec chiffrement au niveau du système d'exploitation",
+      "security": "Clés API chiffrées en AES-256 sur cet ordinateur",
       "autoUpdate": "Système de mise à jour automatique avec les versions GitHub",
       "shortcuts": "Raccourcis clavier pour la productivité",
       "themes": "Thèmes clair et sombre",
@@ -1671,6 +1671,11 @@
       "available": "v{{version}} disponible",
       "upToDate": "À jour",
       "readyToInstall": "Prêt à installer"
+    },
+    "dataFolder": {
+      "title": "Vos données",
+      "description": "La base de données, les journaux et vos propres stratégies vivent dans ce dossier, sur cet ordinateur. Sauvegardez-le application fermée.",
+      "open": "Ouvrir le dossier"
     }
   },
   "setupConfig": {

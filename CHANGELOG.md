@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Self-contained desktop app** — the installer now ships the backend and a PostgreSQL 17 server. On launch the app starts PostgreSQL from its user-data folder (`initdb` on first run, loopback only, scram auth), starts the backend as an Electron utility process with generated secrets kept in the OS keychain, applies the database migrations, and loads the renderer from the backend's own origin. A boot window reports each step; on failure it offers to open the logs, retry or quit. A second launch focuses the running app. Quitting stops the backend and PostgreSQL. Settings → About shows the data folder and opens it. `MM_BACKEND_URL` (or `--backend-url=`) skips the embedded stack for a self-hosted backend.
+- **Backend embeddable by configuration** — `HOST`, `COOKIE_SECURE`, `MM_EMBEDDED`, `MM_RUN_MIGRATIONS`, `MM_DATA_DIR`, `MM_STRATEGIES_DIR`, `MM_USER_STRATEGIES_DIR`, `MM_MIGRATIONS_DIR` and `MM_RENDERER_DIR`. The backend serves the renderer build with an SPA fallback and a content security policy for the hosts the renderer uses, creates its database on first run, and shuts down cleanly on SIGTERM, SIGINT or a parent-port message. `pnpm --filter @marketmind/backend bundle:embedded` produces the single-file bundle.
+- **User strategies folder** — `.pine` files in `strategies/user` (the data folder in the desktop app) load next to the built-in ones; a missing folder is skipped.
+- **Embedded boot end-to-end test** — `pnpm --filter @marketmind/electron test:e2e:embedded` boots the real PostgreSQL and backend in a temporary user-data folder, checks the login page is served from the backend origin, and checks PostgreSQL stops on quit and restarts on the same data.
+
+### Changed
+
+- **One baseline migration** — the migration history is squashed into `0000_baseline`, generated from the Drizzle schema, which is now the single source of truth. Schema changes add a journal entry with `db:generate`; `db:mark-baseline` records the baseline on a database that predates it. The backend tests build their schema with the migrator on plain `postgres:17` instead of a hand-written DDL, so every test run proves the migrations. Indexes the development database had by hand (descending time indexes, partial indexes on open positions, settled orders and closed executions) are now in the schema.
+- **Renderer loads from a URL in every mode** — dev server, external backend or the embedded backend. The packaged app no longer loads `file://`, which could never send the session cookie to the backend.
+- **Installer output** moves from `apps/electron/dist` to `apps/electron/release`, so the renderer build folder is no longer copied into itself.
+- Settings → About lists 45+ indicators, 107 Pine Script strategies and AES-256 key encryption instead of the old numbers.
+
+### Removed
+
+- The unused order archiver service and the `orders_archive` / `daily_pnl` objects it referenced.
+
 ## [1.27.0] - 2026-09-26
 
 Chart reliability release. A chart no longer freezes at 00:00 when a bar closes without a stream update: the renderer opens the next bar itself, resyncs on silence, holes and reconnects, and the backend re-arms Binance subscriptions when a client joins a kline room and keeps retrying reconnects instead of giving up. Kline gaps are repaired end to end (requested-window backfill, calendar-aware monthly and weekly stepping, no truncated open bars, a periodic gaps-only sweep, and a maintenance script for history). Fibonacci drawings highlight 38.2 % instead of 50 %, and the unused chart prototype and kline helpers are gone.

@@ -397,6 +397,19 @@ importers:
       vitest-canvas-mock:
         specifier: ^1.2.0
         version: 1.2.0(vitest@5.0.1)
+    optionalDependencies:
+      '@embedded-postgres/darwin-arm64':
+        specifier: 17.10.0-beta.17
+        version: 17.10.0-beta.17
+      '@embedded-postgres/darwin-x64':
+        specifier: 17.10.0-beta.17
+        version: 17.10.0-beta.17
+      '@embedded-postgres/linux-x64':
+        specifier: 17.10.0-beta.17
+        version: 17.10.0-beta.17
+      '@embedded-postgres/windows-x64':
+        specifier: 17.10.0-beta.17
+        version: 17.10.0-beta.17
 
   packages/chart-studies:
     devDependencies:
@@ -1693,6 +1706,30 @@ packages:
     resolution: {integrity: sha512-dfZeox66AvdPtb2lD8OsIIQh12Tp0GNCRUDfBHIKGpbmopZto2/A8nSpYYLoedPIHpqkeblZ/k8OV0Gy7PYuyQ==}
     engines: {node: '>=14.14'}
     hasBin: true
+
+  '@embedded-postgres/darwin-arm64@17.10.0-beta.17':
+    resolution: {integrity: sha512-E2dxhSllrcyAJBHuvgTrBTx2BaPlX2vvjXClPKHxfwBezk+nTZ01uAEraKiRJMpzHSCyN8J1dTjKh4q/uTsBLQ==}
+    engines: {node: '>=16'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@embedded-postgres/darwin-x64@17.10.0-beta.17':
+    resolution: {integrity: sha512-gXk65MIyttD/PWo6NDSmu/n4vzPcqZQmxVWjEKuecwlyGmWO984AZ3Ljb7F0bwPvXhqcovH4FGN4ydr0fGeJxg==}
+    engines: {node: '>=16'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@embedded-postgres/linux-x64@17.10.0-beta.17':
+    resolution: {integrity: sha512-hU4Sgna19ixDP/l3P/zkHhQ9B0JDV39qA97RNz55QcngeRjFC5/1G36LZjODVJ84kVJHUTQMmly7nzWO8js8kg==}
+    engines: {node: '>=16'}
+    cpu: [x64]
+    os: [linux]
+
+  '@embedded-postgres/windows-x64@17.10.0-beta.17':
+    resolution: {integrity: sha512-q6xIETTkv67i1QlTWz1LAKb3Z+vG2V3qrp+BjLEWhCQ9jE4hbbsQ/J/3wiOPFLJbuwak7CfHC9EUJG7txAbGKw==}
+    engines: {node: '>=16'}
+    cpu: [x64]
+    os: [win32]
 
   '@emotion/babel-plugin@11.13.5':
     resolution: {integrity: sha512-pxHCpT2ex+0q+HH91/zsdHkw/lXd468DIN2zvfvLtPKLLMo6gQj7oLObq8PhkrxOZb/gGCq03S3Z7PDhS8pduQ==}
@@ -10667,6 +10704,18 @@ snapshots:
       postject: 1.0.0-alpha.6
     transitivePeerDependencies:
       - supports-color
+    optional: true
+
+  '@embedded-postgres/darwin-arm64@17.10.0-beta.17':
+    optional: true
+
+  '@embedded-postgres/darwin-x64@17.10.0-beta.17':
+    optional: true
+
+  '@embedded-postgres/linux-x64@17.10.0-beta.17':
+    optional: true
+
+  '@embedded-postgres/windows-x64@17.10.0-beta.17':
     optional: true
 
   '@emotion/babel-plugin@11.13.5(supports-color@8.1.1)':

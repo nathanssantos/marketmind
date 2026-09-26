@@ -1502,11 +1502,11 @@
     "features": "Features",
     "featuresList": {
       "marketData": "Real-time cryptocurrency market data (Binance)",
-      "charts": "Advanced kline charts with 25+ indicators",
-      "strategies": "20 algorithmic trading strategies",
+      "charts": "Advanced kline charts with 45+ indicators",
+      "strategies": "107 Pine Script trading strategies",
       "autoTrading": "Automated trade execution with OCO orders",
       "backtesting": "Full backtesting engine with optimization",
-      "security": "Secure API key storage with OS-level encryption",
+      "security": "API keys encrypted with AES-256 on this computer",
       "autoUpdate": "Auto-update system with GitHub releases",
       "shortcuts": "Keyboard shortcuts for productivity",
       "themes": "Light and dark themes",
@@ -1532,6 +1532,11 @@
       "available": "v{{version}} available",
       "upToDate": "Up to date",
       "readyToInstall": "Ready to install"
+    },
+    "dataFolder": {
+      "title": "Your data",
+      "description": "Database, logs and your own strategies live in this folder on this computer. Back it up with the app closed.",
+      "open": "Open folder"
     }
   },
   "setupConfig": {

@@ -25,7 +25,24 @@ interface NotificationOptions {
   urgency?: 'normal' | 'critical' | 'low';
 }
 
+const BACKEND_URL_ARGUMENT = '--mm-backend-url=';
+const backendUrlFromArguments = process.argv.find((argument) => argument.startsWith(BACKEND_URL_ARGUMENT))?.slice(BACKEND_URL_ARGUMENT.length) ?? null;
+
 const API = {
+  backend: {
+    url: backendUrlFromArguments,
+  },
+
+  app: {
+    getDataDir: async (): Promise<string | null> => {
+      return await ipcRenderer.invoke('app:getDataDir');
+    },
+
+    openDataDir: async (): Promise<void> => {
+      await ipcRenderer.invoke('app:openDataDir');
+    },
+  },
+
   send: (channel: string, data: unknown) => {
     ipcRenderer.send(channel, data);
   },

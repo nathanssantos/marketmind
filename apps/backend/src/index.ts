@@ -6,6 +6,7 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { STARTUP_CONFIG } from './constants';
 import { db } from './db/client';
+import { ensureDatabaseExists } from './db/bootstrap';
 import { runMigrations } from './db/migrate';
 import { DatabaseUnreachableError, assertDatabaseReachable } from './db/readiness';
 import { env } from './env';
@@ -25,6 +26,8 @@ const fastify = Fastify({
 
 const start = async (): Promise<void> => {
   try {
+    if (env.MM_EMBEDDED && (await ensureDatabaseExists(env.DATABASE_URL))) fastify.log.info('> Database created');
+
     await assertDatabaseReachable();
 
     if (env.MM_RUN_MIGRATIONS) {

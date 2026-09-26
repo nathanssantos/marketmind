@@ -1,7 +1,7 @@
 import * as electron from 'electron';
 import type { UpdateManager } from './services/UpdateManager';
 
-const { ipcMain, net, Notification } = electron;
+const { ipcMain, net, Notification, shell } = electron;
 
 const DEBUG_STARTUP = process.env['DEBUG_STARTUP'] === 'true';
 
@@ -217,6 +217,19 @@ export const setupWindowHandlers = (
 
   ipcMain.handle('window:getChartWindows', async () => {
     return getChartWindowIds();
+  });
+};
+
+export interface DataFolderProvider {
+  dataDir: string;
+}
+
+export const setupAppHandlers = (getStack: () => DataFolderProvider | null): void => {
+  ipcMain.handle('app:getDataDir', () => getStack()?.dataDir ?? null);
+  ipcMain.handle('app:openDataDir', async () => {
+    const dataDir = getStack()?.dataDir;
+    if (!dataDir) return;
+    await shell.openPath(dataDir);
   });
 };
 
