@@ -298,14 +298,16 @@ ENCRYPTION_KEY=your-encryption-key
 ### Database Connection Issues
 
 ```bash
-# Check PostgreSQL is running
-brew services list | grep postgresql
+# Check the compose container (pnpm dev starts it automatically)
+docker compose ps postgres
+docker compose logs --tail 50 postgres
 
-# Restart PostgreSQL
-brew services restart postgresql@17
+# Start or restart PostgreSQL
+docker compose up -d postgres
+docker compose restart postgres
 
 # Check TimescaleDB extension
-psql marketmind -c "SELECT * FROM pg_extension WHERE extname = 'timescaledb';"
+docker exec marketmind-postgres psql -U marketmind -d marketmind -c "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb';"
 ```
 
 ### Port Already in Use

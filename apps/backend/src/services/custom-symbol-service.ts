@@ -61,7 +61,6 @@ export class CustomSymbolService {
   private klineBuckets = new Map<string, CustomKlineBucketState>();
 
   async start(): Promise<void> {
-    await this.seedPolitifi();
     await this.loadFromDb();
     await this.initializeBasePrices();
     await this.rebalanceIfNeeded();
@@ -622,87 +621,6 @@ export class CustomSymbolService {
         }
       }
     }
-  }
-
-  private async seedPolitifi(): Promise<void> {
-    const existing = await db.query.customSymbols.findFirst({
-      where: eq(customSymbols.symbol, 'POLITIFI'),
-    });
-    if (existing) {
-      // One-shot migration: existing rows were seeded with marketType=SPOT
-      // before all 5 components were listed on Binance Futures. Switch
-      // any SPOT row to FUTURES so the kline pipeline pulls from
-      // /fapi instead of /api (tighter spreads, aligned with renderer).
-      await db
-        .update(customSymbolComponents)
-        .set({ marketType: 'FUTURES' })
-        .where(
-          and(
-            eq(customSymbolComponents.customSymbolId, existing.id),
-            eq(customSymbolComponents.marketType, 'SPOT'),
-          ),
-        );
-      return;
-    }
-
-    // All 5 components are listed on Binance Futures (verified
-    // 2026-05-09 via /fapi/v1/exchangeInfo). Using FUTURES gives us
-    // tighter spreads, more granular kline data, and aligns with the
-    // marketType the renderer passes for custom symbols.
-    const componentDefs = [
-      { symbol: 'WLFIUSDT', marketType: 'FUTURES' as const, coingeckoId: 'world-liberty-financial' },
-      { symbol: 'TRUMPUSDT', marketType: 'FUTURES' as const, coingeckoId: 'official-trump' },
-      { symbol: 'MELANIAUSDT', marketType: 'FUTURES' as const, coingeckoId: 'official-melania-meme' },
-      { symbol: 'PEOPLEUSDT', marketType: 'FUTURES' as const, coingeckoId: 'constitutiondao' },
-      { symbol: 'PNUTUSDT', marketType: 'FUTURES' as const, coingeckoId: 'peanut-the-squirrel' },
-    ];
-
-    let weights: number[];
-    try {
-      const caps = await fetchMarketCaps(componentDefs.map(c => c.coingeckoId));
-      const orderedCaps = componentDefs.map(c => caps.get(c.coingeckoId) ?? 0);
-      weights = computeWeights('CAPPED_MARKET_CAP', orderedCaps, 40);
-    } catch {
-      weights = componentDefs.map(() => 1 / componentDefs.length);
-      logger.warn('CoinGecko unavailable, using equal weights for POLITIFI seed');
-    }
-
-    const basePrices = new Map<string, number>();
-    for (const c of componentDefs) {
-      try {
-        const price = await fetchBinancePrice(c.symbol);
-        basePrices.set(c.symbol, price);
-      } catch {
-        logger.warn({ symbol: c.symbol }, 'Could not fetch base price for POLITIFI component');
-      }
-    }
-
-    const [politifi] = await db.insert(customSymbols).values({
-      symbol: 'POLITIFI',
-      name: 'Political Token Index',
-      description: 'A basket of top PolitiFi tokens weighted by capped market cap',
-      category: 'politics',
-      baseValue: '100',
-      weightingMethod: 'CAPPED_MARKET_CAP',
-      capPercent: '40',
-      rebalanceIntervalDays: 30,
-      lastRebalancedAt: new Date(),
-    }).returning();
-
-    if (!politifi) return;
-
-    await db.insert(customSymbolComponents).values(
-      componentDefs.map((c, i) => ({
-        customSymbolId: politifi.id,
-        symbol: c.symbol,
-        marketType: c.marketType,
-        coingeckoId: c.coingeckoId,
-        weight: weights[i]!.toString(),
-        basePrice: basePrices.get(c.symbol)?.toString() ?? null,
-      }))
-    );
-
-    logger.info({ components: componentDefs.length }, 'POLITIFI index seeded');
   }
 }
 
