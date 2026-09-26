@@ -70,7 +70,8 @@
     "migrate:enabled-strategies": "tsx scripts/maintenance/migrate-enabled-strategies.ts",
     "reset-wallet": "tsx scripts/maintenance/reset-wallet.ts",
     "audit-klines": "tsx scripts/maintenance/audit-klines.ts",
-    "clear-klines": "tsx scripts/maintenance/clear-klines.ts"
+    "clear-klines": "tsx scripts/maintenance/clear-klines.ts",
+    "fill-kline-gaps": "tsx scripts/maintenance/fill-kline-gaps.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",

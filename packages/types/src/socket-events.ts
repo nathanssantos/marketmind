@@ -268,6 +268,7 @@ export interface LiquidityHeatmapBucketEvent {
 export interface KlineSubscribePayload {
   symbol: string;
   interval: string;
+  marketType?: MarketType;
 }
 
 export type ClientToServerEvents = {

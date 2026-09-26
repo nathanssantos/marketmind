@@ -128,7 +128,7 @@ describe('useKlineLiveStream', () => {
         timestamp: Date.now(),
       });
       vi.advanceTimersByTime(200);
-      await vi.runAllTimersAsync();
+      await vi.runOnlyPendingTimersAsync();
     });
 
     const display = result.current.displayKlines;
@@ -168,7 +168,7 @@ describe('useKlineLiveStream', () => {
         timestamp: Date.now(),
       });
       vi.advanceTimersByTime(200);
-      await vi.runAllTimersAsync();
+      await vi.runOnlyPendingTimersAsync();
     });
 
     expect(result.current.displayKlines.length).toBe(6);
@@ -205,7 +205,7 @@ describe('useKlineLiveStream', () => {
         timestamp: Date.now(),
       });
       vi.advanceTimersByTime(200);
-      await vi.runAllTimersAsync();
+      await vi.runOnlyPendingTimersAsync();
     });
 
     const lastDisplay = result.current.displayKlines[result.current.displayKlines.length - 1];
@@ -245,7 +245,7 @@ describe('useKlineLiveStream', () => {
         timestamp: Date.now(),
       });
       vi.advanceTimersByTime(200);
-      await vi.runAllTimersAsync();
+      await vi.runOnlyPendingTimersAsync();
     });
 
     expect(result.current.displayKlines.length).toBe(6);
@@ -287,7 +287,7 @@ describe('useKlineLiveStream', () => {
         timestamp: Date.now(),
       });
       vi.advanceTimersByTime(200);
-      await vi.runAllTimersAsync();
+      await vi.runOnlyPendingTimersAsync();
     });
 
     expect(mockRefetch).toHaveBeenCalled();

@@ -21,7 +21,7 @@ export interface PrefetchOptions {
   marketType?: MarketType;
   targetCount?: number;
   silent?: boolean;
-  forRotation?: boolean;
+  endTime?: number;
 }
 
 export interface PrefetchResult {
@@ -40,7 +40,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     marketType = 'FUTURES',
     targetCount = BACKFILL_TARGET_KLINES,
     silent = false,
-    forRotation = false,
+    endTime,
   } = options;
 
   const { getCustomSymbolService } = await import('./custom-symbol-service');
@@ -90,7 +90,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     };
   }
 
-  const key = getBackfillKey(symbol, interval, marketType);
+  const key = endTime === undefined ? getBackfillKey(symbol, interval, marketType) : `${getBackfillKey(symbol, interval, marketType)}:${endTime}`;
 
   const existingBackfill = activeBackfills.get(key);
   if (existingBackfill) {
@@ -116,7 +116,7 @@ export const prefetchKlines = async (options: PrefetchOptions): Promise<Prefetch
     }
   }
 
-  const backfillPromise = smartBackfillKlines(symbol, interval as Interval, targetCount, marketType, forRotation);
+  const backfillPromise = smartBackfillKlines(symbol, interval as Interval, targetCount, marketType, { endTime });
   activeBackfills.set(key, backfillPromise);
 
   try {
@@ -224,7 +224,7 @@ export const runBatchBackfill = async (
     await Promise.allSettled(
       batch.map(symbol =>
         withTimeout(
-          prefetchKlines({ symbol, interval, marketType, silent: true, forRotation: true, targetCount: SCANNER_BACKFILL_TARGET }),
+          prefetchKlines({ symbol, interval, marketType, silent: true, targetCount: SCANNER_BACKFILL_TARGET }),
           SYMBOL_TIMEOUT_MS,
         )
       )

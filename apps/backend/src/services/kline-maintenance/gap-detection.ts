@@ -1,3 +1,4 @@
+import { alignToIntervalStart, countOpenTimesBetween, getNextOpenTime, getPreviousOpenTime } from '@marketmind/types';
 import { and, asc, eq, gte, lte } from 'drizzle-orm';
 import { MAINTENANCE_KLINES } from '../../constants';
 import { db } from '../../db';
@@ -65,12 +66,12 @@ export const detectGaps = async (pair: ActivePair): Promise<GapInfo[]> => {
   const firstKline = dbKlines[0];
 
   if (firstKline && !knownEarliestDate && firstKline.openTime.getTime() > startTime.getTime()) {
-    const missingAtStart = Math.floor((firstKline.openTime.getTime() - startTime.getTime()) / intervalMs);
+    const missingAtStart = countOpenTimesBetween(alignToIntervalStart(startTime.getTime(), pair.interval), firstKline.openTime.getTime(), pair.interval);
     if (missingAtStart >= MIN_GAP_SIZE_TO_FILL) {
       gaps.push({
         ...pair,
         gapStart: startTime,
-        gapEnd: new Date(firstKline.openTime.getTime() - intervalMs),
+        gapEnd: new Date(getPreviousOpenTime(firstKline.openTime.getTime(), pair.interval)),
         missingCandles: missingAtStart,
       });
     }
@@ -82,16 +83,16 @@ export const detectGaps = async (pair: ActivePair): Promise<GapInfo[]> => {
     if (!prevKline || !currKline) continue;
     const prevTime = prevKline.openTime.getTime();
     const currTime = currKline.openTime.getTime();
-    const expectedNextTime = prevTime + intervalMs;
+    const expectedNextTime = getNextOpenTime(prevTime, pair.interval);
 
     if (currTime > expectedNextTime) {
-      const missingCandles = Math.floor((currTime - expectedNextTime) / intervalMs) + 1;
+      const missingCandles = countOpenTimesBetween(expectedNextTime, currTime, pair.interval);
 
       if (missingCandles >= MIN_GAP_SIZE_TO_FILL) {
         gaps.push({
           ...pair,
           gapStart: new Date(expectedNextTime),
-          gapEnd: new Date(currTime - intervalMs),
+          gapEnd: new Date(getPreviousOpenTime(currTime, pair.interval)),
           missingCandles,
         });
       }
@@ -102,14 +103,14 @@ export const detectGaps = async (pair: ActivePair): Promise<GapInfo[]> => {
   if (!lastKline) return gaps;
 
   const lastKlineTime = lastKline.openTime.getTime();
-  const expectedLatestTime = Math.floor(now / intervalMs) * intervalMs;
-  const missingAtEnd = Math.floor((expectedLatestTime - lastKlineTime) / intervalMs);
+  const lastClosedOpenTime = getPreviousOpenTime(alignToIntervalStart(now, pair.interval), pair.interval);
+  const missingAtEnd = countOpenTimesBetween(lastKlineTime, lastClosedOpenTime, pair.interval);
 
-  if (missingAtEnd >= MIN_GAP_SIZE_TO_FILL + 1) {
+  if (missingAtEnd >= MIN_GAP_SIZE_TO_FILL) {
     gaps.push({
       ...pair,
-      gapStart: new Date(lastKlineTime + intervalMs),
-      gapEnd: new Date(expectedLatestTime),
+      gapStart: new Date(getNextOpenTime(lastKlineTime, pair.interval)),
+      gapEnd: new Date(lastClosedOpenTime),
       missingCandles: missingAtEnd,
     });
   }

@@ -18,4 +18,5 @@ export interface ActivePair {
 export interface KlineMaintenanceStartOptions {
   skipStartupSync?: boolean;
   delayMs?: number;
+  gapsOnly?: boolean;
 }

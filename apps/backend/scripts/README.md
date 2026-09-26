@@ -155,11 +155,13 @@ Database cleanup and reset operations.
 | `reset-wallet.ts` | Reset wallet balances and clear trade history |
 | `audit-klines.ts` | Audit klines against Binance API (with `--fix` option) |
 | `clear-klines.ts` | Delete all klines from database |
+| `fill-kline-gaps.ts` | Download every missing closed candle for the given symbols and intervals over the last N days (default 60) |
 
 ```bash
 pnpm reset-wallet
 pnpm audit-klines -- -s BTCUSDT -i 1h --fix
 pnpm clear-klines
+pnpm fill-kline-gaps -- -s BTCUSDT,ETHUSDT -i 1m,5m,15m -d 60
 ```
 
 ## debug/

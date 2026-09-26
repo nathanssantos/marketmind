@@ -74,7 +74,6 @@ export const applyRotationWithQueue = async (
           marketType,
           targetCount: requiredKlinesForRotation,
           silent: false,
-          forRotation: true,
         });
         log('> [DynamicRotation] Prefetch result', {
           symbol,

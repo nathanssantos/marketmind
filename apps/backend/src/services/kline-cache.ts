@@ -187,7 +187,6 @@ class KlineCacheService {
         interval,
         gap.expectedCount,
         marketType,
-        false
       );
       return result.downloaded;
     } catch (err) {

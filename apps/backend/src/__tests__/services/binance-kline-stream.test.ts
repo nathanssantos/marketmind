@@ -32,6 +32,19 @@ vi.mock('../../services/websocket', () => ({
   })),
 }));
 
+const { onReconnectMock } = vi.hoisted(() => ({ onReconnectMock: vi.fn() }));
+
+vi.mock('../../services/kline-stream-persistence', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/kline-stream-persistence')>();
+  class ReconnectionGuardStub {
+    onReconnect = onReconnectMock;
+    shouldPersistKline(): boolean {
+      return true;
+    }
+  }
+  return { ...actual, ReconnectionGuard: ReconnectionGuardStub };
+});
+
 vi.mock('../../db', () => ({
   db: {
     query: {
@@ -427,6 +440,66 @@ describe('BinanceFuturesKlineStreamService', () => {
         status: 'degraded',
       }));
       expect(mockCloseAll).toHaveBeenCalled();
+
+      vi.useRealTimers();
+    });
+
+    it('keeps forcing reconnects with a growing cooldown while the stream stays silent', async () => {
+      vi.useFakeTimers();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({ emitKlineUpdate: vi.fn(), emitStreamHealth: vi.fn() });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+
+      vi.advanceTimersByTime(76_000);
+      expect(mockCloseAll).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(3 * 60_000);
+      expect(mockCloseAll).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(75_000);
+      expect(mockCloseAll).toHaveBeenCalledTimes(2);
+
+      vi.advanceTimersByTime(7 * 60_000);
+      expect(mockCloseAll).toHaveBeenCalledTimes(2);
+      vi.advanceTimersByTime(75_000);
+      expect(mockCloseAll).toHaveBeenCalledTimes(3);
+
+      vi.useRealTimers();
+    });
+
+    it('resets the reconnect cooldown once the stream recovers', async () => {
+      vi.useFakeTimers();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({ emitKlineUpdate: vi.fn(), emitStreamHealth: vi.fn() });
+
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+      vi.advanceTimersByTime(76_000);
+      expect(mockCloseAll).toHaveBeenCalledTimes(1);
+
+      const subsMap = (service as unknown as { subscriptions: Map<string, { lastMessageAt: number; healthStatus: string }> }).subscriptions;
+      const restored = subsMap.get('btcusdt_1m')!;
+      restored.healthStatus = 'degraded';
+      restored.lastMessageAt = Date.now();
+      vi.advanceTimersByTime(15_000);
+
+      vi.advanceTimersByTime(120_000);
+      expect(mockCloseAll).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
+
+    it('runs the post-reconnect gap check after a forced reconnect', async () => {
+      vi.useFakeTimers();
+      const { getWebSocketService } = await import('../../services/websocket');
+      (getWebSocketService as ReturnType<typeof vi.fn>).mockReturnValue({ emitKlineUpdate: vi.fn(), emitStreamHealth: vi.fn() });
+      service.start();
+      service.subscribe('BTCUSDT', '1m');
+      vi.advanceTimersByTime(76_000);
+
+      expect(mockCloseAll).toHaveBeenCalledTimes(1);
+      expect(onReconnectMock).toHaveBeenCalledWith('FUTURES');
 
       vi.useRealTimers();
     });

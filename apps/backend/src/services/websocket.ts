@@ -1,3 +1,6 @@
+import type { MarketType } from '@marketmind/types';
+import { binanceFuturesKlineStreamService, binanceKlineStreamService } from './binance-kline-stream';
+import type { BinanceKlineStreamBase } from './binance-kline-stream-base';
 import type { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, type Socket as IOSocket } from 'socket.io';
 import {
@@ -67,6 +70,9 @@ const skipCustomSymbol = (symbol: string, action: () => void): void => {
   if (!isCustomSymbol(symbol)) action();
 };
 
+const klineStreamFor = (marketType: MarketType | undefined): BinanceKlineStreamBase =>
+  marketType === 'SPOT' ? binanceKlineStreamService : binanceFuturesKlineStreamService;
+
 const ROOM_HANDLERS: Array<RoomHandler<keyof ClientToServerEvents>> = [
   {
     subscribe: CLIENT_TO_SERVER_EVENTS.subscribeOrders,
@@ -111,6 +117,14 @@ const ROOM_HANDLERS: Array<RoomHandler<keyof ClientToServerEvents>> = [
     room: (data) => {
       const d = data as KlineSubscribePayload;
       return ROOMS.klines(d.symbol, d.interval);
+    },
+    onJoin: (data) => {
+      const d = data as KlineSubscribePayload;
+      skipCustomSymbol(d.symbol, () => klineStreamFor(d.marketType).subscribe(d.symbol, d.interval));
+    },
+    onLeave: (data) => {
+      const d = data as KlineSubscribePayload;
+      skipCustomSymbol(d.symbol, () => klineStreamFor(d.marketType).unsubscribe(d.symbol, d.interval));
     },
   },
   {
