@@ -50,6 +50,7 @@ export const queryProcedures = {
         interval: input.interval,
         targetCount: input.limit,
         marketType,
+        endTime: input.endTime?.getTime(),
       });
 
       const conditions = [

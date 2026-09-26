@@ -169,12 +169,6 @@ const start = async (): Promise<void> => {
     binanceFuturesKlineStreamService.start();
 
     if (env.DEMO_MODE) {
-      // Kline maintenance scheduler disabled — was a workaround for chart
-      // candle corruption that turned out to be a frontend rendering issue
-      // (backgroundThrottling + stale canvas snapshot). With those fixed,
-      // the periodic gap/corruption sweep is no longer needed. Manual
-      // repair via Settings → Data still works through the tRPC route.
-
       fastify.log.info(`> Backend server running on http://localhost:${port} [DEMO MODE]`);
       fastify.log.info(`> tRPC endpoint: http://localhost:${port}/trpc`);
       fastify.log.info(`> WebSocket server initialized`);
@@ -222,7 +216,8 @@ const start = async (): Promise<void> => {
       const { fundingRateService } = await import('./services/funding-rate-service');
       fundingRateService.start();
 
-      // Kline maintenance scheduler disabled — see DEMO_MODE branch above.
+      const { getKlineMaintenance } = await import('./services/kline-maintenance');
+      await getKlineMaintenance().start({ skipStartupSync: true, delayMs: STARTUP_CONFIG.KLINE_MAINTENANCE_DELAY_MS, gapsOnly: true });
 
       const { orderSyncService } = await import('./services/order-sync');
       await orderSyncService.start({ autoCancelOrphans: false, autoFixMismatches: true, delayFirstSync: STARTUP_CONFIG.ORDER_SYNC_DELAY_MS });

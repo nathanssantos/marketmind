@@ -141,3 +141,38 @@ export const SCALPING_INTERVALS: TimeInterval[] = ['1s', '1m', '5m'];
 export type TimeMsConstants = typeof TIME_MS;
 export type IntervalMsConstants = typeof INTERVAL_MS;
 export type IntervalMinutesConstants = typeof INTERVAL_MINUTES;
+
+const DAYS_PER_WEEK = 7;
+const DAYS_FROM_MONDAY_TO_SUNDAY = 6;
+const CALENDAR_INTERVALS = new Set<TimeInterval>(['1M', '1y']);
+
+export const alignToIntervalStart = (time: number, interval: TimeInterval): number => {
+  const date = new Date(time);
+  if (interval === '1M') return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1);
+  if (interval === '1y') return Date.UTC(date.getUTCFullYear(), 0, 1);
+  if (interval === '1w') {
+    const dayStart = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+    const daysSinceMonday = (date.getUTCDay() + DAYS_FROM_MONDAY_TO_SUNDAY) % DAYS_PER_WEEK;
+    return dayStart - daysSinceMonday * TIME_MS.DAY;
+  }
+  const intervalMs = INTERVAL_MS[interval];
+  return Math.floor(time / intervalMs) * intervalMs;
+};
+
+export const getNextOpenTime = (openTime: number, interval: TimeInterval): number => {
+  const date = new Date(openTime);
+  if (interval === '1M') return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
+  if (interval === '1y') return Date.UTC(date.getUTCFullYear() + 1, 0, 1);
+  return openTime + INTERVAL_MS[interval];
+};
+
+export const getPreviousOpenTime = (openTime: number, interval: TimeInterval): number =>
+  alignToIntervalStart(openTime - 1, interval);
+
+export const countOpenTimesBetween = (fromOpenTime: number, toOpenTimeExclusive: number, interval: TimeInterval): number => {
+  if (toOpenTimeExclusive <= fromOpenTime) return 0;
+  if (!CALENDAR_INTERVALS.has(interval)) return Math.floor((toOpenTimeExclusive - fromOpenTime) / INTERVAL_MS[interval]);
+  let count = 0;
+  for (let cursor = fromOpenTime; cursor < toOpenTimeExclusive; cursor = getNextOpenTime(cursor, interval)) count += 1;
+  return count;
+};
