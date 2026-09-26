@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Fibonacci drawing key levels** — 38.2 % is drawn with the key-level color (like 0 % and 100 %) and 50 % takes the secondary-level color, instead of the other way round.
+
 ## [1.26.0] - 2026-09-25
 
 Tooling, infrastructure and chart-feel release. The monorepo moves to pnpm 11 and every dependency to its latest compatible version (Electron 44, Vite 8, Vitest 5). `pnpm dev` now starts the compose PostgreSQL by itself, and the backend exits with a clear message when the database is down instead of a stack trace from the first query. The chart renders a drag on every frame instead of every 33 ms and skips the base-layer copy while panning, and a new cadence harness measures what the user feels. The POLITIFI seed is gone.
