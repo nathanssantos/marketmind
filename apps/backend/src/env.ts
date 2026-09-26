@@ -14,6 +14,20 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   APP_URL: z.string().url().default('http://localhost:5174'),
   DEMO_MODE: z.string().default('false').transform(v => v === 'true'),
+  HOST: z.string().default('0.0.0.0'),
+  COOKIE_SECURE: z.enum(['true', 'false']).optional(),
+  MM_EMBEDDED: z.string().default('false').transform(v => v === 'true'),
+  MM_RUN_MIGRATIONS: z.string().default('false').transform(v => v === 'true'),
+  MM_DATA_DIR: z.string().optional(),
+  MM_STRATEGIES_DIR: z.string().optional(),
+  MM_USER_STRATEGIES_DIR: z.string().optional(),
+  MM_MIGRATIONS_DIR: z.string().optional(),
+  MM_RENDERER_DIR: z.string().optional(),
 });
 
-export const env = envSchema.parse(process.env);
+const parsed = envSchema.parse(process.env);
+
+export const env = {
+  ...parsed,
+  COOKIE_SECURE: parsed.COOKIE_SECURE === undefined ? parsed.NODE_ENV === 'production' : parsed.COOKIE_SECURE === 'true',
+};

@@ -6,6 +6,7 @@ import type {
   SetupMomentumType,
 } from '@marketmind/types';
 import { logger } from '../../services/logger';
+import { STRATEGY_DIRS } from '../runtime-dirs';
 
 interface StrategyFilterTypes {
   volumeType: SetupVolumeType;
@@ -35,10 +36,7 @@ const FALLBACK_FILTER_TYPES: Record<string, StrategyFilterTypes> = {
 const filterTypesCache = new Map<string, StrategyFilterTypes>();
 let cacheInitialized = false;
 
-const STRATEGIES_PATHS = [
-  path.join(process.cwd(), 'strategies', 'builtin'),
-  path.join(process.cwd(), 'strategies', 'custom'),
-];
+const STRATEGIES_PATHS = STRATEGY_DIRS;
 
 const loadStrategiesFilterTypes = (): void => {
   if (cacheInitialized) return;

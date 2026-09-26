@@ -8,19 +8,15 @@ import type {
 } from '@marketmind/types';
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq } from 'drizzle-orm';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { z } from 'zod';
 import { klines, strategyPerformance, tradeExecutions } from '../db/schema';
 import { detectSetups as detectSetupsUnified } from '../services/indicator-engine';
 import { PineStrategyLoader } from '../services/pine/PineStrategyLoader';
 import { protectedProcedure, publicProcedure, router } from '../trpc';
 import { mapDbKlinesToApi } from '../utils/kline-mapper';
+import { STRATEGY_DIRS } from '../utils/runtime-dirs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const STRATEGIES_DIR = path.join(__dirname, '../../strategies/builtin');
-const sharedStrategyLoader = new PineStrategyLoader([STRATEGIES_DIR]);
+const sharedStrategyLoader = new PineStrategyLoader(STRATEGY_DIRS);
 
 const strategyStatusSchema = z.enum(['active', 'experimental', 'deprecated', 'unprofitable']);
 

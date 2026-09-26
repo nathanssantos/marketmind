@@ -6,11 +6,13 @@ import { useAutoUpdate } from '@/renderer/hooks/useAutoUpdate';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
 import { useUIPref } from '@/renderer/store/preferencesStore';
 import { useEffect } from 'react';
+import { useEmbeddedDataDir } from '@/renderer/hooks/useEmbeddedDataDir';
 import { useTranslation } from 'react-i18next';
-import { LuExternalLink, LuRefreshCw } from 'react-icons/lu';
+import { LuExternalLink, LuFolderOpen, LuRefreshCw } from 'react-icons/lu';
 
 export const AboutTab = () => {
   const { t } = useTranslation();
+  const { dataDir, openDataDir } = useEmbeddedDataDir();
   const currentYear = new Date().getFullYear();
 
   const [autoCheckUpdates, setAutoCheckUpdates] = useUIPref<boolean>('autoCheckUpdates', DEFAULT_AUTO_UPDATE_SETTINGS.autoCheckUpdates);
@@ -131,6 +133,20 @@ export const AboutTab = () => {
           {t('settings.autoUpdate.checkNow')}
         </Button>
       </FormSection>
+
+      {dataDir && (
+        <FormSection title={t('about.dataFolder.title')} description={t('about.dataFolder.description')}>
+          <HStack gap={3} align="center" flexWrap="wrap">
+            <Text fontSize="xs" fontFamily="mono" color="fg.muted" wordBreak="break-all" data-testid="about-data-dir">
+              {dataDir}
+            </Text>
+            <Button size="xs" variant="outline" onClick={() => void openDataDir()} data-testid="about-open-data-dir">
+              <LuFolderOpen />
+              {t('about.dataFolder.open')}
+            </Button>
+          </HStack>
+        </FormSection>
+      )}
 
       <FormSection title={t('about.resources')}>
         <Stack gap={1.5} fontSize="xs">

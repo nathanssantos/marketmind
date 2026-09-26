@@ -6,8 +6,11 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { STARTUP_CONFIG } from './constants';
 import { db } from './db/client';
+import { ensureDatabaseExists } from './db/bootstrap';
+import { runMigrations } from './db/migrate';
 import { DatabaseUnreachableError, assertDatabaseReachable } from './db/readiness';
 import { env } from './env';
+import { RENDERER_CONNECT_SRC, registerRendererStatic } from './server/renderer-static';
 import { initializeWebSocket } from './services/websocket';
 import { createContext, setWebSocketService } from './trpc/context';
 import { appRouter } from './trpc/router';
@@ -23,7 +26,16 @@ const fastify = Fastify({
 
 const start = async (): Promise<void> => {
   try {
+    if (env.MM_EMBEDDED && (await ensureDatabaseExists(env.DATABASE_URL))) fastify.log.info('> Database created');
+
     await assertDatabaseReachable();
+
+    if (env.MM_RUN_MIGRATIONS) {
+      await runMigrations();
+      fastify.log.info('> Database migrations applied');
+    }
+
+    const servesRenderer = env.MM_RENDERER_DIR !== undefined;
 
     await fastify.register(helmet, {
       contentSecurityPolicy: {
@@ -32,15 +44,18 @@ const start = async (): Promise<void> => {
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'"],
           imgSrc: ["'self'", 'data:', 'https:'],
+          fontSrc: ["'self'", 'data:'],
+          workerSrc: ["'self'", 'blob:'],
+          ...(servesRenderer ? { connectSrc: RENDERER_CONNECT_SRC } : {}),
         },
       },
-      crossOriginEmbedderPolicy: env.NODE_ENV === 'production',
+      crossOriginEmbedderPolicy: env.NODE_ENV === 'production' && !servesRenderer,
     });
 
     await fastify.register(rateLimit, {
       max: parseInt(process.env['RATE_LIMIT_MAX'] ?? '1000', 10),
       timeWindow: parseInt(process.env['RATE_LIMIT_WINDOW'] ?? '60000', 10),
-      allowList: env.NODE_ENV === 'development' ? ['127.0.0.1', '::1', '::ffff:127.0.0.1'] : [],
+      allowList: env.NODE_ENV === 'development' || env.MM_EMBEDDED ? ['127.0.0.1', '::1', '::ffff:127.0.0.1'] : [],
       errorResponseBuilder: (request, context) => {
         const message = `Rate limit exceeded. Try again in ${Math.ceil(context.ttl / 1000)}s.`;
         if (request.url.startsWith('/trpc/')) {
@@ -127,15 +142,19 @@ const start = async (): Promise<void> => {
       timestamp: new Date().toISOString(),
     }));
 
-    fastify.get('/', async () => ({
-      name: 'MarketMind API',
-      version: process.env['npm_package_version'] ?? '0.31.0',
-      endpoints: {
-        health: '/health',
-        ready: '/ready',
-        trpc: '/trpc',
-      },
-    }));
+    if (env.MM_RENDERER_DIR) {
+      await registerRendererStatic(fastify, env.MM_RENDERER_DIR);
+    } else {
+      fastify.get('/', async () => ({
+        name: 'MarketMind API',
+        version: process.env['npm_package_version'] ?? '0.31.0',
+        endpoints: {
+          health: '/health',
+          ready: '/ready',
+          trpc: '/trpc',
+        },
+      }));
+    }
 
     // Custom symbol service must be loaded BEFORE we start accepting
     // tRPC requests. Otherwise the renderer connecting on `fastify.listen`
@@ -151,7 +170,7 @@ const start = async (): Promise<void> => {
     }
 
     const port = parseInt(env.PORT, 10);
-    await fastify.listen({ port, host: '0.0.0.0' });
+    await fastify.listen({ port, host: env.HOST });
 
     const websocketService = initializeWebSocket(fastify.server);
     setWebSocketService(websocketService);
@@ -306,6 +325,20 @@ const start = async (): Promise<void> => {
     process.exit(1);
   }
 };
+
+const shutdown = async (reason: string): Promise<void> => {
+  fastify.log.info(`> Shutting down (${reason})`);
+  await fastify.close();
+  process.exit(0);
+};
+
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));
+
+const parentPort = (process as NodeJS.Process & { parentPort?: { on(event: 'message', listener: (message: { data?: { type?: string } }) => void): void } }).parentPort;
+parentPort?.on('message', (message) => {
+  if (message.data?.type === 'shutdown') void shutdown('parent');
+});
 
 void start();
 

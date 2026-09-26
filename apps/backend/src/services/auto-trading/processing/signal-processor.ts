@@ -43,7 +43,7 @@ const BATCH_SIZE = parseInt(
 const VERBOSE_BATCH_LOGS = process.env['VERBOSE_BATCH_LOGS'] === 'true';
 
 export interface SignalProcessorConfig {
-  strategiesDir: string;
+  strategyDirs: string[];
 }
 
 export class SignalProcessor {
@@ -61,7 +61,7 @@ export class SignalProcessor {
     private deps: SignalProcessorDeps,
     config: SignalProcessorConfig
   ) {
-    this.strategyLoader = new PineStrategyLoader([config.strategiesDir]);
+    this.strategyLoader = new PineStrategyLoader(config.strategyDirs);
   }
 
   queueWatcherProcessing(watcherId: string): void {

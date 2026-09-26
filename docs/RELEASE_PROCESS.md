@@ -34,9 +34,10 @@ pnpm -r test:run
 pnpm --filter @marketmind/backend type-check
 pnpm --filter @marketmind/electron type-check
 pnpm --filter @marketmind/electron lint
+pnpm --filter @marketmind/electron test:e2e:embedded   # boots the real PostgreSQL + backend stack
 ```
 
-CLAUDE.md mandate: zero failing tests, zero TS errors. Abort if any fails.
+CLAUDE.md mandate: zero failing tests, zero TS errors. Abort if any fails. The embedded boot test needs the PostgreSQL binaries for this machine (`@embedded-postgres/<platform>`, installed with `pnpm install`) and Docker is not required.
 
 ### 2. Gather what's shipping
 
@@ -184,7 +185,7 @@ gh release create vX.Y.Z \
 Replace `X.Y.Z` in the `awk` pattern with the literal version — the pattern extracts the current release section from the CHANGELOG.
 
 `gh release create` creates the tag on `main`, which triggers:
-- **Desktop builds** via `.github/workflows/desktop-release.yml` (macOS DMG+ZIP, Windows NSIS)
+- **Desktop builds** via `.github/workflows/desktop-release.yml` (macOS DMG+ZIP, Windows NSIS). The workflow bundles the backend (`pnpm --filter @marketmind/backend bundle:embedded`) before `electron-builder`, which ships it with the renderer build and the platform's PostgreSQL binaries as extra resources.
 - electron-builder uploads installers to the GitHub Release automatically
 
 ### 10. Sync local state + return to develop
@@ -205,13 +206,13 @@ gh release view vX.Y.Z
 
 Expected assets:
 - `MarketMind-X.Y.Z-arm64.dmg` (macOS Apple Silicon)
-- `MarketMind-X.Y.Z-arm64-mac.zip` (macOS auto-update package)
-- `MarketMind-X.Y.Z.dmg` (macOS Intel)
-- `MarketMind-X.Y.Z-mac.zip` (macOS Intel auto-update)
-- `MarketMind-Setup-X.Y.Z.exe` (Windows)
+- `MarketMind-X.Y.Z-arm64.zip` (macOS auto-update package)
+- `MarketMind-X.Y.Z-x64.exe` (Windows)
 - `latest-mac.yml` / `latest.yml` (update manifests)
 
 If assets are missing, check `gh run list --workflow=desktop-release.yml`.
+
+Smoke-test the DMG on a machine without the repo: open the app, allow it in System Settings, confirm the boot window reaches the login page, create an account and a paper wallet, quit, and reopen (data must persist). The data folder is `~/Library/Application Support/MarketMind/data`.
 
 ## Auto-update flow
 

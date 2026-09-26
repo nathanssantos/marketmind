@@ -3,6 +3,7 @@ import * as electron from 'electron';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import {
+  setupAppHandlers,
   setupHttpHandlers,
   setupNotificationHandlers,
   setupUpdateIpcHandlers,
@@ -10,8 +11,19 @@ import {
 } from './ipcHandlers';
 import { UpdateManager } from './services/UpdateManager';
 import { windowStateManager } from './services/WindowStateManager';
+import { resolveBootMode } from './embedded/bootMode';
+import { BootWindow } from './embedded/BootWindow';
+import { startEmbeddedStack, type EmbeddedStack } from './embedded/bootstrap';
+import { resolveEmbeddedResources } from './embedded/resources';
+import type { SecretCipher } from './embedded/secrets';
 
-const { app, BrowserWindow, crashReporter, powerSaveBlocker } = electron;
+const { app, BrowserWindow, crashReporter, dialog, powerSaveBlocker, safeStorage, shell } = electron;
+
+const userDataDirOverride = process.env['MM_USER_DATA_DIR'];
+if (userDataDirOverride) app.setPath('userData', userDataDirOverride);
+
+const BACKEND_URL_ARGUMENT = '--mm-backend-url=';
+const BOOT_FAILURE_BUTTONS = { openLogs: 0, retry: 1, quit: 2 } as const;
 
 let powerSaveBlockerId: number | null = null;
 
@@ -26,6 +38,16 @@ crashReporter.start({
   uploadToServer: false,
   ignoreSystemCrashHandler: false,
 });
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  });
+}
 
 const DEBUG_STARTUP = process.env['DEBUG_STARTUP'] === 'true';
 
@@ -89,6 +111,17 @@ let mainWindow: BrowserWindowType | null = null;
 let updateManager: UpdateManager | null = null;
 const chartWindows: Map<number, BrowserWindowType> = new Map();
 let chartWindowCounter = 0;
+let rendererBaseUrl: string | null = null;
+let backendUrl: string | null = null;
+let embeddedStack: EmbeddedStack | null = null;
+let embeddedStackStopped = false;
+
+const rendererArguments = (): string[] => (backendUrl ? [`${BACKEND_URL_ARGUMENT}${backendUrl}`] : []);
+
+const rendererUrl = (hash: string): string => {
+  if (!rendererBaseUrl) throw new Error('No renderer URL: the app started without a dev server, an external backend or the embedded stack');
+  return `${rendererBaseUrl}/${hash}`;
+};
 
 const createChartWindow = (symbol?: string, timeframe?: string): number => {
   debugLog('Creating chart window for symbol:', symbol ?? 'default', 'timeframe:', timeframe ?? 'default');
@@ -112,30 +145,12 @@ const createChartWindow = (symbol?: string, timeframe?: string): number => {
       autoplayPolicy: 'user-gesture-required',
       sandbox: true,
       v8CacheOptions: 'code',
+      additionalArguments: rendererArguments(),
     },
   };
 
   const chartWindow = new BrowserWindow(windowOptions);
   chartWindows.set(windowId, chartWindow);
-
-  const devServerUrl = process.env['VITE_DEV_SERVER_URL'];
-  if (!devServerUrl) {
-    chartWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-      callback({
-        responseHeaders: {
-          ...details.responseHeaders,
-          'Content-Security-Policy': [
-            "default-src 'self';",
-            "script-src 'self';",
-            "style-src 'self' 'unsafe-inline';",
-            "img-src 'self' data: https:;",
-            "font-src 'self' data:;",
-            "connect-src 'self' http://localhost:* ws://localhost:* wss://*.binance.com https://*.binance.com;",
-          ].join(' '),
-        },
-      });
-    });
-  }
 
   chartWindow.once('ready-to-show', () => {
     debugLog('Chart window ready to show');
@@ -148,17 +163,7 @@ const createChartWindow = (symbol?: string, timeframe?: string): number => {
       ? `#/chart/${encodeURIComponent(symbol)}`
       : '#/chart';
 
-  if (devServerUrl) {
-    void chartWindow.loadURL(`${devServerUrl}${urlPath}`);
-  } else {
-    void chartWindow.loadFile(join(__dirname, '../renderer/index.html'), {
-      hash: symbol && timeframe
-        ? `/chart/${encodeURIComponent(symbol)}/${encodeURIComponent(timeframe)}`
-        : symbol
-          ? `/chart/${encodeURIComponent(symbol)}`
-          : '/chart'
-    });
-  }
+  void chartWindow.loadURL(rendererUrl(urlPath));
 
   chartWindow.webContents.on('before-input-event', (_event, input) => {
     if (input.key === 'F12' || (input.key === 'I' && (input.meta || input.control) && input.shift)) {
@@ -197,6 +202,7 @@ const createWindow = (): void => {
       autoplayPolicy: 'user-gesture-required',
       sandbox: true,
       v8CacheOptions: 'code',
+      additionalArguments: rendererArguments(),
     },
   };
 
@@ -206,25 +212,6 @@ const createWindow = (): void => {
   mainWindow = new BrowserWindow(windowOptions);
   debugLog('BrowserWindow created');
 
-  const devServerUrl = process.env['VITE_DEV_SERVER_URL'];
-  if (!devServerUrl) {
-    mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-      callback({
-        responseHeaders: {
-          ...details.responseHeaders,
-          'Content-Security-Policy': [
-            "default-src 'self';",
-            "script-src 'self';",
-            "style-src 'self' 'unsafe-inline';",
-            "img-src 'self' data: https:;",
-            "font-src 'self' data:;",
-            "connect-src 'self' http://localhost:* ws://localhost:* wss://*.binance.com https://*.binance.com;",
-          ].join(' '),
-        },
-      });
-    });
-  }
-
   windowStateManager.manage(mainWindow);
 
   mainWindow.once('ready-to-show', () => {
@@ -232,14 +219,8 @@ const createWindow = (): void => {
     mainWindow?.show();
   });
 
-  debugLog('Dev server URL:', devServerUrl);
-
-  if (devServerUrl) {
-    debugLog('Loading dev server URL...');
-    void mainWindow.loadURL(devServerUrl);
-  } else {
-    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'));
-  }
+  debugLog('Renderer URL:', rendererBaseUrl);
+  void mainWindow.loadURL(rendererUrl(''));
 
   mainWindow.webContents.on('before-input-event', (_event, input) => {
     if (input.key === 'F12' || (input.key === 'I' && (input.meta || input.control) && input.shift)) {
@@ -363,6 +344,58 @@ const stopPowerSaveBlocker = (): void => {
   powerSaveBlockerId = null;
 };
 
+const safeStorageCipher: SecretCipher = {
+  isAvailable: () => safeStorage.isEncryptionAvailable(),
+  encrypt: (plain) => safeStorage.encryptString(plain),
+  decrypt: (cipher) => safeStorage.decryptString(cipher),
+};
+
+const bootEmbeddedStack = async (): Promise<EmbeddedStack | null> => {
+  const resources = resolveEmbeddedResources({
+    resourcesPath: process.resourcesPath,
+    appRoot: join(__dirname, '../..'),
+    isPackaged: app.isPackaged,
+    platform: process.platform,
+    arch: process.arch,
+    override: process.env['MM_RESOURCES_DIR'],
+  });
+  const bootWindow = new BootWindow(app.getLocale());
+  const logsDir = join(app.getPath('userData'), 'data', 'logs');
+  for (;;) {
+    try {
+      const stack = await startEmbeddedStack({
+        userDataDir: app.getPath('userData'),
+        appVersion: app.getVersion(),
+        resources,
+        cipher: safeStorageCipher,
+        onStatus: (status) => bootWindow.setStatus(status),
+        log: (line) => console.log(`[Embedded] ${line}`),
+      });
+      bootWindow.close();
+      return stack;
+    } catch (error) {
+      console.error('[Embedded] Boot failed:', error);
+      const { response } = await dialog.showMessageBox({
+        type: 'error',
+        title: 'MarketMind',
+        message: 'MarketMind could not start its local database or trading engine.',
+        detail: error instanceof Error ? error.message : String(error),
+        buttons: ['Open logs', 'Retry', 'Quit'],
+        defaultId: BOOT_FAILURE_BUTTONS.retry,
+        cancelId: BOOT_FAILURE_BUTTONS.quit,
+      });
+      if (response === BOOT_FAILURE_BUTTONS.openLogs) {
+        await shell.openPath(logsDir);
+        continue;
+      }
+      if (response === BOOT_FAILURE_BUTTONS.retry) continue;
+      bootWindow.close();
+      app.quit();
+      return null;
+    }
+  }
+};
+
 const initializeApp = async (): Promise<void> => {
   try {
     await app.whenReady();
@@ -373,6 +406,19 @@ const initializeApp = async (): Promise<void> => {
     setupHttpHandlers();
     setupWindowHandlers(createChartWindow, () => Array.from(chartWindows.keys()));
     setupNotificationHandlers();
+    setupAppHandlers(() => embeddedStack);
+    const mode = resolveBootMode(process.env, process.argv);
+    if (mode.kind === 'dev-server') {
+      rendererBaseUrl = mode.rendererUrl.replace(/\/+$/, '');
+    } else if (mode.kind === 'external-backend') {
+      rendererBaseUrl = mode.backendUrl;
+      backendUrl = mode.backendUrl;
+    } else {
+      embeddedStack = await bootEmbeddedStack();
+      if (!embeddedStack) return;
+      rendererBaseUrl = embeddedStack.backendUrl;
+      backendUrl = embeddedStack.backendUrl;
+    }
     debugLog('IPC handlers set up, creating window...');
     createWindow();
     debugLog('Window created');
@@ -421,7 +467,17 @@ app.on('window-all-closed', () => {
   }
 });
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
   stopMemoryMonitor();
   stopPowerSaveBlocker();
+  if (!embeddedStack || embeddedStackStopped) return;
+  event.preventDefault();
+  const stack = embeddedStack;
+  embeddedStack = null;
+  void stack.stop()
+    .catch((error: unknown) => console.error('[Embedded] Shutdown failed:', error))
+    .finally(() => {
+      embeddedStackStopped = true;
+      app.quit();
+    });
 });

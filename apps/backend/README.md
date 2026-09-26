@@ -42,9 +42,9 @@ apps/backend/
 
 ### Prerequisites
 
-1. **PostgreSQL 17 + TimescaleDB 2.23.1**
+1. **PostgreSQL 17** (the repo's compose service, pinned `timescale/timescaledb:2.23.1-pg17`)
    ```bash
-   brew install postgresql@17 timescaledb
+   docker compose up -d postgres
    ```
 
 2. **Environment Variables**
@@ -55,14 +55,8 @@ apps/backend/
 
 3. **Database Setup**
    ```bash
-   # Create database and user
-   psql postgres
-   CREATE DATABASE marketmind;
-   CREATE USER marketmind WITH PASSWORD 'your_password';
-   GRANT ALL PRIVILEGES ON DATABASE marketmind TO marketmind;
-   \c marketmind
-   CREATE EXTENSION IF NOT EXISTS timescaledb;
-   \q
+   # Creates the schema from src/db/migrations
+   pnpm --filter @marketmind/backend db:migrate
    ```
 
 4. **Install Dependencies**
@@ -87,15 +81,17 @@ pnpm dev
 
 ### Database Migrations
 
+The Drizzle schema in `src/db/schema/` is the source of truth. `src/db/migrations/` starts from one baseline (`0000_baseline`) generated from it; every schema change adds a journal entry with `db:generate`. The packaged desktop app runs the same migrations at boot (`MM_RUN_MIGRATIONS=true`), and the backend tests build their database from them.
+
 ```bash
-# Generate new migration
+# Generate a migration from a schema change
 pnpm --filter @marketmind/backend db:generate
 
-# Apply migrations
+# Apply pending migrations
 pnpm --filter @marketmind/backend db:migrate
 
-# Drop database (⚠️ destructive)
-pnpm --filter @marketmind/backend db:drop
+# Record the baseline as applied on a database that predates it (run once)
+pnpm --filter @marketmind/backend db:mark-baseline
 
 # Studio (GUI)
 pnpm --filter @marketmind/backend db:studio
@@ -292,6 +288,22 @@ SESSION_SECRET=your-random-secret-key
 # Encryption
 ENCRYPTION_KEY=your-encryption-key
 ```
+
+Optional settings the desktop app sets when it embeds the backend (see `docs/EMBEDDED_BACKEND_PLAN.md`):
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `HOST` | `0.0.0.0` | Interface to listen on; the desktop app uses `127.0.0.1` |
+| `COOKIE_SECURE` | `true` in production | Set `false` to serve the session cookie over plain HTTP on loopback |
+| `MM_EMBEDDED` | `false` | Creates the database on first run and exempts loopback from rate limits |
+| `MM_RUN_MIGRATIONS` | `false` | Applies `src/db/migrations` before the server starts |
+| `MM_DATA_DIR` | backend root | Parent of `logs/` and `output/` |
+| `MM_STRATEGIES_DIR` | `strategies/builtin` | Built-in `.pine` strategies |
+| `MM_USER_STRATEGIES_DIR` | `strategies/user` | The user's own `.pine` strategies, loaded after the built-in ones |
+| `MM_MIGRATIONS_DIR` | `src/db/migrations` | Drizzle migrations folder |
+| `MM_RENDERER_DIR` | unset | Serve this renderer build at `/` with an SPA fallback |
+
+`pnpm bundle:embedded` writes the single-file bundle the desktop app ships to `dist-embedded/`.
 
 ## Troubleshooting
 

@@ -71,6 +71,7 @@ export const aggTrades = pgTable('agg_trades', {
 }, (table) => ({
   pk: primaryKey({ columns: [table.symbol, table.tradeId, table.marketType, table.timestamp] }),
   lookupIdx: index('agg_trades_lookup_idx').on(table.symbol, table.marketType, table.timestamp),
+  timestampIdx: index('agg_trades_timestamp_idx').on(table.timestamp.desc()),
 }));
 
 export const priceCache = pgTable('price_cache', {

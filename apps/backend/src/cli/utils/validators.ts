@@ -1,11 +1,8 @@
 import { TRADING_DEFAULTS } from '@marketmind/types';
 import chalk from 'chalk';
 import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
+import { BUILTIN_STRATEGIES_DIR } from '../../utils/runtime-dirs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 
 export class ValidationError extends Error {
@@ -83,7 +80,7 @@ export function validateDateRange(startDate: string, endDate: string): { startDa
 }
 
 function getDynamicStrategies(): string[] {
-  const strategiesDir = path.resolve(__dirname, '../../../strategies/builtin');
+  const strategiesDir = BUILTIN_STRATEGIES_DIR;
 
   try {
     const files = fs.readdirSync(strategiesDir);

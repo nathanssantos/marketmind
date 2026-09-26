@@ -1,14 +1,12 @@
 import type { MarketType } from '@marketmind/types';
 import chalk from 'chalk';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { BATCH_BACKTEST_TIMEFRAMES, TRADING_DEFAULTS } from '@marketmind/types';
 import { BacktestEngine } from '../../services/backtesting/BacktestEngine';
 import { PineStrategyLoader } from '../../services/pine/PineStrategyLoader';
+import { STRATEGY_DIRS } from '../../utils/runtime-dirs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const TIMEFRAMES = BATCH_BACKTEST_TIMEFRAMES;
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT'];
@@ -266,8 +264,7 @@ export const batchBacktestCommand = async (options: BatchOptions): Promise<void>
   const capital = parseFloat(options.capital);
   const parallelWorkers = parseInt(options.parallel, 10);
 
-  const strategiesDir = resolve(__dirname, '../../../strategies/builtin');
-  const strategyLoader = new PineStrategyLoader([strategiesDir]);
+  const strategyLoader = new PineStrategyLoader(STRATEGY_DIRS);
   const allStrategies = await strategyLoader.loadAll();
   const strategyIds = options.includeDisabled
     ? allStrategies.map((s) => s.metadata.id)

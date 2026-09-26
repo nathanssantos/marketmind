@@ -11,16 +11,22 @@ export default {
     },
 
     directories: {
-        output: 'dist',
+        output: 'release',
         buildResources: 'build',
     },
 
     artifactName: '${productName}-${version}-${arch}.${ext}',
 
     files: [
-        'dist/**/*',
         'dist-electron/**/*',
         'package.json',
+        '!node_modules/@embedded-postgres/**',
+    ],
+
+    extraResources: [
+        { from: '../backend/dist-embedded', to: 'backend' },
+        { from: '../backend/dist-embedded/node_modules', to: 'backend/node_modules' },
+        { from: 'dist', to: 'renderer' },
     ],
 
     extraMetadata: {
@@ -32,6 +38,7 @@ export default {
         target: ['dmg', 'zip'],
         category: 'public.app-category.finance',
         icon: 'build/icon.icns',
+        extraResources: [{ from: 'node_modules/@embedded-postgres/darwin-${arch}/native', to: 'postgres' }],
     },
     
     dmg: {
@@ -45,6 +52,7 @@ export default {
     win: {
         target: ['nsis'],
         icon: 'build/icon-256.png',
+        extraResources: [{ from: 'node_modules/@embedded-postgres/windows-x64/native', to: 'postgres' }],
     },
     
     nsis: {
@@ -58,5 +66,6 @@ export default {
         target: ['AppImage'],
         category: 'Finance',
         icon: 'build/icon.png',
+        extraResources: [{ from: 'node_modules/@embedded-postgres/linux-${arch}/native', to: 'postgres' }],
     },
 };

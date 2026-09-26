@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { validatePassword } from '@marketmind/utils';
 import type { FastifyReply } from 'fastify';
+import { env } from '../env';
 
 const passwordPolicySchema = z.string().superRefine((value, ctx) => {
   const result = validatePassword(value);
@@ -72,7 +73,7 @@ interface CookieReply {
 const setSessionCookie = (res: FastifyReply, sessionId: string, expiresAt: Date): void => {
   (res as unknown as CookieReply).setCookie('session', sessionId, {
     httpOnly: true,
-    secure: process.env['NODE_ENV'] === 'production',
+    secure: env.COOKIE_SECURE,
     sameSite: 'lax',
     expires: expiresAt,
     path: '/',

@@ -1,4 +1,5 @@
 import type { EntryOrderType, MarketType, PositionSide } from '@marketmind/types';
+import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
@@ -299,6 +300,9 @@ export const tradeExecutions = pgTable('trade_executions', {
   marketTypeIdx: index('trade_executions_market_type_idx').on(table.marketType),
   walletStatusIdx: index('trade_executions_wallet_status_idx').on(table.walletId, table.status),
   walletClosedIdx: index('trade_executions_wallet_closed_idx').on(table.walletId, table.status, table.closedAt),
+  closedByWalletIdx: index('trade_executions_wallet_closed_at_idx')
+    .on(table.walletId, table.closedAt.desc())
+    .where(sql`${table.status} = 'closed'`),
 }));
 
 export const incomeEvents = pgTable('income_events', {
@@ -385,8 +389,8 @@ export const strategyPerformance = pgTable('strategy_performance', {
 }, (table) => ({
   uniqueStrategy: unique().on(table.strategyId, table.symbol, table.interval),
   lookupIdx: index('strategy_performance_lookup_idx').on(table.strategyId, table.symbol, table.interval),
-  updatedIdx: index('strategy_performance_updated_idx').on(table.updatedAt),
-  winRateIdx: index('strategy_performance_win_rate_idx').on(table.winRate),
+  updatedIdx: index('strategy_performance_updated_idx').on(table.updatedAt.desc()),
+  winRateIdx: index('strategy_performance_win_rate_idx').on(table.winRate.desc()),
 }));
 
 export const scalpingConfig = pgTable('scalping_config', {
