@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.27.0] - 2026-09-26
+
+Chart reliability release. A chart no longer freezes at 00:00 when a bar closes without a stream update: the renderer opens the next bar itself, resyncs on silence, holes and reconnects, and the backend re-arms Binance subscriptions when a client joins a kline room and keeps retrying reconnects instead of giving up. Kline gaps are repaired end to end (requested-window backfill, calendar-aware monthly and weekly stepping, no truncated open bars, a periodic gaps-only sweep, and a maintenance script for history). Fibonacci drawings highlight 38.2 % instead of 50 %, and the unused chart prototype and kline helpers are gone.
+
 ### Changed
 
 - **Fibonacci drawing key levels** — 38.2 % is drawn with the key-level color (like 0 % and 100 %) and 50 % takes the secondary-level color, instead of the other way round.
