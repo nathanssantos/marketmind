@@ -112,7 +112,7 @@
     "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^8.70.1",
     "@typescript-eslint/parser": "^8.70.1",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.1",
     "artillery": "^2.0.34",
     "drizzle-kit": "^0.31.11",
     "eslint": "^10.11.0",
@@ -121,6 +121,6 @@
     "testcontainers": "^12.1.0",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.1"
   }
 }
