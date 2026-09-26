@@ -61,7 +61,7 @@ export async function submitFuturesOrder(
       avgPrice: String(result.avgPrice),
       origQty: String(result.origQty),
       executedQty: String(result.executedQty),
-      cumQuote: String(result.cumQuote || '0'),
+      cumQuote: String(result.cumQuote ?? '0'),
       timeInForce: result.timeInForce,
       type: result.type,
       reduceOnly: result.reduceOnly,

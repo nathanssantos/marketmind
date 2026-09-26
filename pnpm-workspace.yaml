@@ -8,6 +8,7 @@ strictPeerDependencies: false
 
 allowBuilds:
   '@playwright/browser-chromium': false
+  '@scarf/scarf': false
   canvas: true
   cpu-features: false
   electron-winstaller: true
@@ -15,7 +16,3 @@ allowBuilds:
   protobufjs: false
   ssh2: false
   unix-dgram: false
-
-peerDependencyRules:
-  allowedVersions:
-    vite-plugin-pwa>vite: '8'

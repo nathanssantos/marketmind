@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **pnpm 11** — the monorepo now pins `pnpm@11.20.0` through the `packageManager` field and requires it via `engines.pnpm`. CI reads that pin instead of a hardcoded version; the backend `Dockerfile` and `scripts/setup/setup.sh` install pnpm 11 on Node 24. Build-script approval moved from the removed `onlyBuiltDependencies` list to `allowBuilds` in `pnpm-workspace.yaml`, and the settings pnpm 11 no longer reads from `.npmrc` (`enablePrePostScripts`, `autoInstallPeers`, `strictPeerDependencies`) moved there too.
 - `docker-compose.yml` pins `timescale/timescaledb:2.23.1-pg17` (was `latest-pg17`) so a pull cannot change the extension build under a live volume. Upgrade steps in `docs/INFRA_RECOVERY.md`. The obsolete `version` key is gone.
 - QUICK_START, backend README and CLAUDE.md point to `docker compose up -d postgres` instead of `docker run` / `brew services`.
+- **Every dependency on its latest compatible version** — all 17 workspace packages move to the newest release that installs and passes the gates together. Every minor and patch release is in, except those still inside pnpm's one-day `minimumReleaseAge` window.
+  - Major bumps: `electron` 42 → 44, `vite-plugin-electron` 0.29 → 1.1, `vitest` and `@vitest/*` 4 → 5, `jsdom` 29 → 30, `@testing-library/jest-dom` 6 → 7, `testcontainers` and `@testcontainers/postgresql` 11 → 12, `@pact-foundation/pact` 16 → 17, `@stryker-mutator/*` 9 → 10, `@fastify/rate-limit` 10 → 11, `commander` 14 → 15, `chalk` 5 → 6, `dotenv` 17 → 18, `nanoid` 5 → 6. The MCP servers move from TypeScript 5.9 to 6.0 like the rest of the repo.
+  - `@types/node` is on 24 in every package, to match Node 24 in CI and in Electron 44.
+  - `pinets` 0.9.28+ truncates `const int / const int` in Pine v5 scripts, as TradingView does. The `scalping-1m`, `scalping-5m` and `dca-grid-hybrid` builtin strategies now write their percent targets with float literals, so their stop and target stay at 2% and 4%.
+  - Vitest 5 no longer replaces `process.env.NODE_ENV` in pre-bundled dependencies. The browser test config now sets it for the optimizer, and gets the `@marketmind/trading-core` alias so the dependency scan no longer fails.
+  - The `vite-plugin-pwa>vite` peer override is gone: `vite-plugin-pwa` 1.3 declares Vite 8. The `@scarf/scarf` install script that `@pact-foundation/pact` 17 pulls in is denied in `allowBuilds`.
+  - Held back: `typescript` stays on 6.0. TypeScript 7 does not ship the compiler API, and `typescript-eslint` 8.70 only supports TypeScript below 6.1. `@types/node` stays on 24 on purpose (26 is out).
 
 ### Removed
 
