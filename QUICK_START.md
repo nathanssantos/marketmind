@@ -4,8 +4,8 @@ Get MarketMind up and running in 5 minutes.
 
 ## 📋 Prerequisites
 
-- **Node.js** 20+ ([Download](https://nodejs.org/))
-- **pnpm** 10+ ([Install](https://pnpm.io/installation))
+- **Node.js** 24+ ([Download](https://nodejs.org/))
+- **pnpm** 11+ ([Install](https://pnpm.io/installation))
 - **PostgreSQL** 17 ([Download](https://www.postgresql.org/download/) or use Docker)
 
 ## 🚀 Installation
