@@ -159,9 +159,9 @@ Database cleanup and reset operations.
 
 ```bash
 pnpm reset-wallet
-pnpm audit-klines -- -s BTCUSDT -i 1h --fix
+pnpm audit-klines -s BTCUSDT -i 1h --fix
 pnpm clear-klines
-pnpm fill-kline-gaps -- -s BTCUSDT,ETHUSDT -i 1m,5m,15m -d 60
+pnpm fill-kline-gaps -s BTCUSDT,ETHUSDT -i 1m,5m,15m -d 60
 ```
 
 ## debug/
