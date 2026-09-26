@@ -24,9 +24,11 @@ class KlineMaintenance {
   private isRunning = false;
   private gapCheckCooldownMs = COOLDOWN_GAP_CHECK;
   private corruptionCheckCooldownMs = COOLDOWN_CORRUPTION_CHECK;
+  private gapsOnly = false;
 
   async start(options: KlineMaintenanceStartOptions = {}): Promise<void> {
     if (this.checkInterval) return;
+    this.gapsOnly = options.gapsOnly ?? false;
 
     this.checkInterval = setInterval(() => {
       void this.checkAndFillGaps();
@@ -47,7 +49,7 @@ class KlineMaintenance {
 
     const [gapResults] = await Promise.all([
       this.checkAllStoredPairs(logBuffer),
-      this.checkCorruptionOnStartup(logBuffer),
+      this.gapsOnly ? Promise.resolve({ pairsChecked: 0 }) : this.checkCorruptionOnStartup(logBuffer),
     ]);
 
     logBuffer.setPairsChecked(gapResults.pairsChecked);
@@ -208,7 +210,7 @@ class KlineMaintenance {
             }
           }
 
-          if (await shouldCheckCorruption(pair, this.corruptionCheckCooldownMs)) {
+          if (!this.gapsOnly && await shouldCheckCorruption(pair, this.corruptionCheckCooldownMs)) {
             const { corruptedFound, fixed } = await detectAndFixCorruptedKlines(pair, true);
 
             await updateMaintenanceLog(pair, { corruptedFixed: fixed, checkType: 'corruption' });

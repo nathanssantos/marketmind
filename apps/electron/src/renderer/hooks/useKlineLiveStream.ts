@@ -1,7 +1,17 @@
 import type { Kline, MarketType, TimeInterval } from '@marketmind/types';
+import { alignToIntervalStart, countOpenTimesBetween, getNextOpenTime, getPreviousOpenTime } from '@marketmind/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getKlineClose, getKlineHigh, getKlineLow, getKlineVolume } from '@shared/utils';
-import { INTERVAL_MS_MAP, MIN_UPDATE_INTERVAL_MS } from '../constants/defaults';
+import {
+  INTERVAL_MS_MAP,
+  KLINE_ROLLOVER_GRACE_MS,
+  KLINE_ROLLOVER_MAX_SYNTHETIC_BARS,
+  KLINE_STREAM_SILENCE_MAX_MS,
+  KLINE_STREAM_SILENCE_MIN_MS,
+  KLINE_WATCHDOG_TICK_MS,
+  MIN_UPDATE_INTERVAL_MS,
+} from '../constants/defaults';
+import { useConnectionStore } from '../store/connectionStore';
 import { useKlineStream } from './useBackendKlines';
 
 interface KlineStreamUpdate {
@@ -51,6 +61,31 @@ interface UseKlineLiveStreamReturn {
 
 const MIN_REFETCH_INTERVAL_MS = 30_000;
 
+const synthesizeNextKline = (previous: Kline, openTime: number, nextOpenTime: number): Kline => ({
+  openTime,
+  closeTime: nextOpenTime - 1,
+  open: previous.close,
+  high: previous.close,
+  low: previous.close,
+  close: previous.close,
+  volume: '0',
+  quoteVolume: '0',
+  trades: 0,
+  takerBuyBaseVolume: '0',
+  takerBuyQuoteVolume: '0',
+});
+
+const streamSilenceThresholdMs = (intervalMs: number): number =>
+  Math.min(Math.max(2 * intervalMs, KLINE_STREAM_SILENCE_MIN_MS), KLINE_STREAM_SILENCE_MAX_MS);
+
+const missingOpenTimesUpTo = (lastOpenTime: number, expectedOpenTime: number, interval: TimeInterval): number[] => {
+  const openTimes: number[] = [];
+  for (let openTime = expectedOpenTime; openTime > lastOpenTime && openTimes.length < KLINE_ROLLOVER_MAX_SYNTHETIC_BARS; openTime = getPreviousOpenTime(openTime, interval)) {
+    openTimes.unshift(openTime);
+  }
+  return openTimes;
+};
+
 // Merge baseKlines + liveKlines into the array consumers see. Pulled
 // out of the displayKlines useMemo so we can also call it imperatively
 // inside processUpdate (where there is no React render to trigger the
@@ -94,6 +129,11 @@ export const useKlineLiveStream = ({
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastRefetchRef = useRef<number>(0);
   const lastUpdateRef = useRef<number>(0);
+  const lastStreamUpdateAtRef = useRef<number>(Date.now());
+  const wsConnected = useConnectionStore((s) => s.wsConnected);
+  const wasConnectedRef = useRef<boolean>(wsConnected);
+  const timeframeRef = useRef<TimeInterval>(timeframe as TimeInterval);
+  const resyncRequestedRef = useRef<boolean>(false);
 
   const getIntervalMs = useCallback((tf: string): number =>
     INTERVAL_MS_MAP[tf as TimeInterval] || 60_000, []);
@@ -112,6 +152,9 @@ export const useKlineLiveStream = ({
     pendingUpdateRef.current = null;
     lastRefetchRef.current = 0;
     lastUpdateRef.current = 0;
+    lastStreamUpdateAtRef.current = Date.now();
+    timeframeRef.current = timeframe as TimeInterval;
+    resyncRequestedRef.current = false;
   }, [symbol, timeframe, marketType]);
 
   const tickSubscribersRef = useRef<Set<() => void>>(new Set());
@@ -156,9 +199,9 @@ export const useKlineLiveStream = ({
       }
       next = [...prev.slice(0, -1), latestKline];
     } else if (latestKline.openTime > lastKline.openTime) {
-      // New minute closed — array length grows.
       next = [...prev, latestKline];
       lengthChanged = true;
+      if (latestKline.openTime > getNextOpenTime(lastKline.openTime, timeframeRef.current)) resyncRequestedRef.current = true;
     } else {
       // Out-of-order (older than current head) — ignore.
       rafIdRef.current = null;
@@ -237,6 +280,7 @@ export const useKlineLiveStream = ({
       takerBuyBaseVolume: backendKline.takerBuyBaseVolume ?? '0',
       takerBuyQuoteVolume: backendKline.takerBuyQuoteVolume ?? '0',
     };
+    lastStreamUpdateAtRef.current = Date.now();
     handleRealtimeUpdate(kline, backendKline.isClosed);
   }, [handleRealtimeUpdate]);
 
@@ -247,6 +291,56 @@ export const useKlineLiveStream = ({
     enabled,
     marketType,
   );
+
+  const requestResync = useCallback((now: number): void => {
+    if (now - lastRefetchRef.current < MIN_REFETCH_INTERVAL_MS) return;
+    lastRefetchRef.current = now;
+    lastStreamUpdateAtRef.current = now;
+    void refetchKlines();
+  }, [refetchKlines]);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const interval = timeframe as TimeInterval;
+    const silenceMs = streamSilenceThresholdMs(getIntervalMs(timeframe));
+    const tick = (): void => {
+      const klines = klinesRef.current;
+      const last = klines[klines.length - 1];
+      if (!last) return;
+      const now = Date.now();
+      const expectedOpenTime = alignToIntervalStart(now, interval);
+      const rolloverOverdue = last.openTime < expectedOpenTime && now - expectedOpenTime >= KLINE_ROLLOVER_GRACE_MS;
+      const missingBars = rolloverOverdue ? countOpenTimesBetween(last.openTime, expectedOpenTime, interval) : 0;
+      if (rolloverOverdue && missingBars > KLINE_ROLLOVER_MAX_SYNTHETIC_BARS) resyncRequestedRef.current = true;
+      const canSynthesize = rolloverOverdue && wsConnected && missingBars <= KLINE_ROLLOVER_MAX_SYNTHETIC_BARS && pendingUpdateRef.current === null;
+      if (canSynthesize) {
+        let previous = last;
+        for (const openTime of missingOpenTimesUpTo(last.openTime, expectedOpenTime, interval)) {
+          const synthetic = synthesizeNextKline(previous, openTime, getNextOpenTime(openTime, interval));
+          pendingUpdateRef.current = { kline: synthetic, isFinal: false };
+          processUpdate();
+          previous = synthetic;
+        }
+      }
+      if (resyncRequestedRef.current) {
+        resyncRequestedRef.current = false;
+        requestResync(now);
+      }
+      if (wsConnected && now - lastStreamUpdateAtRef.current > silenceMs) requestResync(now);
+    };
+    const timer = setInterval(tick, KLINE_WATCHDOG_TICK_MS);
+    return () => clearInterval(timer);
+  }, [enabled, timeframe, wsConnected, getIntervalMs, processUpdate, requestResync]);
+
+  useEffect(() => {
+    if (enabled && wsConnected && !wasConnectedRef.current) {
+      const now = Date.now();
+      lastRefetchRef.current = now;
+      lastStreamUpdateAtRef.current = now;
+      void refetchKlines();
+    }
+    wasConnectedRef.current = wsConnected;
+  }, [enabled, wsConnected, refetchKlines]);
 
   useEffect(() => {
     if (!baseKlines || baseKlines.length === 0 || liveKlines.length === 0) return;

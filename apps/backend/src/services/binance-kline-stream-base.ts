@@ -39,6 +39,7 @@ interface KlineStreamSubscription {
 const STREAM_HEALTH_CHECK_INTERVAL_MS = 15_000;
 const STREAM_STALE_THRESHOLD_MS = 60_000;
 const STREAM_FORCED_RECONNECT_COOLDOWN_MS = 120_000;
+const STREAM_FORCED_RECONNECT_MAX_COOLDOWN_MS = 30 * 60_000;
 
 /**
  * Shared lifecycle + health-watchdog + persistence pipeline for the
@@ -58,6 +59,7 @@ export abstract class BinanceKlineStreamBase {
   protected client: WebsocketClient | null = null;
   protected subscriptions: Map<string, KlineStreamSubscription> = new Map();
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
+  private forcedReconnectStreak = 0;
 
   protected abstract readonly marketType: MarketType;
   protected abstract readonly reconnectionGuard: ReconnectionGuard;
@@ -122,28 +124,32 @@ export abstract class BinanceKlineStreamBase {
 
   private checkStreamHealth(): void {
     const now = Date.now();
-    let anyStale = false;
 
     for (const sub of this.subscriptions.values()) {
       const silenceMs = now - sub.lastMessageAt;
 
       if (silenceMs > STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'healthy') {
         sub.healthStatus = 'degraded';
-        anyStale = true;
         logger.warn({ symbol: sub.symbol, interval: sub.interval, silenceMs, marketType: this.marketType },
           `${this.logLabel} stream silent — marking degraded`);
         this.emitHealth(sub);
       } else if (silenceMs <= STREAM_STALE_THRESHOLD_MS && sub.healthStatus === 'degraded') {
         sub.healthStatus = 'healthy';
+        this.forcedReconnectStreak = 0;
         logger.info({ symbol: sub.symbol, interval: sub.interval, marketType: this.marketType },
           `${this.logLabel} stream recovered`);
         this.emitHealth(sub);
       }
     }
 
-    if (anyStale && now - this.getLatestReconnectAt() > STREAM_FORCED_RECONNECT_COOLDOWN_MS) {
+    const anyDegraded = Array.from(this.subscriptions.values()).some((sub) => sub.healthStatus === 'degraded');
+    if (anyDegraded && now - this.getLatestReconnectAt() > this.forcedReconnectCooldownMs()) {
       this.forceReconnect();
     }
+  }
+
+  private forcedReconnectCooldownMs(): number {
+    return Math.min(STREAM_FORCED_RECONNECT_COOLDOWN_MS * 2 ** this.forcedReconnectStreak, STREAM_FORCED_RECONNECT_MAX_COOLDOWN_MS);
   }
 
   private getLatestReconnectAt(): number {
@@ -168,7 +174,8 @@ export abstract class BinanceKlineStreamBase {
   }
 
   private forceReconnect(): void {
-    logger.warn({ marketType: this.marketType }, `Forcing ${this.marketType} kline WebSocket reconnect due to stale streams`);
+    this.forcedReconnectStreak += 1;
+    logger.warn({ marketType: this.marketType, attempt: this.forcedReconnectStreak, nextCooldownMs: this.forcedReconnectCooldownMs() }, `Forcing ${this.marketType} kline WebSocket reconnect due to stale streams`);
     const now = Date.now();
     for (const sub of this.subscriptions.values()) sub.lastReconnectAt = now;
 
@@ -195,6 +202,8 @@ export abstract class BinanceKlineStreamBase {
         restored.lastReconnectAt = now;
       }
     }
+
+    this.reconnectionGuard.onReconnect(this.marketType);
   }
 
   private key(symbol: string, interval: string): string {
@@ -295,6 +304,7 @@ export abstract class BinanceKlineStreamBase {
     sub.lastMessageAt = Date.now();
     if (sub.healthStatus === 'degraded') {
       sub.healthStatus = 'healthy';
+      this.forcedReconnectStreak = 0;
       logger.info({ symbol, interval, marketType: this.marketType }, `${this.logLabel} stream recovered on message receipt`);
       this.emitHealth(sub);
     }

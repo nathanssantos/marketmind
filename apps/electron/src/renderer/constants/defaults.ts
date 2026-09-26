@@ -32,6 +32,11 @@ export const DEFAULT_AUTO_UPDATE_SETTINGS = {
 } as const;
 
 export const MIN_UPDATE_INTERVAL_MS = 100;
+export const KLINE_WATCHDOG_TICK_MS = 1_000;
+export const KLINE_ROLLOVER_GRACE_MS = 2_000;
+export const KLINE_ROLLOVER_MAX_SYNTHETIC_BARS = 5;
+export const KLINE_STREAM_SILENCE_MIN_MS = 45_000;
+export const KLINE_STREAM_SILENCE_MAX_MS = 5 * 60_000;
 
 export const ZOOM_DEFAULT = 100;
 export const ZOOM_MIN = 70;

@@ -57,7 +57,7 @@ class SocketBus {
       reconnection: !IS_E2E_BYPASS_AUTH,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 50,
+      reconnectionAttempts: Infinity,
       transports: ['websocket'],
       timeout: 10000,
     });
@@ -68,11 +68,6 @@ class SocketBus {
     });
     this.socket.on('disconnect', () => useConnectionStore.getState().setWsConnected(false));
     this.socket.on('connect_error', () => useConnectionStore.getState().setWsConnected(false));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (this.socket as any).io.on('reconnect_failed', () => {
-      console.warn('[SocketBus] Reconnection failed after 50 attempts — backend may be offline');
-    });
-
     exposeSocketForE2E(this.socket);
     return this.socket;
   }

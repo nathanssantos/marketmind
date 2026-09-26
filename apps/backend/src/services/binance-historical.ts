@@ -1,4 +1,5 @@
 import type { Interval, MarketType } from '@marketmind/types';
+import { alignToIntervalStart, getNextOpenTime, getPreviousOpenTime } from '@marketmind/types';
 import { BINANCE_NATIVE_INTERVALS, INTERVAL_MS } from '@marketmind/types';
 import { and, asc, eq, gte, lt } from 'drizzle-orm';
 import { ABSOLUTE_MINIMUM_KLINES, AUTO_TRADING_API, AUTO_TRADING_BATCH } from '../constants';
@@ -255,18 +256,21 @@ export interface SmartBackfillResult {
   alreadyComplete: boolean;
 }
 
+export interface SmartBackfillOptions {
+  endTime?: number;
+}
+
 export const smartBackfillKlines = async (
   symbol: string,
   interval: Interval,
   targetCount: number,
   marketType: MarketType = 'FUTURES',
-  forRotation: boolean = false
+  options: SmartBackfillOptions = {}
 ): Promise<SmartBackfillResult> => {
   const intervalMs = getIntervalMilliseconds(interval);
   const now = Date.now();
-
-  const currentCandleOpenTime = Math.floor(now / intervalMs) * intervalMs;
-  const effectiveEndTime = forRotation ? currentCandleOpenTime - 1 : now;
+  const lastClosedCandleEndTime = alignToIntervalStart(now, interval) - 1;
+  const effectiveEndTime = Math.min(options.endTime ?? lastClosedCandleEndTime, lastClosedCandleEndTime);
 
   const BINANCE_SPOT_START = new Date('2017-08-17').getTime();
   const BINANCE_FUTURES_START = new Date('2019-09-08').getTime();
@@ -294,7 +298,7 @@ export const smartBackfillKlines = async (
   let totalDownloaded = 0;
 
   if (existingKlines.length === 0) {
-    logger.info({ symbol, interval, marketType, targetCount, forRotation }, '> [SmartBackfill] No existing data, downloading full range');
+    logger.info({ symbol, interval, marketType, targetCount }, '> [SmartBackfill] No existing data, downloading full range');
     const downloaded = await backfillHistoricalKlines(
       symbol,
       interval,
@@ -310,7 +314,7 @@ export const smartBackfillKlines = async (
   const newestExisting = existingKlines[existingKlines.length - 1]?.openTime?.getTime() ?? now;
 
   if (oldestExisting > targetStartTime + intervalMs * GAP_TOLERANCE_MULTIPLIER) {
-    gaps.push({ start: targetStartTime, end: oldestExisting - intervalMs, type: 'start' });
+    gaps.push({ start: targetStartTime, end: getPreviousOpenTime(oldestExisting, interval), type: 'start' });
     logger.trace(
       { symbol, interval, marketType, gapStart: new Date(targetStartTime).toISOString(), gapEnd: new Date(oldestExisting).toISOString() },
       'Smart backfill: detected gap at start (need older data)'
@@ -318,7 +322,7 @@ export const smartBackfillKlines = async (
   }
 
   if (newestExisting < effectiveEndTime - intervalMs * GAP_TOLERANCE_MULTIPLIER) {
-    gaps.push({ start: newestExisting + intervalMs, end: effectiveEndTime, type: 'end' });
+    gaps.push({ start: getNextOpenTime(newestExisting, interval), end: effectiveEndTime, type: 'end' });
     logger.trace(
       { symbol, interval, marketType, gapStart: new Date(newestExisting).toISOString(), gapEnd: new Date(effectiveEndTime).toISOString() },
       'Smart backfill: detected gap at end (need recent data)'
@@ -328,11 +332,11 @@ export const smartBackfillKlines = async (
   for (let i = 1; i < existingKlines.length; i++) {
     const prevTime = existingKlines[i - 1]?.openTime?.getTime() ?? 0;
     const currTime = existingKlines[i]?.openTime?.getTime() ?? 0;
-    const expectedDiff = intervalMs;
+    const expectedDiff = getNextOpenTime(prevTime, interval) - prevTime;
     const actualDiff = currTime - prevTime;
 
     if (actualDiff > expectedDiff * GAP_TOLERANCE_MULTIPLIER) {
-      gaps.push({ start: prevTime + intervalMs, end: currTime - intervalMs, type: 'internal' });
+      gaps.push({ start: getNextOpenTime(prevTime, interval), end: getPreviousOpenTime(currTime, interval), type: 'internal' });
       logger.trace(
         { symbol, interval, marketType, gapStart: new Date(prevTime).toISOString(), gapEnd: new Date(currTime).toISOString(), missingCandles: Math.floor(actualDiff / intervalMs) - 1 },
         'Smart backfill: detected internal gap'
@@ -421,8 +425,8 @@ export const aggregateYearlyKline = async (
   year: number,
   marketType: MarketType = 'FUTURES'
 ): Promise<AggregatedKline | null> => {
-  const startTime = new Date(year, 0, 1);
-  const endTime = new Date(year + 1, 0, 1);
+  const startTime = new Date(Date.UTC(year, 0, 1));
+  const endTime = new Date(Date.UTC(year + 1, 0, 1));
 
   const monthlyKlines = await db
     .select()

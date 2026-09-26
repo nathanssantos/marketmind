@@ -106,7 +106,7 @@ export const useKlineStream = (
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, symbol, interval, marketType]);
 
-  useKlineSubscription(enabled ? symbol : undefined, enabled ? interval : undefined);
+  useKlineSubscription(enabled ? symbol : undefined, enabled ? interval : undefined, marketType);
 
   useSocketEvent(
     'kline:update',
