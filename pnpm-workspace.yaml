@@ -8,6 +8,7 @@ strictPeerDependencies: false
 
 allowBuilds:
   '@playwright/browser-chromium': false
+  '@scarf/scarf': false
   canvas: true
   cpu-features: false
   electron-winstaller: true
