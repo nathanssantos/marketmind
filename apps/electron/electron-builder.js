@@ -25,6 +25,7 @@ export default {
 
     extraResources: [
         { from: '../backend/dist-embedded', to: 'backend' },
+        { from: '../backend/dist-embedded/node_modules', to: 'backend/node_modules' },
         { from: 'dist', to: 'renderer' },
     ],
 

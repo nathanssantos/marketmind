@@ -75,7 +75,6 @@ export const backendEnvironment = ({ resources, layout, databaseUrl, port, appVe
     MM_MIGRATIONS_DIR: resources.migrationsDir,
     MM_RENDERER_DIR: resources.rendererDir,
     npm_package_version: appVersion,
-    NODE_PATH: resources.backendVendorDir,
     PATH: process.env['PATH'] ?? '',
     HOME: process.env['HOME'] ?? '',
     USERPROFILE: process.env['USERPROFILE'] ?? '',

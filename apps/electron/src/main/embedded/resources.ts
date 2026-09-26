@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export interface EmbeddedResources {
   backendEntry: string;
-  backendVendorDir: string;
+  backendModulesDir: string;
   migrationsDir: string;
   builtinStrategiesDir: string;
   rendererDir: string;
@@ -38,7 +38,7 @@ export const resolveEmbeddedResources = ({ resourcesPath, appRoot, isPackaged, p
   if (root) {
     return {
       backendEntry: path.join(root, 'backend', 'index.js'),
-      backendVendorDir: path.join(root, 'backend', 'vendor'),
+      backendModulesDir: path.join(root, 'backend', 'node_modules'),
       migrationsDir: path.join(root, 'backend', 'migrations'),
       builtinStrategiesDir: path.join(root, 'backend', 'strategies', 'builtin'),
       rendererDir: path.join(root, 'renderer'),
@@ -48,7 +48,7 @@ export const resolveEmbeddedResources = ({ resourcesPath, appRoot, isPackaged, p
   const backendBundle = path.resolve(appRoot, '..', 'backend', 'dist-embedded');
   return {
     backendEntry: path.join(backendBundle, 'index.js'),
-    backendVendorDir: path.join(backendBundle, 'vendor'),
+    backendModulesDir: path.join(backendBundle, 'node_modules'),
     migrationsDir: path.join(backendBundle, 'migrations'),
     builtinStrategiesDir: path.join(backendBundle, 'strategies', 'builtin'),
     rendererDir: path.join(appRoot, 'dist'),
