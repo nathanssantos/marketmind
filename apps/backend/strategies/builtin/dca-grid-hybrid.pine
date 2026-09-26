@@ -35,7 +35,7 @@ exitShort = close < ema50
 
 sig = longEntry ? 1 : shortEntry ? -1 : 0
 sl = longEntry ? close - atrVal * 2 : shortEntry ? close + atrVal * 2 : na
-tp = longEntry ? close * (1 + 4 / 100) : shortEntry ? close * (1 - 4 / 100) : na
+tp = longEntry ? close * (1 + 4.0 / 100) : shortEntry ? close * (1 - 4.0 / 100) : na
 conf = longEntry or shortEntry ? confValue : 0
 exitSig = exitLong ? 1 : exitShort ? -1 : 0
 

@@ -32,6 +32,7 @@ export default defineConfig({
       '@shared': path.resolve(__dirname, './src/shared'),
       '@renderer': path.resolve(__dirname, './src/renderer'),
       '@main': path.resolve(__dirname, './src/main'),
+      '@marketmind/trading-core': path.resolve(__dirname, '../../packages/trading-core/src/index.ts'),
     },
   },
   optimizeDeps: {
@@ -47,5 +48,12 @@ export default defineConfig({
       'zustand',
       'date-fns',
     ],
+    rolldownOptions: {
+      transform: {
+        define: {
+          'process.env.NODE_ENV': JSON.stringify('test'),
+        },
+      },
+    },
   },
 });
