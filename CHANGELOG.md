@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-09-26
+
+Self-contained desktop release. The installer now ships the backend and a PostgreSQL 17 server: open the app and it starts its database and trading engine on your machine, applies the migrations, and loads the renderer from the backend's own origin. Nothing to deploy, no Docker, no Node. The migration history restarts from one baseline generated from the Drizzle schema, which the backend tests now build their database from.
+
 ### Added
 
 - **Self-contained desktop app** — the installer now ships the backend and a PostgreSQL 17 server. On launch the app starts PostgreSQL from its user-data folder (`initdb` on first run, loopback only, scram auth), starts the backend as an Electron utility process with generated secrets kept in the OS keychain, applies the database migrations, and loads the renderer from the backend's own origin. A boot window reports each step; on failure it offers to open the logs, retry or quit. A second launch focuses the running app. Quitting stops the backend and PostgreSQL. Settings → About shows the data folder and opens it. `MM_BACKEND_URL` (or `--backend-url=`) skips the embedded stack for a self-hosted backend.
