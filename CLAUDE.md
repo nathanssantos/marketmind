@@ -7,8 +7,8 @@
 **🚀 Quick start for new agents:** read this file → check `QUICK_START.md` → run `pnpm test`.
 
 ### Tech Stack
-- **Frontend:** TypeScript, Electron 39.2.6, React 19, Chakra UI, Canvas API, Vite 7.2.7
-- **Backend:** Fastify 5.6.2, tRPC 11.7.2, Drizzle ORM 0.45.1, PostgreSQL 17 + TimescaleDB 2.23.1, Argon2 (OWASP), Binance SDK 3.1.5, TypeScript 5.9.3
+- **Frontend:** TypeScript, Electron 44.4.5, React 19, Chakra UI, Canvas API, Vite 8.3.1
+- **Backend:** Fastify 5.12.5, tRPC 11.19.0, Drizzle ORM 0.45.3, PostgreSQL 17 + TimescaleDB 2.23.1, Argon2 (OWASP), Binance SDK 3.6.5, TypeScript 6.0.3
 - **Architecture:** pnpm monorepo, 7 shared packages (`@marketmind/types`, `chart-studies`, `fibonacci`, `logger`, `trading-core`, `risk`, `utils`); exchange abstraction over Binance (crypto) + Interactive Brokers (US stocks via `@stoqey/ib`); session auth (HTTP-only cookies); AES-256-CBC for API keys; 105 builtin strategies in `apps/backend/strategies/builtin/`
 
 ### Repository Info
