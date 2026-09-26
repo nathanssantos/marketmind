@@ -32,6 +32,7 @@ pnpm --filter @marketmind/electron test:perf:update
 | `chart-hotpath.spec.ts` | Hot-path scenarios — `price-tick-storm`, `kline-replace-loop`, `kline-append`, `pan-drag-loop`, `wheel-zoom-loop`, `indicator-churn`, `many-drawings` (80 mixed drawings under pan+zoom), `price-tick-storm-20` (20-symbol tick storm). |
 | `chart-mobile.spec.ts` | Narrow-viewport scenarios (`390×844`) — `mobile-overlay`, `mobile-pan-zoom`, `mobile-tick-storm`. Same assertions as desktop baselines. |
 | `sibling-renders.spec.ts` | Sentinel — `Portfolio` + `OrdersList` renders/sec stay ≤ 10 under 10-symbol tick storm. |
+| `pan-cadence.spec.ts` | Frame cadence during a steady 3 s drag over a deterministic single-chart layout: rAF intervals, render-to-render gaps (p50 / p95 / max, count > 34 ms), input-to-render latency, long animation frames, heap growth. Scenarios: 500 klines, 10k klines, zoomed out (~1.5k visible), live streams, overlay indicators, 2×2 charts, DPR 2. Run with `test:perf:cadence`; results land in git-ignored `pan-cadence-last-run.json`. `PAN_CADENCE_TAG=<tag>` suffixes the result keys, so A/B runs of a code change can be compared in one file. Measurement only — no baseline gate. |
 | `baseline.json` | Committed. Current accepted numbers for each scenario. |
 | `last-run.json` | Git-ignored. Written per run by the specs, diffed by `scripts/perf/compare-baseline.ts`. |
 
@@ -42,6 +43,8 @@ Driver helpers live in [`../helpers/chartTestSetup.ts`](../helpers/chartTestSetu
 - `drivePan(page, frames, amplitudePx)` / `driveWheelZoom(page, frames, deltaPx)` — synthetic `page.mouse.*` paced with rAF
 - `driveFrames(page, frames)` — synthetic mousemove on every rAF tick (this is what marks the chart dirty)
 - `readPerfSnapshot(page)` / `resetPerfMonitor(page)` — `window.__mmPerf` bridge
+
+[`../helpers/frameProbe.ts`](../helpers/frameProbe.ts) adds `installFrameProbe` / `startFrameProbe` / `stopFrameProbe`: an in-page probe that wraps `__mmPerf.endFrame` to timestamp every chart render, runs its own rAF loop to measure the vsync cadence the page actually gets, records `mousemove` timestamps while a button is held, and observes `long-animation-frame` / `longtask` entries. `stopFrameProbe` returns the aggregated report (`FrameProbeReport`).
 
 All bridges (`window.__*`) are gated on `IS_E2E_BYPASS_AUTH` and dead-code-eliminated in prod builds.
 

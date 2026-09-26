@@ -56,6 +56,7 @@ pnpm --filter @marketmind/electron test:perf
   - **sanity** — adds the 5-panel set, asserts no console errors
 - `apps/electron/e2e/perf/chart-hotpath.spec.ts` — hot-path regression tests that exercise real-world data churn (see **Hot-path scenarios** below)
 - `apps/electron/e2e/perf/sibling-renders.spec.ts` — sentinel tests that assert non-chart React components (`Portfolio`, `OrdersList`) don't balloon past a fixed re-render ceiling under hot-path drivers. Relies on `perfMonitor.recordComponentRender` calls at the top of each instrumented component.
+- `apps/electron/e2e/perf/pan-cadence.spec.ts` — frame-cadence measurement during a steady drag (rAF intervals, render-to-render gaps, input-to-render latency, long animation frames) across data size, zoom level, live streams, indicators, layout and DPR. `pnpm --filter @marketmind/electron test:perf:cadence`; see the perf README for the metrics.
 - `apps/electron/e2e/perf/baseline.json` — committed baseline numbers; update via `pnpm --filter @marketmind/electron test:perf:update`
 - `apps/electron/e2e/perf/last-run.json` — written by each run, compared against baseline by `scripts/perf/compare-baseline.ts`
 - `apps/electron/e2e/helpers/`
