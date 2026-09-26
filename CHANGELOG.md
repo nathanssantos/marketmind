@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **pnpm 11** — the monorepo now pins `pnpm@11.20.0` through the `packageManager` field and requires it via `engines.pnpm`. CI reads that pin instead of a hardcoded version; the backend `Dockerfile` and `scripts/setup/setup.sh` install pnpm 11 on Node 24. Build-script approval moved from the removed `onlyBuiltDependencies` list to `allowBuilds` in `pnpm-workspace.yaml`, and the settings pnpm 11 no longer reads from `.npmrc` (`enablePrePostScripts`, `autoInstallPeers`, `strictPeerDependencies`) moved there too.
+
 ## [1.25.0] - 2026-06-16
 
 Market-dashboard split, chart/UI polish, and developer-experience. The aggregate Market Indicators dashboard becomes ten individual resizable panels; chart price scales now react to theme changes instantly; panel padding, modal focus and the trade-ticket grid are fixed; MCP config is versioned with a fast pre-commit gate; and the marketing screenshots get a realism pass.
