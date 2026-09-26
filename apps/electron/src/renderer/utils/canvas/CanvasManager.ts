@@ -63,10 +63,7 @@ export class CanvasManager {
     overlays: true,
     all: true,
   };
-  private lastRenderTime: number = 0;
-  private minFrameTime: number = 16;
-  private viewportFrameTime: number = 33;
-  private overlayOnlyFrameTime: number = 33;
+  private lastRenderTimestamp: number = 0;
   private lastViewportDirtyAt: number = 0;
   private frameCache: Map<unknown, unknown> | null = null;
   private frameCacheGeneration: number = 0;
@@ -141,20 +138,11 @@ export class CanvasManager {
     if (this.isAnimating || !this.isDirty()) return;
 
     this.isAnimating = true;
-    this.animationFrameId = requestAnimationFrame(() => {
-      const now = performance.now();
-      const elapsed = now - this.lastRenderTime;
+    this.animationFrameId = requestAnimationFrame((timestamp) => {
+      const elapsed = timestamp - this.lastRenderTimestamp;
+      const budgetElapsed = elapsed >= CHART_CONFIG.FRAME_BUDGET_MS - CHART_CONFIG.FRAME_BUDGET_TOLERANCE_MS;
 
-      const f = this.dirtyFlags;
-      const isOverlayOnly = f.overlays && !f.all && !f.klines && !f.viewport && !f.dimensions;
-      const isViewportOnly = f.viewport && !f.all && !f.klines && !f.dimensions;
-      const budget = isOverlayOnly
-        ? this.overlayOnlyFrameTime
-        : isViewportOnly
-          ? this.viewportFrameTime
-          : this.minFrameTime;
-
-      if (elapsed < budget && !f.all) {
+      if (!budgetElapsed && !this.dirtyFlags.all) {
         this.isAnimating = false;
         this.scheduleRender();
         return;
@@ -173,7 +161,7 @@ export class CanvasManager {
 
       if (this.renderCallback && this.isDirty()) {
         this.renderCallback();
-        this.lastRenderTime = now;
+        this.lastRenderTimestamp = timestamp;
       }
 
       this.isAnimating = false;
@@ -194,6 +182,10 @@ export class CanvasManager {
     if (flag !== 'overlays') this.offscreenValid = false;
     if (flag === 'viewport') this.lastViewportDirtyAt = performance.now();
     this.scheduleRender();
+  }
+
+  public shouldSnapshotBaseLayer(): boolean {
+    return !this.dirtyFlags.viewport;
   }
 
   public isRecentlyPanning(windowMs: number = 200): boolean {

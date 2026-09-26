@@ -24,7 +24,6 @@ export interface UseChartCanvasProps {
 export interface UseChartCanvasReturn {
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   manager: CanvasManager | null;
-  viewport: Viewport;
   isPanning: boolean;
   handleMouseDown: (event: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseMove: (event: React.MouseEvent<HTMLCanvasElement>) => void;
@@ -53,8 +52,7 @@ export const useChartCanvas = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const managerRef = useRef<CanvasManager | null>(null);
   const [manager, setManager] = useState<CanvasManager | null>(null);
-  
-  const [viewport, setViewport] = useState<Viewport>(() => {
+  const [initialViewportValue] = useState<Viewport>(() => {
     if (initialViewport !== DEFAULT_VIEWPORT) {
       return initialViewport;
     }
@@ -72,7 +70,6 @@ export const useChartCanvas = ({
       end: klineCount + futureSpace,
     };
   });
-  
   const [isPanning, setIsPanning] = useState(false);
   const [isPanningOnScale, setIsPanningOnScale] = useState(false);
   const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
@@ -97,7 +94,7 @@ export const useChartCanvas = ({
   useEffect(() => {
     if (!canvasRef.current || managerRef.current) return;
 
-    let initialVp = viewport;
+    let initialVp = initialViewportValue;
     if (klines.length > 0) {
       const visibleCount = Math.min(calculateVisibleKlines(), klines.length);
       const futureSpace = Math.max(
@@ -109,7 +106,6 @@ export const useChartCanvas = ({
         start: Math.max(0, klines.length - visibleCount),
         end: klines.length + futureSpace,
       };
-      setViewport(initialVp);
       isInitialLoadRef.current = false;
     }
 
@@ -198,7 +194,6 @@ export const useChartCanvas = ({
           start: currentVp.start + prependedCount,
           end: currentVp.end + prependedCount,
         };
-        setViewport(shiftedViewport);
         managerRef.current.setViewport(shiftedViewport);
         onViewportChange?.(shiftedViewport);
       } else if (isInitialLoadRef.current && currentCount > 0) {
@@ -213,7 +208,6 @@ export const useChartCanvas = ({
           end: currentCount + futureSpace,
         };
 
-        setViewport(newViewport);
         managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
         managerRef.current.resetVerticalZoom();
@@ -233,7 +227,6 @@ export const useChartCanvas = ({
           managerRef.current.resetToInitialView();
         }
         const newViewport = managerRef.current.getViewport();
-        setViewport(newViewport);
         onViewportChange?.(newViewport);
         wasAtEndRef.current = wasAtEnd;
       } else if (wasAtEnd && currentCount > prevCount) {
@@ -249,7 +242,6 @@ export const useChartCanvas = ({
           end: currentCount + futureSpace,
         };
 
-        setViewport(newViewport);
         managerRef.current.setViewport(newViewport);
         onViewportChange?.(newViewport);
         wasAtEndRef.current = true;
@@ -262,8 +254,7 @@ export const useChartCanvas = ({
             start: currentViewport.start + klinesAdded,
             end: currentViewport.end + klinesAdded,
           };
-          setViewport(newViewport);
-          managerRef.current.setViewport(newViewport);
+            managerRef.current.setViewport(newViewport);
           onViewportChange?.(newViewport);
         }
       } else {
@@ -283,14 +274,6 @@ export const useChartCanvas = ({
   }, [klines, symbol]);
 
   const updateViewport = useCallback(
-    (newViewport: Viewport): void => {
-      setViewport(newViewport);
-      onViewportChangeRef.current?.(newViewport);
-    },
-    [],
-  );
-
-  const notifyViewportChange = useCallback(
     (newViewport: Viewport): void => {
       onViewportChangeRef.current?.(newViewport);
     },
@@ -387,13 +370,11 @@ export const useChartCanvas = ({
       } else {
         if (deltaX !== 0) {
           managerRef.current.pan(deltaX);
-          
           const now = Date.now();
           const timeSinceLastUpdate = now - lastViewportUpdateRef.current;
-          
           if (timeSinceLastUpdate > VIEWPORT_UPDATE_THROTTLE_MS) {
             const newViewport = managerRef.current.getViewport();
-            notifyViewportChange(newViewport);
+            updateViewport(newViewport);
             wasAtEndRef.current = Math.abs(newViewport.end - klinesLengthRef.current) < 1;
             lastViewportUpdateRef.current = now;
 
@@ -406,10 +387,9 @@ export const useChartCanvas = ({
           managerRef.current.panVertical(deltaY);
         }
       }
-      
       lastMousePosRef.current = { x: event.clientX, y: event.clientY };
     },
-    [isPanning, isPanningOnScale, notifyViewportChange],
+    [isPanning, isPanningOnScale, updateViewport],
   );
 
   const handleMouseUp = useCallback((): void => {
@@ -448,7 +428,6 @@ export const useChartCanvas = ({
   return {
     canvasRef,
     manager,
-    viewport,
     isPanning,
     handleMouseDown,
     handleMouseMove,
