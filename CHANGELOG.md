@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.26.0] - 2026-09-25
+
+Tooling, infrastructure and chart-feel release. The monorepo moves to pnpm 11 and every dependency to its latest compatible version (Electron 44, Vite 8, Vitest 5). `pnpm dev` now starts the compose PostgreSQL by itself, and the backend exits with a clear message when the database is down instead of a stack trace from the first query. The chart renders a drag on every frame instead of every 33 ms and skips the base-layer copy while panning, and a new cadence harness measures what the user feels. The POLITIFI seed is gone.
+
 ### Added
 
 - **Database bootstrap on `pnpm dev`** — `apps/backend/scripts/ensure-database.sh` runs before the backend dev server (`predev`). When nothing answers on the `DATABASE_URL` host/port, it starts Docker if needed, brings up the compose `postgres` service with the credentials from `apps/backend/.env`, and waits for the health check.
