@@ -155,6 +155,7 @@ test-results/
 playwright-report/
 apps/electron/e2e/perf/last-run.json
 apps/electron/e2e/perf/diagnose-*.json
+apps/electron/e2e/perf/pan-cadence-last-run.json
 
 # ===========================
 # Logs

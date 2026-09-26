@@ -56,6 +56,7 @@
     "test:perf": "playwright test --project=perf --reporter=list",
     "test:perf:diagnose": "PERF_DIAGNOSE=1 playwright test --project=perf --reporter=list",
     "test:perf:update": "tsx ../../scripts/perf/update-baseline.ts",
+    "test:perf:cadence": "playwright test --project=perf e2e/perf/pan-cadence.spec.ts --reporter=list",
     "build:main": "VITE_TARGET=electron vite build",
     "bundle:analyze": "ANALYZE=1 pnpm build:web",
     "test:e2e:electron": "pnpm build:main && playwright test --project=electron --reporter=list",

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Database bootstrap on `pnpm dev`** — `apps/backend/scripts/ensure-database.sh` runs before the backend dev server (`predev`). When nothing answers on the `DATABASE_URL` host/port, it starts Docker if needed, brings up the compose `postgres` service with the credentials from `apps/backend/.env`, and waits for the health check.
 - **Startup readiness check** — the backend probes PostgreSQL before registering any service and retries for 30 s. If the database stays unreachable it exits with a one-line message naming the host, port and database and how to start it, instead of a Drizzle stack trace from the first query.
+- **Chart pan cadence harness** — `e2e/perf/pan-cadence.spec.ts` plus `e2e/helpers/frameProbe.ts` measure what the user actually feels during a drag: render-to-render gaps (p50 / p95 / max and the count above 34 ms), the vsync cadence the page gets, input-to-render latency, long animation frames and heap growth, over a deterministic single-chart layout across 500 / 10k klines, zoomed out, live streams, overlay indicators, 2×2 charts and DPR 2. `pnpm --filter @marketmind/electron test:perf:cadence`; `PAN_CADENCE_TAG` tags result keys for A/B runs.
 
 ### Changed
 
