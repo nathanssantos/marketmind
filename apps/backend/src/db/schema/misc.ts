@@ -49,8 +49,8 @@ export const indicatorHistory = pgTable('indicator_history', {
   metadata: text(),
   recordedAt: timestamp('recorded_at', { mode: 'date' }).defaultNow().notNull(),
 }, (table) => ({
-  typeTimeIdx: index('indicator_history_type_time_idx').on(table.indicatorType, table.recordedAt),
-  recordedAtIdx: index('indicator_history_recorded_at_idx').on(table.recordedAt),
+  typeTimeIdx: index('indicator_history_type_time_idx').on(table.indicatorType, table.recordedAt.desc()),
+  recordedAtIdx: index('indicator_history_recorded_at_idx').on(table.recordedAt.desc()),
 }));
 
 export const customSymbols = pgTable('custom_symbols', {

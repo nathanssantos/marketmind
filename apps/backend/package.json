@@ -71,13 +71,16 @@
     "reset-wallet": "tsx scripts/maintenance/reset-wallet.ts",
     "audit-klines": "tsx scripts/maintenance/audit-klines.ts",
     "clear-klines": "tsx scripts/maintenance/clear-klines.ts",
-    "fill-kline-gaps": "tsx scripts/maintenance/fill-kline-gaps.ts"
+    "fill-kline-gaps": "tsx scripts/maintenance/fill-kline-gaps.ts",
+    "bundle:embedded": "node scripts/build/bundle-embedded.mjs",
+    "db:mark-baseline": "tsx scripts/maintenance/mark-migration-baseline.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
     "@fastify/helmet": "^13.1.1",
     "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^10.1.4",
     "@marketmind/fibonacci": "workspace:*",
     "@marketmind/logger": "workspace:*",
     "@marketmind/risk": "workspace:*",
@@ -116,6 +119,7 @@
     "@vitest/coverage-v8": "^5.0.1",
     "artillery": "^2.0.34",
     "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "globals": "^17.12.0",
     "pino-pretty": "^13.1.3",

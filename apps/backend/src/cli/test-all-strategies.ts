@@ -1,16 +1,13 @@
 import 'dotenv/config';
 import * as fs from 'fs';
-import * as path from 'path';
-import { fileURLToPath } from 'url';
 import { MultiWatcherBacktestEngine } from '../services/backtesting/MultiWatcherBacktestEngine';
 import type { WatcherConfig } from '@marketmind/types';
 import { createBaseConfig, formatCurrency } from './shared-backtest-config';
+import { BUILTIN_STRATEGIES_DIR } from '../utils/runtime-dirs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT'];
-const STRATEGIES_DIR = path.join(__dirname, '../../strategies/builtin');
+const STRATEGIES_DIR = BUILTIN_STRATEGIES_DIR;
 
 interface StrategyResult {
   name: string;

@@ -5,7 +5,7 @@ let container: StartedPostgreSqlContainer | null = null;
 export async function setup(): Promise<void> {
   console.log('\n> Starting shared test database container...');
 
-  container = await new PostgreSqlContainer('timescale/timescaledb:latest-pg17')
+  container = await new PostgreSqlContainer('postgres:17-alpine')
     .withDatabase('marketmind_test')
     .withUsername('test')
     .withPassword('test')

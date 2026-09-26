@@ -13,18 +13,15 @@ import type { FilterResults } from '../../utils/confluence-scoring';
 import type { PineStrategy } from '../pine/types';
 import type { BacktestProgressReporter } from './BacktestProgressReporter';
 import { FilterManager } from './FilterManager';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { BACKTEST_ENGINE } from '../../constants';
 import { generateEntityId } from '../../utils/id';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { PineStrategyLoader } from '../pine/PineStrategyLoader';
+import { STRATEGY_DIRS } from '../../utils/runtime-dirs';
 import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
 import { calculateBacktestMetrics } from './metrics-calculator';
 import { SharedPortfolioManager, type TradeResult as PortfolioTradeResult, type PortfolioConfig } from './SharedPortfolioManager';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 interface WatcherState {
   config: WatcherConfig;
@@ -198,9 +195,8 @@ export class MultiWatcherBacktestEngine {
   }
 
   private async initializeWatchers(): Promise<void> {
-    const strategiesDir = this.config.pineStrategiesDir
-      ?? resolve(__dirname, '../../../strategies/builtin');
-    const pineLoader = new PineStrategyLoader([strategiesDir]);
+    const strategyDirs = this.config.pineStrategiesDir ? [this.config.pineStrategiesDir] : STRATEGY_DIRS;
+    const pineLoader = new PineStrategyLoader(strategyDirs);
     const allPineStrategies = await pineLoader.loadAll();
 
     const intervalsNeeded = new Set(this.config.watchers.map((w) => w.interval));
