@@ -1,7 +1,7 @@
  
 import { CHART_CONFIG } from '@shared/constants';
 import type { Kline, Viewport } from '@marketmind/types';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CanvasManager } from './CanvasManager';
 
 vi.mock('./drawingUtils', () => ({
@@ -127,6 +127,75 @@ describe('CanvasManager', () => {
       const clamped = manager.getViewport();
       expect(clamped.start).toBeGreaterThanOrEqual(0);
       expect(clamped.end).toBeGreaterThanOrEqual(mockKlines.length);
+    });
+  });
+
+  describe('render scheduling', () => {
+    let frameCallbacks: FrameRequestCallback[];
+
+    beforeEach(() => {
+      frameCallbacks = [];
+      vi.stubGlobal('requestAnimationFrame', vi.fn((callback: FrameRequestCallback) => {
+        frameCallbacks.push(callback);
+        return frameCallbacks.length;
+      }));
+      vi.stubGlobal('cancelAnimationFrame', vi.fn());
+      manager = new CanvasManager(canvas, viewport);
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    const runFrame = (timestamp: number): void => {
+      const callback = frameCallbacks.shift();
+      if (!callback) throw new Error('no animation frame scheduled');
+      callback(timestamp);
+    };
+
+    const installRender = (): ReturnType<typeof vi.fn> => {
+      const render = vi.fn(() => manager.clearDirtyFlags());
+      manager.setRenderCallback(render);
+      return render;
+    };
+
+    it('renders the first frame, then waits for the frame budget measured by the rAF timestamp', () => {
+      const render = installRender();
+      runFrame(1000);
+      expect(render).toHaveBeenCalledTimes(1);
+
+      manager.markDirty('viewport');
+      runFrame(1008.3);
+      expect(render).toHaveBeenCalledTimes(1);
+      runFrame(1016.7);
+      expect(render).toHaveBeenCalledTimes(2);
+    });
+
+    it('renders on every 60 Hz frame while the viewport keeps changing', () => {
+      const render = installRender();
+      runFrame(0);
+      for (let frame = 1; frame <= 10; frame += 1) {
+        manager.markDirty('viewport');
+        runFrame(frame * 16.667);
+      }
+      expect(render).toHaveBeenCalledTimes(11);
+    });
+
+    it('renders a full invalidation without waiting for the budget', () => {
+      const render = installRender();
+      runFrame(1000);
+      manager.markDirty('all');
+      runFrame(1004);
+      expect(render).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips the base-layer snapshot on viewport frames only', () => {
+      manager.clearDirtyFlags();
+      manager.markDirty('viewport');
+      expect(manager.shouldSnapshotBaseLayer()).toBe(false);
+      manager.clearDirtyFlags();
+      manager.markDirty('overlays');
+      expect(manager.shouldSnapshotBaseLayer()).toBe(true);
     });
   });
 

@@ -165,7 +165,7 @@ export const useChartRenderPipeline = ({
         renderOverlayOnly();
       } else {
         renderBase();
-        manager.snapshotBaseLayer();
+        if (manager.shouldSnapshotBaseLayer()) manager.snapshotBaseLayer();
         renderOverlayOnly();
       }
 

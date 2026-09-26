@@ -268,15 +268,18 @@ export const slowestSectionMs = (snap: PerfSnapshot): number => {
   return snap.sections[0]!.lastMs;
 };
 
-export const componentRenderRate = (snap: PerfSnapshot, name: string): number => {
-  const entry = snap.componentRenders.find((c) => c.name === name);
-  return entry?.ratePerSec ?? 0;
-};
+const matchesComponent = (recordedName: string, name: string): boolean =>
+  recordedName === name || recordedName.startsWith(`${name}#`);
 
-export const componentRenderTotal = (snap: PerfSnapshot, name: string): number => {
-  const entry = snap.componentRenders.find((c) => c.name === name);
-  return entry?.total ?? 0;
-};
+export const componentRenderRate = (snap: PerfSnapshot, name: string): number =>
+  snap.componentRenders
+    .filter((c) => matchesComponent(c.name, name))
+    .reduce((sum, c) => sum + c.ratePerSec, 0);
+
+export const componentRenderTotal = (snap: PerfSnapshot, name: string): number =>
+  snap.componentRenders
+    .filter((c) => matchesComponent(c.name, name))
+    .reduce((sum, c) => sum + c.total, 0);
 
 const isKlineListQueryKey = (key: unknown): boolean => {
   if (!Array.isArray(key)) return false;

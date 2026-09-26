@@ -177,6 +177,34 @@ Input events arrive at about 60 Hz in every run (the CDP round-trip caps the syn
 4. Move the wheel path off React state the same way the pan path already is, and scale the zoom step by `deltaY`.
 5. Fix the existing harness blind spots so its gates mean something: `componentRenderRate(snap, 'ChartCanvas')` never matches the recorded key `ChartCanvas#SYMBOL@TF` (so the pan re-render cap is vacuous), `p95FrameMs` is the slowest section's last sample rather than a percentile, and the fixtures load 500 klines where the app loads 10,000.
 
+### After the fix (same day, branch `perf/chart-pan-frame-budget`)
+
+Items 1, 2 and 4 of the list above landed together: the frame budget is now `CHART_CONFIG.FRAME_BUDGET_MS` (16 ms) minus `FRAME_BUDGET_TOLERANCE_MS` (4 ms), measured on the rAF timestamp; viewport frames skip the base-layer snapshot; the chart canvas hook keeps no React copy of the viewport, so wheel zoom and mouse-up no longer re-render `ChartCanvas`; and the perf harness matches `ChartCanvas#SYMBOL@TF` keys.
+
+### fix
+
+| Scenario | charts | visible | renders/s | gap p50 / p95 / max ms | gaps > 34 ms | JS ms p50 | snapshot ms p50 | vsync ms / missed % | heap Δ MB |
+|---|---|---|---|---|---|---|---|---|---|
+| pan-500 | 1 | 65 | 57.9 | 16.7 / 22.9 / 25.9 | 0 | 0.3 | 0.9 | 7.3 / 0.3 | 21.2 |
+| pan-10k | 1 | 65 | 58.9 | 16.7 / 18.6 / 25.0 | 0 | 0.3 | 1.0 | 7.8 / 0.0 | 21.0 |
+| pan-10k-zoomed-out | 1 | 1533 | 56.5 | 16.9 / 23.5 / 25.6 | 0 | 1.0 | 1.2 | 7.1 / 0.3 | 17.5 |
+| pan-10k-live | 1 | 65 | 58.9 | 16.7 / 19.0 / 25.7 | 0 | 0.3 | 1.1 | 7.3 / 0.0 | 21.3 |
+| pan-10k-indicators | 1 | 65 | 58.7 | 16.7 / 18.7 / 24.9 | 0 | 0.4 | 1.5 | 7.7 / 0.3 | 20.8 |
+| pan-10k-live-2x2 | 4 | 65 | 118.5 | 7.6 / 18.7 / 30.2 | 0 | 0.2 | 0.0 | 7.5 / 0.5 | -0.6 |
+| wheel-10k | 1 | 65 | 30.2 | 33.4 / 35.4 / 35.7 | 13 | 0.8 | 1.1 | 7.8 / 0.0 | -6.3 |
+| pan-10k-dpr2 | 1 | 65 | 47.1 | 22.8 / 25.6 / 27.4 | 0 | 0.3 | 3.3 | 7.2 / 0.3 | 18.4 |
+
+### fix-headed
+
+| Scenario | charts | visible | renders/s | gap p50 / p95 / max ms | gaps > 34 ms | JS ms p50 | snapshot ms p50 | vsync ms / missed % | heap Δ MB |
+|---|---|---|---|---|---|---|---|---|---|
+| pan-10k | 1 | 65 | 43.7 | 17.6 / 34.4 / 35.6 | 11 | 0.6 | 0.1 | 14.9 / 0.0 | 17.7 |
+| pan-10k-live | 1 | 65 | 49.9 | 16.9 / 33.6 / 35.4 | 5 | 0.6 | 0.2 | 14.9 / 0.0 | 20.3 |
+| wheel-10k | 1 | 65 | 20.2 | 50.2 / 52.3 / 53.8 | 59 | 3.7 | 0.1 | 15.2 / 0.0 | -4.3 |
+| pan-10k-dpr2 | 1 | 65 | 50.4 | 16.8 / 33.6 / 52.6 | 3 | 0.6 | 0.1 | 14.8 / 0.0 | 19.8 |
+
+Read against the `final33` rows above: every pan scenario moved from ~29 to 57–59 renders/s with p95 gaps of 18–24 ms and no gap above 34 ms; JS per frame fell from 1.3–5.1 ms to 0.3–1.0 ms because the snapshot now runs once per gesture instead of once per frame; the wheel scenario stopped allocating (heap change −6 MB against +36 to +53 MB before). DPR 2 headless sits at 47 renders/s with a flat 23–26 ms gap, which is the 2× raster cost on a 120 Hz panel and the next thing to measure with a GPU trace. In the headed runs on the 60 Hz display the synthetic input itself dropped to 44–50 Hz and the renders followed it one to one (`rAF missed` 0 %, JS 0.6 ms), so the residual p95 of about 34 ms there is the input driver, not the renderer.
+
 ### Harness caveats
 
 - The synthetic mouse is capped near 60 Hz by the CDP round-trip, so the 120 Hz behaviour of the app is only partially exercised. A real trackpad on the internal display can produce 120 input events per second; the fixes above still apply, but the p95 there should be measured with the perf overlay (`chart.perf`) in the running app.

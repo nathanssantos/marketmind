@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The `vite-plugin-pwa>vite` peer override is gone: `vite-plugin-pwa` 1.3 declares Vite 8. The `@scarf/scarf` install script that `@pact-foundation/pact` 17 pulls in is denied in `allowBuilds`.
   - Held back: `typescript` stays on 6.0. TypeScript 7 does not ship the compiler API, and `typescript-eslint` 8.70 only supports TypeScript below 6.1. `@types/node` stays on 24 on purpose (26 is out).
 
+### Fixed
+
+- **Chart drag cadence** — `CanvasManager.scheduleRender` no longer throttles viewport and overlay frames to a 33 ms wall-clock budget measured with `performance.now()`; it renders once per `CHART_CONFIG.FRAME_BUDGET_MS` measured on the rAF timestamp, with a tolerance so 60 Hz and 120 Hz displays both settle on one render every 16.7 ms instead of alternating 33 / 50 ms gaps. The base-layer snapshot is skipped on viewport frames (pan and zoom), where the next frame redraws the base anyway; it was 75–94 % of the JS per frame. The chart canvas hook no longer mirrors the viewport in React state, so wheel zoom, mouse-up and kline shifts stop re-rendering `ChartCanvas`. The perf harness now matches `ChartCanvas#SYMBOL@TF` render keys, so its pan re-render cap is enforced.
+
 ### Removed
 
 - **POLITIFI seed** — the backend no longer creates the `POLITIFI` custom symbol at boot, and the default layout seed no longer opens a tab for it.
