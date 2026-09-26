@@ -44,6 +44,9 @@ jobs:
           pnpm exec tsc -p tsconfig.node.json
           pnpm exec vite build
 
+      - name: Bundle embedded backend
+        run: pnpm --filter @marketmind/backend bundle:embedded
+
       - name: Build macOS installers
         if: matrix.os == 'macos-latest'
         working-directory: apps/electron

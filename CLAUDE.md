@@ -261,6 +261,17 @@ Argon2 params: `{ memoryCost: 19456, timeCost: 2, outputLen: 32, parallelism: 1 
 
 ---
 
+## 📦 Embedded desktop stack (v1.28+)
+
+The installer is self-contained. `apps/electron/src/main/embedded/` boots it (plan: `docs/EMBEDDED_BACKEND_PLAN.md`):
+
+- **Resources** (`extraResources`): `backend/` (esbuild bundle from `pnpm --filter @marketmind/backend bundle:embedded` + `migrations/` + `strategies/builtin/`), `renderer/` (Vite build), `postgres/` (binaries from `@embedded-postgres/<platform>`, kept out of the asar).
+- **Boot** (`bootstrap.ts`): single-instance lock → secrets in `userData/secrets.json` encrypted with `safeStorage` → PostgreSQL via `initdb`/`pg_ctl` on a free loopback port (`EmbeddedPostgres.ts`) → backend as `utilityProcess` with the `MM_*` env (`BackendProcess.ts`, health-polled, restarted with backoff) → main window `loadURL(http://127.0.0.1:<port>/)`. The backend creates its database, runs the Drizzle migrations and serves the renderer, so page and API are same-origin.
+- **Modes** (`bootMode.ts`): `VITE_DEV_SERVER_URL` → dev (external backend on :3001 as before); `MM_BACKEND_URL` / `--backend-url=` → self-hosted backend that must serve the renderer (`MM_RENDERER_DIR`); otherwise embedded. `MM_USER_DATA_DIR` and `MM_RESOURCES_DIR` override paths (tests).
+- **Data**: `userData/data/{postgres,logs,output,strategies/user}`; Settings → About opens it. PGDATA is tied to PostgreSQL major 17.
+- **Never** load the renderer from `file://` again: `SameSite=Lax` cookies do not travel from a `file://` page to `localhost`.
+- **Gate**: `pnpm --filter @marketmind/electron test:e2e:embedded` boots the real stack; the unit tests cover ports, secrets, argument builders, boot mode and resource resolution.
+
 ## 🔒 Security
 
 - **API keys:** AES-256-CBC encrypt before insert, decrypt on read. Never log raw keys. Electron renderer uses `safeStorage` (platform-native) via IPC `storage:setApiKey` / `storage:getApiKey`; preload exposes only `window.electron.secureStorage`.
@@ -294,7 +305,7 @@ Docs: [`docs/MCP_SERVERS.md`](docs/MCP_SERVERS.md), [`docs/MCP_AGENT_GUIDE.md`](
 ### Backend integration tests
 Use **testcontainers** with PostgreSQL + TimescaleDB. Helpers in `apps/backend/src/__tests__/helpers/`:
 
-- **`test-db.ts`** — `setupTestDatabase()` / `teardownTestDatabase()` boot a `timescale/timescaledb:latest-pg17` container and run migrations. Cleanup uses `session_replication_role = 'replica'` to skip RI cascades, so **new child tables must be added to the explicit cleanup list**.
+- **`test-db.ts`** — `setupTestDatabase()` / `teardownTestDatabase()` share a `postgres:17-alpine` container (`globalSetup.ts`) and build the schema with the Drizzle migrator from `src/db/migrations`, so a schema change without `db:generate` fails the suite. Cleanup uses `session_replication_role = 'replica'` to skip RI cascades, so **new child tables must be added to the explicit cleanup list**.
 - **`test-context.ts`** — tRPC context factory.
 - **`test-fixtures.ts`** — `createTestUser`, `createAuthenticatedUser`, `createTestSession`, `createTestWallet`.
 - **`test-caller.ts`** — `createAuthenticatedCaller(user, session)` for router tests.
@@ -395,9 +406,12 @@ pnpm build
 **PostgreSQL setup (one-time):**
 ```bash
 docker compose up -d postgres
+pnpm --filter @marketmind/backend db:migrate        # fresh database
+pnpm --filter @marketmind/backend db:mark-baseline  # database that predates 0000_baseline (run once)
 ```
-Pinned `timescale/timescaledb:2.23.1-pg17` with a named volume; `pnpm dev` / `pnpm dev:backend` run this automatically when nothing answers on the `DATABASE_URL` port (`apps/backend/scripts/ensure-database.sh`).
+Pinned `timescale/timescaledb:2.23.1-pg17` with a named volume; `pnpm dev` / `pnpm dev:backend` run the compose step automatically when nothing answers on the `DATABASE_URL` port (`apps/backend/scripts/ensure-database.sh`).
 `apps/backend/.env`: `DATABASE_URL=postgresql://...`, `ENCRYPTION_KEY=<32-byte hex>`, `NODE_ENV=development`.
+**Schema changes**: edit `apps/backend/src/db/schema/`, run `db:generate` (new journal entry), apply with `db:migrate`. The Drizzle schema is the single source of truth; nothing is applied by hand-written SQL anymore.
 
 ---
 

@@ -7,6 +7,10 @@ autoInstallPeers: true
 strictPeerDependencies: false
 
 allowBuilds:
+  '@embedded-postgres/darwin-arm64': true
+  '@embedded-postgres/darwin-x64': true
+  '@embedded-postgres/linux-x64': true
+  '@embedded-postgres/windows-x64': true
   '@playwright/browser-chromium': false
   '@scarf/scarf': false
   canvas: true

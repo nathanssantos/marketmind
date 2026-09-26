@@ -1652,11 +1652,11 @@
     "features": "Características",
     "featuresList": {
       "marketData": "Datos de mercado de criptomonedas en tiempo real (Binance)",
-      "charts": "Gráficos de velas avanzados con 25+ indicadores",
-      "strategies": "20 estrategias de trading algorítmico",
+      "charts": "Gráficos de velas avanzados con más de 45 indicadores",
+      "strategies": "107 estrategias de trading en Pine Script",
       "autoTrading": "Ejecución automática de trades con órdenes OCO",
       "backtesting": "Motor de backtesting completo con optimización",
-      "security": "Almacenamiento seguro de claves de API con cifrado a nivel del SO",
+      "security": "Claves de API cifradas con AES-256 en este equipo",
       "autoUpdate": "Sistema de actualización automática con versiones de GitHub",
       "shortcuts": "Atajos de teclado para productividad",
       "themes": "Temas claro y oscuro",
@@ -1682,6 +1682,11 @@
       "available": "v{{version}} disponible",
       "upToDate": "Actualizado",
       "readyToInstall": "Listo para instalar"
+    },
+    "dataFolder": {
+      "title": "Tus datos",
+      "description": "La base de datos, los logs y tus propias estrategias viven en esta carpeta, en este equipo. Haz una copia con la app cerrada.",
+      "open": "Abrir carpeta"
     }
   },
   "setupConfig": {

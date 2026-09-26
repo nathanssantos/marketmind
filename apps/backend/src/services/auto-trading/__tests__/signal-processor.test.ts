@@ -258,7 +258,7 @@ const createDeps = (): SignalProcessorDeps => ({
 });
 
 const createConfig = (): SignalProcessorConfig => ({
-  strategiesDir: '/tmp/strategies',
+  strategyDirs: ['/tmp/strategies'],
 });
 
 const createKlineRow = (openTimeMs: number, overrides: Record<string, unknown> = {}) => ({
@@ -2053,8 +2053,8 @@ describe('SignalProcessor', () => {
   });
 
   describe('constructor', () => {
-    it('should initialize PineStrategyLoader with provided strategies directory', () => {
-      const config = { strategiesDir: '/custom/strategies/dir' };
+    it('should initialize PineStrategyLoader with the provided strategy directories', () => {
+      const config = { strategyDirs: ['/custom/strategies/dir'] };
       const newProcessor = new SignalProcessor(deps, config);
       expect((newProcessor as any).strategyLoader).toBeDefined();
     });

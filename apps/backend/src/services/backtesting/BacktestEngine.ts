@@ -10,11 +10,10 @@ import type { PineStrategy } from '../pine/types';
 import { getDefaultFee, FILTER_DEFAULTS } from '@marketmind/types';
 import { PineIndicatorService } from '../pine/PineIndicatorService';
 import { TRPCError } from '@trpc/server';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
 import { BACKTEST_DEFAULTS, BACKTEST_ENGINE } from '../../constants';
 import { generateEntityId } from '../../utils/id';
 import { PineStrategyLoader } from '../pine/PineStrategyLoader';
+import { STRATEGY_DIRS } from '../../utils/runtime-dirs';
 import { SetupDetectionService } from '../setup-detection/SetupDetectionService';
 import { getHigherTimeframe, getOneStepAboveTimeframe } from '../../utils/filters';
 import { applyFilterDefaults } from '../../utils/filters/filter-registry';
@@ -25,8 +24,6 @@ import { getIntervalMs, fetchKlinesFromDbWithBackfill } from './kline-fetcher';
 import { calculateBacktestMetrics } from './metrics-calculator';
 import { TradeExecutor, type TradeResult } from './TradeExecutor';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export class BacktestEngine {
   async run(
@@ -246,9 +243,8 @@ export class BacktestEngine {
     const strategyMap = new Map<string, PineStrategy>();
 
     if (setupsToEnable.length > 0) {
-      const strategiesDir = config.pineStrategiesDir
-        ?? resolve(__dirname, '../../../strategies/builtin');
-      const pineLoader = new PineStrategyLoader([strategiesDir]);
+      const strategyDirs = config.pineStrategiesDir ? [config.pineStrategiesDir] : STRATEGY_DIRS;
+      const pineLoader = new PineStrategyLoader(strategyDirs);
       const allPineStrategies = await pineLoader.loadAll();
 
       for (const pineStrategy of allPineStrategies) {

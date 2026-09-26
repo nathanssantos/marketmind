@@ -1,7 +1,9 @@
 import type { PositionSide, MarketType } from '@marketmind/types';
+import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
+  index,
   integer,
   numeric,
   pgTable,
@@ -36,7 +38,11 @@ export const orders = pgTable('orders', {
   reduceOnly: boolean('reduce_only').default(false),
   stopLossIntent: numeric('stop_loss_intent', { precision: 20, scale: 8 }),
   takeProfitIntent: numeric('take_profit_intent', { precision: 20, scale: 8 }),
-});
+}, (table) => ({
+  settledStatusCreatedIdx: index('orders_status_created_at_idx')
+    .on(table.status, table.createdAt)
+    .where(sql`${table.status} IN ('FILLED', 'CANCELED')`),
+}));
 
 export const positions = pgTable('positions', {
   id: varchar({ length: 255 }).primaryKey(),
@@ -65,7 +71,11 @@ export const positions = pgTable('positions', {
   marginType: varchar('margin_type', { length: 10 }).$type<'ISOLATED' | 'CROSSED'>(),
   liquidationPrice: numeric('liquidation_price', { precision: 20, scale: 8 }),
   accumulatedFunding: numeric('accumulated_funding', { precision: 20, scale: 8 }).default('0'),
-});
+}, (table) => ({
+  openWalletSymbolIdx: index('positions_wallet_symbol_open_idx')
+    .on(table.walletId, table.symbol)
+    .where(sql`${table.status} = 'open'`),
+}));
 
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;

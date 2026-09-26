@@ -1,8 +1,6 @@
 import type { ExchangeId, MarketType, TradingSetup } from '@marketmind/types';
 import type { PineStrategy } from './pine/types';
 import { and, eq } from 'drizzle-orm';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { db } from '../db';
 import { tradeExecutions } from '../db/schema';
 import type { RotationConfig, RotationResult } from './dynamic-symbol-rotation';
@@ -16,10 +14,8 @@ import {
   WatcherManager,
   RotationManager,
 } from './auto-trading/index';
+import { STRATEGY_DIRS } from '../utils/runtime-dirs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const STRATEGIES_DIR = path.join(__dirname, '../../strategies/builtin');
 
 export type { WalletPauseInfo } from './auto-trading/processing/watcher-manager';
 
@@ -94,7 +90,7 @@ export class AutoTradingScheduler {
         pauseWatchersForWallet: (walletId, reason) => this.watcherManager.pauseWatchersForWallet(walletId, reason),
         resumeWatchersForWallet: (walletId) => this.watcherManager.resumeWatchersForWallet(walletId),
       },
-      { strategiesDir: STRATEGIES_DIR }
+      { strategyDirs: STRATEGY_DIRS }
     );
   }
 

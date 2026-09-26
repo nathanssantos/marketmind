@@ -244,7 +244,10 @@ export class PineStrategyLoader {
   }
 
   private async findPineFiles(directory: string): Promise<string[]> {
-    const entries = await readdir(directory, { withFileTypes: true });
+    const entries = await readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
     return entries
       .filter((e) => e.isFile() && e.name.endsWith(PINE_EXTENSION))
       .map((e) => join(directory, e.name))

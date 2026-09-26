@@ -9,6 +9,7 @@ export default [
     ...baseConfig,
     {
         ignores: [
+      'release/**',
             'coverage/**',
             'scripts/**',
             'dist/**',
