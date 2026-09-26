@@ -7,9 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Database bootstrap on `pnpm dev`** — `apps/backend/scripts/ensure-database.sh` runs before the backend dev server (`predev`). When nothing answers on the `DATABASE_URL` host/port, it starts Docker if needed, brings up the compose `postgres` service with the credentials from `apps/backend/.env`, and waits for the health check.
+- **Startup readiness check** — the backend probes PostgreSQL before registering any service and retries for 30 s. If the database stays unreachable it exits with a one-line message naming the host, port and database and how to start it, instead of a Drizzle stack trace from the first query.
+
 ### Changed
 
 - **pnpm 11** — the monorepo now pins `pnpm@11.20.0` through the `packageManager` field and requires it via `engines.pnpm`. CI reads that pin instead of a hardcoded version; the backend `Dockerfile` and `scripts/setup/setup.sh` install pnpm 11 on Node 24. Build-script approval moved from the removed `onlyBuiltDependencies` list to `allowBuilds` in `pnpm-workspace.yaml`, and the settings pnpm 11 no longer reads from `.npmrc` (`enablePrePostScripts`, `autoInstallPeers`, `strictPeerDependencies`) moved there too.
+- `docker-compose.yml` pins `timescale/timescaledb:2.23.1-pg17` (was `latest-pg17`) so a pull cannot change the extension build under a live volume. Upgrade steps in `docs/INFRA_RECOVERY.md`. The obsolete `version` key is gone.
+- QUICK_START, backend README and CLAUDE.md point to `docker compose up -d postgres` instead of `docker run` / `brew services`.
+
+### Removed
+
+- **POLITIFI seed** — the backend no longer creates the `POLITIFI` custom symbol at boot, and the default layout seed no longer opens a tab for it.
 
 ## [1.25.0] - 2026-06-16
 

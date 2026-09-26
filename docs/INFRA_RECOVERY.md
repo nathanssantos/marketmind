@@ -27,6 +27,10 @@ volumes:
 - **`wal_level=replica`** is unchanged from the prior default (sufficient for PITR).
 - **`max_wal_senders=2`** is set so a future replica or pg_basebackup taken from this node can stream WAL.
 
+## Image pin
+
+The service runs `timescale/timescaledb:2.23.1-pg17`, not `latest-pg17`, so a `docker compose pull` cannot change the TimescaleDB build under a live volume. To upgrade: bump the tag in `docker-compose.yml`, run `docker compose up -d postgres`, then run `ALTER EXTENSION timescaledb UPDATE;` in the `marketmind` database before any other client connects.
+
 ## Disk-space expectations
 
 - WAL segments are 16 MB each. Postgres archives a segment when it fills, every `archive_timeout` (default off — segments archive only when full) or on `pg_switch_wal()` calls.

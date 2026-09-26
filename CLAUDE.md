@@ -394,10 +394,9 @@ pnpm build
 
 **PostgreSQL setup (one-time):**
 ```bash
-docker run -d --name marketmind-postgres \
-  -e POSTGRES_PASSWORD=your-password -e POSTGRES_DB=marketmind \
-  -p 5432:5432 timescale/timescaledb:latest-pg17
+docker compose up -d postgres
 ```
+Pinned `timescale/timescaledb:2.23.1-pg17` with a named volume; `pnpm dev` / `pnpm dev:backend` run this automatically when nothing answers on the `DATABASE_URL` port (`apps/backend/scripts/ensure-database.sh`).
 `apps/backend/.env`: `DATABASE_URL=postgresql://...`, `ENCRYPTION_KEY=<32-byte hex>`, `NODE_ENV=development`.
 
 ---

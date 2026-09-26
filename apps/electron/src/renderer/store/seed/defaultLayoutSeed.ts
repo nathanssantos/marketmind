@@ -82,12 +82,6 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
       "symbol": "ADAUSDT",
       "marketType": "FUTURES",
       "order": 4
-    },
-    {
-      "id": "1777561540597-zjd3r9",
-      "symbol": "POLITIFI",
-      "marketType": "SPOT",
-      "order": 5
     }
   ],
   "activeSymbolTabId": "default",

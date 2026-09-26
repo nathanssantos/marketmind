@@ -13,7 +13,8 @@ scripts/
 ├── maintenance/       # Database maintenance
 ├── debug/             # Debugging tools
 ├── sql/               # Raw SQL migrations
-└── ensure-docker.sh   # Docker container setup
+├── ensure-docker.sh   # Docker container setup
+└── ensure-database.sh # Starts the compose PostgreSQL before `pnpm dev`
 ```
 
 ## audit/

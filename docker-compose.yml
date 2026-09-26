@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # PostgreSQL 17 with TimescaleDB
   postgres:
-    image: timescale/timescaledb:latest-pg17
+    image: timescale/timescaledb:2.23.1-pg17
     container_name: marketmind-postgres
     restart: unless-stopped
     environment:
