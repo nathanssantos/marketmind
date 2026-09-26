@@ -207,7 +207,7 @@ describe('Kline Router', () => {
       });
 
       expect(result.length).toBe(2);
-      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1m', 10, 'SPOT', false);
+      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1m', 10, 'SPOT', { endTime: undefined });
       expect(binanceKlineStreamService.subscribe).toHaveBeenCalledWith('BTCUSDT', '1m');
     });
 
@@ -269,7 +269,7 @@ describe('Kline Router', () => {
       expect(result.success).toBe(true);
       expect(result.downloaded).toBeDefined();
       expect(result.totalInDb).toBeDefined();
-      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1h', 500, 'SPOT', false);
+      expect(smartBackfillKlines).toHaveBeenCalledWith('BTCUSDT', '1h', 500, 'SPOT', { endTime: undefined });
     });
 
     it('should trigger backfill for FUTURES market', async () => {
@@ -284,7 +284,7 @@ describe('Kline Router', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(smartBackfillKlines).toHaveBeenCalledWith('ETHUSDT', '4h', 200, 'FUTURES', false);
+      expect(smartBackfillKlines).toHaveBeenCalledWith('ETHUSDT', '4h', 200, 'FUTURES', { endTime: undefined });
     });
   });
 
@@ -408,76 +408,6 @@ describe('Kline Router', () => {
 
       expect(spotCount.count).toBe(1);
       expect(futuresCount.count).toBe(2);
-    });
-  });
-
-  describe('sync', () => {
-    it('should return klines since timestamp', async () => {
-      const { user, session } = await createAuthenticatedUser();
-      const caller = createAuthenticatedCaller(user, session);
-
-      const now = Date.now();
-      await createTestKline({
-        symbol: 'BTCUSDT',
-        interval: '1m',
-        marketType: 'SPOT',
-        openTime: new Date(now - 120000),
-        closeTime: new Date(now - 60001),
-      });
-      await createTestKline({
-        symbol: 'BTCUSDT',
-        interval: '1m',
-        marketType: 'SPOT',
-        openTime: new Date(now - 60000),
-        closeTime: new Date(now - 1),
-      });
-
-      const result = await caller.kline.sync({
-        symbol: 'BTCUSDT',
-        interval: '1m',
-        marketType: 'SPOT',
-        since: now - 180000,
-        limit: 100,
-      });
-
-      expect(result.klines.length).toBeGreaterThanOrEqual(0);
-      expect(result.serverTime).toBeGreaterThan(0);
-      expect(result.nextExpectedOpen).toBeDefined();
-    });
-
-    it('should sort klines by openTime ascending', async () => {
-      const { user, session } = await createAuthenticatedUser();
-      const caller = createAuthenticatedCaller(user, session);
-
-      const now = Date.now();
-      await createTestKline({
-        symbol: 'ETHUSDT',
-        interval: '5m',
-        marketType: 'FUTURES',
-        openTime: new Date(now - 600000),
-        closeTime: new Date(now - 300001),
-      });
-      await createTestKline({
-        symbol: 'ETHUSDT',
-        interval: '5m',
-        marketType: 'FUTURES',
-        openTime: new Date(now - 900000),
-        closeTime: new Date(now - 600001),
-      });
-
-      const result = await caller.kline.sync({
-        symbol: 'ETHUSDT',
-        interval: '5m',
-        marketType: 'FUTURES',
-        since: now - 1000000,
-        limit: 100,
-      });
-
-      if (result.klines.length >= 2) {
-        expect(new Date(result.klines[0]!.openTime).getTime()).toBeLessThan(
-          new Date(result.klines[1]!.openTime).getTime()
-        );
-      }
     });
   });
 

@@ -5,7 +5,7 @@ import { CHART_INITIAL_KLINES } from '../../constants';
 import { db } from '../../db';
 import { customSymbols, klines } from '../../db/schema';
 import { symbolSearch } from '../../exchange/interactive-brokers/symbol-search';
-import { aggregateYearlyKlines, getIntervalMilliseconds } from '../../services/binance-historical';
+import { aggregateYearlyKlines } from '../../services/binance-historical';
 import { getCustomSymbolService } from '../../services/custom-symbol-service';
 import { prefetchKlines } from '../../services/kline-prefetch';
 import { logger } from '../../services/logger';
@@ -125,53 +125,6 @@ export const queryProcedures = {
       });
 
       return { count: result.length };
-    }),
-
-  sync: demoOrProtectedProcedure
-    .input(
-      z.object({
-        symbol: z.string(),
-        interval: intervalSchema,
-        marketType: marketTypeSchema,
-        since: z.number(),
-        limit: z.number().min(1).max(500).default(100),
-      })
-    )
-    .query(async ({ input }) => {
-      const marketType = input.marketType;
-      const sinceDate = new Date(input.since);
-      const now = Date.now();
-      const intervalMs = getIntervalMilliseconds(input.interval);
-
-      const result = await db.query.klines.findMany({
-        where: and(
-          eq(klines.symbol, input.symbol),
-          eq(klines.interval, input.interval),
-          eq(klines.marketType, marketType),
-          gte(klines.closeTime, sinceDate)
-        ),
-        orderBy: [desc(klines.openTime)],
-        limit: input.limit,
-      });
-
-      const closedKlines = result.filter((k) => {
-        const closeTime = k.closeTime.getTime();
-        return now >= closeTime + 2000;
-      });
-
-      closedKlines.sort((a, b) => a.openTime.getTime() - b.openTime.getTime());
-
-      const latestClosed = closedKlines[closedKlines.length - 1];
-      const nextExpectedOpen = latestClosed
-        ? latestClosed.openTime.getTime() + intervalMs
-        : input.since;
-
-      return {
-        klines: closedKlines,
-        latestCloseTime: latestClosed?.closeTime.getTime() ?? input.since,
-        nextExpectedOpen,
-        serverTime: now,
-      };
     }),
 
   searchSymbols: demoOrProtectedProcedure

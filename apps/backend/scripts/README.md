@@ -87,9 +87,7 @@ Kline data backfill, repair, and verification.
 | Script | Description |
 |--------|-------------|
 | `backfill-historical.ts` | Backfill historical klines from Binance |
-| `backfill-kline-gaps.ts` | Fill gaps in existing kline data |
 | `fix-corrupted-klines.ts` | Fix corrupted OHLCV values |
-| `fix-gaps.ts` | Repair kline time gaps |
 | `refresh-klines.ts` | Refresh stale kline data |
 | `verify-recent-klines.ts` | Verify recent klines match exchange data |
 | `audit-all-timeframes.ts` | Audit data completeness across timeframes |
