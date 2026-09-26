@@ -20,7 +20,7 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.35.0",
+    "@chakra-ui/react": "^3.37.0",
     "@marketmind/fibonacci": "workspace:*",
     "@marketmind/types": "workspace:*"
   },
