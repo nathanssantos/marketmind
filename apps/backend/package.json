@@ -30,7 +30,9 @@
     }
   },
   "scripts": {
+    "predev": "bash scripts/ensure-database.sh",
     "dev": "caffeinate -dims tsx watch src/index.ts",
+    "predev:allow-sleep": "bash scripts/ensure-database.sh",
     "dev:allow-sleep": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "caffeinate -dims node dist/index.js",

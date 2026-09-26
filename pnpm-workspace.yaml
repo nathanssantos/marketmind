@@ -2,11 +2,19 @@ packages:
   - apps/*
   - packages/*
 
-onlyBuiltDependencies:
-  - canvas
-  - electron
-  - electron-winstaller
-  - esbuild
+enablePrePostScripts: true
+autoInstallPeers: true
+strictPeerDependencies: false
+
+allowBuilds:
+  '@playwright/browser-chromium': false
+  canvas: true
+  cpu-features: false
+  electron-winstaller: true
+  esbuild: true
+  protobufjs: false
+  ssh2: false
+  unix-dgram: false
 
 peerDependencyRules:
   allowedVersions:

@@ -4,8 +4,8 @@ Get MarketMind up and running in 5 minutes.
 
 ## 📋 Prerequisites
 
-- **Node.js** 20+ ([Download](https://nodejs.org/))
-- **pnpm** 10+ ([Install](https://pnpm.io/installation))
+- **Node.js** 24+ ([Download](https://nodejs.org/))
+- **pnpm** 11+ ([Install](https://pnpm.io/installation))
 - **PostgreSQL** 17 ([Download](https://www.postgresql.org/download/) or use Docker)
 
 ## 🚀 Installation
@@ -27,13 +27,9 @@ pnpm install
 
 **Option A: Docker (Recommended)**
 ```bash
-docker run -d \
-  --name marketmind-postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=marketmind \
-  -p 5432:5432 \
-  timescale/timescaledb:latest-pg17
+docker compose up -d postgres
 ```
+This uses the repo `docker-compose.yml`: pinned `timescale/timescaledb:2.23.1-pg17`, data in the named volume `marketmind_postgres_data`, `restart: unless-stopped`. `pnpm dev` and `pnpm dev:backend` run this step for you whenever nothing answers on the `DATABASE_URL` port.
 
 **Option B: Local PostgreSQL**
 ```bash
@@ -45,6 +41,7 @@ brew services start postgresql@17
 psql postgres -c "CREATE DATABASE marketmind;"
 psql marketmind -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
 ```
+A `brew upgrade` that replaces or removes `postgresql@17` stops the database until you reinstall it. Option A keeps the image pinned and the data in a Docker volume.
 
 ### 4. Configure Backend
 
@@ -63,7 +60,7 @@ nano .env
 
 **Minimal .env:**
 ```bash
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/marketmind
+DATABASE_URL=postgresql://marketmind:marketmind_dev_password@localhost:5432/marketmind
 SESSION_SECRET=paste-first-generated-key-here
 ENCRYPTION_KEY=paste-second-generated-key-here
 ```
@@ -123,11 +120,12 @@ pnpm dev:backend
 ### Database Connection Failed
 
 ```bash
-# Check if PostgreSQL is running
-psql -U postgres -c "SELECT version();"
+# Check the compose container
+docker compose ps postgres
+docker compose logs --tail 50 postgres
 
-# Verify database exists
-psql -U postgres -l | grep marketmind
+# Start it (pnpm dev does this automatically)
+docker compose up -d postgres
 
 # Check .env DATABASE_URL matches your setup
 cat apps/backend/.env | grep DATABASE_URL

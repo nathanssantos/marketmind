@@ -10,7 +10,6 @@ on:
 
 env:
   NODE_VERSION: '24'
-  PNPM_VERSION: '10.24.0'
   VITE_E2E_BYPASS_AUTH: 'true'
   MM_MCP_BASE_URL: 'http://localhost:5174'
   # Lock viewport / DPR for visual regression so the baseline PNGs stay
@@ -31,8 +30,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

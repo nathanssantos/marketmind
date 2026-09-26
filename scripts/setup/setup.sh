@@ -33,13 +33,13 @@ print_error() {
 echo "Checking Node.js..."
 if ! command -v node &> /dev/null; then
     print_error "Node.js not found!"
-    echo "Install Node.js 20+: https://nodejs.org"
+    echo "Install Node.js 24+: https://nodejs.org"
     exit 1
 fi
 
 NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 20 ]; then
-    print_error "Node.js 20+ is required (current: $(node -v))"
+if [ "$NODE_VERSION" -lt 24 ]; then
+    print_error "Node.js 24+ is required (current: $(node -v))"
     exit 1
 fi
 print_success "Node.js $(node -v)"
@@ -48,7 +48,7 @@ print_success "Node.js $(node -v)"
 echo "Checking pnpm..."
 if ! command -v pnpm &> /dev/null; then
     print_warning "pnpm not found, installing..."
-    npm install -g pnpm@9
+    npm install -g pnpm@11
 fi
 print_success "pnpm $(pnpm -v)"
 

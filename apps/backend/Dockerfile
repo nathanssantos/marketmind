@@ -4,10 +4,10 @@
 # ===================================
 
 # Stage 1: Base dependencies
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 # Install pnpm globally
-RUN npm install -g pnpm@9
+RUN npm install -g pnpm@11
 
 WORKDIR /app
 
@@ -47,7 +47,7 @@ COPY apps/backend/package.json ./apps/backend/
 RUN pnpm install --frozen-lockfile --prod
 
 # Stage 5: Production runtime
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 # Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init

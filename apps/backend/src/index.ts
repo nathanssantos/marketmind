@@ -6,6 +6,7 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import { STARTUP_CONFIG } from './constants';
 import { db } from './db/client';
+import { DatabaseUnreachableError, assertDatabaseReachable } from './db/readiness';
 import { env } from './env';
 import { initializeWebSocket } from './services/websocket';
 import { createContext, setWebSocketService } from './trpc/context';
@@ -22,6 +23,8 @@ const fastify = Fastify({
 
 const start = async (): Promise<void> => {
   try {
+    await assertDatabaseReachable();
+
     await fastify.register(helmet, {
       contentSecurityPolicy: {
         directives: {
@@ -303,7 +306,8 @@ const start = async (): Promise<void> => {
       fastify.log.info(`> Indicator scheduler started (snapshots every 30min)`);
     }
   } catch (err) {
-    fastify.log.error(err);
+    if (err instanceof DatabaseUnreachableError) fastify.log.fatal(err.message);
+    else fastify.log.error(err);
     process.exit(1);
   }
 };
