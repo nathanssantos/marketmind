@@ -35,7 +35,7 @@
 13. **No watch mode** — always run-once (`pnpm test`, `npm test -- --run`); never `vitest` without `--run`
 14. **Single-line blocks** — `if (cond) return val;` when lint-compliant
 15. **🔴 All tests must pass** — never commit with failing tests. Run `pnpm test` first. Zero tolerance.
-16. **Handler object over switch** — switch statements mapping >3 enum/type cases to handlers should become `Record<Type, Handler>` objects (real examples: `IndicatorEngine.indicatorComputeHandlers`, `AnnotationLayer.markerStyleHandlers`, `AIService.providerFactories`)
+16. **Handler object over switch** — switch statements mapping >3 enum/type cases to handlers should become `Record<Type, Handler>` objects (real examples: `IndicatorEngine.indicatorComputeHandlers`, `AIService.providerFactories`)
 17. **🔴 No flaky tests** — a test that "sometimes passes" is broken. If a test fails on CI but passes locally (or vice-versa), or fails intermittently when re-run, the test is **wrong** — not the code under test. Diagnose the root cause (test pollution between runs, leaked global state, missing cleanup, race conditions, time-dependent assertions, network/IO without isolation, hard-coded ports/dates) and fix the test so it is deterministic. **Do not** retry, mark `.skip`, add `--retry`, raise timeouts, or paper over with `setTimeout` until "it passes." Re-running until green hides real bugs and trains the team to ignore CI red. If the underlying behavior is genuinely non-deterministic (websocket timing, animation frames), the test must wait on the deterministic signal that proves the work happened (event, store value, DOM mutation), not on a wall clock.
 
 ### UI Component Standards (`@renderer/components/ui`)

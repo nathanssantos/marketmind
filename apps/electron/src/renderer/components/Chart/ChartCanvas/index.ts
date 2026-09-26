@@ -32,21 +32,6 @@ export type {
 } from './useChartInteraction';
 
 export {
-  useLayerCache,
-  shouldRerenderStatic,
-  shouldRerenderData,
-  shouldRerenderIndicators,
-  shouldRerenderOverlays,
-} from './useLayerCache';
-export type {
-  LayerCacheId,
-  LayerCacheEntry,
-  LayerCacheState,
-  UseLayerCacheProps,
-  UseLayerCacheResult,
-} from './useLayerCache';
-
-export {
   useVirtualizedKlines,
   getVisibleRange,
   isKlineVisible,
@@ -56,30 +41,6 @@ export type {
   VirtualizedKlinesResult,
   UseVirtualizedKlinesProps,
 } from './useVirtualizedKlines';
-
-export {
-  useRenderLoop,
-  createFrameLimiter,
-  measureRenderTime,
-  batchRenders,
-} from './useRenderLoop';
-export type {
-  RenderLoopStats,
-  UseRenderLoopProps,
-  UseRenderLoopResult,
-} from './useRenderLoop';
-
-export { useTouchGestures, isTouchDevice } from './useTouchGestures';
-export type {
-  UseTouchGesturesProps,
-  UseTouchGesturesResult,
-} from './useTouchGestures';
-
-export { useKeyboardNavigation, KEYBOARD_SHORTCUTS } from './useKeyboardNavigation';
-export type {
-  UseKeyboardNavigationProps,
-  UseKeyboardNavigationResult,
-} from './useKeyboardNavigation';
 
 export { useChartTradingData } from './useChartTradingData';
 export type { OptimisticOverride } from './useChartTradingData';
