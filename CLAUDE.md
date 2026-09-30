@@ -375,7 +375,7 @@ node --experimental-vm-modules --loader ts-node/esm scripts/backtest/run-optimiz
 pnpm install
 
 # dev (2 terminals)
-pnpm --filter @marketmind/backend dev          # backend on :3001
+pnpm --filter @marketmind/backend dev          # backend on :3001, or the next free port (written to apps/backend/.runtime/backend.json)
 pnpm --filter @marketmind/electron dev         # Electron renderer
 
 # tests (mandatory before commit)

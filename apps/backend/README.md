@@ -294,6 +294,7 @@ Optional settings the desktop app sets when it embeds the backend (see `docs/EMB
 | Variable | Default | Purpose |
 |---|---|---|
 | `HOST` | `0.0.0.0` | Interface to listen on; the desktop app uses `127.0.0.1` |
+| `PORT_STRICT` | `false` | When `false`, a taken `PORT` falls back to the last used port, then `PORT+1..PORT+20`, then any free port; the bound URL goes to `.runtime/backend.json` for the Electron app, the Vite dev server and the MCP servers |
 | `COOKIE_SECURE` | `true` in production | Set `false` to serve the session cookie over plain HTTP on loopback |
 | `MM_EMBEDDED` | `false` | Creates the database on first run and exempts loopback from rate limits |
 | `MM_RUN_MIGRATIONS` | `false` | Applies `src/db/migrations` before the server starts |

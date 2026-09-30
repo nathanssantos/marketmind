@@ -4,7 +4,23 @@
  * thin wrappers around existing trading procedures — no DB access.
  */
 
-const TRPC_BASE_URL = process.env.MM_MCP_TRPC_URL ?? 'http://localhost:3001/trpc';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const DEFAULT_TRPC_BASE_URL = 'http://localhost:3001/trpc';
+const BACKEND_RUNTIME_FILE = resolve(dirname(fileURLToPath(import.meta.url)), '../../../apps/backend/.runtime/backend.json');
+
+const runtimeTrpcBaseUrl = (): string | null => {
+  try {
+    const content = JSON.parse(readFileSync(BACKEND_RUNTIME_FILE, 'utf8')) as { service?: string; url?: string };
+    return content.service === 'marketmind-backend' && typeof content.url === 'string' ? `${content.url}/trpc` : null;
+  } catch {
+    return null;
+  }
+};
+
+const resolveTrpcBaseUrl = (): string => process.env.MM_MCP_TRPC_URL || runtimeTrpcBaseUrl() || DEFAULT_TRPC_BASE_URL;
 const SESSION_COOKIE = process.env.MM_MCP_SESSION_COOKIE ?? '';
 
 interface TrpcSuccess { result: { data: unknown } }
@@ -22,7 +38,7 @@ export const callProcedure = async (path: string, input: unknown): Promise<unkno
   if (!/^[a-zA-Z][a-zA-Z0-9_.]*$/.test(path)) {
     throw new Error(`invalid tRPC path: ${path}`);
   }
-  const url = `${TRPC_BASE_URL}/${path}`;
+  const url = `${resolveTrpcBaseUrl()}/${path}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: headers(),
@@ -43,13 +59,13 @@ export const callProcedure = async (path: string, input: unknown): Promise<unkno
 };
 
 export const trpcHealthCheck = async (): Promise<{ ok: boolean; status: number; baseUrl: string }> => {
-  const url = `${TRPC_BASE_URL}/health.check`;
+  const url = `${resolveTrpcBaseUrl()}/health.check`;
   try {
     const res = await fetch(url, { method: 'POST', headers: headers(), body: '{}' });
-    return { ok: res.ok, status: res.status, baseUrl: TRPC_BASE_URL };
+    return { ok: res.ok, status: res.status, baseUrl: resolveTrpcBaseUrl() };
   } catch {
-    return { ok: false, status: 0, baseUrl: TRPC_BASE_URL };
+    return { ok: false, status: 0, baseUrl: resolveTrpcBaseUrl() };
   }
 };
 
-export const getTrpcBaseUrl = (): string => TRPC_BASE_URL;
+export const getTrpcBaseUrl = (): string => resolveTrpcBaseUrl();
