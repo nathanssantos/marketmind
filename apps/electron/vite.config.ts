@@ -15,8 +15,10 @@ const BACKEND_RUNTIME_FILE = resolve(__dirname, '../backend/.runtime/backend.jso
 
 const readDevBackendUrl = (): string | null => {
   try {
-    const content = JSON.parse(readFileSync(BACKEND_RUNTIME_FILE, 'utf8')) as { service?: string; url?: string };
-    return content.service === 'marketmind-backend' && typeof content.url === 'string' ? content.url : null;
+    const content = JSON.parse(readFileSync(BACKEND_RUNTIME_FILE, 'utf8')) as { service?: string; port?: unknown };
+    const port = typeof content.port === 'number' ? content.port : Number.NaN;
+    if (content.service !== 'marketmind-backend' || !Number.isInteger(port) || port < 1 || port > 65_535) return null;
+    return `http://localhost:${String(port)}`;
   } catch {
     return null;
   }

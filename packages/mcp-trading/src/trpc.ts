@@ -11,10 +11,20 @@ import { fileURLToPath } from 'node:url';
 const DEFAULT_TRPC_BASE_URL = 'http://localhost:3001/trpc';
 const BACKEND_RUNTIME_FILE = resolve(dirname(fileURLToPath(import.meta.url)), '../../../apps/backend/.runtime/backend.json');
 
+const MAX_TCP_PORT = 65_535;
+
+const loopbackUrlFromRuntimePort = (value: unknown): string | null => {
+  const port = typeof value === 'number' ? value : Number.NaN;
+  if (!Number.isInteger(port) || port < 1 || port > MAX_TCP_PORT) return null;
+  return `http://localhost:${String(port)}`;
+};
+
 const runtimeTrpcBaseUrl = (): string | null => {
   try {
-    const content = JSON.parse(readFileSync(BACKEND_RUNTIME_FILE, 'utf8')) as { service?: string; url?: string };
-    return content.service === 'marketmind-backend' && typeof content.url === 'string' ? `${content.url}/trpc` : null;
+    const content = JSON.parse(readFileSync(BACKEND_RUNTIME_FILE, 'utf8')) as { service?: string; port?: unknown };
+    if (content.service !== 'marketmind-backend') return null;
+    const url = loopbackUrlFromRuntimePort(content.port);
+    return url ? `${url}/trpc` : null;
   } catch {
     return null;
   }

@@ -7,13 +7,21 @@ export const DEV_BACKEND_HEALTH_TIMEOUT_MS = 1_500;
 
 interface RuntimeFileContent {
   service?: string;
-  url?: string;
+  port?: unknown;
 }
+
+const MAX_TCP_PORT = 65_535;
+
+const loopbackUrlFromRuntimePort = (value: unknown): string | null => {
+  const port = typeof value === 'number' ? value : Number.NaN;
+  if (!Number.isInteger(port) || port < 1 || port > MAX_TCP_PORT) return null;
+  return `http://localhost:${String(port)}`;
+};
 
 export const readRuntimeBackendUrl = (runtimeFile: string): string | null => {
   try {
     const content = JSON.parse(readFileSync(runtimeFile, 'utf8')) as RuntimeFileContent;
-    return content.service === BACKEND_HEALTH_SERVICE && typeof content.url === 'string' ? content.url : null;
+    return content.service === BACKEND_HEALTH_SERVICE ? loopbackUrlFromRuntimePort(content.port) : null;
   } catch {
     return null;
   }

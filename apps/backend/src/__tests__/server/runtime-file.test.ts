@@ -33,8 +33,7 @@ describe('backend runtime file', () => {
     removeBackendRuntime(filePath);
     expect(existsSync(filePath)).toBe(false);
 
-    writeBackendRuntime(filePath, 3008);
-    writeFileSync(filePath, JSON.stringify({ ...readBackendRuntime(filePath), pid: process.pid + 1 }));
+    writeFileSync(filePath, JSON.stringify({ service: BACKEND_HEALTH_SERVICE, url: 'http://localhost:3008', port: 3008, pid: process.pid + 1, startedAt: '' }));
     removeBackendRuntime(filePath);
     expect(existsSync(filePath)).toBe(true);
   });

@@ -19,11 +19,19 @@ describe('dev backend discovery', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  const writeRuntime = (url: string): void => writeFileSync(runtimeFile, JSON.stringify({ service: 'marketmind-backend', url, port: 3005 }));
+  const writeRuntime = (url: string): void =>
+    writeFileSync(runtimeFile, JSON.stringify({ service: 'marketmind-backend', url, port: Number(new URL(url).port) }));
 
   it('reads the backend URL from the runtime file', () => {
     writeRuntime('http://localhost:3005');
     expect(readRuntimeBackendUrl(runtimeFile)).toBe('http://localhost:3005');
+  });
+
+  it('builds a loopback URL from the recorded port and ignores any recorded host', () => {
+    writeFileSync(runtimeFile, JSON.stringify({ service: 'marketmind-backend', url: 'http://evil.example:3005', port: 3005 }));
+    expect(readRuntimeBackendUrl(runtimeFile)).toBe('http://localhost:3005');
+    writeFileSync(runtimeFile, JSON.stringify({ service: 'marketmind-backend', port: 'x' }));
+    expect(readRuntimeBackendUrl(runtimeFile)).toBeNull();
   });
 
   it('uses the runtime file when that port answers as the MarketMind backend', async () => {
