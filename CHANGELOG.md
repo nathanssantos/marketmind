@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`pnpm dev` when port 3001 is taken** — the backend no longer dies with `EADDRINUSE` when another program holds 3001. It tries the port it used last, then 3002 to 3021, and logs the one it took. `/health` now answers `service: "marketmind-backend"`, and the Electron main process, the Vite dev server and the MCP servers find the backend by probing 3001 to 3021 for that answer, so a foreign server on 3001 is never mistaken for it. `PORT_STRICT=true` keeps the old fail-fast behaviour; the embedded desktop stack always uses its own strict port.
+
 ## [1.28.0] - 2026-09-26
 
 Self-contained desktop release. The installer now ships the backend and a PostgreSQL 17 server: open the app and it starts its database and trading engine on your machine, applies the migrations, and loads the renderer from the backend's own origin. Nothing to deploy, no Docker, no Node. The migration history restarts from one baseline generated from the Drizzle schema, which the backend tests now build their database from.

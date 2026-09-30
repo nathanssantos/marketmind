@@ -15,6 +15,7 @@ const envSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:5174'),
   DEMO_MODE: z.string().default('false').transform(v => v === 'true'),
   HOST: z.string().default('0.0.0.0'),
+  PORT_STRICT: z.string().default('false').transform(v => v === 'true'),
   COOKIE_SECURE: z.enum(['true', 'false']).optional(),
   MM_EMBEDDED: z.string().default('false').transform(v => v === 'true'),
   MM_RUN_MIGRATIONS: z.string().default('false').transform(v => v === 'true'),

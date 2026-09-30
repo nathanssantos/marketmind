@@ -19,6 +19,8 @@ export const USER_STRATEGIES_DIR = env.MM_USER_STRATEGIES_DIR ?? path.join(BACKE
 
 export const STRATEGY_DIRS = [BUILTIN_STRATEGIES_DIR, USER_STRATEGIES_DIR];
 
+export const BACKEND_RUNTIME_FILE = path.join(BACKEND_ROOT, '.runtime', 'backend.json');
+
 export const MIGRATIONS_DIR = env.MM_MIGRATIONS_DIR ?? path.join(BACKEND_ROOT, 'src', 'db', 'migrations');
 
 export const ensureDir = (dir: string): string => {

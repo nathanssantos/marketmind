@@ -10,7 +10,10 @@ import { ensureDatabaseExists } from './db/bootstrap';
 import { runMigrations } from './db/migrate';
 import { DatabaseUnreachableError, assertDatabaseReachable } from './db/readiness';
 import { env } from './env';
+import { listenWithFallback } from './server/listen';
 import { RENDERER_CONNECT_SRC, registerRendererStatic } from './server/renderer-static';
+import { BACKEND_HEALTH_SERVICE, readBackendRuntime, removeBackendRuntime, writeBackendRuntime } from './server/runtime-file';
+import { BACKEND_RUNTIME_FILE } from './utils/runtime-dirs';
 import { initializeWebSocket } from './services/websocket';
 import { createContext, setWebSocketService } from './trpc/context';
 import { appRouter } from './trpc/router';
@@ -133,6 +136,7 @@ const start = async (): Promise<void> => {
 
     fastify.get('/health', async () => ({
       status: 'ok',
+      service: BACKEND_HEALTH_SERVICE,
       timestamp: new Date().toISOString(),
       version: process.env['npm_package_version'] ?? '0.31.0',
     }));
@@ -169,8 +173,15 @@ const start = async (): Promise<void> => {
       fastify.log.info('> Custom symbol service started');
     }
 
-    const port = parseInt(env.PORT, 10);
-    await fastify.listen({ port, host: env.HOST });
+    const preferredPort = parseInt(env.PORT, 10);
+    const port = await listenWithFallback(fastify, {
+      port: preferredPort,
+      host: env.HOST,
+      strict: env.PORT_STRICT || env.MM_EMBEDDED,
+      previousPort: readBackendRuntime(BACKEND_RUNTIME_FILE)?.port ?? null,
+    });
+    if (port !== preferredPort) fastify.log.warn(`> Port ${preferredPort} is in use by another process; listening on ${port} instead`);
+    if (!env.MM_EMBEDDED) writeBackendRuntime(BACKEND_RUNTIME_FILE, port);
 
     const websocketService = initializeWebSocket(fastify.server);
     setWebSocketService(websocketService);
@@ -328,6 +339,7 @@ const start = async (): Promise<void> => {
 
 const shutdown = async (reason: string): Promise<void> => {
   fastify.log.info(`> Shutting down (${reason})`);
+  if (!env.MM_EMBEDDED) removeBackendRuntime(BACKEND_RUNTIME_FILE);
   await fastify.close();
   process.exit(0);
 };
