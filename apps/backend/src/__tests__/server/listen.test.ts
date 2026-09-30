@@ -1,7 +1,7 @@
 import net from 'node:net';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
-import { fallbackPortCandidates, listenWithFallback, PORT_FALLBACK_RANGE } from '../../server/listen';
+import { fallbackPortCandidates, listenWithFallback } from '../../server/listen';
 
 const HOST = '127.0.0.1';
 
@@ -17,13 +17,17 @@ const occupyPort = (): Promise<{ port: number; release: () => Promise<void> }> =
   });
 
 describe('fallbackPortCandidates', () => {
-  it('tries the previous port first, then the next ports, then any free port', () => {
+  it('tries the previous port first, then the rest of the discoverable range', () => {
     const candidates = fallbackPortCandidates({ port: 3001, previousPort: 3004 });
     expect(candidates[0]).toBe(3004);
     expect(candidates).toContain(3002);
     expect(candidates.filter((candidate) => candidate === 3004)).toHaveLength(1);
-    expect(candidates[candidates.length - 1]).toBe(0);
-    expect(candidates).toHaveLength(PORT_FALLBACK_RANGE + 1);
+    expect(candidates[candidates.length - 1]).toBe(3021);
+    expect(candidates).not.toContain(0);
+  });
+
+  it('ignores a previous port outside the discoverable range', () => {
+    expect(fallbackPortCandidates({ port: 3001, previousPort: 49_152 })[0]).toBe(3002);
   });
 
   it('skips the previous port when it is the preferred one', () => {

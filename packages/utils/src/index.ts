@@ -6,3 +6,4 @@ export * from './pnl';
 export * from './breakeven';
 export * from './formatters';
 export * from './passwordPolicy';
+export * from './backendDiscovery';

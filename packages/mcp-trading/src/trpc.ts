@@ -4,33 +4,42 @@
  * thin wrappers around existing trading procedures — no DB access.
  */
 
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 const DEFAULT_TRPC_BASE_URL = 'http://localhost:3001/trpc';
-const BACKEND_RUNTIME_FILE = resolve(dirname(fileURLToPath(import.meta.url)), '../../../apps/backend/.runtime/backend.json');
+const BACKEND_HEALTH_SERVICE = 'marketmind-backend';
+const BACKEND_FIRST_PORT = 3001;
+const BACKEND_PORT_RANGE_SIZE = 21;
+const BACKEND_PROBE_TIMEOUT_MS = 1_000;
 
-const MAX_TCP_PORT = 65_535;
+const localBackendUrl = (port: number): string => `http://localhost:${String(port)}`;
 
-const loopbackUrlFromRuntimePort = (value: unknown): string | null => {
-  const port = typeof value === 'number' ? value : Number.NaN;
-  if (!Number.isInteger(port) || port < 1 || port > MAX_TCP_PORT) return null;
-  return `http://localhost:${String(port)}`;
-};
-
-const runtimeTrpcBaseUrl = (): string | null => {
+const isMarketMindBackend = async (port: number): Promise<boolean> => {
   try {
-    const content = JSON.parse(readFileSync(BACKEND_RUNTIME_FILE, 'utf8')) as { service?: string; port?: unknown };
-    if (content.service !== 'marketmind-backend') return null;
-    const url = loopbackUrlFromRuntimePort(content.port);
-    return url ? `${url}/trpc` : null;
+    const response = await fetch(`${localBackendUrl(port)}/health`, { signal: AbortSignal.timeout(BACKEND_PROBE_TIMEOUT_MS) });
+    if (!response.ok) return false;
+    const body = (await response.json()) as { service?: unknown };
+    return body.service === BACKEND_HEALTH_SERVICE;
   } catch {
-    return null;
+    return false;
   }
 };
 
-const resolveTrpcBaseUrl = (): string => process.env.MM_MCP_TRPC_URL || runtimeTrpcBaseUrl() || DEFAULT_TRPC_BASE_URL;
+const findLocalBackendPort = async (): Promise<number | null> => {
+  const ports = Array.from({ length: BACKEND_PORT_RANGE_SIZE }, (_, offset) => BACKEND_FIRST_PORT + offset);
+  const answers = await Promise.all(ports.map(isMarketMindBackend));
+  const index = answers.indexOf(true);
+  return index === -1 ? null : (ports[index] ?? null);
+};
+
+let discoveredBaseUrl: string | null = null;
+
+const resolveTrpcBaseUrl = async (): Promise<string> => {
+  if (process.env.MM_MCP_TRPC_URL) return process.env.MM_MCP_TRPC_URL;
+  if (discoveredBaseUrl) return discoveredBaseUrl;
+  const port = await findLocalBackendPort();
+  if (port === null) return DEFAULT_TRPC_BASE_URL;
+  discoveredBaseUrl = `${localBackendUrl(port)}/trpc`;
+  return discoveredBaseUrl;
+};
 const SESSION_COOKIE = process.env.MM_MCP_SESSION_COOKIE ?? '';
 
 interface TrpcSuccess { result: { data: unknown } }
@@ -48,7 +57,7 @@ export const callProcedure = async (path: string, input: unknown): Promise<unkno
   if (!/^[a-zA-Z][a-zA-Z0-9_.]*$/.test(path)) {
     throw new Error(`invalid tRPC path: ${path}`);
   }
-  const url = `${resolveTrpcBaseUrl()}/${path}`;
+  const url = `${await resolveTrpcBaseUrl()}/${path}`;
   const res = await fetch(url, {
     method: 'POST',
     headers: headers(),
@@ -69,13 +78,13 @@ export const callProcedure = async (path: string, input: unknown): Promise<unkno
 };
 
 export const trpcHealthCheck = async (): Promise<{ ok: boolean; status: number; baseUrl: string }> => {
-  const url = `${resolveTrpcBaseUrl()}/health.check`;
+  const url = `${await resolveTrpcBaseUrl()}/health.check`;
   try {
     const res = await fetch(url, { method: 'POST', headers: headers(), body: '{}' });
-    return { ok: res.ok, status: res.status, baseUrl: resolveTrpcBaseUrl() };
+    return { ok: res.ok, status: res.status, baseUrl: await resolveTrpcBaseUrl() };
   } catch {
-    return { ok: false, status: 0, baseUrl: resolveTrpcBaseUrl() };
+    return { ok: false, status: 0, baseUrl: await resolveTrpcBaseUrl() };
   }
 };
 
-export const getTrpcBaseUrl = (): string => resolveTrpcBaseUrl();
+export const getTrpcBaseUrl = (): Promise<string> => resolveTrpcBaseUrl();

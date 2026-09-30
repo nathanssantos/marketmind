@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
-import { readFileSync } from 'fs';
+import { waitForLocalBackendUrl } from '../../packages/utils/src/backendDiscovery';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 import electron from 'vite-plugin-electron';
 import { VitePWA } from 'vite-plugin-pwa';
@@ -11,24 +11,13 @@ const isWeb = target === 'web';
 const analyze = process.env.ANALYZE === '1';
 
 
-const BACKEND_RUNTIME_FILE = resolve(__dirname, '../backend/.runtime/backend.json');
-
-const readDevBackendUrl = (): string | null => {
-  try {
-    const content = JSON.parse(readFileSync(BACKEND_RUNTIME_FILE, 'utf8')) as { service?: string; port?: unknown };
-    const port = typeof content.port === 'number' ? content.port : Number.NaN;
-    if (content.service !== 'marketmind-backend' || !Number.isInteger(port) || port < 1 || port > 65_535) return null;
-    return `http://localhost:${String(port)}`;
-  } catch {
-    return null;
-  }
-};
+const DEV_BACKEND_PROBE_WAIT_MS = 0;
 
 const devBackendUrlPlugin = (): Plugin => ({
   name: 'marketmind-dev-backend-url',
   apply: 'serve',
-  transformIndexHtml: () => {
-    const url = readDevBackendUrl();
+  transformIndexHtml: async () => {
+    const url = await waitForLocalBackendUrl({ timeoutMs: DEV_BACKEND_PROBE_WAIT_MS });
     if (!url) return [];
     return [{ tag: 'script', children: `window.__MM_BACKEND_URL__ = ${JSON.stringify(url)};`, injectTo: 'head-prepend' }];
   },

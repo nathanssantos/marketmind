@@ -1,7 +1,8 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { BACKEND_HEALTH_SERVICE } from '@marketmind/utils';
 
-export const BACKEND_HEALTH_SERVICE = 'marketmind-backend';
+export { BACKEND_HEALTH_SERVICE };
 
 export interface BackendRuntimeInfo {
   service: typeof BACKEND_HEALTH_SERVICE;

@@ -33,8 +33,9 @@ describe('backend runtime file', () => {
     removeBackendRuntime(filePath);
     expect(existsSync(filePath)).toBe(false);
 
-    writeFileSync(filePath, JSON.stringify({ service: BACKEND_HEALTH_SERVICE, url: 'http://localhost:3008', port: 3008, pid: process.pid + 1, startedAt: '' }));
-    removeBackendRuntime(filePath);
-    expect(existsSync(filePath)).toBe(true);
+    const foreignFile = path.join(dir, 'foreign.json');
+    writeFileSync(foreignFile, JSON.stringify({ service: BACKEND_HEALTH_SERVICE, url: 'http://localhost:3008', port: 3008, pid: process.pid + 1, startedAt: '' }));
+    removeBackendRuntime(foreignFile);
+    expect(readBackendRuntime(foreignFile)?.port).toBe(3008);
   });
 });

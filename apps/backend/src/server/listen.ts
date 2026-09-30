@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import { backendPortCandidates } from '@marketmind/utils';
 
-export const PORT_FALLBACK_RANGE = 20;
 export const PREVIOUS_PORT_RETRIES = 5;
 export const PREVIOUS_PORT_RETRY_DELAY_MS = 200;
 
@@ -16,14 +16,9 @@ const isAddressInUse = (error: unknown): boolean => (error as NodeJS.ErrnoExcept
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const fallbackPortCandidates = ({ port, previousPort }: Pick<ListenOptions, 'port' | 'previousPort'>): number[] => {
-  const candidates: number[] = [];
-  if (previousPort && previousPort !== port) candidates.push(previousPort);
-  for (let offset = 1; offset <= PORT_FALLBACK_RANGE; offset += 1) {
-    const candidate = port + offset;
-    if (!candidates.includes(candidate)) candidates.push(candidate);
-  }
-  candidates.push(0);
-  return candidates;
+  const range = backendPortCandidates(port).filter((candidate) => candidate !== port);
+  if (!previousPort || previousPort === port || !range.includes(previousPort)) return range;
+  return [previousPort, ...range.filter((candidate) => candidate !== previousPort)];
 };
 
 const boundPort = (fastify: FastifyInstance): number => {
@@ -49,9 +44,10 @@ export const listenWithFallback = async (fastify: FastifyInstance, options: List
   const { port, host, strict, previousPort } = options;
   if (await tryListen(fastify, port, host, 0)) return boundPort(fastify);
   if (strict) throw new Error(`Port ${port} is already in use and PORT_STRICT is set`);
-  for (const candidate of fallbackPortCandidates({ port, previousPort })) {
+  const candidates = fallbackPortCandidates({ port, previousPort });
+  for (const candidate of candidates) {
     const retries = candidate === previousPort ? PREVIOUS_PORT_RETRIES : 0;
     if (await tryListen(fastify, candidate, host, retries)) return boundPort(fastify);
   }
-  throw new Error(`No free port found starting at ${port}`);
+  throw new Error(`Ports ${port} to ${candidates[candidates.length - 1] ?? port} are all in use. Free one of them or set PORT.`);
 };

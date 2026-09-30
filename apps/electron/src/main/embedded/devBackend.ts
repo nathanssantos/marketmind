@@ -1,59 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { BACKEND_DEFAULT_PORT, localBackendUrl, waitForLocalBackendUrl } from '@marketmind/utils';
 
-export const DEFAULT_DEV_BACKEND_URL = 'http://localhost:3001';
-export const BACKEND_HEALTH_SERVICE = 'marketmind-backend';
-export const DEV_BACKEND_POLL_INTERVAL_MS = 250;
-export const DEV_BACKEND_HEALTH_TIMEOUT_MS = 1_500;
-
-interface RuntimeFileContent {
-  service?: string;
-  port?: unknown;
-}
-
-const MAX_TCP_PORT = 65_535;
-
-const loopbackUrlFromRuntimePort = (value: unknown): string | null => {
-  const port = typeof value === 'number' ? value : Number.NaN;
-  if (!Number.isInteger(port) || port < 1 || port > MAX_TCP_PORT) return null;
-  return `http://localhost:${String(port)}`;
-};
-
-export const readRuntimeBackendUrl = (runtimeFile: string): string | null => {
-  try {
-    const content = JSON.parse(readFileSync(runtimeFile, 'utf8')) as RuntimeFileContent;
-    return content.service === BACKEND_HEALTH_SERVICE ? loopbackUrlFromRuntimePort(content.port) : null;
-  } catch {
-    return null;
-  }
-};
-
-export const isMarketMindBackend = async (url: string, fetchImpl: typeof fetch = fetch): Promise<boolean> => {
-  try {
-    const response = await fetchImpl(`${url}/health`, { signal: AbortSignal.timeout(DEV_BACKEND_HEALTH_TIMEOUT_MS) });
-    if (!response.ok) return false;
-    const body = (await response.json()) as { service?: string };
-    return body.service === BACKEND_HEALTH_SERVICE;
-  } catch {
-    return false;
-  }
-};
+export const DEFAULT_DEV_BACKEND_URL = localBackendUrl(BACKEND_DEFAULT_PORT);
 
 export interface DiscoverDevBackendOptions {
-  runtimeFile: string;
   timeoutMs: number;
   fetchImpl?: typeof fetch;
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
 }
 
-const defaultSleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-export const discoverDevBackendUrl = async ({ runtimeFile, timeoutMs, fetchImpl = fetch, now = Date.now, sleep = defaultSleep }: DiscoverDevBackendOptions): Promise<string> => {
-  const deadline = now() + timeoutMs;
-  for (;;) {
-    const url = readRuntimeBackendUrl(runtimeFile);
-    if (url && (await isMarketMindBackend(url, fetchImpl))) return url;
-    if (now() >= deadline) return DEFAULT_DEV_BACKEND_URL;
-    await sleep(DEV_BACKEND_POLL_INTERVAL_MS);
-  }
-};
+export const discoverDevBackendUrl = async (options: DiscoverDevBackendOptions): Promise<string> =>
+  (await waitForLocalBackendUrl(options)) ?? DEFAULT_DEV_BACKEND_URL;

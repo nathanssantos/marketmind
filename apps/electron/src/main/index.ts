@@ -413,7 +413,6 @@ const initializeApp = async (): Promise<void> => {
     if (mode.kind === 'dev-server') {
       rendererBaseUrl = mode.rendererUrl.replace(/\/+$/, '');
       backendUrl = await discoverDevBackendUrl({
-        runtimeFile: join(__dirname, '../../../backend/.runtime/backend.json'),
         timeoutMs: process.env['NODE_ENV'] === 'test' ? 0 : DEV_BACKEND_WAIT_MS,
       });
       console.log(`[Main] Backend: ${backendUrl}`);
