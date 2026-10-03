@@ -100,6 +100,57 @@ test.describe.serial('paper trading on the embedded stack', () => {
     await expect(page.getByText('2 trades')).toBeVisible({ timeout: UI_TIMEOUT_MS });
   });
 
+  test('SL and TP from the ticket reach the position in OCO mode and become two orders when OCO is off', async () => {
+    test.setTimeout(EMBEDDED_BOOT_TIMEOUT_MS);
+    const positions = page.getByRole('table').filter({ hasText: 'AVG PRICE' });
+    const row = positions.getByRole('row').filter({ hasText: 'BTCUSDT' });
+    const askText = await page.getByRole('button', { name: /^Buy/ }).first().innerText();
+    const ask = parseFloat(askText.replace(/[^\d.]/g, ''));
+    const stopLoss = Math.round(ask * 0.98);
+    const takeProfit = Math.round(ask * 1.03);
+    const thousands = (price: number) => Math.floor(price / 1000).toString();
+
+    await page.getByText('10%', { exact: true }).first().click();
+    await page.getByTestId('trade-ticket-sl-switch').click();
+    await page.getByTestId('trade-ticket-tp-switch').click();
+    await page.getByTestId('trade-ticket-sl-input').fill(String(stopLoss));
+    await page.getByTestId('trade-ticket-tp-input').fill(String(takeProfit));
+    await expect(page.getByTestId('trade-ticket-oco-switch')).toBeEnabled();
+
+    await sendMarketOrder(page, 'Buy');
+    await expect(row.filter({ hasText: 'Buy' })).toBeVisible({ timeout: UI_TIMEOUT_MS });
+    await expect(row.filter({ hasText: new RegExp(`${thousands(stopLoss)}\\.`) })).toBeVisible();
+    await expect(row.filter({ hasText: new RegExp(`${thousands(takeProfit)}\\.`) })).toBeVisible();
+
+    await page.getByTestId('trade-ticket-sl-switch').click();
+    await page.getByTestId('trade-ticket-tp-switch').click();
+    await sendMarketOrder(page, 'Sell');
+    await expect(page.getByText('No open positions.').first()).toBeVisible({ timeout: UI_TIMEOUT_MS });
+
+    await page.getByTestId('trade-ticket-sl-switch').click();
+    await page.getByTestId('trade-ticket-tp-switch').click();
+    await page.getByTestId('trade-ticket-oco-switch').click();
+    await sendMarketOrder(page, 'Buy');
+    await expect(row.filter({ hasText: 'Buy' })).toBeVisible({ timeout: UI_TIMEOUT_MS });
+
+    await page.getByText('View All Orders').click();
+    const ordersDialog = page.getByRole('dialog').last();
+    await expect(ordersDialog.getByRole('cell', { name: 'Pending', exact: true })).toHaveCount(2, { timeout: UI_TIMEOUT_MS });
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    await page.getByTestId('trade-ticket-sl-switch').click();
+    await page.getByTestId('trade-ticket-tp-switch').click();
+    await sendMarketOrder(page, 'Sell');
+    await expect(page.getByText('No open positions.').first()).toBeVisible({ timeout: UI_TIMEOUT_MS });
+
+    const cancelOrders = page.getByText('Cancel Orders').first();
+    await cancelOrders.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    await cancelOrders.click();
+    await page.getByRole('dialog').last().getByRole('button', { name: 'Cancel Orders' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
   test('a spot wallet can only sell what it holds, so it never opens a SHORT', async () => {
     test.setTimeout(EMBEDDED_BOOT_TIMEOUT_MS);
     const positions = page.getByRole('table').filter({ hasText: 'AVG PRICE' });

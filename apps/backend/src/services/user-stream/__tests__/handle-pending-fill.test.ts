@@ -42,6 +42,10 @@ vi.mock('../../binance-futures-client', () => ({
 const mockCreateStopLossOrder = vi.fn().mockResolvedValue({ orderId: null, algoId: 'sl-999', isAlgoOrder: true });
 const mockCreateTakeProfitOrder = vi.fn().mockResolvedValue({ orderId: null, algoId: 'tp-999', isAlgoOrder: true });
 
+vi.mock('../../trading/entry-protection', () => ({
+  placeEntryProtection: vi.fn().mockResolvedValue({ errors: [] }),
+}));
+
 vi.mock('../../protection-orders', () => ({
   createStopLossOrder: (...args: unknown[]) => mockCreateStopLossOrder(...args),
   createTakeProfitOrder: (...args: unknown[]) => mockCreateTakeProfitOrder(...args),
@@ -205,7 +209,7 @@ describe('handlePendingFill', () => {
     expect(mockDbUpdate).not.toHaveBeenCalled();
   });
 
-  it('should place SL/TP orders when setupId exists and no protection order IDs', async () => {
+  it('should place SL/TP orders when the pending position has them and no protection order IDs', async () => {
     const ctx = createMockCtx();
     const pending = createMockPending({
       setupId: 'setup-1',
@@ -225,6 +229,22 @@ describe('handlePendingFill', () => {
       symbol: 'BTCUSDT',
       triggerPrice: 53000,
     }));
+  });
+
+  it('places SL/TP for a manual LIMIT entry that has no setupId', async () => {
+    const ctx = createMockCtx();
+    const pending = createMockPending({
+      setupId: null,
+      stopLoss: '48000',
+      takeProfit: '53000',
+    });
+
+    await handlePendingFill(
+      ctx, 'wallet-1', pending as never, 'BTCUSDT', 'BUY', 12345, '50000', '50000', '0.1', '0.25', 'USDT'
+    );
+
+    expect(mockCreateStopLossOrder).toHaveBeenCalledWith(expect.objectContaining({ triggerPrice: 48000 }));
+    expect(mockCreateTakeProfitOrder).toHaveBeenCalledWith(expect.objectContaining({ triggerPrice: 53000 }));
   });
 
   it('should not place SL/TP when protection order IDs already exist', async () => {

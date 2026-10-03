@@ -366,6 +366,120 @@ describe('Paper order engine', () => {
     });
   });
 
+  describe('protection at entry', () => {
+    const openOrders = async (walletId: string) => {
+      const db = getTestDatabase();
+      const rows = await db.select().from(orders).where(eq(orders.walletId, walletId));
+      return rows.filter((row) => row.status === 'NEW');
+    };
+
+    it('attaches SL and TP to the position in OCO mode and exits once when one of them triggers', async () => {
+      const { caller, wallet, executionsWithStatus } = await setup();
+
+      await caller.trading.createOrder({
+        walletId: wallet.id, symbol: SYMBOL, marketType: 'FUTURES', side: 'BUY', type: 'MARKET', quantity: '0.1',
+        stopLoss: '49000', takeProfit: '52000', protectionMode: 'OCO',
+      });
+
+      const [position] = await executionsWithStatus('open');
+      expect(parseFloat(position!.stopLoss!)).toBe(49_000);
+      expect(parseFloat(position!.takeProfit!)).toBe(52_000);
+      expect(await openOrders(wallet.id)).toHaveLength(0);
+    });
+
+    it('places SL and TP as separate reduce-only orders in INDEPENDENT mode', async () => {
+      const { caller, wallet, executionsWithStatus } = await setup();
+
+      await caller.trading.createOrder({
+        walletId: wallet.id, symbol: SYMBOL, marketType: 'FUTURES', side: 'BUY', type: 'MARKET', quantity: '0.1',
+        stopLoss: '49000', takeProfit: '52000', protectionMode: 'INDEPENDENT',
+      });
+
+      const [position] = await executionsWithStatus('open');
+      expect(position!.stopLoss).toBeNull();
+      expect(position!.takeProfit).toBeNull();
+      const pending = await openOrders(wallet.id);
+      expect(pending.map((o) => [o.side, o.type, o.price, o.reduceOnly]).sort()).toEqual([
+        ['SELL', 'STOP_MARKET', '49000', true],
+        ['SELL', 'TAKE_PROFIT_MARKET', '52000', true],
+      ]);
+    });
+
+    it('closes the position through the independent SL and leaves the TP pending until it expires', async () => {
+      const { caller, wallet, executionsWithStatus, orderStatus } = await setup();
+      await caller.trading.createOrder({
+        walletId: wallet.id, symbol: SYMBOL, marketType: 'FUTURES', side: 'BUY', type: 'MARKET', quantity: '0.1',
+        stopLoss: '49000', takeProfit: '52000', protectionMode: 'INDEPENDENT',
+      });
+      const [stopOrder, takeProfitOrder] = (await openOrders(wallet.id)).sort((a, b) => a.type.localeCompare(b.type));
+
+      setMarketPrice(48_900);
+      await checkPaperPendingOrders();
+
+      expect(await executionsWithStatus('open')).toHaveLength(0);
+      expect(await orderStatus(stopOrder!.orderId)).toBe('FILLED');
+      expect(await orderStatus(takeProfitOrder!.orderId)).toBe('NEW');
+
+      setMarketPrice(52_100);
+      await checkPaperPendingOrders();
+      expect(await orderStatus(takeProfitOrder!.orderId)).toBe('EXPIRED');
+    });
+
+    it('places independent SL and TP only when a LIMIT entry fills', async () => {
+      const { caller, wallet, executionsWithStatus } = await setup();
+      await caller.trading.createOrder({
+        walletId: wallet.id, symbol: SYMBOL, marketType: 'FUTURES', side: 'BUY', type: 'LIMIT', quantity: '0.1', price: '49500',
+        stopLoss: '49000', takeProfit: '52000', protectionMode: 'INDEPENDENT',
+      });
+      expect(await openOrders(wallet.id)).toHaveLength(1);
+
+      setMarketPrice(49_400);
+      await checkPaperPendingOrders();
+
+      expect(await executionsWithStatus('open')).toHaveLength(1);
+      const pending = await openOrders(wallet.id);
+      expect(pending.map((o) => o.type).sort()).toEqual(['STOP_MARKET', 'TAKE_PROFIT_MARKET']);
+      expect(pending.every((o) => o.reduceOnly)).toBe(true);
+    });
+
+    it('keeps SL and TP on the pending position in OCO mode for a LIMIT entry', async () => {
+      const { caller, wallet, executionsWithStatus } = await setup();
+      await caller.trading.createOrder({
+        walletId: wallet.id, symbol: SYMBOL, marketType: 'FUTURES', side: 'SELL', type: 'LIMIT', quantity: '0.1', price: '50500',
+        stopLoss: '51000', takeProfit: '48000',
+      });
+
+      const [pending] = await executionsWithStatus('pending');
+      expect(parseFloat(pending!.stopLoss!)).toBe(51_000);
+      expect(parseFloat(pending!.takeProfit!)).toBe(48_000);
+      expect(await openOrders(wallet.id)).toHaveLength(1);
+    });
+
+    it('ignores SL and TP on an order that only reduces an open position', async () => {
+      const { caller, wallet, place, executionsWithStatus } = await setup();
+      await place({ side: 'BUY', quantity: '0.1' });
+
+      await caller.trading.createOrder({
+        walletId: wallet.id, symbol: SYMBOL, marketType: 'FUTURES', side: 'SELL', type: 'MARKET', quantity: '0.05',
+        stopLoss: '49000', takeProfit: '52000', protectionMode: 'INDEPENDENT',
+      });
+
+      expect(await openOrders(wallet.id)).toHaveLength(0);
+      const [position] = await executionsWithStatus('open');
+      expect(parseFloat(position!.quantity)).toBeCloseTo(0.05, 8);
+    });
+
+    it('rejects SL and TP from the ticket on a live spot wallet', async () => {
+      const { user, session } = await createAuthenticatedUser();
+      const liveSpot = await createTestWallet({ userId: user.id, walletType: 'testnet', marketType: 'SPOT', apiKey: 'k', apiSecret: 's' });
+      const liveCaller = createAuthenticatedCaller(user, session);
+
+      await expect(
+        liveCaller.trading.createOrder({ walletId: liveSpot.id, symbol: SYMBOL, marketType: 'SPOT', side: 'BUY', type: 'MARKET', quantity: '0.1', stopLoss: '49000' }),
+      ).rejects.toThrow('not available on live spot wallets yet');
+    });
+  });
+
   describe('futures router', () => {
     it('attaches stop loss and take profit to the position opened by a market order', async () => {
       const { caller, wallet, executionsWithStatus } = await setup();

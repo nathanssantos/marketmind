@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { orders, tradeExecutions } from '../../db/schema';
 import { getOrderEntryFee, getPosition } from '../binance-futures-client';
 import { createStopLossOrder, createTakeProfitOrder } from '../protection-orders';
+import { placeEntryProtection } from '../trading/entry-protection';
 import { logHandlerAction } from '../binance-event-logger';
 import { logger, serializeError } from '../logger';
 import { getWebSocketService } from '../websocket';
@@ -82,8 +83,8 @@ export async function handlePendingFill(
   let activationSlIsAlgo = pendingExecution.stopLossIsAlgo;
   let activationTpIsAlgo = pendingExecution.takeProfitIsAlgo;
 
-  const needsSlPlacement = !!pendingExecution.setupId && !pendingExecution.stopLossAlgoId && !pendingExecution.stopLossOrderId && pendingExecution.stopLoss;
-  const needsTpPlacement = !!pendingExecution.setupId && !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
+  const needsSlPlacement = !pendingExecution.stopLossAlgoId && !pendingExecution.stopLossOrderId && pendingExecution.stopLoss;
+  const needsTpPlacement = !pendingExecution.takeProfitAlgoId && !pendingExecution.takeProfitOrderId && pendingExecution.takeProfit;
 
   if (needsSlPlacement || needsTpPlacement) {
     const walletForActivation = await ctx.getCachedWallet(walletId);
@@ -107,6 +108,31 @@ export async function handlePendingFill(
         } catch (e) {
           logger.error({ error: serializeError(e), symbol }, '[FuturesUserStream] Failed to place TP on manual LIMIT activation');
         }
+      }
+    }
+  }
+
+  const [entryOrder] = await db
+    .select({ protectionMode: orders.protectionMode, stopLossIntent: orders.stopLossIntent, takeProfitIntent: orders.takeProfitIntent })
+    .from(orders)
+    .where(and(eq(orders.walletId, walletId), eq(orders.orderId, String(orderId))))
+    .limit(1);
+  if (entryOrder?.protectionMode === 'INDEPENDENT' && (entryOrder.stopLossIntent || entryOrder.takeProfitIntent)) {
+    const walletForProtection = await ctx.getCachedWallet(walletId);
+    if (walletForProtection) {
+      const protection = await placeEntryProtection({
+        wallet: walletForProtection,
+        userId: pendingExecution.userId,
+        symbol,
+        side: pendingExecution.side,
+        quantity: fillQty,
+        marketType: 'FUTURES',
+        stopLoss: entryOrder.stopLossIntent,
+        takeProfit: entryOrder.takeProfitIntent,
+        protectionMode: 'INDEPENDENT',
+      });
+      if (protection.errors.length > 0) {
+        logger.error({ executionId: pendingExecution.id, symbol, errors: protection.errors }, '[FuturesUserStream] Independent SL/TP placement failed on LIMIT fill');
       }
     }
   }

@@ -1,4 +1,4 @@
-import type { EntryOrderType, MarketType, PositionSide } from '@marketmind/types';
+import type { EntryOrderType, MarketType, PositionSide, ProtectionMode } from '@marketmind/types';
 import { calculateLiquidationPrice, getDefaultFee } from '@marketmind/types';
 import { calculateBreakevenPrice, calculatePnl } from '@marketmind/utils';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -35,6 +35,7 @@ export interface PaperOrderRequest {
   setupType?: string;
   stopLoss?: string;
   takeProfit?: string;
+  protectionMode?: ProtectionMode;
   leverage?: number;
 }
 
@@ -91,6 +92,19 @@ const ENTRY_ORDER_TYPE_BY_TRIGGER_KIND: Record<TriggerKind, EntryOrderType> = {
   STOP: 'STOP_MARKET',
   TAKE_PROFIT: 'TAKE_PROFIT_MARKET',
 };
+
+const DEFAULT_PROTECTION_MODE: ProtectionMode = 'OCO';
+
+interface IndependentProtectionRequest {
+  userId: string;
+  walletId: string;
+  symbol: string;
+  marketType: MarketType;
+  positionSide: PositionSide;
+  quantity: string;
+  stopLoss?: string | null;
+  takeProfit?: string | null;
+}
 
 let paperOrderSequence = 0;
 
@@ -168,6 +182,21 @@ const assertProtectionSide = (
     const isProfitable = isLong ? takeProfitPrice > referencePrice : takeProfitPrice < referencePrice;
     if (!isProfitable) throw badRequest(`Take profit must be ${isLong ? 'above' : 'below'} the entry price for a ${side} position`);
   }
+};
+
+const placeIndependentProtection = async (request: IndependentProtectionRequest): Promise<void> => {
+  const closeSide: OrderSide = request.positionSide === 'LONG' ? 'SELL' : 'BUY';
+  const base = {
+    userId: request.userId,
+    walletId: request.walletId,
+    symbol: request.symbol,
+    marketType: request.marketType,
+    side: closeSide,
+    quantity: request.quantity,
+    reduceOnly: true,
+  };
+  if (request.stopLoss) await placePaperOrder({ ...base, type: 'STOP_MARKET', stopPrice: request.stopLoss });
+  if (request.takeProfit) await placePaperOrder({ ...base, type: 'TAKE_PROFIT_MARKET', stopPrice: request.takeProfit });
 };
 
 const reduceExecution = async (execution: ExecutionRow, maxQuantity: number, exitPrice: number): Promise<number> => {
@@ -380,6 +409,13 @@ export const placePaperOrder = async (request: PaperOrderRequest): Promise<Paper
     assertProtectionSide(positionSide, triggerKind ? triggerPrice : marketPrice, request.stopLoss, request.takeProfit);
   }
 
+  const protectionMode = request.protectionMode ?? DEFAULT_PROTECTION_MODE;
+  const hasProtection = request.stopLoss !== undefined || request.takeProfit !== undefined;
+  const attachesProtection = hasProtection && protectionMode === 'OCO' && !reducesPosition;
+  const placesIndependentProtection = hasProtection && protectionMode === 'INDEPENDENT' && !reducesPosition;
+  const attachedStopLoss = attachesProtection ? request.stopLoss : undefined;
+  const attachedTakeProfit = attachesProtection ? request.takeProfit : undefined;
+
   const orderId = generatePaperOrderId();
   const placedAt = Date.now();
   const orderType = isMarketableLimit && triggerKind === 'STOP' ? 'STOP_MARKET' : request.type;
@@ -408,8 +444,9 @@ export const placePaperOrder = async (request: PaperOrderRequest): Promise<Paper
     setupType: request.setupType,
     marketType,
     reduceOnly,
-    stopLossIntent: request.stopLoss,
-    takeProfitIntent: request.takeProfit,
+    stopLossIntent: hasProtection && !reducesPosition ? request.stopLoss : undefined,
+    takeProfitIntent: hasProtection && !reducesPosition ? request.takeProfit : undefined,
+    protectionMode: hasProtection && !reducesPosition ? protectionMode : undefined,
   });
 
   if (!triggerKind) {
@@ -427,9 +464,22 @@ export const placePaperOrder = async (request: PaperOrderRequest): Promise<Paper
       leverage,
       setupId: request.setupId,
       setupType: request.setupType,
-      stopLoss: request.stopLoss,
-      takeProfit: request.takeProfit,
+      stopLoss: attachedStopLoss,
+      takeProfit: attachedTakeProfit,
     });
+
+    if (placesIndependentProtection) {
+      await placeIndependentProtection({
+        userId: request.userId,
+        walletId,
+        symbol,
+        marketType,
+        positionSide,
+        quantity: request.quantity,
+        stopLoss: request.stopLoss,
+        takeProfit: request.takeProfit,
+      });
+    }
   } else if (!reduceOnly) {
     const [pending] = await db
       .insert(tradeExecutions)
@@ -449,9 +499,9 @@ export const placePaperOrder = async (request: PaperOrderRequest): Promise<Paper
         leverage,
         setupId: request.setupId,
         setupType: request.setupType,
-        stopLoss: request.stopLoss,
-        takeProfit: request.takeProfit,
-        originalStopLoss: request.stopLoss,
+        stopLoss: attachedStopLoss,
+        takeProfit: attachedTakeProfit,
+        originalStopLoss: attachedStopLoss,
         openedAt: new Date(placedAt),
       })
       .returning();
@@ -548,6 +598,19 @@ const processPendingPaperOrder = async (orderId: string): Promise<void> => {
   });
 
   await settlePendingOrder(order, 'FILLED');
+
+  if (!reduceOnly && order.protectionMode === 'INDEPENDENT' && (order.stopLossIntent || order.takeProfitIntent)) {
+    await placeIndependentProtection({
+      userId: order.userId,
+      walletId: order.walletId,
+      symbol: order.symbol,
+      marketType,
+      positionSide: toPositionSide(order.side),
+      quantity: order.origQty ?? formatQuantity(quantity),
+      stopLoss: order.stopLossIntent,
+      takeProfit: order.takeProfitIntent,
+    });
+  }
 
   const sideLabel = order.side === 'BUY' ? 'Buy' : 'Sell';
   getWebSocketService()?.emitTradeNotification(order.walletId, {

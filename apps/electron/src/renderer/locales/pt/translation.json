@@ -1059,7 +1059,13 @@
       "stopLoss": "SL",
       "takeProfit": "TP",
       "slInvalid": "Stop Loss deve estar no lado da perda em relação ao preço de entrada",
-      "tpInvalid": "Take Profit deve estar no lado do lucro em relação ao preço de entrada"
+      "tpInvalid": "Take Profit deve estar no lado do lucro em relação ao preço de entrada",
+      "oco": "OCO",
+      "ocoOn": "SL e TP se cancelam",
+      "ocoOff": "SL e TP ficam independentes",
+      "protection": "Proteção",
+      "protectionOco": "OCO",
+      "protectionIndependent": "Independentes"
     },
     "gridOrders": {
       "title": "Ordens em Grade",
@@ -1513,7 +1519,8 @@
       "closeFailed": "Falha ao fechar ordem",
       "slTpUpdateFailed": "Falha ao atualizar SL/TP",
       "slTpCreateFailed": "Falha ao criar SL/TP",
-      "entryUpdateFailed": "Falha ao mover ordem pendente"
+      "entryUpdateFailed": "Falha ao mover ordem pendente",
+      "protectionFailed": "Ordem de proteção não enviada"
     },
     "dialogs": {
       "chartClose": {

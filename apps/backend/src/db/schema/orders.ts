@@ -1,4 +1,4 @@
-import type { PositionSide, MarketType } from '@marketmind/types';
+import type { PositionSide, MarketType, ProtectionMode } from '@marketmind/types';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -38,6 +38,7 @@ export const orders = pgTable('orders', {
   reduceOnly: boolean('reduce_only').default(false),
   stopLossIntent: numeric('stop_loss_intent', { precision: 20, scale: 8 }),
   takeProfitIntent: numeric('take_profit_intent', { precision: 20, scale: 8 }),
+  protectionMode: varchar('protection_mode', { length: 12 }).$type<ProtectionMode>(),
 }, (table) => ({
   settledStatusCreatedIdx: index('orders_status_created_at_idx')
     .on(table.status, table.createdAt)
