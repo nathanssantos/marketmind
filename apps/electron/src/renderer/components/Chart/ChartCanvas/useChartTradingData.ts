@@ -147,6 +147,7 @@ export const useChartTradingData = ({
         fibonacciProjection: exec.fibonacciProjection ? JSON.parse(exec.fibonacciProjection) : null,
         leverage: exec.leverage ?? 1,
         liquidationPrice: exec.liquidationPrice,
+        breakevenPrice: exec.breakevenPrice,
       }));
   }, [backendExecutions, symbol, marketType]);
 

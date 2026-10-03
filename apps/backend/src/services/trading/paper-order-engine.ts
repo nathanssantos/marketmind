@@ -1,6 +1,6 @@
 import type { EntryOrderType, MarketType, PositionSide } from '@marketmind/types';
 import { calculateLiquidationPrice, getDefaultFee } from '@marketmind/types';
-import { calculatePnl } from '@marketmind/utils';
+import { calculateBreakevenPrice, calculatePnl } from '@marketmind/utils';
 import { and, eq, inArray } from 'drizzle-orm';
 import { PAPER_TRADING } from '../../constants/paper-trading';
 import { db } from '../../db';
@@ -148,6 +148,9 @@ const liquidationPriceFor = (
   return calculateLiquidationPrice({ entryPrice, quantity, leverage, side }).toString();
 };
 
+const breakevenPriceFor = (marketType: MarketType, side: PositionSide, entryPrice: number): string =>
+  calculateBreakevenPrice({ entryPrice, side, takerRate: getDefaultFee(marketType, 'TAKER') }).toString();
+
 const assertProtectionSide = (
   side: PositionSide,
   referencePrice: number,
@@ -251,6 +254,7 @@ const increasePosition = async (primary: ExecutionRow, fill: PaperFill, quantity
       entryPrice: mergedEntryPrice.toString(),
       entryFee: mergedEntryFee.toString(),
       liquidationPrice: liquidationPriceFor(marketType, primary.side, mergedEntryPrice, mergedQuantity, leverage),
+      breakevenPrice: breakevenPriceFor(marketType, primary.side, mergedEntryPrice),
       stopLoss: fill.stopLoss ?? primary.stopLoss,
       takeProfit: fill.takeProfit ?? primary.takeProfit,
       updatedAt: new Date(),
@@ -272,6 +276,7 @@ const openPosition = async (fill: PaperFill, quantity: number): Promise<void> =>
     entryFee: takerFee(fill.price * quantity, fill.marketType).toString(),
     leverage: fill.leverage,
     liquidationPrice: liquidationPriceFor(fill.marketType, side, fill.price, quantity, fill.leverage),
+    breakevenPrice: breakevenPriceFor(fill.marketType, side, fill.price),
     highestPriceSinceEntry: fill.price.toString(),
     lowestPriceSinceEntry: fill.price.toString(),
     openedAt,

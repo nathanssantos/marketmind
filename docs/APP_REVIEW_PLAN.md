@@ -10,6 +10,7 @@
 - Paper trading first. Live trading is investigated early but validated last.
 - Every item is tested and seen through Playwright: a spec under `apps/electron/e2e/` that stays in the repo, plus a run against the real backend that checks the effect on screen (position, PnL, balance, chart lines). Specs that mock tRPC prove the screen only, so they never count as the backend check.
 - Competitor differentiators live in [`PAPER_TRADING_BENCHMARK_PLAN.md`](PAPER_TRADING_BENCHMARK_PLAN.md), not here.
+- Paper trading mirrors live trading: whatever a live position shows (break-even line, fees, liquidation, funding, margin) a paper position shows too, computed from what the paper engine actually charges.
 - The plan ends with a docs and site update that reflects what shipped.
 
 ## Decisions
@@ -30,7 +31,7 @@ Scope: futures LONG and SHORT, spot LONG. Spot SHORT must be impossible.
 | 1.2 | Spot wallets | No way to create a SPOT paper wallet; no client sends `marketType`; spot short is accepted by `trading.createPosition`, the whole `futures-trading` router, `autoTrading.executeSetup` and watchers; Sell and Alt+click are never hidden on spot. |
 | 1.3 | SL/TP at entry | The ticket sends `stopLoss` / `takeProfit` and the input schema drops them, while the confirm dialog shows them. |
 | 1.4 | Futures realism | Leverage stuck at 1x on paper; no margin check; liquidation only alerts; funding only on the legacy table. |
-| 1.5 | Accounting | Entry fee skipped on SL/TP exits; exits fill at the observed price instead of the trigger; no min notional, lot, tick or balance validation. |
+| 1.5 | Accounting and live parity | Entry fee skipped on SL/TP exits; exits fill at the observed price instead of the trigger; no min notional, lot, tick or balance validation; auto-trading paper entries store neither the entry fee nor the break-even price; the break-even line is off by default. |
 | 1.6 | Trading UI | No wallet reset or deposit; no partial close; no margin type control; no paper/live marker on the confirm dialog; raw English rejection messages; conflicting badge colours. |
 | 1.7 | MCP paper gate | `close_position` and `set_sl_tp` check the supplied `walletId` but act on an id from any wallet. |
 | 1.8 | On-screen validation | Run futures LONG, futures SHORT, spot LONG and the spot-short attempt in the app; check position, PnL, balance, chart lines; measure ticket and chart performance. |

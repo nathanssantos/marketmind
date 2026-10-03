@@ -99,6 +99,31 @@ describe('Paper order engine', () => {
       expect(await balance()).toBe(INITIAL_BALANCE);
     });
 
+    it('stores the break-even price that covers the taker fee on both legs', async () => {
+      const { place, executionsWithStatus } = await setup();
+
+      await place({ side: 'BUY', quantity: '0.1' });
+      const [long] = await executionsWithStatus('open');
+      const longBreakeven = parseFloat(long!.breakevenPrice!);
+      expect(longBreakeven).toBeCloseTo(50_000 * (1 + FUTURES_TAKER_FEE_RATE) / (1 - FUTURES_TAKER_FEE_RATE), 6);
+
+      setMarketPrice(longBreakeven);
+      await place({ side: 'SELL', quantity: '0.1' });
+      const [closed] = await executionsWithStatus('closed');
+      expect(parseFloat(closed!.pnl!)).toBeCloseTo(0, 6);
+    });
+
+    it('moves the break-even price to the merged entry when the position grows', async () => {
+      const { place, executionsWithStatus } = await setup();
+      await place({ side: 'SELL', quantity: '0.1' });
+
+      setMarketPrice(52_000);
+      await place({ side: 'SELL', quantity: '0.1' });
+
+      const [short] = await executionsWithStatus('open');
+      expect(parseFloat(short!.breakevenPrice!)).toBeCloseTo(51_000 * (1 - FUTURES_TAKER_FEE_RATE) / (1 + FUTURES_TAKER_FEE_RATE), 6);
+    });
+
     it('opens a SHORT position on a SELL', async () => {
       const { place, executionsWithStatus } = await setup();
 
