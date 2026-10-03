@@ -977,7 +977,8 @@
       "reason": {
         "belowMinNotional": "Order below the minimum of {{min}} {{currency}}",
         "notShortable": "This stock is not available for short selling",
-        "marketClosed": "Market closed: market orders wait for the regular session"
+        "marketClosed": "Market closed: market orders wait for the regular session",
+        "sizeBelowStep": "Size too small: {{percent}}% of the balance is below the minimum of {{step}} {{asset}}"
       }
     },
     "gridOrders": {

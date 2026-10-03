@@ -5,6 +5,7 @@ import { useIndicatorStore } from '../store/indicatorStore';
 import { usePatternStore } from '../store/patternStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { useScreenerStore } from '../store/screenerStore';
+import { useQuickTradeStore } from '../store/quickTradeStore';
 import { useSetupStore } from '../store/setupStore';
 import { useUIStore } from '../store/uiStore';
 import { useCurrencyStore } from '../store/currencyStore';
@@ -28,6 +29,7 @@ const hydrateDomainStores = (prefs: Record<string, Record<string, unknown>>) => 
   useScreenerStore.getState().hydrate(ui);
   useCurrencyStore.getState().hydrate(ui);
   useSetupStore.getState().hydrate(trading);
+  useQuickTradeStore.getState().hydrate(trading);
   void hydrateLayoutStore();
 };
 

@@ -493,11 +493,13 @@ export const scalePosition = (pos: GridPosition, fx: number, fy: number): GridPo
   h: Math.round(pos.h * fy),
 });
 
+const GRID_GRANULARITY_VERSION = 2;
+
 export const migrateGridGranularity = (
   presets: LayoutPreset[],
   fromVersion: number,
 ): LayoutPreset[] => {
-  if (fromVersion >= GRID_VERSION) return presets;
+  if (fromVersion >= GRID_GRANULARITY_VERSION) return presets;
   // v1 → v2: cols 12 → 192 (×16 horizontal so column granularity matches
   // rowHeight 8 visually), rowHeight 30 → 8 (×4 vertical gives close visual
   // match — panels end up ~7% taller, imperceptible).
@@ -513,6 +515,35 @@ export const migrateGridGranularity = (
       }),
     })),
   }));
+};
+
+const MIN_ROWS_LEFT_BELOW_TICKET = 8;
+const TICKET_HEIGHT_GRID_VERSION = 3;
+
+const overlapsHorizontally = (a: GridPosition, b: GridPosition): boolean => a.x < b.x + b.w && b.x < a.x + a.w;
+
+const growTicketInGrid = (grid: GridPanelConfig[]): GridPanelConfig[] => {
+  const ticket = grid.find((panel) => panel.kind === 'ticket');
+  if (!ticket || ticket.gridPosition.h >= TRADING_RAIL_ROWS.ticket) return grid;
+
+  const ticketBottom = ticket.gridPosition.y + ticket.gridPosition.h;
+  const below = grid.find((panel) => panel.id !== ticket.id
+    && panel.gridPosition.y === ticketBottom
+    && overlapsHorizontally(panel.gridPosition, ticket.gridPosition));
+  const wanted = TRADING_RAIL_ROWS.ticket - ticket.gridPosition.h;
+  const taken = below ? Math.max(0, Math.min(wanted, below.gridPosition.h - MIN_ROWS_LEFT_BELOW_TICKET)) : wanted;
+  if (taken === 0) return grid;
+
+  return grid.map((panel) => {
+    if (panel.id === ticket.id) return { ...panel, gridPosition: { ...panel.gridPosition, h: panel.gridPosition.h + taken } };
+    if (panel.id === below?.id) return { ...panel, gridPosition: { ...panel.gridPosition, y: panel.gridPosition.y + taken, h: panel.gridPosition.h - taken } };
+    return panel;
+  });
+};
+
+export const migrateTicketHeight = (presets: LayoutPreset[], fromVersion: number): LayoutPreset[] => {
+  if (fromVersion >= TICKET_HEIGHT_GRID_VERSION) return presets;
+  return presets.map((preset) => ({ ...preset, grid: growTicketInGrid(preset.grid) }));
 };
 
 // Reconcile persisted layouts with panel kinds that have since been renamed
@@ -547,7 +578,7 @@ export const hydrateLayoutStore = async (): Promise<void> => {
           ? (saved as { gridVersion: number }).gridVersion
           : 1;
       const migratedPresets = saved.layoutPresets
-        ? migrateRenamedPanelKinds(migrateGridGranularity(saved.layoutPresets, savedVersion))
+        ? migrateTicketHeight(migrateRenamedPanelKinds(migrateGridGranularity(saved.layoutPresets, savedVersion)), savedVersion)
         : undefined;
 
       // v1.5 — `activeLayoutId` lifted from per-tab to top-level. If

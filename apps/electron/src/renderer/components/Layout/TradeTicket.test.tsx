@@ -248,6 +248,14 @@ describe('TradeTicket — side selector and action button', () => {
     expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('Loading leverage…');
   });
 
+  it('explains that the size is below the symbol step when the quantity rounds to zero', () => {
+    setDefaults({ quantity: '0.000' });
+    renderTicket();
+
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('chart.quickTrade.reason.sizeBelowStep');
+  });
+
   it('disables the button when the order is below the minimum notional', () => {
     setDefaults({ quantity: '0.00001', minNotional: 5 });
     renderTicket();
@@ -462,6 +470,19 @@ describe('TradeTicket — asset type matrix', () => {
 
     expect(submit()).toBeEnabled();
     expect(submit()).toHaveTextContent('chart.quickTrade.action.close');
+  });
+
+  it('spot: a Sell larger than the holding is capped to it and closes the position', async () => {
+    setDefaults({ wallet: PAPER_SPOT_WALLET, openPosition: { side: 'LONG', quantity: 0.05 }, quantity: '0.100' });
+    const user = userEvent.setup();
+    renderTicket({ marketType: 'SPOT' });
+
+    fireEvent.click(sideButton('sell'));
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.close');
+    await user.click(submit());
+    await user.click(within(await confirmDialog()).getByRole('button', { name: /confirmSell/ }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL', quantity: '0.050', marketType: 'SPOT' }));
   });
 
   it('futures: shows leverage, margin and liquidation and labels sides Long and Short', () => {
