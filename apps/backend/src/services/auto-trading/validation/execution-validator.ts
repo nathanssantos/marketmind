@@ -10,7 +10,7 @@ import {
   tradingProfiles,
 } from '../../../db/schema';
 import { applyProfileOverrides } from '../../profile-applicator';
-import { isDirectionAllowed } from '../../../utils/trading-validation';
+import { isDirectionAllowed, isSideAllowedOnMarket } from '../../../utils/trading-validation';
 import { cooldownService } from '../../cooldown';
 import { pyramidingService } from '../../pyramiding';
 import { riskManagerService } from '../../risk-manager';
@@ -212,6 +212,7 @@ export const validateSetupFilters = async (
 
   const directionMode = config?.directionMode ?? 'auto';
   if (!isDirectionAllowed(directionMode, setup.direction)) return false;
+  if (!isSideAllowedOnMarket(watcher.marketType, setup.direction)) return false;
 
   if (!config) return false;
 
@@ -296,6 +297,13 @@ export const validateExecutionChecks = async (
     return null;
   }
   logBuffer.addValidationCheck({ name: 'Direction Mode', passed: true, reason: directionMode });
+
+  if (!isSideAllowedOnMarket(watcher.marketType, setup.direction)) {
+    logBuffer.addValidationCheck({ name: 'Spot Side', passed: false, value: setup.direction, reason: 'Spot cannot short' });
+    logBuffer.addRejection({ setupType: setup.type, direction: setup.direction, reason: 'Spot wallets cannot open short positions' });
+    logBuffer.completeSetupValidation('blocked', 'Spot cannot short');
+    return null;
+  }
 
   const filterConfig = buildFilterConfig(config, directionMode);
   const filterValidation = await filterValidator.validateFilters(watcher, setup, filterConfig, cycleKlines, strategies, logBuffer);

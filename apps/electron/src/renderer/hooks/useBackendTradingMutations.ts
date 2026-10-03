@@ -78,7 +78,7 @@ export const useBackendTradingMutations = () => {
       // to every cache variant so charts/Portfolio/dialogs all reflect
       // the new entry in the same render frame.
       fanOutOpenExecutions(data);
-      invalidateTradingAnalytics();
+      invalidateTradingAnalytics({ daily: true });
       // Refresh the wallet balance immediately on entry. The opening fee
       // (and, for paper wallets, the locked margin) just changed the
       // balance, and the exposure/margin percentages in PortfolioSummary

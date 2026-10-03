@@ -85,7 +85,13 @@ describe('CreateWalletDialog', () => {
       name: 'Paper One',
       initialBalance: 10000,
       currency: 'USDT',
+      marketType: 'FUTURES',
     });
+  });
+
+  it('offers the market choice for Binance wallets', () => {
+    renderDialog();
+    expect(screen.getByText('trading.wallets.marketType')).toBeDefined();
   });
 
   it('renders Initial Balance + Currency fields by default (paper Binance)', () => {

@@ -149,6 +149,16 @@ describe('Paper order engine', () => {
       expect(await balance()).toBeCloseTo(INITIAL_BALANCE + expectedPnl, 6);
     });
 
+    it('returns the wallet with an empty open list when the order closes the last position', async () => {
+      const { place, wallet } = await setup();
+      await place({ side: 'BUY', quantity: '0.1' });
+
+      const closing = await place({ side: 'SELL', quantity: '0.1' });
+
+      expect(closing.walletId).toBe(wallet.id);
+      expect(closing.openExecutions).toEqual([]);
+    });
+
     it('closes a SHORT at a loss when the price rises', async () => {
       const { place, executionsWithStatus, balance } = await setup();
       await place({ side: 'SELL', quantity: '0.1' });

@@ -11,6 +11,7 @@ import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
 import { badRequest, internalServerError, notFound } from '../../utils/trpc-errors';
+import { assertSideAllowedOnMarket } from '../../utils/trading-validation';
 import { generateEntityId } from '../../utils/id';
 
 export const positionsRouter = router({
@@ -56,7 +57,8 @@ export const positionsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      assertSideAllowedOnMarket(wallet.marketType, input.side);
 
       if (input.stopLoss && input.takeProfit) {
         const entryPrice = parseFloat(input.entryPrice);

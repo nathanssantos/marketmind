@@ -1332,7 +1332,10 @@
       "emptyReal": "No wallets yet. Create a paper trading wallet to test auto-trading.",
       "realMode": "Paper Trading Mode - Create a wallet to test auto-trading without real funds.",
       "selectWallet": "Select a wallet first",
-      "syncBalance": "Sync balance from Binance"
+      "syncBalance": "Sync balance from Binance",
+      "marketType": "Mercado",
+      "marketFutures": "Futuros",
+      "marketSpot": "Spot"
     },
     "ticket": {
       "title": "Orden",
@@ -1643,7 +1646,11 @@
       "noSuggestions": "Sin sugerencias pendientes"
     },
     "noWalletSelected": "No wallet selected. Please create or select a wallet first.",
-    "loadingWallets": "Loading wallets, please wait..."
+    "loadingWallets": "Loading wallets, please wait...",
+    "spot": {
+      "shortNotAllowed": "Las carteras spot no pueden abrir posiciones cortas.",
+      "nothingToSell": "Nada que vender: esta cartera no tiene este activo."
+    }
   },
   "about": {
     "version": "Versión {{version}}",

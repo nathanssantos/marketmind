@@ -112,7 +112,7 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
-          return { ...paperOrder, openExecutions: paperOpenExecutions };
+          return { ...paperOrder, walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
 
         const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters(input.marketType);
@@ -277,6 +277,7 @@ export const orderMutationsRouter = router({
             quantity: algoOrder.quantity,
             executedQty: '0',
             marketType: orderInput.marketType,
+            walletId: orderInput.walletId,
             openExecutions: algoOpenExecutions,
           };
         }
@@ -476,6 +477,7 @@ export const orderMutationsRouter = router({
           quantity: binanceOrder.origQty,
           executedQty: binanceOrder.executedQty,
           marketType: orderInput.marketType,
+          walletId: orderInput.walletId,
           openExecutions,
         };
       } catch (error) {

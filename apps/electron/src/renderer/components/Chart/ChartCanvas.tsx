@@ -4,6 +4,7 @@ import type { Kline, MarketType, TimeInterval, TradingSetup, Viewport } from '@m
 import type { KlineSource } from '@renderer/hooks/useKlineLiveStream';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
+import { useTradingMarketType } from '@renderer/hooks/useTradingMarketType';
 import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
 import { useChartPref, useTradingPref } from '@renderer/store/preferencesStore';
 import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
@@ -153,7 +154,8 @@ const ChartCanvasInternal = ({
     return () => unsubscribe();
   }, []);
 
-  const tradingData = useChartTradingData({ symbol, marketType });
+  const tradingMarketType = useTradingMarketType(marketType);
+  const tradingData = useChartTradingData({ symbol, marketType: tradingMarketType });
   const {
     backendWalletId,
     hasTradingEnabled,
@@ -307,7 +309,7 @@ const ChartCanvasInternal = ({
   }, [klinePrice]);
 
   const tradingActions = useChartTradingActions({
-    symbol, marketType, manager, backendWalletId,
+    symbol, marketType: tradingMarketType, manager, backendWalletId,
     backendExecutions: backendExecutions as unknown as BackendExecution[] | undefined, allExecutions,
     setOptimisticExecutions, orderLoadingMapRef, orderFlashMapRef,
     closingSnapshotsRef, setClosingVersion, applyOptimistic, clearOptimistic,

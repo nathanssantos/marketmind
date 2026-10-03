@@ -6,6 +6,8 @@ import { useBookTicker } from '@renderer/hooks/useBookTicker';
 import { useBackendFuturesTrading } from '@renderer/hooks/useBackendFuturesTrading';
 import { useBackendTradingMutations } from '@renderer/hooks/useBackendTradingMutations';
 import { useOrderQuantity } from '@renderer/hooks/useOrderQuantity';
+import { useSpotHeldQuantity } from '@renderer/hooks/useSpotHeldQuantity';
+import { useTradingMarketType } from '@renderer/hooks/useTradingMarketType';
 import { useLeverageBrackets } from '@renderer/hooks/useLeverageBrackets';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
@@ -60,9 +62,10 @@ interface BuySellButtonsProps {
   onPlaceOrder: (side: 'BUY' | 'SELL', price: number) => void;
   buyLabel: string;
   sellLabel: string;
+  sellDisabled: boolean;
 }
 
-const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrder, buyLabel, sellLabel }: BuySellButtonsProps) => {
+const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrder, buyLabel, sellLabel, sellDisabled }: BuySellButtonsProps) => {
   const { bidPrice, askPrice } = useBookTicker(symbol);
   const buyPrice = askPrice > 0 ? askPrice : currentPrice;
   const sellPrice = bidPrice > 0 ? bidPrice : currentPrice;
@@ -93,7 +96,7 @@ const BuySellButtons = memo(({ symbol, currentPrice, isCreatingOrder, onPlaceOrd
           {spread > 0 ? spread.toFixed(2) : '—'}
         </Text>
       </Box>
-      <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={onSell} loading={isCreatingOrder} flex={1}>
+      <Button size="2xs" fontSize="2xs" h="34px" colorPalette="red" variant="solid" onClick={onSell} loading={isCreatingOrder} disabled={sellDisabled} flex={1}>
         <VStack gap={0} lineHeight="1">
           <Text fontSize="2xs">{sellLabel}</Text>
           <Text fontSize="2xs" fontWeight="bold">{sellPrice > 0 ? formatChartPrice(sellPrice) : '—'}</Text>
@@ -194,6 +197,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
 
   const { getQuantity, leverage, isReady, notReadyReason } = useOrderQuantity(symbol, marketType);
   const leverageBrackets = useLeverageBrackets(symbol, marketType === 'FUTURES');
+  const isSpot = marketType === 'SPOT';
+  const spotHeldQuantity = useSpotHeldQuantity(symbol, isSpot);
 
   const slPriceNum = useMemo(() => (slEnabled ? parseFloat(slPrice) : NaN), [slEnabled, slPrice]);
   const tpPriceNum = useMemo(() => (tpEnabled ? parseFloat(tpPrice) : NaN), [tpEnabled, tpPrice]);
@@ -242,15 +247,21 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
       toastError(t('chart.quickTrade.invalidQuantityError'));
       return;
     }
+    const isSpotSell = isSpot && side === 'SELL';
+    if (isSpotSell && spotHeldQuantity <= 0) {
+      toastError(t('trading.spot.nothingToSell'));
+      return;
+    }
+    const quantity = isSpotSell && parseFloat(previewQty) > spotHeldQuantity ? spotHeldQuantity.toString() : previewQty;
     setPendingOrder({
       side,
       price: effectivePrice,
-      quantity: previewQty,
+      quantity,
       orderType,
       ...(slEnabled && !Number.isNaN(slPriceNum) ? { stopLoss: slPriceNum.toString() } : {}),
       ...(tpEnabled && !Number.isNaN(tpPriceNum) ? { takeProfit: tpPriceNum.toString() } : {}),
     });
-  }, [activeWallet?.id, symbol, orderType, limitPrice, getQuantity, isReady, notReadyReason, warning, toastError, t, isSlInvalidFor, isTpInvalidFor, slEnabled, slPriceNum, tpEnabled, tpPriceNum]);
+  }, [activeWallet?.id, symbol, orderType, limitPrice, getQuantity, isReady, notReadyReason, warning, toastError, t, isSlInvalidFor, isTpInvalidFor, slEnabled, slPriceNum, tpEnabled, tpPriceNum, isSpot, spotHeldQuantity]);
 
   const handleConfirmOrder = useCallback(async () => {
     if (!activeWallet?.id || !pendingOrder) return;
@@ -270,6 +281,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
         type: pendingOrder.orderType,
         quantity: pendingOrder.quantity,
         referencePrice: pendingOrder.price,
+        marketType,
         ...(pendingOrder.orderType === 'LIMIT' ? { price: pendingOrder.price.toString() } : {}),
         ...(pendingOrder.stopLoss ? { stopLoss: pendingOrder.stopLoss } : {}),
         ...(pendingOrder.takeProfit ? { takeProfit: pendingOrder.takeProfit } : {}),
@@ -280,7 +292,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
     } finally {
       setPendingOrder(null);
     }
-  }, [activeWallet?.id, symbol, pendingOrder, createOrder, toastError, t]);
+  }, [activeWallet?.id, symbol, marketType, pendingOrder, createOrder, toastError, t]);
 
   const handleSliderChange = useCallback((value: number[]) => {
     const v = value[0];
@@ -380,6 +392,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
             onPlaceOrder={handleQuickOrder}
             buyLabel={t('chart.quickTrade.buy')}
             sellLabel={t('chart.quickTrade.sell')}
+            sellDisabled={isSpot && spotHeldQuantity <= 0}
           />
         </HStack>
 
@@ -522,6 +535,9 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
           brackets: leverageBrackets,
         });
         const liqPct = liqPrice > 0 ? Math.abs((liqPrice - pendingOrder.price) / pendingOrder.price * 100) : 0;
+        const futuresSideLabel = isBuy ? 'LONG' : 'SHORT';
+        const spotSideLabel = isBuy ? t('trading.ticket.buy') : t('trading.ticket.sell');
+        const sideLabel = isSpot ? spotSideLabel : futuresSideLabel;
 
         return (
           <ConfirmationDialog
@@ -540,7 +556,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
                 </Flex>
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('common.side')}</Text>
-                  <Text fontWeight="bold" color={isBuy ? 'trading.long' : 'trading.short'}>{isBuy ? 'LONG' : 'SHORT'}</Text>
+                  <Text fontWeight="bold" color={isBuy ? 'trading.long' : 'trading.short'}>{sideLabel}</Text>
                 </Flex>
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('chart.quickTrade.orderType')}</Text>
@@ -566,23 +582,29 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
                     <Text color="trading.profit">{formatChartPrice(parseFloat(pendingOrder.takeProfit))}</Text>
                   </Flex>
                 )}
-                <Flex justify="space-between">
-                  <Text color="fg.muted">{t('futures.leverage')}</Text>
-                  <Text color="orange.fg" fontWeight="bold">{leverage}x</Text>
-                </Flex>
+                {!isSpot && (
+                  <Flex justify="space-between">
+                    <Text color="fg.muted">{t('futures.leverage')}</Text>
+                    <Text color="orange.fg" fontWeight="bold">{leverage}x</Text>
+                  </Flex>
+                )}
                 <Box h="1px" bg="border" />
                 <Flex justify="space-between">
                   <Text color="fg.muted">{t('chart.quickTrade.totalValue')}</Text>
                   <Text fontWeight="bold">{formatChartPrice(totalValue)} USDT</Text>
                 </Flex>
-                <Flex justify="space-between">
-                  <Text color="fg.muted">{t('chart.quickTrade.margin')}</Text>
-                  <Text>{formatChartPrice(margin)} USDT</Text>
-                </Flex>
-                <Flex justify="space-between">
-                  <Text color="fg.muted">{t('chart.quickTrade.liquidation')}</Text>
-                  <Text color="trading.loss">{formatChartPrice(liqPrice)} ({liqPct.toFixed(1)}%)</Text>
-                </Flex>
+                {!isSpot && (
+                  <>
+                    <Flex justify="space-between">
+                      <Text color="fg.muted">{t('chart.quickTrade.margin')}</Text>
+                      <Text>{formatChartPrice(margin)} USDT</Text>
+                    </Flex>
+                    <Flex justify="space-between">
+                      <Text color="fg.muted">{t('chart.quickTrade.liquidation')}</Text>
+                      <Text color="trading.loss">{formatChartPrice(liqPrice)} ({liqPct.toFixed(1)}%)</Text>
+                    </Flex>
+                  </>
+                )}
               </VStack>
             }
           />
@@ -600,7 +622,8 @@ interface TradeTicketProps {
   onClose?: () => void;
 }
 
-export const TradeTicket = memo(({ symbol, marketType = 'FUTURES', onClose }: TradeTicketProps) => {
+export const TradeTicket = memo(({ symbol, marketType: chartMarketType, onClose }: TradeTicketProps) => {
+  const marketType = useTradingMarketType(chartMarketType);
   const [savedPosition, setSavedPosition] = useUIPref<{ x: number; y: number }>('quickTradeToolbarPosition', { x: EDGE_PADDING, y: EDGE_PADDING });
 
   const containerRef = useRef<HTMLDivElement>(null);

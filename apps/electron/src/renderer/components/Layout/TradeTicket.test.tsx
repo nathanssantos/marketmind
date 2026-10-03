@@ -12,6 +12,7 @@ const useOrderQuantityMock = vi.fn();
 const useToastMock = vi.fn();
 const useQuickTradeStoreMock = vi.fn();
 const usePricesForSymbolsMock = vi.fn();
+const useSpotHeldQuantityMock = vi.fn();
 
 const reversePositionMock = vi.fn();
 const closePositionAndCancelOrdersMock = vi.fn();
@@ -39,6 +40,10 @@ vi.mock('@renderer/hooks/useBackendTradingMutations', () => ({
 
 vi.mock('@renderer/hooks/useOrderQuantity', () => ({
   useOrderQuantity: (symbol: string, marketType: string) => useOrderQuantityMock(symbol, marketType),
+}));
+
+vi.mock('@renderer/hooks/useSpotHeldQuantity', () => ({
+  useSpotHeldQuantity: (symbol: string, enabled: boolean) => useSpotHeldQuantityMock(symbol, enabled),
 }));
 
 vi.mock('@renderer/hooks/useLeverageBrackets', () => ({
@@ -129,6 +134,7 @@ const setDefaults = (overrides: { positions?: unknown[]; sizePercent?: number; p
     isCreatingOrder: false,
   });
   useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
+  useSpotHeldQuantityMock.mockReturnValue(0);
   useToastMock.mockReturnValue({ warning: warningMock, error: errorMock });
   useQuickTradeStoreMock.mockReturnValue({
     sizePercent,
@@ -189,6 +195,76 @@ describe('TradeTicket — Buy / Sell flow (regression: v0.107)', () => {
       quantity: '0.1000',
       referencePrice: 49_950,
     }));
+  });
+
+  it('sends the market type of the ticket with the order', async () => {
+    const user = userEvent.setup();
+    renderActions({ marketType: 'SPOT' });
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ side: 'BUY', marketType: 'SPOT' }));
+  });
+
+  it('disables Sell on SPOT while the wallet holds none of the asset', () => {
+    renderActions({ marketType: 'SPOT' });
+
+    expect(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i })).toBeDisabled();
+  });
+
+  it('keeps Sell enabled on FUTURES with no open position', () => {
+    renderActions();
+
+    expect(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i })).toBeEnabled();
+  });
+
+  it('caps a SPOT sell at the held quantity', async () => {
+    useSpotHeldQuantityMock.mockReturnValue(0.04);
+    const user = userEvent.setup();
+    renderActions({ marketType: 'SPOT' });
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmSell/i }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL', quantity: '0.04', marketType: 'SPOT' }));
+  });
+
+  it('sells the previewed quantity on SPOT when the wallet holds more than that', async () => {
+    useSpotHeldQuantityMock.mockReturnValue(0.5);
+    const user = userEvent.setup();
+    renderActions({ marketType: 'SPOT' });
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmSell/i }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL', quantity: '0.1000' }));
+  });
+
+  it('shows Buy instead of LONG and hides leverage, margin and liquidation in the SPOT confirm dialog', async () => {
+    const user = userEvent.setup();
+    renderActions({ marketType: 'SPOT' });
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByText('trading.ticket.buy')).toBeInTheDocument();
+    expect(within(dialog).queryByText('LONG')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('futures.leverage')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('chart.quickTrade.margin')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('chart.quickTrade.liquidation')).not.toBeInTheDocument();
+  });
+
+  it('shows LONG with leverage, margin and liquidation in the FUTURES confirm dialog', async () => {
+    const user = userEvent.setup();
+    renderActions();
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    const dialog = await screen.findByRole('dialog');
+
+    expect(within(dialog).getByText('LONG')).toBeInTheDocument();
+    expect(within(dialog).getByText('futures.leverage')).toBeInTheDocument();
+    expect(within(dialog).getByText('chart.quickTrade.liquidation')).toBeInTheDocument();
   });
 
   it('warns when no wallet is active and does NOT open the confirm dialog', async () => {

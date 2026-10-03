@@ -1179,7 +1179,10 @@
       "liveWarning": "Warning: Real Money",
       "liveDescription": "Live trading uses real funds. Make sure you understand the risks.",
       "selectWallet": "Select a wallet first",
-      "syncBalance": "Sync balance from Binance"
+      "syncBalance": "Sync balance from Binance",
+      "marketType": "Market",
+      "marketFutures": "Futures",
+      "marketSpot": "Spot"
     },
     "ticket": {
       "title": "Ticket",
@@ -1493,6 +1496,10 @@
       "expired": "Expired",
       "positionSize": "Position Size",
       "noSuggestions": "No pending suggestions"
+    },
+    "spot": {
+      "shortNotAllowed": "Spot wallets cannot open short positions.",
+      "nothingToSell": "Nothing to sell: this wallet holds none of this asset."
     }
   },
   "about": {
