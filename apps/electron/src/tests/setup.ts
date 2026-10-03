@@ -389,6 +389,7 @@ global.requestAnimationFrame = (callback: FrameRequestCallback) => {
   const id = ++rafId;
   const timer = setTimeout(() => {
     if (!pendingFrames.delete(id)) return;
+    if (typeof globalThis.requestAnimationFrame !== 'function') return;
     callback(performance.now());
   }, FRAME_INTERVAL_MS);
   pendingFrames.set(id, timer);
