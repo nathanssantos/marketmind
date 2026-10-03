@@ -259,6 +259,9 @@ Slower than Layer 2 (~30 s boot). Only covers what the Vite renderer path can't:
 
 ### Real-backend specs (embedded stack)
 
+The `electron` project runs one worker, one test at a time. Two Electron apps launched at once under Playwright sometimes left one main process paused in the debugger for 120 seconds, so the renderer never appeared in time, and closing apps while another was attaching crashed Electron (`EXC_BAD_ACCESS` in the Node inspector) with a macOS crash dialog. Running them serially removed both.
+
+
 Specs that mock tRPC prove the screen only. A flow that must reach the backend runs on the embedded stack: real PostgreSQL, real backend, real renderer, in a throwaway user-data folder. They need network access to the exchange for prices.
 
 ```bash

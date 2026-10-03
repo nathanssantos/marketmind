@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **Parallel Electron e2e runs** — the `electron` Playwright project runs serially. In parallel, one app's main process could stay paused in the debugger for 120 seconds (an intermittent embedded-boot failure) and Electron crashed on close with a macOS crash dialog.
 - **Unused ticket leftovers** — `MarketStatusBar`, `ShortabilityBadge` and `useSpotHeldQuantity` in the renderer, the `shortability.*` locale keys and the `NYSE_HOURS` / `NYSE_TIMEZONE` constants, all replaced by the ticket's session strip and the `stocks` router.
 - **Activity dots on candles** — the chart no longer draws the green and pink dots above candles with unusually high or low volume and trade count. They had no layer and no setting, so they could not be turned off.
 
