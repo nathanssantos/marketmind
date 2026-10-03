@@ -2,18 +2,11 @@ import type { HighlightedCandle, Kline } from '@marketmind/types';
 import type { ChartThemeColors } from '@renderer/hooks/useChartColors';
 import type { CanvasManager } from '@renderer/utils/canvas/CanvasManager';
 import { drawCandleLabel } from '@renderer/utils/canvas/drawingUtils';
-import { ACTIVITY_COLORS, CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
-import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen, getKlineTrades, getKlineVolume } from '@shared/utils';
+import { CHART_CONFIG, INDICATOR_COLORS } from '@shared/constants';
+import { getKlineClose, getKlineHigh, getKlineLow, getKlineOpen } from '@shared/utils';
 import type { MutableRefObject } from 'react';
 import { useCallback, useRef } from 'react';
 import { isKlineBullishInclusive } from './utils/klineColor';
-
-interface AvgCache {
-  klines: Kline[];
-  length: number;
-  avgTrades: number;
-  avgVolume: number;
-}
 
 interface HighlightedMapCache {
   source: HighlightedCandle[];
@@ -24,7 +17,6 @@ export interface UseKlineRendererProps {
   manager: CanvasManager | null;
   colors: ChartThemeColors;
   enabled?: boolean;
-  showActivityIndicator?: boolean;
   klineWickWidth?: number;
   hoveredKlineIndexRef?: MutableRefObject<number | undefined>;
   highlightedCandlesRef?: MutableRefObject<HighlightedCandle[]>;
@@ -45,12 +37,10 @@ export const useKlineRenderer = ({
   manager,
   colors,
   enabled = true,
-  showActivityIndicator = true,
   klineWickWidth,
   hoveredKlineIndexRef,
   highlightedCandlesRef,
 }: UseKlineRendererProps): UseKlineRendererReturn => {
-  const avgCacheRef = useRef<AvgCache | null>(null);
   // Cache the highlighted-index Map across frames keyed on the source
   // array's identity. Building `new Map(highlightedCandles.map(...))`
   // every frame allocated a Map + an intermediate tuple array per pan
@@ -72,28 +62,6 @@ export const useKlineRenderer = ({
 
     const visibleRange = viewport.end - viewport.start;
     const widthPerKline = chartWidth / visibleRange;
-
-    const allKlines = manager.getKlines() ?? [];
-    let avgTrades = 0;
-    let avgVolume = 0;
-    if (allKlines.length > 0) {
-      const cache = avgCacheRef.current;
-      if (cache?.klines === allKlines && cache.length === allKlines.length) {
-        avgTrades = cache.avgTrades;
-        avgVolume = cache.avgVolume;
-      } else {
-        let sumT = 0;
-        let sumV = 0;
-        for (let i = 0; i < allKlines.length; i++) {
-          const k = allKlines[i]!;
-          sumT += getKlineTrades(k);
-          sumV += getKlineVolume(k);
-        }
-        avgTrades = sumT / allKlines.length;
-        avgVolume = sumV / allKlines.length;
-        avgCacheRef.current = { klines: allKlines, length: allKlines.length, avgTrades, avgVolume };
-      }
-    }
 
     ctx.save();
     ctx.beginPath();
@@ -250,50 +218,21 @@ export const useKlineRenderer = ({
       ctx.restore();
     }
 
-    const wantsActivity = showActivityIndicator && klineWidth >= 4 && avgTrades > 0;
-    const wantsLabels = highlightedIndicesMap && klineWidth >= 4;
-
-    if (wantsLabels || wantsActivity) {
+    if (highlightedIndicesMap && klineWidth >= 4) {
       const lists: KlineDraw[][] = [bullishDraws, bearishDraws, highlightedDraws];
-      const indicatorSize = klineWidth > 0 ? Math.min(klineWidth * 0.3, 3) : 3;
-
-      const processDraw = (d: KlineDraw): void => {
-        if (wantsLabels && highlightedIndicesMap) {
-          const highlighted = highlightedIndicesMap.get(d.actualIndex);
-          if (highlighted) {
-            const labelColor = HIGHLIGHT_LABEL_COLORS[highlighted.role] ?? HIGHLIGHT_LABEL_COLORS.context;
-            drawCandleLabel(ctx, d.klineX + klineWidth / 2, d.visualTopY, highlighted.offset.toString(), labelColor);
-          }
-        }
-
-        if (wantsActivity) {
-          const trades = getKlineTrades(d.kline);
-          const volume = getKlineVolume(d.kline);
-          const isHighActivity = trades > avgTrades * 1.5 && volume > avgVolume * 1.5;
-          const isLowActivity = trades < avgTrades * 0.3 && volume < avgVolume * 0.5;
-
-          if (isHighActivity || isLowActivity) {
-            ctx.save();
-            ctx.fillStyle = isHighActivity ? ACTIVITY_COLORS.HIGH_ACTIVITY : ACTIVITY_COLORS.LOW_ACTIVITY;
-            ctx.globalAlpha = 0.9;
-            ctx.beginPath();
-            ctx.arc(d.klineX + klineWidth / 2, d.visualTopY - indicatorSize - 4, indicatorSize, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = isHighActivity ? ACTIVITY_COLORS.HIGH_ACTIVITY_STROKE : ACTIVITY_COLORS.LOW_ACTIVITY_STROKE;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-            ctx.restore();
-          }
-        }
-      };
 
       for (const list of lists) {
-        for (const d of list) processDraw(d);
+        for (const d of list) {
+          const highlighted = highlightedIndicesMap.get(d.actualIndex);
+          if (!highlighted) continue;
+          const labelColor = HIGHLIGHT_LABEL_COLORS[highlighted.role] ?? HIGHLIGHT_LABEL_COLORS.context;
+          drawCandleLabel(ctx, d.klineX + klineWidth / 2, d.visualTopY, highlighted.offset.toString(), labelColor);
+        }
       }
     }
 
     ctx.restore();
-  }, [manager, colors, enabled, showActivityIndicator, klineWickWidth, hoveredKlineIndexRef, highlightedCandlesRef]);
+  }, [manager, colors, enabled, klineWickWidth, hoveredKlineIndexRef, highlightedCandlesRef]);
 
   return { render };
 };
