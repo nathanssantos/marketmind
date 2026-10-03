@@ -14,15 +14,11 @@ import { getWebSocketService } from '../../services/websocket';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { calculateQtyFromPercent } from '../../services/trading/order-quantity';
+import { cancelPaperOrders, placePaperOrder } from '../../services/trading/paper-order-engine';
+import { withWriteLock } from '../../services/write-op-mutex';
 import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
 import { badRequest, internalServerError } from '../../utils/trpc-errors';
-
-let paperOrderCounter = 0;
-const generatePaperOrderId = (): string => {
-  paperOrderCounter = (paperOrderCounter + 1) % 10000;
-  return String(Date.now() * 10000 + paperOrderCounter);
-};
 
 export const orderMutationsRouter = router({
   createOrder: protectedProcedure
@@ -92,30 +88,22 @@ export const orderMutationsRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          const simulatedTimestamp = Date.now();
-          const simulatedOrderId = generatePaperOrderId();
-          const price = input.price ?? '0';
-          const quantity = input.quantity;
-
-          await ctx.db.insert(orders).values({
-            orderId: simulatedOrderId,
-            userId: ctx.user.id,
-            walletId: input.walletId,
-            symbol: input.symbol,
-            side: input.side,
-            type: input.type,
-            price,
-            origQty: quantity,
-            executedQty: input.type === 'MARKET' ? quantity : '0',
-            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-            timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
-            time: simulatedTimestamp,
-            updateTime: simulatedTimestamp,
-            setupId: input.setupId,
-            setupType: input.setupType,
-            marketType: input.marketType,
-            reduceOnly: input.reduceOnly,
-          });
+          const paperOrder = await withWriteLock(input.walletId, input.symbol, () =>
+            placePaperOrder({
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: input.symbol,
+              side: input.side,
+              type: input.type,
+              quantity: input.quantity,
+              marketType: input.marketType,
+              price: input.price,
+              stopPrice: input.stopPrice,
+              reduceOnly: input.reduceOnly,
+              setupId: input.setupId,
+              setupType: input.setupType,
+            })
+          );
 
           const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -124,33 +112,7 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
-          const wsService = getWebSocketService();
-          if (wsService) {
-            wsService.emitOrderCreated(input.walletId, {
-              orderId: simulatedOrderId,
-              symbol: input.symbol,
-              side: input.side,
-              type: input.type,
-              status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-              price,
-              origQty: quantity,
-              executedQty: input.type === 'MARKET' ? quantity : '0',
-              marketType: input.marketType,
-            });
-          }
-
-          return {
-            orderId: simulatedOrderId,
-            symbol: input.symbol,
-            side: input.side,
-            type: input.type,
-            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-            price,
-            quantity,
-            executedQty: input.type === 'MARKET' ? quantity : '0',
-            marketType: input.marketType,
-            openExecutions: paperOpenExecutions,
-          };
+          return { ...paperOrder, openExecutions: paperOpenExecutions };
         }
 
         const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters(input.marketType);
@@ -546,25 +508,9 @@ export const orderMutationsRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          await ctx.db
-            .update(orders)
-            .set({
-              status: 'CANCELED',
-              updateTime: Date.now(),
-            })
-            .where(eq(orders.orderId, input.orderId));
-
-          const paperCancelledExecs = await ctx.db
-            .update(tradeExecutions)
-            .set({ status: 'cancelled', updatedAt: new Date() })
-            .where(
-              and(
-                eq(tradeExecutions.walletId, input.walletId),
-                eq(tradeExecutions.entryOrderId, input.orderId),
-                eq(tradeExecutions.status, 'pending')
-              )
-            )
-            .returning();
+          await withWriteLock(input.walletId, input.symbol, () =>
+            cancelPaperOrders({ walletId: input.walletId, orderId: input.orderId })
+          );
 
           const paperOpenExecs = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -572,15 +518,6 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.userId, ctx.user.id),
               eq(tradeExecutions.status, 'open'),
             ));
-
-          const wsService = getWebSocketService();
-          if (wsService) {
-            wsService.emitOrderCancelled(input.walletId, input.orderId);
-            for (const exec of paperCancelledExecs) {
-              wsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
-              wsService.emitPositionUpdate(input.walletId, exec);
-            }
-          }
 
           return {
             orderId: input.orderId,

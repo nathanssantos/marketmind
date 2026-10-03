@@ -63,7 +63,8 @@
     "clear-storage": "node ../../scripts/dev/clear-storage.mjs",
     "clean": "rm -rf dist dist-web dist-electron node_modules",
     "build:backend": "pnpm --filter @marketmind/backend bundle:embedded",
-    "test:e2e:embedded": "pnpm build:main && pnpm build:backend && playwright test --project=electron e2e/electron/embedded-boot.spec.ts --reporter=list"
+    "test:e2e:embedded": "pnpm build:main && pnpm build:backend && playwright test --project=electron e2e/electron/embedded-boot.spec.ts --reporter=list",
+    "test:e2e:paper-trading": "pnpm build:main && pnpm build:backend && playwright test --project=electron e2e/electron/paper-trading.spec.ts --reporter=list"
   },
   "dependencies": {
     "@chakra-ui/react": "^3.37.0",

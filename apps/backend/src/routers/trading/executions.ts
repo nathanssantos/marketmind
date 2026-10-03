@@ -2,7 +2,7 @@ import type { MarketType } from '@marketmind/types';
 import { calculatePnl } from '@marketmind/utils';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 import { z } from 'zod';
-import { tradeExecutions } from '../../db/schema';
+import { orders, tradeExecutions } from '../../db/schema';
 import { env } from '../../env';
 import { isPaperWallet } from '../../services/binance-client';
 import { getFuturesClient, getSpotClient } from '../../exchange';
@@ -120,6 +120,13 @@ export const executionsRouter = router({
               }
             }
           }
+        }
+
+        if (isPaperWallet(wallet) && execution.entryOrderId) {
+          await ctx.db
+            .update(orders)
+            .set({ status: 'CANCELED', updateTime: Date.now() })
+            .where(and(eq(orders.orderId, execution.entryOrderId), eq(orders.status, 'NEW')));
         }
 
         await ctx.db
