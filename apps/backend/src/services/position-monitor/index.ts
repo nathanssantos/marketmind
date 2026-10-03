@@ -12,6 +12,7 @@ import { getWebSocketService } from '../websocket';
 import { opportunityCostManagerService } from '../opportunity-cost-manager';
 import { checkLiquidationRisk } from './liquidation-checks';
 import { checkPendingOrders } from './pending-orders';
+import { checkPaperPendingOrders } from '../trading/paper-order-engine';
 import { getCurrentPrice, updatePrice, invalidatePriceCache } from './price-service';
 import { executeExit } from './exit-execution';
 import type { PositionCheckResult } from './types';
@@ -144,6 +145,7 @@ export class PositionMonitorService {
   async checkAllPositions(): Promise<void> {
     if (binanceApiCache.isBanned()) return;
     await this.checkPendingOrders();
+    await checkPaperPendingOrders();
 
     const openExecutions = await db
       .select()
