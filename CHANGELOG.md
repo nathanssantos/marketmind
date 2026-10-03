@@ -7,11 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Removed
+## [1.29.0] - 2026-10-03
 
-- **Parallel Electron e2e runs** — the `electron` Playwright project runs serially. In parallel, one app's main process could stay paused in the debugger for 120 seconds (an intermittent embedded-boot failure) and Electron crashed on close with a macOS crash dialog.
-- **Unused ticket leftovers** — `MarketStatusBar`, `ShortabilityBadge` and `useSpotHeldQuantity` in the renderer, the `shortability.*` locale keys and the `NYSE_HOURS` / `NYSE_TIMEZONE` constants, all replaced by the ticket's session strip and the `stocks` router.
-- **Activity dots on candles** — the chart no longer draws the green and pink dots above candles with unusually high or low volume and trade count. They had no layer and no setting, so they could not be turned off.
+Paper trading release. Manual orders on paper wallets now become real positions with fees, PnL and break-even; spot wallets exist and can never short; SL and TP from the ticket are applied, with an OCO switch; and the trade ticket is redesigned around a side selector, the asset type of the wallet and the account's real Binance fees.
 
 ### Changed
 
@@ -21,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Default layouts** — the ticket panel height is one shared value (25 rows) across the layout templates, the default seed and the marketing screenshot fixture, with portfolio at 35 and confluence at 22 so the rail still fills the column. Saved layouts are migrated on load: a ticket shorter than that grows, taking the rows from the panel right below it (which keeps at least 8). A browser test fails when the action button no longer fits the panel.
 - **Ticket size is remembered** — the size percentage is saved in the trading preferences and restored on load (first time: 10%), instead of starting at 0.1% every time. When a size rounds below the symbol's minimum step, the ticket says so and shows the minimum instead of "Invalid quantity".
 - **Layers follow the chart's market** — the Heatmap / liquidations layer only appears on futures charts, since both the order-book heatmap and the liquidations come from the futures streams; a spot chart no longer subscribes to them. The layer switch now actually hides the heatmap and liquidation markers (it was not wired before).
+- **Electron e2e runs one app at a time** — the `electron` Playwright project runs serially. In parallel, one app's main process could stay paused in the debugger for 120 seconds (an intermittent embedded-boot failure) and Electron crashed on close with a macOS crash dialog.
 
 ### Fixed
 
@@ -31,6 +30,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Positions list after an order closes the last position** — `createOrder` now returns the wallet id, so the list empties right away instead of waiting for a reload, and the day's trade count refreshes.
 - **Break-even line on the chart** — the chart dropped the break-even price stored on a position and always drew a round-trip estimate at a fixed rate. It now draws the stored price: Binance's own break-even on live positions, and on paper positions the price that covers the taker fee actually charged on both legs. Paper positions store that price when they open and when they grow.
 - **`pnpm dev` when port 3001 is taken** — the backend no longer dies with `EADDRINUSE` when another program holds 3001. It tries the port it used last, then 3002 to 3021, and logs the one it took. `/health` now answers `service: "marketmind-backend"`, and the Electron main process, the Vite dev server and the MCP servers find the backend by probing 3001 to 3021 for that answer, so a foreign server on 3001 is never mistaken for it. `PORT_STRICT=true` keeps the old fail-fast behaviour; the embedded desktop stack always uses its own strict port.
+
+### Removed
+
+- **Unused ticket leftovers** — `MarketStatusBar`, `ShortabilityBadge` and `useSpotHeldQuantity` in the renderer, the `shortability.*` locale keys and the `NYSE_HOURS` / `NYSE_TIMEZONE` constants, all replaced by the ticket's session strip and the `stocks` router.
+- **Activity dots on candles** — the chart no longer draws the green and pink dots above candles with unusually high or low volume and trade count. They had no layer and no setting, so they could not be turned off.
+
+### Notes
+
+- Stocks (Interactive Brokers) are built into the ticket and covered by mocked tests, but not validated on screen: that needs a running IB Gateway.
+- On live spot wallets, SL and TP from the ticket are rejected until that path is validated on testnet.
 
 ## [1.28.0] - 2026-09-26
 
