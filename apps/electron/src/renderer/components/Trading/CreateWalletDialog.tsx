@@ -14,6 +14,7 @@ type WalletType = 'paper' | 'testnet' | 'live';
 type IBConnectionType = 'gateway' | 'tws';
 
 const DEFAULT_MARKET_TYPE: MarketType = 'FUTURES';
+const IB_GATEWAY_PLACEHOLDER = 'ib-gateway';
 
 interface CreateWalletDialogProps extends DialogControlProps {
   onCreate: (params: {
@@ -21,6 +22,7 @@ interface CreateWalletDialogProps extends DialogControlProps {
     initialBalance: number;
     currency: WalletCurrency;
     marketType: MarketType;
+    exchange: ExchangeId;
   }) => void;
   onCreateReal?: (params: {
     name: string;
@@ -28,6 +30,7 @@ interface CreateWalletDialogProps extends DialogControlProps {
     apiSecret: string;
     walletType: 'testnet' | 'live';
     marketType: MarketType;
+    exchange: ExchangeId;
   }) => Promise<void>;
   isCreating?: boolean;
 }
@@ -56,32 +59,33 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
     if (walletType === 'paper') {
       const balance = parseFloat(initialBalance);
       if (isNaN(balance) || balance <= 0) return;
-      onCreate({ name: name.trim(), initialBalance: balance, currency, marketType });
+      onCreate({ name: name.trim(), initialBalance: balance, currency, marketType: isIB ? 'SPOT' : marketType, exchange });
       resetForm();
       onClose();
     } else {
-      if (!apiKey.trim() || !apiSecret.trim()) {
-        setError('API Key and Secret are required');
+      if (isBinance && (!apiKey.trim() || !apiSecret.trim())) {
+        setError(t('trading.wallets.apiKeysRequired'));
         return;
       }
 
       if (!onCreateReal) {
-        setError('Real wallet creation not available');
+        setError(t('trading.wallets.realCreationUnavailable'));
         return;
       }
 
       try {
         await onCreateReal({
           name: name.trim(),
-          apiKey: apiKey.trim(),
-          apiSecret: apiSecret.trim(),
-          walletType,
-          marketType,
+          apiKey: isIB ? IB_GATEWAY_PLACEHOLDER : apiKey.trim(),
+          apiSecret: isIB ? IB_GATEWAY_PLACEHOLDER : apiSecret.trim(),
+          walletType: walletType === 'live' ? 'live' : 'testnet',
+          marketType: isIB ? 'SPOT' : marketType,
+          exchange,
         });
         resetForm();
         onClose();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to create wallet');
+        setError(err instanceof Error ? err.message : t('trading.wallets.createFailed'));
       }
     }
   };
@@ -241,7 +245,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
           </>
         )}
 
-        {isBinance && walletType === 'paper' && (
+        {walletType === 'paper' && (
           <>
             <Field label={t('trading.wallets.initialBalance')}>
               <NumberInput

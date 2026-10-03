@@ -30,6 +30,7 @@ vi.mock('@/renderer/store/preferencesStore', () => ({
         selector({ chart: { chartColorPalette: 'default' }, ui: {}, trading: {} }),
     useChartPref: (_key: string, defaultValue: unknown) => [defaultValue, mockSetChartPref],
     useUIPref: (_key: string, defaultValue: unknown) => [defaultValue, mockSetUIPref],
+    useTradingPref: (_key: string, defaultValue: unknown) => [defaultValue, vi.fn()],
 }));
 
 const mockSetEnableShiftAltOrderEntry = vi.fn();

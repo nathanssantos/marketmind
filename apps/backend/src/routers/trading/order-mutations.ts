@@ -1,4 +1,4 @@
-import type { PositionSide } from '@marketmind/types';
+import type { ExchangeId, PositionSide } from '@marketmind/types';
 import { PROTECTION_MODES } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
@@ -102,6 +102,7 @@ export const orderMutationsRouter = router({
               type: input.type,
               quantity: input.quantity,
               marketType: input.marketType,
+              exchange: wallet.exchange as ExchangeId | null,
               price: input.price,
               stopPrice: input.stopPrice,
               reduceOnly: input.reduceOnly,

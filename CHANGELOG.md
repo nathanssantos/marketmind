@@ -9,7 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **Unused ticket leftovers** — `MarketStatusBar`, `ShortabilityBadge` and `useSpotHeldQuantity` in the renderer, the `shortability.*` locale keys and the `NYSE_HOURS` / `NYSE_TIMEZONE` constants, all replaced by the ticket's session strip and the `stocks` router.
 - **Activity dots on candles** — the chart no longer draws the green and pink dots above candles with unusually high or low volume and trade count. They had no layer and no setting, so they could not be turned off.
+
+### Changed
+
+- **Trade ticket redesigned** — the ticket now reads top to bottom in the order a trade is decided: size, side, type, protection, send. A Buy | Sell selector replaces the two large buttons, with the OCO switch on the same row, and a single action button carries side, quantity and price. When an open position sits on the opposite side the button reads Close, Reduce or Reverse, SL and TP go grey with a note that they do not apply, and the confirmation says what the order does to the position. SL and TP have price and percent fields that stay in sync; the summary shows total, margin and liquidation (futures), risk as a percent of balance and R:R; the confirmation adds the estimated fee and the break-even price. A Limit price that crosses the market is shown as Stop, which is what the server sends. The "→" button of a Long or Short Position drawing now selects the side too, and a strip above the button shows where the values came from. A PAPER or LIVE badge sits on the button, the disabled button shows its reason, arrow keys move prices by one tick, and a new chart setting sends market orders without confirmation.
+- **Ticket follows the asset type** — crypto spot, crypto futures and stocks each show only what applies: leverage, margin and liquidation on futures; Buy and Sell with holdings on spot; whole shares, the NYSE session (pre-market, regular, after-hours, closed, with the next open or close), shortability and the IB commission on stocks. Market orders on stocks wait for the regular session. Fees come from the account's real Binance tier (`fees.forWallet`); paper wallets use the published rates of their market. The Risk % label on the position drawing uses the same rate.
+- **Interactive Brokers wallets** — the wallet dialog now sends the chosen exchange, so an IB wallet is created as IB (spot, USD) instead of a Binance wallet with an IB name. Manual orders route to the IB client for IB wallets; the IB helpers for market hours, shortability and commission are exposed through a new `stocks` router. Stocks remain unvalidated on screen until an IB Gateway is available.
+- **Default layouts** — the ticket panel height is one shared value (38 rows) across the layout templates, the default seed and the marketing screenshot fixture; portfolio and confluence panels adjust so the rail still fills the column. A browser test fails when the ticket no longer fits that height.
 
 ### Fixed
 

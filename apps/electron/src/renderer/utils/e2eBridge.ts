@@ -5,6 +5,7 @@ import { useConnectionStore } from '../store/connectionStore';
 import { useDrawingStore } from '../store/drawingStore';
 import { useIndicatorStore } from '../store/indicatorStore';
 import { useLayoutStore } from '../store/layoutStore';
+import { useQuickTradeStore } from '../store/quickTradeStore';
 import { usePanActivityStore } from '../store/panActivityStore';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { usePriceStore } from '../store/priceStore';
@@ -54,6 +55,7 @@ declare global {
     __socketTestBridge?: SocketTestBridge;
     __globalActions?: GlobalActionsBridge;
     __setColorMode?: (mode: 'light' | 'dark') => void;
+    __quickTradeStore?: typeof useQuickTradeStore;
   }
 }
 
@@ -63,6 +65,7 @@ export const installE2EBridge = (): void => {
   window.__drawingStore = useDrawingStore;
   window.__indicatorStore = useIndicatorStore;
   window.__layoutStore = useLayoutStore;
+  window.__quickTradeStore = useQuickTradeStore;
   window.__preferencesStore = usePreferencesStore;
   window.__priceStore = usePriceStore;
   window.__connectionStore = useConnectionStore;

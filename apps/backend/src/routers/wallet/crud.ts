@@ -1,4 +1,5 @@
-import { DEFAULT_CURRENCY } from '@marketmind/types';
+import type { DatabaseType } from '../../db/client';
+import { DEFAULT_CURRENCY, EXCHANGE_IDS } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -13,6 +14,43 @@ import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
 import { badRequest, notFound } from '../../utils/trpc-errors';
 import { WALLET_SAFE_COLUMNS } from './shared';
+
+const IB_CURRENCY = 'USD';
+const IB_GATEWAY_CREDENTIAL = 'ib-gateway';
+
+const createInteractiveBrokersWallet = async (
+  ctx: { db: DatabaseType; user: { id: string } },
+  input: { name: string; walletType: 'live' | 'testnet'; marketType: 'SPOT' | 'FUTURES' },
+) => {
+  if (input.marketType === 'FUTURES') throw badRequest('Interactive Brokers wallets trade stocks only; choose Spot');
+
+  const walletId = generateEntityId();
+  await ctx.db.insert(wallets).values({
+    id: walletId,
+    userId: ctx.user.id,
+    name: input.name,
+    walletType: input.walletType,
+    marketType: 'SPOT',
+    exchange: 'INTERACTIVE_BROKERS',
+    apiKeyEncrypted: encryptApiKey(IB_GATEWAY_CREDENTIAL),
+    apiSecretEncrypted: encryptApiKey(IB_GATEWAY_CREDENTIAL),
+    initialBalance: '0',
+    currentBalance: '0',
+    currency: IB_CURRENCY,
+    isActive: true,
+  });
+
+  return {
+    id: walletId,
+    name: input.name,
+    walletType: input.walletType,
+    marketType: 'SPOT' as const,
+    exchange: 'INTERACTIVE_BROKERS' as const,
+    initialBalance: '0',
+    currentBalance: '0',
+    currency: IB_CURRENCY,
+  };
+};
 
 export const walletCrudRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -45,9 +83,13 @@ export const walletCrudRouter = router({
         initialBalance: z.string().default('10000'),
         currency: z.string().default(DEFAULT_CURRENCY),
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+        exchange: z.enum(EXCHANGE_IDS).default('BINANCE'),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      if (input.exchange === 'INTERACTIVE_BROKERS' && input.marketType === 'FUTURES') {
+        throw badRequest('Interactive Brokers wallets trade stocks only; choose Spot');
+      }
       const walletId = generateEntityId();
 
       await ctx.db.insert(wallets).values({
@@ -56,6 +98,7 @@ export const walletCrudRouter = router({
         name: input.name,
         walletType: 'paper',
         marketType: input.marketType,
+        exchange: input.exchange,
         apiKeyEncrypted: 'paper-trading',
         apiSecretEncrypted: 'paper-trading',
         initialBalance: input.initialBalance,
@@ -69,6 +112,7 @@ export const walletCrudRouter = router({
         name: input.name,
         walletType: 'paper' as const,
         marketType: input.marketType,
+        exchange: input.exchange,
         initialBalance: input.initialBalance,
         currentBalance: input.initialBalance,
         currency: input.currency,
@@ -90,9 +134,11 @@ export const walletCrudRouter = router({
         apiSecret: z.string().min(1),
         walletType: z.enum(['live', 'testnet']).default('testnet'),
         marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+        exchange: z.enum(EXCHANGE_IDS).default('BINANCE'),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      if (input.exchange === 'INTERACTIVE_BROKERS') return createInteractiveBrokersWallet(ctx, input);
       try {
         let initialBalance = 0;
 
@@ -131,6 +177,7 @@ export const walletCrudRouter = router({
           name: input.name,
           walletType: input.walletType,
           marketType: input.marketType,
+          exchange: input.exchange,
           apiKeyEncrypted,
           apiSecretEncrypted,
           initialBalance: initialBalance.toString(),
@@ -144,6 +191,7 @@ export const walletCrudRouter = router({
           name: input.name,
           walletType: input.walletType,
           marketType: input.marketType,
+          exchange: input.exchange,
           initialBalance: initialBalance.toString(),
           currentBalance: initialBalance.toString(),
           currency: DEFAULT_CURRENCY,

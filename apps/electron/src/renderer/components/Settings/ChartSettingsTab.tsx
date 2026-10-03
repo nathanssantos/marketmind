@@ -11,7 +11,7 @@ import {
 import { DEFAULT_ADVANCED_CONFIG } from '@/renderer/constants/defaults';
 import { PALETTE_IDS, getPalette } from '@/renderer/constants/chartPalettes';
 import { useDebounceCallback } from '@/renderer/hooks/useDebounceCallback';
-import { useChartPref, useUIPref } from '@/renderer/store/preferencesStore';
+import { useChartPref, useTradingPref, useUIPref } from '@/renderer/store/preferencesStore';
 import { useUIStore } from '@/renderer/store/uiStore';
 import { Box, Flex, Grid, HStack, Stack, Text } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +27,7 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
   const { t } = useTranslation();
   const { colorMode } = useColorMode();
   const [chartType, setChartType] = useChartPref<'kline' | 'line'>('chartType', 'kline');
+  const [skipMarketConfirm, setSkipMarketConfirm] = useTradingPref<boolean>('ticketSkipMarketConfirm', false);
   const [colorPalette, setColorPalette] = useChartPref<string>('chartColorPalette', 'default');
   const [showGrid, setShowGrid] = useChartPref('showGrid', true);
   const [showCurrentPriceLine, setShowCurrentPriceLine] = useChartPref('showCurrentPriceLine', true);
@@ -82,6 +83,15 @@ export const ChartSettingsTab = ({ config, onConfigChange }: ChartSettingsTabPro
       </FormSection>
 
       <FormSection title={t('settings.chart.displayOptions')}>
+        <FormRow label={t('settings.chart.skipMarketConfirm')} helper={t('settings.chart.skipMarketConfirmHelper')}>
+          <Switch
+            checked={skipMarketConfirm}
+            onCheckedChange={setSkipMarketConfirm}
+            size="sm"
+            aria-label={t('settings.chart.skipMarketConfirm')}
+            data-testid="chart-skip-market-confirm"
+          />
+        </FormRow>
         <FormRow label={t('chart.controls.grid')}>
           <Switch
             checked={showGrid}

@@ -2,7 +2,8 @@ import type { Kline, KlineData, TimeInterval } from './kline';
 
 export type AssetClass = 'CRYPTO' | 'STOCKS';
 
-export type ExchangeId = 'BINANCE' | 'INTERACTIVE_BROKERS';
+export const EXCHANGE_IDS = ['BINANCE', 'INTERACTIVE_BROKERS'] as const;
+export type ExchangeId = (typeof EXCHANGE_IDS)[number];
 
 export type WalletType = 'live' | 'testnet' | 'paper';
 

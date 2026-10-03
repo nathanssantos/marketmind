@@ -106,6 +106,8 @@ export interface LayoutState {
 export const DEFAULT_GRID_COLS = 192;
 export const DEFAULT_ROW_HEIGHT = 8;
 export const GRID_MARGIN: [number, number] = [4, 4];
+
+export const TRADING_RAIL_ROWS = { portfolio: 24, ticket: 38, confluence: 20 } as const;
 export const GRID_CONTAINER_PADDING: [number, number] = [0, 0];
 
 /**

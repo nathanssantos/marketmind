@@ -1,3 +1,4 @@
+import { EXCHANGE_IDS } from '@marketmind/types';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { symbolTrailingStopOverrides } from '../../db/schema';
@@ -11,6 +12,8 @@ import { logger } from '../../services/logger';
 import { protectedProcedure, router } from '../../trpc';
 import { serializeError } from '../../utils/errors';
 import { internalServerError } from '../../utils/trpc-errors';
+
+const STOCK_SYMBOL_FILTERS = { minNotional: 1, minQty: 1, stepSize: 1, tickSize: 0.01 } as const;
 
 export const marketDataRouter = router({
   getTickerPrices: protectedProcedure
@@ -183,8 +186,10 @@ export const marketDataRouter = router({
     .input(z.object({
       symbol: z.string(),
       marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
+      exchange: z.enum(EXCHANGE_IDS).default('BINANCE'),
     }))
     .query(async ({ input }) => {
+      if (input.exchange === 'INTERACTIVE_BROKERS') return STOCK_SYMBOL_FILTERS;
       const service = getMinNotionalFilterService();
       const filtersMap = await service.getSymbolFilters(input.marketType);
       const filters = filtersMap.get(input.symbol);
