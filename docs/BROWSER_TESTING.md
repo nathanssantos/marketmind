@@ -257,6 +257,18 @@ The script builds `dist-electron/main/index.js` via `VITE_TARGET=electron vite b
 
 Slower than Layer 2 (~30 s boot). Only covers what the Vite renderer path can't: preload, IPC, packaged-app boot.
 
+### Real-backend specs (embedded stack)
+
+Specs that mock tRPC prove the screen only. A flow that must reach the backend runs on the embedded stack: real PostgreSQL, real backend, real renderer, in a throwaway user-data folder. They need network access to the exchange for prices.
+
+```bash
+pnpm --filter @marketmind/electron test:e2e:embedded        # boot and shutdown
+pnpm --filter @marketmind/electron test:e2e:paper-trading   # register, create a paper wallet, trade from the ticket
+```
+
+- `apps/electron/e2e/electron/embedded-launch.ts` — `createUserDataDir`, `launchEmbeddedApp`, `waitForRendererWindow`, `removeUserDataDir`
+- `apps/electron/e2e/electron/paper-trading.spec.ts` — a market buy opens a LONG, an equal sell closes it, a further sell opens a SHORT; asserts on the positions table and the trade count
+
 ### Mocking tRPC in Electron — **don't use `page.route()`**
 
 Layer 3 (feature specs) installs network mocks via `installTrpcMock(page)` which uses Playwright's `page.route()`. **That pattern does NOT work inside Electron.** Discovery:
