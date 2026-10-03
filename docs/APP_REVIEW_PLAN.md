@@ -10,6 +10,7 @@
 - Paper trading first. Live trading is investigated early but validated last.
 - Every item is tested and seen through Playwright: a spec under `apps/electron/e2e/` that stays in the repo, plus a run against the real backend that checks the effect on screen (position, PnL, balance, chart lines). Specs that mock tRPC prove the screen only, so they never count as the backend check.
 - Competitor differentiators live in [`PAPER_TRADING_BENCHMARK_PLAN.md`](PAPER_TRADING_BENCHMARK_PLAN.md), not here.
+- Binance values over our own math: when the exchange reports a value (break-even, liquidation price, fees paid, leverage, funding), show and use that value and never a local estimate. A local formula is only a fallback for the moment before the exchange value arrives. Paper has no exchange position, so it is fed with real Binance data instead: live prices, symbol filters, leverage brackets, funding rates and the published fee rates.
 - Paper trading mirrors live trading: whatever a live position shows (break-even line, fees, liquidation, funding, margin) a paper position shows too, computed from what the paper engine actually charges.
 - The plan ends with a docs and site update that reflects what shipped.
 
