@@ -204,7 +204,8 @@ const indexedDBStore = new Map<string, any>();
 
 afterEach(() => {
   indexedDBStore.clear();
-  pendingRafCallbacks.clear();
+  for (const timer of pendingFrames.values()) clearTimeout(timer);
+  pendingFrames.clear();
   rafId = 0;
 });
 
@@ -381,22 +382,23 @@ global.IDBKeyRange = {
 } as any;
 
 let rafId = 0;
-const pendingRafCallbacks = new Map<number, FrameRequestCallback>();
+const FRAME_INTERVAL_MS = 16;
+const pendingFrames = new Map<number, ReturnType<typeof setTimeout>>();
 
 global.requestAnimationFrame = (callback: FrameRequestCallback) => {
   const id = ++rafId;
-  pendingRafCallbacks.set(id, callback);
-  setTimeout(() => {
-    if (pendingRafCallbacks.has(id)) {
-      callback(performance.now());
-      pendingRafCallbacks.delete(id);
-    }
-  }, 16);
+  const timer = setTimeout(() => {
+    if (!pendingFrames.delete(id)) return;
+    callback(performance.now());
+  }, FRAME_INTERVAL_MS);
+  pendingFrames.set(id, timer);
   return id;
 };
 
 global.cancelAnimationFrame = (id: number) => {
-  pendingRafCallbacks.delete(id);
+  const timer = pendingFrames.get(id);
+  if (timer) clearTimeout(timer);
+  pendingFrames.delete(id);
 };
 
 class MockWorker {
