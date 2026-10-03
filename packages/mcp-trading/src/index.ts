@@ -278,7 +278,7 @@ const handle = async (name: string, args: Record<string, unknown> | undefined): 
       };
     }
     case '__health':
-      return { ok: true, baseUrl: getTrpcBaseUrl() };
+      return { ok: true, baseUrl: await getTrpcBaseUrl() };
     default:
       throw new Error(`unknown tool: ${name}`);
   }

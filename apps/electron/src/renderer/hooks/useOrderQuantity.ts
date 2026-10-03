@@ -1,4 +1,4 @@
-import type { MarketType } from '@marketmind/types';
+import type { ExchangeId, MarketType } from '@marketmind/types';
 import { useCallback } from 'react';
 import { useActiveWallet } from './useActiveWallet';
 import { useIsCustomSymbol } from './useIsCustomSymbol';
@@ -12,6 +12,7 @@ export interface UseOrderQuantityResult {
   balance: number;
   sizePercent: number;
   stepSize: number;
+  tickSize: number;
   minNotional: number;
   /**
    * True iff every input needed to size an order is loaded and valid.
@@ -29,7 +30,12 @@ export interface UseOrderQuantityResult {
   notReadyReason: string | null;
 }
 
-export const useOrderQuantity = (symbol: string | undefined, marketType: MarketType | undefined): UseOrderQuantityResult => {
+export interface OrderQuantityOptions {
+  exchange?: ExchangeId;
+  takerFee?: number;
+}
+
+export const useOrderQuantity = (symbol: string | undefined, marketType: MarketType | undefined, options: OrderQuantityOptions = {}): UseOrderQuantityResult => {
   const { activeWallet } = useActiveWallet();
   const sizePercent = useQuickTradeStore((s) => s.sizePercent);
 
@@ -51,10 +57,11 @@ export const useOrderQuantity = (symbol: string | undefined, marketType: MarketT
   // so the ticket displays exactly what will be submitted (no
   // surprise smaller-than-expected fills from server-side floor).
   const { data: symbolFilters } = trpc.trading.getSymbolFilters.useQuery(
-    { symbol: symbol ?? '', marketType: marketType ?? 'FUTURES' },
+    { symbol: symbol ?? '', marketType: marketType ?? 'FUTURES', exchange: options.exchange ?? 'BINANCE' },
     { enabled: !!symbol, staleTime: 60 * 60 * 1000 },
   );
   const stepSize = symbolFilters?.stepSize ?? 0;
+  const tickSize = symbolFilters?.tickSize ?? 0;
   const minNotional = symbolFilters?.minNotional ?? 0;
 
   // Determine readiness. For futures, refuse to compute qty until
@@ -75,8 +82,8 @@ export const useOrderQuantity = (symbol: string | undefined, marketType: MarketT
 
   const getQuantity = useCallback((price: number): string => {
     if (!isReady) return '0';
-    return computeOrderQuantity({ balance, leverage, isFutures, sizePercent, price, stepSize });
-  }, [balance, sizePercent, leverage, isFutures, stepSize, isReady]);
+    return computeOrderQuantity({ balance, leverage, isFutures, sizePercent, price, stepSize, ...(options.takerFee !== undefined ? { takerFee: options.takerFee } : {}) });
+  }, [balance, sizePercent, leverage, isFutures, stepSize, isReady, options.takerFee]);
 
   return {
     getQuantity,
@@ -84,6 +91,7 @@ export const useOrderQuantity = (symbol: string | undefined, marketType: MarketT
     balance,
     sizePercent,
     stepSize,
+    tickSize,
     minNotional,
     isReady,
     notReadyReason,

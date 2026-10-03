@@ -18,6 +18,7 @@ import { screenerRouter } from '../routers/screener';
 import { setupRouter } from '../routers/setup';
 import { setupDetectionRouter } from '../routers/setup-detection';
 import { signalSuggestionsRouter } from '../routers/signal-suggestions';
+import { stocksRouter } from '../routers/stocks';
 import { tickerRouter } from '../routers/ticker';
 import { tradingRouter } from '../routers/trading';
 import { tradingProfilesRouter } from '../routers/trading-profiles';
@@ -37,6 +38,7 @@ export const appRouter = router({
   autoTrading: autoTradingRouter,
   analytics: analyticsRouter,
   fees: feesRouter,
+  stocks: stocksRouter,
   kline: klineRouter,
   setup: setupRouter,
   setupDetection: setupDetectionRouter,

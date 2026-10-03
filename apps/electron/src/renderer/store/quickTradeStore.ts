@@ -1,4 +1,13 @@
 import { create } from 'zustand';
+import { usePreferencesStore } from './preferencesStore';
+
+export const TICKET_SIZE_PERCENT_PREF_KEY = 'ticketSizePercent';
+export const DEFAULT_TICKET_SIZE_PERCENT = 10;
+const MIN_TICKET_SIZE_PERCENT = 0.1;
+const MAX_TICKET_SIZE_PERCENT = 100;
+
+const isValidSizePercent = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value >= MIN_TICKET_SIZE_PERCENT && value <= MAX_TICKET_SIZE_PERCENT;
 
 export interface TicketPrefill {
   /** 'BUY' for long, 'SELL' for short. */
@@ -14,6 +23,7 @@ export interface TicketPrefill {
 interface QuickTradeState {
   sizePercent: number;
   setSizePercent: (pct: number) => void;
+  hydrate: (tradingPrefs: Record<string, unknown>) => void;
   /**
    * One-shot prefill payload. Set by the long/short position drawing's
    * "send to ticket" button; consumed by `TradeTicket` on the next render.
@@ -26,8 +36,15 @@ interface QuickTradeState {
 }
 
 export const useQuickTradeStore = create<QuickTradeState>((set, get) => ({
-  sizePercent: 0.1,
-  setSizePercent: (pct) => set({ sizePercent: pct }),
+  sizePercent: DEFAULT_TICKET_SIZE_PERCENT,
+  setSizePercent: (pct) => {
+    set({ sizePercent: pct });
+    usePreferencesStore.getState().set('trading', TICKET_SIZE_PERCENT_PREF_KEY, pct);
+  },
+  hydrate: (tradingPrefs) => {
+    const saved = tradingPrefs[TICKET_SIZE_PERCENT_PREF_KEY];
+    set({ sizePercent: isValidSizePercent(saved) ? saved : DEFAULT_TICKET_SIZE_PERCENT });
+  },
   pendingPrefill: null,
   prefillFromDrawing: (payload) => set({ pendingPrefill: payload }),
   consumePrefill: () => {

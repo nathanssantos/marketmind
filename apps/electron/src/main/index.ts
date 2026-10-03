@@ -12,6 +12,7 @@ import {
 import { UpdateManager } from './services/UpdateManager';
 import { windowStateManager } from './services/WindowStateManager';
 import { resolveBootMode } from './embedded/bootMode';
+import { discoverDevBackendUrl } from './embedded/devBackend';
 import { BootWindow } from './embedded/BootWindow';
 import { startEmbeddedStack, type EmbeddedStack } from './embedded/bootstrap';
 import { resolveEmbeddedResources } from './embedded/resources';
@@ -23,6 +24,7 @@ const userDataDirOverride = process.env['MM_USER_DATA_DIR'];
 if (userDataDirOverride) app.setPath('userData', userDataDirOverride);
 
 const BACKEND_URL_ARGUMENT = '--mm-backend-url=';
+const DEV_BACKEND_WAIT_MS = 30_000;
 const BOOT_FAILURE_BUTTONS = { openLogs: 0, retry: 1, quit: 2 } as const;
 
 let powerSaveBlockerId: number | null = null;
@@ -410,6 +412,10 @@ const initializeApp = async (): Promise<void> => {
     const mode = resolveBootMode(process.env, process.argv);
     if (mode.kind === 'dev-server') {
       rendererBaseUrl = mode.rendererUrl.replace(/\/+$/, '');
+      backendUrl = await discoverDevBackendUrl({
+        timeoutMs: process.env['NODE_ENV'] === 'test' ? 0 : DEV_BACKEND_WAIT_MS,
+      });
+      console.log(`[Main] Backend: ${backendUrl}`);
     } else if (mode.kind === 'external-backend') {
       rendererBaseUrl = mode.backendUrl;
       backendUrl = mode.backendUrl;

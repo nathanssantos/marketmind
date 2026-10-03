@@ -25,6 +25,8 @@ export interface CreateWalletOptions {
   userId: string;
   name?: string;
   walletType?: 'live' | 'testnet' | 'paper';
+  marketType?: 'SPOT' | 'FUTURES';
+  exchange?: 'BINANCE' | 'INTERACTIVE_BROKERS';
   initialBalance?: string;
   currentBalance?: string;
   totalDeposits?: string;
@@ -255,6 +257,8 @@ export const createTestWallet = async (options: CreateWalletOptions): Promise<Wa
     apiKey = 'paper-trading',
     apiSecret = 'paper-trading',
     agentTradingEnabled = false,
+    marketType = 'FUTURES',
+    exchange = 'BINANCE',
   } = options;
 
   const walletId = generateEntityId();
@@ -273,6 +277,8 @@ export const createTestWallet = async (options: CreateWalletOptions): Promise<Wa
     currency,
     isActive: true,
     agentTradingEnabled,
+    marketType,
+    exchange,
   }).returning();
 
   if (!wallet) throw new Error('Failed to create test wallet');

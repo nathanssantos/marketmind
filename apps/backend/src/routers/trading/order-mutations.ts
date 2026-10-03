@@ -1,4 +1,5 @@
-import type { PositionSide } from '@marketmind/types';
+import type { ExchangeId, PositionSide } from '@marketmind/types';
+import { PROTECTION_MODES } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -14,15 +15,12 @@ import { getWebSocketService } from '../../services/websocket';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { calculateQtyFromPercent } from '../../services/trading/order-quantity';
+import { placeEntryProtection } from '../../services/trading/entry-protection';
+import { cancelPaperOrders, placePaperOrder } from '../../services/trading/paper-order-engine';
+import { withWriteLock } from '../../services/write-op-mutex';
 import { protectedProcedure, router } from '../../trpc';
 import { generateEntityId } from '../../utils/id';
 import { badRequest, internalServerError } from '../../utils/trpc-errors';
-
-let paperOrderCounter = 0;
-const generatePaperOrderId = (): string => {
-  paperOrderCounter = (paperOrderCounter + 1) % 10000;
-  return String(Date.now() * 10000 + paperOrderCounter);
-};
 
 export const orderMutationsRouter = router({
   createOrder: protectedProcedure
@@ -51,6 +49,9 @@ export const orderMutationsRouter = router({
           setupType: z.string().optional(),
           marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
           reduceOnly: z.boolean().optional(),
+          stopLoss: z.string().optional(),
+          takeProfit: z.string().optional(),
+          protectionMode: z.enum(PROTECTION_MODES).default('OCO'),
         })
         .refine(
           (v) => (v.quantity !== undefined) !== (v.percent !== undefined),
@@ -92,30 +93,26 @@ export const orderMutationsRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          const simulatedTimestamp = Date.now();
-          const simulatedOrderId = generatePaperOrderId();
-          const price = input.price ?? '0';
-          const quantity = input.quantity;
-
-          await ctx.db.insert(orders).values({
-            orderId: simulatedOrderId,
-            userId: ctx.user.id,
-            walletId: input.walletId,
-            symbol: input.symbol,
-            side: input.side,
-            type: input.type,
-            price,
-            origQty: quantity,
-            executedQty: input.type === 'MARKET' ? quantity : '0',
-            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-            timeInForce: input.type.includes('LIMIT') ? 'GTC' : undefined,
-            time: simulatedTimestamp,
-            updateTime: simulatedTimestamp,
-            setupId: input.setupId,
-            setupType: input.setupType,
-            marketType: input.marketType,
-            reduceOnly: input.reduceOnly,
-          });
+          const paperOrder = await withWriteLock(input.walletId, input.symbol, () =>
+            placePaperOrder({
+              userId: ctx.user.id,
+              walletId: input.walletId,
+              symbol: input.symbol,
+              side: input.side,
+              type: input.type,
+              quantity: input.quantity,
+              marketType: input.marketType,
+              exchange: wallet.exchange as ExchangeId | null,
+              price: input.price,
+              stopPrice: input.stopPrice,
+              reduceOnly: input.reduceOnly,
+              setupId: input.setupId,
+              setupType: input.setupType,
+              stopLoss: input.stopLoss,
+              takeProfit: input.takeProfit,
+              protectionMode: input.protectionMode,
+            })
+          );
 
           const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -124,34 +121,16 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
-          const wsService = getWebSocketService();
-          if (wsService) {
-            wsService.emitOrderCreated(input.walletId, {
-              orderId: simulatedOrderId,
-              symbol: input.symbol,
-              side: input.side,
-              type: input.type,
-              status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-              price,
-              origQty: quantity,
-              executedQty: input.type === 'MARKET' ? quantity : '0',
-              marketType: input.marketType,
-            });
-          }
-
-          return {
-            orderId: simulatedOrderId,
-            symbol: input.symbol,
-            side: input.side,
-            type: input.type,
-            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-            price,
-            quantity,
-            executedQty: input.type === 'MARKET' ? quantity : '0',
-            marketType: input.marketType,
-            openExecutions: paperOpenExecutions,
-          };
+          return { ...paperOrder, walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
+
+        const hasProtection = input.stopLoss !== undefined || input.takeProfit !== undefined;
+        if (hasProtection && input.marketType === 'SPOT') {
+          throw badRequest('Stop loss and take profit from the ticket are not available on live spot wallets yet');
+        }
+        const attachedStopLoss = hasProtection && input.protectionMode === 'OCO' ? input.stopLoss : undefined;
+        const attachedTakeProfit = hasProtection && input.protectionMode === 'OCO' ? input.takeProfit : undefined;
+        const protectionErrors: string[] = [];
 
         const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters(input.marketType);
         const filters = symbolFiltersMap.get(input.symbol);
@@ -257,6 +236,9 @@ export const orderMutationsRouter = router({
             setupType: orderInput.setupType,
             marketType: orderInput.marketType,
             reduceOnly: orderInput.reduceOnly,
+            stopLossIntent: hasProtection ? input.stopLoss : undefined,
+            takeProfitIntent: hasProtection ? input.takeProfit : undefined,
+            protectionMode: hasProtection ? input.protectionMode : undefined,
           });
 
           if (!orderInput.reduceOnly) {
@@ -291,6 +273,9 @@ export const orderMutationsRouter = router({
                 entryOrderId: algoOrder.algoId,
                 entryOrderType: orderInput.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
                 status: 'pending',
+                stopLoss: attachedStopLoss,
+                takeProfit: attachedTakeProfit,
+                originalStopLoss: attachedStopLoss,
                 marketType: orderInput.marketType,
                 openedAt: new Date(),
                 leverage: futuresLeverage,
@@ -315,6 +300,7 @@ export const orderMutationsRouter = router({
             quantity: algoOrder.quantity,
             executedQty: '0',
             marketType: orderInput.marketType,
+            walletId: orderInput.walletId,
             openExecutions: algoOpenExecutions,
           };
         }
@@ -362,6 +348,9 @@ export const orderMutationsRouter = router({
           setupType: orderInput.setupType,
           marketType: orderInput.marketType,
           reduceOnly: orderInput.reduceOnly,
+          stopLossIntent: hasProtection ? input.stopLoss : undefined,
+          takeProfitIntent: hasProtection ? input.takeProfit : undefined,
+          protectionMode: hasProtection ? input.protectionMode : undefined,
         });
 
         if (binanceOrder.status === 'NEW' && !orderInput.reduceOnly) {
@@ -399,6 +388,9 @@ export const orderMutationsRouter = router({
                 entryOrderId: binanceOrder.orderId,
                 entryOrderType: 'LIMIT',
                 status: 'pending',
+                stopLoss: attachedStopLoss,
+                takeProfit: attachedTakeProfit,
+                originalStopLoss: attachedStopLoss,
                 marketType: orderInput.marketType,
                 openedAt: new Date(),
                 leverage: futuresLeverage,
@@ -478,8 +470,9 @@ export const orderMutationsRouter = router({
               .limit(1);
 
             if (!existingSameSide) {
+              const marketExecutionId = generateEntityId();
               await ctx.db.insert(tradeExecutions).values({
-                id: generateEntityId(),
+                id: marketExecutionId,
                 userId: ctx.user.id,
                 walletId: orderInput.walletId,
                 symbol: orderInput.symbol,
@@ -493,6 +486,35 @@ export const orderMutationsRouter = router({
                 openedAt: new Date(),
                 leverage: futuresLeverage,
               });
+
+              if (hasProtection) {
+                const protection = await placeEntryProtection({
+                  wallet,
+                  userId: ctx.user.id,
+                  symbol: orderInput.symbol,
+                  side: intendedSide,
+                  quantity: fillQty,
+                  marketType: orderInput.marketType,
+                  stopLoss: input.stopLoss,
+                  takeProfit: input.takeProfit,
+                  protectionMode: input.protectionMode,
+                });
+                protectionErrors.push(...protection.errors);
+                if (input.protectionMode === 'OCO') {
+                  await ctx.db.update(tradeExecutions).set({
+                    stopLoss: attachedStopLoss,
+                    takeProfit: attachedTakeProfit,
+                    originalStopLoss: attachedStopLoss,
+                    stopLossAlgoId: protection.stopLossAlgoId,
+                    stopLossOrderId: protection.stopLossOrderId,
+                    stopLossIsAlgo: protection.stopLossIsAlgo,
+                    takeProfitAlgoId: protection.takeProfitAlgoId,
+                    takeProfitOrderId: protection.takeProfitOrderId,
+                    takeProfitIsAlgo: protection.takeProfitIsAlgo,
+                    updatedAt: new Date(),
+                  }).where(eq(tradeExecutions.id, marketExecutionId));
+                }
+              }
             }
           }
         }
@@ -514,7 +536,9 @@ export const orderMutationsRouter = router({
           quantity: binanceOrder.origQty,
           executedQty: binanceOrder.executedQty,
           marketType: orderInput.marketType,
+          walletId: orderInput.walletId,
           openExecutions,
+          protectionErrors,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -546,25 +570,9 @@ export const orderMutationsRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          await ctx.db
-            .update(orders)
-            .set({
-              status: 'CANCELED',
-              updateTime: Date.now(),
-            })
-            .where(eq(orders.orderId, input.orderId));
-
-          const paperCancelledExecs = await ctx.db
-            .update(tradeExecutions)
-            .set({ status: 'cancelled', updatedAt: new Date() })
-            .where(
-              and(
-                eq(tradeExecutions.walletId, input.walletId),
-                eq(tradeExecutions.entryOrderId, input.orderId),
-                eq(tradeExecutions.status, 'pending')
-              )
-            )
-            .returning();
+          await withWriteLock(input.walletId, input.symbol, () =>
+            cancelPaperOrders({ walletId: input.walletId, orderId: input.orderId })
+          );
 
           const paperOpenExecs = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -572,15 +580,6 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.userId, ctx.user.id),
               eq(tradeExecutions.status, 'open'),
             ));
-
-          const wsService = getWebSocketService();
-          if (wsService) {
-            wsService.emitOrderCancelled(input.walletId, input.orderId);
-            for (const exec of paperCancelledExecs) {
-              wsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
-              wsService.emitPositionUpdate(input.walletId, exec);
-            }
-          }
 
           return {
             orderId: input.orderId,

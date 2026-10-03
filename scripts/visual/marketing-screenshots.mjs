@@ -29,6 +29,8 @@ process.env.MM_MCP_VIEWPORT ??= '1920x1080';
 process.env.MM_MCP_SCALE ??= '2';
 process.env.MM_MCP_SCREENSHOT_DIR ??= '/tmp/marketing-screenshots-session';
 
+const MARKETING_TICKET_SIZE_PERCENT = 10;
+
 const OUT_DIR = process.env.MM_MARKETING_OUT_DIR
   ?? path.resolve(import.meta.dirname, '..', '..', '..', 'marketmind-site', 'public', 'images');
 
@@ -47,6 +49,7 @@ const switchLayout = async (presetName) => {
   if (!switched) {
     throw new Error(`switchLayout: preset "${presetName}" not found in layoutPresets`);
   }
+  await page.evaluate((sizePercent) => window.__quickTradeStore?.getState?.().setSizePercent?.(sizePercent), MARKETING_TICKET_SIZE_PERCENT);
   // Give the canvas time to mount, hydrate kline data via the trpc
   // mock, and run rAF frames so candles actually render.
   await page.waitForTimeout(3500);

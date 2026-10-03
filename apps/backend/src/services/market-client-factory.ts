@@ -2,6 +2,8 @@ import type { MarketType } from '@marketmind/types';
 
 import type { Wallet } from '../db/schema';
 import { createBinanceClient, createBinanceFuturesClient } from './binance-client';
+import { getSpotClient } from '../exchange';
+import type { SpotOrderParams } from '../exchange/spot-client';
 
 export interface OrderParams {
   symbol: string;
@@ -169,7 +171,54 @@ class FuturesClient implements MarketClient {
   }
 }
 
+const STOCK_ORDER_TYPES: Record<string, SpotOrderParams['type']> = {
+  MARKET: 'MARKET',
+  LIMIT: 'LIMIT',
+  STOP_MARKET: 'STOP_LOSS',
+  STOP_LOSS: 'STOP_LOSS',
+  STOP_LOSS_LIMIT: 'STOP_LOSS_LIMIT',
+  TAKE_PROFIT_MARKET: 'TAKE_PROFIT',
+  TAKE_PROFIT: 'TAKE_PROFIT',
+  TAKE_PROFIT_LIMIT: 'TAKE_PROFIT_LIMIT',
+};
+
+class StockClient implements MarketClient {
+  readonly marketType: MarketType = 'SPOT';
+  private client: ReturnType<typeof getSpotClient>;
+
+  constructor(wallet: Wallet) {
+    this.client = getSpotClient(wallet);
+  }
+
+  async createOrder(params: OrderParams): Promise<OrderResult> {
+    const type = STOCK_ORDER_TYPES[params.type];
+    if (!type) throw new Error(`Order type ${params.type} is not supported for stocks`);
+    const order = await this.client.submitOrder({
+      symbol: params.symbol,
+      side: params.side,
+      type,
+      quantity: params.quantity,
+      price: params.price,
+      stopPrice: params.stopPrice,
+      timeInForce: params.timeInForce,
+    });
+    return { ...order, reduceOnly: false };
+  }
+
+  async cancelOrder(symbol: string, orderId: string): Promise<CancelOrderResult> {
+    return this.client.cancelOrder(symbol, orderId);
+  }
+
+  async getAllOrders(symbol: string, limit = 100): Promise<OrderResult[]> {
+    return this.client.getAllOrders(symbol, limit);
+  }
+}
+
 export const createMarketClient = (wallet: Wallet, marketType: MarketType): MarketClient => {
+  if (wallet.exchange === 'INTERACTIVE_BROKERS') {
+    if (marketType === 'FUTURES') throw new Error('Interactive Brokers wallets trade stocks only');
+    return new StockClient(wallet);
+  }
   return marketType === 'FUTURES'
     ? new FuturesClient(wallet)
     : new SpotClient(wallet);

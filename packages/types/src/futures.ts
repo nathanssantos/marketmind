@@ -21,6 +21,9 @@ export type EntryOrderType =
   | 'STOP_MARKET'
   | 'TAKE_PROFIT_MARKET';
 
+export const PROTECTION_MODES = ['OCO', 'INDEPENDENT'] as const;
+export type ProtectionMode = (typeof PROTECTION_MODES)[number];
+
 export interface FuturesSymbolInfo {
   symbol: string;
   pair: string;

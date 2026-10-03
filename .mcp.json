@@ -19,21 +19,21 @@
       "args": ["./packages/mcp-backend/dist/index.js"],
       "env": {
         "DATABASE_URL": "${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/marketmind}",
-        "MM_MCP_TRPC_URL": "${MM_MCP_TRPC_URL:-http://localhost:3001/trpc}"
+        "MM_MCP_TRPC_URL": "${MM_MCP_TRPC_URL:-}"
       }
     },
     "marketmind-strategy": {
       "command": "node",
       "args": ["./packages/mcp-strategy/dist/index.js"],
       "env": {
-        "MM_MCP_TRPC_URL": "${MM_MCP_TRPC_URL:-http://localhost:3001/trpc}"
+        "MM_MCP_TRPC_URL": "${MM_MCP_TRPC_URL:-}"
       }
     },
     "marketmind-trading": {
       "command": "node",
       "args": ["./packages/mcp-trading/dist/index.js"],
       "env": {
-        "MM_MCP_TRPC_URL": "${MM_MCP_TRPC_URL:-http://localhost:3001/trpc}",
+        "MM_MCP_TRPC_URL": "${MM_MCP_TRPC_URL:-}",
         "MM_MCP_SESSION_COOKIE": "${MM_MCP_SESSION_COOKIE:-}"
       }
     }

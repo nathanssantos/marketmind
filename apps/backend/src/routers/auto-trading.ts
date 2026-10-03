@@ -5,6 +5,7 @@ import type { ExchangeId, MarketType, TimeInterval } from '@marketmind/types';
 import { AUTO_TRADING_CONFIG, CAPITAL_RULES, INTERVAL_MS, TRADING_DEFAULTS } from '@marketmind/types';
 import { and, desc, eq, gte, inArray, sql } from 'drizzle-orm';
 import { badRequest, notFound } from '../utils/trpc-errors';
+import { assertSideAllowedOnMarket } from '../utils/trading-validation';
 import { z } from 'zod';
 import { DEFAULT_ENABLED_SETUPS, PROTECTION_CONFIG, TRADING_CONFIG } from '../constants';
 import {
@@ -370,6 +371,7 @@ export const autoTradingRouter = router({
       if (wallet.marketType && wallet.marketType !== input.marketType) {
         throw badRequest(`Cannot execute ${input.marketType} setup on ${wallet.marketType} wallet`);
       }
+      assertSideAllowedOnMarket(input.marketType, setup.direction);
 
       const walletBalance = parseFloat(wallet.currentBalance ?? '0');
       const maxPositionSizePercent = parseFloat(config.maxPositionSize);

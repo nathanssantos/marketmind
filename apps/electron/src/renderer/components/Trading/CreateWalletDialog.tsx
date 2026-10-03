@@ -1,6 +1,6 @@
 import { Flex, Stack, Text } from '@chakra-ui/react';
 import { Callout, Field, FormDialog, Input, Link, NumberInput, Select } from '@renderer/components/ui';
-import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, SELECTABLE_CURRENCIES, type DialogControlProps, type WalletCurrency, type ExchangeId } from '@marketmind/types';
+import { CURRENCY_SYMBOLS, DEFAULT_CURRENCY, SELECTABLE_CURRENCIES, type DialogControlProps, type MarketType, type WalletCurrency, type ExchangeId } from '@marketmind/types';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LuExternalLink } from 'react-icons/lu';
@@ -13,17 +13,24 @@ const CURRENCY_SELECT_OPTIONS = SELECTABLE_CURRENCIES.map((c) => ({
 type WalletType = 'paper' | 'testnet' | 'live';
 type IBConnectionType = 'gateway' | 'tws';
 
+const DEFAULT_MARKET_TYPE: MarketType = 'FUTURES';
+const IB_GATEWAY_PLACEHOLDER = 'ib-gateway';
+
 interface CreateWalletDialogProps extends DialogControlProps {
   onCreate: (params: {
     name: string;
     initialBalance: number;
     currency: WalletCurrency;
+    marketType: MarketType;
+    exchange: ExchangeId;
   }) => void;
   onCreateReal?: (params: {
     name: string;
     apiKey: string;
     apiSecret: string;
     walletType: 'testnet' | 'live';
+    marketType: MarketType;
+    exchange: ExchangeId;
   }) => Promise<void>;
   isCreating?: boolean;
 }
@@ -32,6 +39,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
   const { t } = useTranslation();
   const [exchange, setExchange] = useState<ExchangeId>('BINANCE');
   const [walletType, setWalletType] = useState<WalletType>('paper');
+  const [marketType, setMarketType] = useState<MarketType>(DEFAULT_MARKET_TYPE);
   const [name, setName] = useState('');
   const [initialBalance, setInitialBalance] = useState('10000');
   const [currency, setCurrency] = useState<WalletCurrency>(DEFAULT_CURRENCY);
@@ -51,31 +59,33 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
     if (walletType === 'paper') {
       const balance = parseFloat(initialBalance);
       if (isNaN(balance) || balance <= 0) return;
-      onCreate({ name: name.trim(), initialBalance: balance, currency });
+      onCreate({ name: name.trim(), initialBalance: balance, currency, marketType: isIB ? 'SPOT' : marketType, exchange });
       resetForm();
       onClose();
     } else {
-      if (!apiKey.trim() || !apiSecret.trim()) {
-        setError('API Key and Secret are required');
+      if (isBinance && (!apiKey.trim() || !apiSecret.trim())) {
+        setError(t('trading.wallets.apiKeysRequired'));
         return;
       }
 
       if (!onCreateReal) {
-        setError('Real wallet creation not available');
+        setError(t('trading.wallets.realCreationUnavailable'));
         return;
       }
 
       try {
         await onCreateReal({
           name: name.trim(),
-          apiKey: apiKey.trim(),
-          apiSecret: apiSecret.trim(),
-          walletType,
+          apiKey: isIB ? IB_GATEWAY_PLACEHOLDER : apiKey.trim(),
+          apiSecret: isIB ? IB_GATEWAY_PLACEHOLDER : apiSecret.trim(),
+          walletType: walletType === 'live' ? 'live' : 'testnet',
+          marketType: isIB ? 'SPOT' : marketType,
+          exchange,
         });
         resetForm();
         onClose();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to create wallet');
+        setError(err instanceof Error ? err.message : t('trading.wallets.createFailed'));
       }
     }
   };
@@ -87,6 +97,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
     setApiKey('');
     setApiSecret('');
     setWalletType('paper');
+    setMarketType(DEFAULT_MARKET_TYPE);
     setExchange('BINANCE');
     setIbConnectionType('gateway');
     setIbPort('4002');
@@ -155,6 +166,21 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
           />
         </Field>
 
+        {isBinance && (
+          <Field label={t('trading.wallets.marketType')}>
+            <Select
+              size="xs"
+              value={marketType}
+              onChange={(value) => setMarketType(value as MarketType)}
+              options={[
+                { value: 'FUTURES', label: t('trading.wallets.marketFutures') },
+                { value: 'SPOT', label: t('trading.wallets.marketSpot') },
+              ]}
+              usePortal={false}
+            />
+          </Field>
+        )}
+
         {isBinance && walletType === 'testnet' && (
           <Callout tone="info" title={t('trading.wallets.testnetInfo')} compact>
             <Text mb={1}>{t('trading.wallets.testnetDescription')}</Text>
@@ -219,7 +245,7 @@ export const CreateWalletDialog = ({ isOpen, onClose, onCreate, onCreateReal, is
           </>
         )}
 
-        {isBinance && walletType === 'paper' && (
+        {walletType === 'paper' && (
           <>
             <Field label={t('trading.wallets.initialBalance')}>
               <NumberInput

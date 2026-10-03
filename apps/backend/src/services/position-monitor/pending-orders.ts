@@ -1,7 +1,7 @@
 import type { PendingOrderAction, PendingOrdersCheckResult } from '@marketmind/logger';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '../../db';
-import { tradeExecutions } from '../../db/schema';
+import { tradeExecutions, wallets } from '../../db/schema';
 import { serializeError } from '../../utils/errors';
 import { formatPrice } from '../../utils/formatters';
 import { priceCache } from '../price-cache';
@@ -16,6 +16,15 @@ export const checkPendingOrders = async (): Promise<void> => {
     .where(eq(tradeExecutions.status, 'pending'));
 
   if (pendingExecutions.length === 0) return;
+
+  const orderBackedWalletIds = [...new Set(pendingExecutions.filter(e => e.entryOrderId).map(e => e.walletId))];
+  const paperWallets = orderBackedWalletIds.length > 0
+    ? await db
+        .select({ id: wallets.id })
+        .from(wallets)
+        .where(and(inArray(wallets.id, orderBackedWalletIds), eq(wallets.walletType, 'paper')))
+    : [];
+  const paperWalletIds = new Set(paperWallets.map(w => w.id));
 
   const startTime = new Date();
   const actions: PendingOrderAction[] = [];
@@ -37,6 +46,8 @@ export const checkPendingOrders = async (): Promise<void> => {
     : new Map<string, number>();
 
   for (const execution of pendingExecutions) {
+    if (execution.entryOrderId && paperWalletIds.has(execution.walletId)) continue;
+
     try {
       if (execution.expiresAt && execution.expiresAt < now) {
         actions.push({

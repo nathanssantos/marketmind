@@ -8,6 +8,13 @@
       "when": 1790434434154,
       "tag": "0000_baseline",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791036684250,
+      "tag": "0001_orders_protection_mode",
+      "breakpoints": true
     }
   ]
 }

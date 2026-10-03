@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { badRequest, conflict } from '../../utils/trpc-errors';
+import { assertFuturesWallet } from '../../utils/trading-validation';
 import { z } from 'zod';
 import { orders, tradeExecutions } from '../../db/schema';
 import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
@@ -25,6 +26,7 @@ import { getWebSocketService } from '../../services/websocket';
 import { protectedProcedure, router } from '../../trpc';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { generateEntityId } from '../../utils/id';
+import { cancelPaperOrders, placePaperOrder } from '../../services/trading/paper-order-engine';
 import { withWriteLock } from '../../services/write-op-mutex';
 import { handleConditionalOrder, handleMarketOrderProtection } from './order-helpers';
 
@@ -52,6 +54,7 @@ export const orderMutationsRouter = router({
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (!wallet.isActive) throw badRequest('Wallet is inactive');
+      assertFuturesWallet(wallet);
 
       if (!input.reduceOnly && getScalpingScheduler().isSymbolBeingScalped(input.walletId, input.symbol)) {
         throw conflict(`Cannot trade ${input.symbol}: scalping is active on this symbol. Stop scalping first.`);
@@ -66,31 +69,22 @@ export const orderMutationsRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          const simulatedTimestamp = Date.now();
-          const simulatedOrderId = String(simulatedTimestamp);
-          const price = input.price ?? '0';
-          const quantity = input.quantity;
-
-          await ctx.db.insert(orders).values({
-            orderId: simulatedOrderId,
+          const paperOrder = await placePaperOrder({
             userId: ctx.user.id,
             walletId: input.walletId,
             symbol: input.symbol,
             side: input.side,
             type: input.type,
-            price,
-            origQty: quantity,
-            executedQty: input.type === 'MARKET' ? quantity : '0',
-            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-            timeInForce: input.type === 'LIMIT' ? 'GTC' : undefined,
-            time: simulatedTimestamp,
-            updateTime: simulatedTimestamp,
+            quantity: input.quantity,
+            marketType: 'FUTURES',
+            price: input.price,
+            stopPrice: input.stopPrice,
+            reduceOnly: input.reduceOnly,
             setupId: input.setupId,
             setupType: input.setupType,
-            marketType: 'FUTURES',
-            reduceOnly: input.reduceOnly ?? false,
-            stopLossIntent: input.stopLoss,
-            takeProfitIntent: input.takeProfit,
+            stopLoss: input.stopLoss,
+            takeProfit: input.takeProfit,
+            leverage: input.leverage,
           });
 
           const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
@@ -100,32 +94,7 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
-          const paperWsService = getWebSocketService();
-          if (paperWsService) {
-            paperWsService.emitOrderCreated(input.walletId, {
-              orderId: simulatedOrderId,
-              symbol: input.symbol,
-              side: input.side,
-              type: input.type,
-              status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-              price,
-              origQty: quantity,
-              executedQty: input.type === 'MARKET' ? quantity : '0',
-              marketType: 'FUTURES',
-            });
-          }
-
-          return {
-            orderId: simulatedOrderId,
-            symbol: input.symbol,
-            side: input.side,
-            type: input.type,
-            status: input.type === 'MARKET' ? 'FILLED' : 'NEW',
-            price,
-            quantity,
-            executedQty: input.type === 'MARKET' ? quantity : '0',
-            openExecutions: paperOpenExecutions,
-          };
+          return { ...paperOrder, walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
 
         const client = createBinanceFuturesClient(wallet);
@@ -285,16 +254,9 @@ export const orderMutationsRouter = router({
 
       try {
         if (isPaperWallet(wallet)) {
-          await ctx.db
-            .update(orders)
-            .set({ status: 'CANCELED', updateTime: Date.now() })
-            .where(eq(orders.orderId, input.orderId));
-
-          const paperCancelledExecs = await ctx.db
-            .update(tradeExecutions)
-            .set({ status: 'cancelled', updatedAt: new Date() })
-            .where(and(eq(tradeExecutions.entryOrderId, input.orderId), eq(tradeExecutions.status, 'pending')))
-            .returning();
+          await withWriteLock(input.walletId, input.symbol, () =>
+            cancelPaperOrders({ walletId: input.walletId, orderId: input.orderId })
+          );
 
           const paperOpenExecutions = await ctx.db.select().from(tradeExecutions)
             .where(and(
@@ -302,15 +264,6 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.userId, ctx.user.id),
               eq(tradeExecutions.status, 'open'),
             ));
-
-          const paperWsService = getWebSocketService();
-          if (paperWsService) {
-            paperWsService.emitOrderCancelled(input.walletId, input.orderId);
-            for (const exec of paperCancelledExecs) {
-              paperWsService.emitOrderUpdate(input.walletId, { id: exec.id, status: 'cancelled' });
-              paperWsService.emitPositionUpdate(input.walletId, exec);
-            }
-          }
 
           return { orderId: input.orderId, symbol: input.symbol, status: 'CANCELED', walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
@@ -411,17 +364,9 @@ export const orderMutationsRouter = router({
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (isPaperWallet(wallet)) {
-        const cancelled = await ctx.db
-          .update(orders)
-          .set({ status: 'CANCELED', updateTime: Date.now() })
-          .where(
-            and(
-              eq(orders.walletId, input.walletId),
-              eq(orders.symbol, input.symbol),
-              eq(orders.status, 'NEW')
-            )
-          )
-          .returning();
+        const cancelled = await withWriteLock(input.walletId, input.symbol, () =>
+          cancelPaperOrders({ walletId: input.walletId, symbol: input.symbol })
+        );
 
         logger.info({ symbol: input.symbol, cancelled: cancelled.length }, 'Paper wallet - cancelled pending orders');
         return { success: true, cancelled: cancelled.length };

@@ -1,6 +1,6 @@
 import { Box, Flex, Portal, Spinner, Stack, Text } from '@chakra-ui/react';
 import { MenuContent, MenuItem, MenuPositioner, MenuRoot, MenuTrigger } from '@chakra-ui/react/menu';
-import type { Wallet } from '@marketmind/types';
+import type { ExchangeId, MarketType, Wallet } from '@marketmind/types';
 import { Badge, CreateActionButton, EmptyState, FormSection, IconButton, LoadingSpinner, Separator, TooltipWrapper } from '@renderer/components/ui';
 import { BrlValue } from '@renderer/components/BrlValue';
 import { useBackendAnalytics } from '@renderer/hooks/useBackendAnalytics';
@@ -83,11 +83,15 @@ export const WalletManager = () => {
     name: string;
     initialBalance: number;
     currency: 'USD' | 'BRL' | 'EUR' | 'USDT' | 'BTC' | 'ETH';
+    marketType: MarketType;
+    exchange: ExchangeId;
   }) => {
     await createPaperWallet({
       name: params.name,
       initialBalance: params.initialBalance.toString(),
       currency: params.currency,
+      marketType: params.marketType,
+      exchange: params.exchange,
     });
   };
 
@@ -96,6 +100,8 @@ export const WalletManager = () => {
     apiKey: string;
     apiSecret: string;
     walletType: 'testnet' | 'live';
+    marketType: MarketType;
+    exchange: ExchangeId;
   }) => {
     await createWallet(params);
   };

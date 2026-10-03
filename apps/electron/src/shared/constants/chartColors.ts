@@ -184,13 +184,6 @@ export const GRID_COLORS = {
   TEXT: SIGNAL_COLORS.ZONE_LINE,
 } as const;
 
-export const ACTIVITY_COLORS = {
-  HIGH_ACTIVITY: '#00ff00',
-  HIGH_ACTIVITY_STROKE: '#00cc00',
-  LOW_ACTIVITY: '#ff1493',
-  LOW_ACTIVITY_STROKE: '#cc0066',
-} as const;
-
 export const ORDER_LINE_COLORS = {
   PROFIT_AREA: 'rgba(34, 197, 94, 0.08)',
   LOSS_AREA: 'rgba(239, 68, 68, 0.08)',

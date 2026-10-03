@@ -114,7 +114,9 @@
     "start": "Start",
     "settings": "Settings",
     "confirm": "Confirm",
-    "endTime": "End time"
+    "endTime": "End time",
+    "options": "Opções",
+    "clear": "Limpar"
   },
   "app": {
     "title": "MarketMind",
@@ -211,16 +213,6 @@
     "orderImpact": "Impacto da Ordem",
     "requiredInitial": "Inicial Necessária",
     "newBuyingPower": "Novo Poder de Compra"
-  },
-  "shortability": {
-    "easy": "Fácil de Alugar",
-    "hard": "Difícil de Alugar",
-    "unavailable": "Indisponível",
-    "tooltip": {
-      "available": "{{shares}} ações disponíveis ({{difficulty}})",
-      "availableNoCount": "Disponível para venda a descoberto ({{difficulty}})",
-      "unavailable": "Esta ação não está disponível para venda a descoberto"
-    }
   },
   "settings": {
     "title": "Configurações",
@@ -531,7 +523,9 @@
       "liquidityIntensity": "Mapa de liquidez por intensidade",
       "liquidityIntensityHelper": "Usa uma única rampa quente para bid e ask — células mais claras indicam maior liquidez; o lado é inferido pela posição em relação ao preço",
       "confluenceScoreChart": "Gráfico de confluência",
-      "confluenceScoreChartHelper": "Limites de convicção por lado renderizados no gráfico de net score. A faixa entre eles é sombreada como zona neutra para deixar visualmente óbvio que setups medianos devem ser evitados."
+      "confluenceScoreChartHelper": "Limites de convicção por lado renderizados no gráfico de net score. A faixa entre eles é sombreada como zona neutra para deixar visualmente óbvio que setups medianos devem ser evitados.",
+      "skipMarketConfirm": "Enviar ordens a mercado sem confirmação",
+      "skipMarketConfirmHelper": "A boleta envia ordens a mercado em um clique. Ordens limite e stop continuam pedindo confirmação."
     },
     "tradingSimulator": {
       "title": "Configurações do Simulador de Trading",
@@ -997,7 +991,6 @@
       "fibonacciProjection": "Projeção de Fibonacci",
       "measurementRuler": "Régua de Medição",
       "measurementArea": "Área de Medição",
-      "activityIndicator": "Indicador de Atividade",
       "marketEvents": "Eventos de Mercado",
       "openingRange": "Opening Range",
       "autoPatterns": "Detecção Automática de Padrões",
@@ -1060,7 +1053,47 @@
       "stopLoss": "SL",
       "takeProfit": "TP",
       "slInvalid": "Stop Loss deve estar no lado da perda em relação ao preço de entrada",
-      "tpInvalid": "Take Profit deve estar no lado do lucro em relação ao preço de entrada"
+      "tpInvalid": "Take Profit deve estar no lado do lucro em relação ao preço de entrada",
+      "oco": "OCO",
+      "ocoOn": "SL e TP se cancelam",
+      "ocoOff": "SL e TP ficam independentes",
+      "protection": "Proteção",
+      "protectionOco": "OCO",
+      "protectionIndependent": "Independentes",
+      "sideBuyLong": "Compra / Long",
+      "sideSellShort": "Venda / Short",
+      "orderTypeStop": "Stop",
+      "mid": "Meio",
+      "ocoNeedsBoth": "Ligue SL e TP para escolher OCO",
+      "reduceNote": "Esta ordem reduz a posição aberta; SL e TP não se aplicam.",
+      "risk": "Risco",
+      "ofBalance": "do saldo",
+      "riskReward": "R:R",
+      "fromDrawing": "Do desenho {{tool}}",
+      "paper": "PAPER",
+      "live": "REAL",
+      "estimatedFee": "Taxa est.",
+      "breakeven": "Break-even",
+      "effect": "Efeito",
+      "decreaseSize": "Diminuir tamanho 5%",
+      "increaseSize": "Aumentar tamanho 5%",
+      "effectLabel": {
+        "CLOSE": "Fecha a posição",
+        "REDUCE": "Reduz a posição",
+        "REVERSE": "Fecha e inverte a posição"
+      },
+      "action": {
+        "open": "{{side}} {{quantity}} @ {{price}}",
+        "close": "Fechar {{quantity}}",
+        "reduce": "Reduzir {{quantity}}",
+        "reverse": "Inverter para {{side}} {{quantity}}"
+      },
+      "reason": {
+        "belowMinNotional": "Ordem abaixo do mínimo de {{min}} {{currency}}",
+        "notShortable": "Esta ação não está disponível para venda a descoberto",
+        "marketClosed": "Mercado fechado: ordens a mercado esperam o pregão regular",
+        "sizeBelowStep": "Tamanho pequeno demais: {{percent}}% do saldo fica abaixo do mínimo de {{step}} {{asset}}"
+      }
     },
     "gridOrders": {
       "title": "Ordens em Grade",
@@ -1305,7 +1338,13 @@
       "liveWarning": "Aviso: Dinheiro Real",
       "liveDescription": "Trading real usa fundos reais. Garanta que você entende os riscos.",
       "selectWallet": "Select a wallet first",
-      "syncBalance": "Sync balance from Binance"
+      "syncBalance": "Sync balance from Binance",
+      "marketType": "Mercado",
+      "marketFutures": "Futuros",
+      "marketSpot": "Spot",
+      "apiKeysRequired": "API Key e Secret são obrigatórios",
+      "realCreationUnavailable": "Criação de carteira real indisponível",
+      "createFailed": "Falha ao criar carteira"
     },
     "ticket": {
       "title": "Ordem",
@@ -1511,7 +1550,8 @@
       "closeFailed": "Falha ao fechar ordem",
       "slTpUpdateFailed": "Falha ao atualizar SL/TP",
       "slTpCreateFailed": "Falha ao criar SL/TP",
-      "entryUpdateFailed": "Falha ao mover ordem pendente"
+      "entryUpdateFailed": "Falha ao mover ordem pendente",
+      "protectionFailed": "Ordem de proteção não enviada"
     },
     "dialogs": {
       "chartClose": {
@@ -1614,6 +1654,10 @@
       "expired": "Expirada",
       "positionSize": "Tamanho da Posição",
       "noSuggestions": "Sem sugestões pendentes"
+    },
+    "spot": {
+      "shortNotAllowed": "Carteiras spot não podem abrir posições vendidas.",
+      "nothingToSell": "Nada para vender: esta carteira não tem este ativo."
     }
   },
   "about": {

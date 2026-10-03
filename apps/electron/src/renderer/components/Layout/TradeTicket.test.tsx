@@ -12,779 +12,601 @@ const useOrderQuantityMock = vi.fn();
 const useToastMock = vi.fn();
 const useQuickTradeStoreMock = vi.fn();
 const usePricesForSymbolsMock = vi.fn();
+const useSymbolOpenPositionMock = vi.fn();
+const useWalletFeesMock = vi.fn();
+const marketStatusQueryMock = vi.fn();
+const shortabilityQueryMock = vi.fn();
+const commissionQueryMock = vi.fn();
 
-const reversePositionMock = vi.fn();
-const closePositionAndCancelOrdersMock = vi.fn();
 const cancelAllOrdersMock = vi.fn();
 const createOrderMock = vi.fn();
 const setSizePercentMock = vi.fn();
 const warningMock = vi.fn();
 const errorMock = vi.fn();
 
-vi.mock('@renderer/hooks/useActiveWallet', () => ({
-  useActiveWallet: () => useActiveWalletMock(),
-}));
-
-vi.mock('@renderer/hooks/useBookTicker', () => ({
-  useBookTicker: (symbol: string) => useBookTickerMock(symbol),
-}));
-
-vi.mock('@renderer/hooks/useBackendFuturesTrading', () => ({
-  useBackendFuturesTrading: (walletId: string) => useBackendFuturesTradingMock(walletId),
-}));
-
-vi.mock('@renderer/hooks/useBackendTradingMutations', () => ({
-  useBackendTradingMutations: () => useBackendTradingMutationsMock(),
-}));
-
-vi.mock('@renderer/hooks/useOrderQuantity', () => ({
-  useOrderQuantity: (symbol: string, marketType: string) => useOrderQuantityMock(symbol, marketType),
-}));
-
-vi.mock('@renderer/hooks/useLeverageBrackets', () => ({
-  useLeverageBrackets: () => undefined,
-}));
-
-vi.mock('@renderer/hooks/useToast', () => ({
-  useToast: () => useToastMock(),
-}));
-
+const tradingPrefs = new Map<string, unknown>();
+vi.mock('@renderer/store/preferencesStore', async () => {
+  const React = await import('react');
+  const usePref = <T,>(key: string, initialValue: T): [T, (value: T | ((prev: T) => T)) => void] => {
+    const [value, setValue] = React.useState<T>((tradingPrefs.has(key) ? tradingPrefs.get(key) : initialValue) as T);
+    const update = React.useCallback((next: T | ((prev: T) => T)) => {
+      setValue((prev) => {
+        const computed = typeof next === 'function' ? (next as (prev: T) => T)(prev) : next;
+        tradingPrefs.set(key, computed);
+        return computed;
+      });
+    }, [key]);
+    return [value, update];
+  };
+  return { useTradingPref: usePref, useUIPref: usePref, useChartPref: usePref };
+});
+vi.mock('@renderer/hooks/useActiveWallet', () => ({ useActiveWallet: () => useActiveWalletMock() }));
+vi.mock('@renderer/hooks/useBookTicker', () => ({ useBookTicker: (symbol: string) => useBookTickerMock(symbol) }));
+vi.mock('@renderer/hooks/useBackendFuturesTrading', () => ({ useBackendFuturesTrading: (walletId: string) => useBackendFuturesTradingMock(walletId) }));
+vi.mock('@renderer/hooks/useBackendTradingMutations', () => ({ useBackendTradingMutations: () => useBackendTradingMutationsMock() }));
+vi.mock('@renderer/hooks/useOrderQuantity', () => ({ useOrderQuantity: (...args: unknown[]) => useOrderQuantityMock(...args) }));
+vi.mock('@renderer/hooks/useLeverageBrackets', () => ({ useLeverageBrackets: () => undefined }));
+vi.mock('@renderer/hooks/useSymbolOpenPosition', () => ({ useSymbolOpenPosition: (...args: unknown[]) => useSymbolOpenPositionMock(...args) }));
+vi.mock('@renderer/hooks/useWalletFees', () => ({ useWalletFees: (...args: unknown[]) => useWalletFeesMock(...args) }));
+vi.mock('@renderer/hooks/useTradingMarketType', () => ({ useTradingMarketType: (chart: string | undefined) => chart ?? 'FUTURES' }));
+vi.mock('@renderer/hooks/useToast', () => ({ useToast: () => useToastMock() }));
 vi.mock('@renderer/store/quickTradeStore', () => ({
-  // Selector-aware mock — supports both `useQuickTradeStore()` (returns
-  // the whole state object) and `useQuickTradeStore((s) => s.xxx)`
-  // (returns a single field). Production code uses selectors; some
-  // existing tests still destructure the whole object.
   useQuickTradeStore: (selector?: (s: unknown) => unknown) => {
     const state = useQuickTradeStoreMock();
     return typeof selector === 'function' ? selector(state) : state;
   },
 }));
-
-vi.mock('@renderer/store/priceStore', () => ({
-  usePricesForSymbols: (symbols: string[]) => usePricesForSymbolsMock(symbols),
-}));
-
-vi.mock('@renderer/utils/canvas/perfMonitor', () => ({
-  perfMonitor: {
-    isEnabled: () => false,
-    recordComponentRender: vi.fn(),
+vi.mock('@renderer/store/priceStore', () => ({ usePricesForSymbols: (symbols: string[]) => usePricesForSymbolsMock(symbols) }));
+vi.mock('@renderer/utils/canvas/perfMonitor', () => ({ perfMonitor: { isEnabled: () => false, recordComponentRender: vi.fn() } }));
+vi.mock('@renderer/utils/trpc', () => ({
+  trpc: {
+    useUtils: () => ({}),
+    auth: { me: { useQuery: () => ({ data: { id: 'test-user' }, isLoading: false, error: null }) } },
+    preferences: {
+      getByCategory: { useQuery: () => ({ data: {}, isLoading: false, isSuccess: true, error: null }) },
+      set: { useMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }) },
+    },
+    stocks: {
+      marketStatus: { useQuery: (...args: unknown[]) => marketStatusQueryMock(...args) },
+      shortability: { useQuery: (...args: unknown[]) => shortabilityQueryMock(...args) },
+      commissionEstimate: { useQuery: (...args: unknown[]) => commissionQueryMock(...args) },
+    },
   },
 }));
-
-const gridOrderPopoverRender = vi.fn();
 vi.mock('./GridOrderPopover', () => ({
-  GridOrderPopover: ({ triggerElement }: { triggerElement?: React.ReactNode }) => {
-    gridOrderPopoverRender();
-    return <div data-testid="grid-popover">{triggerElement}</div>;
-  },
+  GridOrderPopover: ({ triggerElement }: { triggerElement?: React.ReactNode }) => <div data-testid="grid-popover">{triggerElement}</div>,
 }));
-
-const trailingStopPopoverRender = vi.fn();
 vi.mock('./TrailingStopPopover', () => ({
-  TrailingStopPopover: ({ symbol, triggerElement }: { symbol: string; triggerElement?: React.ReactNode }) => {
-    trailingStopPopoverRender(symbol);
-    return <div data-testid={`trailing-popover-${symbol}`}>{triggerElement}</div>;
-  },
+  TrailingStopPopover: ({ symbol, triggerElement }: { symbol: string; triggerElement?: React.ReactNode }) => <div data-testid={`trailing-popover-${symbol}`}>{triggerElement}</div>,
 }));
-
-const leveragePopoverRender = vi.fn();
 vi.mock('./LeveragePopover', () => ({
-  LeveragePopover: ({ symbol }: { symbol: string }) => {
-    leveragePopoverRender(symbol);
-    return <div data-testid={`leverage-popover-${symbol}`} />;
-  },
+  LeveragePopover: ({ symbol }: { symbol: string }) => <div data-testid={`leverage-popover-${symbol}`} />,
 }));
 
 import { TradeTicketActions } from './TradeTicket';
 
-const renderActions = (props: Partial<React.ComponentProps<typeof TradeTicketActions>> = {}) =>
+type Wallet = { id: string; currentBalance: string; walletType: 'paper' | 'live' | 'testnet'; exchange: 'BINANCE' | 'INTERACTIVE_BROKERS'; currency: string; marketType: 'SPOT' | 'FUTURES' };
+
+const PAPER_FUTURES_WALLET: Wallet = { id: 'w1', currentBalance: '10000', walletType: 'paper', exchange: 'BINANCE', currency: 'USDT', marketType: 'FUTURES' };
+const LIVE_FUTURES_WALLET: Wallet = { ...PAPER_FUTURES_WALLET, walletType: 'live' };
+const PAPER_SPOT_WALLET: Wallet = { ...PAPER_FUTURES_WALLET, marketType: 'SPOT' };
+const IB_WALLET: Wallet = { id: 'w2', currentBalance: '10000', walletType: 'testnet', exchange: 'INTERACTIVE_BROKERS', currency: 'USD', marketType: 'SPOT' };
+const OPEN_SESSION = { isOpen: true, sessionType: 'REGULAR', nextOpen: null, nextClose: '2026-10-03T20:00:00.000Z', isHoliday: false, isEarlyClose: false, earlyCloseTime: null, timezone: 'America/New_York' };
+const CLOSED_SESSION = { ...OPEN_SESSION, isOpen: false, sessionType: 'CLOSED', nextOpen: '2026-10-06T13:30:00.000Z', nextClose: null };
+
+const renderTicket = (props: Partial<React.ComponentProps<typeof TradeTicketActions>> = {}) =>
   render(
     <ChakraProvider value={defaultSystem}>
       <ColorModeProvider>
-        <TradeTicketActions
-          symbol="BTCUSDT"
-          marketType="FUTURES"
-          {...props}
-        />
+        <TradeTicketActions symbol="BTCUSDT" marketType="FUTURES" {...props} />
       </ColorModeProvider>
     </ChakraProvider>,
   );
 
-const setDefaults = (overrides: { positions?: unknown[]; sizePercent?: number; price?: number; bid?: number; ask?: number } = {}) => {
-  const { positions = [], sizePercent = 10, price = 50_000, bid = 49_950, ask = 50_050 } = overrides;
+interface Defaults {
+  wallet?: Wallet | null;
+  sizePercent?: number;
+  price?: number;
+  bid?: number;
+  ask?: number;
+  quantity?: string;
+  openPosition?: { side: 'LONG' | 'SHORT'; quantity: number } | null;
+  isReady?: boolean;
+  notReadyReason?: string | null;
+  minNotional?: number;
+  prefill?: { side: 'BUY' | 'SELL'; entryPrice: string; stopLoss: string; takeProfit: string } | null;
+  marketStatus?: typeof OPEN_SESSION | undefined;
+  shortability?: unknown;
+}
 
-  useActiveWalletMock.mockReturnValue({ activeWallet: { id: 'w1', currentBalance: '10000' } });
+const setDefaults = (overrides: Defaults = {}) => {
+  const {
+    wallet = PAPER_FUTURES_WALLET, sizePercent = 10, price = 50_000, bid = 49_950, ask = 50_050, quantity = '0.1000',
+    openPosition = null, isReady = true, notReadyReason = null, minNotional = 5, prefill = null, marketStatus, shortability,
+  } = overrides;
+
+  useActiveWalletMock.mockReturnValue({ activeWallet: wallet, exchangeId: wallet?.exchange ?? 'BINANCE', isIB: wallet?.exchange === 'INTERACTIVE_BROKERS' });
   useBookTickerMock.mockReturnValue({ bidPrice: bid, askPrice: ask });
-  useBackendFuturesTradingMock.mockReturnValue({
-    positions,
-    reversePosition: reversePositionMock,
-    isReversingPosition: false,
-    closePositionAndCancelOrders: closePositionAndCancelOrdersMock,
-    isClosingPositionAndCancellingOrders: false,
-    cancelAllOrders: cancelAllOrdersMock,
-    isCancellingAllOrders: false,
-  });
-  useBackendTradingMutationsMock.mockReturnValue({
-    createOrder: createOrderMock,
-    isCreatingOrder: false,
-  });
-  useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
+  useBackendFuturesTradingMock.mockReturnValue({ cancelAllOrders: cancelAllOrdersMock, isCancellingAllOrders: false });
+  useBackendTradingMutationsMock.mockReturnValue({ createOrder: createOrderMock, isCreatingOrder: false });
+  useOrderQuantityMock.mockReturnValue({ getQuantity: () => quantity, leverage: 5, balance: parseFloat(wallet?.currentBalance ?? '0'), isReady, notReadyReason, tickSize: 0.1, stepSize: 0.001, minNotional, sizePercent });
+  useSymbolOpenPositionMock.mockReturnValue(openPosition);
+  useWalletFeesMock.mockReturnValue({ maker: 0.0002, taker: 0.0005, vipLevel: 0, hasBnbDiscount: false, isLoaded: true });
   useToastMock.mockReturnValue({ warning: warningMock, error: errorMock });
   useQuickTradeStoreMock.mockReturnValue({
     sizePercent,
     setSizePercent: setSizePercentMock,
-    pendingPrefill: null,
+    pendingPrefill: prefill,
     prefillFromDrawing: vi.fn(),
-    consumePrefill: () => null,
+    consumePrefill: () => prefill,
   });
-  usePricesForSymbolsMock.mockReturnValue({ BTCUSDT: price });
+  usePricesForSymbolsMock.mockReturnValue({ BTCUSDT: price, AAPL: price });
+  marketStatusQueryMock.mockReturnValue({ data: marketStatus });
+  shortabilityQueryMock.mockReturnValue({ data: shortability });
+  commissionQueryMock.mockReturnValue({ data: { commission: 1, perShareRate: 0.005, tier: 'TIER_1', shares: 1, tradeValue: 1, effectiveRate: 0.001 } });
+  createOrderMock.mockResolvedValue({ orderId: '1', openExecutions: [] });
 };
 
+const submit = () => screen.getByTestId('trade-ticket-submit');
+const sideButton = (side: 'buy' | 'sell') => screen.getByTestId(`trade-ticket-side-${side}`);
+const enableProtection = async (user: ReturnType<typeof userEvent.setup>, sl: string, tp: string) => {
+  await user.click(screen.getByTestId('trade-ticket-sl-switch'));
+  await user.click(screen.getByTestId('trade-ticket-tp-switch'));
+  fireEvent.change(screen.getByTestId('trade-ticket-sl-input'), { target: { value: sl } });
+  fireEvent.change(screen.getByTestId('trade-ticket-tp-input'), { target: { value: tp } });
+};
+const confirmDialog = async () => screen.findByRole('dialog');
+
 beforeEach(() => {
+  vi.clearAllMocks();
+  tradingPrefs.clear();
   setDefaults();
-  reversePositionMock.mockResolvedValue({ success: true });
-  closePositionAndCancelOrdersMock.mockResolvedValue({ success: true });
-  cancelAllOrdersMock.mockResolvedValue({ success: true });
-  createOrderMock.mockResolvedValue({ success: true });
 });
 
 afterEach(() => {
-  vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
-describe('TradeTicket — Buy / Sell flow (regression: v0.107)', () => {
-  it('places a BUY market order with the previewed quantity (NOT percent)', async () => {
-    const user = userEvent.setup();
-    renderActions();
+describe('TradeTicket — side selector and action button', () => {
+  it('starts on Buy and shows the open-order label with quantity and price', () => {
+    renderTicket();
 
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-
-    expect(await screen.findByText('chart.quickTrade.confirmOrder')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
-
-    expect(createOrderMock).toHaveBeenCalledTimes(1);
-    const arg = createOrderMock.mock.calls[0]![0];
-    expect(arg).toMatchObject({
-      walletId: 'w1',
-      symbol: 'BTCUSDT',
-      side: 'BUY',
-      type: 'MARKET',
-      quantity: '0.1000',
-      referencePrice: 50_050,
-    });
-    expect(arg).not.toHaveProperty('percent');
+    expect(sideButton('buy')).toHaveAttribute('aria-checked', 'true');
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.open');
+    expect(submit()).toBeEnabled();
   });
 
-  it('places a SELL market order at the bid price', async () => {
+  it('switching to Sell sends a SELL order after confirmation', async () => {
     const user = userEvent.setup();
-    renderActions();
+    renderTicket();
 
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i }));
-    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmSell/i }));
+    await user.click(sideButton('sell'));
+    await user.click(submit());
+    const dialog = await confirmDialog();
+    expect(within(dialog).getByText('SHORT')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /confirmSell/ }));
 
-    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({
-      side: 'SELL',
-      type: 'MARKET',
-      quantity: '0.1000',
-      referencePrice: 49_950,
-    }));
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL', type: 'MARKET', quantity: '0.1000', referencePrice: 49_950, marketType: 'FUTURES' }));
   });
 
-  it('warns when no wallet is active and does NOT open the confirm dialog', async () => {
-    useActiveWalletMock.mockReturnValue({ activeWallet: null });
+  it('labels the button Close when the order flattens the opposite position', () => {
+    setDefaults({ openPosition: { side: 'LONG', quantity: 0.1 } });
+    renderTicket();
+
+    fireEvent.click(sideButton('sell'));
+
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.close');
+    expect(screen.getByText('chart.quickTrade.reduceNote')).toBeInTheDocument();
+  });
+
+  it('closes with the exact position quantity when the sized quantity is within 1% of it', async () => {
+    setDefaults({ openPosition: { side: 'LONG', quantity: 0.101 }, quantity: '0.100' });
     const user = userEvent.setup();
-    renderActions();
+    renderTicket();
 
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    fireEvent.click(sideButton('sell'));
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.close');
+    await user.click(submit());
+    await user.click(within(await confirmDialog()).getByRole('button', { name: /confirmSell/ }));
 
-    expect(warningMock).toHaveBeenCalledWith('trading.ticket.noWallet');
-    expect(screen.queryByText('chart.quickTrade.confirmOrder')).not.toBeInTheDocument();
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL', quantity: '0.101' }));
+  });
+
+  it('labels the button Reduce when the order is smaller than the opposite position', () => {
+    setDefaults({ openPosition: { side: 'LONG', quantity: 0.5 } });
+    renderTicket();
+
+    fireEvent.click(sideButton('sell'));
+
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.reduce');
+  });
+
+  it('labels the button Reverse when the order is larger than the opposite position', () => {
+    setDefaults({ openPosition: { side: 'LONG', quantity: 0.04 } });
+    renderTicket();
+
+    fireEvent.click(sideButton('sell'));
+
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.reverse');
+  });
+
+  it('shows a PAPER badge on paper wallets and LIVE on live wallets', () => {
+    const { unmount } = renderTicket();
+    expect(submit()).toHaveTextContent('chart.quickTrade.paper');
+    unmount();
+
+    setDefaults({ wallet: LIVE_FUTURES_WALLET });
+    renderTicket();
+    expect(submit()).toHaveTextContent('chart.quickTrade.live');
+  });
+
+  it('disables the button and shows the reason when sizing is not ready', () => {
+    setDefaults({ isReady: false, notReadyReason: 'Loading leverage…' });
+    renderTicket();
+
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('Loading leverage…');
+  });
+
+  it('explains that the size is below the symbol step when the quantity rounds to zero', () => {
+    setDefaults({ quantity: '0.000' });
+    renderTicket();
+
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('chart.quickTrade.reason.sizeBelowStep');
+  });
+
+  it('disables the button when the order is below the minimum notional', () => {
+    setDefaults({ quantity: '0.00001', minNotional: 5 });
+    renderTicket();
+
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('chart.quickTrade.reason.belowMinNotional');
+  });
+
+  it('warns and does not open the confirmation without a wallet', async () => {
+    setDefaults({ wallet: null });
+    const user = userEvent.setup();
+    renderTicket();
+
+    expect(submit()).toBeDisabled();
+    await user.click(submit());
+    expect(createOrderMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('TradeTicket — order type', () => {
+  it('shows Stop instead of Limit when the limit price crosses the market', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    fireEvent.change(screen.getByLabelText('chart.quickTrade.limitPrice'), { target: { value: '51000' } });
+
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeStop' })).toBeInTheDocument();
+    await user.click(submit());
+    const dialog = await confirmDialog();
+    expect(within(dialog).getByText('chart.quickTrade.orderTypeStop')).toBeInTheDocument();
+  });
+
+  it('keeps Limit when the limit price rests away from the market and sends type LIMIT with the price', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    fireEvent.change(screen.getByLabelText('chart.quickTrade.limitPrice'), { target: { value: '49000' } });
+    await user.click(submit());
+    await user.click(within(await confirmDialog()).getByRole('button', { name: /confirmBuy/ }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'LIMIT', price: '49000', referencePrice: 49_000 }));
+  });
+
+  it('the Mid button resets the limit price to the book mid', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    fireEvent.change(screen.getByLabelText('chart.quickTrade.limitPrice'), { target: { value: '1' } });
+    await user.click(screen.getByRole('button', { name: 'chart.quickTrade.mid' }));
+
+    expect((screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement).value).toBe('50000');
+  });
+
+  it('arrow keys move the limit price by one tick', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+
+    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
+    const input = screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement;
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+
+    expect(parseFloat(input.value)).toBeCloseTo(50_000.1, 6);
+  });
+});
+
+describe('TradeTicket — SL and TP', () => {
+  it('typing a price fills the percent and typing a percent fills the price', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+
+    await user.click(screen.getByTestId('trade-ticket-sl-switch'));
+    fireEvent.change(screen.getByTestId('trade-ticket-sl-input'), { target: { value: '49048' } });
+    expect((screen.getByTestId('trade-ticket-sl-percent') as HTMLInputElement).value).toBe('-2.00');
+
+    await user.click(screen.getByTestId('trade-ticket-tp-switch'));
+    fireEvent.change(screen.getByTestId('trade-ticket-tp-percent'), { target: { value: '3' } });
+    expect(parseFloat((screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement).value)).toBeCloseTo(50_050 * 1.03, 0);
+  });
+
+  it('blocks a Buy whose SL sits above the entry and shows the reason', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+
+    await user.click(screen.getByTestId('trade-ticket-sl-switch'));
+    fireEvent.change(screen.getByTestId('trade-ticket-sl-input'), { target: { value: '51000' } });
+
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('chart.quickTrade.slInvalid');
+  });
+
+  it('sends SL, TP and OCO by default and shows risk and R:R', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+    await enableProtection(user, '49000', '52000');
+
+    expect(screen.getByText('chart.quickTrade.risk')).toBeInTheDocument();
+    expect(screen.getByText('chart.quickTrade.riskReward')).toBeInTheDocument();
+    await user.click(submit());
+    const dialog = await confirmDialog();
+    expect(within(dialog).getByText('chart.quickTrade.protectionOco')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /confirmBuy/ }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ stopLoss: '49000', takeProfit: '52000', protectionMode: 'OCO' }));
+  });
+
+  it('sends INDEPENDENT when the OCO switch is off', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+    await enableProtection(user, '49000', '52000');
+    await user.click(screen.getByTestId('trade-ticket-oco-switch'));
+    await user.click(submit());
+    await user.click(within(await confirmDialog()).getByRole('button', { name: /confirmBuy/ }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ protectionMode: 'INDEPENDENT' }));
+  });
+
+  it('keeps the OCO switch disabled until both SL and TP are on', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+    const ocoInput = () => screen.getByTestId('trade-ticket-oco-switch').querySelector('input');
+
+    expect(ocoInput()).toBeDisabled();
+    await user.click(screen.getByTestId('trade-ticket-sl-switch'));
+    expect(ocoInput()).toBeDisabled();
+    await user.click(screen.getByTestId('trade-ticket-tp-switch'));
+    expect(ocoInput()).toBeEnabled();
+  });
+
+  it('drops SL and TP from an order that reduces the opposite position', async () => {
+    setDefaults({ openPosition: { side: 'LONG', quantity: 0.5 } });
+    const user = userEvent.setup();
+    renderTicket();
+    await enableProtection(user, '49000', '52000');
+    fireEvent.click(sideButton('sell'));
+    await user.click(submit());
+    await user.click(within(await confirmDialog()).getByRole('button', { name: /confirmSell/ }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.not.objectContaining({ stopLoss: expect.anything() }));
+    expect(createOrderMock).toHaveBeenCalledWith(expect.not.objectContaining({ protectionMode: expect.anything() }));
+  });
+
+  it('toasts each protection error reported after the order', async () => {
+    createOrderMock.mockResolvedValueOnce({ orderId: '1', protectionErrors: ['Stop loss was not placed: boom'] });
+    const user = userEvent.setup();
+    renderTicket();
+    await enableProtection(user, '49000', '52000');
+    await user.click(submit());
+    await user.click(within(await confirmDialog()).getByRole('button', { name: /confirmBuy/ }));
+
+    expect(errorMock).toHaveBeenCalledWith('trading.order.protectionFailed', 'Stop loss was not placed: boom');
+  });
+});
+
+describe('TradeTicket — confirmation dialog', () => {
+  it('shows total, margin, leverage, estimated fee and break-even for futures', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+    await user.click(submit());
+    const dialog = await confirmDialog();
+
+    expect(within(dialog).getByText('LONG')).toBeInTheDocument();
+    expect(within(dialog).getByText('futures.leverage')).toBeInTheDocument();
+    expect(within(dialog).getByText('chart.quickTrade.margin')).toBeInTheDocument();
+    expect(within(dialog).getByText('chart.quickTrade.estimatedFee')).toBeInTheDocument();
+    expect(within(dialog).getByText('chart.quickTrade.breakeven')).toBeInTheDocument();
+    expect(within(dialog).getByText(/5005\.00 USDT/)).toBeInTheDocument();
+  });
+
+  it('closing the dialog does not send the order', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+    await user.click(submit());
+    const dialog = await confirmDialog();
+    await user.click(within(dialog).getByRole('button', { name: /cancel/i }));
+
     expect(createOrderMock).not.toHaveBeenCalled();
   });
 
-  it('errors when computed quantity is invalid (e.g. 0)', async () => {
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0', leverage: 5, isReady: true, notReadyReason: null });
+  it('skips the confirmation for market orders when the preference is on', async () => {
+    tradingPrefs.set('ticketSkipMarketConfirm', true);
     const user = userEvent.setup();
-    renderActions();
+    renderTicket();
+    await user.click(submit());
 
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-
-    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.invalidQuantityError');
-    expect(screen.queryByText('chart.quickTrade.confirmOrder')).not.toBeInTheDocument();
-  });
-
-  it('errors when no live price is available (book ticker = 0 and store price = 0)', async () => {
-    setDefaults({ price: 0, bid: 0, ask: 0 });
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-
-    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.noPriceError');
-    expect(createOrderMock).not.toHaveBeenCalled();
-  });
-
-  it('falls back to currentPrice when the book ticker has no ask/bid', async () => {
-    setDefaults({ price: 50_000, bid: 0, ask: 0 });
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
-
-    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ referencePrice: 50_000 }));
-  });
-
-  it('shows a toast and resets the pending order if createOrder throws', async () => {
-    createOrderMock.mockRejectedValueOnce(new Error('insufficient margin'));
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
-
-    expect(errorMock).toHaveBeenCalledWith('trading.order.failed', 'insufficient margin');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ type: 'MARKET' }));
   });
 });
 
-describe('TradeTicket — Reverse / Close moved out of the ticket (regression)', () => {
-  // These actions live in PositionActionsPopover (opened from the canvas
-  // position-chip kebab). The ticket body itself MUST NOT render them.
-  it('does NOT render the Reverse Position row in the ticket body', () => {
-    renderActions();
-    expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
+describe('TradeTicket — asset type matrix', () => {
+  it('spot: hides leverage, margin and liquidation, labels sides Buy and Sell, and disables Sell without holdings', () => {
+    setDefaults({ wallet: PAPER_SPOT_WALLET });
+    renderTicket({ marketType: 'SPOT' });
+
+    expect(screen.queryByTestId('leverage-popover-BTCUSDT')).not.toBeInTheDocument();
+    expect(screen.queryByText('chart.quickTrade.margin')).not.toBeInTheDocument();
+    expect(screen.queryByText('chart.quickTrade.liquidation')).not.toBeInTheDocument();
+    expect(sideButton('buy')).toHaveTextContent('trading.ticket.buy');
+    fireEvent.click(sideButton('sell'));
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('trading.spot.nothingToSell');
   });
 
-  it('does NOT render the Close Position row in the ticket body', () => {
-    renderActions();
-    expect(screen.queryByText('futures.closePosition')).not.toBeInTheDocument();
+  it('spot: Sell closes the held position', () => {
+    setDefaults({ wallet: PAPER_SPOT_WALLET, openPosition: { side: 'LONG', quantity: 0.1 } });
+    renderTicket({ marketType: 'SPOT' });
+
+    fireEvent.click(sideButton('sell'));
+
+    expect(submit()).toBeEnabled();
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.close');
   });
 
-  it('still does NOT render Reverse/Close even when there IS an open position', () => {
-    setDefaults({ positions: [{ id: 'pos-1', symbol: 'BTCUSDT', side: 'LONG', status: 'open' }] });
-    renderActions();
-    expect(screen.queryByText('futures.reversePosition')).not.toBeInTheDocument();
-    expect(screen.queryByText('futures.closePosition')).not.toBeInTheDocument();
+  it('spot: a Sell larger than the holding is capped to it and closes the position', async () => {
+    setDefaults({ wallet: PAPER_SPOT_WALLET, openPosition: { side: 'LONG', quantity: 0.05 }, quantity: '0.100' });
+    const user = userEvent.setup();
+    renderTicket({ marketType: 'SPOT' });
+
+    fireEvent.click(sideButton('sell'));
+    expect(submit()).toHaveTextContent('chart.quickTrade.action.close');
+    await user.click(submit());
+    await user.click(within(await confirmDialog()).getByRole('button', { name: /confirmSell/ }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ side: 'SELL', quantity: '0.050', marketType: 'SPOT' }));
+  });
+
+  it('futures: shows leverage, margin and liquidation and labels sides Long and Short', () => {
+    renderTicket();
+
+    expect(screen.getByTestId('leverage-popover-BTCUSDT')).toBeInTheDocument();
+    expect(screen.getByText('chart.quickTrade.margin')).toBeInTheDocument();
+    expect(screen.getByText('chart.quickTrade.liquidation')).toBeInTheDocument();
+    expect(sideButton('buy')).toHaveTextContent('chart.quickTrade.sideBuyLong');
+    expect(screen.getByText('futures.cancelOrders')).toBeInTheDocument();
+  });
+
+  it('stocks: shows the market session, hides leverage and uses the IB commission as the fee', async () => {
+    setDefaults({ wallet: IB_WALLET, marketStatus: OPEN_SESSION, quantity: '10' });
+    const user = userEvent.setup();
+    renderTicket({ symbol: 'AAPL', marketType: 'SPOT' });
+
+    expect(screen.getByTestId('trade-ticket-market-session')).toHaveTextContent('marketStatus.open');
+    expect(screen.queryByTestId('leverage-popover-AAPL')).not.toBeInTheDocument();
+    expect(screen.queryByText('futures.cancelOrders')).not.toBeInTheDocument();
+    await user.click(submit());
+    const dialog = await confirmDialog();
+    expect(within(dialog).getByText(/1\.00 USD/)).toBeInTheDocument();
+  });
+
+  it('stocks: market orders are blocked while the session is closed', () => {
+    setDefaults({ wallet: IB_WALLET, marketStatus: CLOSED_SESSION, quantity: '10' });
+    renderTicket({ symbol: 'AAPL', marketType: 'SPOT' });
+
+    expect(screen.getByTestId('trade-ticket-market-session')).toHaveTextContent('marketStatus.closed');
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('chart.quickTrade.reason.marketClosed');
+  });
+
+  it('stocks: Short is blocked when the symbol is not shortable', () => {
+    setDefaults({ wallet: IB_WALLET, marketStatus: OPEN_SESSION, quantity: '10', shortability: { known: true, info: { symbol: 'AAPL', available: false, difficulty: 'unavailable', sharesAvailable: 0 } } });
+    renderTicket({ symbol: 'AAPL', marketType: 'SPOT' });
+
+    fireEvent.click(sideButton('sell'));
+
+    expect(submit()).toBeDisabled();
+    expect(screen.getByTestId('trade-ticket-disabled-reason')).toHaveTextContent('chart.quickTrade.reason.notShortable');
+  });
+
+  it('stocks: Short is allowed when the symbol is shortable', () => {
+    setDefaults({ wallet: IB_WALLET, marketStatus: OPEN_SESSION, quantity: '10', shortability: { known: true, info: { symbol: 'AAPL', available: true, difficulty: 'easy', sharesAvailable: 1_000_000 } } });
+    renderTicket({ symbol: 'AAPL', marketType: 'SPOT' });
+
+    fireEvent.click(sideButton('sell'));
+
+    expect(submit()).toBeEnabled();
   });
 });
 
-describe('TradeTicket — Cancel Orders', () => {
-  it('opens the confirm dialog (no position required) and calls cancelAllOrders', async () => {
+describe('TradeTicket — prefill from the position drawing', () => {
+  it('selects the side, switches to Limit and fills entry, SL and TP, with a strip that can clear it', async () => {
+    setDefaults({ prefill: { side: 'SELL', entryPrice: '50100', stopLoss: '51000', takeProfit: '48000' } });
     const user = userEvent.setup();
-    renderActions();
+    renderTicket();
+
+    expect(sideButton('sell')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' })).toHaveAttribute('aria-selected', 'true');
+    expect((screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement).value).toBe('50100');
+    expect((screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement).value).toBe('51000');
+    expect((screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement).value).toBe('48000');
+    expect(screen.getByText('chart.quickTrade.fromDrawing')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'common.clear' }));
+
+    expect(screen.queryByText('chart.quickTrade.fromDrawing')).not.toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' })).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('switching side after a prefill clears the drawing strip', () => {
+    setDefaults({ prefill: { side: 'BUY', entryPrice: '50100', stopLoss: '49000', takeProfit: '52500' } });
+    renderTicket();
+
+    fireEvent.click(sideButton('sell'));
+
+    expect(screen.queryByText('chart.quickTrade.fromDrawing')).not.toBeInTheDocument();
+  });
+});
+
+describe('TradeTicket — size controls and secondary actions', () => {
+  it('presets, slider steps and bounds update the size percent', async () => {
+    const user = userEvent.setup();
+    renderTicket();
+
+    await user.click(screen.getByRole('button', { name: '50%' }));
+    expect(setSizePercentMock).toHaveBeenCalledWith(50);
+    await user.click(screen.getByRole('button', { name: 'chart.quickTrade.increaseSize' }));
+    expect(setSizePercentMock).toHaveBeenCalledWith(15);
+    await user.click(screen.getByRole('button', { name: 'chart.quickTrade.decreaseSize' }));
+    expect(setSizePercentMock).toHaveBeenCalledWith(5);
+  });
+
+  it('Cancel Orders asks for confirmation and calls cancelAllOrders', async () => {
+    const user = userEvent.setup();
+    renderTicket();
 
     await user.click(screen.getByText('futures.cancelOrders'));
-
-    expect(await screen.findByText('futures.cancelOrdersConfirmTitle')).toBeInTheDocument();
-
-    const dialog = screen.getByText('futures.cancelOrdersConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.cancelOrders/i }));
+    const dialog = await confirmDialog();
+    await user.click(within(dialog).getByRole('button', { name: 'futures.cancelOrders' }));
 
     expect(cancelAllOrdersMock).toHaveBeenCalledWith({ walletId: 'w1', symbol: 'BTCUSDT' });
   });
 
-  it('does nothing when there is no active wallet', async () => {
-    useActiveWalletMock.mockReturnValue({ activeWallet: null });
-    const user = userEvent.setup();
-    renderActions();
+  it('renders the Grid and Trailing Stop rows', () => {
+    renderTicket();
 
-    await user.click(screen.getByText('futures.cancelOrders'));
-
-    const dialog = screen.getByText('futures.cancelOrdersConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.cancelOrders/i }));
-
-    expect(cancelAllOrdersMock).not.toHaveBeenCalled();
-  });
-
-  it('toasts when cancelAllOrders rejects', async () => {
-    cancelAllOrdersMock.mockRejectedValueOnce(new Error('rate limited'));
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByText('futures.cancelOrders'));
-
-    const dialog = screen.getByText('futures.cancelOrdersConfirmTitle').closest('[role="dialog"]')!;
-    await user.click(within(dialog).getByRole('button', { name: /futures\.cancelOrders/i }));
-
-    await vi.waitFor(() => {
-      expect(errorMock).toHaveBeenCalledWith('futures.cancelOrdersFailed', 'rate limited');
-    });
-  });
-});
-
-describe('TradeTicket — Grid Orders / Trailing Stop sub-components', () => {
-  it('renders GridOrderPopover with the action-row trigger always visible', () => {
-    renderActions();
-
-    expect(gridOrderPopoverRender).toHaveBeenCalled();
     expect(screen.getByTestId('grid-popover')).toBeInTheDocument();
-    expect(screen.getByText('chart.quickTrade.gridOrders')).toBeInTheDocument();
-  });
-
-  it('renders TrailingStopPopover with the symbol and the trigger element', () => {
-    renderActions();
-
-    expect(trailingStopPopoverRender).toHaveBeenCalledWith('BTCUSDT');
     expect(screen.getByTestId('trailing-popover-BTCUSDT')).toBeInTheDocument();
-    expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
   });
 
-  it('hides Cancel Orders row for SPOT but still renders Grid + Trailing', () => {
-    renderActions({ marketType: 'SPOT' });
-
-    expect(screen.queryByText('futures.cancelOrders')).not.toBeInTheDocument();
-    expect(screen.getByText('chart.quickTrade.gridOrders')).toBeInTheDocument();
-    expect(screen.getByText('chart.quickTrade.trailingStop')).toBeInTheDocument();
-  });
-});
-
-describe('TradeTicket — Size controls (presets, slider, +/- 5%)', () => {
-  it('clicking a preset updates the size percent', async () => {
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByRole('button', { name: '50%' }));
-    expect(setSizePercentMock).toHaveBeenCalledWith(50);
-  });
-
-  it('+ button rounds up to the next 5% bucket (10 → 15)', async () => {
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByRole('button', { name: /increase size 5%/i }));
-    expect(setSizePercentMock).toHaveBeenCalledWith(15);
-  });
-
-  it('- button rounds down to the previous 5% bucket (10 → 5)', async () => {
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByRole('button', { name: /decrease size 5%/i }));
-    expect(setSizePercentMock).toHaveBeenCalledWith(5);
-  });
-
-  it('+ button caps at 100', () => {
-    setDefaults({ sizePercent: 100 });
-    renderActions();
-
-    const incButton = screen.getByRole('button', { name: /increase size 5%/i });
-    expect(incButton).toBeDisabled();
-  });
-
-  it('- button is disabled at the 0.1 minimum', async () => {
-    setDefaults({ sizePercent: 0.1 });
-    renderActions();
-    expect(screen.getByRole('button', { name: /decrease size 5%/i })).toBeDisabled();
-  });
-
-  it('renders all 5 size preset buttons (10, 25, 50, 75, 100)', () => {
-    renderActions();
-    expect(screen.getByRole('button', { name: '10%' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '25%' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '50%' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '75%' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: '100%' })).toBeInTheDocument();
-  });
-
-  it('+ from a non-multiple-of-5 (12.5) snaps to the next 5 bucket (15)', async () => {
-    setDefaults({ sizePercent: 12.5 });
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('button', { name: /increase size 5%/i }));
-    expect(setSizePercentMock).toHaveBeenCalledWith(15);
-  });
-
-  it('- from a non-multiple-of-5 (12.5) snaps to the previous 5 bucket (10)', async () => {
-    setDefaults({ sizePercent: 12.5 });
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('button', { name: /decrease size 5%/i }));
-    expect(setSizePercentMock).toHaveBeenCalledWith(10);
-  });
-
-  it('display rounds sizePercent to 1 decimal place', () => {
-    setDefaults({ sizePercent: 33.333 });
-    renderActions();
-    expect(screen.getByText('33.3%')).toBeInTheDocument();
-  });
-});
-
-describe('TradeTicket — Pending order confirmation dialog', () => {
-  const openConfirm = async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-    return user;
-  };
-
-  it('shows the order summary (symbol, side, price, quantity, leverage)', async () => {
-    setDefaults({ ask: 50_050 });
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.2500', leverage: 10, isReady: true, notReadyReason: null });
-    await openConfirm();
-
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('BTCUSDT')).toBeInTheDocument();
-    expect(within(dialog).getByText('LONG')).toBeInTheDocument();
-    expect(within(dialog).getByText('0.2500')).toBeInTheDocument();
-    expect(within(dialog).getByText('10x')).toBeInTheDocument();
-  });
-
-  it('SELL side renders SHORT in the side row', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i }));
-    const dialog = await screen.findByRole('dialog');
-    expect(within(dialog).getByText('SHORT')).toBeInTheDocument();
-  });
-
-  it('totalValue = quantity × price', async () => {
-    setDefaults({ ask: 50_050 });
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
-    await openConfirm();
-
-    const dialog = await screen.findByRole('dialog');
-    // 0.1 × 50050 = 5005
-    expect(within(dialog).getByText(/5,?005\.00 USDT/)).toBeInTheDocument();
-  });
-
-  it('margin = totalValue / leverage', async () => {
-    setDefaults({ ask: 50_050 });
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
-    await openConfirm();
-
-    const dialog = await screen.findByRole('dialog');
-    // 5005 / 5 = 1001
-    expect(within(dialog).getByText(/1,?001\.00 USDT/)).toBeInTheDocument();
-  });
-
-  it('cancel via close button does NOT fire createOrder', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-
-    const dialog = await screen.findByRole('dialog');
-    // Close icon button (CloseTrigger) — typically has accessible name "Close" or similar.
-    const closeBtn = within(dialog).queryByRole('button', { name: /close|cancel|×/i });
-    if (closeBtn) await user.click(closeBtn);
-
-    // Even if the dialog can't be closed by an accessible button match,
-    // the absence of a confirm click is enough — createOrder mustn't fire.
-    expect(createOrderMock).not.toHaveBeenCalled();
-  });
-
-  it('keeps the dialog open while createOrder is in flight', async () => {
-    let resolveCreate: () => void = () => {};
-    createOrderMock.mockReturnValueOnce(new Promise<void>((resolve) => {
-      resolveCreate = () => resolve();
-    }));
-    const user = userEvent.setup();
-    renderActions();
-
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
-
-    // pendingOrder is only cleared in the finally — while the promise
-    // is in flight the dialog is still mounted so the user can't
-    // double-fire by clicking again.
-    expect(screen.getByText('chart.quickTrade.confirmOrder')).toBeInTheDocument();
-
-    resolveCreate();
-    await vi.waitFor(() => {
-      expect(screen.queryByText('chart.quickTrade.confirmOrder')).not.toBeInTheDocument();
-    });
-  });
-});
-
-describe('TradeTicket — Order type tabs (Market / Limit)', () => {
-  it('renders Market and Limit tabs', () => {
-    renderActions();
-    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' })).toBeInTheDocument();
-  });
-
-  it('Market is selected by default', () => {
-    renderActions();
-    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' })).toHaveAttribute('aria-selected', 'true');
-  });
-
-  it('selecting Limit reveals the limit price input (and Market hides it)', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    expect(screen.queryByLabelText('chart.quickTrade.limitPrice')).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
-    expect(screen.getByLabelText('chart.quickTrade.limitPrice')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' }));
-    expect(screen.queryByLabelText('chart.quickTrade.limitPrice')).not.toBeInTheDocument();
-  });
-
-  it('Limit price input defaults to the mid price ((bid + ask) / 2)', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
-    const input = await screen.findByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement;
-    // bid=49950, ask=50050 → mid 50000
-    expect(input.value).toBe('50000');
-  });
-
-  it('submitting a LIMIT order sends type=LIMIT and price=limitPrice (NOT bid/ask)', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
-    const input = screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '49000' } });
-
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
-
-    const arg = createOrderMock.mock.calls[0]![0];
-    expect(arg).toMatchObject({
-      type: 'LIMIT',
-      price: '49000',
-      referencePrice: 49000,
-    });
-  });
-
-  it('LIMIT with empty price errors out and does NOT call createOrder', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await user.click(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }));
-    const input = screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: '' } });
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-
-    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.noPriceError');
-    expect(createOrderMock).not.toHaveBeenCalled();
-  });
-});
-
-describe('TradeTicket — SL / TP at open', () => {
-  const enableSl = async (user: ReturnType<typeof userEvent.setup>) => {
-    await user.click(screen.getByTestId('trade-ticket-sl-switch'));
-  };
-  const enableTp = async (user: ReturnType<typeof userEvent.setup>) => {
-    await user.click(screen.getByTestId('trade-ticket-tp-switch'));
-  };
-
-  it('SL input is disabled by default and enabled after toggling the SL switch', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
-    expect(slInput).toBeDisabled();
-    await enableSl(user);
-    expect(slInput).not.toBeDisabled();
-  });
-
-  it('TP input is disabled by default and enabled after toggling the TP switch', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
-    expect(tpInput).toBeDisabled();
-    await enableTp(user);
-    expect(tpInput).not.toBeDisabled();
-  });
-
-  it('BUY with SL above entry errors out and does NOT call createOrder', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await enableSl(user);
-    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
-    fireEvent.change(slInput, { target: { value: '51000' } });
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-
-    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.slInvalid');
-    expect(createOrderMock).not.toHaveBeenCalled();
-  });
-
-  it('BUY with TP below entry errors out and does NOT call createOrder', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await enableTp(user);
-    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
-    fireEvent.change(tpInput, { target: { value: '40000' } });
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-
-    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.tpInvalid');
-    expect(createOrderMock).not.toHaveBeenCalled();
-  });
-
-  it('SELL with SL below entry errors (SL must be ABOVE entry for SHORTs)', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await enableSl(user);
-    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
-    fireEvent.change(slInput, { target: { value: '48000' } });
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.sell/i }));
-
-    expect(errorMock).toHaveBeenCalledWith('chart.quickTrade.slInvalid');
-    expect(createOrderMock).not.toHaveBeenCalled();
-  });
-
-  it('valid BUY with SL+TP passes them through to createOrder', async () => {
-    const user = userEvent.setup();
-    renderActions();
-    await enableSl(user);
-    await enableTp(user);
-
-    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
-    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
-    fireEvent.change(slInput, { target: { value: '49000' } });
-    fireEvent.change(tpInput, { target: { value: '52000' } });
-
-    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
-    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
-
-    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({
-      side: 'BUY',
-      type: 'MARKET',
-      stopLoss: '49000',
-      takeProfit: '52000',
-    }));
-  });
-});
-
-describe('TradeTicket — Total value row', () => {
-  it('renders a total-value row whose number tracks qty × ref price', () => {
-    setDefaults({ bid: 49_950, ask: 50_050 });
-    useOrderQuantityMock.mockReturnValue({ getQuantity: () => '0.1000', leverage: 5, isReady: true, notReadyReason: null });
-    renderActions();
-    const total = screen.getByTestId('trade-ticket-total-value');
-    // mid 50000 × 0.1 = 5000
-    expect(total.textContent).toMatch(/5,?000\.00 USDT/);
-  });
-
-  it('shows — when price is unavailable', () => {
-    setDefaults({ price: 0, bid: 0, ask: 0 });
-    renderActions();
-    expect(screen.getByTestId('trade-ticket-total-value').textContent).toBe('—');
-  });
-});
-
-describe('TradeTicket — Field placeholders', () => {
-  it('SL input shows a placeholder near -2% from the mid price', () => {
-    setDefaults({ bid: 49_950, ask: 50_050 });
-    renderActions();
-    const slInput = screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement;
-    expect(slInput.placeholder).toBe('49000.00');
-  });
-
-  it('TP input shows a placeholder near +4% from the mid price', () => {
-    setDefaults({ bid: 49_950, ask: 50_050 });
-    renderActions();
-    const tpInput = screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement;
-    expect(tpInput.placeholder).toBe('52000.00');
-  });
-
-  it('placeholders are empty when bid/ask are unavailable', () => {
-    setDefaults({ price: 0, bid: 0, ask: 0 });
-    renderActions();
-    expect((screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement).placeholder).toBe('');
-    expect((screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement).placeholder).toBe('');
-  });
-});
-
-describe('TradeTicket — Prefill from chart drawing', () => {
-  // Long/short position drawings on the chart have a "→ TICKET" button
-  // that pushes their entry/SL/TP into `quickTradeStore.pendingPrefill`.
-  // The ticket consumes it once, switches to LIMIT type, and enables SL+TP.
-  it('consumes pendingPrefill and populates LIMIT + SL + TP', async () => {
-    const consumePrefillMock = vi.fn(() => ({
-      side: 'BUY' as const,
-      entryPrice: '50100',
-      stopLoss: '49000',
-      takeProfit: '52500',
-    }));
-    useQuickTradeStoreMock.mockReturnValue({
-      sizePercent: 10,
-      setSizePercent: setSizePercentMock,
-      pendingPrefill: { side: 'BUY', entryPrice: '50100', stopLoss: '49000', takeProfit: '52500' },
-      prefillFromDrawing: vi.fn(),
-      consumePrefill: consumePrefillMock,
-    });
-    renderActions();
-    expect(consumePrefillMock).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeLimit' }))
-      .toHaveAttribute('aria-selected', 'true');
-    expect((screen.getByLabelText('chart.quickTrade.limitPrice') as HTMLInputElement).value)
-      .toBe('50100');
-    expect((screen.getByTestId('trade-ticket-sl-input') as HTMLInputElement).value).toBe('49000');
-    expect((screen.getByTestId('trade-ticket-tp-input') as HTMLInputElement).value).toBe('52500');
-  });
-
-  it('does nothing when pendingPrefill is null', () => {
-    const consumePrefillMock = vi.fn();
-    useQuickTradeStoreMock.mockReturnValue({
-      sizePercent: 10,
-      setSizePercent: setSizePercentMock,
-      pendingPrefill: null,
-      prefillFromDrawing: vi.fn(),
-      consumePrefill: consumePrefillMock,
-    });
-    renderActions();
-    expect(consumePrefillMock).not.toHaveBeenCalled();
-    expect(screen.getByRole('tab', { name: 'chart.quickTrade.orderTypeMarket' }))
-      .toHaveAttribute('aria-selected', 'true');
-  });
-});
-
-describe('TradeTicket — Layout-level UI affordances', () => {
-  it('renders LeveragePopover only for FUTURES', () => {
-    renderActions();
-    expect(screen.getByTestId('leverage-popover-BTCUSDT')).toBeInTheDocument();
-  });
-
-  it('does NOT render LeveragePopover for SPOT', () => {
-    renderActions({ marketType: 'SPOT' });
-    expect(screen.queryByTestId('leverage-popover-BTCUSDT')).not.toBeInTheDocument();
-  });
-
-  it('drag handle is hidden by default and shown when showDragHandle is true', () => {
-    const { rerender } = renderActions();
-    expect(document.querySelector('[class*="cursor-grab"]')).not.toBeInTheDocument();
-
-    rerender(
-      <ChakraProvider value={defaultSystem}>
-        <ColorModeProvider>
-          <TradeTicketActions
-            symbol="BTCUSDT"
-            marketType="FUTURES"
-            showDragHandle
-            onDragStart={vi.fn()}
-          />
-        </ColorModeProvider>
-      </ChakraProvider>,
-    );
-    // The drag handle uses cursor: grab — find it by the icon's parent role/style.
-    // Using a visible-element check — the LuGripVertical icon adds an svg.
-    const handles = document.querySelectorAll('svg');
-    expect(handles.length).toBeGreaterThan(0);
-  });
-
-  it('options menu (Close) is hidden when onClose is not passed', () => {
-    renderActions();
-    expect(screen.queryByRole('button', { name: /options/i })).not.toBeInTheDocument();
-  });
-
-  it('options menu shown when onClose is passed and clicking Close fires the callback', async () => {
+  it('shows the options menu only when onClose is passed', async () => {
     const onClose = vi.fn();
+    const { unmount } = renderTicket();
+    expect(screen.queryByRole('button', { name: 'common.options' })).not.toBeInTheDocument();
+    unmount();
+
     const user = userEvent.setup();
-    render(
-      <ChakraProvider value={defaultSystem}>
-        <ColorModeProvider>
-          <TradeTicketActions symbol="BTCUSDT" marketType="FUTURES" onClose={onClose} />
-        </ColorModeProvider>
-      </ChakraProvider>,
-    );
-
-    const trigger = screen.getByRole('button', { name: /options/i });
-    expect(trigger).toBeInTheDocument();
-
-    await user.click(trigger);
-    const closeItem = await screen.findByText('common.close');
-    await user.click(closeItem);
-
+    renderTicket({ onClose });
+    await user.click(screen.getByRole('button', { name: 'common.options' }));
+    await user.click(await screen.findByText('common.close'));
     expect(onClose).toHaveBeenCalled();
   });
 });

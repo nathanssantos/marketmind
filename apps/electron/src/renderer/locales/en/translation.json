@@ -112,7 +112,9 @@
     "start": "Start",
     "settings": "Settings",
     "confirm": "Confirm",
-    "endTime": "End time"
+    "endTime": "End time",
+    "options": "Options",
+    "clear": "Clear"
   },
   "app": {
     "title": "MarketMind",
@@ -209,16 +211,6 @@
     "orderImpact": "Order Impact",
     "requiredInitial": "Required Initial",
     "newBuyingPower": "New Buying Power"
-  },
-  "shortability": {
-    "easy": "Easy to Borrow",
-    "hard": "Hard to Borrow",
-    "unavailable": "Not Available",
-    "tooltip": {
-      "available": "{{shares}} shares available ({{difficulty}})",
-      "availableNoCount": "Available for short selling ({{difficulty}})",
-      "unavailable": "This stock is not available for short selling"
-    }
   },
   "settings": {
     "title": "Settings",
@@ -507,7 +499,9 @@
       "liquidityIntensity": "Intensity-based liquidity heatmap",
       "liquidityIntensityHelper": "Use a single warm color ramp for both bid and ask — brighter cells mean higher liquidity; side is inferred from position relative to price",
       "confluenceScoreChart": "Confluence score chart",
-      "confluenceScoreChartHelper": "Per-side conviction thresholds rendered on the net-score chart. The band between them is shaded as a no-trade zone so middling setups are obvious to skip."
+      "confluenceScoreChartHelper": "Per-side conviction thresholds rendered on the net-score chart. The band between them is shaded as a no-trade zone so middling setups are obvious to skip.",
+      "skipMarketConfirm": "Send market orders without confirmation",
+      "skipMarketConfirmHelper": "The ticket sends market orders on one click. Limit and stop orders still ask."
     },
     "tradingSimulator": {
       "title": "Trading Simulator Settings",
@@ -909,7 +903,6 @@
       "fibonacciProjection": "Fibonacci Projection",
       "measurementRuler": "Measurement Ruler",
       "measurementArea": "Measurement Area",
-      "activityIndicator": "Activity Indicator",
       "marketEvents": "Market Events",
       "openingRange": "Opening Range",
       "setupDetection": "Algorithmic Setup Detection",
@@ -946,7 +939,47 @@
       "stopLoss": "SL",
       "takeProfit": "TP",
       "slInvalid": "Stop Loss must be on the loss side of the entry price",
-      "tpInvalid": "Take Profit must be on the profit side of the entry price"
+      "tpInvalid": "Take Profit must be on the profit side of the entry price",
+      "oco": "OCO",
+      "ocoOn": "SL and TP cancel each other",
+      "ocoOff": "SL and TP stay independent",
+      "protection": "Protection",
+      "protectionOco": "OCO",
+      "protectionIndependent": "Independent",
+      "sideBuyLong": "Buy / Long",
+      "sideSellShort": "Sell / Short",
+      "orderTypeStop": "Stop",
+      "mid": "Mid",
+      "ocoNeedsBoth": "Turn on SL and TP to choose OCO",
+      "reduceNote": "This order reduces the open position; SL and TP do not apply.",
+      "risk": "Risk",
+      "ofBalance": "of balance",
+      "riskReward": "R:R",
+      "fromDrawing": "From {{tool}} drawing",
+      "paper": "PAPER",
+      "live": "LIVE",
+      "estimatedFee": "Est. fee",
+      "breakeven": "Break-even",
+      "effect": "Effect",
+      "decreaseSize": "Decrease size 5%",
+      "increaseSize": "Increase size 5%",
+      "effectLabel": {
+        "CLOSE": "Closes the position",
+        "REDUCE": "Reduces the position",
+        "REVERSE": "Closes and reverses the position"
+      },
+      "action": {
+        "open": "{{side}} {{quantity}} @ {{price}}",
+        "close": "Close {{quantity}}",
+        "reduce": "Reduce {{quantity}}",
+        "reverse": "Reverse to {{side}} {{quantity}}"
+      },
+      "reason": {
+        "belowMinNotional": "Order below the minimum of {{min}} {{currency}}",
+        "notShortable": "This stock is not available for short selling",
+        "marketClosed": "Market closed: market orders wait for the regular session",
+        "sizeBelowStep": "Size too small: {{percent}}% of the balance is below the minimum of {{step}} {{asset}}"
+      }
     },
     "gridOrders": {
       "title": "Grid Orders",
@@ -1180,7 +1213,13 @@
       "liveWarning": "Warning: Real Money",
       "liveDescription": "Live trading uses real funds. Make sure you understand the risks.",
       "selectWallet": "Select a wallet first",
-      "syncBalance": "Sync balance from Binance"
+      "syncBalance": "Sync balance from Binance",
+      "marketType": "Market",
+      "marketFutures": "Futures",
+      "marketSpot": "Spot",
+      "apiKeysRequired": "API Key and Secret are required",
+      "realCreationUnavailable": "Real wallet creation is not available",
+      "createFailed": "Failed to create wallet"
     },
     "ticket": {
       "title": "Ticket",
@@ -1390,7 +1429,8 @@
       "closeFailed": "Failed to close order",
       "slTpUpdateFailed": "Failed to update SL/TP",
       "slTpCreateFailed": "Failed to create SL/TP",
-      "entryUpdateFailed": "Failed to move pending order"
+      "entryUpdateFailed": "Failed to move pending order",
+      "protectionFailed": "Protection order not placed"
     },
     "dialogs": {
       "chartClose": {
@@ -1494,6 +1534,10 @@
       "expired": "Expired",
       "positionSize": "Position Size",
       "noSuggestions": "No pending suggestions"
+    },
+    "spot": {
+      "shortNotAllowed": "Spot wallets cannot open short positions.",
+      "nothingToSell": "Nothing to sell: this wallet holds none of this asset."
     }
   },
   "about": {

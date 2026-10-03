@@ -56,6 +56,7 @@ export interface SubmitEntryOrderParams {
   marketPrice: number;
   quantity: string;
   reduceOnly: boolean;
+  marketType: MarketType;
   addBackendOrder: (params: {
     walletId: string;
     symbol: string;
@@ -77,6 +78,7 @@ export const submitEntryOrder = async ({
   marketPrice,
   quantity,
   reduceOnly,
+  marketType,
   addBackendOrder,
 }: SubmitEntryOrderParams): Promise<void> => {
   const isBuy = side === 'BUY';
@@ -93,6 +95,7 @@ export const submitEntryOrder = async ({
     stopPrice: useStopMarket ? roundTradingPrice(price) : undefined,
     quantity,
     reduceOnly,
+    marketType,
   });
 };
 

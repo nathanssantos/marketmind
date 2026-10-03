@@ -1,3 +1,4 @@
+import type { ExchangeId, MarketType } from '@marketmind/types';
 import { useCallback, useMemo } from 'react';
 import { QUERY_CONFIG } from '@shared/constants';
 import { trpc } from '../utils/trpc';
@@ -80,14 +81,14 @@ export const useBackendWallet = () => {
   });
 
   const createWallet = useCallback(
-    async (data: { name: string; apiKey: string; apiSecret: string; walletType: 'testnet' | 'live' }) => {
+    async (data: { name: string; apiKey: string; apiSecret: string; walletType: 'testnet' | 'live'; marketType?: MarketType; exchange?: ExchangeId }) => {
       return createMutation.mutateAsync(data);
     },
     [createMutation]
   );
 
   const createPaperWallet = useCallback(
-    async (data: { name: string; initialBalance?: string; currency?: string }) => {
+    async (data: { name: string; initialBalance?: string; currency?: string; marketType?: MarketType; exchange?: ExchangeId }) => {
       return createPaperMutation.mutateAsync(data);
     },
     [createPaperMutation]

@@ -1,4 +1,4 @@
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, ProtectionMode } from '@marketmind/types';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
@@ -78,7 +78,7 @@ export const useBackendTradingMutations = () => {
       // to every cache variant so charts/Portfolio/dialogs all reflect
       // the new entry in the same render frame.
       fanOutOpenExecutions(data);
-      invalidateTradingAnalytics();
+      invalidateTradingAnalytics({ daily: true });
       // Refresh the wallet balance immediately on entry. The opening fee
       // (and, for paper wallets, the locked margin) just changed the
       // balance, and the exposure/margin percentages in PortfolioSummary
@@ -306,6 +306,9 @@ export const useBackendTradingMutations = () => {
       setupId?: string;
       setupType?: string;
       marketType?: MarketType;
+      stopLoss?: string;
+      takeProfit?: string;
+      protectionMode?: ProtectionMode;
     }) => {
       return createOrderMutation.mutateAsync(data);
     },

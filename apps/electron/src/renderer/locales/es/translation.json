@@ -114,7 +114,9 @@
     "start": "Start",
     "settings": "Settings",
     "confirm": "Confirm",
-    "endTime": "End time"
+    "endTime": "End time",
+    "options": "Opciones",
+    "clear": "Limpiar"
   },
   "app": {
     "title": "MarketMind",
@@ -211,16 +213,6 @@
     "orderImpact": "Impacto de Orden",
     "requiredInitial": "Inicial Requerido",
     "newBuyingPower": "Nuevo Poder de Compra"
-  },
-  "shortability": {
-    "easy": "Fácil de Alquilar",
-    "hard": "Difícil de Alquilar",
-    "unavailable": "No Disponible",
-    "tooltip": {
-      "available": "{{shares}} acciones disponibles ({{difficulty}})",
-      "availableNoCount": "Disponible para venta en corto ({{difficulty}})",
-      "unavailable": "Esta acción no está disponible para venta en corto"
-    }
   },
   "settings": {
     "title": "Configuración",
@@ -542,7 +534,9 @@
       "extendSupport": "Extender Niveles de Soporte",
       "extendSupportHelper": "Extiende líneas de soporte hacia la derecha",
       "extendResistance": "Extender Niveles de Resistencia",
-      "extendResistanceHelper": "Extiende líneas de resistencia hacia la derecha"
+      "extendResistanceHelper": "Extiende líneas de resistencia hacia la derecha",
+      "skipMarketConfirm": "Enviar órdenes a mercado sin confirmación",
+      "skipMarketConfirmHelper": "La boleta envía órdenes a mercado con un clic. Las órdenes límite y stop siguen pidiendo confirmación."
     },
     "tradingSimulator": {
       "title": "Configuración del Simulador de Trading",
@@ -1027,7 +1021,6 @@
       "fibonacciProjection": "Proyección de Fibonacci",
       "measurementRuler": "Regla de Medición",
       "measurementArea": "Área de Medición",
-      "activityIndicator": "Indicador de Actividad",
       "marketEvents": "Eventos de Mercado",
       "openingRange": "Opening Range",
       "autoPatterns": "Detección Automática de Patrones",
@@ -1086,7 +1079,47 @@
       "stopLoss": "SL",
       "takeProfit": "TP",
       "slInvalid": "Stop Loss debe estar en el lado de pérdida del precio de entrada",
-      "tpInvalid": "Take Profit debe estar en el lado de ganancia del precio de entrada"
+      "tpInvalid": "Take Profit debe estar en el lado de ganancia del precio de entrada",
+      "oco": "OCO",
+      "ocoOn": "SL y TP se cancelan entre sí",
+      "ocoOff": "SL y TP quedan independientes",
+      "protection": "Protección",
+      "protectionOco": "OCO",
+      "protectionIndependent": "Independientes",
+      "sideBuyLong": "Compra / Long",
+      "sideSellShort": "Venta / Short",
+      "orderTypeStop": "Stop",
+      "mid": "Medio",
+      "ocoNeedsBoth": "Activa SL y TP para elegir OCO",
+      "reduceNote": "Esta orden reduce la posición abierta; SL y TP no se aplican.",
+      "risk": "Riesgo",
+      "ofBalance": "del saldo",
+      "riskReward": "R:R",
+      "fromDrawing": "Del dibujo {{tool}}",
+      "paper": "PAPER",
+      "live": "REAL",
+      "estimatedFee": "Comisión est.",
+      "breakeven": "Break-even",
+      "effect": "Efecto",
+      "decreaseSize": "Reducir tamaño 5%",
+      "increaseSize": "Aumentar tamaño 5%",
+      "effectLabel": {
+        "CLOSE": "Cierra la posición",
+        "REDUCE": "Reduce la posición",
+        "REVERSE": "Cierra e invierte la posición"
+      },
+      "action": {
+        "open": "{{side}} {{quantity}} @ {{price}}",
+        "close": "Cerrar {{quantity}}",
+        "reduce": "Reducir {{quantity}}",
+        "reverse": "Invertir a {{side}} {{quantity}}"
+      },
+      "reason": {
+        "belowMinNotional": "Orden por debajo del mínimo de {{min}} {{currency}}",
+        "notShortable": "Esta acción no está disponible para venta en corto",
+        "marketClosed": "Mercado cerrado: las órdenes a mercado esperan la sesión regular",
+        "sizeBelowStep": "Tamaño demasiado pequeño: el {{percent}}% del saldo queda por debajo del mínimo de {{step}} {{asset}}"
+      }
     },
     "gridOrders": {
       "title": "Órdenes en Cuadrícula",
@@ -1333,7 +1366,13 @@
       "emptyReal": "No wallets yet. Create a paper trading wallet to test auto-trading.",
       "realMode": "Paper Trading Mode - Create a wallet to test auto-trading without real funds.",
       "selectWallet": "Select a wallet first",
-      "syncBalance": "Sync balance from Binance"
+      "syncBalance": "Sync balance from Binance",
+      "marketType": "Mercado",
+      "marketFutures": "Futuros",
+      "marketSpot": "Spot",
+      "apiKeysRequired": "API Key y Secret son obligatorios",
+      "realCreationUnavailable": "Creación de cartera real no disponible",
+      "createFailed": "Error al crear la cartera"
     },
     "ticket": {
       "title": "Orden",
@@ -1539,7 +1578,8 @@
       "closeFailed": "Error al cerrar orden",
       "slTpUpdateFailed": "Error al actualizar SL/TP",
       "slTpCreateFailed": "Error al crear SL/TP",
-      "entryUpdateFailed": "Error al mover orden pendiente"
+      "entryUpdateFailed": "Error al mover orden pendiente",
+      "protectionFailed": "Orden de protección no enviada"
     },
     "dialogs": {
       "chartClose": {
@@ -1644,7 +1684,11 @@
       "noSuggestions": "Sin sugerencias pendientes"
     },
     "noWalletSelected": "No wallet selected. Please create or select a wallet first.",
-    "loadingWallets": "Loading wallets, please wait..."
+    "loadingWallets": "Loading wallets, please wait...",
+    "spot": {
+      "shortNotAllowed": "Las carteras spot no pueden abrir posiciones cortas.",
+      "nothingToSell": "Nada que vender: esta cartera no tiene este activo."
+    }
   },
   "about": {
     "version": "Versión {{version}}",

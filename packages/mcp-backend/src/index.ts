@@ -138,7 +138,7 @@ const handleTool = async (name: string, rawArgs: unknown) => {
       });
     }
     case '__health':
-      return ok({ ok: true, baseUrl: getTrpcBaseUrl(), tools: tools.length });
+      return ok({ ok: true, baseUrl: await getTrpcBaseUrl(), tools: tools.length });
     default:
       return fail(`Unknown tool: ${name}`);
   }

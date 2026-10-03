@@ -117,7 +117,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 19
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -126,9 +126,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 60,
             "w": 33,
-            "h": 28
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -224,7 +224,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 19
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -233,9 +233,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 60,
             "w": 33,
-            "h": 28
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -331,7 +331,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 19
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -340,9 +340,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 60,
             "w": 33,
-            "h": 28
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -432,7 +432,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 19
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -441,9 +441,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 60,
             "w": 33,
-            "h": 28
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -533,7 +533,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 19
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -542,9 +542,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 60,
             "w": 33,
-            "h": 28
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -640,7 +640,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 35,
             "w": 33,
-            "h": 19
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -649,9 +649,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 60,
             "w": 33,
-            "h": 28
+            "h": 22
           },
           "windowState": "normal"
         },

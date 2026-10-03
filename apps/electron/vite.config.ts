@@ -1,6 +1,7 @@
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { waitForLocalBackendUrl } from '../../packages/utils/src/backendDiscovery';
+import { defineConfig, loadEnv, type Plugin } from 'vite';
 import electron from 'vite-plugin-electron';
 import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
@@ -9,11 +10,25 @@ const target = process.env.VITE_TARGET || 'electron';
 const isWeb = target === 'web';
 const analyze = process.env.ANALYZE === '1';
 
+
+const DEV_BACKEND_PROBE_WAIT_MS = 0;
+
+const devBackendUrlPlugin = (): Plugin => ({
+  name: 'marketmind-dev-backend-url',
+  apply: 'serve',
+  transformIndexHtml: async () => {
+    const url = await waitForLocalBackendUrl({ timeoutMs: DEV_BACKEND_PROBE_WAIT_MS });
+    if (!url) return [];
+    return [{ tag: 'script', children: `window.__MM_BACKEND_URL__ = ${JSON.stringify(url)};`, injectTo: 'head-prepend' }];
+  },
+});
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
 
   return {
     plugins: [
+      devBackendUrlPlugin(),
       react(),
       isWeb && VitePWA({
         registerType: 'autoUpdate',

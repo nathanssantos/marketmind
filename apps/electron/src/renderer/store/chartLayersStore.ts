@@ -1,4 +1,12 @@
+import type { MarketType } from '@marketmind/types';
 import { create } from 'zustand';
+
+export const FUTURES_ONLY_LAYERS: ReadonlySet<keyof ChartLayerFlags> = new Set(['heatmap']);
+
+export const isFuturesFlowAvailable = (marketType: MarketType | undefined): boolean => marketType === 'FUTURES';
+
+export const isLayerAvailable = (layer: keyof ChartLayerFlags, marketType: MarketType | undefined): boolean =>
+  !FUTURES_ONLY_LAYERS.has(layer) || isFuturesFlowAvailable(marketType);
 
 export interface ChartLayerFlags {
   drawings: boolean;

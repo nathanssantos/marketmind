@@ -153,6 +153,7 @@ coverage/
 .nyc_output
 test-results/
 playwright-report/
+.playwright-mcp/
 apps/electron/e2e/perf/last-run.json
 apps/electron/e2e/perf/diagnose-*.json
 apps/electron/e2e/perf/pan-cadence-last-run.json

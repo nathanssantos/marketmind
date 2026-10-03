@@ -114,7 +114,9 @@
     "start": "Start",
     "settings": "Settings",
     "confirm": "Confirm",
-    "endTime": "End time"
+    "endTime": "End time",
+    "options": "Options",
+    "clear": "Effacer"
   },
   "app": {
     "title": "MarketMind",
@@ -211,16 +213,6 @@
     "orderImpact": "Impact de l'Ordre",
     "requiredInitial": "Initial Requis",
     "newBuyingPower": "Nouveau Pouvoir d'Achat"
-  },
-  "shortability": {
-    "easy": "Facile à Emprunter",
-    "hard": "Difficile à Emprunter",
-    "unavailable": "Non Disponible",
-    "tooltip": {
-      "available": "{{shares}} actions disponibles ({{difficulty}})",
-      "availableNoCount": "Disponible pour vente à découvert ({{difficulty}})",
-      "unavailable": "Cette action n'est pas disponible pour la vente à découvert"
-    }
   },
   "settings": {
     "title": "Paramètres",
@@ -531,7 +523,9 @@
       "liquidityIntensity": "Carte de liquidité par intensité",
       "liquidityIntensityHelper": "Utilise une seule rampe chaude pour bid et ask — les cellules plus claires indiquent plus de liquidité ; le côté est déduit par la position relative au prix",
       "confluenceScoreChart": "Graphique de confluence",
-      "confluenceScoreChartHelper": "Seuils de conviction par côté rendus sur le graphique de net score. La bande entre eux est ombrée comme zone neutre pour rendre évident qu'il faut éviter les setups intermédiaires."
+      "confluenceScoreChartHelper": "Seuils de conviction par côté rendus sur le graphique de net score. La bande entre eux est ombrée comme zone neutre pour rendre évident qu'il faut éviter les setups intermédiaires.",
+      "skipMarketConfirm": "Envoyer les ordres au marché sans confirmation",
+      "skipMarketConfirmHelper": "Le ticket envoie les ordres au marché en un clic. Les ordres limite et stop demandent toujours confirmation."
     },
     "tradingSimulator": {
       "title": "Paramètres du Simulateur de Trading",
@@ -1016,7 +1010,6 @@
       "fibonacciProjection": "Projection de Fibonacci",
       "measurementRuler": "Règle de Mesure",
       "measurementArea": "Zone de Mesure",
-      "activityIndicator": "Indicateur d'Activité",
       "marketEvents": "Événements du Marché",
       "openingRange": "Opening Range",
       "autoPatterns": "Détection Automatique de Motifs",
@@ -1075,7 +1068,47 @@
       "stopLoss": "SL",
       "takeProfit": "TP",
       "slInvalid": "Le Stop Loss doit être du côté perte par rapport au prix d'entrée",
-      "tpInvalid": "Le Take Profit doit être du côté profit par rapport au prix d'entrée"
+      "tpInvalid": "Le Take Profit doit être du côté profit par rapport au prix d'entrée",
+      "oco": "OCO",
+      "ocoOn": "SL et TP s’annulent mutuellement",
+      "ocoOff": "SL et TP restent indépendants",
+      "protection": "Protection",
+      "protectionOco": "OCO",
+      "protectionIndependent": "Indépendants",
+      "sideBuyLong": "Achat / Long",
+      "sideSellShort": "Vente / Short",
+      "orderTypeStop": "Stop",
+      "mid": "Milieu",
+      "ocoNeedsBoth": "Activez SL et TP pour choisir OCO",
+      "reduceNote": "Cet ordre réduit la position ouverte ; SL et TP ne s’appliquent pas.",
+      "risk": "Risque",
+      "ofBalance": "du solde",
+      "riskReward": "R:R",
+      "fromDrawing": "Depuis le dessin {{tool}}",
+      "paper": "PAPER",
+      "live": "RÉEL",
+      "estimatedFee": "Frais est.",
+      "breakeven": "Break-even",
+      "effect": "Effet",
+      "decreaseSize": "Réduire la taille de 5 %",
+      "increaseSize": "Augmenter la taille de 5 %",
+      "effectLabel": {
+        "CLOSE": "Ferme la position",
+        "REDUCE": "Réduit la position",
+        "REVERSE": "Ferme et inverse la position"
+      },
+      "action": {
+        "open": "{{side}} {{quantity}} @ {{price}}",
+        "close": "Fermer {{quantity}}",
+        "reduce": "Réduire {{quantity}}",
+        "reverse": "Inverser vers {{side}} {{quantity}}"
+      },
+      "reason": {
+        "belowMinNotional": "Ordre en dessous du minimum de {{min}} {{currency}}",
+        "notShortable": "Cette action n’est pas disponible à la vente à découvert",
+        "marketClosed": "Marché fermé : les ordres au marché attendent la séance régulière",
+        "sizeBelowStep": "Taille trop petite : {{percent}} % du solde est sous le minimum de {{step}} {{asset}}"
+      }
     },
     "gridOrders": {
       "title": "Ordres en Grille",
@@ -1322,7 +1355,13 @@
       "emptyReal": "No wallets yet. Create a paper trading wallet to test auto-trading.",
       "realMode": "Paper Trading Mode - Create a wallet to test auto-trading without real funds.",
       "selectWallet": "Select a wallet first",
-      "syncBalance": "Sync balance from Binance"
+      "syncBalance": "Sync balance from Binance",
+      "marketType": "Marché",
+      "marketFutures": "Futures",
+      "marketSpot": "Spot",
+      "apiKeysRequired": "API Key et Secret sont obligatoires",
+      "realCreationUnavailable": "Création de portefeuille réel indisponible",
+      "createFailed": "Échec de la création du portefeuille"
     },
     "ticket": {
       "title": "Ordre",
@@ -1528,7 +1567,8 @@
       "closeFailed": "Échec de la fermeture",
       "slTpUpdateFailed": "Échec de la mise à jour SL/TP",
       "slTpCreateFailed": "Échec de la création du SL/TP",
-      "entryUpdateFailed": "Échec du déplacement de l'ordre en attente"
+      "entryUpdateFailed": "Échec du déplacement de l'ordre en attente",
+      "protectionFailed": "Ordre de protection non envoyé"
     },
     "dialogs": {
       "chartClose": {
@@ -1633,7 +1673,11 @@
       "noSuggestions": "Aucune suggestion en attente"
     },
     "noWalletSelected": "No wallet selected. Please create or select a wallet first.",
-    "loadingWallets": "Loading wallets, please wait..."
+    "loadingWallets": "Loading wallets, please wait...",
+    "spot": {
+      "shortNotAllowed": "Les portefeuilles spot ne peuvent pas ouvrir de positions short.",
+      "nothingToSell": "Rien à vendre : ce portefeuille ne détient pas cet actif."
+    }
   },
   "about": {
     "version": "Version {{version}}",

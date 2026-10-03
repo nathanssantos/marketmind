@@ -71,7 +71,7 @@ describe('Trading Router', () => {
         side: 'SELL',
         type: 'LIMIT',
         quantity: '0.1',
-        price: '2500.00',
+        price: '4000.00',
       });
 
       expect(result.orderId).toBeDefined();

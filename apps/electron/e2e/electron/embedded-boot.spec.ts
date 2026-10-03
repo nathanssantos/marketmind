@@ -1,50 +1,30 @@
-import { _electron, expect, test, type ElectronApplication, type Page } from '@playwright/test';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-const MAIN_ENTRY = resolve(HERE, '../../dist-electron/main/index.js');
-const BOOT_TIMEOUT_MS = 120_000;
-
-const environmentWithoutDevServer = (): NodeJS.ProcessEnv => {
-  const env = { ...process.env };
-  delete env['VITE_DEV_SERVER_URL'];
-  delete env['MM_BACKEND_URL'];
-  return env;
-};
-
-const waitForRendererWindow = async (app: ElectronApplication): Promise<Page> => {
-  const deadline = Date.now() + BOOT_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const page = app.windows().find((candidate) => candidate.url().startsWith('http://127.0.0.1:'));
-    if (page) return page;
-    await app.waitForEvent('window', { timeout: deadline - Date.now() });
-  }
-  throw new Error('The renderer window served by the embedded backend never appeared');
-};
+import { expect, test, type ElectronApplication } from '@playwright/test';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import {
+  EMBEDDED_BOOT_TIMEOUT_MS,
+  createUserDataDir,
+  launchEmbeddedApp,
+  removeUserDataDir,
+  waitForRendererWindow,
+} from './embedded-launch';
 
 test.describe('embedded stack', () => {
   let userDataDir: string;
   let app: ElectronApplication;
 
   test.beforeAll(async () => {
-    userDataDir = mkdtempSync(join(tmpdir(), 'marketmind e2e-'));
-    app = await _electron.launch({
-      args: [MAIN_ENTRY],
-      env: { ...environmentWithoutDevServer(), MM_USER_DATA_DIR: userDataDir },
-      timeout: BOOT_TIMEOUT_MS,
-    });
+    userDataDir = createUserDataDir();
+    app = await launchEmbeddedApp(userDataDir);
   });
 
   test.afterAll(async () => {
     await app.close();
-    rmSync(userDataDir, { recursive: true, force: true });
+    removeUserDataDir(userDataDir);
   });
 
   test('boots PostgreSQL and the backend, then serves the login page from the backend origin', async () => {
-    test.setTimeout(BOOT_TIMEOUT_MS + 30_000);
+    test.setTimeout(EMBEDDED_BOOT_TIMEOUT_MS + 30_000);
     const page = await waitForRendererWindow(app);
     await page.waitForLoadState('domcontentloaded');
 
@@ -62,11 +42,7 @@ test.describe('embedded stack', () => {
     await app.close();
     const pidFile = join(userDataDir, 'data', 'postgres', 'postmaster.pid');
     await expect.poll(() => existsSync(pidFile), { timeout: 30_000 }).toBe(false);
-    app = await _electron.launch({
-      args: [MAIN_ENTRY],
-      env: { ...environmentWithoutDevServer(), MM_USER_DATA_DIR: userDataDir },
-      timeout: BOOT_TIMEOUT_MS,
-    });
+    app = await launchEmbeddedApp(userDataDir);
     const page = await waitForRendererWindow(app);
     await expect(page.locator('input[type="password"]').first()).toBeVisible({ timeout: 60_000 });
   });

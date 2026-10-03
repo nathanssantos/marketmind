@@ -4,6 +4,7 @@ import type { Kline, MarketType, TimeInterval, TradingSetup, Viewport } from '@m
 import type { KlineSource } from '@renderer/hooks/useKlineLiveStream';
 import { useChartColors } from '@renderer/hooks/useChartColors';
 import { useEventRefreshScheduler } from '@renderer/hooks/useEventRefreshScheduler';
+import { useTradingMarketType } from '@renderer/hooks/useTradingMarketType';
 import { useLiquidityHeatmap } from '@renderer/hooks/useLiquidityHeatmap';
 import { useChartPref, useTradingPref } from '@renderer/store/preferencesStore';
 import { useMarketEvents } from '@renderer/hooks/useMarketEvents';
@@ -30,7 +31,7 @@ import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
-import { useChartLayerFlags } from '@renderer/store/chartLayersStore';
+import { isFuturesFlowAvailable, useChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { usePatternMarkers } from '@renderer/hooks/usePatternMarkers';
 import {
   renderCandlePatterns as drawCandlePatterns,
@@ -120,14 +121,15 @@ const ChartCanvasInternal = ({
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showBreakevenLines] = useChartPref<boolean>('showBreakevenLines', false);
   const [showEventRow] = useChartPref('showEventRow', false);
-  const [showActivityIndicator] = useChartPref<boolean>('showActivityIndicator', true);
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const [chartFlipped] = useChartPref<boolean>('chartFlipped', false);
 
   const { showVolume, showOrb, heatmapEnabled } = useIndicatorVisibility();
   const colors = useChartColors();
 
-  const { dataRef: heatmapDataRef } = useLiquidityHeatmap(symbol ?? null, heatmapEnabled);
+  const layerFlags = useChartLayerFlags(panelId ?? '');
+  const showsFuturesFlow = isFuturesFlowAvailable(marketType) && layerFlags.heatmap;
+  const { dataRef: heatmapDataRef } = useLiquidityHeatmap(symbol ?? null, heatmapEnabled && showsFuturesFlow);
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -154,7 +156,8 @@ const ChartCanvasInternal = ({
     return () => unsubscribe();
   }, []);
 
-  const tradingData = useChartTradingData({ symbol, marketType });
+  const tradingMarketType = useTradingMarketType(marketType);
+  const tradingData = useChartTradingData({ symbol, marketType: tradingMarketType });
   const {
     backendWalletId,
     hasTradingEnabled,
@@ -308,7 +311,7 @@ const ChartCanvasInternal = ({
   }, [klinePrice]);
 
   const tradingActions = useChartTradingActions({
-    symbol, marketType, manager, backendWalletId,
+    symbol, marketType: tradingMarketType, manager, backendWalletId,
     backendExecutions: backendExecutions as unknown as BackendExecution[] | undefined, allExecutions,
     setOptimisticExecutions, orderLoadingMapRef, orderFlashMapRef,
     closingSnapshotsRef, setClosingVersion, applyOptimistic, clearOptimistic,
@@ -369,7 +372,7 @@ const ChartCanvasInternal = ({
 
   const { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark } = useChartBaseRenderers({
     manager, colors, chartType, advancedConfig,
-    showGrid, showCurrentPriceLine, showCrosshair, showActivityIndicator,
+    showGrid, showCurrentPriceLine, showCrosshair,
     hoveredKlineIndexRef, highlightedCandlesRef, mousePositionRef,
     timeframe, symbol, marketType,
   });
@@ -430,7 +433,6 @@ const ChartCanvasInternal = ({
   // v1.5 — Layers popover gates: when the user toggles a layer off,
   // skip its render call so the canvas re-paints without it. Flags
   // are session-only, per (symbol, interval).
-  const layerFlags = useChartLayerFlags(panelId ?? '');
   const renderOrderLines = useCallback<typeof rawRenderOrderLines>(
     (...args) => {
       if (!layerFlags.orderLines) return false;

@@ -18,7 +18,6 @@ export interface UseChartBaseRenderersProps {
   showGrid: boolean;
   showCurrentPriceLine: boolean;
   showCrosshair: boolean;
-  showActivityIndicator: boolean;
   hoveredKlineIndexRef: MutableRefObject<number | undefined>;
   highlightedCandlesRef: React.MutableRefObject<HighlightedCandle[]>;
   mousePositionRef: React.MutableRefObject<{ x: number; y: number } | null>;
@@ -45,7 +44,6 @@ export const useChartBaseRenderers = ({
   showGrid,
   showCurrentPriceLine,
   showCrosshair,
-  showActivityIndicator,
   hoveredKlineIndexRef,
   highlightedCandlesRef,
   mousePositionRef,
@@ -66,7 +64,6 @@ export const useChartBaseRenderers = ({
     manager,
     colors,
     enabled: chartType !== 'line',
-    showActivityIndicator,
     ...(advancedConfig?.rightMargin !== undefined && {
       rightMargin: advancedConfig.rightMargin,
     }),

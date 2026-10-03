@@ -160,7 +160,7 @@ export const useChartTradingActions = ({
     try {
       await submitEntryOrder({
         backendWalletId, symbol, side: 'BUY', price, marketPrice,
-        quantity: getOrderQuantity(price), reduceOnly: hasOpenShort, addBackendOrder,
+        quantity: getOrderQuantity(price), reduceOnly: hasOpenShort, marketType: marketType ?? 'FUTURES', addBackendOrder,
       });
       void utils.autoTrading.getActiveExecutions.invalidate();
       orderFlashMapRef.current.set(optimisticId, performance.now());
@@ -188,6 +188,11 @@ export const useChartTradingActions = ({
       (e) => e.symbol === symbol && e.side === 'LONG' && e.status === 'open'
     );
 
+    if (marketType === 'SPOT' && !hasOpenLong) {
+      toastError(t('trading.spot.shortNotAllowed'));
+      return;
+    }
+
     const optimisticId = createOptimisticEntry({
       symbol, side: 'SHORT', price, marketType: marketType ?? 'FUTURES',
       getOrderQuantity, setOptimisticExecutions, orderLoadingMapRef, manager,
@@ -196,7 +201,7 @@ export const useChartTradingActions = ({
     try {
       await submitEntryOrder({
         backendWalletId, symbol, side: 'SELL', price, marketPrice,
-        quantity: getOrderQuantity(price), reduceOnly: hasOpenLong, addBackendOrder,
+        quantity: getOrderQuantity(price), reduceOnly: hasOpenLong, marketType: marketType ?? 'FUTURES', addBackendOrder,
       });
       void utils.autoTrading.getActiveExecutions.invalidate();
       orderFlashMapRef.current.set(optimisticId, performance.now());
@@ -554,6 +559,11 @@ export const useChartTradingActions = ({
   const handleGridConfirm = useCallback(async (prices: number[], side: 'BUY' | 'SELL') => {
     if (!backendWalletId || !symbol) return;
 
+    if (marketType === 'SPOT' && side === 'SELL') {
+      toastError(t('trading.spot.shortNotAllowed'));
+      return;
+    }
+
     const marketPrice = latestKlinesPriceRef.current;
     const gridSide = side === 'BUY' ? 'LONG' as const : 'SHORT' as const;
     const optimisticIds: string[] = [];
@@ -595,7 +605,7 @@ export const useChartTradingActions = ({
       try {
         await submitEntryOrder({
           backendWalletId, symbol, side, price, marketPrice,
-          quantity, reduceOnly: false, addBackendOrder,
+          quantity, reduceOnly: false, marketType: marketType ?? 'FUTURES', addBackendOrder,
         });
         orderFlashMapRef.current.set(optId, performance.now());
         orderLoadingMapRef.current.delete(optId);

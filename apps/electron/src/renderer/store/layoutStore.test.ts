@@ -21,9 +21,10 @@ import {
   migrateGridGranularity,
   scalePosition,
   useLayoutStore,
+  migrateTicketHeight,
 } from './layoutStore';
 import type { ChartPanelConfig, LayoutPreset, NamedPanelConfig } from '@shared/types/layout';
-import { GRID_VERSION } from '@shared/types/layout';
+import { GRID_VERSION, TRADING_RAIL_ROWS } from '@shared/types/layout';
 
 const baseSnapshot = useLayoutStore.getState();
 
@@ -263,5 +264,51 @@ describe('layoutStore — scalePosition', () => {
       w: 7,    // 7.2 → 7
       h: 18,   // 17.6 → 18
     });
+  });
+});
+
+describe('layoutStore — migrateTicketHeight', () => {
+  const rail = (ticketH: number, belowH: number): LayoutPreset[] => [{
+    id: 'l1',
+    name: 'L1',
+    order: 0,
+    grid: [
+      { id: 'portfolio', kind: 'portfolio', gridPosition: { x: 159, y: 0, w: 33, h: 35 }, windowState: 'normal' } satisfies NamedPanelConfig,
+      { id: 'ticket', kind: 'ticket', gridPosition: { x: 159, y: 35, w: 33, h: ticketH }, windowState: 'normal' } satisfies NamedPanelConfig,
+      { id: 'confluence', kind: 'confluence', gridPosition: { x: 159, y: 35 + ticketH, w: 33, h: belowH }, windowState: 'normal' } satisfies NamedPanelConfig,
+    ],
+  }];
+  const positionOf = (presets: LayoutPreset[], id: string) => presets[0]!.grid.find((p) => p.id === id)!.gridPosition;
+
+  it('grows a short ticket to the default height and takes the rows from the panel below', () => {
+    const out = migrateTicketHeight(rail(19, 28), 2);
+
+    expect(positionOf(out, 'ticket')).toEqual({ x: 159, y: 35, w: 33, h: TRADING_RAIL_ROWS.ticket });
+    expect(positionOf(out, 'confluence')).toEqual({ x: 159, y: 35 + TRADING_RAIL_ROWS.ticket, w: 33, h: 28 - (TRADING_RAIL_ROWS.ticket - 19) });
+    expect(positionOf(out, 'portfolio')).toEqual({ x: 159, y: 0, w: 33, h: 35 });
+  });
+
+  it('keeps a minimum height for the panel below and grows the ticket only by what is left', () => {
+    const out = migrateTicketHeight(rail(19, 10), 2);
+
+    expect(positionOf(out, 'confluence').h).toBe(8);
+    expect(positionOf(out, 'ticket').h).toBe(19 + 2);
+    expect(positionOf(out, 'confluence').y).toBe(35 + 21);
+  });
+
+  it('grows the ticket when nothing sits below it', () => {
+    const presets: LayoutPreset[] = [{ ...rail(19, 28)[0]!, grid: rail(19, 28)[0]!.grid.filter((p) => p.id !== 'confluence') }];
+
+    const out = migrateTicketHeight(presets, 2);
+
+    expect(positionOf(out, 'ticket').h).toBe(TRADING_RAIL_ROWS.ticket);
+  });
+
+  it('leaves a ticket that is already tall enough and layouts already on the current version', () => {
+    const tall = rail(TRADING_RAIL_ROWS.ticket + 2, 20);
+    expect(migrateTicketHeight(tall, 2)[0]!.grid).toEqual(tall[0]!.grid);
+
+    const short = rail(19, 28);
+    expect(migrateTicketHeight(short, GRID_VERSION)).toBe(short);
   });
 });
