@@ -71,3 +71,19 @@ Known starting points from the inventory:
 2. Fix the Documentation and Changelog links in Settings → About; register the missing shortcuts in the `?` dialog.
 3. Update `README.md`, `CHANGELOG.md`, `QUICK_START.md` and `docs/MCP_SERVERS.md` where they are stale.
 4. Update the marketing site copy: paper trading, spot and futures, and the live-trading wording, to match what actually works.
+
+## Phase 5 — AI instructions and markdown cleanup
+
+Goal: one source of truth for AI instructions, and no markdown file without a concrete use.
+
+1. **Single generic source for AI instructions.**
+   - Inventory every AI instruction file in the monorepo: `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.gemini/instructions.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.claude/project-instructions.md`, `.windsurfrules`, `.clinerules`, and any per-package copy.
+   - Move all instructions into one tool-neutral agents file (`AGENTS.md`) and make it the source of truth. Today the source is `CLAUDE.md` and the others are symlinks to it.
+   - For each AI that needs its own file or folder structure, create only that file and make it point to the generic one (symlink or a one-line reference), with no duplicated content.
+   - Remove tool-specific wording from the generic file; keep tool-specific notes, if any are needed, in that tool's own file.
+2. **Review every markdown file.** For each `.md` in the repo, classify it:
+   - **Current** — keep, and fix what is stale.
+   - **Obsolete** — delete, or move to `docs/archive/` when it has historical value.
+   - **Incomplete** — finish it, or cut it down to what is true.
+   - **Queue** — it describes work not done yet; turn it into an item of an active plan, so nothing sits without a concrete use.
+3. **Output:** a table with file, classification and action taken, plus the list of items added to the queue.
