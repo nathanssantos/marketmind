@@ -1304,7 +1304,10 @@
       "liveWarning": "Aviso: Dinheiro Real",
       "liveDescription": "Trading real usa fundos reais. Garanta que você entende os riscos.",
       "selectWallet": "Select a wallet first",
-      "syncBalance": "Sync balance from Binance"
+      "syncBalance": "Sync balance from Binance",
+      "marketType": "Mercado",
+      "marketFutures": "Futuros",
+      "marketSpot": "Spot"
     },
     "ticket": {
       "title": "Ordem",
@@ -1613,6 +1616,10 @@
       "expired": "Expirada",
       "positionSize": "Tamanho da Posição",
       "noSuggestions": "Sem sugestões pendentes"
+    },
+    "spot": {
+      "shortNotAllowed": "Carteiras spot não podem abrir posições vendidas.",
+      "nothingToSell": "Nada para vender: esta carteira não tem este ativo."
     }
   },
   "about": {

@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { badRequest, conflict } from '../../utils/trpc-errors';
+import { assertFuturesWallet } from '../../utils/trading-validation';
 import { z } from 'zod';
 import { orders, tradeExecutions } from '../../db/schema';
 import { mapBinanceErrorToTRPC } from '../../utils/binanceErrorHandler';
@@ -53,6 +54,7 @@ export const orderMutationsRouter = router({
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
 
       if (!wallet.isActive) throw badRequest('Wallet is inactive');
+      assertFuturesWallet(wallet);
 
       if (!input.reduceOnly && getScalpingScheduler().isSymbolBeingScalped(input.walletId, input.symbol)) {
         throw conflict(`Cannot trade ${input.symbol}: scalping is active on this symbol. Stop scalping first.`);
@@ -92,7 +94,7 @@ export const orderMutationsRouter = router({
               eq(tradeExecutions.status, 'open'),
             ));
 
-          return { ...paperOrder, openExecutions: paperOpenExecutions };
+          return { ...paperOrder, walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
 
         const client = createBinanceFuturesClient(wallet);

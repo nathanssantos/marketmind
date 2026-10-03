@@ -30,7 +30,7 @@ Scope: futures LONG and SHORT, spot LONG. Spot SHORT must be impossible.
 |---|---|---|
 | 1.1 | Manual paper orders run on one engine | A manual order only wrote an `orders` row: no position, no PnL, no balance change. |
 | 1.2 | Spot wallets | No way to create a SPOT paper wallet; no client sends `marketType`; spot short is accepted by `trading.createPosition`, the whole `futures-trading` router, `autoTrading.executeSetup` and watchers; Sell and Alt+click are never hidden on spot. |
-| 1.3 | SL/TP at entry | The ticket sends `stopLoss` / `takeProfit` and the input schema drops them, while the confirm dialog shows them. |
+| 1.3 | SL/TP at entry, OCO toggle, position drawing tools | The ticket sends `stopLoss` / `takeProfit` and the input schema drops them, while the confirm dialog shows them. Add an OCO toggle to the ticket that decides whether SL and TP created with the entry cancel each other. Review how the Long Position and Short Position drawing tools hand their entry, SL and TP to the ticket. |
 | 1.4 | Futures realism | Leverage stuck at 1x on paper; no margin check; liquidation only alerts; funding only on the legacy table. |
 | 1.5 | Accounting and live parity | Entry fee skipped on SL/TP exits; exits fill at the observed price instead of the trigger; no min notional, lot, tick or balance validation; auto-trading paper entries store neither the entry fee nor the break-even price; the break-even line is off by default. |
 | 1.6 | Trading UI | No wallet reset or deposit; no partial close; no margin type control; no paper/live marker on the confirm dialog; raw English rejection messages; conflicting badge colours. |
@@ -71,3 +71,19 @@ Known starting points from the inventory:
 2. Fix the Documentation and Changelog links in Settings → About; register the missing shortcuts in the `?` dialog.
 3. Update `README.md`, `CHANGELOG.md`, `QUICK_START.md` and `docs/MCP_SERVERS.md` where they are stale.
 4. Update the marketing site copy: paper trading, spot and futures, and the live-trading wording, to match what actually works.
+
+## Phase 5 — AI instructions and markdown cleanup
+
+Goal: one source of truth for AI instructions, and no markdown file without a concrete use.
+
+1. **Single generic source for AI instructions.**
+   - Inventory every AI instruction file in the monorepo: `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `.gemini/instructions.md`, `.cursorrules`, `.github/copilot-instructions.md`, `.claude/project-instructions.md`, `.windsurfrules`, `.clinerules`, and any per-package copy.
+   - Move all instructions into one tool-neutral agents file (`AGENTS.md`) and make it the source of truth. Today the source is `CLAUDE.md` and the others are symlinks to it.
+   - For each AI that needs its own file or folder structure, create only that file and make it point to the generic one (symlink or a one-line reference), with no duplicated content.
+   - Remove tool-specific wording from the generic file; keep tool-specific notes, if any are needed, in that tool's own file.
+2. **Review every markdown file.** For each `.md` in the repo, classify it:
+   - **Current** — keep, and fix what is stale.
+   - **Obsolete** — delete, or move to `docs/archive/` when it has historical value.
+   - **Incomplete** — finish it, or cut it down to what is true.
+   - **Queue** — it describes work not done yet; turn it into an item of an active plan, so nothing sits without a concrete use.
+3. **Output:** a table with file, classification and action taken, plus the list of items added to the queue.

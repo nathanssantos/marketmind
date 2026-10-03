@@ -4,6 +4,7 @@ import { calculatePnl } from '@marketmind/utils';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { badRequest, conflict, internalServerError, notFound } from '../../utils/trpc-errors';
+import { assertFuturesWallet } from '../../utils/trading-validation';
 import { z } from 'zod';
 import { TRADING_CONFIG } from '../../constants';
 import { orders, positions, tradeExecutions, wallets } from '../../db/schema';
@@ -54,7 +55,7 @@ export const positionMutationsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      assertFuturesWallet(await walletQueries.getByIdAndUser(input.walletId, ctx.user.id));
 
       const leverage = input.leverage ?? 1;
 
@@ -326,6 +327,7 @@ export const positionMutationsRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       const wallet = await walletQueries.getByIdAndUser(input.walletId, ctx.user.id);
+      assertFuturesWallet(wallet);
 
       try {
         if (isPaperWallet(wallet)) {
