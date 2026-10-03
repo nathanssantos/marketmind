@@ -1,4 +1,4 @@
-import type { EntryOrderType, MarketType, PositionSide, ProtectionMode } from '@marketmind/types';
+import type { EntryOrderType, ExchangeId, MarketType, PositionSide, ProtectionMode } from '@marketmind/types';
 import { calculateLiquidationPrice, getDefaultFee } from '@marketmind/types';
 import { calculateBreakevenPrice, calculatePnl } from '@marketmind/utils';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -11,6 +11,7 @@ import { generateEntityId } from '../../utils/id';
 import { badRequest } from '../../utils/trpc-errors';
 import { logger } from '../logger';
 import { getCurrentPrice } from '../position-monitor/price-service';
+import { priceCache } from '../price-cache';
 import { closeExecutionAndBroadcast, incrementWalletBalanceAndBroadcast } from '../wallet-broadcast';
 import { getWebSocketService } from '../websocket';
 import { withWriteLock } from '../write-op-mutex';
@@ -28,6 +29,7 @@ export interface PaperOrderRequest {
   type: string;
   quantity: string;
   marketType: MarketType;
+  exchange?: ExchangeId | null;
   price?: string;
   stopPrice?: string;
   reduceOnly?: boolean;
@@ -95,11 +97,19 @@ const ENTRY_ORDER_TYPE_BY_TRIGGER_KIND: Record<TriggerKind, EntryOrderType> = {
 
 const DEFAULT_PROTECTION_MODE: ProtectionMode = 'OCO';
 
+const getPaperMarketPrice = async (symbol: string, marketType: MarketType, exchange: ExchangeId | null | undefined): Promise<number> => {
+  if (exchange !== 'INTERACTIVE_BROKERS') return getCurrentPrice(symbol, marketType);
+  const stockPrice = priceCache.getPrice(symbol, 'SPOT');
+  if (stockPrice === null) throw badRequest(`No market price for ${symbol}: Interactive Brokers Gateway is not connected`);
+  return stockPrice;
+};
+
 interface IndependentProtectionRequest {
   userId: string;
   walletId: string;
   symbol: string;
   marketType: MarketType;
+  exchange?: ExchangeId | null;
   positionSide: PositionSide;
   quantity: string;
   stopLoss?: string | null;
@@ -191,6 +201,7 @@ const placeIndependentProtection = async (request: IndependentProtectionRequest)
     walletId: request.walletId,
     symbol: request.symbol,
     marketType: request.marketType,
+    exchange: request.exchange,
     side: closeSide,
     quantity: request.quantity,
     reduceOnly: true,
@@ -371,7 +382,7 @@ export const placePaperOrder = async (request: PaperOrderRequest): Promise<Paper
   const quantity = parseFloat(request.quantity);
   if (!isAboveZero(quantity)) throw badRequest('Order quantity must be positive');
 
-  const marketPrice = await getCurrentPrice(symbol, marketType);
+  const marketPrice = await getPaperMarketPrice(symbol, marketType, request.exchange);
   if (!(marketPrice > 0)) throw badRequest(`No market price available for ${symbol}`);
 
   const positionSide = toPositionSide(side);
@@ -478,6 +489,7 @@ export const placePaperOrder = async (request: PaperOrderRequest): Promise<Paper
         quantity: request.quantity,
         stopLoss: request.stopLoss,
         takeProfit: request.takeProfit,
+        exchange: request.exchange,
       });
     }
   } else if (!reduceOnly) {
@@ -537,12 +549,14 @@ const settlePendingOrder = async (order: OrderRow, status: 'FILLED' | 'CANCELED'
 };
 
 const processPendingPaperOrder = async (orderId: string): Promise<void> => {
-  const [order] = await db
-    .select()
+  const [pendingRow] = await db
+    .select({ order: orders, walletExchange: wallets.exchange })
     .from(orders)
+    .innerJoin(wallets, eq(orders.walletId, wallets.id))
     .where(and(eq(orders.orderId, orderId), eq(orders.status, 'NEW')))
     .limit(1);
-  if (!order) return;
+  if (!pendingRow) return;
+  const order = { ...pendingRow.order, walletExchange: pendingRow.walletExchange as ExchangeId | null };
 
   const triggerKind = TRIGGER_KIND_BY_ORDER_TYPE[order.type];
   const triggerPrice = parseFloat(order.price ?? '0');
@@ -553,7 +567,7 @@ const processPendingPaperOrder = async (orderId: string): Promise<void> => {
   }
 
   const marketType: MarketType = order.marketType === 'SPOT' ? 'SPOT' : 'FUTURES';
-  const marketPrice = await getCurrentPrice(order.symbol, marketType);
+  const marketPrice = await getPaperMarketPrice(order.symbol, marketType, order.walletExchange);
   if (!isTriggered(triggerKind, order.side, triggerPrice, marketPrice)) return;
 
   const reduceOnly = order.reduceOnly ?? false;
@@ -609,6 +623,7 @@ const processPendingPaperOrder = async (orderId: string): Promise<void> => {
       quantity: order.origQty ?? formatQuantity(quantity),
       stopLoss: order.stopLossIntent,
       takeProfit: order.takeProfitIntent,
+      exchange: order.walletExchange,
     });
   }
 

@@ -52,26 +52,20 @@ const buildBoletaOverrides = (positions: unknown[] = []): Record<string, () => u
   'trading.createOrder': () => ({ success: true, orderId: 99999 }),
 });
 
-const buyButton = (page: import('@playwright/test').Page) =>
-  page.getByRole('button', { name: /^Buy/, exact: false }).first();
+const submitButton = (page: import('@playwright/test').Page) => page.getByTestId('trade-ticket-submit');
 
-const sellButton = (page: import('@playwright/test').Page) =>
-  page.getByRole('button', { name: /^Sell/, exact: false }).first();
+const selectSide = async (page: import('@playwright/test').Page, side: 'buy' | 'sell') => {
+  await page.getByTestId(`trade-ticket-side-${side}`).click();
+};
 
 const waitForBuyPrice = async (page: import('@playwright/test').Page) => {
-  // The Buy button text starts as "Buy —" while currentPrice is 0, then
-  // flips to "Buy 47570.55" once the chart's kline-close has propagated
-  // through usePricesForSymbols (which has a 250ms throttle — so checking
-  // priceStore directly is not enough; the React closure inside the
-  // memoized BuySellButtons must also refresh). The button's accessible
-  // name reflects the actual `buyPrice` captured by the click handler.
-  await expect(buyButton(page)).not.toHaveAccessibleName(/—/, { timeout: 10_000 });
+  await expect(submitButton(page)).not.toHaveText(/—/, { timeout: 10_000 });
 };
 
 const openBoleta = async (page: import('@playwright/test').Page) => {
   const portfolioTab = page.getByRole('tab', { name: /Portfolio/i }).first();
   if (await portfolioTab.isVisible().catch(() => false)) await portfolioTab.click();
-  await expect(buyButton(page)).toBeVisible();
+  await expect(submitButton(page)).toBeVisible();
   await waitForBuyPrice(page);
 };
 
@@ -88,7 +82,7 @@ test.describe('sidebar quick-trade boleta — comprehensive coverage of all 7 fe
     test('Buy click → confirm dialog → trading.createOrder is hit (regression: v0.107 sends quantity, not percent)', async ({ page }) => {
       const before = await getTrpcHitCount(page, 'trading.createOrder');
 
-      await buyButton(page).click();
+      await submitButton(page).click();
 
       const confirmDialog = page.getByRole('dialog').filter({ hasText: /Confirm Order/i });
       await expect(confirmDialog).toBeVisible();
@@ -104,7 +98,8 @@ test.describe('sidebar quick-trade boleta — comprehensive coverage of all 7 fe
     test('Sell click → confirm dialog → SELL/SHORT label and createOrder hit', async ({ page }) => {
       const before = await getTrpcHitCount(page, 'trading.createOrder');
 
-      await sellButton(page).click();
+      await selectSide(page, 'sell');
+      await submitButton(page).click();
 
       const confirmDialog = page.getByRole('dialog').filter({ hasText: /Confirm Order/i });
       await expect(confirmDialog).toBeVisible();

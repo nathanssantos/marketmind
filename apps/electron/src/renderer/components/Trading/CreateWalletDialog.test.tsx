@@ -86,6 +86,7 @@ describe('CreateWalletDialog', () => {
       initialBalance: 10000,
       currency: 'USDT',
       marketType: 'FUTURES',
+      exchange: 'BINANCE',
     });
   });
 

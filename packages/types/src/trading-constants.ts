@@ -27,22 +27,6 @@ export const SELECTABLE_CURRENCIES: readonly WalletCurrency[] = ['USDT', 'USD', 
 export const LEVERAGE_PRESETS = [1, 2, 3, 5, 10, 20, 50, 75, 100, 125] as const;
 
 /**
- * NYSE trading sessions in fractional hours (Eastern time).
- * - PRE_MARKET: 4:00 → 9:30 ET
- * - REGULAR:    9:30 → 16:00 ET
- * - AFTER_HOURS: 16:00 → 20:00 ET
- *
- * Was: inline `const NYSE_HOURS` in MarketStatusBar.tsx.
- */
-export const NYSE_TIMEZONE = 'America/New_York' as const;
-
-export const NYSE_HOURS = {
-  PRE_MARKET: { start: 4, end: 9.5 },
-  REGULAR: { start: 9.5, end: 16 },
-  AFTER_HOURS: { start: 16, end: 20 },
-} as const;
-
-/**
  * Reg T margin fractions — set by the Federal Reserve Board for U.S.
  * stock margin accounts. Initial = the fraction of the trade value the
  * customer must put up in cash; Maintenance = the minimum equity ratio

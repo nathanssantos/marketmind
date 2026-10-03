@@ -1,3 +1,4 @@
+import { OPEN_EXECUTIONS_QUERY_INPUT } from '@renderer/hooks/useSymbolOpenPosition';
 import { useBackendTrading } from '@renderer/hooks/useBackendTrading';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
 import { usePortfolioFilters } from '@renderer/hooks/usePortfolioFilters';
@@ -43,7 +44,7 @@ export const usePortfolioData = () => {
   const dailyPerformancePolling = usePollingInterval(QUERY_CONFIG.BACKUP_POLLING_INTERVAL, { wsBacked: true });
   const { tickerPrices } = useBackendTrading(activeWalletId ?? '', undefined);
   const { data: openTradeExecutions } = trpc.trading.getTradeExecutions.useQuery(
-    { walletId: activeWalletId ?? '', status: 'open', limit: 500 },
+    { walletId: activeWalletId ?? '', ...OPEN_EXECUTIONS_QUERY_INPUT },
     { enabled: !!activeWalletId, refetchInterval: pollingInterval, staleTime: QUERY_CONFIG.STALE_TIME.FAST }
   );
   const tradeExecutions = openTradeExecutions ?? [];

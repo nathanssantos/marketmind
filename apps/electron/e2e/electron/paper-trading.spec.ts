@@ -54,8 +54,13 @@ const createSpotWalletAndSelectIt = async (page: Page): Promise<void> => {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 };
 
+const selectSide = async (page: Page, side: 'Buy' | 'Sell'): Promise<void> => {
+  await page.getByTestId(`trade-ticket-side-${side.toLowerCase()}`).click();
+};
+
 const sendMarketOrder = async (page: Page, side: 'Buy' | 'Sell'): Promise<void> => {
-  await page.getByRole('button', { name: new RegExp(`^${side}`) }).first().click();
+  await selectSide(page, side);
+  await page.getByTestId('trade-ticket-submit').click();
   await page.getByRole('button', { name: `Confirm ${side}` }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0, { timeout: UI_TIMEOUT_MS });
 };
@@ -104,8 +109,10 @@ test.describe.serial('paper trading on the embedded stack', () => {
     test.setTimeout(EMBEDDED_BOOT_TIMEOUT_MS);
     const positions = page.getByRole('table').filter({ hasText: 'AVG PRICE' });
     const row = positions.getByRole('row').filter({ hasText: 'BTCUSDT' });
-    const askText = await page.getByRole('button', { name: /^Buy/ }).first().innerText();
-    const ask = parseFloat(askText.replace(/[^\d.]/g, ''));
+    await selectSide(page, 'Buy');
+    await expect(page.getByTestId('trade-ticket-submit')).toContainText('@', { timeout: UI_TIMEOUT_MS });
+    const askText = await page.getByTestId('trade-ticket-submit').innerText();
+    const ask = parseFloat(askText.split('@')[1]?.replace(/[^\d.]/g, '') ?? '0');
     const stopLoss = Math.round(ask * 0.98);
     const takeProfit = Math.round(ask * 1.03);
     const thousands = (price: number) => Math.floor(price / 1000).toString();
@@ -154,18 +161,21 @@ test.describe.serial('paper trading on the embedded stack', () => {
   test('a spot wallet can only sell what it holds, so it never opens a SHORT', async () => {
     test.setTimeout(EMBEDDED_BOOT_TIMEOUT_MS);
     const positions = page.getByRole('table').filter({ hasText: 'AVG PRICE' });
-    const sell = page.getByRole('button', { name: /^Sell/ }).first();
+    const submit = page.getByTestId('trade-ticket-submit');
 
     await createSpotWalletAndSelectIt(page);
-    await expect(sell).toBeDisabled({ timeout: UI_TIMEOUT_MS });
+    await selectSide(page, 'Sell');
+    await expect(submit).toBeDisabled({ timeout: UI_TIMEOUT_MS });
 
     await page.getByText('10%', { exact: true }).first().click();
     await sendMarketOrder(page, 'Buy');
     await expect(positions.getByRole('row').filter({ hasText: 'BTCUSDT' }).filter({ hasText: 'SPOT' })).toBeVisible({ timeout: UI_TIMEOUT_MS });
-    await expect(sell).toBeEnabled({ timeout: UI_TIMEOUT_MS });
+    await selectSide(page, 'Sell');
+    await expect(submit).toBeEnabled({ timeout: UI_TIMEOUT_MS });
 
     await sendMarketOrder(page, 'Sell');
     await expect(page.getByText('No open positions.').first()).toBeVisible({ timeout: UI_TIMEOUT_MS });
-    await expect(sell).toBeDisabled({ timeout: UI_TIMEOUT_MS });
+    await selectSide(page, 'Sell');
+    await expect(submit).toBeDisabled({ timeout: UI_TIMEOUT_MS });
   });
 });

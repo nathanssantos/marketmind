@@ -115,9 +115,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 35,
+            "y": 24,
             "w": 33,
-            "h": 19
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -126,9 +126,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 62,
             "w": 33,
-            "h": 28
+            "h": 20
           },
           "windowState": "normal"
         },
@@ -161,7 +161,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },
@@ -222,9 +222,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 35,
+            "y": 24,
             "w": 33,
-            "h": 19
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -233,9 +233,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 62,
             "w": 33,
-            "h": 28
+            "h": 20
           },
           "windowState": "normal"
         },
@@ -268,7 +268,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },
@@ -329,9 +329,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 35,
+            "y": 24,
             "w": 33,
-            "h": 19
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -340,9 +340,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 62,
             "w": 33,
-            "h": 28
+            "h": 20
           },
           "windowState": "normal"
         },
@@ -375,7 +375,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },
@@ -430,9 +430,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 35,
+            "y": 24,
             "w": 33,
-            "h": 19
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -441,9 +441,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 62,
             "w": 33,
-            "h": 28
+            "h": 20
           },
           "windowState": "normal"
         },
@@ -476,7 +476,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },
@@ -531,9 +531,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 35,
+            "y": 24,
             "w": 33,
-            "h": 19
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -542,9 +542,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 62,
             "w": 33,
-            "h": 28
+            "h": 20
           },
           "windowState": "normal"
         },
@@ -577,7 +577,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },
@@ -638,9 +638,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 35,
+            "y": 24,
             "w": 33,
-            "h": 19
+            "h": 38
           },
           "windowState": "normal"
         },
@@ -649,9 +649,9 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 54,
+            "y": 62,
             "w": 33,
-            "h": 28
+            "h": 20
           },
           "windowState": "normal"
         },
@@ -684,7 +684,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },
@@ -769,7 +769,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },
@@ -859,7 +859,7 @@ export const DEFAULT_LAYOUT_SEED: DefaultLayoutSeed = {
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 35
+            "h": 24
           },
           "windowState": "normal"
         },

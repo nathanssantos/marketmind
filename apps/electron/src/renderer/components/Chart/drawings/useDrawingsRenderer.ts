@@ -28,11 +28,11 @@ import { renderText } from './renderers/renderText';
 import { renderPosition, type TicketButtonRef, type PositionRiskContext } from './renderers/renderPosition';
 import { computePositionRisk } from './renderers/positionRiskMath';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
+import { useWalletFees } from '@renderer/hooks/useWalletFees';
 import { useIsCustomSymbol } from '@renderer/hooks/useIsCustomSymbol';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { useUIPref } from '@renderer/store/preferencesStore';
 import { trpc } from '@renderer/utils/trpc';
-import { getFeeRateForVipLevel } from '@marketmind/types';
 import { renderDrawingHandles } from './drawingHandles';
 import type { OHLCSnapIndicator } from './useDrawingInteraction';
 
@@ -173,7 +173,6 @@ export interface UseDrawingsRendererResult {
 }
 
 const DEFAULT_RISK_WARNING_THRESHOLD_PCT = 2;
-const TAKER_RATE = getFeeRateForVipLevel('FUTURES', 0, 'TAKER');
 
 export const useDrawingsRenderer = ({
   manager,
@@ -205,6 +204,9 @@ export const useDrawingsRenderer = ({
   // signal when any of them tick. Refs avoid recreating `render` on
   // every value change.
   const { activeWallet } = useActiveWallet();
+  const walletFees = useWalletFees(activeWallet?.id, activeWallet?.marketType ?? 'FUTURES');
+  const takerRateRef = useRef(walletFees.taker);
+  takerRateRef.current = walletFees.taker;
   const balanceRef = useRef(0);
   balanceRef.current = parseFloat(activeWallet?.currentBalance ?? '0');
   const sizePercent = useQuickTradeStore((s) => s.sizePercent);
@@ -277,7 +279,7 @@ export const useDrawingsRenderer = ({
         sizePercent: sizePercentRef.current,
         balance: balanceRef.current,
         leverage: leverageRef.current,
-        takerRate: TAKER_RATE,
+        takerRate: takerRateRef.current,
       });
       if (!Number.isFinite(exposurePercent)) return null;
       return { exposurePercent, warningThresholdPct: warningThresholdRef.current };
