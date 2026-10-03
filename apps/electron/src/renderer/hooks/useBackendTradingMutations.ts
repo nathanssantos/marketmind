@@ -1,4 +1,4 @@
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, ProtectionMode } from '@marketmind/types';
 import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
@@ -306,6 +306,9 @@ export const useBackendTradingMutations = () => {
       setupId?: string;
       setupType?: string;
       marketType?: MarketType;
+      stopLoss?: string;
+      takeProfit?: string;
+      protectionMode?: ProtectionMode;
     }) => {
       return createOrderMutation.mutateAsync(data);
     },

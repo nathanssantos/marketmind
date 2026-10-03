@@ -1085,7 +1085,13 @@
       "stopLoss": "SL",
       "takeProfit": "TP",
       "slInvalid": "Stop Loss debe estar en el lado de pérdida del precio de entrada",
-      "tpInvalid": "Take Profit debe estar en el lado de ganancia del precio de entrada"
+      "tpInvalid": "Take Profit debe estar en el lado de ganancia del precio de entrada",
+      "oco": "OCO",
+      "ocoOn": "SL y TP se cancelan entre sí",
+      "ocoOff": "SL y TP quedan independientes",
+      "protection": "Protección",
+      "protectionOco": "OCO",
+      "protectionIndependent": "Independientes"
     },
     "gridOrders": {
       "title": "Órdenes en Cuadrícula",
@@ -1541,7 +1547,8 @@
       "closeFailed": "Error al cerrar orden",
       "slTpUpdateFailed": "Error al actualizar SL/TP",
       "slTpCreateFailed": "Error al crear SL/TP",
-      "entryUpdateFailed": "Error al mover orden pendiente"
+      "entryUpdateFailed": "Error al mover orden pendiente",
+      "protectionFailed": "Orden de protección no enviada"
     },
     "dialogs": {
       "chartClose": {

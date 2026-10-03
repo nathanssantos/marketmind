@@ -1,4 +1,5 @@
 import type { PositionSide } from '@marketmind/types';
+import { PROTECTION_MODES } from '@marketmind/types';
 import { TRPCError } from '@trpc/server';
 import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
@@ -14,6 +15,7 @@ import { getWebSocketService } from '../../services/websocket';
 import { getMinNotionalFilterService } from '../../services/min-notional-filter';
 import { formatPriceForBinance, formatQuantityForBinance } from '../../utils/formatters';
 import { calculateQtyFromPercent } from '../../services/trading/order-quantity';
+import { placeEntryProtection } from '../../services/trading/entry-protection';
 import { cancelPaperOrders, placePaperOrder } from '../../services/trading/paper-order-engine';
 import { withWriteLock } from '../../services/write-op-mutex';
 import { protectedProcedure, router } from '../../trpc';
@@ -47,6 +49,9 @@ export const orderMutationsRouter = router({
           setupType: z.string().optional(),
           marketType: z.enum(['SPOT', 'FUTURES']).default('FUTURES'),
           reduceOnly: z.boolean().optional(),
+          stopLoss: z.string().optional(),
+          takeProfit: z.string().optional(),
+          protectionMode: z.enum(PROTECTION_MODES).default('OCO'),
         })
         .refine(
           (v) => (v.quantity !== undefined) !== (v.percent !== undefined),
@@ -102,6 +107,9 @@ export const orderMutationsRouter = router({
               reduceOnly: input.reduceOnly,
               setupId: input.setupId,
               setupType: input.setupType,
+              stopLoss: input.stopLoss,
+              takeProfit: input.takeProfit,
+              protectionMode: input.protectionMode,
             })
           );
 
@@ -114,6 +122,14 @@ export const orderMutationsRouter = router({
 
           return { ...paperOrder, walletId: input.walletId, openExecutions: paperOpenExecutions };
         }
+
+        const hasProtection = input.stopLoss !== undefined || input.takeProfit !== undefined;
+        if (hasProtection && input.marketType === 'SPOT') {
+          throw badRequest('Stop loss and take profit from the ticket are not available on live spot wallets yet');
+        }
+        const attachedStopLoss = hasProtection && input.protectionMode === 'OCO' ? input.stopLoss : undefined;
+        const attachedTakeProfit = hasProtection && input.protectionMode === 'OCO' ? input.takeProfit : undefined;
+        const protectionErrors: string[] = [];
 
         const symbolFiltersMap = await getMinNotionalFilterService().getSymbolFilters(input.marketType);
         const filters = symbolFiltersMap.get(input.symbol);
@@ -219,6 +235,9 @@ export const orderMutationsRouter = router({
             setupType: orderInput.setupType,
             marketType: orderInput.marketType,
             reduceOnly: orderInput.reduceOnly,
+            stopLossIntent: hasProtection ? input.stopLoss : undefined,
+            takeProfitIntent: hasProtection ? input.takeProfit : undefined,
+            protectionMode: hasProtection ? input.protectionMode : undefined,
           });
 
           if (!orderInput.reduceOnly) {
@@ -253,6 +272,9 @@ export const orderMutationsRouter = router({
                 entryOrderId: algoOrder.algoId,
                 entryOrderType: orderInput.type as 'STOP_MARKET' | 'TAKE_PROFIT_MARKET',
                 status: 'pending',
+                stopLoss: attachedStopLoss,
+                takeProfit: attachedTakeProfit,
+                originalStopLoss: attachedStopLoss,
                 marketType: orderInput.marketType,
                 openedAt: new Date(),
                 leverage: futuresLeverage,
@@ -325,6 +347,9 @@ export const orderMutationsRouter = router({
           setupType: orderInput.setupType,
           marketType: orderInput.marketType,
           reduceOnly: orderInput.reduceOnly,
+          stopLossIntent: hasProtection ? input.stopLoss : undefined,
+          takeProfitIntent: hasProtection ? input.takeProfit : undefined,
+          protectionMode: hasProtection ? input.protectionMode : undefined,
         });
 
         if (binanceOrder.status === 'NEW' && !orderInput.reduceOnly) {
@@ -362,6 +387,9 @@ export const orderMutationsRouter = router({
                 entryOrderId: binanceOrder.orderId,
                 entryOrderType: 'LIMIT',
                 status: 'pending',
+                stopLoss: attachedStopLoss,
+                takeProfit: attachedTakeProfit,
+                originalStopLoss: attachedStopLoss,
                 marketType: orderInput.marketType,
                 openedAt: new Date(),
                 leverage: futuresLeverage,
@@ -441,8 +469,9 @@ export const orderMutationsRouter = router({
               .limit(1);
 
             if (!existingSameSide) {
+              const marketExecutionId = generateEntityId();
               await ctx.db.insert(tradeExecutions).values({
-                id: generateEntityId(),
+                id: marketExecutionId,
                 userId: ctx.user.id,
                 walletId: orderInput.walletId,
                 symbol: orderInput.symbol,
@@ -456,6 +485,35 @@ export const orderMutationsRouter = router({
                 openedAt: new Date(),
                 leverage: futuresLeverage,
               });
+
+              if (hasProtection) {
+                const protection = await placeEntryProtection({
+                  wallet,
+                  userId: ctx.user.id,
+                  symbol: orderInput.symbol,
+                  side: intendedSide,
+                  quantity: fillQty,
+                  marketType: orderInput.marketType,
+                  stopLoss: input.stopLoss,
+                  takeProfit: input.takeProfit,
+                  protectionMode: input.protectionMode,
+                });
+                protectionErrors.push(...protection.errors);
+                if (input.protectionMode === 'OCO') {
+                  await ctx.db.update(tradeExecutions).set({
+                    stopLoss: attachedStopLoss,
+                    takeProfit: attachedTakeProfit,
+                    originalStopLoss: attachedStopLoss,
+                    stopLossAlgoId: protection.stopLossAlgoId,
+                    stopLossOrderId: protection.stopLossOrderId,
+                    stopLossIsAlgo: protection.stopLossIsAlgo,
+                    takeProfitAlgoId: protection.takeProfitAlgoId,
+                    takeProfitOrderId: protection.takeProfitOrderId,
+                    takeProfitIsAlgo: protection.takeProfitIsAlgo,
+                    updatedAt: new Date(),
+                  }).where(eq(tradeExecutions.id, marketExecutionId));
+                }
+              }
             }
           }
         }
@@ -479,6 +537,7 @@ export const orderMutationsRouter = router({
           marketType: orderInput.marketType,
           walletId: orderInput.walletId,
           openExecutions,
+          protectionErrors,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;

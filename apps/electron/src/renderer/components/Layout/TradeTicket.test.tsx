@@ -761,6 +761,78 @@ describe('TradeTicket — Field placeholders', () => {
   });
 });
 
+describe('TradeTicket — SL/TP protection mode (OCO toggle)', () => {
+  const enableSlAndTp = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByTestId('trade-ticket-sl-switch'));
+    await user.click(screen.getByTestId('trade-ticket-tp-switch'));
+    fireEvent.change(screen.getByTestId('trade-ticket-sl-input'), { target: { value: '49000' } });
+    fireEvent.change(screen.getByTestId('trade-ticket-tp-input'), { target: { value: '52000' } });
+  };
+
+  it('keeps the OCO switch disabled until both SL and TP are enabled', async () => {
+    const user = userEvent.setup();
+    renderActions();
+
+    const ocoInput = () => screen.getByTestId('trade-ticket-oco-switch').querySelector('input');
+    expect(ocoInput()).toBeDisabled();
+    await user.click(screen.getByTestId('trade-ticket-sl-switch'));
+    expect(ocoInput()).toBeDisabled();
+    await user.click(screen.getByTestId('trade-ticket-tp-switch'));
+    expect(ocoInput()).toBeEnabled();
+  });
+
+  it('sends SL, TP and OCO mode by default', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await enableSlAndTp(user);
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('chart.quickTrade.protectionOco')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({
+      stopLoss: '49000', takeProfit: '52000', protectionMode: 'OCO',
+    }));
+  });
+
+  it('sends INDEPENDENT when the OCO switch is turned off', async () => {
+    const user = userEvent.setup();
+    renderActions();
+    await enableSlAndTp(user);
+    await user.click(screen.getByTestId('trade-ticket-oco-switch'));
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('chart.quickTrade.protectionIndependent')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.objectContaining({ protectionMode: 'INDEPENDENT' }));
+  });
+
+  it('sends no protection mode when neither SL nor TP is enabled', async () => {
+    const user = userEvent.setup();
+    renderActions();
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
+
+    expect(createOrderMock).toHaveBeenCalledWith(expect.not.objectContaining({ protectionMode: expect.anything() }));
+  });
+
+  it('toasts each protection error the backend reports after the order', async () => {
+    createOrderMock.mockResolvedValueOnce({ orderId: '1', protectionErrors: ['Stop loss was not placed: boom'] });
+    const user = userEvent.setup();
+    renderActions();
+    await enableSlAndTp(user);
+
+    await user.click(screen.getByRole('button', { name: /chart\.quickTrade\.buy/i }));
+    await user.click(await screen.findByRole('button', { name: /chart\.quickTrade\.confirmBuy/i }));
+
+    expect(errorMock).toHaveBeenCalledWith('trading.order.protectionFailed', 'Stop loss was not placed: boom');
+  });
+});
+
 describe('TradeTicket — Prefill from chart drawing', () => {
   // Long/short position drawings on the chart have a "→ TICKET" button
   // that pushes their entry/SL/TP into `quickTradeStore.pendingPrefill`.

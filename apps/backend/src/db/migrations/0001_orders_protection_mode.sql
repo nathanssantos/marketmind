@@ -1,0 +1,1 @@
+ALTER TABLE "orders" ADD COLUMN "protection_mode" varchar(12);

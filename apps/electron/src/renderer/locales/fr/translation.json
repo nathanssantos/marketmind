@@ -1074,7 +1074,13 @@
       "stopLoss": "SL",
       "takeProfit": "TP",
       "slInvalid": "Le Stop Loss doit être du côté perte par rapport au prix d'entrée",
-      "tpInvalid": "Le Take Profit doit être du côté profit par rapport au prix d'entrée"
+      "tpInvalid": "Le Take Profit doit être du côté profit par rapport au prix d'entrée",
+      "oco": "OCO",
+      "ocoOn": "SL et TP s’annulent mutuellement",
+      "ocoOff": "SL et TP restent indépendants",
+      "protection": "Protection",
+      "protectionOco": "OCO",
+      "protectionIndependent": "Indépendants"
     },
     "gridOrders": {
       "title": "Ordres en Grille",
@@ -1530,7 +1536,8 @@
       "closeFailed": "Échec de la fermeture",
       "slTpUpdateFailed": "Échec de la mise à jour SL/TP",
       "slTpCreateFailed": "Échec de la création du SL/TP",
-      "entryUpdateFailed": "Échec du déplacement de l'ordre en attente"
+      "entryUpdateFailed": "Échec du déplacement de l'ordre en attente",
+      "protectionFailed": "Ordre de protection non envoyé"
     },
     "dialogs": {
       "chartClose": {

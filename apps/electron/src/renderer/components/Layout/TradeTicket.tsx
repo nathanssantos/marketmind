@@ -1,4 +1,4 @@
-import type { MarketType } from '@marketmind/types';
+import type { MarketType, ProtectionMode } from '@marketmind/types';
 import { Button, ConfirmationDialog, IconButton, Input, Menu, Slider, Switch } from '@renderer/components/ui';
 import { Box, Flex, HStack, Spinner, Text, VStack } from '@chakra-ui/react';
 import { useActiveWallet } from '@renderer/hooks/useActiveWallet';
@@ -12,7 +12,7 @@ import { useLeverageBrackets } from '@renderer/hooks/useLeverageBrackets';
 import { useToast } from '@renderer/hooks/useToast';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
 import { usePricesForSymbols } from '@renderer/store/priceStore';
-import { useUIPref } from '@renderer/store/preferencesStore';
+import { useTradingPref, useUIPref } from '@renderer/store/preferencesStore';
 import { formatChartPrice } from '@renderer/utils/formatters';
 import { perfMonitor } from '@renderer/utils/canvas/perfMonitor';
 import { calculateLiquidationPrice } from '@marketmind/types';
@@ -25,6 +25,8 @@ import { LeveragePopover } from './LeveragePopover';
 import { TrailingStopPopover } from './TrailingStopPopover';
 
 type OrderTypeChoice = 'MARKET' | 'LIMIT';
+
+const PROTECTION_OCO_PREF_KEY = 'ticketProtectionOco';
 
 const ActionRow = ({ icon, label, onClick, loading, disabled, children }: {
   icon?: React.ReactNode;
@@ -132,7 +134,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
     isCancellingAllOrders,
   } = useBackendFuturesTrading(activeWallet?.id ?? '');
   const [showCancelOrdersConfirm, setShowCancelOrdersConfirm] = useState(false);
-  const [pendingOrder, setPendingOrder] = useState<{ side: 'BUY' | 'SELL'; price: number; quantity: string; orderType: OrderTypeChoice; stopLoss?: string; takeProfit?: string } | null>(null);
+  const [pendingOrder, setPendingOrder] = useState<{ side: 'BUY' | 'SELL'; price: number; quantity: string; orderType: OrderTypeChoice; stopLoss?: string; takeProfit?: string; protectionMode?: ProtectionMode } | null>(null);
 
   const [orderType, setOrderType] = useState<OrderTypeChoice>('MARKET');
   const [limitPrice, setLimitPrice] = useState<string>('');
@@ -140,6 +142,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
   const [slPrice, setSlPrice] = useState<string>('');
   const [tpEnabled, setTpEnabled] = useState(false);
   const [tpPrice, setTpPrice] = useState<string>('');
+  const [protectionOco, setProtectionOco] = useTradingPref<boolean>(PROTECTION_OCO_PREF_KEY, true);
   const { bidPrice: tickerBid, askPrice: tickerAsk } = useBookTicker(symbol);
   const midPrice = useMemo(() => {
     if (tickerBid > 0 && tickerAsk > 0) return (tickerBid + tickerAsk) / 2;
@@ -260,8 +263,9 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
       orderType,
       ...(slEnabled && !Number.isNaN(slPriceNum) ? { stopLoss: slPriceNum.toString() } : {}),
       ...(tpEnabled && !Number.isNaN(tpPriceNum) ? { takeProfit: tpPriceNum.toString() } : {}),
+      ...(slEnabled || tpEnabled ? { protectionMode: protectionOco ? 'OCO' as const : 'INDEPENDENT' as const } : {}),
     });
-  }, [activeWallet?.id, symbol, orderType, limitPrice, getQuantity, isReady, notReadyReason, warning, toastError, t, isSlInvalidFor, isTpInvalidFor, slEnabled, slPriceNum, tpEnabled, tpPriceNum, isSpot, spotHeldQuantity]);
+  }, [activeWallet?.id, symbol, orderType, limitPrice, getQuantity, isReady, notReadyReason, warning, toastError, t, isSlInvalidFor, isTpInvalidFor, slEnabled, slPriceNum, tpEnabled, tpPriceNum, isSpot, spotHeldQuantity, protectionOco]);
 
   const handleConfirmOrder = useCallback(async () => {
     if (!activeWallet?.id || !pendingOrder) return;
@@ -274,7 +278,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
       // a user picking 10% saw a preview based on total wallet balance
       // but Binance executed 10% of the live available margin — surprising
       // smaller fills. Sending the quantity guarantees preview == actual.
-      await createOrder({
+      const result = await createOrder({
         walletId: activeWallet.id,
         symbol,
         side: pendingOrder.side,
@@ -285,7 +289,10 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
         ...(pendingOrder.orderType === 'LIMIT' ? { price: pendingOrder.price.toString() } : {}),
         ...(pendingOrder.stopLoss ? { stopLoss: pendingOrder.stopLoss } : {}),
         ...(pendingOrder.takeProfit ? { takeProfit: pendingOrder.takeProfit } : {}),
+        ...(pendingOrder.protectionMode ? { protectionMode: pendingOrder.protectionMode } : {}),
       });
+      const protectionErrors = (result as { protectionErrors?: string[] }).protectionErrors ?? [];
+      for (const protectionError of protectionErrors) toastError(t('trading.order.protectionFailed'), protectionError);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toastError(t('trading.order.failed'), msg);
@@ -482,6 +489,20 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
               data-testid="trade-ticket-tp-input"
             />
           </HStack>
+          <HStack gap={1.5}>
+            <Switch
+              checked={protectionOco}
+              onCheckedChange={setProtectionOco}
+              size="sm"
+              disabled={!(slEnabled && tpEnabled)}
+              aria-label={t('chart.quickTrade.oco')}
+              data-testid="trade-ticket-oco-switch"
+            />
+            <Text fontSize="2xs" color="fg.muted" minW="20px">{t('chart.quickTrade.oco')}</Text>
+            <Text fontSize="2xs" color="fg.muted" flex={1}>
+              {protectionOco ? t('chart.quickTrade.ocoOn') : t('chart.quickTrade.ocoOff')}
+            </Text>
+          </HStack>
         </VStack>
 
         <Flex justify="space-between" align="center" px={0.5}>
@@ -580,6 +601,12 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
                   <Flex justify="space-between">
                     <Text color="fg.muted">{t('chart.quickTrade.takeProfit')}</Text>
                     <Text color="trading.profit">{formatChartPrice(parseFloat(pendingOrder.takeProfit))}</Text>
+                  </Flex>
+                )}
+                {pendingOrder.stopLoss && pendingOrder.takeProfit && (
+                  <Flex justify="space-between">
+                    <Text color="fg.muted">{t('chart.quickTrade.protection')}</Text>
+                    <Text fontWeight="medium">{pendingOrder.protectionMode === 'INDEPENDENT' ? t('chart.quickTrade.protectionIndependent') : t('chart.quickTrade.protectionOco')}</Text>
                   </Flex>
                 )}
                 {!isSpot && (
