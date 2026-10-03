@@ -1106,7 +1106,8 @@
       "reason": {
         "belowMinNotional": "Ordre en dessous du minimum de {{min}} {{currency}}",
         "notShortable": "Cette action n’est pas disponible à la vente à découvert",
-        "marketClosed": "Marché fermé : les ordres au marché attendent la séance régulière"
+        "marketClosed": "Marché fermé : les ordres au marché attendent la séance régulière",
+        "sizeBelowStep": "Taille trop petite : {{percent}} % du solde est sous le minimum de {{step}} {{asset}}"
       }
     },
     "gridOrders": {

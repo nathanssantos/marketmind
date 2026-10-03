@@ -31,7 +31,7 @@ import type { BackendExecution } from './useOrderLinesRenderer';
 import { useEventScaleRenderer } from './useEventScaleRenderer';
 import { useDrawingStore, compositeKey } from '@renderer/store/drawingStore';
 import { useQuickTradeStore } from '@renderer/store/quickTradeStore';
-import { useChartLayerFlags } from '@renderer/store/chartLayersStore';
+import { isFuturesFlowAvailable, useChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { usePatternMarkers } from '@renderer/hooks/usePatternMarkers';
 import {
   renderCandlePatterns as drawCandlePatterns,
@@ -127,7 +127,9 @@ const ChartCanvasInternal = ({
   const { showVolume, showOrb, heatmapEnabled } = useIndicatorVisibility();
   const colors = useChartColors();
 
-  const { dataRef: heatmapDataRef } = useLiquidityHeatmap(symbol ?? null, heatmapEnabled);
+  const layerFlags = useChartLayerFlags(panelId ?? '');
+  const showsFuturesFlow = isFuturesFlowAvailable(marketType) && layerFlags.heatmap;
+  const { dataRef: heatmapDataRef } = useLiquidityHeatmap(symbol ?? null, heatmapEnabled && showsFuturesFlow);
 
   const [dragSlEnabled] = useTradingPref<boolean>('dragSlEnabled', true);
   const [dragTpEnabled] = useTradingPref<boolean>('dragTpEnabled', true);
@@ -431,7 +433,6 @@ const ChartCanvasInternal = ({
   // v1.5 — Layers popover gates: when the user toggles a layer off,
   // skip its render call so the canvas re-paints without it. Flags
   // are session-only, per (symbol, interval).
-  const layerFlags = useChartLayerFlags(panelId ?? '');
   const renderOrderLines = useCallback<typeof rawRenderOrderLines>(
     (...args) => {
       if (!layerFlags.orderLines) return false;

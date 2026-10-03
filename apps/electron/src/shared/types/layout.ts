@@ -107,7 +107,7 @@ export const DEFAULT_GRID_COLS = 192;
 export const DEFAULT_ROW_HEIGHT = 8;
 export const GRID_MARGIN: [number, number] = [4, 4];
 
-export const TRADING_RAIL_ROWS = { portfolio: 24, ticket: 38, confluence: 20 } as const;
+export const TRADING_RAIL_ROWS = { portfolio: 35, ticket: 25, confluence: 22 } as const;
 export const GRID_CONTAINER_PADDING: [number, number] = [0, 0];
 
 /**
@@ -119,4 +119,4 @@ export const GRID_CONTAINER_PADDING: [number, number] = [0, 0];
  * viewports of 1280–1920px). Migration scales x/w by 16 and y/h by 4 so
  * panels keep roughly the same visual size.
  */
-export const GRID_VERSION = 2;
+export const GRID_VERSION = 3;

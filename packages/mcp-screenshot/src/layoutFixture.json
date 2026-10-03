@@ -62,9 +62,9 @@
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 24,
+            "y": 35,
             "w": 33,
-            "h": 38
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -73,9 +73,9 @@
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 62,
+            "y": 60,
             "w": 33,
-            "h": 20
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -108,7 +108,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },
@@ -169,9 +169,9 @@
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 24,
+            "y": 35,
             "w": 33,
-            "h": 38
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -180,9 +180,9 @@
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 62,
+            "y": 60,
             "w": 33,
-            "h": 20
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -215,7 +215,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },
@@ -276,9 +276,9 @@
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 24,
+            "y": 35,
             "w": 33,
-            "h": 38
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -287,9 +287,9 @@
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 62,
+            "y": 60,
             "w": 33,
-            "h": 20
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -322,7 +322,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },
@@ -377,9 +377,9 @@
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 24,
+            "y": 35,
             "w": 33,
-            "h": 38
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -388,9 +388,9 @@
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 62,
+            "y": 60,
             "w": 33,
-            "h": 20
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -423,7 +423,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },
@@ -478,9 +478,9 @@
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 24,
+            "y": 35,
             "w": 33,
-            "h": 38
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -489,9 +489,9 @@
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 62,
+            "y": 60,
             "w": 33,
-            "h": 20
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -524,7 +524,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },
@@ -585,9 +585,9 @@
           "kind": "ticket",
           "gridPosition": {
             "x": 159,
-            "y": 24,
+            "y": 35,
             "w": 33,
-            "h": 38
+            "h": 25
           },
           "windowState": "normal"
         },
@@ -596,9 +596,9 @@
           "kind": "confluence",
           "gridPosition": {
             "x": 159,
-            "y": 62,
+            "y": 60,
             "w": 33,
-            "h": 20
+            "h": 22
           },
           "windowState": "normal"
         },
@@ -631,7 +631,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },
@@ -716,7 +716,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },
@@ -806,7 +806,7 @@
             "x": 159,
             "y": 0,
             "w": 33,
-            "h": 24
+            "h": 35
           },
           "windowState": "normal"
         },

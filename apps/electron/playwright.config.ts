@@ -69,6 +69,8 @@ export default defineConfig({
       name: 'electron',
       testDir: './e2e/electron',
       testMatch: '*.spec.ts',
+      fullyParallel: false,
+      workers: 1,
     },
   ],
   webServer: {

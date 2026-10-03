@@ -219,7 +219,8 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
   const sizedQuantity = hasReferencePrice ? getQuantity(referencePrice) : '0';
   const sizedQuantityNum = parseFloat(sizedQuantity);
   const closeTolerance = Math.max(stepSize, (openPosition?.quantity ?? 0) * CLOSE_SNAP_RATIO) + QUANTITY_EPSILON;
-  const flattensPosition = reducesPosition && Math.abs(sizedQuantityNum - openPosition.quantity) <= closeTolerance;
+  const spotSellBeyondHolding = reducesPosition && profile.sellOnlyWhatIsHeld && sizedQuantityNum > openPosition.quantity;
+  const flattensPosition = reducesPosition && (spotSellBeyondHolding || Math.abs(sizedQuantityNum - openPosition.quantity) <= closeTolerance);
   const quantity = flattensPosition ? formatQuantityLike(openPosition.quantity, sizedQuantity) : sizedQuantity;
   const quantityNum = parseFloat(quantity);
   const effect: PositionEffect = !reducesPosition
@@ -243,10 +244,12 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
   const sellBlockedByShortability = profile.isStocks && side === 'SELL' && !reducesPosition && shortability?.known === true && !shortability.info.available;
   const marketClosedForMarketOrder = profile.isStocks && orderType === 'MARKET' && !!marketStatus && !marketStatus.isOpen;
 
+  const baseAsset = baseAssetOf(symbol, profile.isStocks);
   const disabledReason = useMemo((): string | null => {
     if (!activeWallet?.id) return t('trading.ticket.noWallet');
     if (!isReady) return notReadyReason ?? t('chart.quickTrade.invalidQuantityError');
     if (!hasReferencePrice) return t('chart.quickTrade.noPriceError');
+    if (!(quantityNum > 0) && stepSize > 0) return t('chart.quickTrade.reason.sizeBelowStep', { percent: Math.round(sizePercent * 10) / 10, step: stepSize, asset: baseAsset });
     if (!(quantityNum > 0)) return t('chart.quickTrade.invalidQuantityError');
     if (!reducesPosition && minNotional > 0 && quantityNum * referencePrice < minNotional) return t('chart.quickTrade.reason.belowMinNotional', { min: minNotional, currency: profile.quoteCurrency });
     if (sellBlockedBySpotHoldings) return t('trading.spot.nothingToSell');
@@ -255,7 +258,7 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
     if (slInvalid) return t('chart.quickTrade.slInvalid');
     if (tpInvalid) return t('chart.quickTrade.tpInvalid');
     return null;
-  }, [activeWallet?.id, isReady, notReadyReason, hasReferencePrice, quantityNum, reducesPosition, minNotional, referencePrice, profile.quoteCurrency, sellBlockedBySpotHoldings, sellBlockedByShortability, marketClosedForMarketOrder, slInvalid, tpInvalid, t]);
+  }, [activeWallet?.id, isReady, notReadyReason, hasReferencePrice, quantityNum, stepSize, sizePercent, baseAsset, reducesPosition, minNotional, referencePrice, profile.quoteCurrency, sellBlockedBySpotHoldings, sellBlockedByShortability, marketClosedForMarketOrder, slInvalid, tpInvalid, t]);
 
   const totalValue = hasReferencePrice ? quantityNum * referencePrice : 0;
   const marginRequired = profile.isFutures ? totalValue / leverage : totalValue;
@@ -446,7 +449,6 @@ export const TradeTicketActions = memo(({ symbol, marketType = 'FUTURES', showDr
     if (next !== sizePercent) setSizePercent(next);
   }, [sizePercent, setSizePercent]);
 
-  const baseAsset = baseAssetOf(symbol, profile.isStocks);
   const sideLabels = profile.isFutures
     ? { BUY: t('chart.quickTrade.sideBuyLong'), SELL: t('chart.quickTrade.sideSellShort') }
     : { BUY: t('trading.ticket.buy'), SELL: t('trading.ticket.sell') };

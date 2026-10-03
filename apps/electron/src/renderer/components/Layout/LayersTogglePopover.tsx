@@ -1,6 +1,6 @@
 import { Flex, Text } from '@chakra-ui/react';
 import { Button, Popover, PopoverList, PopoverListHeader, PopoverToggleItem, TooltipWrapper } from '@renderer/components/ui';
-import { useChartLayersStore, type ChartLayerFlags } from '@renderer/store/chartLayersStore';
+import { isLayerAvailable, useChartLayersStore, type ChartLayerFlags } from '@renderer/store/chartLayersStore';
 import { useLayoutStore } from '@renderer/store/layoutStore';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -37,21 +37,23 @@ export const LayersTogglePopover = memo(() => {
   const storedFlags = useChartLayersStore((s) => (focusedPanelId ? s.flagsByPanelId[focusedPanelId] : undefined));
   const flags = focusedPanelId ? (storedFlags ?? DEFAULT_FLAGS) : null;
   const toggleFlag = useChartLayersStore((s) => s.toggleFlag);
+  const marketType = useLayoutStore((s) => s.getActiveTab()?.marketType);
+  const visibleRows = useMemo(() => LAYER_ROWS.filter((row) => isLayerAvailable(row.key, marketType)), [marketType]);
 
   const setAll = useCallback(
     (visible: boolean) => {
       if (!focusedPanelId) return;
-      for (const row of LAYER_ROWS) {
+      for (const row of visibleRows) {
         useChartLayersStore.getState().setFlag(focusedPanelId, row.key, visible);
       }
     },
-    [focusedPanelId],
+    [focusedPanelId, visibleRows],
   );
 
   const allOn = useMemo(() => {
     if (!flags) return false;
-    return LAYER_ROWS.every((r) => flags[r.key]);
-  }, [flags]);
+    return visibleRows.every((r) => flags[r.key]);
+  }, [flags, visibleRows]);
 
   const disabled = !focusedPanelId || !flags;
 
@@ -105,7 +107,7 @@ export const LayersTogglePopover = memo(() => {
             {t('chart.layers.noFocusedChart')}
           </Text>
         ) : (
-          LAYER_ROWS.map((row) => (
+          visibleRows.map((row) => (
             <PopoverToggleItem
               key={row.key}
               icon={row.icon}

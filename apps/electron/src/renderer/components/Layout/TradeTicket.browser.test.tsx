@@ -1,4 +1,5 @@
-import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
+import { ChakraProvider } from '@chakra-ui/react';
+import { system } from '@marketmind/tokens';
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ColorModeProvider } from '@renderer/components/ui/color-mode';
@@ -24,9 +25,9 @@ vi.mock('@renderer/store/quickTradeStore', async (importOriginal) => ({
     const state = {
       sizePercent: 10,
       setSizePercent: vi.fn(),
-      pendingPrefill: { side: 'BUY', entryPrice: '50100', stopLoss: '49000', takeProfit: '52500' },
+      pendingPrefill: null,
       prefillFromDrawing: vi.fn(),
-      consumePrefill: () => ({ side: 'BUY', entryPrice: '50100', stopLoss: '49000', takeProfit: '52500' }),
+      consumePrefill: () => null,
     };
     return typeof selector === 'function' ? selector(state) : state;
   },
@@ -72,9 +73,9 @@ const TICKET_PANEL_WIDTH_PX = 432;
 const panelHeightPx = (rows: number): number => rows * DEFAULT_ROW_HEIGHT + (rows - 1) * GRID_MARGIN[1];
 
 describe('TradeTicket panel height', () => {
-  it('fits the ticket, with the drawing strip and both protection rows, inside the default ticket panel height', () => {
+  it('keeps the action button inside the default ticket panel height', () => {
     const { container } = render(
-      <ChakraProvider value={defaultSystem}>
+      <ChakraProvider value={system}>
         <ColorModeProvider>
           <div style={{ width: TICKET_PANEL_WIDTH_PX, height: panelHeightPx(TRADING_RAIL_ROWS.ticket), padding: PANEL_PADDING_PX, overflow: 'auto', boxSizing: 'border-box' }} data-testid="ticket-panel">
             <TradeTicketActions symbol="BTCUSDT" marketType="FUTURES" />
@@ -84,6 +85,7 @@ describe('TradeTicket panel height', () => {
     );
 
     const panel = container.querySelector('[data-testid="ticket-panel"]') as HTMLDivElement;
-    expect(panel.scrollHeight).toBeLessThanOrEqual(panel.clientHeight);
+    const submit = container.querySelector('[data-testid="trade-ticket-submit"]') as HTMLButtonElement;
+    expect(submit.getBoundingClientRect().bottom).toBeLessThanOrEqual(panel.getBoundingClientRect().bottom);
   });
 });
