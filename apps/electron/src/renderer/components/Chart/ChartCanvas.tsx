@@ -120,7 +120,6 @@ const ChartCanvasInternal = ({
   const [showProfitLossAreas] = useChartPref('showProfitLossAreas', false);
   const [showBreakevenLines] = useChartPref<boolean>('showBreakevenLines', false);
   const [showEventRow] = useChartPref('showEventRow', false);
-  const [showActivityIndicator] = useChartPref<boolean>('showActivityIndicator', true);
   const [liquidityColorMode] = useChartPref<'colored' | 'intensity'>('liquidityColorMode', 'colored');
   const [chartFlipped] = useChartPref<boolean>('chartFlipped', false);
 
@@ -369,7 +368,7 @@ const ChartCanvasInternal = ({
 
   const { renderGrid, renderKlines, renderLineChart, renderCurrentPriceLine_Line, renderCurrentPriceLine_Label, renderCrosshairPriceLine, renderWatermark } = useChartBaseRenderers({
     manager, colors, chartType, advancedConfig,
-    showGrid, showCurrentPriceLine, showCrosshair, showActivityIndicator,
+    showGrid, showCurrentPriceLine, showCrosshair,
     hoveredKlineIndexRef, highlightedCandlesRef, mousePositionRef,
     timeframe, symbol, marketType,
   });

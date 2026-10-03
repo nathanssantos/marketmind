@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **Activity dots on candles** — the chart no longer draws the green and pink dots above candles with unusually high or low volume and trade count. They had no layer and no setting, so they could not be turned off.
+
 ### Fixed
 
 - **Manual orders on paper wallets** — an order sent from the ticket or the chart on a paper wallet now becomes a position. A market order fills at the current price, records the taker entry fee and shows up in the portfolio, on the chart and in the PnL. A limit order waits until the price trades through it and fills at the limit price; a stop order fills at the observed price once its trigger is crossed. An opposite order reduces or closes the open position and credits the net PnL to the balance; a larger one flips the side on futures. A same-side order merges into the position at the weighted average price. Reduce-only orders with nothing to reduce are rejected, and a spot SELL without holdings is rejected, so a spot short cannot open through this path. Cancelling an order, cancelling all orders of a symbol, or cancelling the pending position now cancels both the order and its pending entry, scoped to the wallet.
