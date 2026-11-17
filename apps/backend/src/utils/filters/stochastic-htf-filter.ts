@@ -31,11 +31,11 @@ export const findHtfKlineIndex = (htfKlines: Kline[], timestamp: number): number
   return bestIndex;
 };
 
-export const checkStochasticHtfCondition = (
+export const checkStochasticHtfCondition = async (
   htfKlines: Kline[],
   setupTimestamp: number,
   direction: 'LONG' | 'SHORT'
-): StochasticFilterResult => {
+): Promise<StochasticFilterResult> => {
   const htfIndex = findHtfKlineIndex(htfKlines, setupTimestamp);
   if (htfIndex < 0) {
     return {
@@ -49,7 +49,7 @@ export const checkStochasticHtfCondition = (
   }
 
   const slicedKlines = htfKlines.slice(0, htfIndex + 1);
-  const result = checkStochasticCondition(slicedKlines, direction);
+  const result = await checkStochasticCondition(slicedKlines, direction);
 
   return {
     ...result,
@@ -57,11 +57,11 @@ export const checkStochasticHtfCondition = (
   };
 };
 
-export const checkStochasticRecoveryHtfCondition = (
+export const checkStochasticRecoveryHtfCondition = async (
   htfKlines: Kline[],
   setupTimestamp: number,
   direction: 'LONG' | 'SHORT'
-): StochasticFilterResult => {
+): Promise<StochasticFilterResult> => {
   const htfIndex = findHtfKlineIndex(htfKlines, setupTimestamp);
   if (htfIndex < 0) {
     return {
@@ -75,7 +75,7 @@ export const checkStochasticRecoveryHtfCondition = (
   }
 
   const slicedKlines = htfKlines.slice(0, htfIndex + 1);
-  const result = checkStochasticRecoveryCondition(slicedKlines, direction);
+  const result = await checkStochasticRecoveryCondition(slicedKlines, direction);
 
   return {
     ...result,

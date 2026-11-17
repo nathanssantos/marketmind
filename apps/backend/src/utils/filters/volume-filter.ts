@@ -1,4 +1,4 @@
-import { calculateOBV } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type {
   Kline,
   ObvTrend,
@@ -7,6 +7,8 @@ import type {
   VolumeFilterResult,
 } from '@marketmind/types';
 import { getStrategyVolumeType } from './strategy-filter-types';
+
+const pineService = new PineIndicatorService();
 
 const VOLUME_AVG_PERIOD = 20;
 const BREAKOUT_MULTIPLIER = 1.5;
@@ -56,11 +58,12 @@ const calculateVolumeAverage = (klines: Kline[], period: number): number | null 
   return sum / period;
 };
 
-const getObvTrend = (obvValues: number[], lookback: number): ObvTrend => {
-  if (obvValues.length < lookback + 1) return 'FLAT';
+const getObvTrend = (obvValues: (number | null)[], lookback: number): ObvTrend => {
+  const validValues = obvValues.filter((v): v is number => v !== null);
+  if (validValues.length < lookback + 1) return 'FLAT';
 
-  const recent = obvValues.slice(-lookback);
-  const prev = obvValues.slice(-lookback - 1, -1);
+  const recent = validValues.slice(-lookback);
+  const prev = validValues.slice(-lookback - 1, -1);
 
   if (recent.length === 0 || prev.length === 0) return 'FLAT';
 
@@ -80,12 +83,12 @@ const getObvTrend = (obvValues: number[], lookback: number): ObvTrend => {
   return 'FLAT';
 };
 
-export const checkVolumeCondition = (
+export const checkVolumeCondition = async (
   klines: Kline[],
   direction: 'LONG' | 'SHORT',
   setupType: string,
   config?: VolumeFilterConfig
-): VolumeFilterResult => {
+): Promise<VolumeFilterResult> => {
   const { breakoutMult, pullbackMult, useObv, obvLookback } = getDirectionalConfig(direction, config);
 
   if (klines.length < MIN_KLINES_REQUIRED) {
@@ -134,8 +137,8 @@ export const checkVolumeCondition = (
   const volumeRatio = currentVolume / averageVolume;
   const isVolumeSpike = requiredMultiplier > 0 ? volumeRatio >= requiredMultiplier : true;
 
-  const obvResult = calculateOBV(klines);
-  const obvTrend = getObvTrend(obvResult.values, obvLookback);
+  const obvValues = await pineService.compute('obv', klines);
+  const obvTrend = getObvTrend(obvValues, obvLookback);
 
   const obvAligned = !useObv || (
     (direction === 'LONG' && obvTrend !== 'FALLING') ||

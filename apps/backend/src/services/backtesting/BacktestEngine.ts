@@ -143,7 +143,7 @@ export class BacktestEngine {
         loadedStrategies
       );
 
-      const { trades, equity, maxDrawdown, equityCurve } = this.executeBacktest(
+      const { trades, equity, maxDrawdown, equityCurve } = await this.executeBacktest(
         tradableSetups,
         historicalKlines,
         config,
@@ -352,7 +352,7 @@ export class BacktestEngine {
     return tradableSetups;
   }
 
-  private executeBacktest(
+  private async executeBacktest(
     tradableSetups: any[],
     historicalKlines: any[],
     config: BacktestConfig,
@@ -366,7 +366,7 @@ export class BacktestEngine {
     stochasticHtfKlines: Kline[] = [],
     mtfHtfKlines: Kline[] = [],
     mtfHtfInterval: string | null = null
-  ): { trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] } {
+  ): Promise<{ trades: TradeResult[]; equity: number; maxDrawdown: number; equityCurve: any[] }> {
     const trades: TradeResult[] = [];
     let equity = config.initialCapital;
     let peakEquity = config.initialCapital;
@@ -396,10 +396,10 @@ export class BacktestEngine {
 
       const setupIndex = klineIndexMap.get(setup.openTime) ?? -1;
 
-      if (!filterManager.runRegisteredFilters(historicalKlines as Kline[], setupIndex, setup.direction, setup.type)) continue;
-      if (!filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
-      if (!filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length)) continue;
-      if (!filterManager.checkMtfFilter(mtfHtfKlines, setup.direction, mtfHtfInterval, trades.length).passed) continue;
+      if (!(await filterManager.runRegisteredFilters(historicalKlines as Kline[], setupIndex, setup.direction, setup.type))) continue;
+      if (!(await filterManager.checkStochasticHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length))) continue;
+      if (!(await filterManager.checkStochasticRecoveryHtfFilter(stochasticHtfKlines, setup.openTime, setup.direction, trades.length))) continue;
+      if (!(await filterManager.checkMtfFilter(mtfHtfKlines, setup.direction, mtfHtfInterval, trades.length)).passed) continue;
 
       const entryKline = klineMap.get(setup.openTime);
       if (!entryKline) {
@@ -721,7 +721,7 @@ export class BacktestEngine {
           useBnbDiscount: config.useBnbDiscount,
         }, conditionEvaluator);
 
-        const { trades, maxDrawdown, equityCurve } = this.executeBacktest(
+        const { trades, maxDrawdown, equityCurve } = await this.executeBacktest(
           baseFilteredSetups,
           historicalKlines,
           config,

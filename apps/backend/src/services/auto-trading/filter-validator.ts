@@ -155,7 +155,7 @@ export class FilterValidator {
     }
 
     if (config.useMarketRegimeFilter) {
-      const result = this.checkMarketRegimeFilter(cycleKlines, setup, logBuffer);
+      const result = await this.checkMarketRegimeFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
         logBuffer.addValidationCheck({
           name: 'Market Regime',
@@ -181,7 +181,7 @@ export class FilterValidator {
     }
 
     if (config.useVolumeFilter) {
-      const result = this.checkVolumeFilter(cycleKlines, setup, logBuffer, config.volumeFilterConfig);
+      const result = await this.checkVolumeFilter(cycleKlines, setup, logBuffer, config.volumeFilterConfig);
       if (!result.passed) {
         logBuffer.addValidationCheck({
           name: 'Volume',
@@ -263,7 +263,7 @@ export class FilterValidator {
 
     const shouldApplyTrendFilter = this.shouldApplyTrendFilter(config, setup, strategies);
     if (shouldApplyTrendFilter) {
-      const result = this.checkTrendFilter(cycleKlines, setup, logBuffer);
+      const result = await this.checkTrendFilter(cycleKlines, setup, logBuffer);
       if (!result.passed) {
         logBuffer.addValidationCheck({
           name: 'Trend (EMA21)',
@@ -282,7 +282,7 @@ export class FilterValidator {
 
     for (const filter of getFilterValidatorSyncFilters()) {
       if (!config[filter.enableKey as keyof FilterValidatorConfig]) continue;
-      const result = filter.run!(cycleKlines, setup.direction, setup.type, config as unknown as Record<string, unknown>);
+      const result = await filter.run!(cycleKlines, setup.direction, setup.type, config as unknown as Record<string, unknown>);
       logBuffer.addFilterCheck({
         filterName: filter.displayName,
         passed: result.isAllowed,
@@ -302,7 +302,7 @@ export class FilterValidator {
     watcher: ActiveWatcher,
     setup: TradingSetup,
     logBuffer: WatcherLogBuffer
-  ): Promise<{ passed: boolean; filterResult?: ReturnType<typeof checkBtcCorrelation> }> {
+  ): Promise<{ passed: boolean; filterResult?: Awaited<ReturnType<typeof checkBtcCorrelation>> }> {
     const isAltcoin = !watcher.symbol.startsWith('BTC') && watcher.symbol !== 'BTCUSDT';
 
     if (!isAltcoin) {
@@ -312,7 +312,7 @@ export class FilterValidator {
     const mappedBtcKlines = await this.deps.getBtcKlines(watcher.interval, watcher.marketType);
 
     if (mappedBtcKlines.length >= 26) {
-      const btcResult = checkBtcCorrelation(mappedBtcKlines, setup.direction, watcher.symbol);
+      const btcResult = await checkBtcCorrelation(mappedBtcKlines, setup.direction, watcher.symbol);
 
       logBuffer.addFilterCheck({
         filterName: 'BTC Correlation',
@@ -368,7 +368,7 @@ export class FilterValidator {
     watcher: ActiveWatcher,
     setup: TradingSetup,
     logBuffer: WatcherLogBuffer
-  ): Promise<{ passed: boolean; filterResult?: ReturnType<typeof checkMtfCondition> }> {
+  ): Promise<{ passed: boolean; filterResult?: Awaited<ReturnType<typeof checkMtfCondition>> }> {
     const htfInterval = getHigherTimeframe(watcher.interval);
 
     if (!htfInterval) {
@@ -378,7 +378,7 @@ export class FilterValidator {
     const mappedHtfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
 
     if (mappedHtfKlines.length >= MTF_FILTER.MIN_KLINES_FOR_EMA200) {
-      const mtfResult = checkMtfCondition(mappedHtfKlines, setup.direction, htfInterval);
+      const mtfResult = await checkMtfCondition(mappedHtfKlines, setup.direction, htfInterval);
 
       logBuffer.addFilterCheck({
         filterName: 'MTF',
@@ -397,13 +397,13 @@ export class FilterValidator {
     return { passed: true };
   }
 
-  private checkMarketRegimeFilter(
+  private async checkMarketRegimeFilter(
     cycleKlines: Kline[],
     setup: TradingSetup,
     logBuffer: WatcherLogBuffer
-  ): { passed: boolean; filterResult?: ReturnType<typeof checkMarketRegime> } {
+  ): Promise<{ passed: boolean; filterResult?: Awaited<ReturnType<typeof checkMarketRegime>> }> {
     if (cycleKlines.length >= 30) {
-      const regimeResult = checkMarketRegime(cycleKlines, setup.type);
+      const regimeResult = await checkMarketRegime(cycleKlines, setup.type);
 
       logBuffer.addFilterCheck({
         filterName: 'Market Regime',
@@ -422,14 +422,14 @@ export class FilterValidator {
     return { passed: true };
   }
 
-  private checkVolumeFilter(
+  private async checkVolumeFilter(
     cycleKlines: Kline[],
     setup: TradingSetup,
     logBuffer: WatcherLogBuffer,
     volumeFilterConfig?: VolumeFilterConfig
-  ): { passed: boolean; filterResult?: ReturnType<typeof checkVolumeCondition> } {
+  ): Promise<{ passed: boolean; filterResult?: Awaited<ReturnType<typeof checkVolumeCondition>> }> {
     if (cycleKlines.length >= 21) {
-      const volumeResult = checkVolumeCondition(cycleKlines, setup.direction, setup.type, volumeFilterConfig);
+      const volumeResult = await checkVolumeCondition(cycleKlines, setup.direction, setup.type, volumeFilterConfig);
 
       logBuffer.addFilterCheck({
         filterName: 'Volume',
@@ -479,7 +479,7 @@ export class FilterValidator {
     const htfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
     if (htfKlines.length === 0) return { passed: true };
 
-    const result = checkStochasticHtfCondition(htfKlines, setup.openTime, setup.direction);
+    const result = await checkStochasticHtfCondition(htfKlines, setup.openTime, setup.direction);
 
     logBuffer.addFilterCheck({
       filterName: 'HTF Stochastic',
@@ -503,7 +503,7 @@ export class FilterValidator {
     const htfKlines = await this.deps.getHtfKlines(watcher.symbol, htfInterval, watcher.marketType);
     if (htfKlines.length === 0) return { passed: true };
 
-    const result = checkStochasticRecoveryHtfCondition(htfKlines, setup.openTime, setup.direction);
+    const result = await checkStochasticRecoveryHtfCondition(htfKlines, setup.openTime, setup.direction);
 
     logBuffer.addFilterCheck({
       filterName: 'HTF Stochastic Recovery',
@@ -527,11 +527,11 @@ export class FilterValidator {
     return globalTrendFilterEnabled || strategyTrendFilterEnabled;
   }
 
-  private checkTrendFilter(
+  private async checkTrendFilter(
     cycleKlines: Kline[],
     setup: TradingSetup,
     logBuffer: WatcherLogBuffer
-  ): { passed: boolean; reason?: string; details?: Record<string, unknown> } {
+  ): Promise<{ passed: boolean; reason?: string; details?: Record<string, unknown> }> {
     if (cycleKlines.length < 2) {
       return {
         passed: false,
@@ -540,7 +540,7 @@ export class FilterValidator {
       };
     }
 
-    const trendResult = checkTrendCondition(cycleKlines, setup.direction);
+    const trendResult = await checkTrendCondition(cycleKlines, setup.direction);
 
     logBuffer.addFilterCheck({
       filterName: 'Trend (EMA21)',

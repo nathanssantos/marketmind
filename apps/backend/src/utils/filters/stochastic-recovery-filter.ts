@@ -1,15 +1,17 @@
-import { calculateStochastic } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline, StochasticFilterResult } from '@marketmind/types';
 import { STOCHASTIC_FILTER } from './stochastic-filter';
+
+const pineService = new PineIndicatorService();
 
 export const STOCHASTIC_RECOVERY = {
   MIDPOINT_THRESHOLD: 50,
 } as const;
 
-export const checkStochasticRecoveryCondition = (
+export const checkStochasticRecoveryCondition = async (
   klines: Kline[],
   direction: 'LONG' | 'SHORT'
-): StochasticFilterResult => {
+): Promise<StochasticFilterResult> => {
   const { K_PERIOD, K_SMOOTHING, D_PERIOD, OVERSOLD_THRESHOLD, OVERBOUGHT_THRESHOLD } =
     STOCHASTIC_FILTER;
   const { MIDPOINT_THRESHOLD } = STOCHASTIC_RECOVERY;
@@ -27,10 +29,13 @@ export const checkStochasticRecoveryCondition = (
     };
   }
 
-  const stochResult = calculateStochastic(klines, K_PERIOD, K_SMOOTHING, D_PERIOD);
-  const lastIndex = stochResult.k.length - 1;
-  const currentK = stochResult.k[lastIndex];
-  const currentD = stochResult.d[lastIndex];
+  const stochResult = await pineService.computeMulti('stoch', klines, { period: K_PERIOD, smoothK: K_SMOOTHING });
+  const kValues = stochResult['k'] ?? [];
+  const dValues = stochResult['d'] ?? [];
+
+  const lastIndex = kValues.length - 1;
+  const currentK = kValues[lastIndex] ?? null;
+  const currentD = dValues[lastIndex] ?? null;
 
   if (currentK === null || currentK === undefined) {
     return {
@@ -54,7 +59,7 @@ export const checkStochasticRecoveryCondition = (
       isAllowed = false;
       reason = `LONG blocked: Slow Stoch K (${currentK.toFixed(2)}) already crossed midpoint (≥ ${MIDPOINT_THRESHOLD})`;
     } else {
-      const wentBelowOversold = scanBackwardForExtreme(stochResult.k, lastIndex, 'below', OVERSOLD_THRESHOLD, MIDPOINT_THRESHOLD);
+      const wentBelowOversold = scanBackwardForExtreme(kValues, lastIndex, 'below', OVERSOLD_THRESHOLD, MIDPOINT_THRESHOLD);
       if (wentBelowOversold) {
         isAllowed = true;
         reason = `LONG allowed: Slow Stoch K (${currentK.toFixed(2)}) recovering from oversold, below midpoint (${MIDPOINT_THRESHOLD})`;
@@ -68,7 +73,7 @@ export const checkStochasticRecoveryCondition = (
       isAllowed = false;
       reason = `SHORT blocked: Slow Stoch K (${currentK.toFixed(2)}) already crossed midpoint (≤ ${MIDPOINT_THRESHOLD})`;
     } else {
-      const wentAboveOverbought = scanBackwardForExtreme(stochResult.k, lastIndex, 'above', OVERBOUGHT_THRESHOLD, MIDPOINT_THRESHOLD);
+      const wentAboveOverbought = scanBackwardForExtreme(kValues, lastIndex, 'above', OVERBOUGHT_THRESHOLD, MIDPOINT_THRESHOLD);
       if (wentAboveOverbought) {
         isAllowed = true;
         reason = `SHORT allowed: Slow Stoch K (${currentK.toFixed(2)}) recovering from overbought, above midpoint (${MIDPOINT_THRESHOLD})`;

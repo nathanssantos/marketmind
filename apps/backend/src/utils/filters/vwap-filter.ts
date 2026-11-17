@@ -1,5 +1,7 @@
-import { calculateIntradayVWAP } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline, PriceVsVwap, VwapFilterResult } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 const MIN_KLINES_REQUIRED = 5;
 
@@ -9,10 +11,10 @@ export const VWAP_FILTER = {
 
 export type { PriceVsVwap, VwapFilterResult };
 
-export const checkVwapCondition = (
+export const checkVwapCondition = async (
   klines: Kline[],
   direction: 'LONG' | 'SHORT',
-): VwapFilterResult => {
+): Promise<VwapFilterResult> => {
   if (klines.length < MIN_KLINES_REQUIRED) {
     return {
       isAllowed: true,
@@ -23,11 +25,11 @@ export const checkVwapCondition = (
     };
   }
 
-  const vwapValues = calculateIntradayVWAP(klines);
+  const vwapValues = await pineService.compute('vwap', klines);
   const lastVwap = vwapValues[vwapValues.length - 1];
   const lastKline = klines[klines.length - 1];
 
-  if (!lastKline || lastVwap === undefined || isNaN(lastVwap)) {
+  if (!lastKline || lastVwap === undefined || lastVwap === null || isNaN(lastVwap)) {
     return {
       isAllowed: true,
       vwap: null,

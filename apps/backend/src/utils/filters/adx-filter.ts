@@ -1,6 +1,8 @@
-import { calculateADX } from '@marketmind/indicators';
+import { PineIndicatorService } from '../../services/pine/PineIndicatorService';
 import type { Kline } from '@marketmind/types';
 import { INDICATOR_PERIODS, FILTER_THRESHOLDS } from '@marketmind/types';
+
+const pineService = new PineIndicatorService();
 
 export interface AdxFilterResult {
   isAllowed: boolean;
@@ -19,10 +21,10 @@ export const ADX_FILTER = {
   MIN_KLINES_REQUIRED: INDICATOR_PERIODS.ADX_DEFAULT * 2 + 7,
 } as const;
 
-export const checkAdxCondition = (
+export const checkAdxCondition = async (
   klines: Kline[],
   direction: 'LONG' | 'SHORT'
-): AdxFilterResult => {
+): Promise<AdxFilterResult> => {
   const { PERIOD, TREND_THRESHOLD, MIN_KLINES_REQUIRED } = ADX_FILTER;
 
   if (klines.length < MIN_KLINES_REQUIRED) {
@@ -38,10 +40,14 @@ export const checkAdxCondition = (
     };
   }
 
-  const adxResult = calculateADX(klines, PERIOD);
-  const adx = adxResult.adx[adxResult.adx.length - 1];
-  const plusDI = adxResult.plusDI[adxResult.plusDI.length - 1];
-  const minusDI = adxResult.minusDI[adxResult.minusDI.length - 1];
+  const dmiResult = await pineService.computeMulti('dmi', klines, { period: PERIOD });
+  const adxValues = dmiResult['adx'] ?? [];
+  const plusDIValues = dmiResult['plusDI'] ?? [];
+  const minusDIValues = dmiResult['minusDI'] ?? [];
+
+  const adx = adxValues[adxValues.length - 1] ?? null;
+  const plusDI = plusDIValues[plusDIValues.length - 1] ?? null;
+  const minusDI = minusDIValues[minusDIValues.length - 1] ?? null;
 
   if (adx == null || plusDI == null || minusDI == null) {
     return {

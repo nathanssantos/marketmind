@@ -68,7 +68,7 @@ export interface FilterOrchestrationInput {
   strategyHasTrendFilter?: boolean;
 }
 
-export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrchestrationResult => {
+export const orchestrateFilters = async (input: FilterOrchestrationInput): Promise<FilterOrchestrationResult> => {
   const {
     klines,
     setup,
@@ -87,7 +87,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
     const isAltcoin = !symbol.startsWith('BTC') && symbol !== 'BTCUSDT';
 
     if (isAltcoin && externalData.btcKlines.length >= 26) {
-      const btcResult = checkBtcCorrelation(externalData.btcKlines, direction, symbol);
+      const btcResult = await checkBtcCorrelation(externalData.btcKlines, direction, symbol);
 
       checkResults.push({
         filter: 'BTC Correlation',
@@ -140,7 +140,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
 
   if (config.useMtfFilter && externalData.htfKlines && externalData.htfInterval) {
     if (externalData.htfKlines.length >= MTF_FILTER.MIN_KLINES_FOR_EMA200) {
-      const mtfResult = checkMtfCondition(externalData.htfKlines, direction, externalData.htfInterval);
+      const mtfResult = await checkMtfCondition(externalData.htfKlines, direction, externalData.htfInterval);
 
       checkResults.push({
         filter: 'MTF',
@@ -163,7 +163,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
   }
 
   if (config.useMarketRegimeFilter && klines.length >= 30) {
-    const regimeResult = checkMarketRegime(klines, setup.type);
+    const regimeResult = await checkMarketRegime(klines, setup.type);
 
     checkResults.push({
       filter: 'Market Regime',
@@ -186,7 +186,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
   }
 
   if (config.useDirectionFilter && klines.length >= DIRECTION_FILTER.MIN_KLINES_REQUIRED) {
-    const directionResult = checkDirectionFilter(klines, direction, {
+    const directionResult = await checkDirectionFilter(klines, direction, {
       enableLongInBearMarket: config.enableLongInBearMarket,
       enableShortInBullMarket: config.enableShortInBullMarket,
     });
@@ -214,7 +214,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
   }
 
   if (config.useVolumeFilter && klines.length >= 21) {
-    const volumeResult = checkVolumeCondition(klines, direction, setup.type);
+    const volumeResult = await checkVolumeCondition(klines, direction, setup.type);
 
     checkResults.push({
       filter: 'Volume',
@@ -261,7 +261,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
     const minRequired = K_PERIOD + K_SMOOTHING + D_PERIOD;
 
     if (klines.length >= minRequired) {
-      const stochResult = checkStochasticCondition(klines, direction);
+      const stochResult = await checkStochasticCondition(klines, direction);
 
       checkResults.push({
         filter: 'Stochastic',
@@ -285,7 +285,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
     const { MIN_KLINES_REQUIRED } = MOMENTUM_TIMING_FILTER;
 
     if (klines.length >= MIN_KLINES_REQUIRED) {
-      const momentumResult = checkMomentumTiming(klines, direction, setup.type);
+      const momentumResult = await checkMomentumTiming(klines, direction, setup.type);
 
       checkResults.push({
         filter: 'Momentum',
@@ -324,7 +324,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
       };
     }
 
-    const adxResult = checkAdxCondition(klines, direction);
+    const adxResult = await checkAdxCondition(klines, direction);
 
     checkResults.push({
       filter: 'ADX',
@@ -346,7 +346,7 @@ export const orchestrateFilters = (input: FilterOrchestrationInput): FilterOrche
   const shouldApplyTrendFilter = config.useTrendFilter || strategyHasTrendFilter;
 
   if (shouldApplyTrendFilter && klines.length >= 2) {
-    const trendResult = checkTrendCondition(klines, direction);
+    const trendResult = await checkTrendCondition(klines, direction);
 
     checkResults.push({
       filter: 'Trend (EMA21)',
